@@ -1877,6 +1877,78 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(1000);
     }
+  },
+  {
+    id: 'feature_mission_flight_time_epoch',
+    name: 'Mission Flight Time & Epoch Synchronization',
+    description: 'Controls mission flight epoch, interacts with topbar time pill, configures planned schedule with solar presets, and manages flight temporal modes.',
+    issueRef: 'v1.158.0',
+    run: async (page) => {
+      // 1. Re-center cleanly on default rural location
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Click the topbar Mission Time Pill to open the popover
+      const timePill = await page.$('#header-mission-time-pill');
+      if (timePill) {
+        await timePill.click();
+        await page.waitForTimeout(800);
+      }
+
+      // 3. Switch to 'Planned' flight mode
+      const plannedBtn = await page.$('#btn-time-mode-planned');
+      if (plannedBtn) {
+        await plannedBtn.click();
+        await page.waitForTimeout(700);
+      }
+
+      // 4. Click Solar Noon preset
+      const noonBtn = await page.$('#btn-preset-solar-noon');
+      if (noonBtn) {
+        await noonBtn.click();
+        await page.waitForTimeout(900);
+      }
+
+      // 5. Click Golden Hour preset
+      const goldenBtn = await page.$('#btn-preset-golden-hour');
+      if (goldenBtn) {
+        await goldenBtn.click();
+        await page.waitForTimeout(900);
+      }
+
+      // 6. Click +1h quick step preset
+      const plusHourBtn = await page.$('#btn-preset-plus-hour');
+      if (plusHourBtn) {
+        await plusHourBtn.click();
+        await page.waitForTimeout(700);
+      }
+
+      // 7. Switch to 'Live' mode to demonstrate real-time clock tracking
+      const liveBtn = await page.$('#btn-time-mode-live');
+      if (liveBtn) {
+        await liveBtn.click();
+        await page.waitForTimeout(700);
+      }
+
+      // 8. Switch back to 'Planned' mode
+      if (plannedBtn) {
+        await plannedBtn.click();
+        await page.waitForTimeout(700);
+      }
+
+      // 9. Close the popover via the close button or re-clicking pill
+      const closeBtn = await page.$('#btn-close-mission-time-popover');
+      if (closeBtn) {
+        await closeBtn.click();
+      } else if (timePill) {
+        await timePill.click();
+      }
+      await page.waitForTimeout(800);
+
+      // 10. Re-center map cleanly on default rural point
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+    }
   }
 ];
 

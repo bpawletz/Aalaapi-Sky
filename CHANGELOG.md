@@ -1,3 +1,39 @@
+## [1.158.0] - 2026-10-15
+
+Introduces a unified Mission Flight Time & Epoch Manager with topbar time scheduling, quick solar presets, 3D sun sphere and glowing corona tracking in Three.js, and bidirectional synchronization with DJI WPML and historical flight replay.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Topbar Mission Flight Time Pill & Status Indicator**:
+  - Added an interactive status pill in the top navigation bar (`#header-mission-time-pill`) displaying the active mission temporal mode: ⚡ Live Clock, 📅 Planned Schedule, or ▶ Telemetry Replay.
+  - One-click trigger opens the floating Mission Time & Solar Ephemeris drawer from any screen without interrupting mission design.
+- **Mission Time & Planned Schedule Popover**:
+  - Segmented mode switcher to seamlessly toggle between real-time clock, pilot-scheduled future flight departures, and historical replay.
+  - Native local date-time picker with 1-click quick presets: Now (system clock), ☀️ Solar Noon (peak solar elevation, minimal shadows), 🌅 Golden Hour (cinematic warm lighting 45 minutes before sunset), -1h, and +1h incremental steppers.
+  - Real-time lighting quality preview badge and solar vector readout matching the targeted flight epoch.
+- **Physical 3D Sun Sphere & Corona in Sky Dome**:
+  - Added a luminous, physical 3D Sun sphere (`threeSunMesh`) in the Three.js viewport positioned in real-time according to calculated solar azimuth and elevation.
+  - Dynamic solar color grading: daylight white at high noon, warm amber/golden during low sun/golden hours, and automatic horizon culling below twilight.
+- **Automatic Telemetry Replay & WPML Synchronization**:
+  - Automatic synchronization of mission flight time when importing DJI KMZ files containing `<wpml:createTime>` or `<wpml:updateTime>`.
+  - Bidirectional time scrubbing in 3D Flight Diagnostics (`seekTo()`) and `PlaybackManager` to watch shadows and 3D sun positions evolve realistically along the actual flight path.
+  - Toggleable auto-sync preference stored across browser sessions.
+
+#### Under the Hood & Technical Details
+- **MissionClock Core Module (`src/core/MissionClock.js`)**:
+  - Centralized singleton managing temporal epochs (`live`, `planned`, `playback`) with fallback handling, background live ticking, and event dispatching.
+  - Dispatches synchronized updates to solar ephemeris calculations, 2D Leaflet shadow projection cones (`renderSolarOverlay2D`), and Three.js 3D directional sunlight (`update3DSunPosition`).
+- **3D Scene Manager Integration (`src/3d/SceneManager.js`, `src/import/KmzImporter.js`, `src/3d/FpvHud.js`)**:
+  - Declared `threeSunMesh` global state and instantiated basic emissive mesh in `init3DPreview()`.
+  - Updated `update3DSunPosition()` to calculate world-space coordinates from `MissionClock.getEffectiveTime()`, updating both light vector and visible orb mesh.
+  - Added clean resource deallocation in `cleanup3DPreview()`.
+- **Telemetry Replay & Import Hooks (`src/3d/DigitalTwin.js`, `src/import/KmzImporter.js`)**:
+  - Enhanced `DigitalTwin.seekTo()` to resolve timestamp offsets and update `MissionClock.setPlaybackTime()`.
+  - Enhanced `parseWPML()` to extract integer millisecond or ISO timestamps from `wpml:createTime` and activate planned schedule mode.
+- **Popover Mutual Exclusivity (`src/ui/EventBindings.js`)**:
+  - Wired `#mission-time-popover` into topbar popover mutual exclusivity and document click-outside / Escape dismissal handlers.
+
 ## [1.157.1] - 2026-10-15
 
 ### Fixed

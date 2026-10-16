@@ -1759,6 +1759,8 @@ function cleanup3DPreview() {
   threeGroundCanvas = null;
   threeGroundCtx = null;
   threeGroundTexture = null;
+  threeSunLight = null;
+  threeSunMesh = null;
 }
 
 // Auto-Plan State

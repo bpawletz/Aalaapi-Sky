@@ -1,5 +1,71 @@
 [
   {
+    "notam_id": "6/9885",
+    "facility": "ZKC",
+    "state": "KS",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Wichita, KS, Thursday, October 22, 2026 through Sunday, October 25, 2026 UTC",
+    "mod_date": "10/15/2026 22:56:00",
+    "mod_abs_time": "202610152256",
+    "is_new": "Y",
+    "gid": "6/9885"
+  },
+  {
+    "notam_id": "6/9883",
+    "facility": "ZID",
+    "state": "WV",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Fayetteville, WV, Saturday, October 17, 2026 UTC",
+    "mod_date": "10/15/2026 21:33:00",
+    "mod_abs_time": "202610152133",
+    "is_new": "Y",
+    "gid": "6/9883"
+  },
+  {
+    "notam_id": "6/9882",
+    "facility": "ZTL",
+    "state": "GA",
+    "type": "SECURITY",
+    "description": "Marietta, GA, Friday, October 16, 2026 Local",
+    "mod_date": "10/15/2026 21:13:00",
+    "mod_abs_time": "202610152113",
+    "is_new": "Y",
+    "gid": "6/9882"
+  },
+  {
+    "notam_id": "6/9864",
+    "facility": "ZAB",
+    "state": "AZ",
+    "type": "SECURITY",
+    "description": "Libby AAF, AZ, Friday, October 16, 2026 through Sunday, October 18, 2026 Local",
+    "mod_date": "10/15/2026 20:04:00",
+    "mod_abs_time": "202610152004",
+    "is_new": "Y",
+    "gid": "6/9864"
+  },
+  {
+    "notam_id": "6/9845",
+    "facility": "ZID",
+    "state": "WV",
+    "type": "HAZARDS",
+    "description": "MILTON, WV, Thursday, October 15, 2026 through Friday, October 16, 2026 UTC",
+    "mod_date": "10/15/2026 18:17:00",
+    "mod_abs_time": "202610151817",
+    "is_new": "Y",
+    "gid": "6/9845"
+  },
+  {
+    "notam_id": "6/9842",
+    "facility": "ZID",
+    "state": "KY",
+    "type": "VIP",
+    "description": "Hebron, KY, Saturday, October 17, 2026 Local",
+    "mod_date": "10/15/2026 16:45:00",
+    "mod_abs_time": "202610151645",
+    "is_new": "Y",
+    "gid": "6/9842"
+  },
+  {
     "notam_id": "6/9815",
     "facility": "ZJX",
     "state": "SC",
@@ -44,17 +110,6 @@
     "gid": "6/9731"
   },
   {
-    "notam_id": "6/9727",
-    "facility": "ZOB",
-    "state": "MI",
-    "type": "VIP",
-    "description": "Monroe, MI, Thursday, October 15, 2026 Local",
-    "mod_date": "10/15/2026 01:04:00",
-    "mod_abs_time": "202610150104",
-    "is_new": "Y",
-    "gid": "6/9727"
-  },
-  {
     "notam_id": "6/9717",
     "facility": "ZAN",
     "state": "AK",
@@ -62,7 +117,7 @@
     "description": "20NM NE OF FAIRBANKS, AK, Tuesday, October 20, 2026 through Tuesday, October 27, 2026 UTC",
     "mod_date": "10/14/2026 23:20:00",
     "mod_abs_time": "202610142320",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9717"
   },
   {
@@ -73,19 +128,8 @@
     "description": "Herbon, KY, Saturday, October 17, 2026 Local",
     "mod_date": "10/14/2026 22:34:00",
     "mod_abs_time": "202610142234",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9702"
-  },
-  {
-    "notam_id": "6/9577",
-    "facility": "ZID",
-    "state": "WV",
-    "type": "HAZARDS",
-    "description": "MILTON, WV, Wednesday, October 14, 2026 through Thursday, October 15, 2026 UTC",
-    "mod_date": "10/14/2026 20:03:00",
-    "mod_abs_time": "202610142003",
-    "is_new": "Y",
-    "gid": "6/9577"
   },
   {
     "notam_id": "6/9548",
@@ -95,7 +139,7 @@
     "description": "Fayetteville, WV, Saturday, October 17, 2026 UTC",
     "mod_date": "10/14/2026 19:12:00",
     "mod_abs_time": "202610141912",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9548"
   },
   {
@@ -106,7 +150,7 @@
     "description": "NASHWAUK, MN, Monday, October 19, 2026 UTC",
     "mod_date": "10/14/2026 17:34:00",
     "mod_abs_time": "202610141734",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9532"
   },
   {
@@ -117,7 +161,7 @@
     "description": "West Palm Beach, FL, Saturday, October 17, 2026 through Sunday, October 18, 2026 Local",
     "mod_date": "10/14/2026 16:57:00",
     "mod_abs_time": "202610141657",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9528"
   },
   {
@@ -273,17 +317,6 @@
     "mod_abs_time": "202610131119",
     "is_new": "N",
     "gid": "6/9058"
-  },
-  {
-    "notam_id": "6/8992",
-    "facility": "ZOB",
-    "state": "MI",
-    "type": "VIP",
-    "description": "Monroe, MI, Thursday, October 15, 2026 Local",
-    "mod_date": "10/12/2026 12:41:00",
-    "mod_abs_time": "202610121241",
-    "is_new": "N",
-    "gid": "6/8992"
   },
   {
     "notam_id": "6/8902",

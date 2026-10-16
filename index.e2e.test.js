@@ -8207,6 +8207,79 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(res.countAfterDel, 3, 'Deleting node should return count to 3');
       assert.strictEqual(res.isEditActiveAfter, false, 'Clicking done should deactivate isCorridorEditActive');
     });
+
+    test('E2E: Mission Time Pill, Planned Schedule Popover & Quick Presets (v1.158.0)', async () => {
+      const res = await page.evaluate(async () => {
+        const pill = document.getElementById('header-mission-time-pill');
+        const popover = document.getElementById('mission-time-popover');
+        const weatherPop = document.getElementById('telemetry-weather-popover');
+        const modeLabel = document.getElementById('header-time-label');
+        const modeIcon = document.getElementById('header-time-mode-icon');
+        const btnPlanned = document.getElementById('btn-mtime-mode-planned');
+        const btnLive = document.getElementById('btn-mtime-mode-live');
+        const presetNoon = document.getElementById('mtime-preset-noon');
+        const timeInput = document.getElementById('mission-time-input');
+        const previewAngles = document.getElementById('mtime-preview-angles');
+        const closeBtn = document.getElementById('mission-time-popover-close-btn');
+
+        if (!pill || !popover) return { error: 'Mission time elements not found' };
+
+        // Ensure clean live state in case prior diagnostics tests entered playback mode
+        if (typeof MissionClock !== 'undefined' && MissionClock.setLive) {
+          MissionClock.setLive();
+        }
+
+        const initialLive = pill.classList.contains('is-live');
+        const initialPopHidden = popover.classList.contains('hidden');
+
+        // 1. Open Popover via Pill Click
+        pill.click();
+        const popOpened = !popover.classList.contains('hidden');
+        const weatherClosed = weatherPop ? weatherPop.classList.contains('hidden') : true;
+
+        // 2. Switch to Planned Mode
+        if (btnPlanned) btnPlanned.click();
+        const isPlannedPill = pill.classList.contains('is-planned');
+        const plannedIcon = modeIcon ? modeIcon.textContent : '';
+        const inputEnabled = timeInput ? !timeInput.disabled : false;
+
+        // 3. Click Solar Noon Preset
+        if (presetNoon) presetNoon.click();
+        const anglesText = previewAngles ? previewAngles.textContent : '';
+
+        // 4. Reset to Live Clock
+        if (btnLive) btnLive.click();
+        const backToLive = pill.classList.contains('is-live');
+
+        // 5. Close Popover
+        if (closeBtn) closeBtn.click();
+        const popClosed = popover.classList.contains('hidden');
+
+        return {
+          initialLive,
+          initialPopHidden,
+          popOpened,
+          weatherClosed,
+          isPlannedPill,
+          plannedIcon,
+          inputEnabled,
+          anglesText,
+          backToLive,
+          popClosed
+        };
+      });
+
+      assert.strictEqual(res.initialLive, true, 'Mission time pill should default to live mode');
+      assert.strictEqual(res.initialPopHidden, true, 'Mission time popover should default to hidden');
+      assert.strictEqual(res.popOpened, true, 'Clicking pill should open mission time popover');
+      assert.strictEqual(res.weatherClosed, true, 'Opening mission time popover should close weather popover');
+      assert.strictEqual(res.isPlannedPill, true, 'Switching to planned mode should add is-planned class to pill');
+      assert.strictEqual(res.plannedIcon, '📅', 'Planned mode icon should be 📅');
+      assert.strictEqual(res.inputEnabled, true, 'Planned mode should enable datetime input');
+      assert.ok(res.anglesText.includes('Alt'), 'Preview angles should display Alt and Az');
+      assert.strictEqual(res.backToLive, true, 'Clicking live mode should restore is-live on pill');
+      assert.strictEqual(res.popClosed, true, 'Clicking close button should hide popover');
+    });
   });
 });
 
