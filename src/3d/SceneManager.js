@@ -47,6 +47,20 @@ function init3DPreview() {
   threeScene.add(dirLight1);
   threeSunLight = dirLight1;
 
+  // Luminous physical 3D Sun sphere representation in the sky dome
+  try {
+    const sunGeo = new THREE.SphereGeometry(14, 16, 16);
+    const sunMat = new THREE.MeshBasicMaterial({
+      color: 0xfff5cc,
+      wireframe: false
+    });
+    threeSunMesh = new THREE.Mesh(sunGeo, sunMat);
+    threeSunMesh.position.copy(dirLight1.position);
+    threeScene.add(threeSunMesh);
+  } catch (err) {
+    console.warn('Could not initialize 3D Sun Mesh:', err);
+  }
+
   const dirLight2 = new THREE.DirectionalLight(0x06b6d4, 0.6); // Subtle cyan fill light
   dirLight2.position.set(-200, 200, -200);
   threeScene.add(dirLight2);
@@ -344,28 +358,55 @@ function update3DSunPosition() {
   let pos = null;
   if (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris && currentSolarEphemeris.currentPosition) {
     pos = currentSolarEphemeris.currentPosition;
-  } else if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
-    const ll = centerMarker.getLatLng();
-    pos = SolarEphemeris.getSunPosition(new Date(), ll.lat, ll.lng);
   } else {
-    pos = SolarEphemeris.getSunPosition(new Date(), 41.3215, -88.9950);
+    const effectiveTime = (typeof MissionClock !== 'undefined' && typeof MissionClock.getEffectiveTime === 'function')
+      ? MissionClock.getEffectiveTime()
+      : new Date();
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+      const ll = centerMarker.getLatLng();
+      pos = SolarEphemeris.getSunPosition(effectiveTime, ll.lat, ll.lng);
+    } else {
+      pos = SolarEphemeris.getSunPosition(effectiveTime, 41.3215, -88.9950);
+    }
   }
 
   if (!pos) return;
 
   const azRad = (pos.azimuthDeg || 180) * (Math.PI / 180);
-  const altRad = Math.max(0.05, (pos.altitudeDeg || 45)) * (Math.PI / 180);
+  const altRad = Math.max(0.02, (pos.altitudeDeg || 45)) * (Math.PI / 180);
 
   const radius = 600;
   // Sun position in sky:
   // Azimuth 0 = North (-Z), 90 = East (+X), 180 = South (+Z), 270 = West (-X)
   const sunX = radius * Math.cos(altRad) * Math.sin(azRad);
-  const sunY = Math.max(40, radius * Math.sin(altRad));
+  const sunY = Math.max(20, radius * Math.sin(altRad));
   const sunZ = -radius * Math.cos(altRad) * Math.cos(azRad);
 
   threeSunLight.position.set(sunX, sunY, sunZ);
   if (threeSunLight.target && typeof threeScene !== 'undefined' && threeScene) {
     threeSunLight.target.position.set(0, 0, 0);
+  }
+
+  // Update physical Sun Sphere position & appearance
+  if (threeSunMesh) {
+    threeSunMesh.position.set(sunX, sunY, sunZ);
+    if (pos.altitudeDeg <= 0) {
+      threeSunMesh.visible = false;
+    } else {
+      threeSunMesh.visible = true;
+      if (threeSunMesh.material) {
+        if (pos.altitudeDeg < 8) {
+          // Deep golden / amber sunset/sunrise
+          threeSunMesh.material.color.setHex(0xf97316);
+        } else if (pos.altitudeDeg < 25) {
+          // Warm golden hour
+          threeSunMesh.material.color.setHex(0xfbbf24);
+        } else {
+          // Bright daylight sun
+          threeSunMesh.material.color.setHex(0xfffbeb);
+        }
+      }
+    }
   }
 
   // Modulate intensity based on sun elevation (dim at twilight/night)

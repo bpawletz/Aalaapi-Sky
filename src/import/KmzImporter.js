@@ -61,6 +61,26 @@ function parseWPML(wpmlText) {
       }
     }
 
+    // Parse createTime or updateTime to restore the mission scheduled/planned time
+    const createTimeNode = xmlDoc.getElementsByTagName("wpml:createTime")[0] 
+      || xmlDoc.getElementsByTagName("createTime")[0]
+      || xmlDoc.getElementsByTagName("wpml:updateTime")[0]
+      || xmlDoc.getElementsByTagName("updateTime")[0];
+    if (createTimeNode && typeof MissionClock !== 'undefined') {
+      const timeVal = createTimeNode.textContent.trim();
+      let parsedDate = null;
+      if (/^\d+$/.test(timeVal)) {
+        const ms = parseInt(timeVal, 10);
+        if (!isNaN(ms) && ms > 0) parsedDate = new Date(ms);
+      } else {
+        const d = new Date(timeVal);
+        if (!isNaN(d.getTime())) parsedDate = d;
+      }
+      if (parsedDate) {
+        MissionClock.setPlannedTime(parsedDate);
+      }
+    }
+
     const placemarks = xmlDoc.getElementsByTagName("Placemark");
     if (placemarks.length === 0) {
       throw new Error("No waypoints found in the mission file.");
@@ -2490,6 +2510,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
 // Three.js 3D Preview State Variables
 let threeScene, threeCamera, threeRenderer, threeControls, threeAnimationId;
 let threeSunLight = null;
+let threeSunMesh = null;
 let showCones = true;
 let autoRotate3D = false;
 let coneGroups = [];

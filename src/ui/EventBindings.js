@@ -1784,6 +1784,8 @@ function initUIEventListeners() {
     if (shouldOpen) {
       bridgePopover.classList.remove('hidden');
       if (telemetryPopover) telemetryPopover.classList.add('hidden');
+      const timePop = document.getElementById('mission-time-popover');
+      if (timePop) timePop.classList.add('hidden');
     } else {
       bridgePopover.classList.add('hidden');
     }
@@ -1795,6 +1797,8 @@ function initUIEventListeners() {
     if (shouldOpen) {
       telemetryPopover.classList.remove('hidden');
       if (bridgePopover) bridgePopover.classList.add('hidden');
+      const timePop = document.getElementById('mission-time-popover');
+      if (timePop) timePop.classList.add('hidden');
     } else {
       telemetryPopover.classList.add('hidden');
     }
@@ -1944,6 +1948,21 @@ function initUIEventListeners() {
         bridgePopover.classList.add('hidden');
       }
     }
+
+    const timePopover = document.getElementById('mission-time-popover');
+    const timePill = document.getElementById('header-mission-time-pill');
+    if (timePopover && !timePopover.classList.contains('hidden')) {
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+      if (
+        path.includes(timePopover) ||
+        timePopover.contains(e.target) ||
+        timePill?.contains(e.target)
+      ) {
+        // Inside mission time popover
+      } else {
+        timePopover.classList.add('hidden');
+      }
+    }
   });
 
   document.addEventListener('keydown', (e) => {
@@ -1953,6 +1972,10 @@ function initUIEventListeners() {
       }
       if (telemetryPopover && !telemetryPopover.classList.contains('hidden')) {
         telemetryPopover.classList.add('hidden');
+      }
+      const timePopover = document.getElementById('mission-time-popover');
+      if (timePopover && !timePopover.classList.contains('hidden')) {
+        timePopover.classList.add('hidden');
       }
     }
   });

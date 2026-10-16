@@ -660,6 +660,87 @@ html, body {
   border: 1px solid rgba(234, 179, 8, 0.3);
 }
 
+/* Header Mission Time HUD Pill & Modes */
+.header-mission-time-container {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.header-mission-time-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  color: var(--text-main);
+  font-size: 0.72rem;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .header-mission-time-pill {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(15, 23, 42, 0.15);
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.header-mission-time-pill:hover {
+  background: rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(6, 182, 212, 0.45) !important;
+}
+
+.header-mission-time-pill.is-live {
+  border-color: rgba(6, 182, 212, 0.4);
+}
+.header-mission-time-pill.is-live #header-time-mode-icon {
+  color: var(--accent-cyan);
+}
+
+.header-mission-time-pill.is-planned {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(245, 158, 11, 0.08);
+}
+.header-mission-time-pill.is-planned #header-time-mode-icon {
+  color: #fbbf24;
+}
+
+.header-mission-time-pill.is-playback {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(168, 85, 247, 0.08);
+}
+.header-mission-time-pill.is-playback #header-time-mode-icon {
+  color: #c084fc;
+}
+
+.pill-time-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+}
+
+[data-theme="light"] .pill-time-group {
+  color: #0f172a;
+}
+
+.mission-time-popover {
+  animation: fadeInPopover 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
 .bridge-status-popover {
   animation: fadeInPopover 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   max-height: calc(100vh - 24px);
@@ -719,6 +800,7 @@ html, body {
 }
 
 .telemetry-weather-popover::-webkit-scrollbar-track,
+.mission-time-popover::-webkit-scrollbar-track,
 .header-more-menu::-webkit-scrollbar-track,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-track,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-track {
@@ -727,6 +809,7 @@ html, body {
 }
 
 .telemetry-weather-popover::-webkit-scrollbar-thumb,
+.mission-time-popover::-webkit-scrollbar-thumb,
 .header-more-menu::-webkit-scrollbar-thumb,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-thumb,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-thumb {
@@ -735,6 +818,7 @@ html, body {
 }
 
 .telemetry-weather-popover::-webkit-scrollbar-thumb:hover,
+.mission-time-popover::-webkit-scrollbar-thumb:hover,
 .header-more-menu::-webkit-scrollbar-thumb:hover,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-thumb:hover,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-thumb:hover {
@@ -1942,6 +2026,8 @@ html, body {
     margin: 0 !important;
   }
 
+  .topbar-center.search-open #header-mission-time-pill,
+  .topbar-center.search-open .header-mission-time-container,
   .topbar-center.search-open #header-telemetry-pill,
   .topbar-center.search-open .header-telemetry-container,
   .topbar-center.search-open #header-bridge-pill,
@@ -2001,6 +2087,10 @@ html, body {
 @media (max-width: 400px) {
   .header-telemetry-pill {
     max-width: 170px;
+  }
+  .header-mission-time-pill {
+    max-width: 140px;
+    overflow: hidden;
   }
 }
 

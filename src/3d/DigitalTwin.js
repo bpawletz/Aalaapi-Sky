@@ -3276,6 +3276,21 @@ const FlightDiagnostics = {
 
     const pt = pts[safeIdx];
 
+    // Sync MissionClock if playback auto-sync is active
+    if (typeof MissionClock !== 'undefined' && MissionClock.autoSyncPlayback) {
+      let ptTime = null;
+      if (pt.timestamp) {
+        ptTime = new Date(pt.timestamp);
+      } else if (this.telemetryData && this.telemetryData.flightDate) {
+        const base = new Date(this.telemetryData.flightDate).getTime();
+        const offsetSec = (typeof pt.time === 'number' && !isNaN(pt.time)) ? pt.time : 0;
+        ptTime = new Date(base + offsetSec * 1000);
+      }
+      if (ptTime && !isNaN(ptTime.getTime())) {
+        MissionClock.setPlaybackTime(ptTime, false);
+      }
+    }
+
     if (this.droneMesh) {
       const pos = this.projectToWorld(pt.lat, pt.lon, pt.alt);
       this.droneMesh.position.copy(pos);

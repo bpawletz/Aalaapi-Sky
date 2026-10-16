@@ -677,6 +677,87 @@ html, body {
   border: 1px solid rgba(234, 179, 8, 0.3);
 }
 
+/* Header Mission Time HUD Pill & Modes */
+.header-mission-time-container {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.header-mission-time-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  color: var(--text-main);
+  font-size: 0.72rem;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .header-mission-time-pill {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(15, 23, 42, 0.15);
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.header-mission-time-pill:hover {
+  background: rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(6, 182, 212, 0.45) !important;
+}
+
+.header-mission-time-pill.is-live {
+  border-color: rgba(6, 182, 212, 0.4);
+}
+.header-mission-time-pill.is-live #header-time-mode-icon {
+  color: var(--accent-cyan);
+}
+
+.header-mission-time-pill.is-planned {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(245, 158, 11, 0.08);
+}
+.header-mission-time-pill.is-planned #header-time-mode-icon {
+  color: #fbbf24;
+}
+
+.header-mission-time-pill.is-playback {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(168, 85, 247, 0.08);
+}
+.header-mission-time-pill.is-playback #header-time-mode-icon {
+  color: #c084fc;
+}
+
+.pill-time-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+}
+
+[data-theme="light"] .pill-time-group {
+  color: #0f172a;
+}
+
+.mission-time-popover {
+  animation: fadeInPopover 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
 .bridge-status-popover {
   animation: fadeInPopover 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   max-height: calc(100vh - 24px);
@@ -736,6 +817,7 @@ html, body {
 }
 
 .telemetry-weather-popover::-webkit-scrollbar-track,
+.mission-time-popover::-webkit-scrollbar-track,
 .header-more-menu::-webkit-scrollbar-track,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-track,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-track {
@@ -744,6 +826,7 @@ html, body {
 }
 
 .telemetry-weather-popover::-webkit-scrollbar-thumb,
+.mission-time-popover::-webkit-scrollbar-thumb,
 .header-more-menu::-webkit-scrollbar-thumb,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-thumb,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-thumb {
@@ -752,6 +835,7 @@ html, body {
 }
 
 .telemetry-weather-popover::-webkit-scrollbar-thumb:hover,
+.mission-time-popover::-webkit-scrollbar-thumb:hover,
 .header-more-menu::-webkit-scrollbar-thumb:hover,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-thumb:hover,
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-thumb:hover {
@@ -1959,6 +2043,8 @@ html, body {
     margin: 0 !important;
   }
 
+  .topbar-center.search-open #header-mission-time-pill,
+  .topbar-center.search-open .header-mission-time-container,
   .topbar-center.search-open #header-telemetry-pill,
   .topbar-center.search-open .header-telemetry-container,
   .topbar-center.search-open #header-bridge-pill,
@@ -2018,6 +2104,10 @@ html, body {
 @media (max-width: 400px) {
   .header-telemetry-pill {
     max-width: 170px;
+  }
+  .header-mission-time-pill {
+    max-width: 140px;
+    overflow: hidden;
   }
 }
 
@@ -5992,7 +6082,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.157.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.158.0</span></h1>
 
 
 
@@ -6024,6 +6114,17 @@ html, body {
           <!-- Mobile Close Search Button -->
           <button id="mobile-search-close-btn" class="mobile-search-close-btn" type="button" title="Close Search" aria-label="Close search">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Mission Time / Epoch Pill -->
+        <div class="header-mission-time-container">
+          <button id="header-mission-time-pill" class="header-mission-time-pill is-live" type="button" title="Mission Flight Time (Click to schedule flight or view solar alignment)" aria-label="Mission Flight Time">
+            <span class="pill-time-group">
+              <span id="header-time-mode-icon" class="header-time-mode-icon">⚡</span>
+              <span id="header-time-label" style="font-weight: 600; font-size: 0.72rem;">Live Clock</span>
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
           </button>
         </div>
 
@@ -8995,6 +9096,70 @@ html, body {
         </div>
       </div>
 
+      <!-- Floating Topbar Mission Time & Planned Schedule Popover -->
+      <div id="mission-time-popover" class="mission-time-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 350px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
+        <div class="popover-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <div class="popover-title" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#f59e0b" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Mission Time &amp; Solar Ephemeris</span>
+          </div>
+          <button id="mission-time-popover-close-btn" class="popover-close-btn" type="button" aria-label="Close Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px;">✕</button>
+        </div>
+        <div class="popover-body" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Mode Segmented Switcher -->
+          <div class="mtime-mode-selector" style="display: flex; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 3px; gap: 4px;">
+            <button id="btn-mtime-mode-live" class="btn-sm active" type="button" style="flex: 1; padding: 5px 4px; font-size: 0.72rem; font-weight: 600; border-radius: 6px; border: 1px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s;">
+              <span>⚡</span><span>Live</span>
+            </button>
+            <button id="btn-mtime-mode-planned" class="btn-sm" type="button" style="flex: 1; padding: 5px 4px; font-size: 0.72rem; font-weight: 600; border-radius: 6px; border: 1px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s;">
+              <span>📅</span><span>Planned</span>
+            </button>
+            <button id="btn-mtime-mode-playback" class="btn-sm" type="button" style="flex: 1; padding: 5px 4px; font-size: 0.72rem; font-weight: 600; border-radius: 6px; border: 1px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s;">
+              <span>▶</span><span>Replay</span>
+            </button>
+          </div>
+
+          <!-- Active Epoch Status & Date-Time Input -->
+          <div class="mtime-input-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted);">Flight Time (Local)</span>
+              <span id="mtime-status-pill" class="badge-tag" style="font-size: 0.65rem; padding: 1px 6px; border-radius: 4px; font-weight: 600;">⚡ Live Clock</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="datetime-local" id="mission-time-input" style="flex: 1; padding: 6px 8px; font-size: 0.8rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-family: inherit;" disabled>
+            </div>
+            <!-- Quick Presets -->
+            <div class="mtime-presets" style="display: flex; gap: 5px; flex-wrap: wrap;">
+              <button id="mtime-preset-now" class="btn-sm" type="button" style="flex: 1; min-width: 45px; padding: 3px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); cursor: pointer;" title="Reset to current local time">Now</button>
+              <button id="mtime-preset-noon" class="btn-sm" type="button" style="flex: 1; min-width: 65px; padding: 3px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); cursor: pointer;" title="Jump to Solar Noon (highest sun, shortest shadows)">☀️ Noon</button>
+              <button id="mtime-preset-golden" class="btn-sm" type="button" style="flex: 1; min-width: 75px; padding: 3px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); cursor: pointer;" title="Jump to Golden Hour (warm low-angle cinematic lighting)">🌅 Golden</button>
+              <button id="mtime-preset-prev-h" class="btn-sm" type="button" style="flex: 0 0 38px; padding: 3px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); cursor: pointer;" title="Step back 1 hour">-1h</button>
+              <button id="mtime-preset-next-h" class="btn-sm" type="button" style="flex: 0 0 38px; padding: 3px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); cursor: pointer;" title="Step forward 1 hour">+1h</button>
+            </div>
+          </div>
+
+          <!-- Mini Solar Ephemeris & Lighting Quality Preview -->
+          <div class="mtime-solar-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 0.74rem; font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 5px;">
+                <span>☀️</span><span>Target Lighting Quality</span>
+              </span>
+              <span id="mtime-preview-badge" class="badge-tag" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">Optimal</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.74rem;">
+              <span style="color: var(--text-muted);">Solar Vector:</span>
+              <span id="mtime-preview-angles" style="font-weight: 600; color: var(--text-main); font-family: monospace;">+45.0° Alt • 180° Az</span>
+            </div>
+          </div>
+
+          <!-- Auto-Sync Checkbox with Telemetry Playback -->
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--text-muted); cursor: pointer; padding: 2px 4px; user-select: none;">
+            <input type="checkbox" id="mission-time-autosync-chk" checked style="accent-color: var(--accent-cyan); cursor: pointer;">
+            <span>Auto-sync with Telemetry &amp; Flight Replay</span>
+          </label>
+        </div>
+      </div>
+
       <!-- ADS-B Airspace Control Side Drawer (Issue #92) -->
       <div id="adsb-control-drawer" class="adsb-control-drawer hidden" aria-labelledby="adsb-drawer-title">
         <div class="adsb-drawer-header">
@@ -9523,6 +9688,14 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ⚡ Global Mission Flight Time, Planned Schedule Picker &amp; Telemetry Playback Auto-Sync (v1.158.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Control mission time across planning, execution, and historical replay! Features an interactive <strong>Mission Time Pill</strong> in the topbar with state badges (⚡ Live, 📅 Planned, ▶ Replay), an intuitive <strong>Mission Time Popover</strong> with datetime picker and quick presets (Now, Solar Noon, Golden Hour, &plusmn;1h), automatic <strong>Three.js 3D Sun Sphere &amp; Corona</strong> tracking across the sky dome, and seamless bidirectional auto-sync with <strong>DJI WPML <code>&lt;createTime&gt;</code></strong> and <strong>Flight Telemetry Playback</strong>.
+            </p>
+          </div>
           <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ☀️ Solar Ephemeris Engine, Shadow Vectors &amp; Glare-Aware Mission Planning (v1.157.0) (Closes #141)
@@ -10806,7 +10979,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.157.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.158.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10867,6 +11040,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.158.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Global Mission Flight Time, Planned Schedule Picker &amp; Telemetry Playback Auto-Sync:</strong> Added MissionClock epoch state manager with interactive topbar pill (⚡ Live, 📅 Planned, ▶ Replay), popover datetime picker with quick solar presets, 3D Sun Sphere &amp; Corona tracking in Three.js, and bidirectional sync across WPML createTime imports and flight telemetry replay scrubbers.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.157.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -18741,6 +18920,490 @@ if (typeof window !== 'undefined') {
 if (typeof globalThis !== 'undefined') {
   globalThis.PlaybackManager = PlaybackManager;
 }
+// -------------------- src/core/MissionClock.js --------------------
+/**
+ * src/core/MissionClock.js
+ *
+ * Global Mission Time & Temporal Epoch Manager for Aalaapi Sky.
+ * Orchestrates unified mission time across real-time execution, planned schedules,
+ * and historical flight telemetry replay.
+ * Synchronizes 2D Leaflet shadow projection vectors, 3D Three.js sunlight/sun orb,
+ * solar ephemeris, and waypoint specular glare constraints.
+ */
+
+const MissionClock = {
+  mode: 'live', // 'live' | 'planned' | 'playback'
+  plannedDate: null,
+  playbackDate: null,
+  autoSyncPlayback: true,
+  liveTickerInterval: null,
+  isInitialized: false,
+
+  /**
+   * Initialize MissionClock, bind UI listeners and start live clock tick
+   */
+  init() {
+    if (this.isInitialized || typeof document === 'undefined') return;
+    this.isInitialized = true;
+
+    // Load persisted auto-sync preference
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const storedSync = localStorage.getItem('aalaapi_mission_time_autosync');
+        if (storedSync !== null) {
+          this.autoSyncPlayback = storedSync === 'true';
+        }
+      }
+    } catch (_) {}
+
+    this.bindUIEventListeners();
+    this.updateUI();
+
+    // Start background ticker for live mode (updates every 15 seconds)
+    if (!this.liveTickerInterval && typeof setInterval === 'function') {
+      this.liveTickerInterval = setInterval(() => {
+        if (this.mode === 'live') {
+          this.updateUI();
+          this.dispatchTimeUpdates();
+        }
+      }, 15000);
+    }
+
+    // Subscribe to PlaybackManager events if available
+    if (typeof PlaybackManager !== 'undefined' && typeof PlaybackManager.on === 'function') {
+      PlaybackManager.on('timeupdate', (e) => {
+        if (this.autoSyncPlayback && e && e.point && e.point.timestamp) {
+          const d = new Date(e.point.timestamp);
+          if (!isNaN(d.getTime())) {
+            this.setPlaybackTime(d, false);
+          }
+        }
+      });
+      PlaybackManager.on('seek', (e) => {
+        if (this.autoSyncPlayback && e && e.point && e.point.timestamp) {
+          const d = new Date(e.point.timestamp);
+          if (!isNaN(d.getTime())) {
+            this.setPlaybackTime(d, true);
+          }
+        }
+      });
+    }
+  },
+
+  /**
+   * Returns active effective Date for the entire mission
+   * @returns {Date}
+   */
+  getEffectiveTime() {
+    if (this.mode === 'playback' && this.playbackDate instanceof Date && !isNaN(this.playbackDate.getTime())) {
+      return this.playbackDate;
+    }
+    if (this.mode === 'planned' && this.plannedDate instanceof Date && !isNaN(this.plannedDate.getTime())) {
+      return this.plannedDate;
+    }
+    return new Date();
+  },
+
+  /**
+   * Set mission time mode ('live' | 'planned' | 'playback')
+   * @param {'live'|'planned'|'playback'} newMode
+   * @param {Date|null} customDate
+   */
+  setMode(newMode, customDate = null) {
+    if (newMode !== 'live' && newMode !== 'planned' && newMode !== 'playback') return;
+    this.mode = newMode;
+
+    if (customDate instanceof Date && !isNaN(customDate.getTime())) {
+      if (newMode === 'planned') this.plannedDate = new Date(customDate);
+      if (newMode === 'playback') this.playbackDate = new Date(customDate);
+    } else if (newMode === 'planned' && !this.plannedDate) {
+      this.plannedDate = new Date();
+    }
+
+    this.updateUI();
+    this.dispatchTimeUpdates();
+  },
+
+  /**
+   * Set planned flight departure date/time
+   * @param {Date} date
+   */
+  setPlannedTime(date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return;
+    this.plannedDate = new Date(date);
+    this.setMode('planned', this.plannedDate);
+  },
+
+  /**
+   * Set historical playback timestamp (from flight log or 3D replay)
+   * @param {Date} date
+   * @param {boolean} forceRefresh
+   */
+  setPlaybackTime(date, forceRefresh = false) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return;
+    this.playbackDate = new Date(date);
+    if (this.mode !== 'playback') {
+      this.mode = 'playback';
+    }
+    this.updateUI();
+    this.dispatchTimeUpdates(forceRefresh);
+  },
+
+  /**
+   * Switch back to real-time live clock
+   */
+  setLive() {
+    this.setMode('live');
+  },
+
+  /**
+   * Formats a date for the HTML datetime-local input (YYYY-MM-DDTHH:mm)
+   * @param {Date} d
+   * @returns {string}
+   */
+  formatDateForInput(d) {
+    if (!(d instanceof Date) || isNaN(d.getTime())) d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const year = d.getFullYear();
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hours = pad(d.getHours());
+    const mins = pad(d.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${mins}`;
+  },
+
+  /**
+   * Formats date for topbar pill display
+   * @param {Date} d
+   * @returns {string}
+   */
+  formatPillTime(d) {
+    if (!(d instanceof Date) || isNaN(d.getTime())) d = new Date();
+    const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (this.mode === 'live') {
+      return `Live: ${timeStr}`;
+    }
+    const monthStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    if (this.mode === 'planned') {
+      return `Planned: ${monthStr}, ${timeStr}`;
+    }
+    return `Replay: ${monthStr}, ${timeStr}`;
+  },
+
+  /**
+   * Trigger app-wide time updates (solar ephemeris, 3D sun, 2D shadows, glare warnings)
+   */
+  dispatchTimeUpdates(forceFull = true) {
+    const effective = this.getEffectiveTime();
+
+    // 1. Update Solar Ephemeris calculations
+    if (typeof updateSolarEphemeris === 'function') {
+      updateSolarEphemeris(null, null, effective);
+    }
+
+    // 2. Update 2D Map Sun Vector and Shadow Projection Cones
+    if (forceFull && typeof renderSolarOverlay2D === 'function') {
+      let lat = 41.3215, lon = -88.9950;
+      if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+        const ll = centerMarker.getLatLng();
+        lat = ll.lat;
+        lon = ll.lng;
+      }
+      renderSolarOverlay2D(lat, lon);
+    }
+
+    // 3. Update 3D Directional Sunlight and Sun Orb in Three.js
+    if (typeof update3DSunPosition === 'function') {
+      update3DSunPosition();
+    }
+  },
+
+  /**
+   * Updates all DOM elements reflecting mission time
+   */
+  updateUI() {
+    if (typeof document === 'undefined') return;
+
+    const effective = this.getEffectiveTime();
+
+    // Topbar Pill
+    const pill = document.getElementById('header-mission-time-pill');
+    const label = document.getElementById('header-time-label');
+    const icon = document.getElementById('header-time-mode-icon');
+
+    if (pill) {
+      pill.classList.remove('is-live', 'is-planned', 'is-playback');
+      if (this.mode === 'live') pill.classList.add('is-live');
+      else if (this.mode === 'planned') pill.classList.add('is-planned');
+      else pill.classList.add('is-playback');
+    }
+
+    if (label) {
+      label.textContent = this.formatPillTime(effective);
+    }
+
+    if (icon) {
+      if (this.mode === 'live') icon.textContent = '⚡';
+      else if (this.mode === 'planned') icon.textContent = '📅';
+      else icon.textContent = '▶';
+    }
+
+    // Popover Controls
+    const btnLive = document.getElementById('btn-mtime-mode-live');
+    const btnPlanned = document.getElementById('btn-mtime-mode-planned');
+    const btnPlayback = document.getElementById('btn-mtime-mode-playback');
+    const inputTime = document.getElementById('mission-time-input');
+    const statusPill = document.getElementById('mtime-status-pill');
+    const autoSyncChk = document.getElementById('mission-time-autosync-chk');
+
+    const setActiveBtn = (btn, active, activeColor) => {
+      if (!btn) return;
+      if (active) {
+        btn.classList.add('active');
+        btn.style.background = activeColor;
+        btn.style.borderColor = activeColor.replace('0.2', '0.5');
+        btn.style.color = '#f8fafc';
+      } else {
+        btn.classList.remove('active');
+        btn.style.background = 'transparent';
+        btn.style.borderColor = 'transparent';
+        btn.style.color = 'var(--text-muted)';
+      }
+    };
+
+    setActiveBtn(btnLive, this.mode === 'live', 'rgba(6, 182, 212, 0.25)');
+    setActiveBtn(btnPlanned, this.mode === 'planned', 'rgba(245, 158, 11, 0.25)');
+    setActiveBtn(btnPlayback, this.mode === 'playback', 'rgba(168, 85, 247, 0.25)');
+
+    if (inputTime && document.activeElement !== inputTime) {
+      inputTime.value = this.formatDateForInput(effective);
+      inputTime.disabled = (this.mode === 'live');
+    }
+
+    if (statusPill) {
+      if (this.mode === 'live') {
+        statusPill.textContent = '⚡ Live Clock';
+        statusPill.style.color = 'var(--accent-cyan)';
+      } else if (this.mode === 'planned') {
+        statusPill.textContent = '📅 Planned Schedule';
+        statusPill.style.color = '#fbbf24';
+      } else {
+        statusPill.textContent = '▶ Replay Sync';
+        statusPill.style.color = '#c084fc';
+      }
+    }
+
+    if (autoSyncChk) {
+      autoSyncChk.checked = this.autoSyncPlayback;
+    }
+
+    // Update Popover Mini-Solar Preview
+    if (typeof SolarEphemeris !== 'undefined' && SolarEphemeris) {
+      let lat = 41.3215, lon = -88.9950;
+      if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+        const ll = centerMarker.getLatLng();
+        lat = ll.lat;
+        lon = ll.lng;
+      }
+      const pos = SolarEphemeris.getSunPosition(effective, lat, lon);
+      const lq = SolarEphemeris.getLightingQuality(pos.altitudeDeg, effective);
+
+      const anglesEl = document.getElementById('mtime-preview-angles');
+      const badgeEl = document.getElementById('mtime-preview-badge');
+
+      if (anglesEl) {
+        const sign = pos.altitudeDeg >= 0 ? '+' : '';
+        anglesEl.textContent = `${sign}${pos.altitudeDeg.toFixed(1)}° Alt • ${pos.azimuthDeg.toFixed(0)}° Az`;
+      }
+      if (badgeEl && lq) {
+        badgeEl.textContent = lq.badge;
+        badgeEl.style.color = lq.color;
+        badgeEl.style.borderColor = lq.color;
+        badgeEl.style.background = lq.color === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : (lq.color === '#38bdf8' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(245, 158, 11, 0.15)');
+      }
+    }
+  },
+
+  /**
+   * Bind event listeners for topbar button, popover, mode selectors, and presets
+   */
+  bindUIEventListeners() {
+    const pill = document.getElementById('header-mission-time-pill');
+    const popover = document.getElementById('mission-time-popover');
+    const closeBtn = document.getElementById('mission-time-popover-close-btn');
+
+    if (pill) {
+      pill.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        this.togglePopover();
+      };
+    }
+
+    if (closeBtn) {
+      closeBtn.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        this.togglePopover(false);
+      };
+    }
+
+    const btnLive = document.getElementById('btn-mtime-mode-live');
+    if (btnLive) {
+      btnLive.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        this.setLive();
+      };
+    }
+
+    const btnPlanned = document.getElementById('btn-mtime-mode-planned');
+    if (btnPlanned) {
+      btnPlanned.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        this.setPlannedTime(this.plannedDate || new Date());
+      };
+    }
+
+    const btnPlayback = document.getElementById('btn-mtime-mode-playback');
+    if (btnPlayback) {
+      btnPlayback.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        this.setMode('playback', this.playbackDate || new Date());
+      };
+    }
+
+    const inputTime = document.getElementById('mission-time-input');
+    if (inputTime) {
+      inputTime.onchange = (e) => {
+        const val = e.target.value;
+        if (val) {
+          const parsed = new Date(val);
+          if (!isNaN(parsed.getTime())) {
+            this.setPlannedTime(parsed);
+          }
+        }
+      };
+    }
+
+    // Presets
+    const presetNow = document.getElementById('mtime-preset-now');
+    if (presetNow) {
+      presetNow.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        this.setLive();
+      };
+    }
+
+    const presetNoon = document.getElementById('mtime-preset-noon');
+    if (presetNoon) {
+      presetNoon.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        let lat = 41.3215, lon = -88.9950;
+        if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+          const ll = centerMarker.getLatLng();
+          lat = ll.lat;
+          lon = ll.lng;
+        }
+        const effective = this.getEffectiveTime();
+        if (typeof SolarEphemeris !== 'undefined') {
+          const times = SolarEphemeris.getSolarTimesForDay(effective, lat, lon);
+          if (times && times.noon) {
+            this.setPlannedTime(times.noon);
+          }
+        }
+      };
+    }
+
+    const presetGolden = document.getElementById('mtime-preset-golden');
+    if (presetGolden) {
+      presetGolden.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        let lat = 41.3215, lon = -88.9950;
+        if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+          const ll = centerMarker.getLatLng();
+          lat = ll.lat;
+          lon = ll.lng;
+        }
+        const effective = this.getEffectiveTime();
+        if (typeof SolarEphemeris !== 'undefined') {
+          const times = SolarEphemeris.getSolarTimesForDay(effective, lat, lon);
+          if (times && times.official && times.official.set) {
+            // Golden hour: 45 min before sunset
+            const golden = new Date(times.official.set.getTime() - 45 * 60000);
+            this.setPlannedTime(golden);
+          }
+        }
+      };
+    }
+
+    const presetPrevH = document.getElementById('mtime-preset-prev-h');
+    if (presetPrevH) {
+      presetPrevH.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const effective = this.getEffectiveTime();
+        const adjusted = new Date(effective.getTime() - 3600000);
+        this.setPlannedTime(adjusted);
+      };
+    }
+
+    const presetNextH = document.getElementById('mtime-preset-next-h');
+    if (presetNextH) {
+      presetNextH.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const effective = this.getEffectiveTime();
+        const adjusted = new Date(effective.getTime() + 3600000);
+        this.setPlannedTime(adjusted);
+      };
+    }
+
+    const autoSyncChk = document.getElementById('mission-time-autosync-chk');
+    if (autoSyncChk) {
+      autoSyncChk.onchange = (e) => {
+        this.autoSyncPlayback = e.target.checked;
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('aalaapi_mission_time_autosync', String(this.autoSyncPlayback));
+          }
+        } catch (_) {}
+      };
+    }
+  },
+
+  /**
+   * Toggle popover visibility
+   * @param {boolean|null} forceState
+   */
+  togglePopover(forceState) {
+    const popover = document.getElementById('mission-time-popover');
+    if (!popover) return;
+
+    const shouldOpen = typeof forceState === 'boolean' ? forceState : popover.classList.contains('hidden');
+    if (shouldOpen) {
+      popover.classList.remove('hidden');
+      this.updateUI();
+
+      // Close other popovers for mutual exclusivity
+      const weatherPop = document.getElementById('telemetry-weather-popover');
+      if (weatherPop) weatherPop.classList.add('hidden');
+      const bridgePop = document.getElementById('bridge-status-popover');
+      if (bridgePop) bridgePop.classList.add('hidden');
+    } else {
+      popover.classList.add('hidden');
+    }
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.MissionClock = MissionClock;
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => MissionClock.init());
+  } else if (document.getElementById && document.getElementById('header-mission-time-pill')) {
+    MissionClock.init();
+  } else if (typeof document.addEventListener === 'function') {
+    document.addEventListener('DOMContentLoaded', () => MissionClock.init());
+  }
+}
 // -------------------- src/ui/ThemeManager.js --------------------
 const THEME_STORAGE_KEY = 'aalaapi_sky_theme';
 
@@ -26070,6 +26733,8 @@ function initUIEventListeners() {
     if (shouldOpen) {
       bridgePopover.classList.remove('hidden');
       if (telemetryPopover) telemetryPopover.classList.add('hidden');
+      const timePop = document.getElementById('mission-time-popover');
+      if (timePop) timePop.classList.add('hidden');
     } else {
       bridgePopover.classList.add('hidden');
     }
@@ -26081,6 +26746,8 @@ function initUIEventListeners() {
     if (shouldOpen) {
       telemetryPopover.classList.remove('hidden');
       if (bridgePopover) bridgePopover.classList.add('hidden');
+      const timePop = document.getElementById('mission-time-popover');
+      if (timePop) timePop.classList.add('hidden');
     } else {
       telemetryPopover.classList.add('hidden');
     }
@@ -26230,6 +26897,21 @@ function initUIEventListeners() {
         bridgePopover.classList.add('hidden');
       }
     }
+
+    const timePopover = document.getElementById('mission-time-popover');
+    const timePill = document.getElementById('header-mission-time-pill');
+    if (timePopover && !timePopover.classList.contains('hidden')) {
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+      if (
+        path.includes(timePopover) ||
+        timePopover.contains(e.target) ||
+        timePill?.contains(e.target)
+      ) {
+        // Inside mission time popover
+      } else {
+        timePopover.classList.add('hidden');
+      }
+    }
   });
 
   document.addEventListener('keydown', (e) => {
@@ -26239,6 +26921,10 @@ function initUIEventListeners() {
       }
       if (telemetryPopover && !telemetryPopover.classList.contains('hidden')) {
         telemetryPopover.classList.add('hidden');
+      }
+      const timePopover = document.getElementById('mission-time-popover');
+      if (timePopover && !timePopover.classList.contains('hidden')) {
+        timePopover.classList.add('hidden');
       }
     }
   });
@@ -46984,6 +47670,21 @@ const FlightDiagnostics = {
 
     const pt = pts[safeIdx];
 
+    // Sync MissionClock if playback auto-sync is active
+    if (typeof MissionClock !== 'undefined' && MissionClock.autoSyncPlayback) {
+      let ptTime = null;
+      if (pt.timestamp) {
+        ptTime = new Date(pt.timestamp);
+      } else if (this.telemetryData && this.telemetryData.flightDate) {
+        const base = new Date(this.telemetryData.flightDate).getTime();
+        const offsetSec = (typeof pt.time === 'number' && !isNaN(pt.time)) ? pt.time : 0;
+        ptTime = new Date(base + offsetSec * 1000);
+      }
+      if (ptTime && !isNaN(ptTime.getTime())) {
+        MissionClock.setPlaybackTime(ptTime, false);
+      }
+    }
+
     if (this.droneMesh) {
       const pos = this.projectToWorld(pt.lat, pt.lon, pt.alt);
       this.droneMesh.position.copy(pos);
@@ -49489,6 +50190,26 @@ function parseWPML(wpmlText) {
       }
     }
 
+    // Parse createTime or updateTime to restore the mission scheduled/planned time
+    const createTimeNode = xmlDoc.getElementsByTagName("wpml:createTime")[0] 
+      || xmlDoc.getElementsByTagName("createTime")[0]
+      || xmlDoc.getElementsByTagName("wpml:updateTime")[0]
+      || xmlDoc.getElementsByTagName("updateTime")[0];
+    if (createTimeNode && typeof MissionClock !== 'undefined') {
+      const timeVal = createTimeNode.textContent.trim();
+      let parsedDate = null;
+      if (/^\d+$/.test(timeVal)) {
+        const ms = parseInt(timeVal, 10);
+        if (!isNaN(ms) && ms > 0) parsedDate = new Date(ms);
+      } else {
+        const d = new Date(timeVal);
+        if (!isNaN(d.getTime())) parsedDate = d;
+      }
+      if (parsedDate) {
+        MissionClock.setPlannedTime(parsedDate);
+      }
+    }
+
     const placemarks = xmlDoc.getElementsByTagName("Placemark");
     if (placemarks.length === 0) {
       throw new Error("No waypoints found in the mission file.");
@@ -51918,6 +52639,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
 // Three.js 3D Preview State Variables
 let threeScene, threeCamera, threeRenderer, threeControls, threeAnimationId;
 let threeSunLight = null;
+let threeSunMesh = null;
 let showCones = true;
 let autoRotate3D = false;
 let coneGroups = [];
@@ -52702,6 +53424,20 @@ function init3DPreview() {
   threeScene.add(dirLight1);
   threeSunLight = dirLight1;
 
+  // Luminous physical 3D Sun sphere representation in the sky dome
+  try {
+    const sunGeo = new THREE.SphereGeometry(14, 16, 16);
+    const sunMat = new THREE.MeshBasicMaterial({
+      color: 0xfff5cc,
+      wireframe: false
+    });
+    threeSunMesh = new THREE.Mesh(sunGeo, sunMat);
+    threeSunMesh.position.copy(dirLight1.position);
+    threeScene.add(threeSunMesh);
+  } catch (err) {
+    console.warn('Could not initialize 3D Sun Mesh:', err);
+  }
+
   const dirLight2 = new THREE.DirectionalLight(0x06b6d4, 0.6); // Subtle cyan fill light
   dirLight2.position.set(-200, 200, -200);
   threeScene.add(dirLight2);
@@ -52999,28 +53735,55 @@ function update3DSunPosition() {
   let pos = null;
   if (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris && currentSolarEphemeris.currentPosition) {
     pos = currentSolarEphemeris.currentPosition;
-  } else if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
-    const ll = centerMarker.getLatLng();
-    pos = SolarEphemeris.getSunPosition(new Date(), ll.lat, ll.lng);
   } else {
-    pos = SolarEphemeris.getSunPosition(new Date(), 41.3215, -88.9950);
+    const effectiveTime = (typeof MissionClock !== 'undefined' && typeof MissionClock.getEffectiveTime === 'function')
+      ? MissionClock.getEffectiveTime()
+      : new Date();
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+      const ll = centerMarker.getLatLng();
+      pos = SolarEphemeris.getSunPosition(effectiveTime, ll.lat, ll.lng);
+    } else {
+      pos = SolarEphemeris.getSunPosition(effectiveTime, 41.3215, -88.9950);
+    }
   }
 
   if (!pos) return;
 
   const azRad = (pos.azimuthDeg || 180) * (Math.PI / 180);
-  const altRad = Math.max(0.05, (pos.altitudeDeg || 45)) * (Math.PI / 180);
+  const altRad = Math.max(0.02, (pos.altitudeDeg || 45)) * (Math.PI / 180);
 
   const radius = 600;
   // Sun position in sky:
   // Azimuth 0 = North (-Z), 90 = East (+X), 180 = South (+Z), 270 = West (-X)
   const sunX = radius * Math.cos(altRad) * Math.sin(azRad);
-  const sunY = Math.max(40, radius * Math.sin(altRad));
+  const sunY = Math.max(20, radius * Math.sin(altRad));
   const sunZ = -radius * Math.cos(altRad) * Math.cos(azRad);
 
   threeSunLight.position.set(sunX, sunY, sunZ);
   if (threeSunLight.target && typeof threeScene !== 'undefined' && threeScene) {
     threeSunLight.target.position.set(0, 0, 0);
+  }
+
+  // Update physical Sun Sphere position & appearance
+  if (threeSunMesh) {
+    threeSunMesh.position.set(sunX, sunY, sunZ);
+    if (pos.altitudeDeg <= 0) {
+      threeSunMesh.visible = false;
+    } else {
+      threeSunMesh.visible = true;
+      if (threeSunMesh.material) {
+        if (pos.altitudeDeg < 8) {
+          // Deep golden / amber sunset/sunrise
+          threeSunMesh.material.color.setHex(0xf97316);
+        } else if (pos.altitudeDeg < 25) {
+          // Warm golden hour
+          threeSunMesh.material.color.setHex(0xfbbf24);
+        } else {
+          // Bright daylight sun
+          threeSunMesh.material.color.setHex(0xfffbeb);
+        }
+      }
+    }
   }
 
   // Modulate intensity based on sun elevation (dim at twilight/night)
@@ -54803,6 +55566,8 @@ function cleanup3DPreview() {
   threeGroundCanvas = null;
   threeGroundCtx = null;
   threeGroundTexture = null;
+  threeSunLight = null;
+  threeSunMesh = null;
 }
 
 // Auto-Plan State
@@ -55603,7 +56368,7 @@ function parseMetar(raw) {
  * Computes solar coordinates, solar noon, sunrise, sunset, civil/nautical/astronomical twilights,
  * sun elevation/azimuth, daylight remaining, and FAA Part 107 flight window states.
  */
-const SolarEphemeris = {
+var SolarEphemeris = {
   RAD: Math.PI / 180,
   DEG: 180 / Math.PI,
 
@@ -56017,6 +56782,10 @@ const SolarEphemeris = {
   }
 };
 
+if (typeof window !== 'undefined') {
+  window.SolarEphemeris = SolarEphemeris;
+}
+
 let currentSolarEphemeris = null;
 let solarEphemerisTickerInterval = null;
 
@@ -56197,7 +56966,7 @@ function updateSolarEphemeris(centerLat, centerLon, forceTime = null) {
     }
   }
 
-  const now = forceTime || new Date();
+  const now = forceTime || (typeof MissionClock !== 'undefined' && MissionClock ? MissionClock.getEffectiveTime() : new Date());
   const ephemeris = SolarEphemeris.getSolar24hWindow(now, lat, lon);
   currentSolarEphemeris = ephemeris;
 
