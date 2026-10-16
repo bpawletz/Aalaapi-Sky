@@ -493,6 +493,32 @@ function broadcastMediaProgress(prog) {
   }
 }
 
+function broadcastIngestComplete(ingestData) {
+  if (sseMediaProgressClients.size === 0 && sseUnifiedClients.size === 0) return;
+  const payloadStr = JSON.stringify({
+    success: true,
+    event: 'ingest-complete',
+    timestamp: new Date().toISOString(),
+    ...ingestData
+  });
+  for (const client of sseMediaProgressClients) {
+    try {
+      client.res.write(`event: ingest-complete\ndata: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseMediaProgressClients.delete(client);
+    }
+  }
+  for (const client of sseUnifiedClients) {
+    try {
+      client.res.write(`event: ingest-complete\ndata: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseUnifiedClients.delete(client);
+    }
+  }
+}
+
 function getAirspaceStatusPayload() {
   const status = adsbTracker ? adsbTracker.getStatus() : {};
   const cfg = getAdsbConfig();
@@ -2818,6 +2844,13 @@ if ($copied.Count -eq 0 -and $thisPC) {
     status: `Ingestion complete! ${rawFiles.length} photos ready.`
   };
   broadcastMediaProgress(mediaPullProgress);
+  broadcastIngestComplete({
+    missionUuid,
+    targetDir,
+    totalPhotos: correlated.length,
+    photoPaths: rawFiles.map(f => path.join(rawDir, f)),
+    manifest
+  });
 
   return {
     success: true,

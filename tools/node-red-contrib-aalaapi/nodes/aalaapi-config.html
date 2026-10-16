@@ -1,0 +1,74 @@
+<script type="text/javascript">
+  RED.nodes.registerType('aalaapi-config', {
+    category: 'config',
+    defaults: {
+      name: { value: '' },
+      host: { value: '127.0.0.1', required: true },
+      port: { value: 8765, required: true, validate: RED.validators.number() },
+      protocol: { value: 'http:', required: true },
+      timeout: { value: 8000, required: true, validate: RED.validators.number() }
+    },
+    label: function() {
+      return this.name || `Aalaapi Bridge (${this.host}:${this.port})`;
+    },
+    oneditprepare: function() {
+      $('#node-config-test-btn').on('click', function() {
+        const host = $('#node-config-input-host').val() || '127.0.0.1';
+        const port = $('#node-config-input-port').val() || 8765;
+        const protocol = $('#node-config-input-protocol').val() || 'http:';
+        const statusSpan = $('#node-config-test-status');
+
+        statusSpan.html('<i class="fa fa-spinner fa-spin"></i> Testing connection...');
+
+        $.getJSON('/aalaapi-bridge/test-connection', { host, port, protocol })
+          .done(function(data) {
+            statusSpan.html('<span style="color: #2e7d32;"><i class="fa fa-check-circle"></i> Connected! (Bridge v' + (data.status?.version || 'ok') + ')</span>');
+          })
+          .fail(function(jqXHR) {
+            const err = jqXHR.responseJSON?.error || 'Bridge unreachable';
+            statusSpan.html('<span style="color: #d32f2f;"><i class="fa fa-times-circle"></i> Error: ' + err + '</span>');
+          });
+      });
+    }
+  });
+</script>
+
+<script type="text/html" data-template-name="aalaapi-config">
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-config-input-name" placeholder="Aalaapi Bridge">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-protocol"><i class="fa fa-globe"></i> Protocol</label>
+    <select id="node-config-input-protocol" style="width: 70%;">
+      <option value="http:">HTTP</option>
+      <option value="https:">HTTPS</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-host"><i class="fa fa-server"></i> Host / IP</label>
+    <input type="text" id="node-config-input-host" placeholder="127.0.0.1">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-port"><i class="fa fa-random"></i> Port</label>
+    <input type="number" id="node-config-input-port" placeholder="8765">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-timeout"><i class="fa fa-clock-o"></i> Timeout (ms)</label>
+    <input type="number" id="node-config-input-timeout" placeholder="8000">
+  </div>
+  <div class="form-row" style="margin-top: 15px;">
+    <button type="button" class="red-ui-button" id="node-config-test-btn"><i class="fa fa-plug"></i> Test Connection</button>
+    <span id="node-config-test-status" style="margin-left: 10px; font-weight: bold;"></span>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="aalaapi-config">
+  <p><b>Aalaapi Bridge Configuration</b></p>
+  <p>Manages centralized connection parameters (host, port, timeout) for connecting Node-RED flows to a local or remote <code>Aalaapi Bridge</code> companion service (port 8765).</p>
+  <ul>
+    <li><b>Host:</b> IP or hostname running the companion server (default: <code>127.0.0.1</code>).</li>
+    <li><b>Port:</b> Companion service port (default: <code>8765</code>).</li>
+    <li><b>Test Connection:</b> Verifies live handshake with Bridge health endpoint.</li>
+  </ul>
+</script>
