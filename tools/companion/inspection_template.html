@@ -93,6 +93,7 @@
     <div id="overall-status" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
       <span class="badge badge-clean">Audit Complete</span>
       <span id="badge-wireframe" class="badge" style="display: none; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);">🏗️ 3D Wireframe Included</span>
+      <span id="badge-4d-replay" class="badge" style="display: none; background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">🛰️ 4D Replay Stream Synchronized</span>
     </div>
   </header>
 
@@ -103,6 +104,10 @@
     <div class="stat-card"><div class="label">Max Altitude</div><div id="stat-alt" class="value">—</div></div>
     <div class="stat-card"><div class="label">Max Positional Variance</div><div id="stat-variance" class="value">—</div></div>
     <div class="stat-card"><div class="label">Ground Resolution (GSD)</div><div id="stat-gsd" class="value">—</div></div>
+    <div class="stat-card" id="card-4d-replay" style="display: none; border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.05);">
+      <div class="label" style="color: #34d399;">🛰️ 4D Airspace Traffic</div>
+      <div id="stat-4d-replay" class="value" style="color: #34d399; font-size: 1rem;">—</div>
+    </div>
     <div class="stat-card" id="card-wireframe" style="display: none; border-color: rgba(56, 189, 248, 0.35); background: rgba(56, 189, 248, 0.05);">
       <div class="label" style="color: #38bdf8;">🏗️ 3D Wireframe</div>
       <div id="stat-wireframe" class="value" style="color: #38bdf8;">0 Segments</div>
@@ -186,6 +191,19 @@
       if (cWf) cWf.style.display = 'block';
       const sWf = document.getElementById('stat-wireframe');
       if (sWf) sWf.textContent = `${count} Segments`;
+    }
+
+    if (manifest.environmentalReplay) {
+      const bEnv = document.getElementById('badge-4d-replay');
+      if (bEnv) bEnv.style.display = 'inline-flex';
+      const cEnv = document.getElementById('card-4d-replay');
+      if (cEnv) cEnv.style.display = 'block';
+      const sEnv = document.getElementById('stat-4d-replay');
+      if (sEnv) {
+        const ridCount = manifest.environmentalReplay.remoteId?.length || 0;
+        const adsbCount = manifest.environmentalReplay.adsb?.length || 0;
+        sEnv.textContent = `${ridCount} Drones • ${adsbCount} ADS-B`;
+      }
     }
 
     // Map init
@@ -346,6 +364,39 @@
     }
 
     renderPhotos('all');
+
+    // 4D Environmental Replay: Plot historical traffic if available
+    if (manifest.environmentalReplay && map && typeof L !== 'undefined') {
+      const env = manifest.environmentalReplay;
+      const trafficGroup = L.layerGroup();
+      if (Array.isArray(env.adsb)) {
+        env.adsb.forEach(ac => {
+          if (typeof ac.lat === 'number' && typeof ac.lon === 'number') {
+            L.circleMarker([ac.lat, ac.lon], {
+              radius: 6,
+              color: '#38bdf8',
+              fillColor: '#0284c7',
+              fillOpacity: 0.85,
+              weight: 2
+            }).bindTooltip(`✈️ ADS-B: ${ac.callsign || ac.icao || 'Aircraft'}<br>Alt: ${ac.alt || ac.altitude || 0} ft`, { sticky: true }).addTo(trafficGroup);
+          }
+        });
+      }
+      if (Array.isArray(env.remoteId)) {
+        env.remoteId.forEach(d => {
+          if (typeof d.lat === 'number' && typeof d.lon === 'number') {
+            L.circleMarker([d.lat, d.lon], {
+              radius: 5,
+              color: '#f59e0b',
+              fillColor: '#d97706',
+              fillOpacity: 0.85,
+              weight: 2
+            }).bindTooltip(`🛸 Drone: ${d.uasId || d.mac || 'Remote ID'}<br>Alt: ${d.alt || d.altitude || 0} m`, { sticky: true }).addTo(trafficGroup);
+          }
+        });
+      }
+      trafficGroup.addTo(map);
+    }
 
     // Filter bar listener
     document.querySelectorAll('#filter-bar .filter-btn').forEach(btn => {

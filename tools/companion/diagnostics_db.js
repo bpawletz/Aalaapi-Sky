@@ -108,6 +108,20 @@ class DiagnosticsDatabase {
         CREATE INDEX IF NOT EXISTS idx_photos_mission ON photo_records (mission_uuid);
         CREATE INDEX IF NOT EXISTS idx_photos_waypoint ON photo_records (mission_uuid, waypoint_index);
         CREATE INDEX IF NOT EXISTS idx_photos_severity ON photo_records (severity);
+
+        CREATE TABLE IF NOT EXISTS environmental_replay (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          mission_uuid TEXT NOT NULL,
+          start_utc_ms INTEGER,
+          end_utc_ms INTEGER,
+          remote_id_count INTEGER DEFAULT 0,
+          adsb_count INTEGER DEFAULT 0,
+          radar_count INTEGER DEFAULT 0,
+          payload_json TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_env_replay_uuid ON environmental_replay (mission_uuid);
       `);
 
       // Safe table migration if uuid was UNIQUE or archive_id is missing
@@ -642,6 +656,68 @@ class DiagnosticsDatabase {
       return stmt.get(missionUuid);
     } catch (err) {
       console.error('[DIAG DB ERROR] Failed to get photo summary:', err.message);
+      return null;
+    }
+  }
+
+  saveEnvironmentalReplay(missionUuid, sliceData = {}) {
+    if (!this.db || !missionUuid) return { success: false, error: 'Database or missionUuid missing' };
+
+    try {
+      const startMs = sliceData.window?.from || 0;
+      const endMs = sliceData.window?.to || 0;
+      const remoteIdCount = Array.isArray(sliceData.remoteId) ? sliceData.remoteId.length : 0;
+      const adsbCount = Array.isArray(sliceData.adsb) ? sliceData.adsb.length : 0;
+      const radarCount = Array.isArray(sliceData.radar) ? sliceData.radar.length : 0;
+      const payloadJson = JSON.stringify(sliceData);
+      const createdAt = new Date().toISOString();
+
+      const stmt = this.db.prepare(`
+        INSERT INTO environmental_replay (
+          mission_uuid, start_utc_ms, end_utc_ms, remote_id_count, adsb_count, radar_count, payload_json, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      const info = stmt.run(missionUuid, startMs, endMs, remoteIdCount, adsbCount, radarCount, payloadJson, createdAt);
+
+      // Also merge into mission_diagnostics diag_json if record exists
+      try {
+        const diagRow = this.db.prepare('SELECT id, diag_json FROM mission_diagnostics WHERE uuid = ? ORDER BY id DESC LIMIT 1').get(missionUuid);
+        if (diagRow && diagRow.diag_json) {
+          const parsed = JSON.parse(diagRow.diag_json);
+          parsed.environmentalReplay = sliceData;
+          this.db.prepare('UPDATE mission_diagnostics SET diag_json = ? WHERE id = ?').run(JSON.stringify(parsed), diagRow.id);
+        }
+      } catch (_) {}
+
+      return {
+        success: true,
+        id: info.lastInsertRowid,
+        missionUuid,
+        counts: { remoteId: remoteIdCount, adsb: adsbCount, radar: radarCount }
+      };
+    } catch (err) {
+      console.error('[DIAG DB ERROR] Failed to save environmental replay:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  getEnvironmentalReplay(missionUuid) {
+    if (!this.db || !missionUuid) return null;
+
+    try {
+      const row = this.db.prepare(`
+        SELECT payload_json, created_at FROM environmental_replay
+        WHERE mission_uuid = ?
+        ORDER BY id DESC LIMIT 1
+      `).get(missionUuid);
+
+      if (row && row.payload_json) {
+        return JSON.parse(row.payload_json);
+      }
+      return null;
+    } catch (err) {
+      console.error('[DIAG DB ERROR] Failed to get environmental replay:', err.message);
       return null;
     }
   }

@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.159.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.160.1</span></h1>
 
 
 
@@ -128,6 +128,17 @@
               <span id="header-bridge-dot" class="header-bridge-dot"></span>
               <span id="header-bridge-summary" style="font-weight: 600; font-size: 0.72rem;">Bridge: Offline</span>
               <span id="header-rc2-summary-badge" class="header-rc2-badge" title="RC 2 USB Link Status">RC 2</span>
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+          </button>
+        </div>
+
+        <div class="header-ambient-buffer-container">
+          <button id="header-ambient-buffer-pill" class="header-ambient-buffer-pill is-clean" type="button" title="Ambient Telemetry Buffer Monitor (Click to inspect allocation &amp; rolling ring buffer)" aria-label="Ambient Telemetry Buffer">
+            <span class="pill-buffer-group">
+              <span id="header-buffer-icon">🟢</span>
+              <span id="header-buffer-label" style="font-weight: 600; font-size: 0.72rem;">Buffer: 0.0 MB</span>
+              <span id="header-buffer-traffic-badge" class="header-buffer-badge" title="Active Airspace Traffic">0 Traffic</span>
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </span>
           </button>
@@ -2708,6 +2719,8 @@
             <div><span style="color: var(--text-muted);">SPD:</span> <span id="replay-2d-hud-spd" style="color: #38bdf8; font-weight: 600;">0.0m/s</span></div>
             <div><span style="color: var(--text-muted);">HDG:</span> <span id="replay-2d-hud-yaw" style="color: #38bdf8; font-weight: 600;">0°</span></div>
             <div><span style="color: var(--text-muted);">POS:</span> <span id="replay-2d-hud-pos" style="color: var(--text-main);">--</span></div>
+            <div id="replay-2d-hud-drift-container" style="display: none;"><span style="color: var(--text-muted);">DRIFT:</span> <span id="replay-2d-hud-drift" style="color: #a855f7; font-weight: 600;">0 cm</span></div>
+            <span id="replay-2d-hud-breach" class="badge hidden" style="font-size: 0.68rem; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; font-weight: 700;">⚠️ RESTRICTED AIRSPACE</span>
           </div>
         </div>
       </div>
@@ -2996,6 +3009,56 @@
               <span>📸</span>
               Ingest &amp; Inspect Photos
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Ambient Telemetry Buffer Monitor Popover (Issue #142) -->
+      <div id="buffer-monitor-popover" class="buffer-monitor-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 380px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 10px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
+        <div class="popover-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <div class="popover-title" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+            <span style="font-size: 1.05rem;">📡</span>
+            <span>Ambient Telemetry Buffer Monitor</span>
+          </div>
+          <button id="buffer-popover-close-btn" class="popover-close-btn" type="button" aria-label="Close Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px;">✕</button>
+        </div>
+        <div class="popover-body" style="display: flex; flex-direction: column; gap: 10px; font-size: 0.78rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-muted);">Total Allocated RAM:</span>
+            <span id="buffer-stat-ram" style="font-weight: 700; color: #38bdf8;">0.00 MB / 10.00 MB (0%)</span>
+          </div>
+          <div class="buffer-progress-bar-bg" style="width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden;">
+            <div id="buffer-progress-bar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.3s, background 0.3s;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-muted);">Active Rolling Window:</span>
+            <span id="buffer-stat-window" style="font-weight: 600;">0 min (Oldest: Just now)</span>
+          </div>
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span>• ASTM Remote ID Frames:</span>
+              <span id="buffer-stat-rid" style="font-weight: 600; color: #f59e0b;">0 frames (0 KB)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>• ADS-B Aircraft Tracks:</span>
+              <span id="buffer-stat-adsb" style="font-weight: 600; color: #38bdf8;">0 points (0 KB)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>• Cached NEXRAD Tiles:</span>
+              <span id="buffer-stat-radar" style="font-weight: 600; color: #a78bfa;">0 snapshots (0 KB)</span>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.72rem;">
+            <span>Retention Strategy:</span>
+            <span style="color: var(--text-main); font-weight: 600;">FIFO Ring Buffer (60 min)</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.72rem;">
+            <span>Hardware Auto-Commit:</span>
+            <span id="buffer-stat-autocommit" style="color: #34d399; font-weight: 600;">Armed (RC 2 Linked)</span>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
+            <button id="buffer-flush-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 10px; font-size: 0.74rem;">🧹 Flush Transient Buffer</button>
+            <button id="buffer-snapshot-btn" type="button" class="btn-primary" style="flex: 1; padding: 6px 10px; font-size: 0.74rem;">💾 Snapshot to DB</button>
           </div>
         </div>
       </div>
@@ -3672,6 +3735,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🌐 Omnidimensional 4D Flight Replay Engine &amp; Rolling Buffer Architecture (v1.160.0) (Closes #142)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Replay historical flights inside their dynamic 4D operating environment! Surrounding crewed aircraft (ADS-B) and uncrewed traffic (Remote ID) advance synchronously with the timeline scrubber on both 2D Leaflet maps and 3D Three.js viewports. Features dynamic cross-track drift calculation in centimeters, real-time 3D exclusion zone breach auditing, closest NEXRAD radar snapshot synchronization, and an in-memory 60-minute FIFO rolling buffer with Topbar Buffer HUD Pill and memory governance popover.
+            </p>
+          </div>
           <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #c084fc; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🔮 Custom Node-RED Integration Framework &amp; Gaussian Splat Pipeline (v1.159.0) (Closes #140)
@@ -4971,7 +5042,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.159.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.160.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5032,6 +5103,18 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.160.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Photo Inspector Solar Position HUD Toggle:</strong> Added a dedicated <code>☀️ Solar Position HUD</code> toggle checkbox in the Annotation Layers sidebar to selectively enable or disable the circular solar azimuth and elevation compass HUD overlay across captured imagery with local storage persistence.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.160.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Omnidimensional 4D Flight Replay Engine &amp; Rolling Telemetry Buffer Architecture:</strong> Synchronized multi-dataset temporal playback across 2D map and 3D digital twin. Renders dynamic surrounding ADS-B and Remote ID aircraft markers with proximity buffer breach detection, live cross-track drift error in centimeters, real-time 3D exclusion zone breach auditing, closest NEXRAD radar frame matching, and a zero-touch 60-minute FIFO in-memory buffer with Topbar Buffer Metrics HUD pill and management popover. (Closes #142)</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.159.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -8769,6 +8852,15 @@
                 <div style="color: var(--text-muted); font-size: 0.65rem;">GPS POSITION</div>
                 <div id="diag-hud-coords" style="font-weight: 700; color: #f43f5e; font-size: 0.85rem; letter-spacing: -0.2px;">40.013000, -83.176500</div>
               </div>
+              <div id="diag-hud-drift-container">
+                <div style="color: var(--text-muted); font-size: 0.65rem;">DRIFT ERROR</div>
+                <div id="diag-hud-drift" style="font-weight: 700; color: #c084fc; font-size: 0.95rem;">0 cm</div>
+              </div>
+            </div>
+
+            <!-- Exclusion Zone Warning Banner in 3D Replay -->
+            <div id="diag-hud-breach" class="badge" style="display: none; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 100; background: rgba(239, 68, 68, 0.9); color: #fff; font-weight: 700; font-size: 0.8rem; padding: 4px 12px; border-radius: 6px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);">
+              ⚠️ RESTRICTED AIRSPACE
             </div>
 
             <!-- Diagnostic HUD Controls -->
@@ -9353,6 +9445,10 @@
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input type="checkbox" id="layer-toggle-reticle" checked />
                 <span>🎯 Target Framing Reticle</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="layer-toggle-solar" checked />
+                <span>☀️ Solar Position HUD</span>
               </label>
             </div>
           </div>

@@ -1,5 +1,170 @@
 [
   {
+    "notam_id": "6/9995",
+    "facility": "ZTL",
+    "state": "GA",
+    "type": "VIP",
+    "description": "Marietta, GA",
+    "mod_date": "10/16/2026 20:48:00",
+    "mod_abs_time": "202610162048",
+    "is_new": "Y",
+    "gid": "6/9995"
+  },
+  {
+    "notam_id": "6/9979",
+    "facility": "ZSE",
+    "state": "OR",
+    "type": "HAZARDS",
+    "description": "17NM NW MEDFORD, OR, Friday, October 16, 2026 through Monday, October 26, 2026 UTC",
+    "mod_date": "10/16/2026 18:25:00",
+    "mod_abs_time": "202610161825",
+    "is_new": "Y",
+    "gid": "6/9979"
+  },
+  {
+    "notam_id": "6/9971",
+    "facility": "ZLA",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "8NM N OCEANSIDE, CA, Friday, October 16, 2026 through Saturday, October 17, 2026 UTC",
+    "mod_date": "10/16/2026 17:32:00",
+    "mod_abs_time": "202610161732",
+    "is_new": "Y",
+    "gid": "6/9971"
+  },
+  {
+    "notam_id": "6/9965",
+    "facility": "ZAB",
+    "state": "TX",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "El Paso, TX, Friday, October 23, 2026 through Sunday, October 25, 2026 UTC",
+    "mod_date": "10/16/2026 17:23:00",
+    "mod_abs_time": "202610161723",
+    "is_new": "Y",
+    "gid": "6/9965"
+  },
+  {
+    "notam_id": "6/9964",
+    "facility": "ZAB",
+    "state": "TX",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "El Paso, TX, Friday, October 23, 2026 through Sunday, October 25, 2026 UTC",
+    "mod_date": "10/16/2026 17:22:00",
+    "mod_abs_time": "202610161722",
+    "is_new": "Y",
+    "gid": "6/9964"
+  },
+  {
+    "notam_id": "6/9963",
+    "facility": "ZAB",
+    "state": "TX",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "El Paso, TX, Thursday, October 22, 2026 UTC",
+    "mod_date": "10/16/2026 17:19:00",
+    "mod_abs_time": "202610161719",
+    "is_new": "Y",
+    "gid": "6/9963"
+  },
+  {
+    "notam_id": "6/9960",
+    "facility": "ZOA",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "30NM NE, CA, Friday, October 16, 2026 through Monday, October 19, 2026 UTC",
+    "mod_date": "10/16/2026 17:07:00",
+    "mod_abs_time": "202610161707",
+    "is_new": "Y",
+    "gid": "6/9960"
+  },
+  {
+    "notam_id": "6/9958",
+    "facility": "ZSE",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "34NM SE CRESCENT CITY, CA, Friday, October 16, 2026 through Monday, October 19, 2026 UTC",
+    "mod_date": "10/16/2026 17:05:00",
+    "mod_abs_time": "202610161705",
+    "is_new": "Y",
+    "gid": "6/9958"
+  },
+  {
+    "notam_id": "6/9957",
+    "facility": "ZSE",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "30 NM NE MCKINLEYVILLE, CA, Friday, October 16, 2026 through Monday, October 19, 2026 UTC",
+    "mod_date": "10/16/2026 17:04:00",
+    "mod_abs_time": "202610161704",
+    "is_new": "Y",
+    "gid": "6/9957"
+  },
+  {
+    "notam_id": "6/9953",
+    "facility": "ZLC",
+    "state": "UT",
+    "type": "SPACE OPERATIONS",
+    "description": "53 ZLC AIRSPACE FAIRFIELD, UT, Saturday, October 17, 2026 UTC",
+    "mod_date": "10/16/2026 16:43:00",
+    "mod_abs_time": "202610161643",
+    "is_new": "Y",
+    "gid": "6/9953"
+  },
+  {
+    "notam_id": "6/9948",
+    "facility": "ZHU",
+    "state": "TX",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "San Antonio, TX, Wednesday, October 21, 2026 UTC",
+    "mod_date": "10/16/2026 15:56:00",
+    "mod_abs_time": "202610161556",
+    "is_new": "Y",
+    "gid": "6/9948"
+  },
+  {
+    "notam_id": "6/9946",
+    "facility": "ZKC",
+    "state": "KS",
+    "type": "VIP",
+    "description": "WICHITA, KS, Monday, October 19, 2026 through Monday, October 19, 2026 Local",
+    "mod_date": "10/16/2026 15:45:00",
+    "mod_abs_time": "202610161545",
+    "is_new": "Y",
+    "gid": "6/9946"
+  },
+  {
+    "notam_id": "6/9930",
+    "facility": "ZKC",
+    "state": "KS",
+    "type": "HAZARDS",
+    "description": "ARLINGTON, KS, Monday, October 19, 2026 UTC",
+    "mod_date": "10/16/2026 14:14:00",
+    "mod_abs_time": "202610161414",
+    "is_new": "Y",
+    "gid": "6/9930"
+  },
+  {
+    "notam_id": "6/9923",
+    "facility": "ZDC",
+    "state": "VA",
+    "type": "VIP",
+    "description": "Middleburg, VA, Saturday, October 17, 2026 through Sunday, October 18, 2026 Local",
+    "mod_date": "10/16/2026 11:50:00",
+    "mod_abs_time": "202610161150",
+    "is_new": "Y",
+    "gid": "6/9923"
+  },
+  {
+    "notam_id": "6/9922",
+    "facility": "ZHU",
+    "state": "TX",
+    "type": "SECURITY",
+    "description": "AUSTIN, TX, Wednesday, October 21, 2026 through Sunday, October 25, 2026 Local",
+    "mod_date": "10/16/2026 11:37:00",
+    "mod_abs_time": "202610161137",
+    "is_new": "Y",
+    "gid": "6/9922"
+  },
+  {
     "notam_id": "6/9885",
     "facility": "ZKC",
     "state": "KS",
@@ -18,7 +183,7 @@
     "description": "Fayetteville, WV, Saturday, October 17, 2026 UTC",
     "mod_date": "10/15/2026 21:33:00",
     "mod_abs_time": "202610152133",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9883"
   },
   {
@@ -29,7 +194,7 @@
     "description": "Marietta, GA, Friday, October 16, 2026 Local",
     "mod_date": "10/15/2026 21:13:00",
     "mod_abs_time": "202610152113",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9882"
   },
   {
@@ -40,19 +205,8 @@
     "description": "Libby AAF, AZ, Friday, October 16, 2026 through Sunday, October 18, 2026 Local",
     "mod_date": "10/15/2026 20:04:00",
     "mod_abs_time": "202610152004",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9864"
-  },
-  {
-    "notam_id": "6/9845",
-    "facility": "ZID",
-    "state": "WV",
-    "type": "HAZARDS",
-    "description": "MILTON, WV, Thursday, October 15, 2026 through Friday, October 16, 2026 UTC",
-    "mod_date": "10/15/2026 18:17:00",
-    "mod_abs_time": "202610151817",
-    "is_new": "Y",
-    "gid": "6/9845"
   },
   {
     "notam_id": "6/9842",
@@ -62,7 +216,7 @@
     "description": "Hebron, KY, Saturday, October 17, 2026 Local",
     "mod_date": "10/15/2026 16:45:00",
     "mod_abs_time": "202610151645",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9842"
   },
   {
@@ -73,7 +227,7 @@
     "description": "7NM E MONCKS CORNER, SC, Friday, October 16, 2026 UTC",
     "mod_date": "10/15/2026 15:10:00",
     "mod_abs_time": "202610151510",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9815"
   },
   {
@@ -84,7 +238,7 @@
     "description": "MCGREGOR, TX, Thursday, October 15, 2026 through Saturday, October 31, 2026 UTC",
     "mod_date": "10/15/2026 13:53:00",
     "mod_abs_time": "202610151353",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9778"
   },
   {
@@ -95,7 +249,7 @@
     "description": "11NM SE SENECA, OR, Thursday, October 15, 2026 through Monday, October 19, 2026 UTC",
     "mod_date": "10/15/2026 03:47:00",
     "mod_abs_time": "202610150347",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9735"
   },
   {
@@ -106,7 +260,7 @@
     "description": "38NM E FRESNO, CA, Friday, October 16, 2026 through Tuesday, October 20, 2026 UTC",
     "mod_date": "10/15/2026 02:57:00",
     "mod_abs_time": "202610150257",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9731"
   },
   {
@@ -196,17 +350,6 @@
     "mod_abs_time": "202610132212",
     "is_new": "N",
     "gid": "6/9368"
-  },
-  {
-    "notam_id": "6/9367",
-    "facility": "ZTL",
-    "state": "GA",
-    "type": "VIP",
-    "description": "Marietta, GA, Friday, October 16, 2026 Local",
-    "mod_date": "10/13/2026 22:08:00",
-    "mod_abs_time": "202610132208",
-    "is_new": "N",
-    "gid": "6/9367"
   },
   {
     "notam_id": "6/9278",
@@ -350,17 +493,6 @@
     "mod_abs_time": "202610091912",
     "is_new": "N",
     "gid": "6/8713"
-  },
-  {
-    "notam_id": "6/8646",
-    "facility": "ZFW",
-    "state": "TX",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Arlington, TX, Thursday, October 15, 2026 through Friday, October 16, 2026 UTC",
-    "mod_date": "10/09/2026 15:40:00",
-    "mod_abs_time": "202610091540",
-    "is_new": "N",
-    "gid": "6/8646"
   },
   {
     "notam_id": "6/8389",
