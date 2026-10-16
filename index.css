@@ -660,6 +660,92 @@ html, body {
   border: 1px solid rgba(234, 179, 8, 0.3);
 }
 
+/* Ambient Telemetry Buffer HUD Pill (Issue #142) */
+.header-ambient-buffer-container {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.header-ambient-buffer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  color: var(--text-main);
+  font-size: 0.72rem;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .header-ambient-buffer-pill {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(15, 23, 42, 0.15);
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.header-ambient-buffer-pill:hover {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+}
+
+.header-ambient-buffer-pill.is-active {
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+.header-ambient-buffer-pill.is-active:hover {
+  border-color: rgba(56, 189, 248, 0.75) !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+.header-ambient-buffer-pill.is-pressure {
+  border-color: rgba(239, 68, 68, 0.6);
+  background: rgba(239, 68, 68, 0.12) !important;
+}
+
+.pill-buffer-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+}
+
+[data-theme="light"] .pill-buffer-group {
+  color: #0f172a;
+}
+
+.header-buffer-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+}
+
+.header-buffer-badge.is-traffic {
+  background: rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.header-buffer-badge.is-warning {
+  background: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
 /* Header Mission Time HUD Pill & Modes */
 .header-mission-time-container {
   display: inline-flex;
@@ -2032,6 +2118,8 @@ html, body {
   .topbar-center.search-open .header-telemetry-container,
   .topbar-center.search-open #header-bridge-pill,
   .topbar-center.search-open .header-bridge-container,
+  .topbar-center.search-open #header-ambient-buffer-pill,
+  .topbar-center.search-open .header-ambient-buffer-container,
   .topbar-center.search-open .mobile-search-toggle-btn {
     display: none !important;
   }
@@ -2081,6 +2169,12 @@ html, body {
 
   .header-more-menu:not(.hidden) {
     display: flex !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .header-ambient-buffer-container {
+    display: none !important;
   }
 }
 

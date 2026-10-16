@@ -7,6 +7,7 @@ import './state/MissionStore.js';
 import './vision/GcpEngine.js';
 import './core/Utils.js';
 import './core/PlaybackManager.js';
+import './core/TelemetryInterpolator.js';
 import './core/MissionClock.js';
 import './ui/ThemeManager.js';
 import './layers/LayerManager.js';

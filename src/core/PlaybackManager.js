@@ -22,6 +22,12 @@ const PlaybackManager = {
   is2dReplayActive: false,
   isHistorical: false,
   radarCacheMode: 'cached', // 'cached' | 'live'
+  environmentalData: { remoteId: [], adsb: [], radar: [] },
+  proximityBreaches: [],
+  crossTrackDriftMeters: 0,
+  crossTrackDriftCm: 0,
+  activeExclusionBreach: null,
+  currentReplayTimeUtc: 0,
   
   _listeners: {
     timeupdate: [],
@@ -29,7 +35,8 @@ const PlaybackManager = {
     pause: [],
     seek: [],
     flightchange: [],
-    replaymode: []
+    replaymode: [],
+    environmentalchange: []
   },
 
   _animFrameId: null,
@@ -149,7 +156,55 @@ const PlaybackManager = {
       isHistorical: this.isHistorical
     });
 
+    if (options.environmentalData || telemetryData?.environmentalReplay) {
+      this.loadEnvironmentalData(options.environmentalData || telemetryData.environmentalReplay);
+    } else {
+      this.loadEnvironmentalData({ remoteId: [], adsb: [], radar: [] });
+    }
+
     this.seekTo(0, { updateSlider: true });
+  },
+
+  /**
+   * Load environmental dataset slice for 4D multi-stream replay
+   * @param {Object} envData { remoteId: [], adsb: [], radar: [] }
+   */
+  loadEnvironmentalData(envData) {
+    this.environmentalData = {
+      remoteId: Array.isArray(envData?.remoteId) ? envData.remoteId : [],
+      adsb: Array.isArray(envData?.adsb) ? envData.adsb : [],
+      radar: Array.isArray(envData?.radar) ? envData.radar : []
+    };
+
+    // Calculate proximity alert notches along the flight trajectory
+    this.proximityBreaches = [];
+    if (typeof TelemetryInterpolator !== 'undefined' && this.points.length > 0) {
+      const step = Math.max(1, Math.floor(this.points.length / 100));
+      for (let i = 0; i < this.points.length; i += step) {
+        const pt = this.points[i];
+        let ts = pt.timestamp ? new Date(pt.timestamp).getTime() : null;
+        if (!ts && this.telemetryData && this.telemetryData.flightDate) {
+          const base = new Date(this.telemetryData.flightDate).getTime();
+          ts = base + (pt.time || i) * 1000;
+        }
+        if (ts) {
+          const res = TelemetryInterpolator.interpolateAirspace(ts, pt, this.environmentalData.adsb, this.environmentalData.remoteId);
+          if (res.hasBreach) {
+            this.proximityBreaches.push({
+              index: i,
+              fraction: (this.points.length > 1) ? i / (this.points.length - 1) : 0,
+              timestamp: ts,
+              breaches: res.breaches
+            });
+          }
+        }
+      }
+    }
+
+    this.emit('environmentalchange', {
+      data: this.environmentalData,
+      breaches: this.proximityBreaches
+    });
   },
 
   /**
@@ -245,21 +300,58 @@ const PlaybackManager = {
       this.elapsedSeconds = (targetIdx / maxIdx) * this.durationSeconds;
     }
 
-    this.emit('seek', {
-      index: this.currentIndex,
-      fractionalIndex: this.fractionalIndex,
-      progress: maxIdx > 0 ? (targetIdx / maxIdx) : 0,
-      point: pt,
-      elapsedSeconds: this.elapsedSeconds
-    });
+    // Determine current UTC millisecond epoch
+    let currentUtcMs = null;
+    if (pt && pt.timestamp) {
+      currentUtcMs = new Date(pt.timestamp).getTime();
+    } else if (this.telemetryData && this.telemetryData.flightDate) {
+      const base = new Date(this.telemetryData.flightDate).getTime();
+      currentUtcMs = base + this.elapsedSeconds * 1000;
+    } else {
+      currentUtcMs = Date.now();
+    }
+    this.currentReplayTimeUtc = currentUtcMs;
 
-    this.emit('timeupdate', {
+    // 4D Environmental Calculations: Airspace, Radar, Drift, Exclusion Zones
+    let airspaceState = null;
+    let closestRadarSnapshot = null;
+    if (typeof TelemetryInterpolator !== 'undefined' && pt) {
+      airspaceState = TelemetryInterpolator.interpolateAirspace(
+        currentUtcMs,
+        pt,
+        this.environmentalData?.adsb || [],
+        this.environmentalData?.remoteId || []
+      );
+      closestRadarSnapshot = TelemetryInterpolator.matchClosestRadarSnapshot(
+        currentUtcMs,
+        this.environmentalData?.radar || []
+      );
+      const drift = TelemetryInterpolator.calculateCrossTrackDrift(pt, this.plannedWaypoints);
+      this.crossTrackDriftMeters = drift.crossTrackErrorMeters;
+      this.crossTrackDriftCm = drift.crossTrackErrorCm;
+      this.crossTrackDriftPoint = drift.closestPoint;
+
+      const exclusionZones = (typeof MapEngine !== 'undefined' && MapEngine.getExclusionZones) ? MapEngine.getExclusionZones() : [];
+      this.activeExclusionBreach = TelemetryInterpolator.checkExclusionZoneBreach(pt, exclusionZones);
+    }
+
+    const payload = {
       index: this.currentIndex,
       fractionalIndex: this.fractionalIndex,
       progress: maxIdx > 0 ? (targetIdx / maxIdx) : 0,
       point: pt,
-      elapsedSeconds: this.elapsedSeconds
-    });
+      elapsedSeconds: this.elapsedSeconds,
+      currentReplayTimeUtc: this.currentReplayTimeUtc,
+      airspace: airspaceState,
+      radarSnapshot: closestRadarSnapshot,
+      crossTrackDriftMeters: this.crossTrackDriftMeters,
+      crossTrackDriftCm: this.crossTrackDriftCm,
+      crossTrackDriftPoint: this.crossTrackDriftPoint,
+      exclusionBreach: this.activeExclusionBreach
+    };
+
+    this.emit('seek', payload);
+    this.emit('timeupdate', payload);
   },
 
   /**
@@ -389,4 +481,10 @@ if (typeof window !== 'undefined') {
 }
 if (typeof globalThis !== 'undefined') {
   globalThis.PlaybackManager = PlaybackManager;
+}
+if (typeof global !== 'undefined') {
+  global.PlaybackManager = PlaybackManager;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = PlaybackManager;
 }

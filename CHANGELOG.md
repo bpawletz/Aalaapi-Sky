@@ -1,3 +1,51 @@
+## [1.160.1] - 2026-10-16
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Photo Inspector Solar Position HUD Toggle**:
+  - Added a dedicated `☀️ Solar Position HUD` toggle checkbox in the Annotation Layers sidebar of the Photo Inspector modal.
+  - Pilots and inspection analysts can now selectively display or conceal the circular solar azimuth and elevation compass HUD overlay across captured imagery.
+  - Toggled state persists cleanly in local storage (`aalaapi_photo_layer_solar`) and carries through to stamped inspection photo exports.
+
+#### Under the Hood & Technical Details
+- **PhotoInspector Layer State & DOM Architecture (`src/ui/Modals/PhotoInspector.js`, `index_template.html`)**:
+  - Added `#layer-toggle-solar` input element to the Annotation Layers drawer in `index_template.html`.
+  - Registered `'solarAngle'` in `PhotoInspector.setupEvents()` and `PhotoInspector.updateDrawerUI()` for clean bidirectional checkbox synchronization.
+  - Added `solar` alias getter/setter on `PhotoInspector.layers` and local storage initialization.
+
+## [1.160.0] - 2026-10-16
+
+Introduces an Omnidimensional 4D Flight Replay Engine and in-memory rolling FIFO telemetry buffer architecture, synchronizing multi-dataset environmental playback across 2D Leaflet maps and 3D digital twins while providing automated memory governance and slice-and-commit archiving (Closes #142).
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Omnidimensional 4D Flight Replay Engine**:
+  - Replays historical flights inside their real-world 4D operating environment, synchronizing temporal aircraft scrubbers with surrounding crewed and uncrewed airspace traffic.
+  - Dynamic 2D Leaflet and 3D Three.js aircraft markers displaying surrounding ADS-B planes and ASTM F3411 Remote ID drones with historical inspection tooltips (callsign/ICAO/UAS ID, altitude, heading, closure speed, and separation distance).
+  - Safety proximity breach detection notifying pilots when surrounding aircraft breach the 3 NM horizontal or 500 ft vertical separation buffer.
+  - Closest NEXRAD composite radar reflectivity snapshot matching and automatic cached tile syncing.
+- **Dynamic Cross-Track Drift & 3D Exclusion Zone Breach Audits**:
+  - Real-time cross-track error vector rendering between the planned waypoint course and the actual flown 10 Hz trajectory with sub-meter and centimeter readouts in the 2D and 3D HUDs.
+  - Dynamic 3D exclusion zone breach checking flashing restricted airspace alerts when the drone intersects keep-out volume boundaries.
+- **Ambient Buffer Metrics Topbar HUD Pill & Monitoring Popover**:
+  - Real-time Topbar Buffer Pill (`#header-ambient-buffer-pill`) displaying RAM consumption, retention window, and active surrounding traffic counts with warning indicators under memory pressure (≥ 80%).
+  - Interactive Buffer Monitor Popover (`#buffer-monitor-popover`) featuring visual memory progress bars, packet metrics, instant manual flush capability, and 1-click active session snapshot commit.
+
+#### Under the Hood & Technical Details
+- **In-Memory Rolling FIFO Ring Buffer (`tools/companion/buffer.js`)**:
+  - Built `AmbientTelemetryBuffer` with rolling 60-minute retention window, 10 MB RAM ceiling shedding, double-ended queues for Remote ID, ADS-B, and radar snapshots, and `sliceFlightWindow([takeoff - 60s, landing + 60s])`.
+- **Bridge REST API & Diagnostics Persistence (`tools/companion/server.js`, `tools/companion/diagnostics_db.js`)**:
+  - Implemented `/api/buffer/metrics`, `/api/buffer/flush`, `/api/buffer/commit-session`, and `/api/buffer/session` endpoints.
+  - Created `environmental_replay` SQLite schema and automated slice-and-commit storage on flight log ingestion and inspection archiving.
+- **Telemetry Interpolation & Playback Management (`src/core/TelemetryInterpolator.js`, `src/core/PlaybackManager.js`)**:
+  - Built `TelemetryInterpolator` for spherical distance calculation, linear spatial interpolation of traffic tracks, point-in-polygon cylinder exclusion breach auditing, and closest timestamp radar matching.
+  - Enhanced `PlaybackManager` with 4D environmental data loading, proximity pre-pass detection, and extended `seek` and `timeupdate` event payloads.
+- **2D & 3D Replay Viewers (`src/map/MapEngine.js`, `src/3d/DigitalTwin.js`)**:
+  - Wired `historicalTrafficGroup` and dynamic elastic polyline `historicalDriftLine` into Leaflet 2D replay.
+  - Added `replayedTraffic3DGroup` and real-time HUD drift and breach gauges to Three.js 3D digital twin.
+
 ## [1.159.0] - 2026-10-16
 
 Introduces a dedicated Node-RED node module (`node-red-contrib-aalaapi`) and integration framework connecting Node-RED event flows directly into Aalaapi Bridge for automated Remote ID airspace monitoring, photo ingestion tracking, and 3D Gaussian Splatting / COLMAP manifest generation (Closes #140).

@@ -897,6 +897,8 @@ let historicalReplayGroup = null;
 let historicalDroneMarker = null;
 let historicalPlannedLine = null;
 let historicalActualLine = null;
+let historicalTrafficGroup = null;
+let historicalDriftLine = null;
 
 function createDroneSvgHtml(headingDeg = 0) {
   const normDeg = Math.round(headingDeg || 0);
@@ -955,14 +957,14 @@ function init2dReplayEngine() {
   });
 
   // Real-time telemetry tick update
-  PlaybackManager.on('timeupdate', ({ point, elapsedSeconds, progress }) => {
-    update2dDronePosition(point);
-    update2dReplayHud(point, elapsedSeconds, progress);
+  PlaybackManager.on('timeupdate', (payload) => {
+    update2dDronePosition(payload.point, payload.airspace, payload.crossTrackDriftMeters, payload.crossTrackDriftPoint);
+    update2dReplayHud(payload.point, payload.elapsedSeconds, payload.progress, payload.crossTrackDriftCm, payload.exclusionBreach);
   });
 
-  PlaybackManager.on('seek', ({ point, elapsedSeconds, progress }) => {
-    update2dDronePosition(point);
-    update2dReplayHud(point, elapsedSeconds, progress);
+  PlaybackManager.on('seek', (payload) => {
+    update2dDronePosition(payload.point, payload.airspace, payload.crossTrackDriftMeters, payload.crossTrackDriftPoint);
+    update2dReplayHud(payload.point, payload.elapsedSeconds, payload.progress, payload.crossTrackDriftCm, payload.exclusionBreach);
   });
 
   PlaybackManager.on('play', () => {
@@ -1053,9 +1055,11 @@ function clear2dHistoricalTracks() {
   historicalDroneMarker = null;
   historicalPlannedLine = null;
   historicalActualLine = null;
+  historicalTrafficGroup = null;
+  historicalDriftLine = null;
 }
 
-function update2dDronePosition(point) {
+function update2dDronePosition(point, airspace, crossTrackDriftMeters, crossTrackDriftPoint) {
   if (!point || !historicalDroneMarker) return;
   if (typeof point.lat !== 'number' || typeof point.lon !== 'number') return;
 
@@ -1068,9 +1072,71 @@ function update2dDronePosition(point) {
       rotContainer.style.transform = `rotate(${Math.round(point.yaw || 0)}deg)`;
     }
   }
+
+  // 4D Synchronized Airspace Traffic (Issue #142)
+  if (historicalReplayGroup) {
+    if (!historicalTrafficGroup) {
+      historicalTrafficGroup = L.layerGroup().addTo(historicalReplayGroup);
+    }
+    historicalTrafficGroup.clearLayers();
+
+    if (airspace) {
+      const adsbList = airspace.activeAdsb || [];
+      adsbList.forEach(craft => {
+        if (typeof craft.lat === 'number' && typeof craft.lon === 'number') {
+          const planeIcon = L.divIcon({
+            className: 'historical-traffic-plane-icon',
+            html: `<div style="transform: rotate(${Math.round(craft.heading || 0)}deg); font-size: 16px; filter: drop-shadow(0 0 3px #f59e0b);">✈️</div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+          });
+          const m = L.marker([craft.lat, craft.lon], { icon: planeIcon }).addTo(historicalTrafficGroup);
+          const callsign = craft.callsign || craft.icao || 'ADS-B';
+          const distKm = (craft.distanceMeters / 1000).toFixed(2);
+          m.bindTooltip(`<b>✈️ ${callsign}</b><br>Alt: ${Math.round(craft.alt)}m<br>Dist: ${distKm} km<br>Speed: ${Math.round(craft.speed || 0)} kts`, { direction: 'top' });
+        }
+      });
+
+      const ridList = airspace.activeRemoteId || [];
+      ridList.forEach(drone => {
+        if (typeof drone.lat === 'number' && typeof drone.lon === 'number') {
+          const droneIcon = L.divIcon({
+            className: 'historical-traffic-drone-icon',
+            html: `<div style="font-size: 14px; filter: drop-shadow(0 0 3px #38bdf8);">🛸</div>`,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+          });
+          const m = L.marker([drone.lat, drone.lon], { icon: droneIcon }).addTo(historicalTrafficGroup);
+          const droneId = drone.id || 'RemoteID Drone';
+          const distKm = (drone.distanceMeters / 1000).toFixed(2);
+          m.bindTooltip(`<b>🛸 ${droneId}</b><br>Alt: ${Math.round(drone.alt)}m<br>Dist: ${distKm} km`, { direction: 'top' });
+        }
+      });
+    }
+
+    // Dynamic Elastic Cross-Track Drift Vector (Issue #142)
+    if (crossTrackDriftPoint && typeof crossTrackDriftPoint.lat === 'number' && typeof crossTrackDriftPoint.lon === 'number') {
+      const latlngs = [[point.lat, point.lon], [crossTrackDriftPoint.lat, crossTrackDriftPoint.lon]];
+      const driftColor = (crossTrackDriftMeters && crossTrackDriftMeters > 3) ? '#ef4444' : '#a855f7';
+      if (!historicalDriftLine) {
+        historicalDriftLine = L.polyline(latlngs, {
+          color: driftColor,
+          weight: 2,
+          dashArray: '3, 4',
+          opacity: 0.85
+        }).addTo(historicalReplayGroup);
+      } else {
+        historicalDriftLine.setLatLngs(latlngs);
+        historicalDriftLine.setStyle({ color: driftColor });
+      }
+    } else if (historicalDriftLine) {
+      historicalReplayGroup.removeLayer(historicalDriftLine);
+      historicalDriftLine = null;
+    }
+  }
 }
 
-function update2dReplayHud(point, elapsedSeconds, progress) {
+function update2dReplayHud(point, elapsedSeconds, progress, crossTrackDriftCm, exclusionBreach) {
   if (typeof document === 'undefined') return;
 
   const altEl = document.getElementById('replay-2d-hud-alt');
@@ -1092,6 +1158,25 @@ function update2dReplayHud(point, elapsedSeconds, progress) {
   if (spdEl && point) spdEl.textContent = `${(point.speed || 0).toFixed(1)}m/s`;
   if (yawEl && point) yawEl.textContent = `${Math.round(point.yaw || 0)}°`;
   if (posEl && point) posEl.textContent = `${point.lat.toFixed(5)}, ${point.lon.toFixed(5)}`;
+
+  // Cross-track error & drift
+  const driftContainer = document.getElementById('replay-2d-hud-drift-container');
+  const driftEl = document.getElementById('replay-2d-hud-drift');
+  if (driftEl && crossTrackDriftCm !== undefined) {
+    driftEl.textContent = `${Math.round(crossTrackDriftCm)} cm`;
+    if (driftContainer) driftContainer.style.display = 'inline';
+  }
+
+  // Exclusion Zone breach notification
+  const breachEl = document.getElementById('replay-2d-hud-breach');
+  if (breachEl) {
+    if (exclusionBreach && exclusionBreach.hasBreach) {
+      breachEl.textContent = `⚠️ ${exclusionBreach.zone?.name || 'RESTRICTED AIRSPACE'}`;
+      breachEl.classList.remove('hidden');
+    } else {
+      breachEl.classList.add('hidden');
+    }
+  }
 
   if (curTimeEl) curTimeEl.textContent = formatTime(elapsedSeconds);
   if (totTimeEl && typeof PlaybackManager !== 'undefined') {

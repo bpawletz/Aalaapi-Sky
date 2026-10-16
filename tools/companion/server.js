@@ -51,6 +51,8 @@ const wireframeEngine = require('./wireframe_engine.js');
 const SolarEphemeris = require('./solar_ephemeris.js');
 const { TileCacheManager } = require('./tile_cache.js');
 const tileCache = new TileCacheManager();
+const AmbientTelemetryBuffer = require('./buffer.js');
+const telemetryBuffer = new AmbientTelemetryBuffer();
 const mcpServer = require('./mcp_server.js');
 let cachedWeatherTelemetry = null;
 const CONFIG_FILE = path.resolve(__dirname, '../../scratch/companion_config.json');
@@ -419,8 +421,13 @@ const sseUnifiedClients = new Set();
 const mcpSseClients = new Map(); // sessionId -> { res, req, sessionId, createdAt }
 
 function broadcastRemoteIdAirspace(drones) {
-  if (sseRemoteIdClients.size === 0 && sseUnifiedClients.size === 0) return;
   const droneList = drones || (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones ? airspaceTracker.getActiveDrones() : []);
+  if (telemetryBuffer && Array.isArray(droneList) && droneList.length > 0) {
+    for (const d of droneList) {
+      telemetryBuffer.pushRemoteId(d);
+    }
+  }
+  if (sseRemoteIdClients.size === 0 && sseUnifiedClients.size === 0) return;
   const payloadStr = JSON.stringify({
     success: true,
     count: droneList.length,
@@ -558,6 +565,14 @@ function broadcastAirspaceStatus() {
 
 adsbTracker.on('broadcast', () => {
   broadcastAirspaceStatus();
+  if (telemetryBuffer && typeof adsbTracker.getAirspaceBounds === 'function') {
+    const acBounds = adsbTracker.getAirspaceBounds({});
+    if (acBounds && Array.isArray(acBounds.aircraft) && acBounds.aircraft.length > 0) {
+      for (const ac of acBounds.aircraft) {
+        telemetryBuffer.pushAdsb(ac);
+      }
+    }
+  }
   if (sseAirspaceClients.size === 0 && sseUnifiedClients.size === 0) return;
   for (const client of sseAirspaceClients) {
     try {
@@ -2826,6 +2841,18 @@ if ($copied.Count -eq 0 -and $thisPC) {
   // Index photo records into SQLite with thumbnail_url and preview_url
   if (diagDb && typeof diagDb.savePhotoRecords === 'function') {
     diagDb.savePhotoRecords(missionUuid, correlated);
+  }
+
+  // Attach 4D environmental replay dataset if available
+  if (diagDb && typeof diagDb.getEnvironmentalReplay === 'function') {
+    const envData = diagDb.getEnvironmentalReplay(missionUuid);
+    if (envData) manifest.environmentalReplay = envData;
+  }
+  if (!manifest.environmentalReplay && telemetryBuffer) {
+    const envSlice = telemetryBuffer.sliceFlightWindow(Date.now() - 3600000, Date.now());
+    if (envSlice.remoteId.length > 0 || envSlice.adsb.length > 0 || envSlice.radar.length > 0) {
+      manifest.environmentalReplay = envSlice;
+    }
   }
 
   const tmplPath = path.join(__dirname, 'inspection_template.html');
@@ -5286,6 +5313,14 @@ const server = http.createServer(async (req, res) => {
         try {
           const upstream = await fetchUpstreamBinary(targetUrl, req.headers);
           const ct = upstream.headers['content-type'] || 'image/png';
+          if (telemetryBuffer && (targetUrl.includes('conus_bref_qcd') || targetUrl.includes('radar') || targetUrl.includes('rainviewer') || targetUrl.includes('nexrad'))) {
+            telemetryBuffer.pushRadarTile({
+              url: targetUrl,
+              contentType: ct,
+              sizeBytes: upstream.buffer ? upstream.buffer.length : 0,
+              timestamp: Date.now()
+            });
+          }
           res.writeHead(upstream.statusCode || 200, {
             'Content-Type': ct,
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -5384,6 +5419,80 @@ const server = http.createServer(async (req, res) => {
       const targetUrl = url.searchParams.get('url') || '';
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify(tileCache.inspect(targetUrl)));
+      return;
+    }
+
+    // 10d. Ambient Telemetry Buffer & 4D Environmental Replay Endpoints (Issue #142)
+    if ((pathname === '/api/buffer/metrics' || pathname === '/api/telemetry/buffer') && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify(telemetryBuffer.getMetrics()));
+      return;
+    }
+
+    if ((pathname === '/api/buffer/flush' || pathname === '/api/telemetry/buffer/flush') && req.method === 'POST') {
+      const flushResult = telemetryBuffer.flush();
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ success: true, ...flushResult }));
+      return;
+    }
+
+    if ((pathname === '/api/buffer/commit-session' || pathname === '/api/telemetry/buffer/commit') && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const missionUuid = payload.missionUuid || `mission_${Date.now()}`;
+          const startUtcMs = Number(payload.startUtcMs) || (Date.now() - 30 * 60 * 1000);
+          const endUtcMs = Number(payload.endUtcMs) || Date.now();
+          const safetyBufferMs = payload.safetyBufferMs !== undefined ? Number(payload.safetyBufferMs) : 60000;
+
+          const slice = telemetryBuffer.sliceFlightWindow(startUtcMs, endUtcMs, safetyBufferMs);
+
+          let dbResult = null;
+          if (diagDb && typeof diagDb.saveEnvironmentalReplay === 'function') {
+            dbResult = diagDb.saveEnvironmentalReplay(missionUuid, slice);
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({
+            success: true,
+            missionUuid,
+            window: slice.window,
+            counts: {
+              remoteId: slice.remoteId.length,
+              adsb: slice.adsb.length,
+              radar: slice.radar.length
+            },
+            dbResult
+          }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if ((pathname === '/api/buffer/session' || pathname === '/api/telemetry/buffer/session') && req.method === 'GET') {
+      const missionUuid = url.searchParams.get('missionUuid') || '';
+      const startUtcMs = url.searchParams.get('startUtcMs');
+      const endUtcMs = url.searchParams.get('endUtcMs');
+
+      let sessionData = null;
+      if (missionUuid && diagDb && typeof diagDb.getEnvironmentalReplay === 'function') {
+        sessionData = diagDb.getEnvironmentalReplay(missionUuid);
+      }
+
+      if (!sessionData && startUtcMs && endUtcMs) {
+        sessionData = telemetryBuffer.sliceFlightWindow(Number(startUtcMs), Number(endUtcMs));
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({
+        success: Boolean(sessionData),
+        data: sessionData || { remoteId: [], adsb: [], radar: [] }
+      }));
       return;
     }
 
@@ -5766,6 +5875,8 @@ module.exports = {
   updateMediaPullProgress,
   tileCache,
   TileCacheManager,
+  telemetryBuffer,
+  AmbientTelemetryBuffer,
   fetchUpstreamBinary,
   bridgeMetrics,
   Dashboard,

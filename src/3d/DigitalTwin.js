@@ -2481,6 +2481,12 @@ const FlightDiagnostics = {
       this.buildDroneAvatar();
     }
 
+    // 4D Replayed Traffic Group (Issue #142)
+    if (!this.replayedTraffic3DGroup || (this.threeScene && !this.threeScene.children.includes(this.replayedTraffic3DGroup))) {
+      this.replayedTraffic3DGroup = new THREE.Group();
+      this.threeScene.add(this.replayedTraffic3DGroup);
+    }
+
     // Dynamic flight visualizers
     this.addSatelliteFloor();
     this.buildTrajectoryMeshes();
@@ -3317,6 +3323,23 @@ const FlightDiagnostics = {
     setTxt('diag-hud-coords', `${(pt.lat !== undefined && pt.lat !== null ? pt.lat : 0).toFixed(6)}, ${(pt.lon !== undefined && pt.lon !== null ? pt.lon : 0).toFixed(6)}`);
     setTxt('diag-time-display', `${pt.timeStr || '00:00'} / ${this.telemetryData?.durationFormatted || '00:00'}`);
 
+    // Cross-track error & drift (Issue #142)
+    if (typeof PlaybackManager !== 'undefined' && PlaybackManager.crossTrackDriftCm !== undefined) {
+      setTxt('diag-hud-drift', `${Math.round(PlaybackManager.crossTrackDriftCm)} cm`);
+    }
+    const breachBanner = document.getElementById('diag-hud-breach');
+    if (breachBanner) {
+      if (typeof PlaybackManager !== 'undefined' && PlaybackManager.activeExclusionBreach?.hasBreach) {
+        breachBanner.textContent = `⚠️ RESTRICTED AIRSPACE: ${PlaybackManager.activeExclusionBreach.zone?.name || 'KEEP-OUT'}`;
+        breachBanner.style.display = 'block';
+      } else {
+        breachBanner.style.display = 'none';
+      }
+    }
+
+    // 4D Synchronized Airspace Traffic in 3D (Issue #142)
+    this.updateReplayedTraffic3D(pt, safeIdx);
+
     if (updateSlider) {
       const slider = document.getElementById('diag-timeline-slider');
       if (slider && document.activeElement !== slider) slider.value = safeIdx.toString();
@@ -3395,6 +3418,87 @@ const FlightDiagnostics = {
         activeDetails.textContent = `Alt: ${altStr} • Pitch: ${pitchStr} • GSD: ${gsdVal}`;
       }
     }
+  },
+
+  updateReplayedTraffic3D(pt, safeIdx) {
+    if (!this.threeScene || typeof THREE === 'undefined' || typeof THREE.Group !== 'function') return;
+    if (!this.replayedTraffic3DGroup) {
+      try {
+        this.replayedTraffic3DGroup = new THREE.Group();
+        if (this.threeScene.add) {
+          this.threeScene.add(this.replayedTraffic3DGroup);
+        }
+      } catch (e) {
+        return;
+      }
+    }
+    if (!this.replayedTraffic3DGroup || !this.replayedTraffic3DGroup.children) return;
+
+    // Clear existing replayed traffic meshes
+    while (this.replayedTraffic3DGroup.children.length > 0) {
+      const obj = this.replayedTraffic3DGroup.children[0];
+      if (this.replayedTraffic3DGroup.remove) {
+        this.replayedTraffic3DGroup.remove(obj);
+      } else {
+        this.replayedTraffic3DGroup.children.shift();
+      }
+      if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
+      if (obj.material) {
+        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose && m.dispose());
+        else if (obj.material.dispose) obj.material.dispose();
+      }
+    }
+
+    if (typeof TelemetryInterpolator === 'undefined' || typeof PlaybackManager === 'undefined') return;
+    const envData = PlaybackManager.environmentalData;
+    if (!envData || (!envData.adsb?.length && !envData.remoteId?.length)) return;
+
+    let currentUtcMs = null;
+    if (pt.timestamp) {
+      currentUtcMs = new Date(pt.timestamp).getTime();
+    } else if (this.telemetryData && this.telemetryData.flightDate) {
+      const base = new Date(this.telemetryData.flightDate).getTime();
+      const offsetSec = (typeof pt.time === 'number' && !isNaN(pt.time)) ? pt.time : 0;
+      currentUtcMs = base + offsetSec * 1000;
+    }
+    if (!currentUtcMs) return;
+
+    const airspace = TelemetryInterpolator.interpolateAirspace(currentUtcMs, pt, envData.adsb || [], envData.remoteId || []);
+    if (!airspace) return;
+
+    // Render active ADS-B aircraft as orange cones
+    (airspace.activeAdsb || []).forEach(craft => {
+      if (typeof craft.lat === 'number' && typeof craft.lon === 'number') {
+        const altMsl = craft.altitudeMsl || craft.alt || 100;
+        const craftPos = this.projectToWorld(craft.lat, craft.lon, altMsl);
+        const craftGeo = new THREE.ConeGeometry(3, 8, 8);
+        craftGeo.rotateX(-Math.PI / 2);
+        const craftMat = new THREE.MeshStandardMaterial({
+          color: craft.distanceMeters < 5556 ? 0xef4444 : 0xf59e0b,
+          roughness: 0.4
+        });
+        const mesh = new THREE.Mesh(craftGeo, craftMat);
+        mesh.position.copy(craftPos);
+        const hdg = craft.heading || 0;
+        mesh.rotation.y = - (hdg * Math.PI) / 180;
+        this.replayedTraffic3DGroup.add(mesh);
+      }
+    });
+
+    // Render active Remote ID drones as cyan spheres
+    (airspace.activeRemoteId || []).forEach(drone => {
+      if (typeof drone.lat === 'number' && typeof drone.lon === 'number') {
+        const dronePos = this.projectToWorld(drone.lat, drone.lon, drone.alt || 50);
+        const droneGeo = new THREE.SphereGeometry(2, 12, 12);
+        const droneMat = new THREE.MeshStandardMaterial({
+          color: 0x06b6d4,
+          roughness: 0.3
+        });
+        const mesh = new THREE.Mesh(droneGeo, droneMat);
+        mesh.position.copy(dronePos);
+        this.replayedTraffic3DGroup.add(mesh);
+      }
+    });
   },
 
   exportGeoJSON() {
