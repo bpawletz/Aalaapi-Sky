@@ -794,7 +794,7 @@ function parseMetar(raw) {
  * Computes solar coordinates, solar noon, sunrise, sunset, civil/nautical/astronomical twilights,
  * sun elevation/azimuth, daylight remaining, and FAA Part 107 flight window states.
  */
-const SolarEphemeris = {
+var SolarEphemeris = {
   RAD: Math.PI / 180,
   DEG: 180 / Math.PI,
 
@@ -1208,6 +1208,10 @@ const SolarEphemeris = {
   }
 };
 
+if (typeof window !== 'undefined') {
+  window.SolarEphemeris = SolarEphemeris;
+}
+
 let currentSolarEphemeris = null;
 let solarEphemerisTickerInterval = null;
 
@@ -1388,7 +1392,7 @@ function updateSolarEphemeris(centerLat, centerLon, forceTime = null) {
     }
   }
 
-  const now = forceTime || new Date();
+  const now = forceTime || (typeof MissionClock !== 'undefined' && MissionClock ? MissionClock.getEffectiveTime() : new Date());
   const ephemeris = SolarEphemeris.getSolar24hWindow(now, lat, lon);
   currentSolarEphemeris = ephemeris;
 

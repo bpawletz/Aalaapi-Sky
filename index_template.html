@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.157.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.158.0</span></h1>
 
 
 
@@ -98,6 +98,17 @@
           <!-- Mobile Close Search Button -->
           <button id="mobile-search-close-btn" class="mobile-search-close-btn" type="button" title="Close Search" aria-label="Close search">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Mission Time / Epoch Pill -->
+        <div class="header-mission-time-container">
+          <button id="header-mission-time-pill" class="header-mission-time-pill is-live" type="button" title="Mission Flight Time (Click to schedule flight or view solar alignment)" aria-label="Mission Flight Time">
+            <span class="pill-time-group">
+              <span id="header-time-mode-icon" class="header-time-mode-icon">⚡</span>
+              <span id="header-time-label" style="font-weight: 600; font-size: 0.72rem;">Live Clock</span>
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
           </button>
         </div>
 
@@ -3069,6 +3080,70 @@
         </div>
       </div>
 
+      <!-- Floating Topbar Mission Time & Planned Schedule Popover -->
+      <div id="mission-time-popover" class="mission-time-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 350px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
+        <div class="popover-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <div class="popover-title" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#f59e0b" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Mission Time &amp; Solar Ephemeris</span>
+          </div>
+          <button id="mission-time-popover-close-btn" class="popover-close-btn" type="button" aria-label="Close Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px;">✕</button>
+        </div>
+        <div class="popover-body" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Mode Segmented Switcher -->
+          <div class="mtime-mode-selector" style="display: flex; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 3px; gap: 4px;">
+            <button id="btn-mtime-mode-live" class="btn-sm active" type="button" style="flex: 1; padding: 5px 4px; font-size: 0.72rem; font-weight: 600; border-radius: 6px; border: 1px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s;">
+              <span>⚡</span><span>Live</span>
+            </button>
+            <button id="btn-mtime-mode-planned" class="btn-sm" type="button" style="flex: 1; padding: 5px 4px; font-size: 0.72rem; font-weight: 600; border-radius: 6px; border: 1px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s;">
+              <span>📅</span><span>Planned</span>
+            </button>
+            <button id="btn-mtime-mode-playback" class="btn-sm" type="button" style="flex: 1; padding: 5px 4px; font-size: 0.72rem; font-weight: 600; border-radius: 6px; border: 1px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s;">
+              <span>▶</span><span>Replay</span>
+            </button>
+          </div>
+
+          <!-- Active Epoch Status & Date-Time Input -->
+          <div class="mtime-input-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted);">Flight Time (Local)</span>
+              <span id="mtime-status-pill" class="badge-tag" style="font-size: 0.65rem; padding: 1px 6px; border-radius: 4px; font-weight: 600;">⚡ Live Clock</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="datetime-local" id="mission-time-input" style="flex: 1; padding: 6px 8px; font-size: 0.8rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-family: inherit;" disabled>
+            </div>
+            <!-- Quick Presets -->
+            <div class="mtime-presets" style="display: flex; gap: 5px; flex-wrap: wrap;">
+              <button id="mtime-preset-now" class="btn-sm" type="button" style="flex: 1; min-width: 45px; padding: 3px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); cursor: pointer;" title="Reset to current local time">Now</button>
+              <button id="mtime-preset-noon" class="btn-sm" type="button" style="flex: 1; min-width: 65px; padding: 3px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); cursor: pointer;" title="Jump to Solar Noon (highest sun, shortest shadows)">☀️ Noon</button>
+              <button id="mtime-preset-golden" class="btn-sm" type="button" style="flex: 1; min-width: 75px; padding: 3px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); cursor: pointer;" title="Jump to Golden Hour (warm low-angle cinematic lighting)">🌅 Golden</button>
+              <button id="mtime-preset-prev-h" class="btn-sm" type="button" style="flex: 0 0 38px; padding: 3px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); cursor: pointer;" title="Step back 1 hour">-1h</button>
+              <button id="mtime-preset-next-h" class="btn-sm" type="button" style="flex: 0 0 38px; padding: 3px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); cursor: pointer;" title="Step forward 1 hour">+1h</button>
+            </div>
+          </div>
+
+          <!-- Mini Solar Ephemeris & Lighting Quality Preview -->
+          <div class="mtime-solar-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 0.74rem; font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 5px;">
+                <span>☀️</span><span>Target Lighting Quality</span>
+              </span>
+              <span id="mtime-preview-badge" class="badge-tag" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">Optimal</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.74rem;">
+              <span style="color: var(--text-muted);">Solar Vector:</span>
+              <span id="mtime-preview-angles" style="font-weight: 600; color: var(--text-main); font-family: monospace;">+45.0° Alt • 180° Az</span>
+            </div>
+          </div>
+
+          <!-- Auto-Sync Checkbox with Telemetry Playback -->
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--text-muted); cursor: pointer; padding: 2px 4px; user-select: none;">
+            <input type="checkbox" id="mission-time-autosync-chk" checked style="accent-color: var(--accent-cyan); cursor: pointer;">
+            <span>Auto-sync with Telemetry &amp; Flight Replay</span>
+          </label>
+        </div>
+      </div>
+
       <!-- ADS-B Airspace Control Side Drawer (Issue #92) -->
       <div id="adsb-control-drawer" class="adsb-control-drawer hidden" aria-labelledby="adsb-drawer-title">
         <div class="adsb-drawer-header">
@@ -3597,6 +3672,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ⚡ Global Mission Flight Time, Planned Schedule Picker &amp; Telemetry Playback Auto-Sync (v1.158.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Control mission time across planning, execution, and historical replay! Features an interactive <strong>Mission Time Pill</strong> in the topbar with state badges (⚡ Live, 📅 Planned, ▶ Replay), an intuitive <strong>Mission Time Popover</strong> with datetime picker and quick presets (Now, Solar Noon, Golden Hour, &plusmn;1h), automatic <strong>Three.js 3D Sun Sphere &amp; Corona</strong> tracking across the sky dome, and seamless bidirectional auto-sync with <strong>DJI WPML <code>&lt;createTime&gt;</code></strong> and <strong>Flight Telemetry Playback</strong>.
+            </p>
+          </div>
           <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ☀️ Solar Ephemeris Engine, Shadow Vectors &amp; Glare-Aware Mission Planning (v1.157.0) (Closes #141)
@@ -4880,7 +4963,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.157.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.158.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4941,6 +5024,12 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.158.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Global Mission Flight Time, Planned Schedule Picker &amp; Telemetry Playback Auto-Sync:</strong> Added MissionClock epoch state manager with interactive topbar pill (⚡ Live, 📅 Planned, ▶ Replay), popover datetime picker with quick solar presets, 3D Sun Sphere &amp; Corona tracking in Three.js, and bidirectional sync across WPML createTime imports and flight telemetry replay scrubbers.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.157.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
