@@ -17,7 +17,7 @@ const PhotoInspector = {
   activeMeasurePoints: [],
   activeArrowStart: null,
   activeBoxStart: null,
-  layers: {
+  _layers: {
     hud: true,
     boundary: true,
     layerBoundary: true, // Auto-superimpose active flight layer boundary!
@@ -27,7 +27,21 @@ const PhotoInspector = {
     measure: true,
     pins: true,
     reticle: true,
-    solarAngle: true // Toggleable solar azimuth & elevation angle vector overlay (v1.157.0)
+    solarAngle: (typeof localStorage !== 'undefined' && localStorage.getItem('aalaapi_photo_layer_solar') === 'false') ? false : true, // Toggleable solar azimuth & elevation angle vector overlay (v1.157.0, v1.160.1)
+    get solar() { return this.solarAngle; },
+    set solar(val) { this.solarAngle = val; }
+  },
+  get layers() { return this._layers; },
+  set layers(val) {
+    this._layers = val;
+    if (val && typeof val === 'object') {
+      Object.defineProperty(val, 'solar', {
+        get() { return this.solarAngle; },
+        set(v) { this.solarAngle = v; },
+        configurable: true,
+        enumerable: true
+      });
+    }
   },
   projectGeoPointToPixel,
   projectGeoPolygonToPhoto,
@@ -562,6 +576,19 @@ const PhotoInspector = {
       const dispH = this.unit === 'imperial' ? Math.round(this.targetHeight * 3.28084 * 10) / 10 : Math.round(this.targetHeight * 10) / 10;
       heightInput.value = dispH;
     }
+
+    ['hud', 'boundary', 'layerBoundary', 'wireframe', 'fiducials', 'detectedTags', 'measure', 'pins', 'reticle', 'solarAngle'].forEach(lKey => {
+      const elemId = lKey === 'detectedTags' ? 'layer-toggle-detected-tags' : 
+                    (lKey === 'layerBoundary' ? 'layer-toggle-layer-boundary' : 
+                    (lKey === 'wireframe' ? 'layer-toggle-wireframe' : 
+                    (lKey === 'solarAngle' ? 'layer-toggle-solar' : `layer-toggle-${lKey}`)));
+      const cb = document.getElementById(elemId) || 
+                 document.getElementById(`layer-toggle-${lKey.toLowerCase()}`) || 
+                 (lKey === 'solarAngle' ? document.getElementById('layer-toggle-solar-angle') : null);
+      if (cb && typeof this.layers[lKey] === 'boolean') {
+        cb.checked = this.layers[lKey];
+      }
+    });
 
     const annotations = this.activePhoto.annotations || [];
     const pins = annotations.filter(a => a.type === 'pin');
@@ -1661,7 +1688,7 @@ const PhotoInspector = {
     }
 
     // 10. Solar Angle & Bearing Vector HUD Overlay (v1.157.0 - Issue #141)
-    if (this.layers.solarAngle && this.activePhoto) {
+    if ((this.layers.solarAngle || this.layers.solar) && this.activePhoto) {
       const act = this.activePhoto.actual;
       if (act && typeof act.lat === 'number' && typeof act.lon === 'number' && typeof SolarEphemeris !== 'undefined') {
         const photoDate = this.activePhoto.date || (this.activePhoto.timestamp ? new Date(this.activePhoto.timestamp) : new Date());
@@ -2417,12 +2444,23 @@ const PhotoInspector = {
       detectTagsBtn.onclick = () => this.detectOpticalTags();
     }
 
-    ['hud', 'boundary', 'layerBoundary', 'wireframe', 'fiducials', 'detectedTags', 'measure', 'pins', 'reticle'].forEach(lKey => {
-      const elemId = lKey === 'detectedTags' ? 'layer-toggle-detected-tags' : (lKey === 'layerBoundary' ? 'layer-toggle-layer-boundary' : (lKey === 'wireframe' ? 'layer-toggle-wireframe' : `layer-toggle-${lKey}`));
-      const cb = document.getElementById(elemId) || document.getElementById(`layer-toggle-${lKey.toLowerCase()}`);
+    ['hud', 'boundary', 'layerBoundary', 'wireframe', 'fiducials', 'detectedTags', 'measure', 'pins', 'reticle', 'solarAngle'].forEach(lKey => {
+      const elemId = lKey === 'detectedTags' ? 'layer-toggle-detected-tags' : 
+                    (lKey === 'layerBoundary' ? 'layer-toggle-layer-boundary' : 
+                    (lKey === 'wireframe' ? 'layer-toggle-wireframe' : 
+                    (lKey === 'solarAngle' ? 'layer-toggle-solar' : `layer-toggle-${lKey}`)));
+      const cb = document.getElementById(elemId) || 
+                 document.getElementById(`layer-toggle-${lKey.toLowerCase()}`) || 
+                 (lKey === 'solarAngle' ? document.getElementById('layer-toggle-solar-angle') : null);
       if (cb) {
+        if (typeof this.layers[lKey] === 'boolean') {
+          cb.checked = this.layers[lKey];
+        }
         cb.onchange = () => {
           this.layers[lKey] = cb.checked;
+          if (lKey === 'solarAngle' && typeof localStorage !== 'undefined') {
+            try { localStorage.setItem('aalaapi_photo_layer_solar', cb.checked ? 'true' : 'false'); } catch (_) {}
+          }
           const hudBanner = document.getElementById('photo-hud-banner');
           if (lKey === 'hud' && hudBanner) {
             hudBanner.style.display = cb.checked ? 'block' : 'none';

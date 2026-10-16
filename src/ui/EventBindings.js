@@ -1778,12 +1778,37 @@ function initUIEventListeners() {
   const sidebarDirectRc2SyncBtn = document.getElementById('sidebar-direct-rc2-sync-btn');
   const sidebarDirectRc2PullBtn = document.getElementById('sidebar-direct-rc2-pull-btn');
 
+  // Ambient Telemetry Buffer Popover (Issue #142)
+  const bufferPill = document.getElementById('header-ambient-buffer-pill');
+  const bufferPopover = document.getElementById('buffer-monitor-popover');
+  const bufferCloseBtn = document.getElementById('buffer-popover-close-btn');
+  const bufferFlushBtn = document.getElementById('buffer-flush-btn');
+  const bufferSnapshotBtn = document.getElementById('buffer-snapshot-btn');
+
+  function toggleBufferPopover(forceState) {
+    if (!bufferPopover) return;
+    const shouldOpen = typeof forceState === 'boolean' ? forceState : bufferPopover.classList.contains('hidden');
+    if (shouldOpen) {
+      bufferPopover.classList.remove('hidden');
+      if (bridgePopover) bridgePopover.classList.add('hidden');
+      if (telemetryPopover) telemetryPopover.classList.add('hidden');
+      const timePop = document.getElementById('mission-time-popover');
+      if (timePop) timePop.classList.add('hidden');
+      if (typeof ApiClient !== 'undefined' && typeof ApiClient.fetchBufferMetrics === 'function') {
+        ApiClient.fetchBufferMetrics();
+      }
+    } else {
+      bufferPopover.classList.add('hidden');
+    }
+  }
+
   function toggleBridgePopover(forceState) {
     if (!bridgePopover) return;
     const shouldOpen = typeof forceState === 'boolean' ? forceState : bridgePopover.classList.contains('hidden');
     if (shouldOpen) {
       bridgePopover.classList.remove('hidden');
       if (telemetryPopover) telemetryPopover.classList.add('hidden');
+      if (bufferPopover) bufferPopover.classList.add('hidden');
       const timePop = document.getElementById('mission-time-popover');
       if (timePop) timePop.classList.add('hidden');
     } else {
@@ -1797,11 +1822,50 @@ function initUIEventListeners() {
     if (shouldOpen) {
       telemetryPopover.classList.remove('hidden');
       if (bridgePopover) bridgePopover.classList.add('hidden');
+      if (bufferPopover) bufferPopover.classList.add('hidden');
       const timePop = document.getElementById('mission-time-popover');
       if (timePop) timePop.classList.add('hidden');
     } else {
       telemetryPopover.classList.add('hidden');
     }
+  }
+
+  if (bufferPill) {
+    bufferPill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleBufferPopover();
+    });
+  }
+  if (bufferCloseBtn && bufferPopover) {
+    bufferCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      bufferPopover.classList.add('hidden');
+    });
+  }
+  if (bufferPopover) {
+    bufferPopover.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+  if (bufferFlushBtn) {
+    bufferFlushBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (typeof ApiClient !== 'undefined' && typeof ApiClient.flushBuffer === 'function') {
+        bufferFlushBtn.textContent = 'Flushing...';
+        await ApiClient.flushBuffer();
+        bufferFlushBtn.textContent = '🧹 Flush Transient Buffer';
+      }
+    });
+  }
+  if (bufferSnapshotBtn) {
+    bufferSnapshotBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (typeof ApiClient !== 'undefined' && typeof ApiClient.commitBufferSession === 'function') {
+        bufferSnapshotBtn.textContent = 'Saving...';
+        await ApiClient.commitBufferSession();
+        bufferSnapshotBtn.textContent = '💾 Snapshot to DB';
+      }
+    });
   }
 
   if (bridgePill) {

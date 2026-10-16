@@ -434,8 +434,29 @@ const scenarios = [
           const title = modal.querySelector('#photo-inspector-title, h3, .modal-title');
           if (title) title.textContent = 'Photo Inspector (Generic Demo Flight)';
         }
+        const drawer = document.getElementById('photo-inspector-drawer');
+        if (drawer) drawer.classList.remove('hidden', 'drawer-closed');
       });
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(700);
+
+      // Demonstrate toggling the Solar Position HUD overlay checkbox
+      await page.evaluate(() => {
+        const solarCb = document.getElementById('layer-toggle-solar');
+        if (solarCb) {
+          solarCb.checked = false;
+          solarCb.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(600);
+
+      await page.evaluate(() => {
+        const solarCb = document.getElementById('layer-toggle-solar');
+        if (solarCb) {
+          solarCb.checked = true;
+          solarCb.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(600);
 
       // Click Next photo button
       await page.evaluate(() => {
@@ -1946,6 +1967,125 @@ const scenarios = [
       await page.waitForTimeout(800);
 
       // 10. Re-center map cleanly on default rural point
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+    }
+  },
+  {
+    id: 'feature_4d_flight_replay',
+    name: 'Omnidimensional 4D Flight Replay Engine & Rolling Buffer Architecture',
+    description: 'Demonstrates 4D flight replay with synchronous ADS-B & Remote ID traffic, dynamic cross-track drift error, 3D exclusion zone breach checking, and ambient buffer HUD monitoring popover.',
+    issueRef: 'Issue #142 (v1.160.0)',
+    run: async (page) => {
+      // 1. Re-center cleanly on default rural location (Data Privacy Rule 8 & 9)
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Click Topbar Buffer Pill to open Buffer Monitor popover
+      await page.evaluate(() => {
+        const pill = document.getElementById('header-ambient-buffer-pill');
+        if (pill) pill.click();
+      });
+      await page.waitForTimeout(800);
+
+      // Update buffer metrics with mock traffic
+      await page.evaluate(() => {
+        if (typeof AmbientBufferManager !== 'undefined') {
+          AmbientBufferManager.updateBufferHud({
+            totalMemoryBytes: 4200000,
+            formattedMemory: '4.01 MB',
+            totalPackets: 3200,
+            activeAirspaceDrones: 2,
+            activeAdsbAircraft: 3,
+            radarFramesCached: 4,
+            isMemoryPressure: false,
+            capacityPercentage: 40
+          });
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // Close buffer popover
+      await page.evaluate(() => {
+        const closeBtn = document.getElementById('buffer-popover-close-btn');
+        if (closeBtn) closeBtn.click();
+      });
+      await page.waitForTimeout(600);
+
+      // 3. Launch 2D Flight Replay with simulated 4D multi-dataset telemetry
+      await page.evaluate(() => {
+        if (typeof PlaybackManager !== 'undefined') {
+          const baseTime = Date.now();
+          const mockTelemetry = {
+            flightDate: new Date(baseTime).toISOString(),
+            points: [
+              { lat: 41.3215, lon: -88.9950, alt: 30, speed: 4.5, yaw: 0, time: 0, timestamp: new Date(baseTime).toISOString() },
+              { lat: 41.3225, lon: -88.9940, alt: 40, speed: 5.5, yaw: 45, time: 10, timestamp: new Date(baseTime + 10000).toISOString() },
+              { lat: 41.3235, lon: -88.9930, alt: 50, speed: 6.5, yaw: 90, time: 20, timestamp: new Date(baseTime + 20000).toISOString() },
+              { lat: 41.3245, lon: -88.9920, alt: 50, speed: 6.0, yaw: 90, time: 30, timestamp: new Date(baseTime + 30000).toISOString() }
+            ]
+          };
+
+          const plannedWps = [
+            { lat: 41.3215, lon: -88.9950, alt: 30 },
+            { lat: 41.3245, lon: -88.9920, alt: 50 }
+          ];
+
+          const envData = {
+            adsb: [
+              { icao: 'A12B34', callsign: 'REPLAY1', timestamp: baseTime + 10000, lat: 41.3228, lon: -88.9938, alt: 300, heading: 180, speed: 120 }
+            ],
+            remoteId: [
+              { id: 'DRONE-RID-01', timestamp: baseTime + 10000, lat: 41.3222, lon: -88.9942, alt: 42, speed: 5 }
+            ],
+            radar: [
+              { timestamp: baseTime, tileUrl: '' }
+            ]
+          };
+
+          PlaybackManager.loadFlight('4d-demo-flight', mockTelemetry, {
+            name: '4D Environmental Airspace Replay',
+            isHistorical: true,
+            plannedWaypoints: plannedWps,
+            environmentalData: envData
+          });
+          PlaybackManager.set2dReplayActive(true);
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 4. Scrub timeline to middle (10s in)
+      await page.evaluate(() => {
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.seekTo(0.5, { isFraction: true });
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 5. Play replay smoothly for 2 seconds
+      await page.evaluate(() => {
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.play();
+        }
+      });
+      await page.waitForTimeout(2000);
+
+      // 6. Pause replay
+      await page.evaluate(() => {
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.pause();
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // 7. Close 2D Replay bar
+      const closeReplayBtn = await page.$('#replay-2d-close-btn');
+      if (closeReplayBtn) {
+        await closeReplayBtn.click();
+        await page.waitForTimeout(800);
+      }
+
+      // 8. Re-center cleanly on default rural location
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(600);
     }

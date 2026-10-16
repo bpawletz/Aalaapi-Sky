@@ -620,6 +620,9 @@ async function pollCompanionStatus() {
         remoteIdDroneCount = data.droneCount;
       }
       applyCompanionStatusUI(data);
+      if (typeof AmbientBufferManager !== 'undefined' && typeof AmbientBufferManager.fetchBufferMetrics === 'function') {
+        AmbientBufferManager.fetchBufferMetrics().catch(() => {});
+      }
 
       if (!isCompanionStatusStreaming && typeof connectCompanionStatusStream === 'function') {
         connectCompanionStatusStream();
@@ -1384,6 +1387,150 @@ if (typeof global !== 'undefined') {
   global.setConsecutiveRadarFailures = (n) => { consecutiveRadarFailures = n; };
   global.setIsCompanionOnline = (v) => { isCompanionOnline = v; };
   global.getIsCompanionOnline = () => isCompanionOnline;
+}
+
+// ─── Ambient Telemetry Buffer Manager (Issue #142) ─────────────────────────
+
+const AmbientBufferManager = {
+  lastMetrics: null,
+
+  async fetchBufferMetrics() {
+    if (typeof fetch === 'undefined') return null;
+    try {
+      const res = await fetch(`${COMPANION_API_BASE}/api/buffer/metrics`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      this.lastMetrics = data;
+      this.updateBufferHud(data);
+      return data;
+    } catch (_) {
+      return null;
+    }
+  },
+
+  async flushBuffer() {
+    if (typeof fetch === 'undefined') return null;
+    try {
+      const res = await fetch(`${COMPANION_API_BASE}/api/buffer/flush`, { method: 'POST' });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data.metrics) {
+        this.updateBufferHud(data.metrics);
+      } else {
+        await this.fetchBufferMetrics();
+      }
+      return data;
+    } catch (_) {
+      return null;
+    }
+  },
+
+  async commitBufferSession(missionUuid, startUtcMs, endUtcMs) {
+    if (typeof fetch === 'undefined') return null;
+    try {
+      const payload = {
+        missionUuid: missionUuid || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.selectedFlightId) || `mission_${Date.now()}`,
+        startUtcMs: startUtcMs || (Date.now() - 3600000),
+        endUtcMs: endUtcMs || Date.now()
+      };
+      const res = await fetch(`${COMPANION_API_BASE}/api/buffer/commit-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      await this.fetchBufferMetrics();
+      return data;
+    } catch (_) {
+      return null;
+    }
+  },
+
+  updateBufferHud(metrics) {
+    if (!metrics || typeof document === 'undefined') return;
+    const pill = document.getElementById('header-ambient-buffer-pill');
+    const icon = document.getElementById('header-buffer-icon');
+    const label = document.getElementById('header-buffer-label');
+    const badge = document.getElementById('header-buffer-traffic-badge');
+
+    const mbUsed = (typeof metrics.mbUsed === 'number') ? metrics.mbUsed.toFixed(2) : (metrics.formattedMemory ? metrics.formattedMemory.replace(' MB', '') : '0.00');
+    const winMin = metrics.activeWindowMinutes || 0;
+    const ridCount = (metrics.counts?.remoteId !== undefined) ? metrics.counts.remoteId : (metrics.activeAirspaceDrones || 0);
+    const adsbCount = (metrics.counts?.adsb !== undefined) ? metrics.counts.adsb : (metrics.activeAdsbAircraft || 0);
+    const totalTraffic = ridCount + adsbCount;
+    const pct = metrics.percentage !== undefined ? metrics.percentage : (metrics.capacityPercentage || 0);
+
+    if (label) label.textContent = `Buffer: ${mbUsed} MB (${winMin}m)`;
+
+    if (badge) {
+      if (ridCount > 0 && adsbCount > 0) {
+        badge.textContent = `${ridCount} RID | ${adsbCount} ADS-B`;
+        badge.className = 'header-buffer-badge is-traffic';
+      } else if (ridCount > 0) {
+        badge.textContent = `${ridCount} Drone${ridCount === 1 ? '' : 's'}`;
+        badge.className = 'header-buffer-badge is-traffic';
+      } else if (adsbCount > 0) {
+        badge.textContent = `${adsbCount} ADS-B`;
+        badge.className = 'header-buffer-badge is-traffic';
+      } else {
+        badge.textContent = 'Airspace Clear';
+        badge.className = 'header-buffer-badge';
+      }
+    }
+
+    if (pill) {
+      pill.classList.remove('is-clean', 'is-active', 'is-pressure');
+      if (pct >= 80 || metrics.isMemoryPressure) {
+        pill.classList.add('is-pressure');
+        if (icon) icon.textContent = '⚠️';
+        if (badge) {
+          badge.textContent = 'Memory Pressure';
+          badge.className = 'header-buffer-badge is-warning';
+        }
+      } else if (totalTraffic > 0) {
+        pill.classList.add('is-active');
+        if (icon) icon.textContent = '🔵';
+      } else {
+        pill.classList.add('is-clean');
+        if (icon) icon.textContent = '🟢';
+      }
+    }
+
+    // Update Popover elements
+    const ramEl = document.getElementById('buffer-stat-ram');
+    if (ramEl) ramEl.textContent = `${mbUsed} MB / ${metrics.mbMax || 10} MB (${pct}%)`;
+    const barEl = document.getElementById('buffer-progress-bar');
+    if (barEl) {
+      barEl.style.width = `${Math.min(100, pct)}%`;
+      barEl.style.background = (pct >= 80) ? '#ef4444' : ((totalTraffic > 0) ? '#38bdf8' : '#10b981');
+    }
+    const winEl = document.getElementById('buffer-stat-window');
+    if (winEl) winEl.textContent = `${winMin} min (Oldest: ${new Date(metrics.oldestTimestamp || Date.now()).toLocaleTimeString()})`;
+    const ridEl = document.getElementById('buffer-stat-rid');
+    if (ridEl) ridEl.textContent = `${ridCount} frames (${Math.round((ridCount * 140) / 1024)} KB)`;
+    const adsbEl = document.getElementById('buffer-stat-adsb');
+    if (adsbEl) adsbEl.textContent = `${adsbCount} points (${Math.round((adsbCount * 190) / 1024)} KB)`;
+    const radarEl = document.getElementById('buffer-stat-radar');
+    const radarCount = (metrics.counts?.radar !== undefined) ? metrics.counts.radar : (metrics.radarFramesCached || 0);
+    if (radarEl) radarEl.textContent = `${radarCount} snapshots (${Math.round((radarCount * 48000) / 1024)} KB)`;
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.AmbientBufferManager = AmbientBufferManager;
+  window.ApiClient = window.ApiClient || {};
+  window.ApiClient.fetchBufferMetrics = () => AmbientBufferManager.fetchBufferMetrics();
+  window.ApiClient.flushBuffer = () => AmbientBufferManager.flushBuffer();
+  window.ApiClient.commitBufferSession = (u, s, e) => AmbientBufferManager.commitBufferSession(u, s, e);
+}
+
+if (typeof global !== 'undefined') {
+  global.AmbientBufferManager = AmbientBufferManager;
+  global.ApiClient = global.ApiClient || {};
+  global.ApiClient.fetchBufferMetrics = () => AmbientBufferManager.fetchBufferMetrics();
+  global.ApiClient.flushBuffer = () => AmbientBufferManager.flushBuffer();
+  global.ApiClient.commitBufferSession = (u, s, e) => AmbientBufferManager.commitBufferSession(u, s, e);
 }
 
 // ─── Remote ID Airspace Radar & Live Detection ─────────────────────────────

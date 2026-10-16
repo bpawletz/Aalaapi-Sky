@@ -8280,6 +8280,102 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(res.backToLive, true, 'Clicking live mode should restore is-live on pill');
       assert.strictEqual(res.popClosed, true, 'Clicking close button should hide popover');
     });
+
+    test('E2E: Ambient Buffer Pill, Popover Interactivity, and Memory Metrics (v1.160.0, Issue #142)', async () => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      const res = await page.evaluate(async () => {
+        const pill = document.getElementById('header-ambient-buffer-pill');
+        const popover = document.getElementById('buffer-monitor-popover');
+        const closeBtn = document.getElementById('buffer-popover-close-btn');
+        const flushBtn = document.getElementById('buffer-flush-btn');
+        const snapBtn = document.getElementById('buffer-snapshot-btn');
+        const fillBar = document.getElementById('buffer-progress-bar');
+
+        const initialPopHidden = popover.classList.contains('hidden');
+
+        // Click pill to open popover
+        pill.click();
+        const popOpened = !popover.classList.contains('hidden');
+
+        // Update with mock metrics
+        if (typeof AmbientBufferManager !== 'undefined') {
+          AmbientBufferManager.updateBufferHud({
+            totalMemoryBytes: 3500000,
+            formattedMemory: '3.34 MB',
+            totalPackets: 2400,
+            activeAirspaceDrones: 2,
+            activeAdsbAircraft: 4,
+            radarFramesCached: 3,
+            isMemoryPressure: false,
+            capacityPercentage: 35
+          });
+        }
+
+        const labelText = document.getElementById('header-buffer-label')?.textContent;
+        const trafficBadge = document.getElementById('header-buffer-traffic-badge')?.textContent;
+        const barWidth = fillBar?.style.width;
+
+        // Close popover
+        closeBtn.click();
+        const popClosed = popover.classList.contains('hidden');
+
+        return {
+          pillExists: !!pill,
+          popoverExists: !!popover,
+          flushBtnExists: !!flushBtn,
+          snapBtnExists: !!snapBtn,
+          initialPopHidden,
+          popOpened,
+          labelText,
+          trafficBadge,
+          barWidth,
+          popClosed
+        };
+      });
+
+      assert.strictEqual(res.pillExists, true, 'Ambient buffer pill must exist');
+      assert.strictEqual(res.popoverExists, true, 'Buffer monitor popover must exist');
+      assert.strictEqual(res.flushBtnExists, true, 'Buffer flush button must exist');
+      assert.strictEqual(res.snapBtnExists, true, 'Buffer snapshot commit button must exist');
+      assert.strictEqual(res.initialPopHidden, true, 'Popover must default to hidden');
+      assert.strictEqual(res.popOpened, true, 'Clicking pill must open popover');
+      assert.ok(res.labelText.includes('3.34 MB'), 'Buffer label must reflect formatted memory');
+      assert.ok(res.trafficBadge.includes('RID') && res.trafficBadge.includes('ADS-B'), 'Traffic badge must reflect traffic counts');
+      assert.strictEqual(res.barWidth, '35%', 'Progress bar fill must reflect capacity percentage');
+      assert.strictEqual(res.popClosed, true, 'Clicking close button must hide popover');
+    });
+
+    test('E2E: Photo Inspector Solar Position HUD Toggle (v1.160.1)', async () => {
+      const res = await page.evaluate(async () => {
+        const toggle = document.getElementById('layer-toggle-solar');
+        const hasToggle = !!toggle;
+        const initialLayerState = (typeof PhotoInspector !== 'undefined') ? PhotoInspector.layers.solarAngle : null;
+
+        if (toggle) {
+          toggle.checked = false;
+          toggle.dispatchEvent(new Event('change'));
+        }
+        const toggledOffState = (typeof PhotoInspector !== 'undefined') ? PhotoInspector.layers.solarAngle : null;
+
+        if (toggle) {
+          toggle.checked = true;
+          toggle.dispatchEvent(new Event('change'));
+        }
+        const restoredState = (typeof PhotoInspector !== 'undefined') ? PhotoInspector.layers.solarAngle : null;
+
+        return {
+          hasToggle,
+          initialLayerState,
+          toggledOffState,
+          restoredState
+        };
+      });
+
+      assert.strictEqual(res.hasToggle, true, '#layer-toggle-solar must exist in Photo Inspector drawer');
+      assert.strictEqual(res.initialLayerState, true, 'PhotoInspector.layers.solarAngle must be true by default');
+      assert.strictEqual(res.toggledOffState, false, 'Unchecking toggle must disable PhotoInspector solarAngle layer');
+      assert.strictEqual(res.restoredState, true, 'Re-checking toggle must re-enable PhotoInspector solarAngle layer');
+    });
   });
 });
 
