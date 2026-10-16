@@ -1,0 +1,75 @@
+<script type="text/javascript">
+  RED.nodes.registerType('aalaapi-radar', {
+    category: 'Aalaapi Sky',
+    color: '#0288d1',
+    defaults: {
+      name: { value: '' },
+      bridge: { value: '', type: 'aalaapi-config', required: true },
+      mode: { value: 'stream' },
+      pollInterval: { value: 3000 },
+      filterUasId: { value: '' },
+      minAltMeters: { value: '' },
+      maxAltMeters: { value: '' }
+    },
+    inputs: 0,
+    outputs: 1,
+    icon: 'bridge.png',
+    label: function() {
+      return this.name || 'Remote ID Radar';
+    },
+    paletteLabel: 'Remote ID Radar',
+    oneditprepare: function() {
+      $('#node-input-mode').on('change', function() {
+        if ($(this).val() === 'poll') {
+          $('#row-poll-interval').show();
+        } else {
+          $('#row-poll-interval').hide();
+        }
+      }).trigger('change');
+    }
+  });
+</script>
+
+<script type="text/html" data-template-name="aalaapi-radar">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Remote ID Radar">
+  </div>
+  <div class="form-row">
+    <label for="node-input-bridge"><i class="fa fa-server"></i> Bridge</label>
+    <input type="text" id="node-input-bridge">
+  </div>
+  <div class="form-row">
+    <label for="node-input-mode"><i class="fa fa-feed"></i> Subscription Mode</label>
+    <select id="node-input-mode" style="width: 70%;">
+      <option value="stream">Real-time SSE Stream (/api/stream)</option>
+      <option value="poll">Periodic Polling (/api/remote-id/drones)</option>
+    </select>
+  </div>
+  <div class="form-row" id="row-poll-interval">
+    <label for="node-input-pollInterval"><i class="fa fa-clock-o"></i> Interval (ms)</label>
+    <input type="number" id="node-input-pollInterval" placeholder="3000">
+  </div>
+  <div class="form-row">
+    <label for="node-input-filterUasId"><i class="fa fa-filter"></i> UAS ID / MAC Filter</label>
+    <input type="text" id="node-input-filterUasId" placeholder="Optional substring filter (e.g. 1581F...)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-minAltMeters"><i class="fa fa-arrows-v"></i> Min Alt (m)</label>
+    <input type="number" id="node-input-minAltMeters" placeholder="Optional minimum AGL/MSL">
+  </div>
+  <div class="form-row">
+    <label for="node-input-maxAltMeters"><i class="fa fa-arrows-v"></i> Max Alt (m)</label>
+    <input type="number" id="node-input-maxAltMeters" placeholder="Optional maximum AGL/MSL">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="aalaapi-radar">
+  <p><b>Aalaapi Remote ID Airspace Radar</b></p>
+  <p>Monitors ASTM F3411 Remote ID broadcasts (Bluetooth 5 Long Range, BLE 4 Legacy, Wi-Fi Beacon) decoded in real-time by Aalaapi Bridge.</p>
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">object</span></dt>
+    <dd>Contains <code>drones</code> array with live coordinates (<code>latitude</code>, <code>longitude</code>), altitude (<code>heightAgl</code>, <code>altitudeMsl</code>), speeds, heading, and UAS registration identifiers.</dd>
+  </dl>
+</script>

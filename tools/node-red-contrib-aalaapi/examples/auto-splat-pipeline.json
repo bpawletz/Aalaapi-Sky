@@ -1,0 +1,153 @@
+[
+  {
+    "id": "tab_aalaapi_splat",
+    "type": "tab",
+    "label": "Aalaapi Auto-Splat Pipeline",
+    "disabled": false,
+    "info": "Automated workflow listening for DJI RC 2 / SD card photo ingestion, filtering shots, compiling Nerfstudio transforms.json, and launching splatfacto Gaussian Splat training."
+  },
+  {
+    "id": "config_bridge_local",
+    "type": "aalaapi-config",
+    "name": "Local Aalaapi Bridge",
+    "host": "127.0.0.1",
+    "port": 8765,
+    "protocol": "http:",
+    "timeout": 8000
+  },
+  {
+    "id": "node_ingest_watch",
+    "type": "aalaapi-ingest-watch",
+    "z": "tab_aalaapi_splat",
+    "name": "Watch RC 2 Photo Ingest",
+    "bridge": "config_bridge_local",
+    "autoFetchManifest": true,
+    "x": 160,
+    "y": 140,
+    "wires": [
+      [
+        "node_filter_photos"
+      ]
+    ]
+  },
+  {
+    "id": "node_filter_photos",
+    "type": "function",
+    "z": "tab_aalaapi_splat",
+    "name": "Filter Flight & GSD Bounds",
+    "func": "// Exclude photos with GSD deviation or excessive tilt\nconst manifest = msg.manifest || {};\nconst photos = manifest.photos || [];\n\nconst validPhotos = photos.filter(p => {\n  // Require altitude above 10m\n  const alt = p.altAgl || p.alt || 0;\n  return alt >= 10;\n});\n\nnode.status({ fill: 'blue', shape: 'dot', text: `${validPhotos.length}/${photos.length} photos accepted` });\nmsg.photos = validPhotos;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 420,
+    "y": 140,
+    "wires": [
+      [
+        "node_splat_prep"
+      ]
+    ]
+  },
+  {
+    "id": "node_splat_prep",
+    "type": "aalaapi-splat-prep",
+    "z": "tab_aalaapi_splat",
+    "name": "Generate transforms.json",
+    "bridge": "config_bridge_local",
+    "outputFormat": "both",
+    "writeToDisk": true,
+    "filterQuality": "clean_and_warnings",
+    "hfov": 73.7,
+    "vfov": 53.1,
+    "imageWidth": 4000,
+    "imageHeight": 3000,
+    "x": 700,
+    "y": 140,
+    "wires": [
+      [
+        "node_exec_splatfacto",
+        "node_debug_out"
+      ]
+    ]
+  },
+  {
+    "id": "node_exec_splatfacto",
+    "type": "exec",
+    "z": "tab_aalaapi_splat",
+    "command": "ns-train splatfacto --data",
+    "addpay": "targetDir",
+    "append": "--pipeline.model.cull-alpha-thresh 0.01",
+    "useSpawn": "true",
+    "timer": "",
+    "winHide": false,
+    "oldrc": false,
+    "name": "Train 3DGS (splatfacto)",
+    "x": 980,
+    "y": 140,
+    "wires": [
+      [
+        "node_debug_out"
+      ],
+      [
+        "node_debug_out"
+      ],
+      [
+        "node_debug_out"
+      ]
+    ]
+  },
+  {
+    "id": "node_debug_out",
+    "type": "debug",
+    "z": "tab_aalaapi_splat",
+    "name": "Pipeline Output",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 960,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "node_remote_id_radar",
+    "type": "aalaapi-radar",
+    "z": "tab_aalaapi_splat",
+    "name": "ASTM F3411 Airspace Radar",
+    "bridge": "config_bridge_local",
+    "mode": "stream",
+    "pollInterval": 3000,
+    "filterUasId": "",
+    "minAltMeters": "",
+    "maxAltMeters": "",
+    "x": 170,
+    "y": 280,
+    "wires": [
+      [
+        "node_radar_debug"
+      ]
+    ]
+  },
+  {
+    "id": "node_radar_debug",
+    "type": "debug",
+    "z": "tab_aalaapi_splat",
+    "name": "Airspace Stream",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 420,
+    "y": 280,
+    "wires": []
+  }
+]

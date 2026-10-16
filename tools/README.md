@@ -55,6 +55,20 @@ A collection of lightweight automation tools for seamless DJI RC 2 synchronizati
 
 ---
 
+### 4. `node-red-contrib-aalaapi` — Custom Node-RED Integration Framework
+**Files:** [`tools/node-red-contrib-aalaapi/`](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/tools/node-red-contrib-aalaapi/)
+**Install via:** `npm install ./tools/node-red-contrib-aalaapi` in `~/.node-red`
+
+- **Purpose:** First-class Node-RED integration connecting visual flows into Aalaapi Bridge (port `8765`).
+- **Nodes Included:**
+  - `aalaapi-config`: Connection manager with 1-click test button.
+  - `aalaapi-radar`: Live ASTM F3411 Remote ID drone detection stream.
+  - `aalaapi-ingest-watch`: Triggers immediately on USB MTP / SD card photo ingestion completion.
+  - `aalaapi-splat-prep`: Generates Nerfstudio `transforms.json` ($4 \times 4$ camera matrices) and COLMAP priors for automated Gaussian Splatting (`splatfacto`).
+- **Sample Pipeline:** [`tools/node-red-contrib-aalaapi/examples/auto-splat-pipeline.json`](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/tools/node-red-contrib-aalaapi/examples/auto-splat-pipeline.json)
+
+---
+
 ## 📋 Requirements
 - Windows 10 / 11 with PowerShell 5.1+
 - DJI RC 2 connected via USB-C in File Transfer (MTP) mode
