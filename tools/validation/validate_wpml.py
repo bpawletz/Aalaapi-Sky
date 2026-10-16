@@ -140,7 +140,16 @@ global.navigator = dom.window.navigator;
 global.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
 global.L = {
   latLng: (lat, lng) => ({ lat, lng }),
-  marker: () => ({ getLatLng: () => ({ lat: 0, lng: 0 }) })
+  marker: () => ({ getLatLng: () => ({ lat: 0, lng: 0 }) }),
+  map: () => ({
+    setView: function() { return this; },
+    addLayer: function() { return this; },
+    on: function() { return this; },
+    removeLayer: function() { return this; }
+  }),
+  tileLayer: () => ({ addTo: () => {} }),
+  polyline: () => ({ addTo: () => {}, setLatLngs: () => {} }),
+  polygon: () => ({ addTo: () => {}, setLatLngs: () => {} })
 };
 
 const bundleCode = fs.readFileSync('./dist/index.bundle.js', 'utf8');
@@ -177,6 +186,7 @@ droneModels.forEach(drone => {
 
 const outPath = process.argv.slice(1).find(a => a && a.endsWith('.json')) || process.argv[1] || process.argv[2];
 fs.writeFileSync(outPath, JSON.stringify(testMatrix));
+process.exit(0);
 """
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tf:
         out_json_path = tf.name

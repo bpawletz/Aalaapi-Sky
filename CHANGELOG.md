@@ -1,3 +1,28 @@
+## [1.159.0] - 2026-10-16
+
+Introduces a dedicated Node-RED node module (`node-red-contrib-aalaapi`) and integration framework connecting Node-RED event flows directly into Aalaapi Bridge for automated Remote ID airspace monitoring, photo ingestion tracking, and 3D Gaussian Splatting / COLMAP manifest generation (Closes #140).
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Custom Node-RED Integration Framework (`node-red-contrib-aalaapi`)**:
+  - Implemented a dedicated Node-RED palette package (`tools/node-red-contrib-aalaapi/`) connecting visual flows into Aalaapi Bridge on port 8765.
+  - **`aalaapi-config`**: Centralized Bridge connection node with 1-click test button verifying live companion service health.
+  - **`aalaapi-radar`**: Real-time ASTM F3411 Remote ID input node subscribing to decoded Bluetooth/Wi-Fi drone broadcasts with altitude and UAS ID filters.
+  - **`aalaapi-ingest-watch`**: Instant trigger node that emits upon USB MTP or SD card photo ingestion completion and checksum verification.
+  - **`aalaapi-splat-prep`**: Automated spatial transform node converting drone GPS coordinates, gimbal pitch angles, and camera FOV into Nerfstudio standard `transforms.json` ($4 \times 4$ camera matrices) and COLMAP text priors (`cameras.txt`, `images.txt`).
+- **Automated Gaussian Splatting Pipeline Example**:
+  - Added `examples/auto-splat-pipeline.json` providing an end-to-end pipeline: `[Ingest Watch] -> [Filter High-Variance Shots] -> [Prepare transforms.json] -> [Exec: ns-train splatfacto]`.
+
+#### Under the Hood & Technical Details
+- **Companion Server Ingest Completion Event (`tools/companion/server.js`)**:
+  - Added `broadcastIngestComplete()` emitting structured `event: ingest-complete` on Server-Sent Events (SSE) streams (`/api/stream` and `/api/media/progress/stream`) when `pullMediaPhotos()` finishes.
+- **Nerfstudio & COLMAP Mathematical Pipeline (`tools/node-red-contrib-aalaapi/lib/`)**:
+  - Implemented `nerfstudio-splat.js` with Equirectangular local East-North-Up projections, Euler-to-NeRF OpenGL coordinate conversion, pinhole focal length calculation, and AprilTag / ArUco GCP constraints formatting.
+  - Implemented `colmap-prior.js` converting Euler attitudes to unit quaternions and generating PINHOLE camera models.
+- **Node-RED Test Harness & Suite (`tools/node-red-contrib-aalaapi/test/`)**:
+  - Added comprehensive test suites verifying camera mathematics, transforms.json schemas, COLMAP priors, mock SSE streams, and node registration.
+
 ## [1.158.0] - 2026-10-15
 
 Introduces a unified Mission Flight Time & Epoch Manager with topbar time scheduling, quick solar presets, 3D sun sphere and glowing corona tracking in Three.js, and bidirectional synchronization with DJI WPML and historical flight replay.

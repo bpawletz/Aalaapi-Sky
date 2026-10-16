@@ -1,0 +1,50 @@
+<script type="text/javascript">
+  RED.nodes.registerType('aalaapi-ingest-watch', {
+    category: 'Aalaapi Sky',
+    color: '#43a047',
+    defaults: {
+      name: { value: '' },
+      bridge: { value: '', type: 'aalaapi-config', required: true },
+      autoFetchManifest: { value: true }
+    },
+    inputs: 0,
+    outputs: 1,
+    icon: 'camera.png',
+    label: function() {
+      return this.name || 'Photo Ingest Watch';
+    },
+    paletteLabel: 'Ingest Watch'
+  });
+</script>
+
+<script type="text/html" data-template-name="aalaapi-ingest-watch">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Photo Ingest Watch">
+  </div>
+  <div class="form-row">
+    <label for="node-input-bridge"><i class="fa fa-server"></i> Bridge</label>
+    <input type="text" id="node-input-bridge">
+  </div>
+  <div class="form-row">
+    <label><i class="fa fa-file-text-o"></i> Options</label>
+    <input type="checkbox" id="node-input-autoFetchManifest" style="display:inline-block; width:auto; vertical-align:top;">
+    <label for="node-input-autoFetchManifest" style="width: auto;"> Automatically load full inspection manifest (XMP & GPS coordinates)</label>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="aalaapi-ingest-watch">
+  <p><b>Aalaapi Photo Ingest Watcher</b></p>
+  <p>Monitors Aalaapi Bridge for completed photo ingestion batches from USB MTP (DJI RC 2 / Aircraft) or SD card readers.</p>
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>missionUuid <span class="property-type">string</span></dt>
+    <dd>Unique identifier of the completed mission archive directory.</dd>
+    <dt>targetDir <span class="property-type">string</span></dt>
+    <dd>Absolute directory path containing raw photos, previews, and manifest.</dd>
+    <dt>photoPaths <span class="property-type">array&lt;string&gt;</span></dt>
+    <dd>Array of absolute file paths to all ingested high-resolution photos.</dd>
+    <dt>manifest <span class="property-type">object</span></dt>
+    <dd>The complete correlated inspection manifest containing GPS positions, camera pitch/roll/yaw, GSD, and detected AprilTag / ArUco fiducials.</dd>
+  </dl>
+</script>

@@ -1,0 +1,86 @@
+<script type="text/javascript">
+  RED.nodes.registerType('aalaapi-splat-prep', {
+    category: 'Aalaapi Sky',
+    color: '#ab47bc',
+    defaults: {
+      name: { value: '' },
+      bridge: { value: '', type: 'aalaapi-config', required: false },
+      outputFormat: { value: 'nerfstudio' },
+      writeToDisk: { value: true },
+      filterQuality: { value: 'clean_and_warnings' },
+      hfov: { value: 73.7, validate: RED.validators.number() },
+      vfov: { value: 53.1, validate: RED.validators.number() },
+      imageWidth: { value: 4000, validate: RED.validators.number() },
+      imageHeight: { value: 3000, validate: RED.validators.number() }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'cog.png',
+    label: function() {
+      return this.name || 'Splat & COLMAP Prep';
+    },
+    paletteLabel: 'Splat Prep'
+  });
+</script>
+
+<script type="text/html" data-template-name="aalaapi-splat-prep">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Splat & COLMAP Prep">
+  </div>
+  <div class="form-row">
+    <label for="node-input-bridge"><i class="fa fa-server"></i> Bridge (Optional)</label>
+    <input type="text" id="node-input-bridge">
+  </div>
+  <div class="form-row">
+    <label for="node-input-outputFormat"><i class="fa fa-cube"></i> Target Manifest</label>
+    <select id="node-input-outputFormat" style="width: 70%;">
+      <option value="nerfstudio">Nerfstudio (transforms.json for splatfacto / 3DGS)</option>
+      <option value="colmap">COLMAP Text Priors (cameras.txt & images.txt)</option>
+      <option value="both">Both (Nerfstudio + COLMAP Priors)</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-filterQuality"><i class="fa fa-filter"></i> Quality Filter</label>
+    <select id="node-input-filterQuality" style="width: 70%;">
+      <option value="clean_and_warnings">Clean & Minor Warnings (Recommended)</option>
+      <option value="clean_only">Clean Shots Only (Strict)</option>
+      <option value="all">Include All (No Filtering)</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label><i class="fa fa-floppy-o"></i> Output</label>
+    <input type="checkbox" id="node-input-writeToDisk" style="display:inline-block; width:auto; vertical-align:top;">
+    <label for="node-input-writeToDisk" style="width: auto;"> Write transforms.json directly into mission archive folder</label>
+  </div>
+  <div class="form-row">
+    <label for="node-input-hfov"><i class="fa fa-camera"></i> HFOV (°)</label>
+    <input type="number" step="0.1" id="node-input-hfov" placeholder="73.7">
+  </div>
+  <div class="form-row">
+    <label for="node-input-vfov"><i class="fa fa-camera"></i> VFOV (°)</label>
+    <input type="number" step="0.1" id="node-input-vfov" placeholder="53.1">
+  </div>
+  <div class="form-row">
+    <label for="node-input-imageWidth"><i class="fa fa-arrows-h"></i> Width (px)</label>
+    <input type="number" id="node-input-imageWidth" placeholder="4000">
+  </div>
+  <div class="form-row">
+    <label for="node-input-imageHeight"><i class="fa fa-arrows-v"></i> Height (px)</label>
+    <input type="number" id="node-input-imageHeight" placeholder="3000">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="aalaapi-splat-prep">
+  <p><b>Aalaapi 3D Gaussian Splatting & COLMAP Prep</b></p>
+  <p>Receives photo telemetry from <code>aalaapi-ingest-watch</code> and converts drone GPS, gimbal pitch, and flight roll/yaw into Nerfstudio standard 4x4 coordinate matrices and camera intrinsics.</p>
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>transforms <span class="property-type">object</span></dt>
+    <dd>Standard Nerfstudio <code>transforms.json</code> specification compatible with <code>ns-train splatfacto</code> and Postshot.</dd>
+    <dt>transformsPath <span class="property-type">string</span></dt>
+    <dd>Absolute file path if written to disk in target archive folder.</dd>
+    <dt>colmapDir <span class="property-type">string</span></dt>
+    <dd>Directory containing generated <code>cameras.txt</code> and <code>images.txt</code> priors.</dd>
+  </dl>
+</script>
