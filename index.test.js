@@ -31074,9 +31074,9 @@ describe('Omnidimensional 4D Flight Replay Engine & Rolling Buffer Architecture 
   });
 });
 
-describe('v1.161.0 Topbar Cleanup, Unified System Group & Top Ribbon Customizer', () => {
-  test('Version consistency: v1.161.0 across package.json, changelog, index_template.html, and index.html', () => {
-    assertVersionConsistency('1.161.0');
+describe('v1.161.1 Condensed Ambient Buffer HUD Badge & v1.161.0 Top Ribbon Customizer', () => {
+  test('Version consistency: v1.161.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.161.1');
   });
 
   test('Topbar DOM architecture: #header-system-status-group, compact #locate-me-btn, and #more-menu-customize-ribbon-btn exist in templates', () => {
@@ -31316,6 +31316,74 @@ describe('Context-Aware Bridge & Web App Version Sync & Auto-Restart Suite', () 
     const ps1Content = fs.readFileSync(ps1Path, 'utf-8');
     assert.ok(ps1Content.includes('42'), 'start-bridge.ps1 must handle exit code 42');
     assert.ok(ps1Content.includes('AALAAPI_RESTART_LOOP'), 'start-bridge.ps1 must set AALAAPI_RESTART_LOOP');
+  });
+});
+
+describe('v1.161.1 Condensed Ambient Buffer HUD Badge Suite', () => {
+  test('updateBufferHud condenses Airspace Clear to Clear and omits redundant window duration from label', () => {
+    const dom = new JSDOM(`
+      <div id="header-ambient-buffer-pill">
+        <span id="header-buffer-icon">🟢</span>
+        <span id="header-buffer-label"></span>
+        <span id="header-buffer-traffic-badge"></span>
+      </div>
+    `);
+    const prevDoc = global.document;
+    const prevWin = global.window;
+    global.document = dom.window.document;
+    global.window = dom.window;
+
+    try {
+      if (typeof ApiClient !== 'undefined' && ApiClient.updateBufferHud) {
+        ApiClient.updateBufferHud({
+          mbUsed: 0.0,
+          activeWindowMinutes: 0,
+          counts: { remoteId: 0, adsb: 0 },
+          percentage: 0
+        });
+
+        const label = dom.window.document.getElementById('header-buffer-label');
+        const badge = dom.window.document.getElementById('header-buffer-traffic-badge');
+        assert.strictEqual(label.textContent, 'Buffer: 0.00 MB', 'Buffer label must be condensed without (0m) suffix');
+        assert.strictEqual(badge.textContent, 'Clear', 'Traffic badge must be condensed to Clear');
+      }
+    } finally {
+      global.document = prevDoc;
+      global.window = prevWin;
+    }
+  });
+
+  test('updateBufferHud shows traffic count when aircraft are present', () => {
+    const dom = new JSDOM(`
+      <div id="header-ambient-buffer-pill">
+        <span id="header-buffer-icon">🟢</span>
+        <span id="header-buffer-label"></span>
+        <span id="header-buffer-traffic-badge"></span>
+      </div>
+    `);
+    const prevDoc = global.document;
+    const prevWin = global.window;
+    global.document = dom.window.document;
+    global.window = dom.window;
+
+    try {
+      if (typeof ApiClient !== 'undefined' && ApiClient.updateBufferHud) {
+        ApiClient.updateBufferHud({
+          mbUsed: 1.25,
+          activeWindowMinutes: 15,
+          counts: { remoteId: 0, adsb: 3 },
+          percentage: 12.5
+        });
+
+        const label = dom.window.document.getElementById('header-buffer-label');
+        const badge = dom.window.document.getElementById('header-buffer-traffic-badge');
+        assert.strictEqual(label.textContent, 'Buffer: 1.25 MB');
+        assert.strictEqual(badge.textContent, '3 ADS-B');
+      }
+    } finally {
+      global.document = prevDoc;
+      global.window = prevWin;
+    }
   });
 });
 

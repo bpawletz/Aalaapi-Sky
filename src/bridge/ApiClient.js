@@ -1536,7 +1536,7 @@ const AmbientBufferManager = {
     const totalTraffic = ridCount + adsbCount;
     const pct = metrics.percentage !== undefined ? metrics.percentage : (metrics.capacityPercentage || 0);
 
-    if (label) label.textContent = `Buffer: ${mbUsed} MB (${winMin}m)`;
+    if (label) label.textContent = `Buffer: ${mbUsed} MB`;
 
     if (badge) {
       if (ridCount > 0 && adsbCount > 0) {
@@ -1549,13 +1549,14 @@ const AmbientBufferManager = {
         badge.textContent = `${adsbCount} ADS-B`;
         badge.className = 'header-buffer-badge is-traffic';
       } else {
-        badge.textContent = 'Airspace Clear';
+        badge.textContent = 'Clear';
         badge.className = 'header-buffer-badge';
       }
     }
 
     if (pill) {
       pill.classList.remove('is-clean', 'is-active', 'is-pressure');
+      pill.title = `Ambient Buffer: ${mbUsed} MB (${winMin}m window) • ${totalTraffic} Traffic (Click to inspect)`;
       if (pct >= 80 || metrics.isMemoryPressure) {
         pill.classList.add('is-pressure');
         if (icon) icon.textContent = '⚠️';

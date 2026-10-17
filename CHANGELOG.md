@@ -1,3 +1,15 @@
+## [1.161.1] - 2026-10-16
+
+### 🔄 Changed
+
+#### Pilot & Operational Features
+- **Condensed Ambient Buffer HUD Badge**:
+  - Streamlined the ambient telemetry buffer pill by condensing `[Airspace Clear]` down to `[Clear]` and removing redundant window duration noise `(0m)` from the primary label for symmetrical balance with the Bridge indicator.
+  - Retained complete rolling window retention metrics and traffic breakdowns in the interactive monitor popover and hover tooltip.
+
+#### Under the Hood & Technical Details
+- **ApiClient Buffer HUD Formatting**: Refined `updateBufferHud()` in `src/bridge/ApiClient.js` to output concise memory metrics (`Buffer: X.XX MB`) and compact status badge labels.
+
 ## [1.161.0] - 2026-10-16
 
 Introduces a customizable Top Ribbon layout customizer, clean uncrowded topbar ergonomics, unified System/Bridge status grouping, compact search pin locate controls, and hardened single-line ADS-B badge rendering.
