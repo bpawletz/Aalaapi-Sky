@@ -1,4 +1,5 @@
 @echo off
+set AALAAPI_RESTART_LOOP=1
 :loop
 node "%~dp0tools\companion\server.js"
 if %errorlevel% equ 42 (

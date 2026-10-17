@@ -1,14 +1,58 @@
 [
   {
-    "notam_id": "6/9995",
-    "facility": "ZTL",
-    "state": "GA",
-    "type": "VIP",
-    "description": "Marietta, GA",
-    "mod_date": "10/16/2026 20:48:00",
-    "mod_abs_time": "202610162048",
+    "notam_id": "6/0009",
+    "facility": "ZSE",
+    "state": "OR",
+    "type": "HAZARDS",
+    "description": "55NM SE SALEM, OR, Friday, October 16, 2026 through Saturday, October 31, 2026 UTC",
+    "mod_date": "10/16/2026 23:47:00",
+    "mod_abs_time": "202610162347",
     "is_new": "Y",
-    "gid": "6/9995"
+    "gid": "6/0009"
+  },
+  {
+    "notam_id": "6/0008",
+    "facility": "ZAN",
+    "state": "AK",
+    "type": "HAZARDS",
+    "description": "08 ZAN AIRSPACE. GULKANA, AK, Tuesday, October 20, 2026 through Saturday, October 24, 2026 UTC",
+    "mod_date": "10/16/2026 23:40:00",
+    "mod_abs_time": "202610162340",
+    "is_new": "Y",
+    "gid": "6/0008"
+  },
+  {
+    "notam_id": "6/0007",
+    "facility": "ZAN",
+    "state": "AK",
+    "type": "HAZARDS",
+    "description": "07 ZAN AIRSPACE. GULKANA, AK, Sunday, October 18, 2026 UTC",
+    "mod_date": "10/16/2026 23:37:00",
+    "mod_abs_time": "202610162337",
+    "is_new": "Y",
+    "gid": "6/0007"
+  },
+  {
+    "notam_id": "6/0006",
+    "facility": "ZLA",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "19 NM NW OCEANSIDE, CA, Friday, October 16, 2026 through Saturday, October 24, 2026 UTC",
+    "mod_date": "10/16/2026 22:34:00",
+    "mod_abs_time": "202610162234",
+    "is_new": "Y",
+    "gid": "6/0006"
+  },
+  {
+    "notam_id": "6/0004",
+    "facility": "ZLC",
+    "state": "OR",
+    "type": "HAZARDS",
+    "description": "22NM SE JOHN DAY, OR, Monday, October 19, 2026 through Thursday, October 22, 2026 UTC",
+    "mod_date": "10/16/2026 21:35:00",
+    "mod_abs_time": "202610162135",
+    "is_new": "Y",
+    "gid": "6/0004"
   },
   {
     "notam_id": "6/9979",
@@ -172,7 +216,7 @@
     "description": "Wichita, KS, Thursday, October 22, 2026 through Sunday, October 25, 2026 UTC",
     "mod_date": "10/15/2026 22:56:00",
     "mod_abs_time": "202610152256",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9885"
   },
   {
@@ -185,17 +229,6 @@
     "mod_abs_time": "202610152133",
     "is_new": "N",
     "gid": "6/9883"
-  },
-  {
-    "notam_id": "6/9882",
-    "facility": "ZTL",
-    "state": "GA",
-    "type": "SECURITY",
-    "description": "Marietta, GA, Friday, October 16, 2026 Local",
-    "mod_date": "10/15/2026 21:13:00",
-    "mod_abs_time": "202610152113",
-    "is_new": "N",
-    "gid": "6/9882"
   },
   {
     "notam_id": "6/9864",
@@ -218,17 +251,6 @@
     "mod_abs_time": "202610151645",
     "is_new": "N",
     "gid": "6/9842"
-  },
-  {
-    "notam_id": "6/9815",
-    "facility": "ZJX",
-    "state": "SC",
-    "type": "HAZARDS",
-    "description": "7NM E MONCKS CORNER, SC, Friday, October 16, 2026 UTC",
-    "mod_date": "10/15/2026 15:10:00",
-    "mod_abs_time": "202610151510",
-    "is_new": "N",
-    "gid": "6/9815"
   },
   {
     "notam_id": "6/9778",

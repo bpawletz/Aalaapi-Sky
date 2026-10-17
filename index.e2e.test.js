@@ -4011,7 +4011,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
     assert.strictEqual(moreMenuOpenState.menuVisible, true, 'More menu should be visible after clicking more button');
-    assert.strictEqual(moreMenuOpenState.itemsCount, 7, 'More menu should contain 7 action items (Bridge, ADS-B, Diagnostics, Photos, Intro, About, Links)');
+    assert.strictEqual(moreMenuOpenState.itemsCount, 8, 'More menu should contain 8 action items (Bridge, ADS-B, Diagnostics, Photos, Intro, About, Links, Customize Ribbon)');
 
     // Click About from More Menu
     await page.locator('#more-menu-about-btn').click();
@@ -4060,9 +4060,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     // Close config modal
     await page.locator('#close-config-btn').click();
 
-    // 6. Restore Desktop Viewport (1280x720) and assert desktop layout
+    // 6. Restore Desktop Viewport (1280x720) and assert responsive topbar collapse
     await page.setViewportSize({ width: 1280, height: 720 });
-    const desktopState = await page.evaluate(() => {
+    const desktop1280State = await page.evaluate(() => {
       const title = document.querySelector('.logo h1');
       const moreBtn = document.getElementById('header-more-btn');
       const introBtn = document.getElementById('intro-tour-btn');
@@ -4076,10 +4076,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       return {
         titleVisible: window.getComputedStyle(title).display !== 'none',
-        moreBtnHidden: window.getComputedStyle(moreBtn).display === 'none',
-        introVisible: window.getComputedStyle(introBtn).display !== 'none',
-        aboutVisible: window.getComputedStyle(aboutBtn).display !== 'none',
-        linksVisible: window.getComputedStyle(linksBtn).display !== 'none',
+        moreBtnVisible: window.getComputedStyle(moreBtn).display !== 'none',
+        introHidden: window.getComputedStyle(introBtn).display === 'none',
+        aboutHidden: window.getComputedStyle(aboutBtn).display === 'none',
+        linksHidden: window.getComputedStyle(linksBtn).display === 'none',
         unitBtnVisible: window.getComputedStyle(unitBtn).display !== 'none',
         themeBtnVisible: window.getComputedStyle(themeBtn).display !== 'none',
         searchVisible: window.getComputedStyle(searchContainer).display !== 'none',
@@ -4088,16 +4088,35 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
 
-    assert.strictEqual(desktopState.titleVisible, true, 'Desktop should display full brand title');
-    assert.strictEqual(desktopState.moreBtnHidden, true, 'Desktop should hide mobile more button');
-    assert.strictEqual(desktopState.introVisible, true, 'Desktop should display standalone Intro button');
-    assert.strictEqual(desktopState.aboutVisible, true, 'Desktop should display standalone About button');
-    assert.strictEqual(desktopState.linksVisible, true, 'Desktop should display standalone Links button');
-    assert.strictEqual(desktopState.unitBtnVisible, true, 'Desktop should display header unit toggle button');
-    assert.strictEqual(desktopState.themeBtnVisible, true, 'Desktop should display header theme toggle button');
-    assert.strictEqual(desktopState.searchVisible, true, 'Desktop should display inline search container');
-    assert.strictEqual(desktopState.telemVisible, true, 'Desktop should display inline telemetry pill');
-    assert.strictEqual(desktopState.searchToggleHidden, true, 'Desktop should hide mobile search toggle');
+    assert.strictEqual(desktop1280State.titleVisible, true, 'Desktop 1280px should display full brand title');
+    assert.strictEqual(desktop1280State.moreBtnVisible, true, 'Desktop <= 1500px should show More menu button for secondary actions');
+    assert.strictEqual(desktop1280State.introHidden, true, 'Desktop <= 1500px should collapse Intro into More menu');
+    assert.strictEqual(desktop1280State.aboutHidden, true, 'Desktop <= 1500px should collapse About into More menu');
+    assert.strictEqual(desktop1280State.linksHidden, true, 'Desktop <= 1500px should collapse Links into More menu');
+    assert.strictEqual(desktop1280State.unitBtnVisible, true, 'Desktop 1280px should display header unit toggle button');
+    assert.strictEqual(desktop1280State.themeBtnVisible, true, 'Desktop 1280px should display header theme toggle button');
+    assert.strictEqual(desktop1280State.searchVisible, true, 'Desktop 1280px should display inline search container');
+    assert.strictEqual(desktop1280State.telemVisible, true, 'Desktop 1280px should display inline telemetry pill');
+    assert.strictEqual(desktop1280State.searchToggleHidden, true, 'Desktop 1280px should hide mobile search toggle');
+
+    // 7. Test Wide Desktop Viewport (1600x900) where Intro, About, Links are directly visible
+    await page.setViewportSize({ width: 1600, height: 900 });
+    const wideDesktopState = await page.evaluate(() => {
+      const moreBtn = document.getElementById('header-more-btn');
+      const introBtn = document.getElementById('intro-tour-btn');
+      const aboutBtn = document.getElementById('about-btn');
+      const linksBtn = document.getElementById('useful-links-btn');
+      return {
+        moreBtnHidden: window.getComputedStyle(moreBtn).display === 'none',
+        introVisible: window.getComputedStyle(introBtn).display !== 'none',
+        aboutVisible: window.getComputedStyle(aboutBtn).display !== 'none',
+        linksVisible: window.getComputedStyle(linksBtn).display !== 'none'
+      };
+    });
+    assert.strictEqual(wideDesktopState.moreBtnHidden, true, 'Wide desktop >1500px should hide More menu button');
+    assert.strictEqual(wideDesktopState.introVisible, true, 'Wide desktop >1500px should display standalone Intro button');
+    assert.strictEqual(wideDesktopState.aboutVisible, true, 'Wide desktop >1500px should display standalone About button');
+    assert.strictEqual(wideDesktopState.linksVisible, true, 'Wide desktop >1500px should display standalone Links button');
     } finally {
       await page.setViewportSize({ width: 1280, height: 720 });
     }
@@ -8375,6 +8394,116 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(res.initialLayerState, true, 'PhotoInspector.layers.solarAngle must be true by default');
       assert.strictEqual(res.toggledOffState, false, 'Unchecking toggle must disable PhotoInspector solarAngle layer');
       assert.strictEqual(res.restoredState, true, 'Re-checking toggle must re-enable PhotoInspector solarAngle layer');
+    });
+
+    test('E2E: Topbar Cleanup, Unified System Group, Compact Search Pin & Top Ribbon Customizer (v1.161.0)', async () => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+
+      const res = await page.evaluate(async () => {
+        const adsbBtn = document.getElementById('adsb-topbar-btn');
+        const adsbLabel = document.getElementById('adsb-topbar-label');
+        const locateBtn = document.getElementById('locate-me-btn');
+        const locateLabel = document.getElementById('locate-me-label');
+        const searchInput = document.getElementById('location-input');
+        const searchContainer = document.getElementById('header-search-container');
+        const missionTimePill = document.getElementById('header-mission-time-pill');
+        const systemGroup = document.getElementById('header-system-status-group');
+        const bridgePill = document.getElementById('header-bridge-pill');
+        const bufferPill = document.getElementById('header-ambient-buffer-pill');
+        const bridgePop = document.getElementById('bridge-status-popover');
+        const bufferPop = document.getElementById('buffer-monitor-popover');
+        const configModal = document.getElementById('config-modal');
+        const ribbonCard = document.getElementById('ribbon-settings-card');
+        const presetSelect = document.getElementById('ribbon-preset-select');
+        const moreBtn = document.getElementById('header-more-btn');
+        const moreMenu = document.getElementById('header-more-menu');
+        const customizeBtn = document.getElementById('more-menu-customize-ribbon-btn');
+
+        // 1. ADS-B button non-wrapping check
+        const adsbRect = adsbBtn.getBoundingClientRect();
+        const adsbComputed = window.getComputedStyle(adsbBtn);
+        const adsbLabelComputed = window.getComputedStyle(adsbLabel);
+        const adsbSingleLine = adsbRect.height <= 32 && adsbComputed.whiteSpace === 'nowrap' && adsbLabelComputed.whiteSpace === 'nowrap';
+
+        // 2. Locate button compact pin & zero overlap with mission time
+        const locateRect = locateBtn.getBoundingClientRect();
+        const locateLabelHidden = window.getComputedStyle(locateLabel).display === 'none';
+        const locateCompact = locateRect.width <= 32;
+        const timeRect = missionTimePill.getBoundingClientRect();
+        const noOverlap = timeRect.left >= locateRect.right - 2;
+
+        // 3. Unified System Group structure & popover clicking
+        const systemGroupExists = !!systemGroup && systemGroup.contains(bridgePill) && systemGroup.contains(bufferPill);
+        bridgePill.click();
+        const bridgeOpened = !bridgePop.classList.contains('hidden');
+        bufferPill.click();
+        const bufferOpened = !bufferPop.classList.contains('hidden');
+        const bridgeClosedOnBufferOpen = bridgePop.classList.contains('hidden');
+        document.getElementById('buffer-popover-close-btn').click();
+
+        // 4. More menu Customize Ribbon action
+        moreBtn.click();
+        const moreMenuOpen = !moreMenu.classList.contains('hidden');
+        customizeBtn.click();
+        const configOpened = !configModal.classList.contains('hidden');
+        const moreMenuClosedOnSelect = moreMenu.classList.contains('hidden');
+
+        // 5. Ribbon Customizer presets & live toggling
+        const initialPreset = presetSelect ? presetSelect.value : null;
+        if (presetSelect) {
+          presetSelect.value = 'compact';
+          presetSelect.dispatchEvent(new Event('change'));
+        }
+        const unitBtn = document.getElementById('header-unit-toggle-btn');
+        const unitHiddenInCompact = unitBtn.classList.contains('ribbon-hidden');
+
+        // Switch to Studio preset
+        if (presetSelect) {
+          presetSelect.value = 'studio';
+          presetSelect.dispatchEvent(new Event('change'));
+        }
+        const unitVisibleInStudio = !unitBtn.classList.contains('ribbon-hidden');
+
+        // Reset to Standard
+        document.getElementById('reset-ribbon-config-btn').click();
+        const resetPreset = presetSelect ? presetSelect.value : null;
+
+        // Close config modal
+        document.getElementById('close-config-btn').click();
+
+        return {
+          adsbSingleLine,
+          locateLabelHidden,
+          locateCompact,
+          noOverlap,
+          systemGroupExists,
+          bridgeOpened,
+          bufferOpened,
+          bridgeClosedOnBufferOpen,
+          moreMenuOpen,
+          configOpened,
+          moreMenuClosedOnSelect,
+          initialPreset,
+          unitHiddenInCompact,
+          unitVisibleInStudio,
+          resetPreset
+        };
+      });
+
+      assert.strictEqual(res.adsbSingleLine, true, 'ADS-B button must have whitespace nowrap and single-line height');
+      assert.strictEqual(res.locateLabelHidden, true, 'Locate text label must be visually hidden inside search bar');
+      assert.strictEqual(res.locateCompact, true, 'Locate button must render as compact icon pin (<= 32px)');
+      assert.strictEqual(res.noOverlap, true, 'Mission time pill must not overlap with locate pin');
+      assert.strictEqual(res.systemGroupExists, true, 'Unified #header-system-status-group must contain bridge and buffer pills');
+      assert.strictEqual(res.bridgeOpened, true, 'Clicking bridge segment must open bridge popover');
+      assert.strictEqual(res.bufferOpened, true, 'Clicking buffer segment must open buffer monitor popover');
+      assert.strictEqual(res.bridgeClosedOnBufferOpen, true, 'Opening buffer popover must close bridge popover');
+      assert.strictEqual(res.moreMenuOpen, true, 'Clicking More button must reveal dropdown');
+      assert.strictEqual(res.configOpened, true, 'Clicking Customize Ribbon in More menu must open config modal');
+      assert.strictEqual(res.moreMenuClosedOnSelect, true, 'Selecting Customize Ribbon must close More menu');
+      assert.strictEqual(res.unitHiddenInCompact, true, 'Compact preset must hide secondary units toggle from top ribbon');
+      assert.strictEqual(res.unitVisibleInStudio, true, 'Studio preset must show units toggle on top ribbon');
+      assert.strictEqual(res.resetPreset, 'standard', 'Reset defaults button must restore standard preset');
     });
   });
 });

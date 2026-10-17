@@ -263,6 +263,20 @@ function getAppVersion() {
   return '1.149.0';
 }
 
+function compareSemver(v1, v2) {
+  if (!v1 || !v2) return 0;
+  const p1 = String(v1).replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+  const p2 = String(v2).replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+  const len = Math.max(p1.length, p2.length);
+  for (let i = 0; i < len; i++) {
+    const a = p1[i] || 0;
+    const b = p2[i] || 0;
+    if (a > b) return 1;
+    if (a < b) return -1;
+  }
+  return 0;
+}
+
 let isRestartingBridge = false;
 
 async function restartCompanionBridge() {
@@ -331,7 +345,7 @@ async function restartCompanionBridge() {
           restartBtn.textContent = 'Retry Restart';
         }
         if (mismatchText) {
-          mismatchText.textContent = '⚠️ Restart timed out. Check start-bridge.bat';
+          mismatchText.textContent = '⚠️ Restart timed out. Check start-bridge.bat / .ps1, or reload page.';
         }
       }
     }
@@ -367,8 +381,12 @@ function applyCompanionStatusUI(data) {
   const runVerSpan = document.getElementById('companion-running-version');
   const targetVerSpan = document.getElementById('companion-target-version');
   const restartBtn = document.getElementById('companion-restart-btn');
+  const reloadBtn = document.getElementById('companion-reload-btn');
+  const mismatchText = document.getElementById('companion-version-mismatch-text');
+  const mismatchDetail = document.getElementById('companion-version-mismatch-detail');
 
-  const isVersionMismatch = !!(bridgeVer && appVer && bridgeVer !== appVer);
+  const cmp = compareSemver(bridgeVer, appVer);
+  const isVersionMismatch = !!(bridgeVer && appVer && (cmp !== 0 || bridgeVer !== appVer));
 
   if (sDot) sDot.style.background = isVersionMismatch ? '#f59e0b' : '#22c55e';
   if (sText) {
@@ -385,9 +403,45 @@ function applyCompanionStatusUI(data) {
       mismatchAlert.style.display = 'flex';
       if (runVerSpan) runVerSpan.textContent = `v${bridgeVer}`;
       if (targetVerSpan) targetVerSpan.textContent = `v${appVer}`;
-      if (restartBtn) {
-        restartBtn.disabled = false;
-        restartBtn.textContent = 'Auto-Restart Bridge';
+
+      if (cmp > 0) {
+        // Bridge is NEWER than Web App: Browser session is outdated, prompt to reload page
+        mismatchAlert.style.background = 'rgba(14, 165, 233, 0.12)';
+        mismatchAlert.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        if (mismatchText) {
+          mismatchText.textContent = '🔄 Web App Outdated';
+          mismatchText.style.color = '#38bdf8';
+        }
+        if (mismatchDetail) {
+          mismatchDetail.innerHTML = `Bridge service is running newer <span style="font-weight: 600; color: #38bdf8;">v${bridgeVer}</span>, but browser session is <span style="font-weight: 600; color: #f87171;">v${appVer}</span>. Reload webpage to update.`;
+        }
+        if (reloadBtn) {
+          reloadBtn.style.display = 'inline-block';
+          reloadBtn.disabled = false;
+          reloadBtn.textContent = 'Reload Web App';
+        }
+        if (restartBtn) {
+          restartBtn.style.display = 'none';
+        }
+      } else {
+        // Bridge is OLDER than Web App: Bridge service needs restart
+        mismatchAlert.style.background = 'rgba(239, 68, 68, 0.12)';
+        mismatchAlert.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+        if (mismatchText) {
+          mismatchText.textContent = '⚠️ Bridge Service Outdated';
+          mismatchText.style.color = '#f87171';
+        }
+        if (mismatchDetail) {
+          mismatchDetail.innerHTML = `Bridge service is running older <span style="font-weight: 600; color: #f87171;">v${bridgeVer}</span>, but Web app is <span style="font-weight: 600; color: #38bdf8;">v${appVer}</span>. Click to restart bridge.`;
+        }
+        if (reloadBtn) {
+          reloadBtn.style.display = 'none';
+        }
+        if (restartBtn) {
+          restartBtn.style.display = 'inline-block';
+          restartBtn.disabled = false;
+          restartBtn.textContent = 'Auto-Restart Bridge';
+        }
       }
     } else if (!isVersionMismatch) {
       mismatchAlert.style.display = 'none';
@@ -479,6 +533,17 @@ function applyCompanionStatusUI(data) {
   if (headerPill) {
     headerPill.classList.remove('is-offline');
     headerPill.classList.add('is-online');
+    if (isVersionMismatch) {
+      headerPill.classList.add('is-mismatch');
+      if (cmp > 0) {
+        headerPill.title = `⚠️ Version Mismatch (Web App Outdated): App v${appVer} < Bridge v${bridgeVer} (Click to open & reload)`;
+      } else {
+        headerPill.title = `⚠️ Version Mismatch (Bridge Outdated): Bridge v${bridgeVer} < App v${appVer} (Click to open & restart)`;
+      }
+    } else {
+      headerPill.classList.remove('is-mismatch');
+      headerPill.title = 'Aalaapi Bridge & Hardware Status (Click to view details)';
+    }
   }
   if (headerDot) headerDot.style.background = isVersionMismatch ? '#f59e0b' : '#22c55e';
   if (headerSummary) headerSummary.textContent = isVersionMismatch ? 'Bridge (vMismatch)' : 'Bridge: Online';
@@ -1174,10 +1239,20 @@ function initRC2Controls() {
     directBrowseLogsBtn.addEventListener('click', openRc2LogManagerModal);
   }
 
-  // Companion auto-restart button (for version mismatch sync)
+  // Companion auto-restart button (for version mismatch sync when bridge is outdated)
   const companionRestartBtn = document.getElementById('companion-restart-btn');
   if (companionRestartBtn) {
     companionRestartBtn.addEventListener('click', restartCompanionBridge);
+  }
+
+  // Companion web app reload button (for version mismatch sync when web app is outdated)
+  const companionReloadBtn = document.getElementById('companion-reload-btn');
+  if (companionReloadBtn) {
+    companionReloadBtn.addEventListener('click', () => {
+      if (typeof window !== 'undefined' && window.location && typeof window.location.reload === 'function') {
+        window.location.reload();
+      }
+    });
   }
 
   // Initialize Flight Diagnostics Engine
@@ -4260,15 +4335,21 @@ const AdsbAirspaceManager = {
 
 if (typeof window !== 'undefined') {
   window.AdsbAirspaceManager = AdsbAirspaceManager;
+  window.compareSemver = compareSemver;
+  window.applyCompanionStatusUI = applyCompanionStatusUI;
 }
 if (typeof global !== 'undefined') {
   global.AdsbAirspaceManager = AdsbAirspaceManager;
+  global.compareSemver = compareSemver;
+  global.applyCompanionStatusUI = applyCompanionStatusUI;
 }
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     AdsbAirspaceManager,
     getAppVersion,
-    restartCompanionBridge
+    restartCompanionBridge,
+    compareSemver,
+    applyCompanionStatusUI
   };
 }
 

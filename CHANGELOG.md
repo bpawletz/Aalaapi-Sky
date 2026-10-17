@@ -1,3 +1,49 @@
+## [1.161.0] - 2026-10-16
+
+Introduces a customizable Top Ribbon layout customizer, clean uncrowded topbar ergonomics, unified System/Bridge status grouping, compact search pin locate controls, and hardened single-line ADS-B badge rendering.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Customizable Top Ribbon Settings & Presets**:
+  - Added a dedicated Top Ribbon & Toolbar Layout configuration card inside Settings (`#config-modal`) and quick-access entry (`🎛️ Customize Top Ribbon...`) in the `⋮` More menu.
+  - Pilots can toggle visibility and re-order widgets across the center ribbon (`Search`, `Mission Time`, `Weather / TFR`, `System Bridge / Buffer`) and right-side utility buttons (`Units`, `Theme`, `ADS-B`, `Intro`, `About`, `Links`).
+  - Integrated 1-click layout presets: **Standard Studio** (balanced default), **Compact Field Ops** (essentials only), and **Full Studio** (all controls), with automatic `localStorage` persistence and instant layout reset.
+- **Unified System / Bridge & Buffer Status Group**:
+  - Combined the Aalaapi Bridge hardware status and ambient telemetry buffer monitor into a streamlined segmented capsule pill (`#header-system-status-group`).
+  - Clicking the Bridge segment opens the Bridge & Hardware popover; clicking the Buffer segment opens the Ambient Telemetry Buffer monitor popover.
+- **Compact Search & Pin Locate Control**:
+  - Transformed the Locate Me button inside the topbar search container into a compact icon-only pin, freeing up substantial horizontal space for address and coordinate searching while dynamically communicating cached vs. live GPS states via color and tooltip.
+- **Responsive Overflow Collapse**:
+  - Automatically collapses secondary reference buttons (`Intro`, `About`, `Links`) into the `⋮` More menu on desktop viewports `<= 1500px`, maintaining a clean and spacious topbar across all standard monitor sizes.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **ADS-B Traffic Alert Single-Line Enforced Rendering**:
+  - Enforced strict non-wrapping styling on the topbar ADS-B button, preventing the label from awkwardly splitting across lines at the hyphen (`ADS-` / `B`).
+- **Clean Brand Logo & Version Mismatch Warning**:
+  - Relocated the visible app version badge from the topbar brand logo into the About modal with high-contrast styling.
+  - Enabled active amber warning styling (`.is-mismatch`) and explanatory tooltip on `#header-bridge-pill` when a version difference between the companion bridge and web studio is detected.
+
+- **Context-Aware Bridge & Web App Version Sync**:
+  - Automatically identifies whether the Bridge service or the Web App is out of date by comparing semantic versions (`bridgeVer > appVer` vs `bridgeVer < appVer`).
+  - When the Bridge is newer than the Web App, the mismatch banner informs the pilot that the browser session is outdated and presents a dedicated **"Reload Web App"** button (`window.location.reload()`), preventing unnecessary bridge shutdowns.
+  - When the Bridge is older than the Web App, provides an **"Auto-Restart Bridge"** button with automatic reconnect detection.
+- **PowerShell Bridge Auto-Restart Runner (`start-bridge.ps1`)**:
+  - Added native PowerShell auto-restart script with an exit-code 42 loop matching `start-bridge.bat`, ensuring that bridge restart signals from the web app or REST API (`/api/restart`) cleanly loop and respawn the bridge process in PowerShell.
+  - Added `npm run bridge:loop` and `npm run companion:loop` scripts for single-command launch with automated respawn.
+
+#### Under the Hood & Technical Details
+- **Semver Comparison Engine (`src/bridge/ApiClient.js`)**:
+  - Added `compareSemver(v1, v2)` utility normalizing version prefixes and parsing major, minor, and patch components.
+  - Updated `applyCompanionStatusUI()` to dynamically adjust mismatch banner background, text, and button visibility based on whether the browser session or the companion service is outdated.
+  - Enhanced `/api/restart` endpoint in `tools/companion/server.js` with `hasLoopRunner` detection via `AALAAPI_RESTART_LOOP` environment variable and diagnostic logging.
+- **Topbar Center Flexible Layout (`index.css`)**:
+  - Removed artificial `max-width: 760px` restriction from `.topbar-center`, allowing flex items to dynamically distribute available space without collision or overlap.
+- **Ribbon State Management (`src/ui/SidebarManager.js`)**:
+  - Implemented `getTopbarRibbonConfig()`, `setTopbarRibbonConfig()`, `applyTopbarRibbonConfig()`, and `resetTopbarRibbonConfig()` with DOM order and CSS `.ribbon-hidden` class bindings.
+
 ## [1.160.1] - 2026-10-16
 
 ### 🚀 Added

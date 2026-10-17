@@ -145,15 +145,14 @@ html, body {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  z-index: 2;
 }
 
 .topbar-center {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 1;
-  max-width: 760px;
-  margin: 0 auto;
+  gap: 8px;
+  flex: 1 1 auto;
   min-width: 0;
   justify-content: center;
 }
@@ -163,13 +162,13 @@ html, body {
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
+  z-index: 2;
 }
 
 /* Mobile Topbar Extra Elements - Hidden on Desktop */
 .mobile-search-toggle-btn,
 .mobile-search-close-btn,
-.header-more-btn,
-.header-more-menu {
+.header-more-btn {
   display: none;
 }
 
@@ -191,8 +190,13 @@ html, body {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+  display: flex;
   flex-direction: column;
   gap: 3px;
+}
+
+.header-more-menu.hidden {
+  display: none !important;
 }
 
 [data-theme="light"] .header-more-menu {
@@ -321,6 +325,15 @@ html, body {
   align-items: center !important;
   justify-content: center !important;
   font-weight: 600;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  gap: 4px !important;
+}
+
+#adsb-topbar-btn,
+#adsb-topbar-label {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .header-config-btn {
@@ -354,21 +367,22 @@ html, body {
   display: flex;
   gap: 6px;
   align-items: center;
-  flex: 1;
-  max-width: 380px;
-  min-width: 180px;
+  flex: 0 1 210px;
+  max-width: 240px;
+  min-width: 175px;
 }
 
 .header-search-input-wrapper {
   position: relative;
   flex: 1;
-  min-width: 120px;
+  min-width: 110px;
   display: flex;
   align-items: center;
 }
 
 .header-search-input-wrapper input {
   width: 100%;
+  min-width: 110px;
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -410,18 +424,26 @@ html, body {
 .header-locate-btn {
   height: 28px !important;
   min-height: 28px !important;
-  padding: 4px 8px !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  padding: 0 !important;
   border-radius: 6px !important;
   font-size: 0.72rem !important;
   line-height: 1 !important;
-  white-space: nowrap;
-  flex-shrink: 0;
-  max-width: 90px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
   display: inline-flex !important;
-  align-items: center;
-  gap: 4px;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#locate-me-label {
+  display: none !important;
+}
+
+.header-version-badge {
+  display: none !important;
 }
 
 .header-theme-btn {
@@ -563,6 +585,69 @@ html, body {
   background: rgba(6, 182, 212, 0.18) !important;
   border: 1px solid rgba(6, 182, 212, 0.45) !important;
   color: var(--accent-cyan) !important;
+}
+
+/* Unified System / Bridge & Buffer Status Group (Issue: Topbar Cleanup) */
+.header-system-status-group {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid var(--border-color);
+  padding: 1px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+  transition: var(--transition-smooth);
+}
+
+[data-theme="light"] .header-system-status-group {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(15, 23, 42, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.header-system-status-group .header-bridge-container,
+.header-system-status-group .header-ambient-buffer-container {
+  display: inline-flex;
+  align-items: center;
+}
+
+.header-system-status-group .header-bridge-pill,
+.header-system-status-group .header-ambient-buffer-pill {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 999px !important;
+  height: 26px !important;
+  min-height: 26px !important;
+  padding: 0 8px !important;
+}
+
+.header-system-status-group .header-bridge-pill:hover,
+.header-system-status-group .header-ambient-buffer-pill:hover {
+  background: rgba(6, 182, 212, 0.15) !important;
+}
+
+.header-system-status-group .header-ambient-buffer-container {
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .header-system-status-group .header-ambient-buffer-container {
+  border-left-color: rgba(15, 23, 42, 0.1);
+}
+
+.header-bridge-pill.is-mismatch {
+  color: #fde047 !important;
+}
+
+.header-bridge-pill.is-mismatch .header-bridge-dot {
+  background: #f59e0b !important;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6) !important;
+}
+
+.header-system-status-group:has(.header-bridge-pill.is-mismatch) {
+  border-color: rgba(245, 158, 11, 0.6) !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25) !important;
 }
 
 /* Header Bridge HUD Pill (Theme-adaptive Dark/Light) (Issue #128) */
@@ -1993,6 +2078,136 @@ html, body {
   }
 }
 
+/* User Ribbon Customization Hidden State */
+.ribbon-hidden {
+  display: none !important;
+}
+
+/* Ribbon customizer list items in settings modal */
+.ribbon-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  transition: var(--transition-smooth);
+}
+
+.ribbon-item-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(6, 182, 212, 0.3);
+}
+
+.ribbon-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.ribbon-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-ribbon-move {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.btn-ribbon-move:hover {
+  background: rgba(6, 182, 212, 0.2);
+  color: var(--accent-cyan);
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+/* Responsive Desktop Topbar Collapse (<= 1500px) */
+@media (max-width: 1500px) {
+  #intro-tour-btn:not(.ribbon-force-show),
+  #about-btn:not(.ribbon-force-show),
+  #useful-links-btn:not(.ribbon-force-show) {
+    display: none !important;
+  }
+  .header-more-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+  }
+}
+
+/* Medium Desktop & Laptop Screens (<= 1400px) */
+@media (max-width: 1400px) {
+  .header-search-container {
+    max-width: 220px;
+    min-width: 140px;
+  }
+  #header-buffer-traffic-badge {
+    display: none !important;
+  }
+  .topbar-center {
+    gap: 6px;
+  }
+  .header-mission-time-pill,
+  .header-telemetry-pill,
+  .header-bridge-pill,
+  .header-ambient-buffer-pill {
+    padding: 3px 8px !important;
+    font-size: 0.7rem !important;
+  }
+}
+
+/* Compact Laptop Screens (<= 1150px) */
+@media (max-width: 1150px) {
+  .studio-topbar {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .header-search-container {
+    max-width: 180px;
+    min-width: 140px;
+  }
+  #header-unit-toggle-btn:not(.ribbon-force-show),
+  #theme-toggle-btn:not(.ribbon-force-show) {
+    display: none !important;
+  }
+}
+
+/* Tablet & Compact Screens (<= 1024px) */
+@media (max-width: 1024px) {
+  #adsb-topbar-btn {
+    display: none !important;
+  }
+  .header-search-container {
+    max-width: 120px;
+    min-width: 80px;
+  }
+}
+
 /* Small Screens & Mobile Phone Ergonomics (<= 640px) */
 @media (max-width: 640px) {
   .logo h1 {
@@ -2009,7 +2224,9 @@ html, body {
   #about-btn,
   #useful-links-btn,
   #adsb-topbar-btn,
+  #header-system-status-group,
   .header-bridge-container,
+  .header-ambient-buffer-container,
   #header-unit-toggle-btn,
   #theme-toggle-btn {
     display: none !important;

@@ -5276,9 +5276,17 @@ const server = http.createServer(async (req, res) => {
 
     // 11b. Remote Restart Endpoint (Auto-Restart for Version Sync)
     if ((pathname === '/api/restart') && (req.method === 'POST' || req.method === 'GET')) {
+      const hasLoopRunner = !!process.env.AALAAPI_RESTART_LOOP;
       logWarn('[RESTART]', 'Received remote restart request via REST API (exit code 42)');
+      if (!hasLoopRunner) {
+        logWarn('[RESTART]', 'Note: Auto-restart loop runner not detected. If running in a raw shell, launch via start-bridge.bat or start-bridge.ps1 for automated respawn.');
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true, message: 'Aalaapi Sky Companion Bridge restarting...' }));
+      res.end(JSON.stringify({
+        success: true,
+        message: 'Aalaapi Sky Companion Bridge restarting...',
+        hasLoopRunner
+      }));
       stopScanners();
       setTimeout(() => {
         try { server.close(); } catch (e) {}
