@@ -184,12 +184,13 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     ci = cj;
   }
 
-  // Identify hyperlapse segments in sanitizedWps
+  // Identify hyperlapse segments in sanitizedWps (only for spline mode with minimal control waypoints)
   const hyperlapseSegments = [];
+  const hasDenseHyperlapse = sanitizedWps.some(w => w && (w.isHyperlapseFrame || (w.isHyperlapse && w.cameraAction === 'takePhoto' && sanitizedWps.length > 2)));
   let currentHlSegment = null;
   sanitizedWps.forEach((w, i) => {
     const isH = (gridType === 'hyperlapse') || (w.isHyperlapse) || (w.gridType === 'hyperlapse') || (w.layerPattern === 'hyperlapse');
-    if (isH) {
+    if (isH && !hasDenseHyperlapse) {
       if (!currentHlSegment) {
         currentHlSegment = { startIdx: i, endIdx: i, layerId: w.layerId, interval: w.hyperlapseInterval || 3 };
         hyperlapseSegments.push(currentHlSegment);
@@ -519,8 +520,11 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:action>`);
     }
 
+    // 6. Per-waypoint camera action (RC 2 feature parity)
+    const perWpAction = wp.cameraAction || 'inherit';
+
     // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints and never in video mode)
-    if (!wp.isPhotoSphereActionGroup && (isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
+    if (!wp.isPhotoSphereActionGroup && (isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo && perWpAction !== 'takePhoto') {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
@@ -530,8 +534,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:action>`);
     }
 
-    // 6. Per-waypoint camera action (RC 2 feature parity)
-    const perWpAction = wp.cameraAction || 'inherit';
     if (perWpAction !== 'inherit' && perWpAction !== 'none') {
       if (perWpAction === 'takePhoto') {
         waypointActions.push(`          <wpml:action>

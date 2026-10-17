@@ -1,5 +1,71 @@
 [
   {
+    "notam_id": "6/0048",
+    "facility": "ZTL",
+    "state": "NC",
+    "type": "VIP",
+    "description": "ASHEVILLE, NC, Monday, October 19, 2026 Local",
+    "mod_date": "10/17/2026 21:17:00",
+    "mod_abs_time": "202610172117",
+    "is_new": "Y",
+    "gid": "6/0048"
+  },
+  {
+    "notam_id": "6/0047",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "FORT COLLINS, CO, Sunday, October 18, 2026 through Saturday, October 24, 2026 UTC",
+    "mod_date": "10/17/2026 21:16:00",
+    "mod_abs_time": "202610172116",
+    "is_new": "Y",
+    "gid": "6/0047"
+  },
+  {
+    "notam_id": "6/0038",
+    "facility": "ZLC",
+    "state": "OR",
+    "type": "HAZARDS",
+    "description": "11NM SE SENECA, OR, Saturday, October 17, 2026 through Wednesday, October 21, 2026 UTC",
+    "mod_date": "10/17/2026 20:01:00",
+    "mod_abs_time": "202610172001",
+    "is_new": "Y",
+    "gid": "6/0038"
+  },
+  {
+    "notam_id": "6/0037",
+    "facility": "ZKC",
+    "state": "KS",
+    "type": "SECURITY",
+    "description": "Wichita, KS, Monday, October 19, 2026 through Monday, October 19, 2026 Local",
+    "mod_date": "10/17/2026 19:35:00",
+    "mod_abs_time": "202610171935",
+    "is_new": "Y",
+    "gid": "6/0037"
+  },
+  {
+    "notam_id": "6/0036",
+    "facility": "ZJX",
+    "state": "SC",
+    "type": "HAZARDS",
+    "description": "12NM NE MOUNT PLEASANT, SC, Sunday, October 18, 2026 through Monday, October 19, 2026 UTC",
+    "mod_date": "10/17/2026 19:20:00",
+    "mod_abs_time": "202610171920",
+    "is_new": "Y",
+    "gid": "6/0036"
+  },
+  {
+    "notam_id": "6/0033",
+    "facility": "ZJX",
+    "state": "SC",
+    "type": "HAZARDS",
+    "description": "12NM E MONCKS CORNER, SC, Sunday, October 18, 2026 through Monday, October 19, 2026 UTC",
+    "mod_date": "10/17/2026 19:06:00",
+    "mod_abs_time": "202610171906",
+    "is_new": "Y",
+    "gid": "6/0033"
+  },
+  {
     "notam_id": "6/0024",
     "facility": "ZLA",
     "state": "CA",
@@ -51,7 +117,7 @@
     "description": "08 ZAN AIRSPACE. GULKANA, AK, Tuesday, October 20, 2026 through Saturday, October 24, 2026 UTC",
     "mod_date": "10/16/2026 23:40:00",
     "mod_abs_time": "202610162340",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/0008"
   },
   {
@@ -62,7 +128,7 @@
     "description": "07 ZAN AIRSPACE. GULKANA, AK, Sunday, October 18, 2026 UTC",
     "mod_date": "10/16/2026 23:37:00",
     "mod_abs_time": "202610162337",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/0007"
   },
   {
@@ -73,7 +139,7 @@
     "description": "22NM SE JOHN DAY, OR, Monday, October 19, 2026 through Thursday, October 22, 2026 UTC",
     "mod_date": "10/16/2026 21:35:00",
     "mod_abs_time": "202610162135",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/0004"
   },
   {
@@ -84,7 +150,7 @@
     "description": "17NM NW MEDFORD, OR, Friday, October 16, 2026 through Monday, October 26, 2026 UTC",
     "mod_date": "10/16/2026 18:25:00",
     "mod_abs_time": "202610161825",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9979"
   },
   {
@@ -95,7 +161,7 @@
     "description": "El Paso, TX, Friday, October 23, 2026 through Sunday, October 25, 2026 UTC",
     "mod_date": "10/16/2026 17:23:00",
     "mod_abs_time": "202610161723",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9965"
   },
   {
@@ -106,7 +172,7 @@
     "description": "El Paso, TX, Friday, October 23, 2026 through Sunday, October 25, 2026 UTC",
     "mod_date": "10/16/2026 17:22:00",
     "mod_abs_time": "202610161722",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9964"
   },
   {
@@ -117,7 +183,7 @@
     "description": "El Paso, TX, Thursday, October 22, 2026 UTC",
     "mod_date": "10/16/2026 17:19:00",
     "mod_abs_time": "202610161719",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9963"
   },
   {
@@ -128,7 +194,7 @@
     "description": "30NM NE, CA, Friday, October 16, 2026 through Monday, October 19, 2026 UTC",
     "mod_date": "10/16/2026 17:07:00",
     "mod_abs_time": "202610161707",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9960"
   },
   {
@@ -139,7 +205,7 @@
     "description": "34NM SE CRESCENT CITY, CA, Friday, October 16, 2026 through Monday, October 19, 2026 UTC",
     "mod_date": "10/16/2026 17:05:00",
     "mod_abs_time": "202610161705",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9958"
   },
   {
@@ -150,19 +216,8 @@
     "description": "30 NM NE MCKINLEYVILLE, CA, Friday, October 16, 2026 through Monday, October 19, 2026 UTC",
     "mod_date": "10/16/2026 17:04:00",
     "mod_abs_time": "202610161704",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9957"
-  },
-  {
-    "notam_id": "6/9953",
-    "facility": "ZLC",
-    "state": "UT",
-    "type": "SPACE OPERATIONS",
-    "description": "53 ZLC AIRSPACE FAIRFIELD, UT, Saturday, October 17, 2026 UTC",
-    "mod_date": "10/16/2026 16:43:00",
-    "mod_abs_time": "202610161643",
-    "is_new": "Y",
-    "gid": "6/9953"
   },
   {
     "notam_id": "6/9948",
@@ -172,7 +227,7 @@
     "description": "San Antonio, TX, Wednesday, October 21, 2026 UTC",
     "mod_date": "10/16/2026 15:56:00",
     "mod_abs_time": "202610161556",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9948"
   },
   {
@@ -183,7 +238,7 @@
     "description": "WICHITA, KS, Monday, October 19, 2026 through Monday, October 19, 2026 Local",
     "mod_date": "10/16/2026 15:45:00",
     "mod_abs_time": "202610161545",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9946"
   },
   {
@@ -231,17 +286,6 @@
     "gid": "6/9885"
   },
   {
-    "notam_id": "6/9883",
-    "facility": "ZID",
-    "state": "WV",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Fayetteville, WV, Saturday, October 17, 2026 UTC",
-    "mod_date": "10/15/2026 21:33:00",
-    "mod_abs_time": "202610152133",
-    "is_new": "N",
-    "gid": "6/9883"
-  },
-  {
     "notam_id": "6/9864",
     "facility": "ZAB",
     "state": "AZ",
@@ -251,17 +295,6 @@
     "mod_abs_time": "202610152004",
     "is_new": "N",
     "gid": "6/9864"
-  },
-  {
-    "notam_id": "6/9842",
-    "facility": "ZID",
-    "state": "KY",
-    "type": "VIP",
-    "description": "Hebron, KY, Saturday, October 17, 2026 Local",
-    "mod_date": "10/15/2026 16:45:00",
-    "mod_abs_time": "202610151645",
-    "is_new": "N",
-    "gid": "6/9842"
   },
   {
     "notam_id": "6/9778",
@@ -297,28 +330,6 @@
     "gid": "6/9717"
   },
   {
-    "notam_id": "6/9702",
-    "facility": "ZID",
-    "state": "KY",
-    "type": "SECURITY",
-    "description": "Herbon, KY, Saturday, October 17, 2026 Local",
-    "mod_date": "10/14/2026 22:34:00",
-    "mod_abs_time": "202610142234",
-    "is_new": "N",
-    "gid": "6/9702"
-  },
-  {
-    "notam_id": "6/9548",
-    "facility": "ZOB",
-    "state": "WV",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Fayetteville, WV, Saturday, October 17, 2026 UTC",
-    "mod_date": "10/14/2026 19:12:00",
-    "mod_abs_time": "202610141912",
-    "is_new": "N",
-    "gid": "6/9548"
-  },
-  {
     "notam_id": "6/9532",
     "facility": "ZMP",
     "state": "MN",
@@ -339,17 +350,6 @@
     "mod_abs_time": "202610141657",
     "is_new": "N",
     "gid": "6/9528"
-  },
-  {
-    "notam_id": "6/9387",
-    "facility": "ZLC",
-    "state": "MT",
-    "type": "SPACE OPERATIONS",
-    "description": "87 ZLC AIRSPACE DILLON, MT, Saturday, October 17, 2026 UTC",
-    "mod_date": "10/14/2026 12:08:00",
-    "mod_abs_time": "202610141208",
-    "is_new": "N",
-    "gid": "6/9387"
   },
   {
     "notam_id": "6/9370",
@@ -429,17 +429,6 @@
     "gid": "6/9085"
   },
   {
-    "notam_id": "6/9084",
-    "facility": "ZFW",
-    "state": "TX",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "Corsicana, TX, Friday, October 16, 2026 through Saturday, October 17, 2026 UTC",
-    "mod_date": "10/13/2026 13:01:00",
-    "mod_abs_time": "202610131301",
-    "is_new": "N",
-    "gid": "6/9084"
-  },
-  {
     "notam_id": "6/9083",
     "facility": "ZJX",
     "state": "FL",
@@ -449,17 +438,6 @@
     "mod_abs_time": "202610131301",
     "is_new": "N",
     "gid": "6/9083"
-  },
-  {
-    "notam_id": "6/9081",
-    "facility": "ZAB",
-    "state": "NM",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "Las Cruces, NM, Friday, October 16, 2026 through Saturday, October 17, 2026 UTC",
-    "mod_date": "10/13/2026 12:58:00",
-    "mod_abs_time": "202610131258",
-    "is_new": "N",
-    "gid": "6/9081"
   },
   {
     "notam_id": "6/9058",

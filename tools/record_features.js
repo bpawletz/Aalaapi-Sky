@@ -1426,6 +1426,60 @@ const scenarios = [
     }
   },
   {
+    id: 'hyperlapse_dense_waypoints',
+    name: 'Hyperlapse Discrete Frame Waypoints for RC 2 (v1.167.0)',
+    description: 'Demonstrates compiling all interval photo capture positions into explicit discrete waypoints visible on the RC 2 with curved transitions and reachPoint photo actions.',
+    issueRef: 'v1.167.0',
+    run: async (page) => {
+      // 1. Center squarely on Utica default rural location
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Select Hyperlapse pattern
+      await selectPattern(page, 'hyperlapse');
+      await page.waitForTimeout(600);
+
+      // 3. Add transit waypoints (start and end)
+      await page.evaluate(({ lat, lon }) => {
+        const layer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+        if (layer) {
+          layer.pattern = 'hyperlapse';
+          layer.altitude = 24;
+          layer.gimbalPitch = 0;
+          layer.hyperlapseInterval = 3;
+          layer.hyperlapseWaypointMode = 'dense';
+          layer.freeformWaypoints = [
+            { lat: lat, lon: lon, x: 0, y: 0, alt: 24, isModified: false },
+            { lat: lat - 0.00035, lon: lon + 0.0001, x: 6.4, y: -39.6, alt: 24, isModified: false }
+          ];
+        }
+        if (typeof updateGrid === 'function') updateGrid();
+      }, { lat: DEFAULT_LAT, lon: DEFAULT_LON });
+      await page.waitForTimeout(1500);
+
+      // 4. Toggle between Discrete Frames and Keyframe Spline mode
+      await page.evaluate(() => {
+        const modeSelect = document.getElementById('hyperlapse-waypoint-mode');
+        if (modeSelect) {
+          modeSelect.value = 'spline';
+          modeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      await page.evaluate(() => {
+        const modeSelect = document.getElementById('hyperlapse-waypoint-mode');
+        if (modeSelect) {
+          modeSelect.value = 'dense';
+          modeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(1500);
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+    }
+  },
+  {
     id: 'bridge_version_sync',
     name: 'Companion Bridge Version Synchronization & Auto-Restart (v1.147.2)',
     description: 'Demonstrates automated version mismatch detection between the web app and Companion Bridge, displaying amber warning alert with 1-click Auto-Restart capability.',

@@ -81,7 +81,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.166.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.167.0</span></h1>
         </div>
       </div>
 
@@ -1048,6 +1048,21 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 6px 8px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 6px;">
               <span style="font-size: 0.72rem; color: #f59e0b; font-weight: 600;">⏱️ Projected Video Duration</span>
               <span id="hyperlapse-duration-badge" style="font-size: 0.72rem; color: #f59e0b; font-weight: 700;">Clip: 0.0s (30fps) | 0.0s (24fps)</span>
+            </div>
+
+            <!-- RC 2 Waypoint Mode Selector -->
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label for="hyperlapse-waypoint-mode" style="font-size: 0.75rem; color: var(--text-main); font-weight: 600; margin: 0;">RC 2 Waypoint Mode</label>
+                <span id="hyperlapse-mode-badge" class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-size: 0.65rem; padding: 1px 6px;">Discrete Frames</span>
+              </div>
+              <select id="hyperlapse-waypoint-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                <option value="dense" selected>Discrete Frame Waypoints (Full RC 2 Visibility)</option>
+                <option value="spline">Keyframe Spline (2 Control Points + Auto Timer)</option>
+              </select>
+              <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; line-height: 1.3;">
+                In Discrete Frame mode, every intermediate interval photo position is compiled as an explicit waypoint visible on the RC 2 controller.
+              </div>
             </div>
 
             <!-- Interval Capture Slider -->
@@ -5169,7 +5184,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.166.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.167.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5230,6 +5245,20 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.167.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Hyperlapse Discrete Frame Waypoints for RC 2:</strong> Automatically compiles all intermediate interval photo capture positions into explicit flight waypoints with curved transitions and individual reachPoint photos, ensuring full waypoint visibility and guaranteed execution on the RC 2 controller.</li>
+              <li><strong>Configurable RC 2 Waypoint Mode:</strong> Added pilot selector between Discrete Frame Waypoints (default) and Keyframe Spline mode in Section 2 Hyperlapse Settings.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.166.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Photo Ingestion Modal Completion &amp; Close States:</strong> Dynamically updates modal action buttons upon ingest completion, transitioning Cancel to Close and adding a primary Done button to dismiss the dialog safely. Cleanly resets on reopen.</li>
+              <li><strong>Interactive Archive Download Feedback:</strong> Disables the Download Archive (.zip) button while active, rendering real-time Preparing Download... and Downloading... progress states before confirming completion.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.166.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

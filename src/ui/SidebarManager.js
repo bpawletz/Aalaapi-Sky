@@ -1301,6 +1301,10 @@ function togglePatternParameters() {
         if (hlStart) hlStart.value = curPitch;
         if (hlEnd) hlEnd.value = curPitch;
       }
+      const hlModeSel = document.getElementById('hyperlapse-waypoint-mode');
+      const hlModeBdg = document.getElementById('hyperlapse-mode-badge');
+      if (hlModeSel) hlModeSel.value = activeLayer.hyperlapseWaypointMode || 'dense';
+      if (hlModeBdg) hlModeBdg.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
     }
     const layerCapSelect = document.getElementById('layer-capture-mode');
     if (layerCapSelect) layerCapSelect.value = 'continuous';

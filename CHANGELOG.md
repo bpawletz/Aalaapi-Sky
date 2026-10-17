@@ -1,3 +1,50 @@
+## [1.167.0] - 2026-10-17
+
+Introduces Discrete Frame Waypoints for Hyperlapse missions, compiling all intermediate interval capture frames into explicit flight waypoints visible on the DJI RC 2 controller with smooth continuous transitions and guaranteed photo triggering.
+
+### 🚀 Added | Changed
+
+#### Pilot & Operational Features
+- **Hyperlapse Discrete Frame Waypoints for RC 2**:
+  - Resolves the issue where DJI Fly on the RC 2 only displayed 2 waypoints (start and end nodes) for Hyperlapse missions.
+  - Automatically compiles all intermediate interval photo positions into explicit, numbered flight waypoints along the planned trajectory, providing complete visual route awareness on the RC 2 controller screen.
+  - Generates smooth continuous curved transitions (`toPointAndPassWithContinuityCurvature`) with individual waypoint `takePhoto` actions at `reachPoint`, ensuring the drone captures photos reliably without stopping or relying on consumer-unsupported `multipleTiming` tags.
+- **Configurable RC 2 Waypoint Mode Selector**:
+  - Added a dedicated **RC 2 Waypoint Mode** selector to Section 2 Hyperlapse Settings.
+  - **Discrete Frame Waypoints (Default)**: Compiles every interval capture position into an explicit flight waypoint for full controller visibility and guaranteed execution.
+  - **Keyframe Spline**: Minimal 2-node route for legacy/manual interval triggering.
+
+#### Under the Hood & Technical Details
+- **Pattern Generators (`src/patterns/PatternGenerators.js`)**:
+  - Upgraded `generateHyperlapseWaypoints()` to support `waypointMode === 'dense'` (default), mapping sampled frame points into complete flight waypoint objects with interpolated altitude, gimbal pitch, and flight-path tangent headings.
+  - Enforced terminal destination point inclusion ($t=1.0$) so the flight path covers the full intended distance.
+- **WPML Mission Compiler (`src/export/WpmlCompiler.js`)**:
+  - Detected dense hyperlapse waypoints (`hasDenseHyperlapse`) and suppressed the redundant segment-level `multipleTiming` action group when discrete frame waypoints are present.
+  - Ensured each dense waypoint emits a dedicated `reachPoint` action group containing gimbal rotation and `takePhoto` execution with duplicate action prevention.
+- **Layer & UI State Synchronization (`src/layers/LayerManager.js`, `src/ui/SidebarManager.js`, `src/ui/EventBindings.js`)**:
+  - Registered `hyperlapseWaypointMode` on the layer schema with persistence across `saveActiveLayerFromUi()` and `loadActiveLayerToUi()`.
+  - Added `#hyperlapse-waypoint-mode` select and `#hyperlapse-mode-badge` indicators in `#hyperlapse-container`.
+
+## [1.166.2] - 2026-10-17
+
+Adds visual processing feedback during photo inspection archive downloads and dynamically transitions photo ingestion buttons to clearly indicate completion and modal closure.
+
+### 🚀 Changed | Fixed
+
+#### Pilot & Operational Features
+- **Photo Ingestion Modal Completion & Close States**:
+  - Dynamically updates the footer action buttons when photo ingestion finishes: the secondary button transitions from `Cancel` to `Close`, and the primary action button transitions to `✓ Done`.
+  - Clicking `✓ Done` or `Close` safely dismisses the completed ingestion dialog without confusion.
+  - Reopening the ingestion modal cleanly resets all buttons back to `Cancel`, `📥 Ingest & Correlate Photos`, and clean progress states.
+- **Interactive Archive Download Feedback**:
+  - Added immediate visual feedback when clicking `📦 Download Archive (.zip)`. Disables the button to prevent duplicate server compression tasks, displays `⏳ Preparing Download...` while packaging the zip, transitions to `⬇️ Downloading...` upon stream delivery, and concludes with `✅ Downloaded (.zip)`.
+  - Re-enables and restores the button after 4 seconds so pilots can re-download if needed.
+
+#### Under the Hood & Technical Details
+- **Cross-Origin Streaming Headers (`tools/companion/server.js`)**: Added `Access-Control-Allow-Origin: *` and `Access-Control-Expose-Headers: Content-Disposition` to `/api/media/archive-zip` so web clients can fetch and stream generated mission archives with native filename parsing.
+- **Download Feedback & Fallback Handler (`src/bridge/Rc2LogExplorer.js`)**: Upgraded `media-download-archive-btn` click handler to perform asynchronous fetch with blob generation, status text updates (`Packaging archive (.zip) and preparing download...`), and automatic fallback to `window.location.href` on network or CORS restrictions.
+- **Completion State Dispatcher (`src/bridge/Rc2LogExplorer.js`, `src/ui/Modals/PhotoInspector.js`)**: Updated `executeMediaPull` to set `data-action="close"` and `✓ Done` on `#start-media-pull-btn`, and `'Close'` on `#close-media-ingest-footer-btn`. Added complete button and progress bar reset logic in `openMediaIngestModal()`.
+
 ## [1.166.1] - 2026-10-17
 
 Eliminates cross-pattern waypoint bleeding and stale settings retention when switching from Road Following to Nadir or 3D Grid patterns, ensuring clean procedural waypoint generation and layer state isolation.

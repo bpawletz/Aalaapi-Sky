@@ -2884,6 +2884,41 @@ function openMediaIngestModal() {
   if (!modal) return;
   modal.classList.remove('hidden');
 
+  // Reset buttons and progress states when opening modal
+  const startPullBtn = document.getElementById('start-media-pull-btn');
+  if (startPullBtn) {
+    if (typeof startPullBtn.removeAttribute === 'function') {
+      startPullBtn.removeAttribute('data-action');
+    }
+    if (startPullBtn.dataset) {
+      delete startPullBtn.dataset.action;
+    }
+    startPullBtn.textContent = '📥 Ingest & Correlate Photos';
+    startPullBtn.disabled = false;
+  }
+  const closeIngestFooter = document.getElementById('close-media-ingest-footer-btn');
+  if (closeIngestFooter) {
+    closeIngestFooter.textContent = 'Cancel';
+    closeIngestFooter.style.display = '';
+  }
+  const dlBtn = document.getElementById('media-download-archive-btn');
+  if (dlBtn) {
+    dlBtn.style.display = 'none';
+    dlBtn.disabled = false;
+    dlBtn.innerHTML = '📦 Download Archive (.zip)';
+  }
+  const progContainer = document.getElementById('ingest-progress-container');
+  if (progContainer) progContainer.style.display = 'none';
+  const progBar = document.getElementById('ingest-progress-bar');
+  if (progBar) progBar.style.width = '0%';
+  const progPct = document.getElementById('ingest-pct-text');
+  if (progPct) progPct.textContent = '0%';
+  const progText = document.getElementById('ingest-status-text');
+  if (progText) {
+    progText.textContent = 'Ingesting photos...';
+    progText.style.color = '';
+  }
+
   // Populate active mission window details
   const windowBox = document.getElementById('media-mission-window-box');
   const windowBadge = document.getElementById('ingest-window-count-badge');

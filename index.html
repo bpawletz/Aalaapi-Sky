@@ -6469,7 +6469,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.166.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.167.0</span></h1>
         </div>
       </div>
 
@@ -7436,6 +7436,21 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 6px 8px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 6px;">
               <span style="font-size: 0.72rem; color: #f59e0b; font-weight: 600;">⏱️ Projected Video Duration</span>
               <span id="hyperlapse-duration-badge" style="font-size: 0.72rem; color: #f59e0b; font-weight: 700;">Clip: 0.0s (30fps) | 0.0s (24fps)</span>
+            </div>
+
+            <!-- RC 2 Waypoint Mode Selector -->
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label for="hyperlapse-waypoint-mode" style="font-size: 0.75rem; color: var(--text-main); font-weight: 600; margin: 0;">RC 2 Waypoint Mode</label>
+                <span id="hyperlapse-mode-badge" class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-size: 0.65rem; padding: 1px 6px;">Discrete Frames</span>
+              </div>
+              <select id="hyperlapse-waypoint-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                <option value="dense" selected>Discrete Frame Waypoints (Full RC 2 Visibility)</option>
+                <option value="spline">Keyframe Spline (2 Control Points + Auto Timer)</option>
+              </select>
+              <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; line-height: 1.3;">
+                In Discrete Frame mode, every intermediate interval photo position is compiled as an explicit waypoint visible on the RC 2 controller.
+              </div>
             </div>
 
             <!-- Interval Capture Slider -->
@@ -11557,7 +11572,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.166.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.167.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -11618,6 +11633,20 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.167.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Hyperlapse Discrete Frame Waypoints for RC 2:</strong> Automatically compiles all intermediate interval photo capture positions into explicit flight waypoints with curved transitions and individual reachPoint photos, ensuring full waypoint visibility and guaranteed execution on the RC 2 controller.</li>
+              <li><strong>Configurable RC 2 Waypoint Mode:</strong> Added pilot selector between Discrete Frame Waypoints (default) and Keyframe Spline mode in Section 2 Hyperlapse Settings.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.166.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Photo Ingestion Modal Completion &amp; Close States:</strong> Dynamically updates modal action buttons upon ingest completion, transitioning Cancel to Close and adding a primary Done button to dismiss the dialog safely. Cleanly resets on reopen.</li>
+              <li><strong>Interactive Archive Download Feedback:</strong> Disables the Download Archive (.zip) button while active, rendering real-time Preparing Download... and Downloading... progress states before confirming completion.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.166.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -21420,6 +21449,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     hyperlapseHeadingMode: 'path', // 'path' or 'keyframes'
     hyperlapseStartHeading: 0,
     hyperlapseEndHeading: 90,
+    hyperlapseWaypointMode: 'dense', // 'dense' (discrete frames) or 'spline' (2 control waypoints)
     lightArtPreset: 'spiral', // 'spiral', 'helix', 'star', 'heart', 'circle'
     lightArtOrientation: 'horizontal', // 'horizontal' or 'vertical'
     lightArtRadius: 25,
@@ -22130,6 +22160,8 @@ function saveActiveLayerFromUi() {
   if (hlHeadingMode && hlHeadingMode.value) layer.hyperlapseHeadingMode = hlHeadingMode.value;
   if (hlStartHeading) layer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
   if (hlEndHeading) layer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
+  const hlWpMode = document.getElementById('hyperlapse-waypoint-mode');
+  if (hlWpMode && hlWpMode.value) layer.hyperlapseWaypointMode = hlWpMode.value;
 
   const laPreset = document.getElementById('light-art-preset');
   const laOrientation = document.getElementById('light-art-orientation');
@@ -22437,6 +22469,10 @@ function syncUiWithActiveLayer() {
       hlKeyframesBox.classList.add('hidden');
     }
   }
+  const hlWpModeUi = document.getElementById('hyperlapse-waypoint-mode');
+  const hlModeBadgeUi = document.getElementById('hyperlapse-mode-badge');
+  if (hlWpModeUi) hlWpModeUi.value = layer.hyperlapseWaypointMode || 'dense';
+  if (hlModeBadgeUi) hlModeBadgeUi.textContent = (layer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
 
   // Sync Light Art Controls
   const laPreset = document.getElementById('light-art-preset');
@@ -27670,6 +27706,8 @@ function initUIEventListeners() {
     const hlKeyframesBox = document.getElementById('hyperlapse-heading-keyframes-box');
     const hlUndoBtn = document.getElementById('hyperlapse-undo-btn');
     const hlClearBtn = document.getElementById('hyperlapse-clear-btn');
+    const hlWaypointMode = document.getElementById('hyperlapse-waypoint-mode');
+    const hlModeBadge = document.getElementById('hyperlapse-mode-badge');
 
     const updateHyperlapse = () => {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -27693,13 +27731,19 @@ function initUIEventListeners() {
       }
       if (hlStartHeading) activeLayer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
       if (hlEndHeading) activeLayer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
+      if (hlWaypointMode) {
+        activeLayer.hyperlapseWaypointMode = hlWaypointMode.value || 'dense';
+        if (hlModeBadge) {
+          hlModeBadge.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
+        }
+      }
 
       updateGrid();
       updateMapLegend();
       saveAllSettingsToLocalStorage();
     };
 
-    [hlInterval, hlStartPitch, hlEndPitch, hlHeadingMode, hlStartHeading, hlEndHeading].forEach(el => {
+    [hlInterval, hlStartPitch, hlEndPitch, hlHeadingMode, hlStartHeading, hlEndHeading, hlWaypointMode].forEach(el => {
       if (el) {
         el.addEventListener('input', updateHyperlapse);
         el.addEventListener('change', updateHyperlapse);
@@ -30968,6 +31012,10 @@ function togglePatternParameters() {
         if (hlStart) hlStart.value = curPitch;
         if (hlEnd) hlEnd.value = curPitch;
       }
+      const hlModeSel = document.getElementById('hyperlapse-waypoint-mode');
+      const hlModeBdg = document.getElementById('hyperlapse-mode-badge');
+      if (hlModeSel) hlModeSel.value = activeLayer.hyperlapseWaypointMode || 'dense';
+      if (hlModeBdg) hlModeBdg.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
     }
     const layerCapSelect = document.getElementById('layer-capture-mode');
     if (layerCapSelect) layerCapSelect.value = 'continuous';
@@ -34359,13 +34407,15 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
 // ============================================================================
 function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
   if (!rawWps || !Array.isArray(rawWps) || rawWps.length === 0) {
-    return { waypoints: [], framePoints: [], interval: 3, frameSpacing: 0 };
+    return { waypoints: [], framePoints: [], controlWaypoints: [], denseWaypoints: [], waypointMode: 'dense', interval: 3, frameSpacing: 0 };
   }
 
   const rawInterval = layer ? layer.hyperlapseInterval : 3;
   let interval = parseInt(rawInterval, 10);
   if (isNaN(interval) || interval < 2) interval = 2;
   if (interval > 10) interval = 10;
+
+  const waypointMode = (layer && layer.hyperlapseWaypointMode) ? layer.hyperlapseWaypointMode : 'dense';
 
   const layerPitch = (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== 'auto' && !isNaN(layer.gimbalPitch))
     ? parseInt(layer.gimbalPitch, 10)
@@ -34374,8 +34424,8 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
   const rawStart = (layer && layer.hyperlapseStartPitch !== undefined && !isNaN(layer.hyperlapseStartPitch)) ? parseInt(layer.hyperlapseStartPitch, 10) : null;
   const rawEnd = (layer && layer.hyperlapseEndPitch !== undefined && !isNaN(layer.hyperlapseEndPitch)) ? parseInt(layer.hyperlapseEndPitch, 10) : null;
   const hasCustomSweep = (rawStart !== null && rawEnd !== null && rawStart !== rawEnd);
-  const startPitch = hasCustomSweep ? rawStart : (rawStart !== null && rawStart !== -15 ? rawStart : layerPitch);
-  const endPitch = hasCustomSweep ? rawEnd : (rawEnd !== null && rawEnd !== -15 ? rawEnd : layerPitch);
+  const startPitch = hasCustomSweep ? rawStart : (rawStart !== null ? rawStart : layerPitch);
+  const endPitch = hasCustomSweep ? rawEnd : (rawEnd !== null ? rawEnd : layerPitch);
 
   const headingMode = (layer && layer.hyperlapseHeadingMode) ? layer.hyperlapseHeadingMode : 'path';
   const startHeading = (layer && layer.hyperlapseStartHeading !== undefined && !isNaN(layer.hyperlapseStartHeading)) ? parseFloat(layer.hyperlapseStartHeading) % 360 : 0;
@@ -34424,8 +34474,8 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
     return 0;
   }
 
-  // Generate per-waypoint parameters
-  const waypoints = rawWps.map((wp, idx) => {
+  // Generate per-control-waypoint parameters
+  const controlWaypoints = rawWps.map((wp, idx) => {
     const t = totalDist > 0 ? cumDists[idx] / totalDist : (rawWps.length > 1 ? idx / (rawWps.length - 1) : 0);
     let pitch, heading;
 
@@ -34488,15 +34538,15 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
   const effectiveSpeed = Math.max(0.1, (speed !== undefined && !isNaN(speed) && speed > 0) ? Number(speed) : 2.0);
   const frameSpacing = Math.max(0.05, effectiveSpeed * interval);
 
-  if (waypoints.length >= 2 && totalDist > 0) {
+  if (controlWaypoints.length >= 2 && totalDist > 0) {
     let currentDist = 0;
     while (currentDist <= totalDist + 0.01) {
       let segIdx = 0;
       while (segIdx < cumDists.length - 2 && cumDists[segIdx + 1] < currentDist) {
         segIdx++;
       }
-      const pA = waypoints[segIdx];
-      const pB = waypoints[segIdx + 1] || pA;
+      const pA = controlWaypoints[segIdx];
+      const pB = controlWaypoints[segIdx + 1] || pA;
       const segLen = cumDists[segIdx + 1] - cumDists[segIdx];
       const segT = segLen > 0 ? Math.min(1, Math.max(0, (currentDist - cumDists[segIdx]) / segLen)) : 0;
       const globalT = currentDist / totalDist;
@@ -34512,8 +34562,11 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
         const samplePt = { lat: fLat, lon: fLon, x: fX, y: fY, alt: fAlt };
         fHeading = getBearingBetween(samplePt, targetPoi);
         fPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(samplePt, targetPoi, fAlt) : -45;
-      } else {
+      } else if (headingMode === 'keyframes') {
         fPitch = Math.round(startPitch + (endPitch - startPitch) * globalT);
+        fHeading = lerpAngleShortest(startHeading, endHeading, globalT);
+      } else {
+        fPitch = Math.round((pA.pitch !== undefined ? pA.pitch : startPitch) + ((pB.pitch !== undefined ? pB.pitch : endPitch) - (pA.pitch !== undefined ? pA.pitch : startPitch)) * segT);
         fHeading = lerpAngleShortest(pA.heading || 0, pB.heading || 0, segT);
       }
 
@@ -34531,16 +34584,72 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
 
       currentDist += frameSpacing;
     }
+  } else if (controlWaypoints.length === 1) {
+    const p0 = controlWaypoints[0];
+    framePoints.push({
+      lat: p0.lat,
+      lon: p0.lon,
+      x: p0.x,
+      y: p0.y,
+      alt: p0.alt,
+      pitch: p0.pitch,
+      heading: p0.heading,
+      distMeters: 0,
+      isHyperlapseFrame: true
+    });
   }
+
+  // Generate dense flight waypoints from frame points
+  const denseWaypoints = framePoints.map((fp, fIdx) => {
+    const isFirst = (fIdx === 0);
+    const isLast = (fIdx === framePoints.length - 1);
+    const matchedControl = isFirst ? controlWaypoints[0] : (isLast ? controlWaypoints[controlWaypoints.length - 1] : null);
+    const isMod = matchedControl ? Boolean(matchedControl.isModified) : false;
+
+    return {
+      idx: fIdx,
+      lat: fp.lat,
+      lon: fp.lon,
+      x: Math.round(fp.x * 100) / 100,
+      y: Math.round(fp.y * 100) / 100,
+      alt: Math.round(fp.alt * 10) / 10,
+      pitch: fp.pitch,
+      heading: fp.heading,
+      isModified: isMod,
+      headingMode: 'smoothTransition',
+      turnMode: 'curved',
+      pathMode: 'curved',
+      speed: effectiveSpeed,
+      captureMode: 'continuous',
+      cameraAction: 'takePhoto',
+      skipPhoto: false,
+      isHyperlapse: true,
+      isHyperlapseFrame: true,
+      layerId: layer ? layer.id : null,
+      layerName: layer ? layer.name : null,
+      layerPattern: 'hyperlapse',
+      layerAltitude: (layer && layer.altitude !== undefined) ? layer.altitude : altitude,
+      layerGimbalPitch: fp.pitch,
+      distMeters: fp.distMeters,
+      hyperlapseInterval: interval
+    };
+  });
 
   const totalFrames = framePoints.length;
   const flightDurationSec = (effectiveSpeed > 0 && totalDist > 0) ? (totalDist / effectiveSpeed) : 0;
   const videoDuration24fps = totalFrames / 24.0;
   const videoDuration30fps = totalFrames / 30.0;
 
+  const finalWaypoints = (waypointMode === 'dense' && denseWaypoints.length > 0)
+    ? denseWaypoints
+    : controlWaypoints;
+
   return {
-    waypoints,
-    framePoints,
+    waypoints: finalWaypoints,
+    framePoints: framePoints,
+    controlWaypoints: controlWaypoints,
+    denseWaypoints: denseWaypoints,
+    waypointMode: waypointMode,
     interval,
     frameSpacing,
     totalDist,
@@ -40677,12 +40786,13 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     ci = cj;
   }
 
-  // Identify hyperlapse segments in sanitizedWps
+  // Identify hyperlapse segments in sanitizedWps (only for spline mode with minimal control waypoints)
   const hyperlapseSegments = [];
+  const hasDenseHyperlapse = sanitizedWps.some(w => w && (w.isHyperlapseFrame || (w.isHyperlapse && w.cameraAction === 'takePhoto' && sanitizedWps.length > 2)));
   let currentHlSegment = null;
   sanitizedWps.forEach((w, i) => {
     const isH = (gridType === 'hyperlapse') || (w.isHyperlapse) || (w.gridType === 'hyperlapse') || (w.layerPattern === 'hyperlapse');
-    if (isH) {
+    if (isH && !hasDenseHyperlapse) {
       if (!currentHlSegment) {
         currentHlSegment = { startIdx: i, endIdx: i, layerId: w.layerId, interval: w.hyperlapseInterval || 3 };
         hyperlapseSegments.push(currentHlSegment);
@@ -41012,8 +41122,11 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:action>`);
     }
 
+    // 6. Per-waypoint camera action (RC 2 feature parity)
+    const perWpAction = wp.cameraAction || 'inherit';
+
     // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints and never in video mode)
-    if (!wp.isPhotoSphereActionGroup && (isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
+    if (!wp.isPhotoSphereActionGroup && (isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo && perWpAction !== 'takePhoto') {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
@@ -41023,8 +41136,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:action>`);
     }
 
-    // 6. Per-waypoint camera action (RC 2 feature parity)
-    const perWpAction = wp.cameraAction || 'inherit';
     if (perWpAction !== 'inherit' && perWpAction !== 'none') {
       if (perWpAction === 'takePhoto') {
         waypointActions.push(`          <wpml:action>
@@ -66990,6 +67101,41 @@ function openMediaIngestModal() {
   if (!modal) return;
   modal.classList.remove('hidden');
 
+  // Reset buttons and progress states when opening modal
+  const startPullBtn = document.getElementById('start-media-pull-btn');
+  if (startPullBtn) {
+    if (typeof startPullBtn.removeAttribute === 'function') {
+      startPullBtn.removeAttribute('data-action');
+    }
+    if (startPullBtn.dataset) {
+      delete startPullBtn.dataset.action;
+    }
+    startPullBtn.textContent = '📥 Ingest & Correlate Photos';
+    startPullBtn.disabled = false;
+  }
+  const closeIngestFooter = document.getElementById('close-media-ingest-footer-btn');
+  if (closeIngestFooter) {
+    closeIngestFooter.textContent = 'Cancel';
+    closeIngestFooter.style.display = '';
+  }
+  const dlBtn = document.getElementById('media-download-archive-btn');
+  if (dlBtn) {
+    dlBtn.style.display = 'none';
+    dlBtn.disabled = false;
+    dlBtn.innerHTML = '📦 Download Archive (.zip)';
+  }
+  const progContainer = document.getElementById('ingest-progress-container');
+  if (progContainer) progContainer.style.display = 'none';
+  const progBar = document.getElementById('ingest-progress-bar');
+  if (progBar) progBar.style.width = '0%';
+  const progPct = document.getElementById('ingest-pct-text');
+  if (progPct) progPct.textContent = '0%';
+  const progText = document.getElementById('ingest-status-text');
+  if (progText) {
+    progText.textContent = 'Ingesting photos...';
+    progText.style.color = '';
+  }
+
   // Populate active mission window details
   const windowBox = document.getElementById('media-mission-window-box');
   const windowBadge = document.getElementById('ingest-window-count-badge');
@@ -67406,6 +67552,15 @@ function safeJsonStringify(obj, space) {
 }
 
 async function executeMediaPull() {
+  const startPullBtn = document.getElementById('start-media-pull-btn');
+  const actionAttr = startPullBtn && typeof startPullBtn.getAttribute === 'function' ? startPullBtn.getAttribute('data-action') : (startPullBtn && startPullBtn.dataset ? startPullBtn.dataset.action : null);
+  if (actionAttr === 'close') {
+    if (typeof closeMediaIngestModal === 'function') {
+      closeMediaIngestModal();
+    }
+    return;
+  }
+
   const progContainer = document.getElementById('ingest-progress-container');
   const progBar = document.getElementById('ingest-progress-bar');
   const progText = document.getElementById('ingest-status-text');
@@ -67414,7 +67569,7 @@ async function executeMediaPull() {
   const filterTimeCheck = document.getElementById('ingest-filter-time');
   const filterGeoCheck = document.getElementById('ingest-filter-geo');
   const deleteDroneCheck = document.getElementById('ingest-delete-from-drone');
-  const startPullBtn = document.getElementById('start-media-pull-btn');
+  const closeIngestFooter = document.getElementById('close-media-ingest-footer-btn');
 
   const shouldDeleteFromDrone = !!(deleteDroneCheck && deleteDroneCheck.checked);
   if (shouldDeleteFromDrone && typeof window !== 'undefined' && typeof window.confirm === 'function') {
@@ -67436,7 +67591,19 @@ async function executeMediaPull() {
   if (progText) progText.textContent = shouldDeleteFromDrone
     ? 'Connecting to aircraft & verifying storage...'
     : 'Connecting to aircraft & scanning storage...';
-  if (startPullBtn) startPullBtn.disabled = true;
+  if (startPullBtn) {
+    if (typeof startPullBtn.removeAttribute === 'function') {
+      startPullBtn.removeAttribute('data-action');
+    }
+    if (startPullBtn.dataset) {
+      delete startPullBtn.dataset.action;
+    }
+    startPullBtn.disabled = true;
+    startPullBtn.textContent = '⏳ Ingesting Photos...';
+  }
+  if (closeIngestFooter) {
+    closeIngestFooter.textContent = 'Cancel';
+  }
 
   const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
@@ -67654,8 +67821,71 @@ async function executeMediaPull() {
       }
       if (dlBtn) {
         dlBtn.style.display = 'inline-flex';
-        dlBtn.onclick = () => {
-          window.location.href = `${apiBase}/api/media/archive-zip?uuid=${encodeURIComponent(data.missionUuid)}`;
+        dlBtn.disabled = false;
+        dlBtn.innerHTML = '📦 Download Archive (.zip)';
+        dlBtn.onclick = async () => {
+          if (dlBtn.disabled) return;
+          dlBtn.disabled = true;
+          const origDlHtml = '📦 Download Archive (.zip)';
+          dlBtn.innerHTML = '⏳ Preparing Download...';
+          const originalStatusMsg = progText ? progText.textContent : '';
+          if (progText) progText.textContent = 'Packaging archive (.zip) and preparing download...';
+
+          try {
+            const downloadUrl = `${apiBase}/api/media/archive-zip?uuid=${encodeURIComponent(data.missionUuid)}`;
+            const res = await fetch(downloadUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+
+            dlBtn.innerHTML = '⬇️ Downloading...';
+            const blob = await res.blob();
+            const blobUrl = (typeof window !== 'undefined' && window.URL) ? window.URL.createObjectURL(blob) : null;
+            if (blobUrl && typeof document !== 'undefined' && typeof document.createElement === 'function') {
+              const a = document.createElement('a');
+              a.href = blobUrl;
+              let filename = `${data.missionUuid}_inspection_archive.zip`;
+              const cd = res.headers && typeof res.headers.get === 'function' ? res.headers.get('Content-Disposition') : null;
+              if (cd) {
+                const m = cd.match(/filename="?([^"]+)"?/);
+                if (m && m[1]) filename = m[1];
+              }
+              a.download = filename;
+              if (document.body && typeof document.body.appendChild === 'function') {
+                document.body.appendChild(a);
+              }
+              if (typeof a.click === 'function') {
+                a.click();
+              }
+              setTimeout(() => {
+                if (a.parentNode && typeof a.parentNode.removeChild === 'function') {
+                  a.parentNode.removeChild(a);
+                }
+                if (typeof window !== 'undefined' && window.URL && typeof window.URL.revokeObjectURL === 'function') {
+                  window.URL.revokeObjectURL(blobUrl);
+                }
+              }, 1000);
+            }
+
+            dlBtn.innerHTML = '✅ Downloaded (.zip)';
+            if (progText) progText.textContent = originalStatusMsg;
+            setTimeout(() => {
+              dlBtn.innerHTML = origDlHtml;
+              dlBtn.disabled = false;
+            }, 4000);
+          } catch (dlErr) {
+            console.warn('[PhotoIngest] Direct blob download failed, falling back to window.location.href:', dlErr);
+            dlBtn.innerHTML = '⬇️ Downloading...';
+            if (typeof window !== 'undefined' && window.location) {
+              window.location.href = `${apiBase}/api/media/archive-zip?uuid=${encodeURIComponent(data.missionUuid)}`;
+            }
+            setTimeout(() => {
+              dlBtn.innerHTML = '✅ Download Started (.zip)';
+              if (progText) progText.textContent = originalStatusMsg;
+            }, 1500);
+            setTimeout(() => {
+              dlBtn.innerHTML = origDlHtml;
+              dlBtn.disabled = false;
+            }, 5000);
+          }
         };
       }
     }
@@ -67669,15 +67899,46 @@ async function executeMediaPull() {
         FlightDiagnostics.loadWireframeGeometry(data.manifest.wireframe);
       }
     }
+
+    if (closeIngestFooter) {
+      closeIngestFooter.textContent = 'Close';
+    }
+    if (startPullBtn) {
+      if (typeof startPullBtn.setAttribute === 'function') {
+        startPullBtn.setAttribute('data-action', 'close');
+      }
+      if (startPullBtn.dataset) {
+        startPullBtn.dataset.action = 'close';
+      }
+      startPullBtn.textContent = '✓ Done';
+      startPullBtn.disabled = false;
+    }
+
     return data;
   } catch (err) {
     isPulling = false;
     if (progressEs) { try { progressEs.close(); } catch (_) {} progressEs = null; }
     if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
     if (progText) progText.textContent = 'Ingest error: ' + err.message;
+    if (startPullBtn) {
+      if (typeof startPullBtn.removeAttribute === 'function') {
+        startPullBtn.removeAttribute('data-action');
+      }
+      if (startPullBtn.dataset) {
+        delete startPullBtn.dataset.action;
+      }
+      startPullBtn.textContent = '📥 Retry Ingest';
+      startPullBtn.disabled = false;
+    }
+    if (closeIngestFooter) {
+      closeIngestFooter.textContent = 'Close';
+    }
     throw err;
   } finally {
-    if (startPullBtn) startPullBtn.disabled = false;
+    const isCloseAction = startPullBtn && (typeof startPullBtn.getAttribute === 'function' ? startPullBtn.getAttribute('data-action') === 'close' : (startPullBtn.dataset && startPullBtn.dataset.action === 'close'));
+    if (startPullBtn && !isCloseAction) {
+      startPullBtn.disabled = false;
+    }
   }
 }
 
@@ -68524,7 +68785,13 @@ if (typeof document !== 'undefined') {
 
     const startPullBtn = document.getElementById('start-media-pull-btn');
     if (startPullBtn) {
-      startPullBtn.addEventListener('click', executeMediaPull);
+      startPullBtn.addEventListener('click', () => {
+        if (startPullBtn.getAttribute('data-action') === 'close') {
+          if (typeof closeMediaIngestModal === 'function') closeMediaIngestModal();
+          return;
+        }
+        executeMediaPull();
+      });
     }
   });
 }

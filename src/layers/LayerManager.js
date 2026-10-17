@@ -150,6 +150,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     hyperlapseHeadingMode: 'path', // 'path' or 'keyframes'
     hyperlapseStartHeading: 0,
     hyperlapseEndHeading: 90,
+    hyperlapseWaypointMode: 'dense', // 'dense' (discrete frames) or 'spline' (2 control waypoints)
     lightArtPreset: 'spiral', // 'spiral', 'helix', 'star', 'heart', 'circle'
     lightArtOrientation: 'horizontal', // 'horizontal' or 'vertical'
     lightArtRadius: 25,
@@ -860,6 +861,8 @@ function saveActiveLayerFromUi() {
   if (hlHeadingMode && hlHeadingMode.value) layer.hyperlapseHeadingMode = hlHeadingMode.value;
   if (hlStartHeading) layer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
   if (hlEndHeading) layer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
+  const hlWpMode = document.getElementById('hyperlapse-waypoint-mode');
+  if (hlWpMode && hlWpMode.value) layer.hyperlapseWaypointMode = hlWpMode.value;
 
   const laPreset = document.getElementById('light-art-preset');
   const laOrientation = document.getElementById('light-art-orientation');
@@ -1167,6 +1170,10 @@ function syncUiWithActiveLayer() {
       hlKeyframesBox.classList.add('hidden');
     }
   }
+  const hlWpModeUi = document.getElementById('hyperlapse-waypoint-mode');
+  const hlModeBadgeUi = document.getElementById('hyperlapse-mode-badge');
+  if (hlWpModeUi) hlWpModeUi.value = layer.hyperlapseWaypointMode || 'dense';
+  if (hlModeBadgeUi) hlModeBadgeUi.textContent = (layer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
 
   // Sync Light Art Controls
   const laPreset = document.getElementById('light-art-preset');

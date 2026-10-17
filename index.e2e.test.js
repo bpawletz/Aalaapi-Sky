@@ -7596,6 +7596,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       if (layer) {
         layer.pattern = 'hyperlapse';
         layer.gridType = 'hyperlapse';
+        layer.hyperlapseWaypointMode = 'spline';
       }
 
       // Add waypoints to layer
@@ -8951,6 +8952,11 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
           setGridCenter(41.3215, -88.9950);
         }
 
+        // Ensure daytime sun using MissionClock planned mode
+        if (typeof MissionClock !== 'undefined' && MissionClock && typeof MissionClock.setPlannedTime === 'function') {
+          MissionClock.setPlannedTime(new Date('2026-10-17T18:00:00Z'));
+        }
+
         // Mock currentSolarEphemeris with daytime sun
         if (typeof currentSolarEphemeris !== 'undefined') {
           currentSolarEphemeris = {
@@ -9000,9 +9006,12 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         // Check cloud cover tile layer
         const hasCloudCoverLayer = typeof cloudCoverLayer !== 'undefined' && cloudCoverLayer !== null;
 
-        // Restore to auto
+        // Restore to auto and live clock
         select.value = 'auto';
         select.dispatchEvent(new Event('change', { bubbles: true }));
+        if (typeof MissionClock !== 'undefined' && MissionClock && typeof MissionClock.setLive === 'function') {
+          MissionClock.setLive();
+        }
 
         return {
           initialVal,
@@ -9078,6 +9087,81 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.notStrictEqual(evalResult.wp0Pitch, -80, 'Waypoint 0 must not retain road pitch -80');
       assert.strictEqual(evalResult.roadWaypointsLength, 0, 'activeLayer.roadWaypoints must be cleared');
       assert.strictEqual(evalResult.hasCustomWaypoints, false, 'hasCustomWaypoints must be cleared');
+    });
+
+    test('E2E: Hyperlapse Discrete Frame Waypoints generation, UI mode selector, and RC 2 WPML export (v1.167.0)', async () => {
+      const evalResult = await page.evaluate(async () => {
+        // 1. Select Hyperlapse pattern
+        const gridTypeSelect = document.getElementById('grid-type');
+        gridTypeSelect.value = 'hyperlapse';
+        gridTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // 2. Check UI mode selector
+        const modeSelect = document.getElementById('hyperlapse-waypoint-mode');
+        const modeBadge = document.getElementById('hyperlapse-mode-badge');
+        const hasModeSelect = Boolean(modeSelect);
+        const defaultMode = modeSelect ? modeSelect.value : null;
+
+        // 3. Add 2 transit waypoints (~40m apart)
+        const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+        if (activeLayer) {
+          activeLayer.pattern = 'hyperlapse';
+          activeLayer.altitude = 24;
+          activeLayer.gimbalPitch = 0;
+          activeLayer.hyperlapseInterval = 3;
+          activeLayer.hyperlapseWaypointMode = 'dense';
+          activeLayer.freeformWaypoints = [
+            { lat: 41.3215, lon: -88.9950, x: 0, y: 0, alt: 24, isModified: false },
+            { lat: 41.3211446, lon: -88.9949249, x: 6.4, y: -39.6, alt: 24, isModified: false }
+          ];
+        }
+
+        // 4. Update grid
+        if (typeof updateGrid === 'function') updateGrid();
+
+        const waypoints = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : [];
+        const wpCount = waypoints.length;
+        const w0 = waypoints[0] || {};
+        const wEnd = waypoints[waypoints.length - 1] || {};
+
+        // 5. Test WPML compilation
+        const wpml = (typeof buildWaylinesWpml === 'function' && waypoints.length > 0)
+          ? buildWaylinesWpml(waypoints, {
+              flightPattern: 'hyperlapse',
+              droneModel: '68',
+              altitude: 24,
+              speed: 1.4,
+              gimbalPitch: 0
+            })
+          : '';
+
+        const placemarkCount = (wpml.match(/<Placemark>/g) || []).length;
+        const hasMultipleTiming = wpml.includes('<wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>');
+        const hasTakePhoto = wpml.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
+
+        return {
+          hasModeSelect,
+          defaultMode,
+          modeBadgeText: modeBadge ? modeBadge.textContent : '',
+          wpCount,
+          w0Action: w0.cameraAction,
+          w0IsFrame: Boolean(w0.isHyperlapseFrame),
+          wEndLat: wEnd.lat,
+          wEndLon: wEnd.lon,
+          placemarkCount,
+          hasMultipleTiming,
+          hasTakePhoto
+        };
+      });
+
+      assert.strictEqual(evalResult.hasModeSelect, true, '#hyperlapse-waypoint-mode must exist in DOM');
+      assert.strictEqual(evalResult.defaultMode, 'dense', 'Default waypoint mode must be dense');
+      assert.ok(evalResult.wpCount > 2, `Discrete frames mode must generate > 2 waypoints. Got: ${evalResult.wpCount}`);
+      assert.strictEqual(evalResult.w0Action, 'takePhoto', 'Waypoint 0 must have takePhoto camera action');
+      assert.strictEqual(evalResult.w0IsFrame, true, 'Waypoint 0 must be flagged as isHyperlapseFrame');
+      assert.strictEqual(evalResult.placemarkCount, evalResult.wpCount, 'WPML placemarks must match total discrete waypoints');
+      assert.strictEqual(evalResult.hasMultipleTiming, false, 'Dense mode must suppress multipleTiming action group');
+      assert.strictEqual(evalResult.hasTakePhoto, true, 'WPML must contain takePhoto actions');
     });
   });
 });
