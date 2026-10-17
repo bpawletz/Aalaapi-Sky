@@ -24559,21 +24559,7 @@ describe('Issue #77: Multi-POI Association & Three-Tier Cascading Hierarchy', ()
 
   describe('Issue #141 & v1.160.1: Photo Inspector Solar Position HUD Toggle Suite', () => {
   test('Version consistency: v1.160.1 across package.json, changelog, index_template.html, and index.html', () => {
-    const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.160.1');
-
-    const changelog = fs.readFileSync(path.resolve(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.160.1] - 2026-10-16'), 'CHANGELOG.md must contain 1.160.1 header');
-
-    const indexTemplate = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(indexTemplate.includes('v1.160.1</span>'), 'index_template.html must contain header badge v1.160.1');
-    assert.ok(indexTemplate.includes('Version 1.160.1</span>'), 'index_template.html must contain Version 1.160.1 tag');
-    assert.ok(indexTemplate.includes('Changelog (v1.160.1):'), 'index_template.html must contain Changelog (v1.160.1)');
-
-    const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('v1.160.1</span>'), 'index.html must contain header badge v1.160.1');
-    assert.ok(indexHtml.includes('Version 1.160.1</span>'), 'index.html must contain Version 1.160.1 tag');
-    assert.ok(indexHtml.includes('Changelog (v1.160.1):'), 'index.html must contain Changelog (v1.160.1)');
+    assertVersionConsistency('1.160.1');
   });
 
   test('DOM Architecture: #layer-toggle-solar checkbox exists in index_template.html and index.html', () => {
@@ -31085,6 +31071,251 @@ describe('Omnidimensional 4D Flight Replay Engine & Rolling Buffer Architecture 
     } finally {
       global.fetch = originalFetch;
     }
+  });
+});
+
+describe('v1.161.0 Topbar Cleanup, Unified System Group & Top Ribbon Customizer', () => {
+  test('Version consistency: v1.161.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.161.0');
+  });
+
+  test('Topbar DOM architecture: #header-system-status-group, compact #locate-me-btn, and #more-menu-customize-ribbon-btn exist in templates', () => {
+    const template = fs.readFileSync('index_template.html', 'utf8');
+    assert.ok(template.includes('id="header-system-status-group"'), 'Template must include #header-system-status-group');
+    assert.ok(template.includes('id="header-bridge-pill"'), 'Template must include #header-bridge-pill');
+    assert.ok(template.includes('id="header-ambient-buffer-pill"'), 'Template must include #header-ambient-buffer-pill');
+    assert.ok(template.includes('id="locate-me-btn"'), 'Template must include #locate-me-btn');
+    assert.ok(template.includes('id="locate-me-label"'), 'Template must include #locate-me-label');
+    assert.ok(template.includes('id="more-menu-customize-ribbon-btn"'), 'Template must include #more-menu-customize-ribbon-btn');
+    assert.ok(template.includes('id="ribbon-settings-card"'), 'Template must include #ribbon-settings-card in config modal');
+    assert.ok(template.includes('id="ribbon-preset-select"'), 'Template must include #ribbon-preset-select');
+    assert.ok(template.includes('id="reset-ribbon-config-btn"'), 'Template must include #reset-ribbon-config-btn');
+  });
+
+  test('Stylesheet rules enforce nowrap on ADS-B and header buttons, compact locate button, and 1500px collapse', () => {
+    const css = fs.readFileSync('index.css', 'utf8');
+    assert.ok(css.includes('#adsb-topbar-btn') && css.includes('white-space: nowrap !important;'), 'index.css must enforce nowrap on #adsb-topbar-btn');
+    assert.ok(css.includes('#locate-me-label') && css.includes('display: none !important;'), 'index.css must hide locate-me-label visually');
+    assert.ok(css.includes('.header-system-status-group'), 'index.css must style .header-system-status-group');
+    assert.ok(css.includes('@media (max-width: 1500px)'), 'index.css must define responsive collapse breakpoint at 1500px');
+    assert.ok(css.includes('.ribbon-hidden'), 'index.css must define .ribbon-hidden');
+  });
+
+  test('Bridge version mismatch sets .is-mismatch and descriptive warning tooltip', () => {
+    const dom = new JSDOM(`
+      <div class="header-system-status-group">
+        <button id="header-bridge-pill" class="header-bridge-pill is-offline">
+          <span id="header-bridge-dot"></span>
+          <span id="header-bridge-summary">Bridge: Offline</span>
+        </button>
+      </div>
+      <span class="header-version-badge">v1.161.0</span>
+      <span class="version-tag">Version 1.161.0</span>
+    `);
+    const prevDoc = global.document;
+    const prevWin = global.window;
+    global.document = dom.window.document;
+    global.window = dom.window;
+
+    try {
+      if (typeof applyCompanionStatusUI === 'function') {
+        applyCompanionStatusUI({
+          connected: true,
+          version: '1.155.0'
+        });
+
+        const pill = dom.window.document.getElementById('header-bridge-pill');
+        const summary = dom.window.document.getElementById('header-bridge-summary');
+        assert.ok(pill.classList.contains('is-mismatch'), 'Bridge pill must have .is-mismatch on version difference');
+        assert.ok(pill.title.includes('Version Mismatch'), 'Bridge pill title must warn about mismatch');
+        assert.strictEqual(summary.textContent, 'Bridge (vMismatch)');
+      }
+    } finally {
+      global.document = prevDoc;
+      global.window = prevWin;
+    }
+  });
+
+  test('Top Ribbon Customizer functions: getTopbarRibbonConfig, setTopbarRibbonConfig, resetTopbarRibbonConfig', () => {
+    const dom = new JSDOM(`
+      <div class="topbar-center">
+        <div id="header-search-container"></div>
+        <div class="header-mission-time-container"></div>
+        <div class="header-telemetry-container"></div>
+        <div id="header-system-status-group">
+          <div class="header-bridge-container">
+            <button id="header-bridge-pill"></button>
+          </div>
+          <div class="header-ambient-buffer-container">
+            <button id="header-ambient-buffer-pill"></button>
+          </div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button id="header-unit-toggle-btn"></button>
+        <button id="theme-toggle-btn"></button>
+        <button id="adsb-topbar-btn"></button>
+        <button id="intro-tour-btn"></button>
+        <button id="about-btn"></button>
+        <button id="useful-links-btn"></button>
+        <button id="header-more-btn"></button>
+      </div>
+      <div id="ribbon-settings-card">
+        <select id="ribbon-preset-select">
+          <option value="standard">Standard</option>
+          <option value="compact">Compact</option>
+          <option value="studio">Studio</option>
+          <option value="custom">Custom</option>
+        </select>
+        <div id="ribbon-items-list"></div>
+        <button id="reset-ribbon-config-btn"></button>
+      </div>
+    `);
+
+    const prevDoc = global.document;
+    const prevWin = global.window;
+    global.document = dom.window.document;
+    global.window = dom.window;
+
+    try {
+      if (typeof getTopbarRibbonConfig === 'function') {
+        const config = getTopbarRibbonConfig();
+        assert.ok(config && config.items, 'Ribbon config must return valid items');
+        assert.strictEqual(config.items.search.visible, true);
+        assert.strictEqual(config.items.adsb.visible, true);
+
+        config.preset = 'custom';
+        config.items.units.visible = false;
+        setTopbarRibbonConfig(config);
+
+        const unitsBtn = dom.window.document.getElementById('header-unit-toggle-btn');
+        assert.ok(unitsBtn.classList.contains('ribbon-hidden'), 'Hiding units must add .ribbon-hidden class');
+
+        resetTopbarRibbonConfig();
+        assert.strictEqual(unitsBtn.classList.contains('ribbon-hidden'), false, 'Resetting must restore units visibility');
+      }
+    } finally {
+      global.document = prevDoc;
+      global.window = prevWin;
+    }
+  });
+});
+
+describe('Context-Aware Bridge & Web App Version Sync & Auto-Restart Suite', () => {
+  test('compareSemver accurately compares semver strings', () => {
+    assert.strictEqual(compareSemver('1.161.0', '1.160.1'), 1, '1.161.0 should be greater than 1.160.1');
+    assert.strictEqual(compareSemver('1.160.1', '1.161.0'), -1, '1.160.1 should be less than 1.161.0');
+    assert.strictEqual(compareSemver('1.161.0', '1.161.0'), 0, 'equal versions return 0');
+    assert.strictEqual(compareSemver('v1.161.0', '1.161.0'), 0, 'v-prefix is normalized');
+    assert.strictEqual(compareSemver('1.161.1', '1.161.0'), 1, 'patch increments are detected');
+    assert.strictEqual(compareSemver('2.0.0', '1.99.99'), 1, 'major increments are detected');
+  });
+
+  test('When Bridge is newer than Web App, UI prompts to reload Web App rather than killing bridge', () => {
+    const dom = new JSDOM(`
+      <div id="companion-version-mismatch-alert" style="display: none;">
+        <span id="companion-version-mismatch-text"></span>
+        <button id="companion-reload-btn" style="display: none;"></button>
+        <button id="companion-restart-btn" style="display: none;"></button>
+        <div id="companion-version-mismatch-detail"></div>
+        <span id="companion-running-version"></span>
+        <span id="companion-target-version"></span>
+      </div>
+      <div class="header-system-status-group">
+        <button id="header-bridge-pill" class="header-bridge-pill is-offline">
+          <span id="header-bridge-dot"></span>
+          <span id="header-bridge-summary">Bridge: Offline</span>
+        </button>
+      </div>
+      <span class="header-version-badge">v1.160.1</span>
+      <span class="version-tag">Version 1.160.1</span>
+    `);
+    const prevDoc = global.document;
+    const prevWin = global.window;
+    global.document = dom.window.document;
+    global.window = dom.window;
+
+    try {
+      applyCompanionStatusUI({
+        connected: true,
+        version: '1.161.0'
+      });
+
+      const alert = dom.window.document.getElementById('companion-version-mismatch-alert');
+      const text = dom.window.document.getElementById('companion-version-mismatch-text');
+      const reloadBtn = dom.window.document.getElementById('companion-reload-btn');
+      const restartBtn = dom.window.document.getElementById('companion-restart-btn');
+      const pill = dom.window.document.getElementById('header-bridge-pill');
+
+      assert.strictEqual(alert.style.display, 'flex');
+      assert.ok(text.textContent.includes('Web App Outdated'), 'Text must warn that web app is outdated');
+      assert.strictEqual(reloadBtn.style.display, 'inline-block', 'Reload button must be visible');
+      assert.strictEqual(restartBtn.style.display, 'none', 'Restart bridge button must be hidden');
+      assert.ok(pill.title.includes('Web App Outdated'), 'Header pill title must guide user to reload');
+    } finally {
+      global.document = prevDoc;
+      global.window = prevWin;
+    }
+  });
+
+  test('When Bridge is older than Web App, UI prompts to restart Bridge', () => {
+    const dom = new JSDOM(`
+      <div id="companion-version-mismatch-alert" style="display: none;">
+        <span id="companion-version-mismatch-text"></span>
+        <button id="companion-reload-btn" style="display: none;"></button>
+        <button id="companion-restart-btn" style="display: none;"></button>
+        <div id="companion-version-mismatch-detail"></div>
+        <span id="companion-running-version"></span>
+        <span id="companion-target-version"></span>
+      </div>
+      <div class="header-system-status-group">
+        <button id="header-bridge-pill" class="header-bridge-pill is-offline">
+          <span id="header-bridge-dot"></span>
+          <span id="header-bridge-summary">Bridge: Offline</span>
+        </button>
+      </div>
+      <span class="header-version-badge">v1.161.0</span>
+      <span class="version-tag">Version 1.161.0</span>
+    `);
+    const prevDoc = global.document;
+    const prevWin = global.window;
+    global.document = dom.window.document;
+    global.window = dom.window;
+
+    try {
+      applyCompanionStatusUI({
+        connected: true,
+        version: '1.159.0'
+      });
+
+      const alert = dom.window.document.getElementById('companion-version-mismatch-alert');
+      const text = dom.window.document.getElementById('companion-version-mismatch-text');
+      const reloadBtn = dom.window.document.getElementById('companion-reload-btn');
+      const restartBtn = dom.window.document.getElementById('companion-restart-btn');
+      const pill = dom.window.document.getElementById('header-bridge-pill');
+
+      assert.strictEqual(alert.style.display, 'flex');
+      assert.ok(text.textContent.includes('Bridge Service Outdated'), 'Text must warn that bridge service is outdated');
+      assert.strictEqual(reloadBtn.style.display, 'none', 'Reload button must be hidden');
+      assert.strictEqual(restartBtn.style.display, 'inline-block', 'Restart bridge button must be visible');
+      assert.ok(pill.title.includes('Bridge Outdated'), 'Header pill title must guide user to restart');
+    } finally {
+      global.document = prevDoc;
+      global.window = prevWin;
+    }
+  });
+
+  test('Template and build output contain companion-reload-btn and start-bridge.ps1 exists', () => {
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf-8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8');
+    assert.ok(templateHtml.includes('id="companion-reload-btn"'), 'index_template.html must contain companion-reload-btn');
+    assert.ok(indexHtml.includes('id="companion-reload-btn"'), 'index.html must contain companion-reload-btn');
+
+    const ps1Path = path.join(__dirname, 'start-bridge.ps1');
+    assert.ok(fs.existsSync(ps1Path), 'start-bridge.ps1 must exist');
+    const ps1Content = fs.readFileSync(ps1Path, 'utf-8');
+    assert.ok(ps1Content.includes('42'), 'start-bridge.ps1 must handle exit code 42');
+    assert.ok(ps1Content.includes('AALAAPI_RESTART_LOOP'), 'start-bridge.ps1 must set AALAAPI_RESTART_LOOP');
   });
 });
 

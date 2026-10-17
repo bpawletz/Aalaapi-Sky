@@ -249,6 +249,22 @@ function initMobileNav() {
       });
     }
 
+    const moreCustomizeBtn = document.getElementById('more-menu-customize-ribbon-btn');
+    if (moreCustomizeBtn && typeof moreCustomizeBtn.addEventListener === 'function') {
+      moreCustomizeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        moreMenu.classList.add('hidden');
+        const configModal = document.getElementById('config-modal');
+        if (configModal) {
+          configModal.classList.remove('hidden');
+          const card = document.getElementById('ribbon-settings-card');
+          if (card && typeof card.scrollIntoView === 'function') {
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      });
+    }
+
     // Dismiss menu on click outside
     document.addEventListener('click', (e) => {
       if (!moreMenu.contains(e.target) && e.target !== moreBtn && !moreBtn.contains(e.target)) {
@@ -263,6 +279,255 @@ function initMobileNav() {
       }
     });
   }
+
+  // Initialize Top Ribbon layout customizer
+  initTopbarRibbon();
+}
+
+/**
+ * Customizable Top Ribbon Architecture (v1.161.0)
+ * Allows pilots to toggle visibility and reorder items on the top menu bar,
+ * with presets ('standard', 'compact', 'studio', 'custom') persisted in localStorage.
+ */
+const RIBBON_STORAGE_KEY = 'aalaapi_sky_topbar_ribbon_config';
+
+const DEFAULT_RIBBON_ITEMS = [
+  { id: 'search', label: 'Search & Location Bar', selector: '#header-search-container', defaultVisible: true },
+  { id: 'mission-time', label: 'Mission Flight Time', selector: '.header-mission-time-container', defaultVisible: true },
+  { id: 'weather', label: 'Weather & TFR Status', selector: '.header-telemetry-container', defaultVisible: true },
+  { id: 'system-bridge', label: 'Bridge & Ambient Buffer', selector: '#header-system-status-group', defaultVisible: true },
+  { id: 'units', label: 'Units Toggle (FT / MPH)', selector: '#header-unit-toggle-btn', defaultVisible: true },
+  { id: 'theme', label: 'Theme Toggle (Light / Dark)', selector: '#theme-toggle-btn', defaultVisible: true },
+  { id: 'adsb', label: 'ADS-B Airspace Alerts', selector: '#adsb-topbar-btn', defaultVisible: true },
+  { id: 'intro', label: 'Intro Guide Tour', selector: '#intro-tour-btn', defaultVisible: true },
+  { id: 'about', label: 'About & Changelog', selector: '#about-btn', defaultVisible: true },
+  { id: 'links', label: 'Useful Aviation Links', selector: '#useful-links-btn', defaultVisible: true }
+];
+
+function getDefaultRibbonConfig() {
+  const items = {};
+  DEFAULT_RIBBON_ITEMS.forEach((it, idx) => {
+    items[it.id] = {
+      visible: it.defaultVisible,
+      order: (idx + 1) * 10
+    };
+  });
+  return { preset: 'standard', items };
+}
+
+function getTopbarRibbonConfig() {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(RIBBON_STORAGE_KEY) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.items) {
+        const defaults = getDefaultRibbonConfig();
+        return {
+          preset: parsed.preset || 'custom',
+          items: { ...defaults.items, ...parsed.items }
+        };
+      }
+    }
+  } catch (e) {
+    Logger.warn('Error reading ribbon config from localStorage:', e);
+  }
+  return getDefaultRibbonConfig();
+}
+
+function setTopbarRibbonConfig(cfg) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(RIBBON_STORAGE_KEY, JSON.stringify(cfg));
+    }
+  } catch (e) {
+    Logger.warn('Error saving ribbon config:', e);
+  }
+  applyTopbarRibbonConfig(cfg);
+}
+
+function applyTopbarRibbonConfig(cfg) {
+  if (typeof document === 'undefined') return;
+  const config = cfg || getTopbarRibbonConfig();
+  let hasHiddenItem = false;
+
+  DEFAULT_RIBBON_ITEMS.forEach(def => {
+    const itemCfg = config.items[def.id];
+    const el = document.querySelector(def.selector);
+    if (!el) return;
+
+    const isVisible = itemCfg ? itemCfg.visible : def.defaultVisible;
+    if (isVisible) {
+      el.classList.remove('ribbon-hidden');
+      if (['intro', 'about', 'links'].includes(def.id) && config.preset === 'studio') {
+        el.classList.add('ribbon-force-show');
+      } else {
+        el.classList.remove('ribbon-force-show');
+      }
+    } else {
+      el.classList.add('ribbon-hidden');
+      el.classList.remove('ribbon-force-show');
+      hasHiddenItem = true;
+    }
+
+    if (itemCfg && typeof itemCfg.order === 'number') {
+      el.style.order = String(itemCfg.order);
+    }
+  });
+
+  const moreBtn = document.getElementById('header-more-btn');
+  if (moreBtn) {
+    if (hasHiddenItem) {
+      moreBtn.style.display = 'inline-flex';
+    } else if (typeof window !== 'undefined' && window.innerWidth > 1500) {
+      moreBtn.style.display = '';
+    }
+  }
+}
+
+function resetTopbarRibbonConfig() {
+  const def = getDefaultRibbonConfig();
+  setTopbarRibbonConfig(def);
+  renderRibbonCustomizerUI();
+}
+
+function renderRibbonCustomizerUI() {
+  if (typeof document === 'undefined') return;
+  const listEl = document.getElementById('ribbon-items-list');
+  const presetSelect = document.getElementById('ribbon-preset-select');
+  if (!listEl || typeof listEl.appendChild !== 'function') return;
+
+  const config = getTopbarRibbonConfig();
+  if (presetSelect) {
+    presetSelect.value = config.preset;
+  }
+
+  listEl.innerHTML = '';
+
+  const sortedItems = [...DEFAULT_RIBBON_ITEMS].sort((a, b) => {
+    const ordA = (config.items[a.id]?.order) ?? 0;
+    const ordB = (config.items[b.id]?.order) ?? 0;
+    return ordA - ordB;
+  });
+
+  sortedItems.forEach((item, idx) => {
+    const itemCfg = config.items[item.id] || { visible: item.defaultVisible, order: (idx + 1) * 10 };
+    const row = document.createElement('div');
+    if (!row) return;
+    row.className = 'ribbon-item-row';
+    if (row.dataset) {
+      row.dataset.itemId = item.id;
+    }
+    if (typeof row.setAttribute === 'function') {
+      row.setAttribute('data-item-id', item.id);
+    }
+
+    row.innerHTML = `
+      <label class="ribbon-item-info" style="cursor: pointer; margin: 0; user-select: none;">
+        <input type="checkbox" class="ribbon-item-checkbox" data-id="${item.id}" ${itemCfg.visible ? 'checked' : ''} style="cursor: pointer; margin: 0;">
+        <span>${item.label}</span>
+      </label>
+      <div class="ribbon-item-actions">
+        <button type="button" class="btn-ribbon-move btn-move-up" data-id="${item.id}" title="Move Earlier" ${idx === 0 ? 'disabled style="opacity: 0.3;"' : ''}>▲</button>
+        <button type="button" class="btn-ribbon-move btn-move-down" data-id="${item.id}" title="Move Later" ${idx === sortedItems.length - 1 ? 'disabled style="opacity: 0.3;"' : ''}>▼</button>
+      </div>
+    `;
+
+    const checkbox = row.querySelector ? row.querySelector('.ribbon-item-checkbox') : null;
+    if (checkbox && typeof checkbox.addEventListener === 'function') {
+      checkbox.addEventListener('change', () => {
+        config.preset = 'custom';
+        if (!config.items[item.id]) config.items[item.id] = {};
+        config.items[item.id].visible = checkbox.checked;
+        setTopbarRibbonConfig(config);
+        if (presetSelect) presetSelect.value = 'custom';
+      });
+    }
+
+    const upBtn = row.querySelector ? row.querySelector('.btn-move-up') : null;
+    if (upBtn && typeof upBtn.addEventListener === 'function') {
+      upBtn.addEventListener('click', () => {
+        if (idx === 0) return;
+        const prevItem = sortedItems[idx - 1];
+        const curOrder = config.items[item.id].order;
+        const prevOrder = config.items[prevItem.id].order;
+        config.items[item.id].order = prevOrder;
+        config.items[prevItem.id].order = curOrder;
+        config.preset = 'custom';
+        setTopbarRibbonConfig(config);
+        renderRibbonCustomizerUI();
+      });
+    }
+
+    const downBtn = row.querySelector ? row.querySelector('.btn-move-down') : null;
+    if (downBtn && typeof downBtn.addEventListener === 'function') {
+      downBtn.addEventListener('click', () => {
+        if (idx === sortedItems.length - 1) return;
+        const nextItem = sortedItems[idx + 1];
+        const curOrder = config.items[item.id].order;
+        const nextOrder = config.items[nextItem.id].order;
+        config.items[item.id].order = nextOrder;
+        config.items[nextItem.id].order = curOrder;
+        config.preset = 'custom';
+        setTopbarRibbonConfig(config);
+        renderRibbonCustomizerUI();
+      });
+    }
+
+    listEl.appendChild(row);
+  });
+}
+
+function initTopbarRibbon() {
+  if (typeof document === 'undefined') return;
+
+  const config = getTopbarRibbonConfig();
+  applyTopbarRibbonConfig(config);
+
+  const presetSelect = document.getElementById('ribbon-preset-select');
+  if (presetSelect && typeof presetSelect.addEventListener === 'function') {
+    presetSelect.addEventListener('change', () => {
+      const val = presetSelect.value;
+      const current = getTopbarRibbonConfig();
+      if (val === 'standard') {
+        resetTopbarRibbonConfig();
+        return;
+      }
+      if (val === 'compact') {
+        current.preset = 'compact';
+        DEFAULT_RIBBON_ITEMS.forEach(it => {
+          if (['units', 'theme', 'intro', 'about', 'links'].includes(it.id)) {
+            current.items[it.id].visible = false;
+          } else {
+            current.items[it.id].visible = true;
+          }
+        });
+      } else if (val === 'studio') {
+        current.preset = 'studio';
+        DEFAULT_RIBBON_ITEMS.forEach(it => {
+          current.items[it.id].visible = true;
+        });
+      }
+      setTopbarRibbonConfig(current);
+      renderRibbonCustomizerUI();
+    });
+  }
+
+  const resetBtn = document.getElementById('reset-ribbon-config-btn');
+  if (resetBtn && typeof resetBtn.addEventListener === 'function') {
+    resetBtn.addEventListener('click', () => {
+      resetTopbarRibbonConfig();
+    });
+  }
+
+  renderRibbonCustomizerUI();
+}
+
+if (typeof window !== 'undefined') {
+  window.getTopbarRibbonConfig = getTopbarRibbonConfig;
+  window.setTopbarRibbonConfig = setTopbarRibbonConfig;
+  window.applyTopbarRibbonConfig = applyTopbarRibbonConfig;
+  window.resetTopbarRibbonConfig = resetTopbarRibbonConfig;
+  window.initTopbarRibbon = initTopbarRibbon;
 }
 
 /**

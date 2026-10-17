@@ -4,15 +4,17 @@
     "playwright": "^1.64.0"
   },
   "name": "aalaapi-sky",
-  "version": "1.160.1",
+  "version": "1.161.0",
   "description": "Aalaapi-Sky Drone Flight Planner & Editor for DJI Fly",
   "main": "src/main.js",
   "scripts": {
     "build": "python scratch/build.py",
     "bridge": "node tools/companion/server.js",
+    "bridge:loop": "powershell -ExecutionPolicy Bypass -File ./start-bridge.ps1",
     "bridge:stop": "node -e \"require('http').request({hostname:'127.0.0.1',port:process.env.AALAAPI_PORT||8765,path:'/api/shutdown',method:'POST'},res=>{console.log('Aalaapi Sky Bridge stopped.');process.exit(0);}).on('error',()=>console.log('Aalaapi Sky Bridge is not running.')).end()\"",
     "check:modules": "node tools/build/check_modules.js",
     "companion": "node tools/companion/server.js",
+    "companion:loop": "powershell -ExecutionPolicy Bypass -File ./start-bridge.ps1",
     "companion:stop": "node -e \"require('http').request({hostname:'127.0.0.1',port:process.env.AALAAPI_PORT||8765,path:'/api/shutdown',method:'POST'},res=>{console.log('Aalaapi Sky Companion stopped.');process.exit(0);}).on('error',()=>console.log('Aalaapi Sky Companion is not running.')).end()\"",
     "record:features": "node tools/record_features.js",
     "record:features:all": "node tools/record_features.js --all",

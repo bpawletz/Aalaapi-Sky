@@ -2089,6 +2089,66 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(600);
     }
+  },
+  {
+    id: 'topbar_ribbon',
+    name: 'Topbar Cleanup, Unified System Group & Top Ribbon Customizer',
+    description: 'Customizable top menu ribbon, unified bridge/buffer status group, compact search pin, and version tag in About modal.',
+    issueRef: 'v1.161.0',
+    run: async (page) => {
+      // 1. Center map on default rural location
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Open More menu and launch Ribbon Customizer
+      const moreBtn = await page.$('#header-more-btn');
+      if (moreBtn) {
+        await moreBtn.click();
+        await page.waitForTimeout(600);
+        const customizeBtn = await page.$('#more-menu-customize-ribbon-btn');
+        if (customizeBtn) {
+          await customizeBtn.click();
+          await page.waitForTimeout(800);
+        }
+      }
+
+      // 3. Test preset selection in Settings modal
+      const presetSelect = await page.$('#ribbon-preset-select');
+      if (presetSelect) {
+        await presetSelect.selectOption('compact');
+        await page.waitForTimeout(800);
+        await presetSelect.selectOption('studio');
+        await page.waitForTimeout(800);
+        await presetSelect.selectOption('standard');
+        await page.waitForTimeout(800);
+      }
+
+      // 4. Close settings modal
+      const closeSettings = await page.$('#close-config-btn');
+      if (closeSettings) {
+        await closeSettings.click();
+        await page.waitForTimeout(600);
+      }
+
+      // 5. Open About modal to demonstrate high-contrast version display
+      const aboutBtn = await page.$('#about-btn');
+      if (aboutBtn && await aboutBtn.isVisible()) {
+        await aboutBtn.click();
+        await page.waitForTimeout(1000);
+        const closeAbout = await page.$('#close-about-btn');
+        if (closeAbout) {
+          await closeAbout.click();
+          await page.waitForTimeout(600);
+        }
+      }
+
+      // 6. Inspect unified bridge/buffer status group
+      const bridgePill = await page.$('#header-bridge-pill');
+      if (bridgePill) {
+        await bridgePill.click();
+        await page.waitForTimeout(800);
+      }
+    }
   }
 ];
 

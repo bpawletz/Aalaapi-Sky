@@ -240,6 +240,7 @@ function initGeolocation() {
     if (btn) {
       btn.style.color = isCached ? 'var(--accent-cyan, #06b6d4)' : 'var(--accent-green, #10b981)';
       btn.style.borderColor = isCached ? 'rgba(6, 182, 212, 0.4)' : 'rgba(16, 185, 129, 0.4)';
+      btn.title = isCached ? 'Map Centered (Cached Location)' : 'Map Centered (GPS Located)';
       btn.disabled = false;
     }
     if (typeof map !== 'undefined' && map) {
@@ -264,7 +265,10 @@ function initGeolocation() {
 
   if (!navigator.geolocation) {
     if (label && !userLocation) label.textContent = 'Location Not Supported';
-    if (btn) btn.disabled = true;
+    if (btn) {
+      btn.disabled = true;
+      btn.title = 'Geolocation not supported by browser';
+    }
     return;
   }
 
@@ -272,6 +276,7 @@ function initGeolocation() {
     btn.addEventListener('click', () => {
       if (label) label.textContent = '⏳ Locating…';
       btn.disabled = true;
+      btn.title = 'Locating current GPS position…';
       btn.style.color = '';
       btn.style.borderColor = '';
       navigator.geolocation.getCurrentPosition(
@@ -303,6 +308,7 @@ function initGeolocation() {
           if (btn) {
             btn.style.color = 'var(--accent-red, #ef4444)';
             btn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+            btn.title = 'Location access denied or unavailable';
             btn.disabled = false;
           }
         },
