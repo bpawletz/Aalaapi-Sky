@@ -236,6 +236,8 @@ function initMap() {
   map = L.map('map', {
     zoomControl: false // We will add zoom control on top-left instead of default top-left
   }).setView([startLat, startLng], 17);
+  if (typeof window !== 'undefined') window.map = map;
+  if (typeof global !== 'undefined') global.map = map;
 
   // Add zoom control to top-left
   L.control.zoom({ position: 'topleft' }).addTo(map);
