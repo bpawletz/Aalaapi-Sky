@@ -2633,6 +2633,7 @@ function updateAcousticAdvisorUI(waypoints) {
 
   const applyBtn = document.getElementById('btn-acoustic-apply-altitude');
   if (applyBtn) {
+    if (!applyBtn.dataset) applyBtn.dataset = {};
     applyBtn.dataset.stealthAltM = String(stealthAltM);
     applyBtn.title = `Set flight altitude to ${formatDist(stealthAltM)} (${stealthAltM}m) for low-noise stealth operation`;
   }

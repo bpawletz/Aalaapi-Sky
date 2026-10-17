@@ -24321,6 +24321,8 @@ function initMap() {
   map = L.map('map', {
     zoomControl: false // We will add zoom control on top-left instead of default top-left
   }).setView([startLat, startLng], 17);
+  if (typeof window !== 'undefined') window.map = map;
+  if (typeof global !== 'undefined') global.map = map;
 
   // Add zoom control to top-left
   L.control.zoom({ position: 'topleft' }).addTo(map);
@@ -38635,6 +38637,7 @@ function updateAcousticAdvisorUI(waypoints) {
 
   const applyBtn = document.getElementById('btn-acoustic-apply-altitude');
   if (applyBtn) {
+    if (!applyBtn.dataset) applyBtn.dataset = {};
     applyBtn.dataset.stealthAltM = String(stealthAltM);
     applyBtn.title = `Set flight altitude to ${formatDist(stealthAltM)} (${stealthAltM}m) for low-noise stealth operation`;
   }
@@ -55338,6 +55341,45 @@ function getWaypointHeadingAndPitch(idx, waypoints) {
 }
 
 let showDroneModels = true;
+let showAcoustic3D = (function() {
+  try {
+    return localStorage.getItem('aalaapi_show_3d_acoustic_rings') === 'true';
+  } catch (e) {
+    return false;
+  }
+})();
+let acoustic3DGroup = null;
+let fpvAcousticRingGroup = null;
+
+function set3DAcousticOverlayEnabled(enabled) {
+  showAcoustic3D = !!enabled;
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('aalaapi_show_3d_acoustic_rings', showAcoustic3D ? 'true' : 'false');
+    }
+  } catch (e) {}
+
+  if (typeof document !== 'undefined') {
+    const indicator = document.getElementById('indicator-3d-noise');
+    if (indicator) {
+      indicator.style.background = showAcoustic3D ? '#10b981' : '#ef4444';
+    }
+    const cardToggle = document.getElementById('acoustic-3d-overlay-toggle');
+    if (cardToggle && cardToggle.checked !== showAcoustic3D) {
+      cardToggle.checked = showAcoustic3D;
+    }
+  }
+
+  if (acoustic3DGroup) {
+    acoustic3DGroup.visible = showAcoustic3D && !fpvActive;
+  }
+  if (fpvAcousticRingGroup) {
+    fpvAcousticRingGroup.visible = showAcoustic3D && fpvActive;
+  }
+}
+if (typeof window !== 'undefined') {
+  window.set3DAcousticOverlayEnabled = set3DAcousticOverlayEnabled;
+}
 
 // Create a procedural 3D Quadcopter Drone mesh for waypoint visualization
 function create3DDroneMesh(colorHex, scale = 1.0) {
@@ -55447,6 +55489,8 @@ function recreate3DWaypointsAndPaths() {
   if (pathsGroup) threeScene.remove(pathsGroup);
   if (groundLinesGroup) threeScene.remove(groundLinesGroup);
   if (conesGroup) threeScene.remove(conesGroup);
+  if (acoustic3DGroup) threeScene.remove(acoustic3DGroup);
+  if (fpvAcousticRingGroup) threeScene.remove(fpvAcousticRingGroup);
 
   const waypoints = getCurrentWaypoints();
   if (!waypoints || waypoints.length === 0) return;
@@ -55459,6 +55503,8 @@ function recreate3DWaypointsAndPaths() {
   pathsGroup = new THREE.Group();
   groundLinesGroup = new THREE.Group();
   conesGroup = new THREE.Group();
+  acoustic3DGroup = new THREE.Group();
+  fpvAcousticRingGroup = new THREE.Group();
 
   const materialCache = {};
 
@@ -55730,12 +55776,156 @@ function recreate3DWaypointsAndPaths() {
     }
   }
 
+  // Plot 3D Ground Observer Acoustic Rings & Sound Cones (v1.164.0)
+  try {
+    const summary = (typeof getMissionAcousticSummary === 'function')
+      ? getMissionAcousticSummary(waypoints)
+      : { profile: { refDba1m: 73.0 }, missionAltM: 50, missionSpeedMs: 4, ambientDba: 45, audibilityRadiusM: 35, noticeableRadius55M: 0, intrusiveRadius65M: 0 };
+
+    const maxRings3D = 14;
+    const step3D = Math.max(1, Math.ceil(waypoints.length / maxRings3D));
+
+    for (let i = 0; i < waypoints.length; i += step3D) {
+      const wp = waypoints[i];
+      if (!wp) continue;
+      const wx = wp.x || 0;
+      const wy = Math.max(2, wp.alt || summary.missionAltM || 50);
+      const wz = -(wp.y || 0);
+      const wSpd = (typeof wp.speed === 'number' && wp.speed > 0) ? wp.speed : summary.missionSpeedMs;
+
+      const rAud = (typeof calculateGroundRadiusForTargetDba === 'function')
+        ? calculateGroundRadiusForTargetDba(summary.profile.refDba1m, wy, summary.ambientDba, wSpd)
+        : summary.audibilityRadiusM;
+      const rNotice = (typeof calculateGroundRadiusForTargetDba === 'function')
+        ? calculateGroundRadiusForTargetDba(summary.profile.refDba1m, wy, 55, wSpd)
+        : summary.noticeableRadius55M;
+      const rIntrusive = (typeof calculateGroundRadiusForTargetDba === 'function')
+        ? calculateGroundRadiusForTargetDba(summary.profile.refDba1m, wy, 65, wSpd)
+        : summary.intrusiveRadius65M;
+
+      const effectiveOuterR = Math.min(220, Math.max(6, rAud > 1 ? rAud : 10));
+
+      // Outer Audibility Ground Ring (Emerald / Cyan)
+      const audRingGeom = new THREE.RingGeometry(Math.max(1, effectiveOuterR - 1.2), effectiveOuterR, 32);
+      const audRingMat = new THREE.MeshBasicMaterial({
+        color: rAud > 1 ? 0x10b981 : 0x06b6d4,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false
+      });
+      const audRingMesh = new THREE.Mesh(audRingGeom, audRingMat);
+      audRingMesh.rotation.x = Math.PI / 2;
+      audRingMesh.position.set(wx, 0.08, wz);
+      acoustic3DGroup.add(audRingMesh);
+
+      // Soft ground fill disc
+      const fillGeom = new THREE.CircleGeometry(effectiveOuterR, 32);
+      const fillMat = new THREE.MeshBasicMaterial({
+        color: rAud > 1 ? 0x10b981 : 0x06b6d4,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.08,
+        depthWrite: false
+      });
+      const fillMesh = new THREE.Mesh(fillGeom, fillMat);
+      fillMesh.rotation.x = Math.PI / 2;
+      fillMesh.position.set(wx, 0.06, wz);
+      acoustic3DGroup.add(fillMesh);
+
+      // 55 dBA Noticeable Ground Ring (Amber)
+      if (rNotice > 1.5) {
+        const noticeR = Math.min(180, rNotice);
+        const noticeGeom = new THREE.RingGeometry(Math.max(0.8, noticeR - 1.0), noticeR, 32);
+        const noticeMat = new THREE.MeshBasicMaterial({
+          color: 0xf59e0b,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.65,
+          depthWrite: false
+        });
+        const noticeMesh = new THREE.Mesh(noticeGeom, noticeMat);
+        noticeMesh.rotation.x = Math.PI / 2;
+        noticeMesh.position.set(wx, 0.10, wz);
+        acoustic3DGroup.add(noticeMesh);
+      }
+
+      // 65 dBA Intrusive Core Ring (Red)
+      if (rIntrusive > 1.0) {
+        const intrR = Math.min(120, rIntrusive);
+        const intrGeom = new THREE.RingGeometry(Math.max(0.5, intrR - 1.0), intrR, 32);
+        const intrMat = new THREE.MeshBasicMaterial({
+          color: 0xef4444,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.75,
+          depthWrite: false
+        });
+        const intrMesh = new THREE.Mesh(intrGeom, intrMat);
+        intrMesh.rotation.x = Math.PI / 2;
+        intrMesh.position.set(wx, 0.12, wz);
+        acoustic3DGroup.add(intrMesh);
+      }
+
+      // Vertical Acoustic Propagation Cone from Drone to Ground (open-ended cylinder wireframe)
+      if (i === 0 || i === waypoints.length - 1 || i % (step3D * 2) === 0) {
+        const coneBottomR = Math.min(35, effectiveOuterR * 0.45);
+        const waveConeGeom = new THREE.CylinderGeometry(0.4, coneBottomR, wy, 16, 1, true);
+        const waveConeMat = new THREE.MeshBasicMaterial({
+          color: rNotice > 1.5 ? 0xf59e0b : 0x10b981,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.16,
+          depthWrite: false
+        });
+        const waveConeMesh = new THREE.Mesh(waveConeGeom, waveConeMat);
+        waveConeMesh.position.set(wx, wy * 0.5, wz);
+        acoustic3DGroup.add(waveConeMesh);
+      }
+    }
+
+    // Dynamic FPV Live Ground Acoustic Ripple Ring (follows drone during FPV Walkthrough)
+    const fpvOuterGeom = new THREE.RingGeometry(0.92, 1.0, 36);
+    const fpvOuterMat = new THREE.MeshBasicMaterial({
+      color: 0x10b981,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.75,
+      depthWrite: false
+    });
+    const fpvOuterMesh = new THREE.Mesh(fpvOuterGeom, fpvOuterMat);
+    fpvOuterMesh.rotation.x = Math.PI / 2;
+    fpvAcousticRingGroup.add(fpvOuterMesh);
+
+    const fpvInnerGeom = new THREE.CircleGeometry(1.0, 36);
+    const fpvInnerMat = new THREE.MeshBasicMaterial({
+      color: 0x06b6d4,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.14,
+      depthWrite: false
+    });
+    const fpvInnerMesh = new THREE.Mesh(fpvInnerGeom, fpvInnerMat);
+    fpvInnerMesh.rotation.x = Math.PI / 2;
+    fpvAcousticRingGroup.add(fpvInnerMesh);
+
+    fpvAcousticRingGroup.userData = { outerMesh: fpvOuterMesh, innerMesh: fpvInnerMesh };
+  } catch (err) {
+    console.warn('Could not build 3D acoustic rings:', err);
+  }
+
   threeScene.add(waypointsGroup);
   threeScene.add(pathsGroup);
   threeScene.add(groundLinesGroup);
 
   conesGroup.visible = fpvActive ? false : showCones;
   threeScene.add(conesGroup);
+
+  acoustic3DGroup.visible = showAcoustic3D && !fpvActive;
+  threeScene.add(acoustic3DGroup);
+
+  fpvAcousticRingGroup.visible = showAcoustic3D && fpvActive;
+  threeScene.add(fpvAcousticRingGroup);
 }
 
 // Draws the dynamic photogrammetry coverage footprint for the active FPV camera

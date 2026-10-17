@@ -186,13 +186,46 @@ function updateFPVCamera(dt) {
   const telemetryAlt = document.getElementById('fpv-telemetry-alt');
   const telemetrySpeed = document.getElementById('fpv-telemetry-speed');
   const telemetryWp = document.getElementById('fpv-telemetry-wp');
+  const telemetryDba = document.getElementById('fpv-telemetry-dba');
   
+  const currentSpeed = fpvPlaying ? getEffectiveWaypointSpeed(p1) : 0;
   if (telemetryAlt) telemetryAlt.textContent = Math.round(currentPos.y);
   if (telemetrySpeed) {
-    const currentSpeed = fpvPlaying ? getEffectiveWaypointSpeed(p1) : 0;
     telemetrySpeed.textContent = (currentSpeed * fpvSpeed).toFixed(1);
   }
   if (telemetryWp) telemetryWp.textContent = `${fpvProgressIndex + 1} / ${waypoints.length}`;
+
+  // Update Live FPV Ground Acoustic SPL (dBA) & Dynamic 3D Ground Ripple Ring (v1.164.0)
+  const droneEl = document.getElementById('drone-model');
+  const droneProfile = (typeof getDroneAcousticProfile === 'function')
+    ? getDroneAcousticProfile(droneEl ? droneEl.value : '68')
+    : { refDba1m: 73.0 };
+  const ambientEl = document.getElementById('acoustic-ambient-preset');
+  const ambDba = ambientEl ? (parseFloat(ambientEl.value) || 45) : 45;
+  const liveNadirDba = (typeof calculateGroundNoiseDba === 'function')
+    ? calculateGroundNoiseDba(droneProfile.refDba1m, Math.max(1, currentPos.y), currentSpeed, 0)
+    : 40.0;
+
+  if (telemetryDba) {
+    telemetryDba.textContent = liveNadirDba.toFixed(1);
+    telemetryDba.style.color = liveNadirDba >= 65 ? '#ef4444' : (liveNadirDba >= 55 ? '#f59e0b' : '#10b981');
+  }
+
+  if (typeof fpvAcousticRingGroup !== 'undefined' && fpvAcousticRingGroup) {
+    fpvAcousticRingGroup.visible = !!(showAcoustic3D && fpvActive);
+    if (fpvAcousticRingGroup.visible) {
+      const liveAudRadius = (typeof calculateGroundRadiusForTargetDba === 'function')
+        ? calculateGroundRadiusForTargetDba(droneProfile.refDba1m, Math.max(1, currentPos.y), ambDba, currentSpeed)
+        : 25;
+      const scaleR = Math.min(200, Math.max(6, liveAudRadius > 1 ? liveAudRadius : 8));
+      fpvAcousticRingGroup.position.set(currentPos.x, 0.14, currentPos.z);
+      fpvAcousticRingGroup.scale.set(scaleR, 1, scaleR);
+      if (fpvAcousticRingGroup.userData && fpvAcousticRingGroup.userData.outerMesh && fpvAcousticRingGroup.userData.outerMesh.material) {
+        const ringColor = liveNadirDba >= 65 ? 0xef4444 : (liveNadirDba >= 55 ? 0xf59e0b : 0x10b981);
+        fpvAcousticRingGroup.userData.outerMesh.material.color.setHex(ringColor);
+      }
+    }
+  }
 
   // Dynamically redraw active camera footprint ellipse on ground plane (throttled to avoid GPU stalls)
   if (showFootprints) {
@@ -302,6 +335,8 @@ function toggleFPVWalkthrough(enable) {
     lastFpvRedrawTime = 0;
 
     if (conesGroup) conesGroup.visible = false;
+    if (typeof acoustic3DGroup !== 'undefined' && acoustic3DGroup) acoustic3DGroup.visible = showAcoustic3D;
+    if (typeof fpvAcousticRingGroup !== 'undefined' && fpvAcousticRingGroup) fpvAcousticRingGroup.visible = showAcoustic3D;
     
     // Save original camera view
     const activeCamera = threeCamera || (typeof global !== 'undefined' && global.threeCamera) || (typeof window !== 'undefined' && window.threeCamera);
@@ -397,6 +432,8 @@ function toggleFPVWalkthrough(enable) {
     }
 
     if (conesGroup) conesGroup.visible = showCones;
+    if (typeof acoustic3DGroup !== 'undefined' && acoustic3DGroup) acoustic3DGroup.visible = showAcoustic3D;
+    if (typeof fpvAcousticRingGroup !== 'undefined' && fpvAcousticRingGroup) fpvAcousticRingGroup.visible = false;
     
     if (fpvPhotoDelayTimer) {
       clearTimeout(fpvPhotoDelayTimer);
