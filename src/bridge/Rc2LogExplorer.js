@@ -325,6 +325,15 @@ function safeJsonStringify(obj, space) {
 }
 
 async function executeMediaPull() {
+  const startPullBtn = document.getElementById('start-media-pull-btn');
+  const actionAttr = startPullBtn && typeof startPullBtn.getAttribute === 'function' ? startPullBtn.getAttribute('data-action') : (startPullBtn && startPullBtn.dataset ? startPullBtn.dataset.action : null);
+  if (actionAttr === 'close') {
+    if (typeof closeMediaIngestModal === 'function') {
+      closeMediaIngestModal();
+    }
+    return;
+  }
+
   const progContainer = document.getElementById('ingest-progress-container');
   const progBar = document.getElementById('ingest-progress-bar');
   const progText = document.getElementById('ingest-status-text');
@@ -333,7 +342,7 @@ async function executeMediaPull() {
   const filterTimeCheck = document.getElementById('ingest-filter-time');
   const filterGeoCheck = document.getElementById('ingest-filter-geo');
   const deleteDroneCheck = document.getElementById('ingest-delete-from-drone');
-  const startPullBtn = document.getElementById('start-media-pull-btn');
+  const closeIngestFooter = document.getElementById('close-media-ingest-footer-btn');
 
   const shouldDeleteFromDrone = !!(deleteDroneCheck && deleteDroneCheck.checked);
   if (shouldDeleteFromDrone && typeof window !== 'undefined' && typeof window.confirm === 'function') {
@@ -355,7 +364,19 @@ async function executeMediaPull() {
   if (progText) progText.textContent = shouldDeleteFromDrone
     ? 'Connecting to aircraft & verifying storage...'
     : 'Connecting to aircraft & scanning storage...';
-  if (startPullBtn) startPullBtn.disabled = true;
+  if (startPullBtn) {
+    if (typeof startPullBtn.removeAttribute === 'function') {
+      startPullBtn.removeAttribute('data-action');
+    }
+    if (startPullBtn.dataset) {
+      delete startPullBtn.dataset.action;
+    }
+    startPullBtn.disabled = true;
+    startPullBtn.textContent = '⏳ Ingesting Photos...';
+  }
+  if (closeIngestFooter) {
+    closeIngestFooter.textContent = 'Cancel';
+  }
 
   const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
@@ -573,8 +594,71 @@ async function executeMediaPull() {
       }
       if (dlBtn) {
         dlBtn.style.display = 'inline-flex';
-        dlBtn.onclick = () => {
-          window.location.href = `${apiBase}/api/media/archive-zip?uuid=${encodeURIComponent(data.missionUuid)}`;
+        dlBtn.disabled = false;
+        dlBtn.innerHTML = '📦 Download Archive (.zip)';
+        dlBtn.onclick = async () => {
+          if (dlBtn.disabled) return;
+          dlBtn.disabled = true;
+          const origDlHtml = '📦 Download Archive (.zip)';
+          dlBtn.innerHTML = '⏳ Preparing Download...';
+          const originalStatusMsg = progText ? progText.textContent : '';
+          if (progText) progText.textContent = 'Packaging archive (.zip) and preparing download...';
+
+          try {
+            const downloadUrl = `${apiBase}/api/media/archive-zip?uuid=${encodeURIComponent(data.missionUuid)}`;
+            const res = await fetch(downloadUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+
+            dlBtn.innerHTML = '⬇️ Downloading...';
+            const blob = await res.blob();
+            const blobUrl = (typeof window !== 'undefined' && window.URL) ? window.URL.createObjectURL(blob) : null;
+            if (blobUrl && typeof document !== 'undefined' && typeof document.createElement === 'function') {
+              const a = document.createElement('a');
+              a.href = blobUrl;
+              let filename = `${data.missionUuid}_inspection_archive.zip`;
+              const cd = res.headers && typeof res.headers.get === 'function' ? res.headers.get('Content-Disposition') : null;
+              if (cd) {
+                const m = cd.match(/filename="?([^"]+)"?/);
+                if (m && m[1]) filename = m[1];
+              }
+              a.download = filename;
+              if (document.body && typeof document.body.appendChild === 'function') {
+                document.body.appendChild(a);
+              }
+              if (typeof a.click === 'function') {
+                a.click();
+              }
+              setTimeout(() => {
+                if (a.parentNode && typeof a.parentNode.removeChild === 'function') {
+                  a.parentNode.removeChild(a);
+                }
+                if (typeof window !== 'undefined' && window.URL && typeof window.URL.revokeObjectURL === 'function') {
+                  window.URL.revokeObjectURL(blobUrl);
+                }
+              }, 1000);
+            }
+
+            dlBtn.innerHTML = '✅ Downloaded (.zip)';
+            if (progText) progText.textContent = originalStatusMsg;
+            setTimeout(() => {
+              dlBtn.innerHTML = origDlHtml;
+              dlBtn.disabled = false;
+            }, 4000);
+          } catch (dlErr) {
+            console.warn('[PhotoIngest] Direct blob download failed, falling back to window.location.href:', dlErr);
+            dlBtn.innerHTML = '⬇️ Downloading...';
+            if (typeof window !== 'undefined' && window.location) {
+              window.location.href = `${apiBase}/api/media/archive-zip?uuid=${encodeURIComponent(data.missionUuid)}`;
+            }
+            setTimeout(() => {
+              dlBtn.innerHTML = '✅ Download Started (.zip)';
+              if (progText) progText.textContent = originalStatusMsg;
+            }, 1500);
+            setTimeout(() => {
+              dlBtn.innerHTML = origDlHtml;
+              dlBtn.disabled = false;
+            }, 5000);
+          }
         };
       }
     }
@@ -588,15 +672,46 @@ async function executeMediaPull() {
         FlightDiagnostics.loadWireframeGeometry(data.manifest.wireframe);
       }
     }
+
+    if (closeIngestFooter) {
+      closeIngestFooter.textContent = 'Close';
+    }
+    if (startPullBtn) {
+      if (typeof startPullBtn.setAttribute === 'function') {
+        startPullBtn.setAttribute('data-action', 'close');
+      }
+      if (startPullBtn.dataset) {
+        startPullBtn.dataset.action = 'close';
+      }
+      startPullBtn.textContent = '✓ Done';
+      startPullBtn.disabled = false;
+    }
+
     return data;
   } catch (err) {
     isPulling = false;
     if (progressEs) { try { progressEs.close(); } catch (_) {} progressEs = null; }
     if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
     if (progText) progText.textContent = 'Ingest error: ' + err.message;
+    if (startPullBtn) {
+      if (typeof startPullBtn.removeAttribute === 'function') {
+        startPullBtn.removeAttribute('data-action');
+      }
+      if (startPullBtn.dataset) {
+        delete startPullBtn.dataset.action;
+      }
+      startPullBtn.textContent = '📥 Retry Ingest';
+      startPullBtn.disabled = false;
+    }
+    if (closeIngestFooter) {
+      closeIngestFooter.textContent = 'Close';
+    }
     throw err;
   } finally {
-    if (startPullBtn) startPullBtn.disabled = false;
+    const isCloseAction = startPullBtn && (typeof startPullBtn.getAttribute === 'function' ? startPullBtn.getAttribute('data-action') === 'close' : (startPullBtn.dataset && startPullBtn.dataset.action === 'close'));
+    if (startPullBtn && !isCloseAction) {
+      startPullBtn.disabled = false;
+    }
   }
 }
 
@@ -1443,7 +1558,13 @@ if (typeof document !== 'undefined') {
 
     const startPullBtn = document.getElementById('start-media-pull-btn');
     if (startPullBtn) {
-      startPullBtn.addEventListener('click', executeMediaPull);
+      startPullBtn.addEventListener('click', () => {
+        if (startPullBtn.getAttribute('data-action') === 'close') {
+          if (typeof closeMediaIngestModal === 'function') closeMediaIngestModal();
+          return;
+        }
+        executeMediaPull();
+      });
     }
   });
 }
