@@ -66,11 +66,8 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.160.1</span></h1>
-
-
-
-
+          </svg>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.161.0</span></h1>
         </div>
       </div>
 
@@ -93,7 +90,7 @@
               <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
               <circle cx="12" cy="12" r="9" opacity="0.3"></circle>
             </svg>
-            <span id="locate-me-label">Locate</span>
+            <span id="locate-me-label" class="sr-only">Locate</span>
           </button>
           <!-- Mobile Close Search Button -->
           <button id="mobile-search-close-btn" class="mobile-search-close-btn" type="button" title="Close Search" aria-label="Close search">
@@ -122,26 +119,29 @@
           </button>
         </div>
 
-        <div class="header-bridge-container">
-          <button id="header-bridge-pill" class="header-bridge-pill is-offline" type="button" title="Aalaapi Bridge &amp; Hardware Status (Click to view details)" aria-label="Bridge and Hardware Status">
-            <span class="pill-bridge-group">
-              <span id="header-bridge-dot" class="header-bridge-dot"></span>
-              <span id="header-bridge-summary" style="font-weight: 600; font-size: 0.72rem;">Bridge: Offline</span>
-              <span id="header-rc2-summary-badge" class="header-rc2-badge" title="RC 2 USB Link Status">RC 2</span>
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-            </span>
-          </button>
-        </div>
+        <!-- Unified System / Bridge & Buffer Status Group -->
+        <div id="header-system-status-group" class="header-system-status-group">
+          <div class="header-bridge-container">
+            <button id="header-bridge-pill" class="header-bridge-pill is-offline" type="button" title="Aalaapi Bridge &amp; Hardware Status (Click to view details)" aria-label="Bridge and Hardware Status">
+              <span class="pill-bridge-group">
+                <span id="header-bridge-dot" class="header-bridge-dot"></span>
+                <span id="header-bridge-summary" style="font-weight: 600; font-size: 0.72rem;">Bridge: Offline</span>
+                <span id="header-rc2-summary-badge" class="header-rc2-badge" title="RC 2 USB Link Status">RC 2</span>
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+            </button>
+          </div>
 
-        <div class="header-ambient-buffer-container">
-          <button id="header-ambient-buffer-pill" class="header-ambient-buffer-pill is-clean" type="button" title="Ambient Telemetry Buffer Monitor (Click to inspect allocation &amp; rolling ring buffer)" aria-label="Ambient Telemetry Buffer">
-            <span class="pill-buffer-group">
-              <span id="header-buffer-icon">🟢</span>
-              <span id="header-buffer-label" style="font-weight: 600; font-size: 0.72rem;">Buffer: 0.0 MB</span>
-              <span id="header-buffer-traffic-badge" class="header-buffer-badge" title="Active Airspace Traffic">0 Traffic</span>
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-            </span>
-          </button>
+          <div class="header-ambient-buffer-container">
+            <button id="header-ambient-buffer-pill" class="header-ambient-buffer-pill is-clean" type="button" title="Ambient Telemetry Buffer Monitor (Click to inspect allocation &amp; rolling ring buffer)" aria-label="Ambient Telemetry Buffer">
+              <span class="pill-buffer-group">
+                <span id="header-buffer-icon">🟢</span>
+                <span id="header-buffer-label" style="font-weight: 600; font-size: 0.72rem;">Buffer: 0.0 MB</span>
+                <span id="header-buffer-traffic-badge" class="header-buffer-badge" title="Active Airspace Traffic">0 Traffic</span>
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -202,6 +202,10 @@
         <button id="more-menu-links-btn" class="more-menu-item" type="button">
           <span class="more-menu-icon">🔗</span>
           <span class="more-menu-label">Useful Aviation Links</span>
+        </button>
+        <button id="more-menu-customize-ribbon-btn" class="more-menu-item" type="button" style="border-top: 1px solid var(--border-color); margin-top: 4px; padding-top: 8px;">
+          <span class="more-menu-icon">🎛️</span>
+          <span class="more-menu-label">Customize Top Ribbon...</span>
         </button>
       </div>
     </header>
@@ -2867,11 +2871,14 @@
                 <button id="companion-service-help-btn" class="companion-help-circle-btn" type="button" title="How to start Aalaapi Bridge">?</button>
               </span>
             </div>
-            <!-- Bridge Version Mismatch Alert Banner & Auto-Restart -->
+            <!-- Bridge Version Mismatch Alert Banner & Auto-Restart / Reload -->
             <div id="companion-version-mismatch-alert" style="display: none; padding: 6px 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px; font-size: 0.72rem; flex-direction: column; gap: 4px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
                 <span id="companion-version-mismatch-text" style="font-weight: 600; color: #f87171;">⚠️ Bridge Version Mismatch</span>
-                <button id="companion-restart-btn" type="button" class="btn-primary" style="padding: 2px 8px; font-size: 0.68rem; height: 22px; background: #ef4444; border-color: #dc2626; line-height: 1; cursor: pointer;">Auto-Restart Bridge</button>
+                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                  <button id="companion-reload-btn" type="button" class="btn-primary" style="display: none; padding: 2px 8px; font-size: 0.68rem; height: 22px; background: #0284c7; border-color: #0369a1; line-height: 1; cursor: pointer;">Reload Web App</button>
+                  <button id="companion-restart-btn" type="button" class="btn-primary" style="padding: 2px 8px; font-size: 0.68rem; height: 22px; background: #ef4444; border-color: #dc2626; line-height: 1; cursor: pointer;">Auto-Restart Bridge</button>
+                </div>
               </div>
               <div id="companion-version-mismatch-detail" style="color: var(--text-muted); font-size: 0.65rem; line-height: 1.2;">
                 Bridge service is running <span id="companion-running-version" style="font-weight: 600; color: #f87171;">v?</span>, but Web app is <span id="companion-target-version" style="font-weight: 600; color: #38bdf8;">v?</span>. Click to cleanly restart.
@@ -3735,6 +3742,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎛️ Customizable Top Ribbon &amp; Clean Topbar Ergonomics (v1.161.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Personalize your top menu bar with full layout control! Toggle individual widgets on or off and re-order them to fit your operational style, or pick from Standard Studio, Compact Field Ops, and Full Studio presets. Featuring a unified System/Bridge &amp; Buffer segmented pill, compact search locate pin, responsive overflow collapse below 1500px, and single-line ADS-B button rendering.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🌐 Omnidimensional 4D Flight Replay Engine &amp; Rolling Buffer Architecture (v1.160.0) (Closes #142)
@@ -5042,7 +5057,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.160.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.161.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5103,6 +5118,14 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.161.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Customizable Top Ribbon Layout &amp; Presets:</strong> Configure what displays on the top bar or collapses into the More menu. Features Standard Studio, Compact Field Ops, and Full Studio presets, with item re-ordering and visibility toggles in Settings and <code>🎛️ Customize Top Ribbon...</code> in the More menu.</li>
+              <li><strong>Unified System/Bridge &amp; Buffer Status Group:</strong> Combined Aalaapi Bridge hardware status and ambient telemetry buffer into a single segmented pill (<code>#header-system-status-group</code>).</li>
+              <li><strong>Compact Pin Locate Control &amp; Uncrowded Center Navigation:</strong> Upgraded the search locate button into a compact icon-only pin, uncapped center container width, and prevented ADS-B label splitting.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.160.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -8114,6 +8137,32 @@
               <option value="sidebar">Sidebar (Classic Top)</option>
             </select>
             <p class="help-text" style="margin-top: 4px; font-size: 0.74rem;">Choose where address search and location controls appear.</p>
+          </div>
+
+          <!-- Top Ribbon & Toolbar Layout Customizer -->
+          <div id="ribbon-settings-card" class="control-group ribbon-settings-card" style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 14px; margin-top: 4px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; justify-content: space-between;">
+              <span style="display: flex; align-items: center; gap: 6px;">🎛️ Top Ribbon &amp; Toolbar Layout</span>
+              <button id="reset-ribbon-config-btn" class="btn-secondary" type="button" style="padding: 2px 8px; font-size: 0.7rem; border-radius: 4px;">Reset Defaults</button>
+            </div>
+            
+            <div>
+              <label for="ribbon-preset-select" style="font-weight: 600; font-size: 0.82rem; color: var(--text-main); margin-bottom: 6px; display: block;">Layout Preset</label>
+              <select id="ribbon-preset-select" class="form-select" style="width: 100%;">
+                <option value="standard" selected>Standard Studio (Balanced)</option>
+                <option value="compact">Compact Field Ops (Essentials Only)</option>
+                <option value="studio">Full Studio (Show All Controls)</option>
+                <option value="custom">Custom Layout</option>
+              </select>
+              <p class="help-text" style="margin-top: 4px; font-size: 0.74rem;">Choose which widgets appear directly on the top ribbon. Hidden items remain accessible from the More menu.</p>
+            </div>
+
+            <div>
+              <div style="font-weight: 600; font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px;">Ribbon Items &amp; Visibility</div>
+              <div id="ribbon-items-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; padding-right: 4px;">
+                <!-- Populated dynamically by initTopbarRibbon() -->
+              </div>
+            </div>
           </div>
         </div>
 
