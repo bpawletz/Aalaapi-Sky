@@ -1185,6 +1185,14 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   if (typeof renderSolarOverlay2D === 'function') {
     renderSolarOverlay2D(activeCenterLat, activeCenterLon);
   }
+
+  // 8. Update Ground Observer Acoustic Advisor & Render 2D Noise Contours (v1.164.0)
+  if (typeof updateAcousticAdvisorUI === 'function') {
+    updateAcousticAdvisorUI(waypoints);
+  }
+  if (typeof renderAcousticOverlay2D === 'function') {
+    renderAcousticOverlay2D(waypoints, activeCenterLat, activeCenterLon);
+  }
 }
 
 // Add Map Legend for Multi-Orbit altitudes
@@ -2479,3 +2487,329 @@ function renderSolarOverlay2D(centerLat, centerLon) {
 if (typeof window !== 'undefined') {
   window.renderSolarOverlay2D = renderSolarOverlay2D;
 }
+
+/**
+ * Computes current mission acoustic metrics based on active drone profile, altitude, speed, waypoints, and ambient preset.
+ */
+function getMissionAcousticSummary(waypoints) {
+  const droneEl = (typeof document !== 'undefined') ? document.getElementById('drone-model') : null;
+  const droneEnum = droneEl ? droneEl.value : '68';
+  const profile = (typeof getDroneAcousticProfile === 'function')
+    ? getDroneAcousticProfile(droneEnum)
+    : { name: 'DJI Mini 4 Pro', refDba1m: 73.0, weightClass: 'Sub-249g Micro' };
+
+  const altEl = (typeof document !== 'undefined') ? document.getElementById('altitude') : null;
+  const speedEl = (typeof document !== 'undefined') ? document.getElementById('speed') : null;
+  const ambientEl = (typeof document !== 'undefined') ? document.getElementById('acoustic-ambient-preset') : null;
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const missionAltM = (activeLayer && typeof activeLayer.altitude === 'number' && activeLayer.altitude > 0)
+    ? activeLayer.altitude
+    : (altEl ? (parseFloat(altEl.value) || 50) : 50);
+  const missionSpeedMs = (activeLayer && typeof activeLayer.speed === 'number' && activeLayer.speed > 0)
+    ? activeLayer.speed
+    : (speedEl ? (parseFloat(speedEl.value) || 4) : 4);
+  const ambientDba = ambientEl ? (parseFloat(ambientEl.value) || 45) : 45;
+
+  const wps = Array.isArray(waypoints) ? waypoints : ((typeof getCurrentWaypoints === 'function') ? (getCurrentWaypoints() || []) : []);
+
+  const nadirDba = (typeof calculateGroundNoiseDba === 'function')
+    ? calculateGroundNoiseDba(profile.refDba1m, missionAltM, missionSpeedMs, 0)
+    : 40.0;
+
+  let peakDba = nadirDba;
+  let minAltM = missionAltM;
+  if (wps.length > 0 && typeof calculateGroundNoiseDba === 'function') {
+    wps.forEach(wp => {
+      const wpAlt = (wp && typeof wp.alt === 'number' && wp.alt > 0) ? wp.alt : ((wp && typeof wp.altitude === 'number' && wp.altitude > 0) ? wp.altitude : missionAltM);
+      const wpSpd = (wp && typeof wp.speed === 'number' && wp.speed > 0) ? wp.speed : missionSpeedMs;
+      const wpDba = calculateGroundNoiseDba(profile.refDba1m, wpAlt, wpSpd, 0);
+      if (wpDba > peakDba) peakDba = wpDba;
+      if (wpAlt < minAltM) minAltM = wpAlt;
+    });
+  }
+
+  const impact = (typeof classifyAcousticImpact === 'function')
+    ? classifyAcousticImpact(nadirDba, ambientDba)
+    : { nadirDba, ambientDba, deltaDb: nadirDba - ambientDba, humanEquivalent: 'Quiet Library (~45 dBA)', severity: 'moderate', label: 'Low Noticeability', color: '#06b6d4' };
+
+  const audibilityRadiusM = (typeof calculateGroundRadiusForTargetDba === 'function')
+    ? calculateGroundRadiusForTargetDba(profile.refDba1m, missionAltM, ambientDba, missionSpeedMs)
+    : 0;
+  const noticeableRadius55M = (typeof calculateGroundRadiusForTargetDba === 'function')
+    ? calculateGroundRadiusForTargetDba(profile.refDba1m, missionAltM, 55, missionSpeedMs)
+    : 0;
+  const intrusiveRadius65M = (typeof calculateGroundRadiusForTargetDba === 'function')
+    ? calculateGroundRadiusForTargetDba(profile.refDba1m, missionAltM, 65, missionSpeedMs)
+    : 0;
+  const stealthAltM = (typeof calculateRecommendedQuietAltitude === 'function')
+    ? calculateRecommendedQuietAltitude(profile.refDba1m, ambientDba, missionSpeedMs, 3)
+    : 50;
+
+  return {
+    profile,
+    missionAltM,
+    missionSpeedMs,
+    ambientDba,
+    nadirDba,
+    peakDba,
+    minAltM,
+    impact,
+    audibilityRadiusM,
+    noticeableRadius55M,
+    intrusiveRadius65M,
+    stealthAltM
+  };
+}
+
+/**
+ * Updates the Section 3 Ground Observer Acoustic Impact Advisor subcard DOM elements.
+ */
+function updateAcousticAdvisorUI(waypoints) {
+  if (typeof document === 'undefined') return;
+  const summary = getMissionAcousticSummary(waypoints);
+  const {
+    profile,
+    ambientDba,
+    nadirDba,
+    peakDba,
+    impact,
+    audibilityRadiusM,
+    stealthAltM
+  } = summary;
+
+  const useImp = (typeof isImperial === 'function') ? isImperial() : false;
+  const formatDist = (meters) => {
+    if (useImp) {
+      return `${Math.round(meters * 3.28084)} ft`;
+    }
+    return `${Math.round(meters)} m`;
+  };
+
+  const badgeEl = document.getElementById('acoustic-impact-badge');
+  if (badgeEl) {
+    badgeEl.textContent = `${nadirDba.toFixed(1)} dBA • ${impact.label}`;
+    badgeEl.style.color = impact.color;
+    badgeEl.style.borderColor = `${impact.color}55`;
+    badgeEl.style.background = `${impact.color}22`;
+  }
+
+  const droneRefEl = document.getElementById('acoustic-drone-ref');
+  if (droneRefEl) {
+    droneRefEl.textContent = `${profile.name} (${profile.refDba1m.toFixed(0)} dBA @ 1m)`;
+  }
+
+  const nadirEl = document.getElementById('acoustic-nadir-dba');
+  if (nadirEl) {
+    nadirEl.textContent = (peakDba > nadirDba + 0.3)
+      ? `${nadirDba.toFixed(1)} dBA (Peak: ${peakDba.toFixed(1)} dBA)`
+      : `${nadirDba.toFixed(1)} dBA`;
+    nadirEl.style.color = impact.color;
+  }
+
+  const humanEl = document.getElementById('acoustic-human-equiv');
+  if (humanEl) {
+    humanEl.textContent = impact.humanEquivalent;
+  }
+
+  const deltaEl = document.getElementById('acoustic-delta-ambient');
+  if (deltaEl) {
+    const sign = impact.deltaDb > 0 ? '+' : '';
+    deltaEl.textContent = `${sign}${impact.deltaDb.toFixed(1)} dB vs Ambient (${ambientDba} dBA)`;
+    deltaEl.style.color = impact.deltaDb <= 0 ? '#10b981' : (impact.deltaDb <= 6 ? '#38bdf8' : (impact.deltaDb <= 12 ? '#fbbf24' : '#f87171'));
+  }
+
+  const radiusEl = document.getElementById('acoustic-audibility-radius');
+  if (radiusEl) {
+    radiusEl.textContent = audibilityRadiusM <= 0
+      ? `0 ${useImp ? 'ft' : 'm'} (Masked by Ambient)`
+      : `${formatDist(audibilityRadiusM)} radius`;
+  }
+
+  const stealthEl = document.getElementById('acoustic-stealth-alt-readout');
+  if (stealthEl) {
+    stealthEl.textContent = `≥ ${formatDist(stealthAltM)} AGL`;
+  }
+
+  const applyBtn = document.getElementById('btn-acoustic-apply-altitude');
+  if (applyBtn) {
+    applyBtn.dataset.stealthAltM = String(stealthAltM);
+    applyBtn.title = `Set flight altitude to ${formatDist(stealthAltM)} (${stealthAltM}m) for low-noise stealth operation`;
+  }
+}
+
+/**
+ * Enables or disables the 2D Ground Noise Contours overlay on the Leaflet map and syncs UI toggles.
+ */
+function set2DAcousticOverlayEnabled(enabled) {
+  const isOn = !!enabled;
+  if (typeof localStorage !== 'undefined') {
+    try { localStorage.setItem('aalaapi_show_2d_acoustic_contours', isOn ? 'true' : 'false'); } catch (e) {}
+  }
+  const toggleEl = (typeof document !== 'undefined') ? document.getElementById('acoustic-map-overlay-toggle') : null;
+  if (toggleEl && toggleEl.checked !== isOn) {
+    toggleEl.checked = isOn;
+  }
+  if (typeof map !== 'undefined' && map && typeof acousticOverlaysGroup !== 'undefined' && acousticOverlaysGroup) {
+    if (isOn && !map.hasLayer(acousticOverlaysGroup)) {
+      acousticOverlaysGroup.addTo(map);
+    } else if (!isOn && map.hasLayer(acousticOverlaysGroup)) {
+      map.removeLayer(acousticOverlaysGroup);
+    }
+    const wps = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : [];
+    let cLat = 41.3215, cLon = -88.9950;
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+      const ll = centerMarker.getLatLng();
+      cLat = ll.lat;
+      cLon = ll.lng;
+    }
+    renderAcousticOverlay2D(wps, cLat, cLon);
+  }
+}
+
+/**
+ * Renders 2D Ground Noise Swath & Waypoint dBA Contours on the Leaflet map when acousticOverlaysGroup is enabled.
+ */
+function renderAcousticOverlay2D(waypoints, centerLat, centerLon) {
+  if (typeof L === 'undefined' || typeof map === 'undefined' || !map) return;
+  if (typeof acousticOverlaysGroup === 'undefined' || !acousticOverlaysGroup) return;
+
+  acousticOverlaysGroup.clearLayers();
+
+  // Only draw when the 2D overlay is enabled on the map
+  if (!map.hasLayer(acousticOverlaysGroup)) return;
+
+  const summary = getMissionAcousticSummary(waypoints);
+  const {
+    profile,
+    missionAltM,
+    missionSpeedMs,
+    ambientDba,
+    audibilityRadiusM,
+    noticeableRadius55M,
+    intrusiveRadius65M
+  } = summary;
+
+  const wps = Array.isArray(waypoints) ? waypoints : ((typeof getCurrentWaypoints === 'function') ? (getCurrentWaypoints() || []) : []);
+  const useImp = (typeof isImperial === 'function') ? isImperial() : false;
+  const fmtDist = (m) => useImp ? `${Math.round(m * 3.28084)}ft` : `${Math.round(m)}m`;
+
+  // If no waypoints exist yet, render concentric contour rings around centerLat/centerLon if available
+  const targetPoints = (wps.length > 0)
+    ? wps
+    : ((typeof centerLat === 'number' && typeof centerLon === 'number') ? [{ lat: centerLat, lon: centerLon, alt: missionAltM, speed: missionSpeedMs }] : []);
+
+  if (targetPoints.length === 0) return;
+
+  // 1. Flight Path Acoustic Swath Corridor (if 2+ waypoints)
+  if (targetPoints.length >= 2) {
+    const latlngs = targetPoints
+      .filter(pt => typeof pt.lat === 'number' && typeof (pt.lon !== undefined ? pt.lon : pt.lng) === 'number')
+      .map(pt => [pt.lat, pt.lon !== undefined ? pt.lon : pt.lng]);
+
+    if (latlngs.length >= 2 && audibilityRadiusM > 2) {
+      const swathLine = L.polyline(latlngs, {
+        color: '#06b6d4',
+        weight: 10,
+        opacity: 0.18,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false
+      }).addTo(acousticOverlaysGroup);
+      swathLine.bindTooltip(`🔊 Ground Audibility Swath (> ${ambientDba} dBA Ambient)`, { sticky: true });
+    }
+  }
+
+  // 2. Sample up to 20 waypoints along the route to draw physical ground radius contours (L.circle in meters)
+  const maxRings = 20;
+  const step = Math.max(1, Math.ceil(targetPoints.length / maxRings));
+
+  for (let i = 0; i < targetPoints.length; i += step) {
+    const wp = targetPoints[i];
+    const lat = wp.lat;
+    const lon = wp.lon !== undefined ? wp.lon : wp.lng;
+    if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) continue;
+
+    const wpAlt = (typeof wp.alt === 'number' && wp.alt > 0) ? wp.alt : ((typeof wp.altitude === 'number' && wp.altitude > 0) ? wp.altitude : missionAltM);
+    const wpSpd = (typeof wp.speed === 'number' && wp.speed > 0) ? wp.speed : missionSpeedMs;
+    const wpNadirDba = (typeof calculateGroundNoiseDba === 'function')
+      ? calculateGroundNoiseDba(profile.refDba1m, wpAlt, wpSpd, 0)
+      : summary.nadirDba;
+    const wpAudRadius = (typeof calculateGroundRadiusForTargetDba === 'function')
+      ? calculateGroundRadiusForTargetDba(profile.refDba1m, wpAlt, ambientDba, wpSpd)
+      : audibilityRadiusM;
+    const wpNoticeRadius = (typeof calculateGroundRadiusForTargetDba === 'function')
+      ? calculateGroundRadiusForTargetDba(profile.refDba1m, wpAlt, 55, wpSpd)
+      : noticeableRadius55M;
+    const wpIntrusiveRadius = (typeof calculateGroundRadiusForTargetDba === 'function')
+      ? calculateGroundRadiusForTargetDba(profile.refDba1m, wpAlt, 65, wpSpd)
+      : intrusiveRadius65M;
+
+    const deltaDb = Math.round((wpNadirDba - ambientDba) * 10) / 10;
+    const tooltipHtml = `🔊 <b>WP ${i + 1} Ground Noise: ${wpNadirDba.toFixed(1)} dBA</b><br/>` +
+      `Prominence: ${deltaDb >= 0 ? '+' : ''}${deltaDb.toFixed(1)} dB vs Ambient (${ambientDba} dBA)<br/>` +
+      `Audible Radius: ${wpAudRadius > 0 ? fmtDist(wpAudRadius) : 'Masked'}`;
+
+    // Outer Ambient Audibility Ring
+    if (wpAudRadius > 1) {
+      const outerRing = L.circle([lat, lon], {
+        radius: wpAudRadius,
+        color: '#10b981',
+        weight: 1.5,
+        dashArray: '4, 4',
+        fillColor: '#10b981',
+        fillOpacity: 0.07,
+        interactive: true
+      }).addTo(acousticOverlaysGroup);
+      outerRing.bindTooltip(tooltipHtml, { direction: 'top', sticky: true });
+    }
+
+    // Middle Noticeable Contour Ring (>= 55 dBA)
+    if (wpNoticeRadius > 1) {
+      const midRing = L.circle([lat, lon], {
+        radius: wpNoticeRadius,
+        color: '#f59e0b',
+        weight: 1.5,
+        fillColor: '#f59e0b',
+        fillOpacity: 0.12,
+        interactive: true
+      }).addTo(acousticOverlaysGroup);
+      midRing.bindTooltip(tooltipHtml, { direction: 'top', sticky: true });
+    }
+
+    // Inner Intrusive Core Ring (>= 65 dBA)
+    if (wpIntrusiveRadius > 1) {
+      const innerRing = L.circle([lat, lon], {
+        radius: wpIntrusiveRadius,
+        color: '#ef4444',
+        weight: 2,
+        fillColor: '#ef4444',
+        fillOpacity: 0.2,
+        interactive: true
+      }).addTo(acousticOverlaysGroup);
+      innerRing.bindTooltip(tooltipHtml, { direction: 'top', sticky: true });
+    }
+
+    // If masked by ambient, still place a small subtle acoustic indicator circle at the start waypoint
+    if (wpAudRadius <= 1 && i === 0) {
+      const quietRing = L.circle([lat, lon], {
+        radius: 12,
+        color: '#10b981',
+        weight: 1.5,
+        dashArray: '2, 4',
+        fillColor: '#10b981',
+        fillOpacity: 0.1,
+        interactive: true
+      }).addTo(acousticOverlaysGroup);
+      quietRing.bindTooltip(tooltipHtml, { direction: 'top', sticky: true });
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.getMissionAcousticSummary = getMissionAcousticSummary;
+  window.updateAcousticAdvisorUI = updateAcousticAdvisorUI;
+  window.renderAcousticOverlay2D = renderAcousticOverlay2D;
+  window.set2DAcousticOverlayEnabled = set2DAcousticOverlayEnabled;
+}
+

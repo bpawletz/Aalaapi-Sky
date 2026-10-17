@@ -103,7 +103,6 @@ let streetLayer;
 let esriStreetLayer;
 let satelliteLayer;
 let topoLayer;
-let darkCanvasLayer;
 let nasaNightLightsLayer;
 
 // FAA Airspace Overlay layers
@@ -310,33 +309,29 @@ function initMap() {
     attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
   });
 
-  // Night Flight Basemap (Dark Canvas / CartoDB Dark Matter) (v1.161.0 - Issue #143)
-  darkCanvasLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 22,
-    maxNativeZoom: 19,
-    subdomains: 'abcd',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-  });
-
-  // NASA Earth at Night (Black Marble / VIIRS Night Lights) Overlay (v1.161.0 - Issue #143)
+  // NASA Earth at Night (Black Marble / VIIRS Night Lights) Overlay (v1.161.0 - Issue #143, fixed v1.163.1)
   nasaNightLightsLayer = L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default//GoogleMapsCompatible_Level8/{z}/{y}/{x}.png', {
-    maxZoom: 8,
+    maxZoom: 22,
     maxNativeZoom: 8,
+    minZoom: 1,
     opacity: 0.65,
     attribution: 'Imagery &copy; NASA Earth Applied Sciences / GIBS Black Marble'
   });
 
   if (typeof window !== 'undefined') {
-    window.darkCanvasLayer = darkCanvasLayer;
     window.nasaNightLightsLayer = nasaNightLightsLayer;
   }
   if (typeof global !== 'undefined') {
-    global.darkCanvasLayer = darkCanvasLayer;
     global.nasaNightLightsLayer = nasaNightLightsLayer;
   }
 
   // Default to Satellite View (best for drone planning)
   satelliteLayer.addTo(map);
+
+  // If NASA Night Lights overlay was enabled in settings, add it to map
+  if (typeof isNightAutoNasaEnabled === 'function' && isNightAutoNasaEnabled()) {
+    nasaNightLightsLayer.addTo(map);
+  }
 
   // Initialize Airspace Overlays
   // VFR tile layer — always available (standard L.tileLayer, no Esri dependency)
@@ -473,7 +468,6 @@ function initMap() {
   // Add Layer Control — include only layers that successfully initialized
   const baseMaps = {
     "Satellite View": satelliteLayer,
-    "Night Flight (Dark Canvas)": darkCanvasLayer,
     "Street Map (Esri)": esriStreetLayer,
     [osmStreetLabel]: streetLayer,
     "Topography Map": topoLayer
@@ -610,6 +604,18 @@ function initMap() {
   }
   overlays["☀️/🌙 Celestial Vector & Shadow Casting (2D)"] = solarOverlaysGroup;
 
+  // Ground Observer Acoustic Contours Overlay (2D) (v1.164.0)
+  if (!acousticOverlaysGroup) {
+    acousticOverlaysGroup = L.layerGroup();
+  }
+  const savedShow2dAcoustic = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_show_2d_acoustic_contours') : null;
+  if (savedShow2dAcoustic === 'true') {
+    acousticOverlaysGroup.addTo(map);
+    const toggle2dEl = (typeof document !== 'undefined') ? document.getElementById('acoustic-map-overlay-toggle') : null;
+    if (toggle2dEl) toggle2dEl.checked = true;
+  }
+  overlays["🔊 Ground Noise Contours (dBA) (2D)"] = acousticOverlaysGroup;
+
   const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
 
   // If running on localhost or file://, disable the OpenStreetMap radio button with styled indicator & tooltip
@@ -706,6 +712,33 @@ function initMap() {
       }
     }
 
+    // Track NASA Earth at Night (VIIRS Lights) checkbox state
+    if (e.name === 'NASA Earth at Night (VIIRS Lights)') {
+      if (typeof setNightAutoNasaEnabled === 'function') {
+        setNightAutoNasaEnabled(e.type === 'overlayadd', true);
+      }
+    }
+
+    // Track 2D Ground Noise Contours (dBA) checkbox state
+    if (e.name === '🔊 Ground Noise Contours (dBA) (2D)') {
+      const isAdded = (e.type === 'overlayadd');
+      if (typeof localStorage !== 'undefined') {
+        try { localStorage.setItem('aalaapi_show_2d_acoustic_contours', isAdded ? 'true' : 'false'); } catch (err) {}
+      }
+      const toggle2dEl = (typeof document !== 'undefined') ? document.getElementById('acoustic-map-overlay-toggle') : null;
+      if (toggle2dEl) toggle2dEl.checked = isAdded;
+      if (isAdded && typeof renderAcousticOverlay2D === 'function' && typeof getCurrentWaypoints === 'function') {
+        const wps = getCurrentWaypoints();
+        let cLat = 41.3215, cLon = -88.9950;
+        if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+          const ll = centerMarker.getLatLng();
+          cLat = ll.lat;
+          cLon = ll.lng;
+        }
+        renderAcousticOverlay2D(wps, cLat, cLon);
+      }
+    }
+
     updateAirspaceLegend(e);
   });
 
@@ -728,6 +761,7 @@ function initMap() {
   roadPathGroup = L.layerGroup().addTo(map);
   targetPolygonGroup = L.layerGroup().addTo(map);
   if (!solarOverlaysGroup) solarOverlaysGroup = L.layerGroup().addTo(map);
+  if (!acousticOverlaysGroup) acousticOverlaysGroup = L.layerGroup();
   if (!photoInspectionGroup) photoInspectionGroup = L.layerGroup().addTo(map);
   if (!photoFootprintsGroup) photoFootprintsGroup = L.layerGroup();
 
@@ -801,7 +835,7 @@ const CONTROLS_LIST = [
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
   'camera-model', 'drone-model', 'camera-zoom', 'camera-aspect-ratio', 'camera-hfov', 'camera-vfov', 'road-offset',
   'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer',
-  'max-flight-height', 'rth-altitude',
+  'max-flight-height', 'rth-altitude', 'acoustic-ambient-preset',
   'target-splat-radius', 'target-splat-height', 'target-splat-culling-mode', 'target-splat-grid-pass',
   'tower-min-height', 'tower-max-height', 'tower-radius', 'tower-guy-wire-buffer', 'tower-movement-mode', 'tower-altitude-order'
 ];
@@ -863,6 +897,7 @@ const FACTORY_DEFAULTS = {
   'global-exclusion-detour-mode': 'perimeter',
   'global-exclusion-clearance-buffer': '10',
   'max-flight-time': '25',
+  'acoustic-ambient-preset': '45',
   // UI & Layout Preferences
   'unit-system': 'imperial',
   'theme': 'dark',
@@ -1317,10 +1352,8 @@ function initReplay2dBarListeners() {
 
 // Night Flight Map Layer exports (v1.161.0 - Issue #143)
 if (typeof window !== 'undefined') {
-  window.darkCanvasLayer = darkCanvasLayer;
   window.nasaNightLightsLayer = nasaNightLightsLayer;
 }
 if (typeof global !== 'undefined') {
-  global.darkCanvasLayer = darkCanvasLayer;
   global.nasaNightLightsLayer = nasaNightLightsLayer;
 }

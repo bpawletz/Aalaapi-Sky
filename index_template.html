@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.163.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.163.1</span></h1>
         </div>
       </div>
 
@@ -5049,7 +5049,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.163.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.163.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5111,12 +5111,18 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.163.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>NASA VIIRS Night Lights Across All Zoom Levels:</strong> Enabled selecting the NASA Black Marble VIIRS night lights overlay (<code>nasaNightLightsLayer</code>) across all zoom levels (1&ndash;22) with smooth native tile upscaling, bidirectional Settings toggle sync, and Companion Bridge proxy caching.</li>
+              <li><strong>Removed Key-Gated CartoDB Dark Canvas Layer:</strong> Removed the <code>Night Flight (Dark Canvas)</code> basemap and setting to ensure 100% open, API-key-free map layers.</li>
+            </ul>
+          </div>
+          <div>
             <strong style="color: var(--text-main);">Changelog (v1.163.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Astronomical Lunar Ephemeris &amp; Adaptive HUD:</strong> Added offline Jean Meeus lunar position, phase cycle glyphs, illumination fraction, and ambient lux calculations, dynamically switching between Sun dial (day) and Moon dial (night) across Photo Review and 2D/3D flight maps.</li>
               <li><strong>1-Click Celestial HUD Toggle:</strong> Added instant <code>☀️/🌙 HUD</code> button (<code>#photo-toggle-hud-btn</code>) to the Photo Inspector top toolbar to toggle solar and lunar overlays on captured inspection photos.</li>
-              <li><strong>Night Flight Basemap &amp; NASA VIIRS Overlay:</strong> Integrated CartoDB Dark Matter basemap (<code>darkCanvasLayer</code>) and NASA Black Marble VIIRS night lights (<code>nasaNightLightsLayer</code>) with proxy cache support.</li>
-              <li><strong>Night Flight Settings Card:</strong> Added dedicated controls in Configuration to customize automatic night basemap switching, NASA lights, and nocturnal celestial HUD.</li>
+              <li><strong>NASA VIIRS Night Lights Overlay:</strong> Integrated NASA Black Marble VIIRS night lights (<code>nasaNightLightsLayer</code>) and nocturnal flight layer preferences in Configuration.</li>
             </ul>
           </div>
           <div>
@@ -8220,22 +8226,10 @@
           </div>
         </div>
 
-        <!-- Card 3: Night Flight & Nocturnal Layers (v1.161.0 - Issue #143) -->
+        <!-- Card 3: Night Flight & Nocturnal Layers (v1.163.1 - Issue #143) -->
         <div class="settings-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px;">
           <div style="font-size: 0.8rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
             <span>🌙 Night Flight &amp; Nocturnal Layers</span>
-          </div>
-
-          <!-- Night Auto Basemap Toggle -->
-          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-            <div>
-              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">Auto-Switch Dark Canvas at Night</span>
-              <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.74rem;">Automatically switch the 2D basemap to Night Flight (Dark Matter) when the sun descends below the horizon.</p>
-            </div>
-            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0;">
-              <input type="checkbox" id="config-night-auto-basemap" checked style="opacity: 0; width: 0; height: 0;">
-              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
-            </label>
           </div>
 
           <!-- NASA Black Marble Overlay Toggle -->

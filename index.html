@@ -6399,7 +6399,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.163.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.163.1</span></h1>
         </div>
       </div>
 
@@ -11381,7 +11381,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.163.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.163.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -11443,12 +11443,18 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.163.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>NASA VIIRS Night Lights Across All Zoom Levels:</strong> Enabled selecting the NASA Black Marble VIIRS night lights overlay (<code>nasaNightLightsLayer</code>) across all zoom levels (1&ndash;22) with smooth native tile upscaling, bidirectional Settings toggle sync, and Companion Bridge proxy caching.</li>
+              <li><strong>Removed Key-Gated CartoDB Dark Canvas Layer:</strong> Removed the <code>Night Flight (Dark Canvas)</code> basemap and setting to ensure 100% open, API-key-free map layers.</li>
+            </ul>
+          </div>
+          <div>
             <strong style="color: var(--text-main);">Changelog (v1.163.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Astronomical Lunar Ephemeris &amp; Adaptive HUD:</strong> Added offline Jean Meeus lunar position, phase cycle glyphs, illumination fraction, and ambient lux calculations, dynamically switching between Sun dial (day) and Moon dial (night) across Photo Review and 2D/3D flight maps.</li>
               <li><strong>1-Click Celestial HUD Toggle:</strong> Added instant <code>☀️/🌙 HUD</code> button (<code>#photo-toggle-hud-btn</code>) to the Photo Inspector top toolbar to toggle solar and lunar overlays on captured inspection photos.</li>
-              <li><strong>Night Flight Basemap &amp; NASA VIIRS Overlay:</strong> Integrated CartoDB Dark Matter basemap (<code>darkCanvasLayer</code>) and NASA Black Marble VIIRS night lights (<code>nasaNightLightsLayer</code>) with proxy cache support.</li>
-              <li><strong>Night Flight Settings Card:</strong> Added dedicated controls in Configuration to customize automatic night basemap switching, NASA lights, and nocturnal celestial HUD.</li>
+              <li><strong>NASA VIIRS Night Lights Overlay:</strong> Integrated NASA Black Marble VIIRS night lights (<code>nasaNightLightsLayer</code>) and nocturnal flight layer preferences in Configuration.</li>
             </ul>
           </div>
           <div>
@@ -14552,22 +14558,10 @@ html, body {
           </div>
         </div>
 
-        <!-- Card 3: Night Flight & Nocturnal Layers (v1.161.0 - Issue #143) -->
+        <!-- Card 3: Night Flight & Nocturnal Layers (v1.163.1 - Issue #143) -->
         <div class="settings-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px;">
           <div style="font-size: 0.8rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
             <span>🌙 Night Flight &amp; Nocturnal Layers</span>
-          </div>
-
-          <!-- Night Auto Basemap Toggle -->
-          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-            <div>
-              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">Auto-Switch Dark Canvas at Night</span>
-              <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.74rem;">Automatically switch the 2D basemap to Night Flight (Dark Matter) when the sun descends below the horizon.</p>
-            </div>
-            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0;">
-              <input type="checkbox" id="config-night-auto-basemap" checked style="opacity: 0; width: 0; height: 0;">
-              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
-            </label>
           </div>
 
           <!-- NASA Black Marble Overlay Toggle -->
@@ -16561,6 +16555,7 @@ let boundaryLayersGroup = null;
 let fiducialMarkersGroup = null;
 let targetPolygonGroup = null;
 let solarOverlaysGroup = null;
+let acousticOverlaysGroup = null;
 let isTargetPolyEditActive = false;
 let isCorridorEditActive = false;
 let isAnyPopupOpen = false;
@@ -20598,46 +20593,11 @@ function setCameraConeEnabled(enabled) {
   }
 }
 
-const NIGHT_AUTO_BASEMAP_STORAGE_KEY = 'aalaapi_night_auto_basemap';
 const NIGHT_AUTO_NASA_STORAGE_KEY = 'aalaapi_night_auto_nasa';
 const NIGHT_CELESTIAL_HUD_STORAGE_KEY = 'aalaapi_night_celestial_hud';
 
-let cachedNightAutoBasemap = null;
 let cachedNightAutoNasa = null;
 let cachedNightCelestialHud = null;
-
-function isNightAutoBasemapEnabled() {
-  if (cachedNightAutoBasemap !== null) return cachedNightAutoBasemap;
-  const el = typeof document !== 'undefined' ? document.getElementById('config-night-auto-basemap') : null;
-  if (el) {
-    cachedNightAutoBasemap = !!el.checked;
-    return cachedNightAutoBasemap;
-  }
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem(NIGHT_AUTO_BASEMAP_STORAGE_KEY);
-      if (saved !== null) {
-        cachedNightAutoBasemap = (saved === 'true');
-        return cachedNightAutoBasemap;
-      }
-    }
-  } catch (e) {}
-  cachedNightAutoBasemap = true;
-  return cachedNightAutoBasemap;
-}
-
-function setNightAutoBasemapEnabled(enabled) {
-  cachedNightAutoBasemap = !!enabled;
-  try {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(NIGHT_AUTO_BASEMAP_STORAGE_KEY, cachedNightAutoBasemap ? 'true' : 'false');
-    }
-  } catch (e) {}
-  if (typeof document !== 'undefined') {
-    const el = document.getElementById('config-night-auto-basemap');
-    if (el && el.checked !== cachedNightAutoBasemap) el.checked = cachedNightAutoBasemap;
-  }
-}
 
 function isNightAutoNasaEnabled() {
   if (cachedNightAutoNasa !== null) return cachedNightAutoNasa;
@@ -20659,7 +20619,7 @@ function isNightAutoNasaEnabled() {
   return cachedNightAutoNasa;
 }
 
-function setNightAutoNasaEnabled(enabled) {
+function setNightAutoNasaEnabled(enabled, fromMapEvent = false) {
   cachedNightAutoNasa = !!enabled;
   try {
     if (typeof localStorage !== 'undefined') {
@@ -20669,6 +20629,17 @@ function setNightAutoNasaEnabled(enabled) {
   if (typeof document !== 'undefined') {
     const el = document.getElementById('config-night-auto-nasa');
     if (el && el.checked !== cachedNightAutoNasa) el.checked = cachedNightAutoNasa;
+  }
+  // Synchronize Leaflet overlay layer if not already triggered by map overlayadd/overlayremove
+  if (!fromMapEvent && typeof map !== 'undefined' && map) {
+    const nasaLayer = (typeof window !== 'undefined' && window.nasaNightLightsLayer) ? window.nasaNightLightsLayer : (typeof nasaNightLightsLayer !== 'undefined' ? nasaNightLightsLayer : null);
+    if (nasaLayer) {
+      if (cachedNightAutoNasa && typeof map.hasLayer === 'function' && !map.hasLayer(nasaLayer)) {
+        nasaLayer.addTo(map);
+      } else if (!cachedNightAutoNasa && typeof map.hasLayer === 'function' && map.hasLayer(nasaLayer)) {
+        map.removeLayer(nasaLayer);
+      }
+    }
   }
 }
 
@@ -20720,16 +20691,12 @@ if (typeof window !== 'undefined') {
   window.updatePaletteSwatchPreview = updatePaletteSwatchPreview;
   window.isCameraConeEnabled = isCameraConeEnabled;
   window.setCameraConeEnabled = setCameraConeEnabled;
-  window.isNightAutoBasemapEnabled = isNightAutoBasemapEnabled;
-  window.setNightAutoBasemapEnabled = setNightAutoBasemapEnabled;
   window.isNightAutoNasaEnabled = isNightAutoNasaEnabled;
   window.setNightAutoNasaEnabled = setNightAutoNasaEnabled;
   window.isNightCelestialHudEnabled = isNightCelestialHudEnabled;
   window.setNightCelestialHudEnabled = setNightCelestialHudEnabled;
 }
 if (typeof global !== 'undefined') {
-  global.isNightAutoBasemapEnabled = isNightAutoBasemapEnabled;
-  global.setNightAutoBasemapEnabled = setNightAutoBasemapEnabled;
   global.isNightAutoNasaEnabled = isNightAutoNasaEnabled;
   global.setNightAutoNasaEnabled = setNightAutoNasaEnabled;
   global.isNightCelestialHudEnabled = isNightCelestialHudEnabled;
@@ -24221,7 +24188,6 @@ let streetLayer;
 let esriStreetLayer;
 let satelliteLayer;
 let topoLayer;
-let darkCanvasLayer;
 let nasaNightLightsLayer;
 
 // FAA Airspace Overlay layers
@@ -24428,33 +24394,29 @@ function initMap() {
     attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
   });
 
-  // Night Flight Basemap (Dark Canvas / CartoDB Dark Matter) (v1.161.0 - Issue #143)
-  darkCanvasLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 22,
-    maxNativeZoom: 19,
-    subdomains: 'abcd',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-  });
-
-  // NASA Earth at Night (Black Marble / VIIRS Night Lights) Overlay (v1.161.0 - Issue #143)
+  // NASA Earth at Night (Black Marble / VIIRS Night Lights) Overlay (v1.161.0 - Issue #143, fixed v1.163.1)
   nasaNightLightsLayer = L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default//GoogleMapsCompatible_Level8/{z}/{y}/{x}.png', {
-    maxZoom: 8,
+    maxZoom: 22,
     maxNativeZoom: 8,
+    minZoom: 1,
     opacity: 0.65,
     attribution: 'Imagery &copy; NASA Earth Applied Sciences / GIBS Black Marble'
   });
 
   if (typeof window !== 'undefined') {
-    window.darkCanvasLayer = darkCanvasLayer;
     window.nasaNightLightsLayer = nasaNightLightsLayer;
   }
   if (typeof global !== 'undefined') {
-    global.darkCanvasLayer = darkCanvasLayer;
     global.nasaNightLightsLayer = nasaNightLightsLayer;
   }
 
   // Default to Satellite View (best for drone planning)
   satelliteLayer.addTo(map);
+
+  // If NASA Night Lights overlay was enabled in settings, add it to map
+  if (typeof isNightAutoNasaEnabled === 'function' && isNightAutoNasaEnabled()) {
+    nasaNightLightsLayer.addTo(map);
+  }
 
   // Initialize Airspace Overlays
   // VFR tile layer — always available (standard L.tileLayer, no Esri dependency)
@@ -24591,7 +24553,6 @@ function initMap() {
   // Add Layer Control — include only layers that successfully initialized
   const baseMaps = {
     "Satellite View": satelliteLayer,
-    "Night Flight (Dark Canvas)": darkCanvasLayer,
     "Street Map (Esri)": esriStreetLayer,
     [osmStreetLabel]: streetLayer,
     "Topography Map": topoLayer
@@ -24728,6 +24689,18 @@ function initMap() {
   }
   overlays["☀️/🌙 Celestial Vector & Shadow Casting (2D)"] = solarOverlaysGroup;
 
+  // Ground Observer Acoustic Contours Overlay (2D) (v1.164.0)
+  if (!acousticOverlaysGroup) {
+    acousticOverlaysGroup = L.layerGroup();
+  }
+  const savedShow2dAcoustic = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_show_2d_acoustic_contours') : null;
+  if (savedShow2dAcoustic === 'true') {
+    acousticOverlaysGroup.addTo(map);
+    const toggle2dEl = (typeof document !== 'undefined') ? document.getElementById('acoustic-map-overlay-toggle') : null;
+    if (toggle2dEl) toggle2dEl.checked = true;
+  }
+  overlays["🔊 Ground Noise Contours (dBA) (2D)"] = acousticOverlaysGroup;
+
   const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
 
   // If running on localhost or file://, disable the OpenStreetMap radio button with styled indicator & tooltip
@@ -24824,6 +24797,33 @@ function initMap() {
       }
     }
 
+    // Track NASA Earth at Night (VIIRS Lights) checkbox state
+    if (e.name === 'NASA Earth at Night (VIIRS Lights)') {
+      if (typeof setNightAutoNasaEnabled === 'function') {
+        setNightAutoNasaEnabled(e.type === 'overlayadd', true);
+      }
+    }
+
+    // Track 2D Ground Noise Contours (dBA) checkbox state
+    if (e.name === '🔊 Ground Noise Contours (dBA) (2D)') {
+      const isAdded = (e.type === 'overlayadd');
+      if (typeof localStorage !== 'undefined') {
+        try { localStorage.setItem('aalaapi_show_2d_acoustic_contours', isAdded ? 'true' : 'false'); } catch (err) {}
+      }
+      const toggle2dEl = (typeof document !== 'undefined') ? document.getElementById('acoustic-map-overlay-toggle') : null;
+      if (toggle2dEl) toggle2dEl.checked = isAdded;
+      if (isAdded && typeof renderAcousticOverlay2D === 'function' && typeof getCurrentWaypoints === 'function') {
+        const wps = getCurrentWaypoints();
+        let cLat = 41.3215, cLon = -88.9950;
+        if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+          const ll = centerMarker.getLatLng();
+          cLat = ll.lat;
+          cLon = ll.lng;
+        }
+        renderAcousticOverlay2D(wps, cLat, cLon);
+      }
+    }
+
     updateAirspaceLegend(e);
   });
 
@@ -24846,6 +24846,7 @@ function initMap() {
   roadPathGroup = L.layerGroup().addTo(map);
   targetPolygonGroup = L.layerGroup().addTo(map);
   if (!solarOverlaysGroup) solarOverlaysGroup = L.layerGroup().addTo(map);
+  if (!acousticOverlaysGroup) acousticOverlaysGroup = L.layerGroup();
   if (!photoInspectionGroup) photoInspectionGroup = L.layerGroup().addTo(map);
   if (!photoFootprintsGroup) photoFootprintsGroup = L.layerGroup();
 
@@ -24919,7 +24920,7 @@ const CONTROLS_LIST = [
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
   'camera-model', 'drone-model', 'camera-zoom', 'camera-aspect-ratio', 'camera-hfov', 'camera-vfov', 'road-offset',
   'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer',
-  'max-flight-height', 'rth-altitude',
+  'max-flight-height', 'rth-altitude', 'acoustic-ambient-preset',
   'target-splat-radius', 'target-splat-height', 'target-splat-culling-mode', 'target-splat-grid-pass',
   'tower-min-height', 'tower-max-height', 'tower-radius', 'tower-guy-wire-buffer', 'tower-movement-mode', 'tower-altitude-order'
 ];
@@ -24981,6 +24982,7 @@ const FACTORY_DEFAULTS = {
   'global-exclusion-detour-mode': 'perimeter',
   'global-exclusion-clearance-buffer': '10',
   'max-flight-time': '25',
+  'acoustic-ambient-preset': '45',
   // UI & Layout Preferences
   'unit-system': 'imperial',
   'theme': 'dark',
@@ -25435,11 +25437,9 @@ function initReplay2dBarListeners() {
 
 // Night Flight Map Layer exports (v1.161.0 - Issue #143)
 if (typeof window !== 'undefined') {
-  window.darkCanvasLayer = darkCanvasLayer;
   window.nasaNightLightsLayer = nasaNightLightsLayer;
 }
 if (typeof global !== 'undefined') {
-  global.darkCanvasLayer = darkCanvasLayer;
   global.nasaNightLightsLayer = nasaNightLightsLayer;
 }
 // -------------------- src/ui/ResetManager.js --------------------
@@ -28764,10 +28764,6 @@ function initUIEventListeners() {
         if (camConesToggle) {
           camConesToggle.checked = isCameraConeEnabled();
         }
-        const nightBasemapToggle = document.getElementById('config-night-auto-basemap');
-        if (nightBasemapToggle) {
-          nightBasemapToggle.checked = isNightAutoBasemapEnabled();
-        }
         const nightNasaToggle = document.getElementById('config-night-auto-nasa');
         if (nightNasaToggle) {
           nightNasaToggle.checked = isNightAutoNasaEnabled();
@@ -28809,16 +28805,7 @@ function initUIEventListeners() {
       });
     }
 
-    // Night Flight & Nocturnal Layers event listeners (v1.161.0 - Issue #143)
-    const nightBasemapToggle = document.getElementById('config-night-auto-basemap');
-    if (nightBasemapToggle) {
-      nightBasemapToggle.checked = isNightAutoBasemapEnabled();
-      nightBasemapToggle.addEventListener('change', () => {
-        setNightAutoBasemapEnabled(nightBasemapToggle.checked);
-        if (typeof updateSolarEphemeris === 'function') updateSolarEphemeris();
-      });
-    }
-
+    // Night Flight & Nocturnal Layers event listeners (v1.163.1 - Issue #143)
     const nightNasaToggle = document.getElementById('config-night-auto-nasa');
     if (nightNasaToggle) {
       nightNasaToggle.checked = isNightAutoNasaEnabled();
@@ -37200,6 +37187,14 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   if (typeof renderSolarOverlay2D === 'function') {
     renderSolarOverlay2D(activeCenterLat, activeCenterLon);
   }
+
+  // 8. Update Ground Observer Acoustic Advisor & Render 2D Noise Contours (v1.164.0)
+  if (typeof updateAcousticAdvisorUI === 'function') {
+    updateAcousticAdvisorUI(waypoints);
+  }
+  if (typeof renderAcousticOverlay2D === 'function') {
+    renderAcousticOverlay2D(waypoints, activeCenterLat, activeCenterLon);
+  }
 }
 
 // Add Map Legend for Multi-Orbit altitudes
@@ -38494,6 +38489,332 @@ function renderSolarOverlay2D(centerLat, centerLon) {
 if (typeof window !== 'undefined') {
   window.renderSolarOverlay2D = renderSolarOverlay2D;
 }
+
+/**
+ * Computes current mission acoustic metrics based on active drone profile, altitude, speed, waypoints, and ambient preset.
+ */
+function getMissionAcousticSummary(waypoints) {
+  const droneEl = (typeof document !== 'undefined') ? document.getElementById('drone-model') : null;
+  const droneEnum = droneEl ? droneEl.value : '68';
+  const profile = (typeof getDroneAcousticProfile === 'function')
+    ? getDroneAcousticProfile(droneEnum)
+    : { name: 'DJI Mini 4 Pro', refDba1m: 73.0, weightClass: 'Sub-249g Micro' };
+
+  const altEl = (typeof document !== 'undefined') ? document.getElementById('altitude') : null;
+  const speedEl = (typeof document !== 'undefined') ? document.getElementById('speed') : null;
+  const ambientEl = (typeof document !== 'undefined') ? document.getElementById('acoustic-ambient-preset') : null;
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const missionAltM = (activeLayer && typeof activeLayer.altitude === 'number' && activeLayer.altitude > 0)
+    ? activeLayer.altitude
+    : (altEl ? (parseFloat(altEl.value) || 50) : 50);
+  const missionSpeedMs = (activeLayer && typeof activeLayer.speed === 'number' && activeLayer.speed > 0)
+    ? activeLayer.speed
+    : (speedEl ? (parseFloat(speedEl.value) || 4) : 4);
+  const ambientDba = ambientEl ? (parseFloat(ambientEl.value) || 45) : 45;
+
+  const wps = Array.isArray(waypoints) ? waypoints : ((typeof getCurrentWaypoints === 'function') ? (getCurrentWaypoints() || []) : []);
+
+  const nadirDba = (typeof calculateGroundNoiseDba === 'function')
+    ? calculateGroundNoiseDba(profile.refDba1m, missionAltM, missionSpeedMs, 0)
+    : 40.0;
+
+  let peakDba = nadirDba;
+  let minAltM = missionAltM;
+  if (wps.length > 0 && typeof calculateGroundNoiseDba === 'function') {
+    wps.forEach(wp => {
+      const wpAlt = (wp && typeof wp.alt === 'number' && wp.alt > 0) ? wp.alt : ((wp && typeof wp.altitude === 'number' && wp.altitude > 0) ? wp.altitude : missionAltM);
+      const wpSpd = (wp && typeof wp.speed === 'number' && wp.speed > 0) ? wp.speed : missionSpeedMs;
+      const wpDba = calculateGroundNoiseDba(profile.refDba1m, wpAlt, wpSpd, 0);
+      if (wpDba > peakDba) peakDba = wpDba;
+      if (wpAlt < minAltM) minAltM = wpAlt;
+    });
+  }
+
+  const impact = (typeof classifyAcousticImpact === 'function')
+    ? classifyAcousticImpact(nadirDba, ambientDba)
+    : { nadirDba, ambientDba, deltaDb: nadirDba - ambientDba, humanEquivalent: 'Quiet Library (~45 dBA)', severity: 'moderate', label: 'Low Noticeability', color: '#06b6d4' };
+
+  const audibilityRadiusM = (typeof calculateGroundRadiusForTargetDba === 'function')
+    ? calculateGroundRadiusForTargetDba(profile.refDba1m, missionAltM, ambientDba, missionSpeedMs)
+    : 0;
+  const noticeableRadius55M = (typeof calculateGroundRadiusForTargetDba === 'function')
+    ? calculateGroundRadiusForTargetDba(profile.refDba1m, missionAltM, 55, missionSpeedMs)
+    : 0;
+  const intrusiveRadius65M = (typeof calculateGroundRadiusForTargetDba === 'function')
+    ? calculateGroundRadiusForTargetDba(profile.refDba1m, missionAltM, 65, missionSpeedMs)
+    : 0;
+  const stealthAltM = (typeof calculateRecommendedQuietAltitude === 'function')
+    ? calculateRecommendedQuietAltitude(profile.refDba1m, ambientDba, missionSpeedMs, 3)
+    : 50;
+
+  return {
+    profile,
+    missionAltM,
+    missionSpeedMs,
+    ambientDba,
+    nadirDba,
+    peakDba,
+    minAltM,
+    impact,
+    audibilityRadiusM,
+    noticeableRadius55M,
+    intrusiveRadius65M,
+    stealthAltM
+  };
+}
+
+/**
+ * Updates the Section 3 Ground Observer Acoustic Impact Advisor subcard DOM elements.
+ */
+function updateAcousticAdvisorUI(waypoints) {
+  if (typeof document === 'undefined') return;
+  const summary = getMissionAcousticSummary(waypoints);
+  const {
+    profile,
+    ambientDba,
+    nadirDba,
+    peakDba,
+    impact,
+    audibilityRadiusM,
+    stealthAltM
+  } = summary;
+
+  const useImp = (typeof isImperial === 'function') ? isImperial() : false;
+  const formatDist = (meters) => {
+    if (useImp) {
+      return `${Math.round(meters * 3.28084)} ft`;
+    }
+    return `${Math.round(meters)} m`;
+  };
+
+  const badgeEl = document.getElementById('acoustic-impact-badge');
+  if (badgeEl) {
+    badgeEl.textContent = `${nadirDba.toFixed(1)} dBA • ${impact.label}`;
+    badgeEl.style.color = impact.color;
+    badgeEl.style.borderColor = `${impact.color}55`;
+    badgeEl.style.background = `${impact.color}22`;
+  }
+
+  const droneRefEl = document.getElementById('acoustic-drone-ref');
+  if (droneRefEl) {
+    droneRefEl.textContent = `${profile.name} (${profile.refDba1m.toFixed(0)} dBA @ 1m)`;
+  }
+
+  const nadirEl = document.getElementById('acoustic-nadir-dba');
+  if (nadirEl) {
+    nadirEl.textContent = (peakDba > nadirDba + 0.3)
+      ? `${nadirDba.toFixed(1)} dBA (Peak: ${peakDba.toFixed(1)} dBA)`
+      : `${nadirDba.toFixed(1)} dBA`;
+    nadirEl.style.color = impact.color;
+  }
+
+  const humanEl = document.getElementById('acoustic-human-equiv');
+  if (humanEl) {
+    humanEl.textContent = impact.humanEquivalent;
+  }
+
+  const deltaEl = document.getElementById('acoustic-delta-ambient');
+  if (deltaEl) {
+    const sign = impact.deltaDb > 0 ? '+' : '';
+    deltaEl.textContent = `${sign}${impact.deltaDb.toFixed(1)} dB vs Ambient (${ambientDba} dBA)`;
+    deltaEl.style.color = impact.deltaDb <= 0 ? '#10b981' : (impact.deltaDb <= 6 ? '#38bdf8' : (impact.deltaDb <= 12 ? '#fbbf24' : '#f87171'));
+  }
+
+  const radiusEl = document.getElementById('acoustic-audibility-radius');
+  if (radiusEl) {
+    radiusEl.textContent = audibilityRadiusM <= 0
+      ? `0 ${useImp ? 'ft' : 'm'} (Masked by Ambient)`
+      : `${formatDist(audibilityRadiusM)} radius`;
+  }
+
+  const stealthEl = document.getElementById('acoustic-stealth-alt-readout');
+  if (stealthEl) {
+    stealthEl.textContent = `≥ ${formatDist(stealthAltM)} AGL`;
+  }
+
+  const applyBtn = document.getElementById('btn-acoustic-apply-altitude');
+  if (applyBtn) {
+    applyBtn.dataset.stealthAltM = String(stealthAltM);
+    applyBtn.title = `Set flight altitude to ${formatDist(stealthAltM)} (${stealthAltM}m) for low-noise stealth operation`;
+  }
+}
+
+/**
+ * Enables or disables the 2D Ground Noise Contours overlay on the Leaflet map and syncs UI toggles.
+ */
+function set2DAcousticOverlayEnabled(enabled) {
+  const isOn = !!enabled;
+  if (typeof localStorage !== 'undefined') {
+    try { localStorage.setItem('aalaapi_show_2d_acoustic_contours', isOn ? 'true' : 'false'); } catch (e) {}
+  }
+  const toggleEl = (typeof document !== 'undefined') ? document.getElementById('acoustic-map-overlay-toggle') : null;
+  if (toggleEl && toggleEl.checked !== isOn) {
+    toggleEl.checked = isOn;
+  }
+  if (typeof map !== 'undefined' && map && typeof acousticOverlaysGroup !== 'undefined' && acousticOverlaysGroup) {
+    if (isOn && !map.hasLayer(acousticOverlaysGroup)) {
+      acousticOverlaysGroup.addTo(map);
+    } else if (!isOn && map.hasLayer(acousticOverlaysGroup)) {
+      map.removeLayer(acousticOverlaysGroup);
+    }
+    const wps = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : [];
+    let cLat = 41.3215, cLon = -88.9950;
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+      const ll = centerMarker.getLatLng();
+      cLat = ll.lat;
+      cLon = ll.lng;
+    }
+    renderAcousticOverlay2D(wps, cLat, cLon);
+  }
+}
+
+/**
+ * Renders 2D Ground Noise Swath & Waypoint dBA Contours on the Leaflet map when acousticOverlaysGroup is enabled.
+ */
+function renderAcousticOverlay2D(waypoints, centerLat, centerLon) {
+  if (typeof L === 'undefined' || typeof map === 'undefined' || !map) return;
+  if (typeof acousticOverlaysGroup === 'undefined' || !acousticOverlaysGroup) return;
+
+  acousticOverlaysGroup.clearLayers();
+
+  // Only draw when the 2D overlay is enabled on the map
+  if (!map.hasLayer(acousticOverlaysGroup)) return;
+
+  const summary = getMissionAcousticSummary(waypoints);
+  const {
+    profile,
+    missionAltM,
+    missionSpeedMs,
+    ambientDba,
+    audibilityRadiusM,
+    noticeableRadius55M,
+    intrusiveRadius65M
+  } = summary;
+
+  const wps = Array.isArray(waypoints) ? waypoints : ((typeof getCurrentWaypoints === 'function') ? (getCurrentWaypoints() || []) : []);
+  const useImp = (typeof isImperial === 'function') ? isImperial() : false;
+  const fmtDist = (m) => useImp ? `${Math.round(m * 3.28084)}ft` : `${Math.round(m)}m`;
+
+  // If no waypoints exist yet, render concentric contour rings around centerLat/centerLon if available
+  const targetPoints = (wps.length > 0)
+    ? wps
+    : ((typeof centerLat === 'number' && typeof centerLon === 'number') ? [{ lat: centerLat, lon: centerLon, alt: missionAltM, speed: missionSpeedMs }] : []);
+
+  if (targetPoints.length === 0) return;
+
+  // 1. Flight Path Acoustic Swath Corridor (if 2+ waypoints)
+  if (targetPoints.length >= 2) {
+    const latlngs = targetPoints
+      .filter(pt => typeof pt.lat === 'number' && typeof (pt.lon !== undefined ? pt.lon : pt.lng) === 'number')
+      .map(pt => [pt.lat, pt.lon !== undefined ? pt.lon : pt.lng]);
+
+    if (latlngs.length >= 2 && audibilityRadiusM > 2) {
+      const swathLine = L.polyline(latlngs, {
+        color: '#06b6d4',
+        weight: 10,
+        opacity: 0.18,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false
+      }).addTo(acousticOverlaysGroup);
+      swathLine.bindTooltip(`🔊 Ground Audibility Swath (> ${ambientDba} dBA Ambient)`, { sticky: true });
+    }
+  }
+
+  // 2. Sample up to 20 waypoints along the route to draw physical ground radius contours (L.circle in meters)
+  const maxRings = 20;
+  const step = Math.max(1, Math.ceil(targetPoints.length / maxRings));
+
+  for (let i = 0; i < targetPoints.length; i += step) {
+    const wp = targetPoints[i];
+    const lat = wp.lat;
+    const lon = wp.lon !== undefined ? wp.lon : wp.lng;
+    if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) continue;
+
+    const wpAlt = (typeof wp.alt === 'number' && wp.alt > 0) ? wp.alt : ((typeof wp.altitude === 'number' && wp.altitude > 0) ? wp.altitude : missionAltM);
+    const wpSpd = (typeof wp.speed === 'number' && wp.speed > 0) ? wp.speed : missionSpeedMs;
+    const wpNadirDba = (typeof calculateGroundNoiseDba === 'function')
+      ? calculateGroundNoiseDba(profile.refDba1m, wpAlt, wpSpd, 0)
+      : summary.nadirDba;
+    const wpAudRadius = (typeof calculateGroundRadiusForTargetDba === 'function')
+      ? calculateGroundRadiusForTargetDba(profile.refDba1m, wpAlt, ambientDba, wpSpd)
+      : audibilityRadiusM;
+    const wpNoticeRadius = (typeof calculateGroundRadiusForTargetDba === 'function')
+      ? calculateGroundRadiusForTargetDba(profile.refDba1m, wpAlt, 55, wpSpd)
+      : noticeableRadius55M;
+    const wpIntrusiveRadius = (typeof calculateGroundRadiusForTargetDba === 'function')
+      ? calculateGroundRadiusForTargetDba(profile.refDba1m, wpAlt, 65, wpSpd)
+      : intrusiveRadius65M;
+
+    const deltaDb = Math.round((wpNadirDba - ambientDba) * 10) / 10;
+    const tooltipHtml = `🔊 <b>WP ${i + 1} Ground Noise: ${wpNadirDba.toFixed(1)} dBA</b><br/>` +
+      `Prominence: ${deltaDb >= 0 ? '+' : ''}${deltaDb.toFixed(1)} dB vs Ambient (${ambientDba} dBA)<br/>` +
+      `Audible Radius: ${wpAudRadius > 0 ? fmtDist(wpAudRadius) : 'Masked'}`;
+
+    // Outer Ambient Audibility Ring
+    if (wpAudRadius > 1) {
+      const outerRing = L.circle([lat, lon], {
+        radius: wpAudRadius,
+        color: '#10b981',
+        weight: 1.5,
+        dashArray: '4, 4',
+        fillColor: '#10b981',
+        fillOpacity: 0.07,
+        interactive: true
+      }).addTo(acousticOverlaysGroup);
+      outerRing.bindTooltip(tooltipHtml, { direction: 'top', sticky: true });
+    }
+
+    // Middle Noticeable Contour Ring (>= 55 dBA)
+    if (wpNoticeRadius > 1) {
+      const midRing = L.circle([lat, lon], {
+        radius: wpNoticeRadius,
+        color: '#f59e0b',
+        weight: 1.5,
+        fillColor: '#f59e0b',
+        fillOpacity: 0.12,
+        interactive: true
+      }).addTo(acousticOverlaysGroup);
+      midRing.bindTooltip(tooltipHtml, { direction: 'top', sticky: true });
+    }
+
+    // Inner Intrusive Core Ring (>= 65 dBA)
+    if (wpIntrusiveRadius > 1) {
+      const innerRing = L.circle([lat, lon], {
+        radius: wpIntrusiveRadius,
+        color: '#ef4444',
+        weight: 2,
+        fillColor: '#ef4444',
+        fillOpacity: 0.2,
+        interactive: true
+      }).addTo(acousticOverlaysGroup);
+      innerRing.bindTooltip(tooltipHtml, { direction: 'top', sticky: true });
+    }
+
+    // If masked by ambient, still place a small subtle acoustic indicator circle at the start waypoint
+    if (wpAudRadius <= 1 && i === 0) {
+      const quietRing = L.circle([lat, lon], {
+        radius: 12,
+        color: '#10b981',
+        weight: 1.5,
+        dashArray: '2, 4',
+        fillColor: '#10b981',
+        fillOpacity: 0.1,
+        interactive: true
+      }).addTo(acousticOverlaysGroup);
+      quietRing.bindTooltip(tooltipHtml, { direction: 'top', sticky: true });
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.getMissionAcousticSummary = getMissionAcousticSummary;
+  window.updateAcousticAdvisorUI = updateAcousticAdvisorUI;
+  window.renderAcousticOverlay2D = renderAcousticOverlay2D;
+  window.set2DAcousticOverlayEnabled = set2DAcousticOverlayEnabled;
+}
+
 // -------------------- src/ui/TelemetryHud.js --------------------
 function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, captureMode) {
   if (waypoints.length < 2) return null;
@@ -38890,14 +39211,162 @@ function isEnterpriseDrone(droneEnumValue) {
   return !isConsumerDrone(droneEnumValue);
 }
 
+const DRONE_ACOUSTIC_PROFILES = {
+  68: { name: 'DJI Mini 4 Pro', refDba1m: 73.0, speedNoiseCoeff: 0.22, climbNoiseCoeff: 0.45, weightClass: 'Sub-249g Micro' },
+  89: { name: 'DJI Air 3', refDba1m: 78.0, speedNoiseCoeff: 0.25, climbNoiseCoeff: 0.50, weightClass: '720g Mid-Size' },
+  77: { name: 'DJI Mavic 3 Enterprise', refDba1m: 80.0, speedNoiseCoeff: 0.26, climbNoiseCoeff: 0.55, weightClass: '915g Enterprise' },
+  67: { name: 'DJI Matrice 30 / 30T', refDba1m: 85.0, speedNoiseCoeff: 0.28, climbNoiseCoeff: 0.60, weightClass: '3.77kg Heavy Enterprise' },
+  60: { name: 'DJI Matrice 300 / 350 RTK', refDba1m: 88.0, speedNoiseCoeff: 0.30, climbNoiseCoeff: 0.65, weightClass: '6.47kg Heavy Industrial' },
+  71: { name: 'DJI Inspire 3', refDba1m: 86.0, speedNoiseCoeff: 0.28, climbNoiseCoeff: 0.60, weightClass: '3.99kg Cinema' }
+};
+
+function getDroneAcousticProfile(droneEnumValue) {
+  const effectiveEnum = normalizeDroneEnum(droneEnumValue);
+  return DRONE_ACOUSTIC_PROFILES[effectiveEnum] || DRONE_ACOUSTIC_PROFILES[68];
+}
+
+/**
+ * Calculates ground observer A-weighted Sound Pressure Level (dBA) at a given 3D slant distance.
+ * Models spherical spreading (-20*log10(d)), atmospheric absorption (-alpha*d), and rotor load boost.
+ */
+function calculateGroundNoiseDba(refDba1m, slantDistanceM, speedMs = 0, climbRateMs = 0, alphaDbPerMeter = 0.005) {
+  const baseDba = (typeof refDba1m === 'number' && !isNaN(refDba1m) && refDba1m > 0) ? refDba1m : 73.0;
+  const dist = Math.max(1.0, (typeof slantDistanceM === 'number' && !isNaN(slantDistanceM)) ? slantDistanceM : 50.0);
+  const spd = Math.max(0, (typeof speedMs === 'number' && !isNaN(speedMs)) ? Math.abs(speedMs) : 0);
+  const climb = (typeof climbRateMs === 'number' && !isNaN(climbRateMs)) ? climbRateMs : 0;
+  const alpha = (typeof alphaDbPerMeter === 'number' && !isNaN(alphaDbPerMeter) && alphaDbPerMeter >= 0) ? alphaDbPerMeter : 0.005;
+
+  const sphericalLossDb = 20.0 * Math.log10(dist);
+  const atmosphericLossDb = alpha * dist;
+  const speedLoadBoostDb = Math.min(3.5, spd * 0.24);
+  const climbLoadBoostDb = climb > 0 ? Math.min(2.5, climb * 0.5) : (climb < 0 ? Math.min(1.2, Math.abs(climb) * 0.2) : 0);
+
+  const rawSpl = baseDba - sphericalLossDb - atmosphericLossDb + speedLoadBoostDb + climbLoadBoostDb;
+  return Math.max(15.0, Math.round(rawSpl * 10) / 10);
+}
+
+/**
+ * Solves for the horizontal ground radius (meters) from nadir at which ground SPL drops to targetDba.
+ * Returns 0 if nadir SPL right beneath the aircraft is already <= targetDba.
+ */
+function calculateGroundRadiusForTargetDba(refDba1m, altitudeM, targetDba, speedMs = 0, alphaDbPerMeter = 0.005) {
+  const alt = Math.max(1.0, (typeof altitudeM === 'number' && !isNaN(altitudeM)) ? altitudeM : 50.0);
+  const target = (typeof targetDba === 'number' && !isNaN(targetDba)) ? targetDba : 45.0;
+  const nadirSpl = calculateGroundNoiseDba(refDba1m, alt, speedMs, 0, alphaDbPerMeter);
+  if (nadirSpl <= target) return 0;
+
+  // Binary search for slant distance d >= alt where SPL(d) == target
+  let low = alt;
+  let high = 2500.0;
+  for (let i = 0; i < 28; i++) {
+    const mid = 0.5 * (low + high);
+    const splMid = calculateGroundNoiseDba(refDba1m, mid, speedMs, 0, alphaDbPerMeter);
+    if (splMid > target) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  const slantDist = 0.5 * (low + high);
+  if (slantDist <= alt) return 0;
+  const horizRadius = Math.sqrt(Math.max(0, slantDist * slantDist - alt * alt));
+  return Math.round(horizRadius * 10) / 10;
+}
+
+/**
+ * Computes the minimum recommended quiet/stealth flight altitude AGL (meters)
+ * so that nadir ground SPL does not exceed (ambientDba + marginDb).
+ */
+function calculateRecommendedQuietAltitude(refDba1m, ambientDba = 45, speedMs = 0, marginDb = 3, alphaDbPerMeter = 0.005) {
+  const amb = (typeof ambientDba === 'number' && !isNaN(ambientDba)) ? ambientDba : 45.0;
+  const margin = (typeof marginDb === 'number' && !isNaN(marginDb)) ? marginDb : 3.0;
+  const targetSpl = amb + margin;
+
+  let low = 15.0;
+  let high = 400.0;
+  if (calculateGroundNoiseDba(refDba1m, low, speedMs, 0, alphaDbPerMeter) <= targetSpl) {
+    return 15;
+  }
+  for (let i = 0; i < 25; i++) {
+    const mid = 0.5 * (low + high);
+    const splMid = calculateGroundNoiseDba(refDba1m, mid, speedMs, 0, alphaDbPerMeter);
+    if (splMid > targetSpl) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  return Math.min(400, Math.max(15, Math.ceil(high)));
+}
+
+/**
+ * Classifies ground acoustic impact into human-comparable sound levels and prominence above ambient.
+ */
+function classifyAcousticImpact(nadirDba, ambientDba = 45) {
+  const spl = (typeof nadirDba === 'number' && !isNaN(nadirDba)) ? nadirDba : 45.0;
+  const amb = (typeof ambientDba === 'number' && !isNaN(ambientDba)) ? ambientDba : 45.0;
+  const deltaDb = Math.round((spl - amb) * 10) / 10;
+
+  let humanEquivalent = 'Quiet Library (~45 dBA)';
+  if (spl < 38) {
+    humanEquivalent = 'Whisper / Rustling Leaves (<38 dBA)';
+  } else if (spl < 48) {
+    humanEquivalent = 'Quiet Library / Birdsong (~42 dBA)';
+  } else if (spl < 56) {
+    humanEquivalent = 'Moderate Rainfall / Fridge Hum (~50 dBA)';
+  } else if (spl < 64) {
+    humanEquivalent = 'Normal Conversation / A/C Unit (~60 dBA)';
+  } else if (spl < 72) {
+    humanEquivalent = 'Vacuum Cleaner / Busy Street (~68 dBA)';
+  } else {
+    humanEquivalent = 'Intrusive / Lawn Equipment (≥72 dBA)';
+  }
+
+  let severity = 'quiet';
+  let label = 'Stealth / Masked';
+  let color = '#10b981'; // Emerald
+  if (deltaDb <= 0) {
+    severity = 'quiet';
+    label = 'Masked by Ambient';
+    color = '#10b981';
+  } else if (deltaDb <= 5 && spl < 56) {
+    severity = 'moderate';
+    label = 'Low Noticeability';
+    color = '#06b6d4'; // Cyan
+  } else if (deltaDb <= 12 && spl < 65) {
+    severity = 'noticeable';
+    label = 'Noticeable Hum';
+    color = '#f59e0b'; // Amber
+  } else {
+    severity = 'intrusive';
+    label = 'High / Intrusive';
+    color = '#ef4444'; // Red
+  }
+
+  return {
+    nadirDba: spl,
+    ambientDba: amb,
+    deltaDb,
+    humanEquivalent,
+    severity,
+    label,
+    color
+  };
+}
+
 function getDroneProfile(droneEnumValue) {
   const effectiveEnum = normalizeDroneEnum(droneEnumValue);
   const isConsumer = isConsumerDrone(effectiveEnum);
+  const acoustic = getDroneAcousticProfile(effectiveEnum);
   return {
     isConsumer,
     isEnterprise: !isConsumer,
     droneEnumValue: effectiveEnum,
-    name: effectiveEnum === 68 ? 'DJI Mini 4 Pro' : (effectiveEnum === 89 ? 'DJI Air 3' : (effectiveEnum === 77 ? 'DJI Mavic 3 Enterprise' : 'DJI Enterprise Drone')),
+    name: acoustic ? acoustic.name : (effectiveEnum === 68 ? 'DJI Mini 4 Pro' : (effectiveEnum === 89 ? 'DJI Air 3' : (effectiveEnum === 77 ? 'DJI Mavic 3 Enterprise' : 'DJI Enterprise Drone'))),
+    refDba1m: acoustic.refDba1m,
+    speedNoiseCoeff: acoustic.speedNoiseCoeff,
+    climbNoiseCoeff: acoustic.climbNoiseCoeff,
+    weightClass: acoustic.weightClass,
     requiresTemplateType: !isConsumer,
     requiresPayloadParam: !isConsumer,
     supportsPayloadParam: !isConsumer,
@@ -42033,7 +42502,8 @@ function shouldProxyTileUrl(url) {
          lower.includes('opentopomap.org') ||
          lower.includes('services6.arcgis.com') ||
          lower.includes('services1.arcgis.com') ||
-         lower.includes('opengeo.ncep.noaa.gov');
+         lower.includes('opengeo.ncep.noaa.gov') ||
+         lower.includes('gibs.earthdata.nasa.gov');
 }
 
 function getBridgeProxyUrl(rawUrl) {
