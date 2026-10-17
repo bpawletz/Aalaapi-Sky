@@ -211,46 +211,11 @@ function setCameraConeEnabled(enabled) {
   }
 }
 
-const NIGHT_AUTO_BASEMAP_STORAGE_KEY = 'aalaapi_night_auto_basemap';
 const NIGHT_AUTO_NASA_STORAGE_KEY = 'aalaapi_night_auto_nasa';
 const NIGHT_CELESTIAL_HUD_STORAGE_KEY = 'aalaapi_night_celestial_hud';
 
-let cachedNightAutoBasemap = null;
 let cachedNightAutoNasa = null;
 let cachedNightCelestialHud = null;
-
-function isNightAutoBasemapEnabled() {
-  if (cachedNightAutoBasemap !== null) return cachedNightAutoBasemap;
-  const el = typeof document !== 'undefined' ? document.getElementById('config-night-auto-basemap') : null;
-  if (el) {
-    cachedNightAutoBasemap = !!el.checked;
-    return cachedNightAutoBasemap;
-  }
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem(NIGHT_AUTO_BASEMAP_STORAGE_KEY);
-      if (saved !== null) {
-        cachedNightAutoBasemap = (saved === 'true');
-        return cachedNightAutoBasemap;
-      }
-    }
-  } catch (e) {}
-  cachedNightAutoBasemap = true;
-  return cachedNightAutoBasemap;
-}
-
-function setNightAutoBasemapEnabled(enabled) {
-  cachedNightAutoBasemap = !!enabled;
-  try {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(NIGHT_AUTO_BASEMAP_STORAGE_KEY, cachedNightAutoBasemap ? 'true' : 'false');
-    }
-  } catch (e) {}
-  if (typeof document !== 'undefined') {
-    const el = document.getElementById('config-night-auto-basemap');
-    if (el && el.checked !== cachedNightAutoBasemap) el.checked = cachedNightAutoBasemap;
-  }
-}
 
 function isNightAutoNasaEnabled() {
   if (cachedNightAutoNasa !== null) return cachedNightAutoNasa;
@@ -272,7 +237,7 @@ function isNightAutoNasaEnabled() {
   return cachedNightAutoNasa;
 }
 
-function setNightAutoNasaEnabled(enabled) {
+function setNightAutoNasaEnabled(enabled, fromMapEvent = false) {
   cachedNightAutoNasa = !!enabled;
   try {
     if (typeof localStorage !== 'undefined') {
@@ -282,6 +247,17 @@ function setNightAutoNasaEnabled(enabled) {
   if (typeof document !== 'undefined') {
     const el = document.getElementById('config-night-auto-nasa');
     if (el && el.checked !== cachedNightAutoNasa) el.checked = cachedNightAutoNasa;
+  }
+  // Synchronize Leaflet overlay layer if not already triggered by map overlayadd/overlayremove
+  if (!fromMapEvent && typeof map !== 'undefined' && map) {
+    const nasaLayer = (typeof window !== 'undefined' && window.nasaNightLightsLayer) ? window.nasaNightLightsLayer : (typeof nasaNightLightsLayer !== 'undefined' ? nasaNightLightsLayer : null);
+    if (nasaLayer) {
+      if (cachedNightAutoNasa && typeof map.hasLayer === 'function' && !map.hasLayer(nasaLayer)) {
+        nasaLayer.addTo(map);
+      } else if (!cachedNightAutoNasa && typeof map.hasLayer === 'function' && map.hasLayer(nasaLayer)) {
+        map.removeLayer(nasaLayer);
+      }
+    }
   }
 }
 
@@ -333,16 +309,12 @@ if (typeof window !== 'undefined') {
   window.updatePaletteSwatchPreview = updatePaletteSwatchPreview;
   window.isCameraConeEnabled = isCameraConeEnabled;
   window.setCameraConeEnabled = setCameraConeEnabled;
-  window.isNightAutoBasemapEnabled = isNightAutoBasemapEnabled;
-  window.setNightAutoBasemapEnabled = setNightAutoBasemapEnabled;
   window.isNightAutoNasaEnabled = isNightAutoNasaEnabled;
   window.setNightAutoNasaEnabled = setNightAutoNasaEnabled;
   window.isNightCelestialHudEnabled = isNightCelestialHudEnabled;
   window.setNightCelestialHudEnabled = setNightCelestialHudEnabled;
 }
 if (typeof global !== 'undefined') {
-  global.isNightAutoBasemapEnabled = isNightAutoBasemapEnabled;
-  global.setNightAutoBasemapEnabled = setNightAutoBasemapEnabled;
   global.isNightAutoNasaEnabled = isNightAutoNasaEnabled;
   global.setNightAutoNasaEnabled = setNightAutoNasaEnabled;
   global.isNightCelestialHudEnabled = isNightCelestialHudEnabled;

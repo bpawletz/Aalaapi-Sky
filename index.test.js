@@ -31448,10 +31448,6 @@ describe('v1.162.0 Streamlined Top Navigation Ribbon & Consolidated Bridge Buffe
 });
 
 describe('v1.163.0 Nighttime Moon Position HUD, Nocturnal Map Layers, and Customizable Settings (Closes #143)', () => {
-  test('Version Consistency across required locations for v1.163.0', () => {
-    assertVersionConsistency('1.163.0');
-  });
-
   test('SolarEphemeris calculates Jean Meeus lunar position, parallax, phase, and natural lux', () => {
     assert.ok(typeof SolarEphemeris !== 'undefined', 'SolarEphemeris must be defined');
     assert.ok(typeof SolarEphemeris.getMoonPosition === 'function', 'getMoonPosition must be a function');
@@ -31484,17 +31480,10 @@ describe('v1.163.0 Nighttime Moon Position HUD, Nocturnal Map Layers, and Custom
   });
 
   test('Night flight configuration settings and ThemeManager persistence', () => {
-    assert.ok(typeof isNightAutoBasemapEnabled === 'function', 'isNightAutoBasemapEnabled must be a function');
-    assert.ok(typeof setNightAutoBasemapEnabled === 'function', 'setNightAutoBasemapEnabled must be a function');
     assert.ok(typeof isNightAutoNasaEnabled === 'function', 'isNightAutoNasaEnabled must be a function');
     assert.ok(typeof setNightAutoNasaEnabled === 'function', 'setNightAutoNasaEnabled must be a function');
     assert.ok(typeof isNightCelestialHudEnabled === 'function', 'isNightCelestialHudEnabled must be a function');
     assert.ok(typeof setNightCelestialHudEnabled === 'function', 'setNightCelestialHudEnabled must be a function');
-
-    setNightAutoBasemapEnabled(false);
-    assert.strictEqual(isNightAutoBasemapEnabled(), false);
-    setNightAutoBasemapEnabled(true);
-    assert.strictEqual(isNightAutoBasemapEnabled(), true);
 
     setNightAutoNasaEnabled(true);
     assert.strictEqual(isNightAutoNasaEnabled(), true);
@@ -31511,18 +31500,38 @@ describe('v1.163.0 Nighttime Moon Position HUD, Nocturnal Map Layers, and Custom
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
     assert.ok(template.includes('id="photo-toggle-hud-btn"'), 'index_template.html must contain #photo-toggle-hud-btn');
     assert.ok(template.includes('id="layer-toggle-solar"'), 'index_template.html must contain #layer-toggle-solar');
-    assert.ok(template.includes('id="config-night-auto-basemap"'), 'index_template.html must contain #config-night-auto-basemap');
     assert.ok(template.includes('id="config-night-auto-nasa"'), 'index_template.html must contain #config-night-auto-nasa');
     assert.ok(template.includes('id="config-night-celestial-hud"'), 'index_template.html must contain #config-night-celestial-hud');
   });
 
-  test('MapEngine exports darkCanvasLayer and nasaNightLightsLayer', () => {
+  test('MapEngine exports nasaNightLightsLayer and Celestial Vector overlay', () => {
     const mapEngineJs = fs.readFileSync(path.join(__dirname, 'src', 'map', 'MapEngine.js'), 'utf8');
-    assert.ok(mapEngineJs.includes('darkCanvasLayer'), 'MapEngine.js must declare darkCanvasLayer');
     assert.ok(mapEngineJs.includes('nasaNightLightsLayer'), 'MapEngine.js must declare nasaNightLightsLayer');
-    assert.ok(mapEngineJs.includes('"Night Flight (Dark Canvas)"'), 'MapEngine.js must include Night Flight in baseMaps');
     assert.ok(mapEngineJs.includes('"NASA Earth at Night (VIIRS Lights)"'), 'MapEngine.js must include NASA Earth at Night in overlays');
     assert.ok(mapEngineJs.includes('"☀️/🌙 Celestial Vector & Shadow Casting (2D)"'), 'MapEngine.js must include Celestial Vector in overlays');
+  });
+});
+
+describe('v1.163.1 Open-Source Night Layers Cleanup & NASA VIIRS All-Zoom Selectability', () => {
+  test('Version Consistency across required locations for v1.163.1', () => {
+    assertVersionConsistency('1.163.1');
+  });
+
+  test('Key-gated CartoDB Dark Canvas layer and auto-basemap setting are completely removed', () => {
+    const mapEngineJs = fs.readFileSync(path.join(__dirname, 'src', 'map', 'MapEngine.js'), 'utf8');
+    const themeManagerJs = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'ThemeManager.js'), 'utf8');
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+
+    assert.ok(!mapEngineJs.includes('darkCanvasLayer'), 'MapEngine.js must not contain darkCanvasLayer');
+    assert.ok(!mapEngineJs.includes('basemaps.cartocdn.com'), 'MapEngine.js must not reference CartoDB tile URLs');
+    assert.ok(!themeManagerJs.includes('isNightAutoBasemapEnabled'), 'ThemeManager.js must not contain isNightAutoBasemapEnabled');
+    assert.ok(!template.includes('id="config-night-auto-basemap"'), 'index_template.html must not contain #config-night-auto-basemap');
+  });
+
+  test('NASA VIIRS night lights layer supports maxZoom 22 with maxNativeZoom 8 and tile proxy caching', () => {
+    const mapEngineJs = fs.readFileSync(path.join(__dirname, 'src', 'map', 'MapEngine.js'), 'utf8');
+    assert.ok(mapEngineJs.includes('maxZoom: 22, maxNativeZoom: 8'), 'nasaNightLightsLayer must set maxZoom: 22 and maxNativeZoom: 8 so it is selectable at all zoom levels');
+    assert.strictEqual(shouldProxyTileUrl('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8/6/23/16.png'), true, 'shouldProxyTileUrl must include gibs.earthdata.nasa.gov');
   });
 });
 

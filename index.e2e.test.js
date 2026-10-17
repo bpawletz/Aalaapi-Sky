@@ -8510,7 +8510,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(res.resetPreset, 'standard', 'Reset defaults button must restore standard preset');
     });
 
-    test('v1.163.0 Nighttime Moon Position HUD, Nocturnal Map Layers, and Customizable Settings', async () => {
+    test('v1.163.0 & v1.163.1 Nighttime Moon Position HUD, NASA VIIRS All-Zoom Selectability, and Open-Source Layer Cleanup', async () => {
       const res = await page.evaluate(() => {
         // 1. Verify Photo Review 1-click HUD toggle button and drawer checkbox
         const photoToggleBtn = document.getElementById('photo-toggle-hud-btn');
@@ -8541,28 +8541,43 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         const chkAutoNasa = document.getElementById('config-night-auto-nasa');
         const chkCelestialHud = document.getElementById('config-night-celestial-hud');
 
-        const nightCardControlsExist = !!(chkAutoBasemap && chkAutoNasa && chkCelestialHud);
+        const autoBasemapRemoved = !chkAutoBasemap;
+        const nightCardControlsExist = !!(chkAutoNasa && chkCelestialHud);
 
-        // Test toggles and persistence
-        if (chkAutoBasemap) {
-          chkAutoBasemap.checked = false;
-          chkAutoBasemap.dispatchEvent(new Event('change'));
+        // Test NASA VIIRS toggle and map layer sync
+        if (chkAutoNasa) {
+          chkAutoNasa.checked = true;
+          chkAutoNasa.dispatchEvent(new Event('change'));
         }
-        const basemapPersistedFalse = localStorage.getItem('aalaapi_night_auto_basemap') === 'false';
+        const nasaPersistedTrue = localStorage.getItem('aalaapi_night_auto_nasa') === 'true';
+        const nasaOnMapWhenEnabled = !!(window.map && window.nasaNightLightsLayer && window.map.hasLayer(window.nasaNightLightsLayer));
 
-        if (chkAutoBasemap) {
-          chkAutoBasemap.checked = true;
-          chkAutoBasemap.dispatchEvent(new Event('change'));
+        if (chkAutoNasa) {
+          chkAutoNasa.checked = false;
+          chkAutoNasa.dispatchEvent(new Event('change'));
         }
-        const basemapPersistedTrue = localStorage.getItem('aalaapi_night_auto_basemap') === 'true';
+        const nasaPersistedFalse = localStorage.getItem('aalaapi_night_auto_nasa') === 'false';
+        const nasaOffMapWhenDisabled = !!(window.map && window.nasaNightLightsLayer && !window.map.hasLayer(window.nasaNightLightsLayer));
 
         // Close config modal
         const closeConfigBtn = document.getElementById('close-config-btn');
         if (closeConfigBtn) closeConfigBtn.click();
 
-        // 3. Verify Map Layers in window
-        const darkCanvasExists = typeof window.darkCanvasLayer !== 'undefined';
+        // 3. Verify Map Layers in window and Leaflet layer control selectability at zoom 17
+        const darkCanvasRemoved = typeof window.darkCanvasLayer === 'undefined';
         const nasaLightsExists = typeof window.nasaNightLightsLayer !== 'undefined';
+        const nasaMaxZoom = window.nasaNightLightsLayer && window.nasaNightLightsLayer.options ? window.nasaNightLightsLayer.options.maxZoom : null;
+        const nasaMaxNativeZoom = window.nasaNightLightsLayer && window.nasaNightLightsLayer.options ? window.nasaNightLightsLayer.options.maxNativeZoom : null;
+
+        // Check that the NASA Earth at Night checkbox in Leaflet layer control is NOT disabled at default zoom 17
+        let nasaCheckboxDisabled = null;
+        const labels = Array.from(document.querySelectorAll('.leaflet-control-layers-overlays label'));
+        for (const lbl of labels) {
+          if (lbl.textContent && lbl.textContent.includes('NASA Earth at Night')) {
+            const input = lbl.querySelector('input[type="checkbox"]');
+            if (input) nasaCheckboxDisabled = input.disabled;
+          }
+        }
 
         return {
           btnExists,
@@ -8571,11 +8586,17 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
           toggledSolarState,
           restoredSolarState,
           configVisible,
+          autoBasemapRemoved,
           nightCardControlsExist,
-          basemapPersistedFalse,
-          basemapPersistedTrue,
-          darkCanvasExists,
-          nasaLightsExists
+          nasaPersistedTrue,
+          nasaOnMapWhenEnabled,
+          nasaPersistedFalse,
+          nasaOffMapWhenDisabled,
+          darkCanvasRemoved,
+          nasaLightsExists,
+          nasaMaxZoom,
+          nasaMaxNativeZoom,
+          nasaCheckboxDisabled
         };
       });
 
@@ -8584,11 +8605,17 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.notStrictEqual(res.initialSolarState, res.toggledSolarState, 'Clicking #photo-toggle-hud-btn must toggle solar/lunar HUD layer state');
       assert.strictEqual(res.restoredSolarState, res.initialSolarState, 'Second click must restore initial state');
       assert.strictEqual(res.configVisible, true, 'Config modal must open on trigger click');
+      assert.strictEqual(res.autoBasemapRemoved, true, '#config-night-auto-basemap must be removed');
       assert.strictEqual(res.nightCardControlsExist, true, 'Night Flight & Nocturnal Layers settings controls must exist in #config-modal');
-      assert.strictEqual(res.basemapPersistedFalse, true, 'Toggling night basemap checkbox must update localStorage to false');
-      assert.strictEqual(res.basemapPersistedTrue, true, 'Toggling night basemap checkbox must update localStorage to true');
-      assert.strictEqual(res.darkCanvasExists, true, 'darkCanvasLayer must be defined on window');
+      assert.strictEqual(res.nasaPersistedTrue, true, 'Toggling NASA night lights checkbox must update localStorage to true');
+      assert.strictEqual(res.nasaOnMapWhenEnabled, true, 'Enabling NASA night lights checkbox must add nasaNightLightsLayer to the map');
+      assert.strictEqual(res.nasaPersistedFalse, true, 'Toggling NASA night lights checkbox off must update localStorage to false');
+      assert.strictEqual(res.nasaOffMapWhenDisabled, true, 'Disabling NASA night lights checkbox must remove nasaNightLightsLayer from the map');
+      assert.strictEqual(res.darkCanvasRemoved, true, 'darkCanvasLayer must be removed from window');
       assert.strictEqual(res.nasaLightsExists, true, 'nasaNightLightsLayer must be defined on window');
+      assert.strictEqual(res.nasaMaxZoom, 22, 'nasaNightLightsLayer maxZoom must be 22 so it is selectable at high zoom levels');
+      assert.strictEqual(res.nasaMaxNativeZoom, 8, 'nasaNightLightsLayer maxNativeZoom must be 8 for tile upscaling');
+      assert.strictEqual(res.nasaCheckboxDisabled, false, 'NASA Earth at Night checkbox in Leaflet layer control must NOT be disabled at zoom 17');
     });
   });
 });

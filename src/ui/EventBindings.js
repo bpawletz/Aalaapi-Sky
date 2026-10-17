@@ -2584,10 +2584,6 @@ function initUIEventListeners() {
         if (camConesToggle) {
           camConesToggle.checked = isCameraConeEnabled();
         }
-        const nightBasemapToggle = document.getElementById('config-night-auto-basemap');
-        if (nightBasemapToggle) {
-          nightBasemapToggle.checked = isNightAutoBasemapEnabled();
-        }
         const nightNasaToggle = document.getElementById('config-night-auto-nasa');
         if (nightNasaToggle) {
           nightNasaToggle.checked = isNightAutoNasaEnabled();
@@ -2629,16 +2625,7 @@ function initUIEventListeners() {
       });
     }
 
-    // Night Flight & Nocturnal Layers event listeners (v1.161.0 - Issue #143)
-    const nightBasemapToggle = document.getElementById('config-night-auto-basemap');
-    if (nightBasemapToggle) {
-      nightBasemapToggle.checked = isNightAutoBasemapEnabled();
-      nightBasemapToggle.addEventListener('change', () => {
-        setNightAutoBasemapEnabled(nightBasemapToggle.checked);
-        if (typeof updateSolarEphemeris === 'function') updateSolarEphemeris();
-      });
-    }
-
+    // Night Flight & Nocturnal Layers event listeners (v1.163.1 - Issue #143)
     const nightNasaToggle = document.getElementById('config-night-auto-nasa');
     if (nightNasaToggle) {
       nightNasaToggle.checked = isNightAutoNasaEnabled();

@@ -126,7 +126,8 @@ function shouldProxyTileUrl(url) {
          lower.includes('opentopomap.org') ||
          lower.includes('services6.arcgis.com') ||
          lower.includes('services1.arcgis.com') ||
-         lower.includes('opengeo.ncep.noaa.gov');
+         lower.includes('opengeo.ncep.noaa.gov') ||
+         lower.includes('gibs.earthdata.nasa.gov');
 }
 
 function getBridgeProxyUrl(rawUrl) {

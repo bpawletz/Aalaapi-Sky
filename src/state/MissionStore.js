@@ -14,6 +14,7 @@ let boundaryLayersGroup = null;
 let fiducialMarkersGroup = null;
 let targetPolygonGroup = null;
 let solarOverlaysGroup = null;
+let acousticOverlaysGroup = null;
 let isTargetPolyEditActive = false;
 let isCorridorEditActive = false;
 let isAnyPopupOpen = false;

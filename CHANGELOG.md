@@ -1,3 +1,26 @@
+## [1.163.1] - 2026-10-17
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **NASA Earth at Night (VIIRS Lights) Selectability Across All Zoom Levels**:
+  - Fixed an issue where the `NASA Earth at Night (VIIRS Lights)` overlay checkbox in the Leaflet layer control was disabled and unselectable when zoomed past level 8 (such as the default mission planning zoom level 17).
+  - Configured the layer to upscale native zoom-8 tiles smoothly up to zoom level 22 and synchronized the Leaflet layer control checkbox bidirectionally with the Settings modal toggle (`#config-night-auto-nasa`).
+
+#### Under the Hood & Technical Details
+- **Leaflet Overlay Configuration (`src/map/MapEngine.js`)**: Updated `nasaNightLightsLayer` options to `{ maxZoom: 22, maxNativeZoom: 8, minZoom: 1, opacity: 0.65 }` and added `overlayadd` / `overlayremove` synchronization listeners.
+- **Companion Bridge Tile Proxy (`src/bridge/ApiClient.js`)**: Added `gibs.earthdata.nasa.gov` to `shouldProxyTileUrl(url)` so NASA GIBS tiles are cached locally by the Companion Bridge when online.
+- **ThemeManager (`src/ui/ThemeManager.js`)**: Updated `setNightAutoNasaEnabled` to dynamically add or remove `window.nasaNightLightsLayer` on the active Leaflet map instance.
+
+### 🗑️ Removed
+
+#### Pilot & Operational Features
+- **Key-Gated Night Flight (Dark Canvas) Basemap**:
+  - Removed the CartoDB Dark Matter (`Night Flight (Dark Canvas)`) basemap layer and the `Auto-Switch Dark Canvas at Night` setting (`#config-night-auto-basemap`) after `basemaps.cartocdn.com` began enforcing API key restrictions (`carto.com/basemaps/apikey`), keeping all Aalaapi Sky map layers 100% open and key-free.
+
+#### Under the Hood & Technical Details
+- **Codebase Cleanup (`src/map/MapEngine.js`, `src/ui/ThemeManager.js`, `src/ui/EventBindings.js`, `index_template.html`)**: Removed `darkCanvasLayer`, `isNightAutoBasemapEnabled`, `setNightAutoBasemapEnabled`, `NIGHT_AUTO_BASEMAP_STORAGE_KEY`, and `#config-night-auto-basemap`.
+
 ## [1.163.0] - 2026-10-17
 
 Introduces an astronomical lunar ephemeris engine, nighttime Moon position HUD, nocturnal basemap & NASA VIIRS night lights layers, and customizable night flight settings. (Closes #143)
