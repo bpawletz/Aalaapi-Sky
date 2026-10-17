@@ -31968,6 +31968,96 @@ describe('v1.166.0 Weather-Coordinated Shadow Casting & Satellite Cloud Cover Ov
   });
 });
 
+describe('v1.166.1 Road Following Pattern Switch & Waypoint Retention', () => {
+  test('Version Consistency across required locations for v1.166.1', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.166.1', 'package.json version must be 1.166.1');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.166.1]'), 'CHANGELOG.md must contain 1.166.1 header');
+
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('Version 1.166.1</span>'), 'index.html must contain Version 1.166.1');
+    assert.ok(indexHtml.includes('Changelog (v1.166.1):</strong>'), 'index.html must contain Changelog (v1.166.1)');
+
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tpl.includes('Version 1.166.1</span>'), 'index_template.html must contain Version 1.166.1');
+    assert.ok(tpl.includes('Changelog (v1.166.1):</strong>'), 'index_template.html must contain Changelog (v1.166.1)');
+    assert.ok(tpl.includes('class="header-version-badge"') && tpl.includes('>v1.166.1</span>'), 'index_template.html header badge must be v1.166.1');
+  });
+
+  test('generateLayerWaypoints resets stale custom road waypoints when pattern changes to single', () => {
+    const layer = createDefaultLayer('layer-road-test', 'Road Layer', 0, 'single');
+    layer.altitude = 26;
+    layer.gimbalPitch = -90;
+    layer.hasCustomWaypoints = true;
+    layer.waypoints = [
+      { lat: 41.3215965, lon: -88.9949583, alt: 50, pitch: -80, heading: 7.2, isRoadDroneWaypoint: true, isModified: true, layerPattern: 'road-following' },
+      { lat: 41.3216971, lon: -88.9959963, alt: 50, pitch: -80, heading: 7.2, isRoadDroneWaypoint: true, isModified: true, layerPattern: 'road-following' }
+    ];
+
+    const result = generateLayerWaypoints(layer, 41.3215, -88.9950);
+    assert.strictEqual(layer.hasCustomWaypoints, false, 'hasCustomWaypoints must be reset on pattern mismatch');
+    assert.ok(result.waypoints.length > 2, 'Should generate procedural grid waypoints');
+    assert.strictEqual(result.waypoints[0].alt, 26, 'Waypoint 0 altitude must match layer altitude 26m, not road alt 50m');
+    assert.strictEqual(result.waypoints[0].pitch, -90, 'Waypoint 0 pitch must match nadir -90, not road pitch -80');
+    assert.strictEqual(result.waypoints[1].alt, 26, 'Waypoint 1 altitude must match layer altitude 26m');
+    assert.strictEqual(result.waypoints[1].pitch, -90, 'Waypoint 1 pitch must match nadir -90');
+    assert.strictEqual(result.waypoints[0].isRoadDroneWaypoint, undefined, 'Must not be road drone waypoint');
+  });
+
+  test('generateLayerWaypoints does not allow old road waypoints to overwrite procedural grid points in preservation loop', () => {
+    const layer = createDefaultLayer('layer-road-test-2', 'Road Layer 2', 0, 'single');
+    layer.altitude = 26;
+    layer.gimbalPitch = -90;
+    layer.hasCustomWaypoints = false;
+    layer.waypoints = [
+      { lat: 41.3215965, lon: -88.9949583, alt: 50, pitch: -80, heading: 7.2, isRoadDroneWaypoint: true, isModified: true, layerPattern: 'road-following', gridType: 'road-following' },
+      { lat: 41.3216971, lon: -88.9959963, alt: 50, pitch: -80, heading: 7.2, isRoadDroneWaypoint: true, isModified: true, layerPattern: 'road-following', gridType: 'road-following' }
+    ];
+
+    const result = generateLayerWaypoints(layer, 41.3215, -88.9950);
+    assert.ok(result.waypoints.length > 2);
+    // Waypoints 0 and 1 must be newly generated grid waypoints, NOT the road waypoints
+    assert.notStrictEqual(result.waypoints[0].pitch, -80, 'Waypoint 0 must not retain road pitch -80');
+    assert.strictEqual(result.waypoints[0].pitch, -90, 'Waypoint 0 must have single grid pitch -90');
+    assert.strictEqual(result.waypoints[0].alt, 26, 'Waypoint 0 must have single grid alt 26');
+    assert.notStrictEqual(result.waypoints[1].pitch, -80, 'Waypoint 1 must not retain road pitch -80');
+  });
+
+  test('togglePatternParameters cleans up roadWaypoints when transitioning from road-following to single', () => {
+    if (typeof togglePatternParameters === 'function') {
+      const origGetById = document.getElementById;
+      try {
+        const gridTypeSelect = { value: 'single' };
+        document.getElementById = (id) => {
+          if (id === 'grid-type') return gridTypeSelect;
+          if (id === 'gimbal-pitch') return { value: '-90' };
+          if (id === 'grid-width' || id === 'grid-height' || id === 'grid-rotation') return { value: '100', closest: () => ({ querySelector: () => ({ textContent: '' }), style: {} }) };
+          if (id === 'front-overlap' || id === 'side-overlap') return { value: '80', closest: () => ({ style: {} }) };
+          if (id === 'speed') return { value: '4' };
+          if (id === 'altitude') return { value: '26' };
+          return { classList: { add: () => {}, remove: () => {}, contains: () => false }, style: {}, querySelector: () => null, appendChild: () => {}, innerHTML: '' };
+        };
+
+        const testLayer = createDefaultLayer('test-road-trans', 'Test Road Trans', 0, 'road-following');
+        testLayer.roadWaypoints = [{ lat: 41.32, lon: -88.99, x: 0, y: 0 }];
+        roadWaypoints = [{ lat: 41.32, lon: -88.99, x: 0, y: 0 }];
+        flightLayers = [testLayer];
+        activeLayerId = testLayer.id;
+
+        togglePatternParameters();
+
+        assert.strictEqual(testLayer.pattern, 'single', 'Layer pattern must be updated to single');
+        assert.strictEqual(testLayer.roadWaypoints.length, 0, 'testLayer.roadWaypoints must be cleared');
+        assert.strictEqual(roadWaypoints.length, 0, 'global roadWaypoints must be cleared');
+      } finally {
+        document.getElementById = origGetById;
+      }
+    }
+  });
+});
+
 after(() => {
   for (const h of process._getActiveHandles()) {
     if (h && h.constructor && h.constructor.name === 'Socket' && !h._isStdio && h.fd === undefined) {

@@ -2337,6 +2337,15 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   let sPhoto = null;
   let actualRotation = rotation;
 
+  // Guard: If layer.hasCustomWaypoints is set, verify that the custom waypoints match the current pattern.
+  // If the layer pattern was changed (e.g. from road-following to single), clear stale custom waypoints.
+  const hasPatternMismatch = layer.hasCustomWaypoints && Array.isArray(layer.waypoints) && layer.waypoints.length > 0 &&
+    layer.waypoints.some(wp => (wp && (wp.isRoadDroneWaypoint || (wp.layerPattern && wp.layerPattern !== gridType) || (wp.gridType && wp.gridType !== gridType))));
+  if (hasPatternMismatch) {
+    layer.hasCustomWaypoints = false;
+    layer.waypoints = [];
+  }
+
   if (layer.hasCustomWaypoints && Array.isArray(layer.waypoints) && layer.waypoints.length > 0) {
     layer.waypoints.forEach((wp, idx) => {
       const offsets = geodeticToLocal(wp.lat, wp.lon, centerLat, centerLon);
@@ -2520,10 +2529,13 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       };
     });
 
-    // Preserve custom modified/nudged waypoints from existing layer state
+    // Preserve custom modified/nudged waypoints from existing layer state ONLY if from the same pattern
     if (layer.waypoints && Array.isArray(layer.waypoints)) {
       layer.waypoints.forEach((oldWp, oldIdx) => {
-        if (oldWp && oldWp.isModified && waypoints[oldIdx]) {
+        const isSamePattern = oldWp && !oldWp.isRoadDroneWaypoint &&
+          (!oldWp.gridType || oldWp.gridType === gridType) &&
+          (!oldWp.layerPattern || oldWp.layerPattern === gridType);
+        if (oldWp && oldWp.isModified && waypoints[oldIdx] && isSamePattern) {
           waypoints[oldIdx].lat = oldWp.lat;
           waypoints[oldIdx].lon = oldWp.lon;
           waypoints[oldIdx].x = oldWp.x;

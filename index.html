@@ -6469,7 +6469,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.166.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.166.1</span></h1>
         </div>
       </div>
 
@@ -11557,7 +11557,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.166.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.166.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -11618,6 +11618,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.166.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Road Following Pattern Switching Isolation:</strong> Switching from Road Following to 2D Nadir Grid or other flight plans now completely clears road waypoints, ensuring clean procedural grid generation without retaining road coordinates, altitude, pitch, or headings.</li>
+              <li><strong>Pattern-Matched Waypoint Preservation:</strong> Guarded the custom waypoint preservation loop so nudged waypoints from previous or different flight patterns never overwrite newly generated grid waypoints.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.166.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -23600,6 +23607,15 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   let sPhoto = null;
   let actualRotation = rotation;
 
+  // Guard: If layer.hasCustomWaypoints is set, verify that the custom waypoints match the current pattern.
+  // If the layer pattern was changed (e.g. from road-following to single), clear stale custom waypoints.
+  const hasPatternMismatch = layer.hasCustomWaypoints && Array.isArray(layer.waypoints) && layer.waypoints.length > 0 &&
+    layer.waypoints.some(wp => (wp && (wp.isRoadDroneWaypoint || (wp.layerPattern && wp.layerPattern !== gridType) || (wp.gridType && wp.gridType !== gridType))));
+  if (hasPatternMismatch) {
+    layer.hasCustomWaypoints = false;
+    layer.waypoints = [];
+  }
+
   if (layer.hasCustomWaypoints && Array.isArray(layer.waypoints) && layer.waypoints.length > 0) {
     layer.waypoints.forEach((wp, idx) => {
       const offsets = geodeticToLocal(wp.lat, wp.lon, centerLat, centerLon);
@@ -23783,10 +23799,13 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       };
     });
 
-    // Preserve custom modified/nudged waypoints from existing layer state
+    // Preserve custom modified/nudged waypoints from existing layer state ONLY if from the same pattern
     if (layer.waypoints && Array.isArray(layer.waypoints)) {
       layer.waypoints.forEach((oldWp, oldIdx) => {
-        if (oldWp && oldWp.isModified && waypoints[oldIdx]) {
+        const isSamePattern = oldWp && !oldWp.isRoadDroneWaypoint &&
+          (!oldWp.gridType || oldWp.gridType === gridType) &&
+          (!oldWp.layerPattern || oldWp.layerPattern === gridType);
+        if (oldWp && oldWp.isModified && waypoints[oldIdx] && isSamePattern) {
           waypoints[oldIdx].lat = oldWp.lat;
           waypoints[oldIdx].lon = oldWp.lon;
           waypoints[oldIdx].x = oldWp.x;
@@ -26595,6 +26614,7 @@ function initUIEventListeners() {
   controls.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
+    if (id === 'grid-type') return;
     
     // Listen to changes to trigger redrawing of the grid
     el.addEventListener('input', () => {
@@ -30226,8 +30246,40 @@ function togglePatternParameters() {
   const gridType = gridTypeEl.value;
 
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const previousPattern = activeLayer ? activeLayer.pattern : null;
+  const isPatternChanging = Boolean(activeLayer && previousPattern && previousPattern !== gridType);
+
   if (activeLayer) {
+    if (isPatternChanging) {
+      if (previousPattern === 'road-following') {
+        activeLayer.roadWaypoints = [];
+        roadWaypoints = [];
+        if (typeof roadPathGroup !== 'undefined' && roadPathGroup && typeof roadPathGroup.clearLayers === 'function') {
+          roadPathGroup.clearLayers();
+        }
+      } else if (previousPattern === 'corridor') {
+        activeLayer.corridorCenterline = null;
+        if (typeof corridorCenterline !== 'undefined') corridorCenterline = null;
+      } else if (previousPattern === 'freeform') {
+        activeLayer.freeformWaypoints = [];
+        activeLayer.freeformPhotos = [];
+      }
+      activeLayer.hasCustomWaypoints = false;
+      activeLayer.waypoints = [];
+      if (activeLayer.gimbalPitch === 'auto' && gridType !== 'road-following') {
+        activeLayer.gimbalPitch = (gridType === 'single') ? -90 : ((gridType === 'double') ? -60 : -45);
+      }
+    }
     activeLayer.pattern = gridType;
+    if (gridType !== 'road-following') {
+      if (activeLayer.roadWaypoints && activeLayer.roadWaypoints.length > 0) {
+        activeLayer.roadWaypoints = [];
+      }
+      roadWaypoints = [];
+      if (typeof roadPathGroup !== 'undefined' && roadPathGroup && typeof roadPathGroup.clearLayers === 'function') {
+        roadPathGroup.clearLayers();
+      }
+    }
     activeLayer.isExclusionZone = (gridType === 'exclusion-box' || gridType === 'exclusion-freeform');
     activeLayer.isDrawingLayer = (gridType === 'boundary-polygon' || gridType === 'fiducial-markers');
     activeLayer.isFiducialLayer = (gridType === 'fiducial-markers');
@@ -31163,6 +31215,7 @@ function togglePatternParameters() {
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
 
   } else {
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
     if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "📐 Coverage & Geometry";

@@ -1,3 +1,19 @@
+## [1.166.1] - 2026-10-17
+
+Eliminates cross-pattern waypoint bleeding and stale settings retention when switching from Road Following to Nadir or 3D Grid patterns, ensuring clean procedural waypoint generation and layer state isolation.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Clean Pattern Switching from Road Following**:
+  - Resolved an issue where switching from Road Following (`road-following`) to 2D Nadir Grid (`single`) or other flight patterns inadvertently retained the first two road waypoints at their road coordinates instead of generating a clean grid.
+  - Eliminated road altitude (50m) and road gimbal pitch (-80°) from sticking to grid waypoints when switching into nadir grids (-90°).
+  - Ensured switching to any grid pattern immediately clears road control nodes and dashed road polylines from the map.
+
+#### Under the Hood & Technical Details
+- **Pattern-Matched Custom Waypoint Preservation (`src/layers/LayerManager.js`)**: Updated `generateLayerWaypoints()` to validate that custom modified waypoints belong to the active pattern before preserving them. Added `isSamePattern` validation to the nudged waypoint preservation loop, preventing road drone waypoints (`isRoadDroneWaypoint`) from overwriting grid waypoints.
+- **Pattern State Transition Reset (`src/ui/SidebarManager.js`)**: Updated `togglePatternParameters()` to detect when `activeLayer` changes pattern type, resetting `activeLayer.roadWaypoints`, global `roadWaypoints`, `roadPathGroup`, `activeLayer.hasCustomWaypoints`, and `activeLayer.waypoints`. Added road waypoints reset to the fallback `else` block covering `single`, `double`, and orbit patterns.
+
 ## [1.166.0] - 2026-10-17
 
 Coordinates solar shadow casting, photogrammetry lighting quality, and camera glare avoidance with local weather reports (NWS/METAR cloud cover), introducing dissipated ambient zones under overcast skies, pilot Sky Condition overrides, and a free toggleable Satellite Cloud Cover overlay.
