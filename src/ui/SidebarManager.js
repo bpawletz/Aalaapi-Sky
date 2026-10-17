@@ -2336,6 +2336,9 @@ function syncDisplayValues() {
   }
 
   updateInheritOptionLabels();
+  if (typeof updateAcousticAdvisorUI === 'function') {
+    updateAcousticAdvisorUI();
+  }
 }
 
 // ============================================================================

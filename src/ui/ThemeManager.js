@@ -53,6 +53,7 @@ function initTheme() {
       });
     }
   }
+  applyEffectiveMapFilter();
 }
 
 // Map & Camera Visual Palette System
@@ -294,6 +295,126 @@ function setNightCelestialHudEnabled(enabled) {
   }
 }
 
+// Map Visual Filters: Normal / Dark / Tactical Red / Full NVG (v1.165.0)
+const MAP_VISUAL_FILTER_STORAGE_KEY = 'aalaapi_map_visual_filter';
+const NIGHT_AUTO_FILTER_STORAGE_KEY = 'aalaapi_night_auto_filter';
+
+let cachedMapVisualFilter = null;
+let cachedNightAutoFilter = null;
+
+function getMapVisualFilter() {
+  if (cachedMapVisualFilter !== null) return cachedMapVisualFilter;
+  const select = typeof document !== 'undefined' ? document.getElementById('config-map-visual-filter') : null;
+  if (select && select.value) {
+    cachedMapVisualFilter = select.value;
+    return cachedMapVisualFilter;
+  }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem(MAP_VISUAL_FILTER_STORAGE_KEY);
+      if (saved && ['normal', 'dark', 'red-map', 'red-nvg'].includes(saved)) {
+        cachedMapVisualFilter = saved;
+        return cachedMapVisualFilter;
+      }
+    }
+  } catch (e) {}
+  cachedMapVisualFilter = 'normal';
+  return cachedMapVisualFilter;
+}
+
+function setMapVisualFilter(mode) {
+  const validModes = ['normal', 'dark', 'red-map', 'red-nvg'];
+  cachedMapVisualFilter = validModes.includes(mode) ? mode : 'normal';
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(MAP_VISUAL_FILTER_STORAGE_KEY, cachedMapVisualFilter);
+    }
+  } catch (e) {}
+
+  if (typeof document !== 'undefined') {
+    const select = document.getElementById('config-map-visual-filter');
+    if (select && select.value !== cachedMapVisualFilter) select.value = cachedMapVisualFilter;
+
+    const badge = document.getElementById('map-filter-mode-badge');
+    if (badge) {
+      const badgeLabels = {
+        'normal': 'Standard',
+        'dark': 'Dark Map',
+        'red-map': 'Tactical Red',
+        'red-nvg': 'Full NVG'
+      };
+      badge.textContent = badgeLabels[cachedMapVisualFilter] || 'Standard';
+      badge.style.color = cachedMapVisualFilter.startsWith('red') ? '#ef4444' : (cachedMapVisualFilter === 'dark' ? '#38bdf8' : '#38bdf8');
+      badge.style.borderColor = cachedMapVisualFilter.startsWith('red') ? 'rgba(239, 68, 68, 0.4)' : 'rgba(56, 189, 248, 0.3)';
+      badge.style.background = cachedMapVisualFilter.startsWith('red') ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)';
+    }
+  }
+
+  applyEffectiveMapFilter();
+}
+
+function isNightAutoFilterEnabled() {
+  if (cachedNightAutoFilter !== null) return cachedNightAutoFilter;
+  const el = typeof document !== 'undefined' ? document.getElementById('config-night-auto-filter') : null;
+  if (el) {
+    cachedNightAutoFilter = !!el.checked;
+    return cachedNightAutoFilter;
+  }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem(NIGHT_AUTO_FILTER_STORAGE_KEY);
+      if (saved !== null) {
+        cachedNightAutoFilter = (saved === 'true');
+        return cachedNightAutoFilter;
+      }
+    }
+  } catch (e) {}
+  cachedNightAutoFilter = false;
+  return cachedNightAutoFilter;
+}
+
+function setNightAutoFilterEnabled(enabled) {
+  cachedNightAutoFilter = !!enabled;
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(NIGHT_AUTO_FILTER_STORAGE_KEY, cachedNightAutoFilter ? 'true' : 'false');
+    }
+  } catch (e) {}
+  if (typeof document !== 'undefined') {
+    const el = document.getElementById('config-night-auto-filter');
+    if (el && el.checked !== cachedNightAutoFilter) el.checked = cachedNightAutoFilter;
+  }
+  applyEffectiveMapFilter();
+}
+
+/**
+ * Resolves active filter considering user preference and automatic night activation.
+ */
+function applyEffectiveMapFilter(isNightNow = null) {
+  if (typeof document === 'undefined') return;
+
+  const userMode = getMapVisualFilter();
+  const autoNight = isNightAutoFilterEnabled();
+
+  let effectiveNight = isNightNow;
+  if (effectiveNight === null) {
+    if (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris && currentSolarEphemeris.currentPosition) {
+      effectiveNight = currentSolarEphemeris.currentPosition.altitudeDeg <= 0;
+    } else {
+      effectiveNight = false;
+    }
+  }
+
+  let effectiveMode = userMode;
+  if (userMode === 'normal' && autoNight && effectiveNight) {
+    effectiveMode = 'dark';
+  }
+
+  if (document.documentElement) {
+    document.documentElement.dataset.mapFilter = effectiveMode;
+  }
+}
+
 // Attach to window for inline onclick handlers and testing
 if (typeof window !== 'undefined') {
   window.getAppTheme = getAppTheme;
@@ -313,12 +434,22 @@ if (typeof window !== 'undefined') {
   window.setNightAutoNasaEnabled = setNightAutoNasaEnabled;
   window.isNightCelestialHudEnabled = isNightCelestialHudEnabled;
   window.setNightCelestialHudEnabled = setNightCelestialHudEnabled;
+  window.getMapVisualFilter = getMapVisualFilter;
+  window.setMapVisualFilter = setMapVisualFilter;
+  window.isNightAutoFilterEnabled = isNightAutoFilterEnabled;
+  window.setNightAutoFilterEnabled = setNightAutoFilterEnabled;
+  window.applyEffectiveMapFilter = applyEffectiveMapFilter;
 }
 if (typeof global !== 'undefined') {
   global.isNightAutoNasaEnabled = isNightAutoNasaEnabled;
   global.setNightAutoNasaEnabled = setNightAutoNasaEnabled;
   global.isNightCelestialHudEnabled = isNightCelestialHudEnabled;
   global.setNightCelestialHudEnabled = setNightCelestialHudEnabled;
+  global.getMapVisualFilter = getMapVisualFilter;
+  global.setMapVisualFilter = setMapVisualFilter;
+  global.isNightAutoFilterEnabled = isNightAutoFilterEnabled;
+  global.setNightAutoFilterEnabled = setNightAutoFilterEnabled;
+  global.applyEffectiveMapFilter = applyEffectiveMapFilter;
 }
 
 function initGeolocation() {

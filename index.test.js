@@ -31535,6 +31535,151 @@ describe('v1.163.1 Open-Source Night Layers Cleanup & NASA VIIRS All-Zoom Select
   });
 });
 
+describe('v1.164.0 Ground Observer Acoustic Impact & 2D/3D Noise Contour Advisor', () => {
+  test('Version Consistency across required locations for v1.164.0', () => {
+    assertVersionConsistency('1.164.0');
+  });
+
+  test('getDroneAcousticProfile returns realistic reference dBA @ 1m across DJI aircraft models', () => {
+    const mini4 = getDroneAcousticProfile('68');
+    const air3 = getDroneAcousticProfile('89');
+    const mavic3 = getDroneAcousticProfile('77');
+    const m350 = getDroneAcousticProfile('60');
+
+    assert.strictEqual(mini4.refDba1m, 73.0, 'DJI Mini 4 Pro (68) should have 73.0 dBA @ 1m reference noise');
+    assert.strictEqual(air3.refDba1m, 78.0, 'DJI Air 3 (89) should have 78.0 dBA @ 1m reference noise');
+    assert.strictEqual(mavic3.refDba1m, 80.0, 'Mavic 3 Enterprise (77) should have 80.0 dBA @ 1m reference noise');
+    assert.strictEqual(m350.refDba1m, 88.0, 'Matrice 300/350 RTK (60) should have 88.0 dBA @ 1m reference noise');
+    assert.ok(mini4.refDba1m < air3.refDba1m && air3.refDba1m < m350.refDba1m, 'Larger airframes must have higher reference dBA than sub-250g Mini airframes');
+  });
+
+  test('calculateGroundNoiseDba models inverse-square attenuation, atmospheric absorption, speed, and climb load', () => {
+    // Mini 4 Pro (73.0 dBA @ 1m) hovering at 50m AGL
+    const hover50m = calculateGroundNoiseDba(73.0, 50, 0, 0, 0.005);
+    // At 50m: 73 - 20*log10(50) [33.98] - 0.005*50 [0.25] = 38.8 dBA
+    assert.ok(hover50m >= 38.5 && hover50m <= 39.5, `Expected ~38.8 dBA at 50m hover, got ${hover50m}`);
+
+    // At 100m hover, should drop by ~6.25 dBA compared to 50m
+    const hover100m = calculateGroundNoiseDba(73.0, 100, 0, 0, 0.005);
+    assert.ok(hover50m - hover100m > 5.8 && hover50m - hover100m < 6.8, 'Doubling altitude from 50m to 100m must attenuate SPL by ~6.25 dBA');
+
+    // Forward flight speed and climb rate should increase rotor acoustic output
+    const fastClimb = calculateGroundNoiseDba(73.0, 50, 12, 3, 0.005);
+    assert.ok(fastClimb > hover50m + 3.0, 'Forward speed + climb must increase ground noise over stationary hover');
+
+    // Slant range at 80m lateral offset (sqrt(50^2 + 80^2) = 94.3m) decreases SPL
+    const slantDist = Math.hypot(50, 80);
+    const lateral80m = calculateGroundNoiseDba(73.0, slantDist, 0, 0, 0.005);
+    assert.ok(lateral80m < hover50m - 5.0, 'Lateral offset of 80m must reduce ground observer SPL compared to nadir');
+  });
+
+  test('calculateGroundRadiusForTargetDba and calculateRecommendedQuietAltitude solve inverse acoustic thresholds accurately', () => {
+    // At 20m altitude, Air 3 (78 dBA @ 1m) nadir SPL is ~53.1 dBA -> 45 dBA ring should have a positive ground radius
+    const radius45 = calculateGroundRadiusForTargetDba(78.0, 20, 45, 5, 0.005);
+    assert.ok(radius45 > 25 && radius45 < 90, `Expected positive 45 dBA ground radius at 20m AGL, got ${radius45}`);
+
+    // At 120m altitude, nadir SPL is well below 65 dBA -> 65 dBA radius must be 0
+    const radius65At120m = calculateGroundRadiusForTargetDba(78.0, 120, 65, 5, 0.005);
+    assert.strictEqual(radius65At120m, 0, 'When nadir SPL is below target dBA, ground radius must be 0');
+
+    // Recommended quiet altitude for Suburban (45 dBA) vs Rural (35 dBA)
+    const quietAltSuburban = calculateRecommendedQuietAltitude(78.0, 45, 5, 5, 0.005);
+    const quietAltRural = calculateRecommendedQuietAltitude(78.0, 35, 5, 5, 0.005);
+    assert.ok(quietAltRural > quietAltSuburban, `Rural quiet altitude (${quietAltRural}m) must be higher than Suburban (${quietAltSuburban}m)`);
+
+    // Verify that at quietAltSuburban, nadir SPL is <= 45 + 5 = 50.2 dBA
+    const splAtQuietAlt = calculateGroundNoiseDba(78.0, quietAltSuburban, 5, 0, 0.005);
+    assert.ok(splAtQuietAlt <= 50.5, `SPL at recommended quiet altitude (${splAtQuietAlt} dBA) must be <= ambient + 5 dB`);
+  });
+
+  test('classifyAcousticImpact categorizes SPL and delta over ambient into human-readable tiers', () => {
+    const masked = classifyAcousticImpact(38, 45);
+    assert.strictEqual(masked.severity, 'quiet');
+    assert.strictEqual(masked.label, 'Masked by Ambient');
+
+    const loud = classifyAcousticImpact(68, 45);
+    assert.strictEqual(loud.severity, 'intrusive');
+    assert.strictEqual(loud.label, 'High / Intrusive');
+    assert.strictEqual(loud.color, '#ef4444');
+  });
+
+  test('2D and 3D acoustic overlay enable/disable toggles update state and DOM controls', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('id="acoustic-noise-subcard"'), 'index_template.html must contain #acoustic-noise-subcard');
+    assert.ok(template.includes('id="acoustic-map-overlay-toggle"'), 'index_template.html must contain #acoustic-map-overlay-toggle');
+    assert.ok(template.includes('id="acoustic-3d-overlay-toggle"'), 'index_template.html must contain #acoustic-3d-overlay-toggle');
+    assert.ok(template.includes('id="btn-3d-toggle-noise"'), 'index_template.html must contain #btn-3d-toggle-noise');
+    assert.ok(template.includes('id="fpv-telemetry-dba"'), 'index_template.html must contain #fpv-telemetry-dba');
+
+    assert.strictEqual(typeof set2DAcousticOverlayEnabled, 'function', 'set2DAcousticOverlayEnabled must be exported');
+    assert.strictEqual(typeof set3DAcousticOverlayEnabled, 'function', 'set3DAcousticOverlayEnabled must be exported');
+  });
+});
+
+describe('v1.165.0 Dark Map, Tactical Red & NVG Visual Filters', () => {
+  test('Version Consistency across required locations for v1.165.0', () => {
+    assertVersionConsistency('1.165.0');
+  });
+
+  test('ThemeManager exports getMapVisualFilter, setMapVisualFilter, and persistence', () => {
+    assert.strictEqual(typeof getMapVisualFilter, 'function', 'getMapVisualFilter must be a function');
+    assert.strictEqual(typeof setMapVisualFilter, 'function', 'setMapVisualFilter must be a function');
+    assert.strictEqual(typeof isNightAutoFilterEnabled, 'function', 'isNightAutoFilterEnabled must be a function');
+    assert.strictEqual(typeof setNightAutoFilterEnabled, 'function', 'setNightAutoFilterEnabled must be a function');
+    assert.strictEqual(typeof applyEffectiveMapFilter, 'function', 'applyEffectiveMapFilter must be a function');
+
+    setMapVisualFilter('dark');
+    assert.strictEqual(getMapVisualFilter(), 'dark');
+    assert.strictEqual(document.documentElement.dataset.mapFilter, 'dark');
+
+    setMapVisualFilter('red-map');
+    assert.strictEqual(getMapVisualFilter(), 'red-map');
+    assert.strictEqual(document.documentElement.dataset.mapFilter, 'red-map');
+
+    setMapVisualFilter('red-nvg');
+    assert.strictEqual(getMapVisualFilter(), 'red-nvg');
+    assert.strictEqual(document.documentElement.dataset.mapFilter, 'red-nvg');
+
+    setMapVisualFilter('normal');
+    assert.strictEqual(getMapVisualFilter(), 'normal');
+    assert.strictEqual(document.documentElement.dataset.mapFilter, 'normal');
+
+    setNightAutoFilterEnabled(true);
+    assert.strictEqual(isNightAutoFilterEnabled(), true);
+    // When normal + auto-night enabled + night true -> effective filter should be dark
+    applyEffectiveMapFilter(true);
+    assert.strictEqual(document.documentElement.dataset.mapFilter, 'dark');
+
+    // When day -> effective filter should revert to normal
+    applyEffectiveMapFilter(false);
+    assert.strictEqual(document.documentElement.dataset.mapFilter, 'normal');
+
+    setNightAutoFilterEnabled(false);
+  });
+
+  test('index_template.html contains SVG tactical red filter and configuration controls', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('id="aalaapi-tactical-red-filter"'), 'index_template.html must contain SVG #aalaapi-tactical-red-filter');
+    assert.ok(template.includes('id="config-map-visual-filter"'), 'index_template.html must contain #config-map-visual-filter');
+    assert.ok(template.includes('id="config-night-auto-filter"'), 'index_template.html must contain #config-night-auto-filter');
+  });
+
+  test('index.css contains CSS filter rules for dark, red-map, and red-nvg', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('html[data-map-filter="dark"]'), 'index.css must style data-map-filter="dark"');
+    assert.ok(css.includes('html[data-map-filter="red-map"]'), 'index.css must style data-map-filter="red-map"');
+    assert.ok(css.includes('html[data-map-filter="red-nvg"]'), 'index.css must style data-map-filter="red-nvg"');
+    assert.ok(css.includes('aalaapi-base-tile-layer'), 'index.css must target .aalaapi-base-tile-layer');
+  });
+
+  test('MapEngine.js sets base tile layer classes without inverting overlays', () => {
+    const mapEngineJs = fs.readFileSync(path.join(__dirname, 'src', 'map', 'MapEngine.js'), 'utf8');
+    assert.ok(mapEngineJs.includes('aalaapi-base-street'), 'MapEngine.js must classify street layers');
+    assert.ok(mapEngineJs.includes('aalaapi-base-satellite'), 'MapEngine.js must classify satellite layer');
+    assert.ok(mapEngineJs.includes('aalaapi-base-topo'), 'MapEngine.js must classify topo layer');
+  });
+});
+
 after(() => {
   for (const h of process._getActiveHandles()) {
     if (h && h.constructor && h.constructor.name === 'Socket' && !h._isStdio && h.fd === undefined) {

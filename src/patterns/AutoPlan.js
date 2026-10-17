@@ -1530,6 +1530,10 @@ function updateSolarEphemeris(centerLat, centerLon, forceTime = null) {
   currentSolarEphemeris = ephemeris;
 
   renderSolarCardUI(ephemeris);
+  if (typeof applyEffectiveMapFilter === 'function') {
+    const isNight = ephemeris && ephemeris.currentPosition ? ephemeris.currentPosition.altitudeDeg <= 0 : false;
+    applyEffectiveMapFilter(isNight);
+  }
   return ephemeris;
 }
 

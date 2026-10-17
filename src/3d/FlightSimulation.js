@@ -227,9 +227,9 @@ function getWaypointHeadingAndPitch(idx, waypoints) {
 let showDroneModels = true;
 let showAcoustic3D = (function() {
   try {
-    return localStorage.getItem('aalaapi_show_3d_acoustic_rings') === 'true';
+    return localStorage.getItem('aalaapi_show_3d_acoustic_rings') !== 'false';
   } catch (e) {
-    return false;
+    return true;
   }
 })();
 let acoustic3DGroup = null;
@@ -237,6 +237,9 @@ let fpvAcousticRingGroup = null;
 
 function set3DAcousticOverlayEnabled(enabled) {
   showAcoustic3D = !!enabled;
+  if (typeof window !== 'undefined') {
+    window.showAcoustic3D = showAcoustic3D;
+  }
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('aalaapi_show_3d_acoustic_rings', showAcoustic3D ? 'true' : 'false');
@@ -262,6 +265,7 @@ function set3DAcousticOverlayEnabled(enabled) {
   }
 }
 if (typeof window !== 'undefined') {
+  window.showAcoustic3D = showAcoustic3D;
   window.set3DAcousticOverlayEnabled = set3DAcousticOverlayEnabled;
 }
 

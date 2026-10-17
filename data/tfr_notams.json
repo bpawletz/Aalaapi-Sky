@@ -484,17 +484,6 @@
     "gid": "6/9058"
   },
   {
-    "notam_id": "6/8902",
-    "facility": "ZJX",
-    "state": "FL",
-    "type": "SECURITY",
-    "description": "MAYPORT, FL, Tuesday, October 13, 2026 through Saturday, October 17, 2026 Local",
-    "mod_date": "10/12/2026 02:16:00",
-    "mod_abs_time": "202610120216",
-    "is_new": "N",
-    "gid": "6/8902"
-  },
-  {
     "notam_id": "6/8802",
     "facility": "ZBW",
     "state": "MA",
