@@ -1798,6 +1798,8 @@ function cleanup3DPreview() {
   threeGroundTexture = null;
   threeSunLight = null;
   threeSunMesh = null;
+  acoustic3DGroup = null;
+  fpvAcousticRingGroup = null;
 }
 
 // Auto-Plan State

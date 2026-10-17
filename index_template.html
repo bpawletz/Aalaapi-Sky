@@ -22,6 +22,20 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='12' cy='12' r='9' stroke='%2306b6d4' stroke-width='0.5' stroke-dasharray='2 2' opacity='0.25'/%3E%3Ccircle cx='12' cy='12' r='6' stroke='%2306b6d4' stroke-width='0.75' opacity='0.4'/%3E%3Cline x1='12' y1='12' x2='6.5' y2='6.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='17.5' y2='6.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='6.5' y2='17.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='17.5' y2='17.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cpolygon points='10,9 11,10 10,11 9,10' fill='%23f5f0e8'/%3E%3Cpolygon points='8,7 9,8 8,9 7,8' fill='%23f5f0e8'/%3E%3Cpolygon points='14,9 15,10 14,11 13,10' fill='%23f5f0e8'/%3E%3Cpolygon points='16,7 17,8 16,9 15,8' fill='%23f5f0e8'/%3E%3Cpolygon points='10,15 11,14 10,13 9,14' fill='%23f5f0e8'/%3E%3Cpolygon points='8,17 9,16 8,15 7,16' fill='%23f5f0e8'/%3E%3Cpolygon points='14,15 15,14 14,13 13,14' fill='%23f5f0e8'/%3E%3Cpolygon points='16,17 17,16 16,15 15,16' fill='%23f5f0e8'/%3E%3Ccircle cx='5.5' cy='5.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='18.5' cy='5.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='5.5' cy='18.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='18.5' cy='18.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Cpolygon points='12,7 17,12 12,17 7,12' fill='%23c2622d' stroke='%23f5f0e8' stroke-width='0.75'/%3E%3Cpolygon points='12,9.5 14.5,12 12,14.5 9.5,12' fill='%2306b6d4'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%23f5f0e8'/%3E%3C/svg%3E">
 </head>
 <body>
+  <!-- Night Vision Goggle (NVG) / Tactical Red Color Matrix Filter (v1.165.0) -->
+  <svg width="0" height="0" style="position:absolute; pointer-events:none; width:0; height:0;" aria-hidden="true">
+    <defs>
+      <!-- Maps tile luminance strictly into pure monochrome deep red (620nm-650nm) -->
+      <filter id="aalaapi-tactical-red-filter" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values="
+          0.35 0.55 0.10 0 -0.02
+          0.00 0.00 0.00 0  0.00
+          0.00 0.00 0.00 0  0.00
+          0.00 0.00 0.00 1  0.00" />
+      </filter>
+    </defs>
+  </svg>
+
   <div class="app-root">
     <!-- Full-Width Studio Topbar (100vw) -->
     <header class="studio-topbar glass app-header">
@@ -67,7 +81,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.163.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.165.0</span></h1>
         </div>
       </div>
 
@@ -2534,6 +2548,69 @@
             </div>
             <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">2D map renders active sun ray bearing &amp; cast shadows. 3D viewport matches real-world sun angle.</p>
           </div> <!-- /sun-lighting-subcard -->
+
+          <!-- Sub-card 5: Ground Noise & Observer Acoustic Advisor -->
+          <div class="failsafe-subcard" id="acoustic-noise-subcard">
+            <div class="subcard-label" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+              <span>🔊 Ground Noise &amp; Observer Acoustic Impact</span>
+              <span id="acoustic-impact-badge" class="status-badge" style="font-size: 0.65rem; padding: 2px 7px; border-radius: 999px; background: rgba(6, 182, 212, 0.14); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); font-weight: 700;">Quiet / Faint</span>
+            </div>
+
+            <div class="control-group" style="margin-bottom: 6px;">
+              <label for="acoustic-ambient-preset" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Observer Environment (Ambient Noise)</span>
+                <span id="acoustic-drone-ref-label" style="font-size: 0.68rem; color: var(--text-muted); font-family: monospace;">73.0 dBA @ 1m</span>
+              </label>
+              <select id="acoustic-ambient-preset" style="font-size: 0.78rem; padding: 5px 8px;">
+                <option value="35">🌲 Rural / Wildlife Sanctuary (35 dBA)</option>
+                <option value="45" selected>🏡 Suburban Residential (45 dBA)</option>
+                <option value="60">🏙️ Urban / Commercial Street (60 dBA)</option>
+                <option value="70">🏭 Industrial / Highway Corridor (70 dBA)</option>
+              </select>
+            </div>
+
+            <div class="control-group" style="font-size: 0.76rem; display: flex; flex-direction: column; gap: 6px; background: rgba(15, 23, 42, 0.45); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 6px; padding: 8px 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);">🎯 Ground Observer SPL (Nadir):</span>
+                <span id="acoustic-nadir-dba" style="font-weight: 700; color: #38bdf8; font-family: monospace; font-size: 0.85rem;">-- dBA</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);">🔊 Peak Mission Ground Noise:</span>
+                <span id="acoustic-peak-dba" style="font-weight: 600; color: var(--text-main); font-family: monospace;">-- dBA</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);">👂 Perceived Sound Equivalent:</span>
+                <span id="acoustic-equiv-text" style="font-weight: 600; color: var(--text-main); font-size: 0.73rem;">Quiet Library</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);">📊 Above Ambient Background:</span>
+                <span id="acoustic-delta-text" style="font-weight: 600; color: #10b981; font-family: monospace;">+0.0 dB (Masked)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);">📡 Ground Audibility Radius:</span>
+                <span id="acoustic-audibility-radius" style="font-weight: 600; color: var(--text-main); font-family: monospace;">-- m</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 6px; margin-top: 2px;">
+                <span style="color: var(--text-muted);">🤫 Stealth Altitude (&le; Ambient+5dB):</span>
+                <div style="display: inline-flex; align-items: center; gap: 6px;">
+                  <span id="acoustic-stealth-alt" style="font-weight: 700; color: #10b981; font-family: monospace;">-- m</span>
+                  <button type="button" id="btn-acoustic-apply-altitude" class="btn-secondary" style="padding: 2px 7px; font-size: 0.66rem; font-weight: 600; margin: 0;" title="Set mission altitude to recommended quiet altitude">Set Quiet Alt</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="control-group" style="margin-top: 6px; margin-bottom: 0; display: flex; flex-direction: column; gap: 5px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.76rem; margin: 0;">
+                <input type="checkbox" id="acoustic-map-overlay-toggle" style="width: 14px; height: 14px; accent-color: #38bdf8;" />
+                <span>Show 2D Ground Noise Contours (dBA Swath &amp; Rings)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.76rem; margin: 0;">
+                <input type="checkbox" id="acoustic-3d-overlay-toggle" checked style="width: 14px; height: 14px; accent-color: #38bdf8;" />
+                <span>Show 3D Ground Noise Rings &amp; Sound Cones</span>
+              </label>
+            </div>
+            <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">Models spherical spreading (20&middot;log<sub>10</sub>(d)), ISO 9613-1 atmospheric absorption, speed/climb thrust load, and wind compensation.</p>
+          </div> <!-- /acoustic-noise-subcard -->
         </section>
 
         <!-- Section 4: Actions & Live Sync -->
@@ -3726,6 +3803,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🔊 Ground Observer Acoustic Impact &amp; 2D/3D Noise Contours (v1.164.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Predict real-time drone sound levels (<code>dBA</code>) on ground observers before takeoff! Models airframe-specific reference noise across all supported DJI aircraft, inverse-square spherical spreading, ISO 9613-1 atmospheric absorption, forward speed/climb thrust load, and wind compensation. Includes selectable ambient environment presets (Rural Wildlife to Industrial), a 1-click <strong>Set Quiet Alt</strong> stealth advisor, toggleable 2D ground noise swath contours, and toggleable 3D concentric ground noise rings, sound cones, and live FPV SPL telemetry.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🌙 Night Moon Position HUD, Nocturnal Map Layers &amp; Night Flight Settings (v1.163.0) (Closes #143)
@@ -5049,7 +5134,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.163.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.165.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5110,6 +5195,22 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.165.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Dark Map, Tactical Red &amp; NVG Visual Filters:</strong> Added zero-API-key GPU CSS and SVG color matrix filters to transform Street, Satellite, and Topo maps into low-glare Dark Mode or 620nm–650nm Tactical Red (astronomy / cockpit night-vision preservation).</li>
+              <li><strong>Full NVG Red Mode:</strong> Added full-screen monochromatic crimson night-vision mode across both map and UI to preserve pilot dark adaptation during night field ops.</li>
+              <li><strong>Auto-Apply Filter at Night:</strong> Added automatic solar ephemeris synchronization to transition maps into dark/red mode when the sun dips below the horizon.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.164.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Ground Observer Acoustic Impact Advisor:</strong> Added live ground sound pressure level (<code>dBA</code>) estimation in Section 3 modeling aircraft-specific reference noise across all supported DJI airframes, inverse-square spherical spreading, ISO 9613-1 atmospheric absorption, forward speed &amp; climb thrust penalties, and wind compensation.</li>
+              <li><strong>Ambient Environment Presets &amp; 1-Click Stealth Altitude:</strong> Select between Rural/Wildlife (35 dBA), Suburban (45 dBA), Urban (60 dBA), and Industrial (70 dBA) background environments with a 1-click <code>Set Quiet Alt</code> button to automatically elevate the mission to stealth altitude (&le; Ambient + 5 dB).</li>
+              <li><strong>Toggleable 2D &amp; 3D Ground Noise Visualizations:</strong> Added toggleable 2D map noise swath &amp; concentric contour rings (<code>acousticOverlaysGroup</code>) and toggleable 3D concentric ground noise rings, vertical sound propagation cones, and live FPV SPL telemetry (<code>#fpv-telemetry-dba</code>).</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.163.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -8226,10 +8327,37 @@
           </div>
         </div>
 
-        <!-- Card 3: Night Flight & Nocturnal Layers (v1.163.1 - Issue #143) -->
+        <!-- Card 3: Night Flight & Nocturnal Layers (v1.165.0 - Issue #143) -->
         <div class="settings-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px;">
           <div style="font-size: 0.8rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
             <span>🌙 Night Flight &amp; Nocturnal Layers</span>
+          </div>
+
+          <!-- Basemap Visual Filter Mode (Dark / Tactical Red / Full NVG) -->
+          <div class="control-group">
+            <label for="config-map-visual-filter" style="font-weight: 600; font-size: 0.82rem; color: var(--text-main); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+              <span>Basemap Visual Filter</span>
+              <span id="map-filter-mode-badge" style="font-size: 0.7rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">Standard</span>
+            </label>
+            <select id="config-map-visual-filter" class="form-select" style="width: 100%;">
+              <option value="normal" selected>☀️ Normal / True Color (Standard Daylight)</option>
+              <option value="dark">🌑 Dark Mode Map (Dark Street &amp; Dimmed Satellite)</option>
+              <option value="red-map">🔴 Tactical Red Basemap (Preserves Color Overlays)</option>
+              <option value="red-nvg">🥽 Full Tactical Red NVG (Entire Screen &amp; UI)</option>
+            </select>
+            <p class="help-text" style="margin-top: 4px; font-size: 0.74rem;">Converts Street, Satellite, and Topography maps into dark or 620nm–650nm red monochrome for low glare and cockpit night vision preservation.</p>
+          </div>
+
+          <!-- Auto-Apply Filter at Night Toggle -->
+          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div>
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">Auto-Apply Filter at Night</span>
+              <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.74rem;">Automatically activates the selected Dark or Red filter when the sun descends below the horizon.</p>
+            </div>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0;">
+              <input type="checkbox" id="config-night-auto-filter" style="opacity: 0; width: 0; height: 0;">
+              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+            </label>
           </div>
 
           <!-- NASA Black Marble Overlay Toggle -->
@@ -8443,6 +8571,10 @@
             <span>3D Drones</span>
             <span id="indicator-3d-drones" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
           </button>
+          <button id="btn-3d-toggle-noise" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
+            <span>Noise Rings</span>
+            <span id="indicator-3d-noise" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+          </button>
           <button id="btn-3d-fpv" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
             <span>FPV Mode</span>
             <span id="indicator-3d-fpv" style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
@@ -8468,6 +8600,7 @@
               <div><span style="color: #94a3b8;">ALT:</span> <span id="fpv-telemetry-alt" style="color: #06b6d4; font-weight: 600; font-family: monospace;">0</span> <span id="fpv-telemetry-alt-unit" style="font-size: 0.7rem; color: #94a3b8;">m</span></div>
               <div><span style="color: #94a3b8;">SPD:</span> <span id="fpv-telemetry-speed" style="color: #06b6d4; font-weight: 600; font-family: monospace;">0</span> <span style="font-size: 0.7rem; color: #94a3b8;">m/s</span></div>
               <div><span style="color: #94a3b8;">WP:</span> <span id="fpv-telemetry-wp" style="color: #06b6d4; font-weight: 600; font-family: monospace;">0 / 0</span></div>
+              <div><span style="color: #94a3b8;">SPL:</span> <span id="fpv-telemetry-dba" style="color: #10b981; font-weight: 600; font-family: monospace;">-- dBA</span></div>
             </div>
           </div>
 
