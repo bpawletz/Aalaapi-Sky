@@ -454,16 +454,38 @@ const PhotoInspector = {
     const pitch = (p.actual && p.actual.gimbalPitch !== undefined) ? p.actual.gimbalPitch : -90;
     const isOblique = Math.abs(pitch + 90) > 2;
     const modeTag = isOblique ? (this.calibrationMode === 'slant' ? ' • Slant Calibrated' : ' • Ground Corrected') : '';
-    // Compute Solar Ephemeris for Photo Exposure (v1.157.0 - Issue #141)
+    // Compute Celestial Ephemeris for Photo Exposure (v1.157.0, v1.161.0 - Issue #143)
     let solarText = '';
-    let photoSunPos = null;
-    if (typeof SolarEphemeris !== 'undefined' && typeof SolarEphemeris.getSunPosition === 'function' && p.actual && typeof p.actual.lat === 'number' && typeof p.actual.lon === 'number') {
+    if (typeof SolarEphemeris !== 'undefined' && typeof SolarEphemeris.getCelestialSummary === 'function' && p.actual && typeof p.actual.lat === 'number' && typeof p.actual.lon === 'number') {
       const photoDate = p.date || (p.timestamp ? new Date(p.timestamp) : new Date());
-      photoSunPos = SolarEphemeris.getSunPosition(photoDate, p.actual.lat, p.actual.lon);
+      const cel = SolarEphemeris.getCelestialSummary(photoDate, p.actual.lat, p.actual.lon);
+      if (cel) {
+        if (cel.isNight) {
+          const altSign = cel.moon.altitudeDeg >= 0 ? '+' : '';
+          solarText = ` • ${cel.moonIllum.icon} Moon Az: ${cel.moon.azimuthDeg.toFixed(0)}° (${cel.moon.compassDirection}) • Elev: ${altSign}${cel.moon.altitudeDeg.toFixed(0)}° (${cel.moonIllum.phaseName} ${(cel.moonIllum.fraction * 100).toFixed(0)}%)`;
+        } else if (cel.isTwilight) {
+          solarText = ` • 🌅 Twilight Sun: ${cel.sun.altitudeDeg.toFixed(0)}° (Az ${cel.sun.azimuthDeg.toFixed(0)}°) • ${cel.moonIllum.icon} Moon: ${cel.moon.altitudeDeg.toFixed(0)}°`;
+        } else {
+          const altSign = cel.sun.altitudeDeg >= 0 ? '+' : '';
+          solarText = ` • ☀️ Sun Az: ${cel.sun.azimuthDeg.toFixed(0)}° (${cel.sun.compassDirection}) • Elev: ${altSign}${cel.sun.altitudeDeg.toFixed(0)}°`;
+        }
+      }
+    } else if (typeof SolarEphemeris !== 'undefined' && typeof SolarEphemeris.getSunPosition === 'function' && p.actual && typeof p.actual.lat === 'number' && typeof p.actual.lon === 'number') {
+      const photoDate = p.date || (p.timestamp ? new Date(p.timestamp) : new Date());
+      const photoSunPos = SolarEphemeris.getSunPosition(photoDate, p.actual.lat, p.actual.lon);
       if (photoSunPos) {
         const altSign = photoSunPos.altitudeDeg >= 0 ? '+' : '';
         solarText = ` • ☀️ Sun Az: ${photoSunPos.azimuthDeg.toFixed(0)}° (${photoSunPos.compassDirection}) • Elev: ${altSign}${photoSunPos.altitudeDeg.toFixed(0)}°`;
       }
+    }
+
+    const hudToggleBtn = document.getElementById('photo-toggle-hud-btn');
+    if (hudToggleBtn) {
+      const active = !!(this.layers.solarAngle || this.layers.solar);
+      hudToggleBtn.style.color = active ? 'var(--accent-cyan)' : 'var(--text-muted)';
+      hudToggleBtn.style.borderColor = active ? 'rgba(56, 189, 248, 0.5)' : 'var(--border-color)';
+      hudToggleBtn.style.background = active ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.05)';
+      hudToggleBtn.textContent = active ? '☀️/🌙 HUD' : '☀️/🌙 HUD (Off)';
     }
 
     if (subEl) {
@@ -540,6 +562,19 @@ const PhotoInspector = {
   },
 
   updateDrawerUI() {
+    ['hud', 'boundary', 'layerBoundary', 'wireframe', 'fiducials', 'detectedTags', 'measure', 'pins', 'reticle', 'solarAngle'].forEach(lKey => {
+      const elemId = lKey === 'detectedTags' ? 'layer-toggle-detected-tags' : 
+                    (lKey === 'layerBoundary' ? 'layer-toggle-layer-boundary' : 
+                    (lKey === 'wireframe' ? 'layer-toggle-wireframe' : 
+                    (lKey === 'solarAngle' ? 'layer-toggle-solar' : `layer-toggle-${lKey}`)));
+      const cb = document.getElementById(elemId) || 
+                 document.getElementById(`layer-toggle-${lKey.toLowerCase()}`) || 
+                 (lKey === 'solarAngle' ? document.getElementById('layer-toggle-solar-angle') : null);
+      if (cb && typeof this.layers[lKey] === 'boolean') {
+        cb.checked = this.layers[lKey];
+      }
+    });
+
     if (!this.activePhoto) return;
     const notesList = document.getElementById('defect-notes-list');
     const countBadge = document.getElementById('defect-count-badge');
@@ -576,19 +611,6 @@ const PhotoInspector = {
       const dispH = this.unit === 'imperial' ? Math.round(this.targetHeight * 3.28084 * 10) / 10 : Math.round(this.targetHeight * 10) / 10;
       heightInput.value = dispH;
     }
-
-    ['hud', 'boundary', 'layerBoundary', 'wireframe', 'fiducials', 'detectedTags', 'measure', 'pins', 'reticle', 'solarAngle'].forEach(lKey => {
-      const elemId = lKey === 'detectedTags' ? 'layer-toggle-detected-tags' : 
-                    (lKey === 'layerBoundary' ? 'layer-toggle-layer-boundary' : 
-                    (lKey === 'wireframe' ? 'layer-toggle-wireframe' : 
-                    (lKey === 'solarAngle' ? 'layer-toggle-solar' : `layer-toggle-${lKey}`)));
-      const cb = document.getElementById(elemId) || 
-                 document.getElementById(`layer-toggle-${lKey.toLowerCase()}`) || 
-                 (lKey === 'solarAngle' ? document.getElementById('layer-toggle-solar-angle') : null);
-      if (cb && typeof this.layers[lKey] === 'boolean') {
-        cb.checked = this.layers[lKey];
-      }
-    });
 
     const annotations = this.activePhoto.annotations || [];
     const pins = annotations.filter(a => a.type === 'pin');
@@ -1687,74 +1709,110 @@ const PhotoInspector = {
       });
     }
 
-    // 10. Solar Angle & Bearing Vector HUD Overlay (v1.157.0 - Issue #141)
+    // 10. Solar / Lunar Celestial Angle & Bearing Vector HUD Overlay (v1.157.0, v1.160.1, v1.161.0 - Issue #143)
     if ((this.layers.solarAngle || this.layers.solar) && this.activePhoto) {
       const act = this.activePhoto.actual;
       if (act && typeof act.lat === 'number' && typeof act.lon === 'number' && typeof SolarEphemeris !== 'undefined') {
         const photoDate = this.activePhoto.date || (this.activePhoto.timestamp ? new Date(this.activePhoto.timestamp) : new Date());
-        const sunPos = SolarEphemeris.getSunPosition(photoDate, act.lat, act.lon);
-        if (sunPos) {
-          ctx.save();
-          const camYaw = typeof act.heading === 'number' ? act.heading : 0;
-          // Relative sun azimuth with respect to camera heading (0° = straight ahead)
-          const relAzimuth = ((sunPos.azimuthDeg - camYaw) % 360 + 360) % 360;
-          const relRad = (relAzimuth - 90) * (Math.PI / 180); // 0° ahead = pointing up (-Y in canvas)
+        const celestial = typeof SolarEphemeris.getCelestialSummary === 'function'
+          ? SolarEphemeris.getCelestialSummary(photoDate, act.lat, act.lon)
+          : { mode: 'DAY', isDay: true, sun: SolarEphemeris.getSunPosition(photoDate, act.lat, act.lon), moon: null, moonIllum: null, naturalLux: 10000 };
 
-          // Top-right corner HUD widget position
-          const widgetX = canvas.width - 70;
-          const widgetY = 70;
-          const radius = 32;
+        const camYaw = typeof act.heading === 'number' ? act.heading : 0;
+        const isNight = celestial.mode === 'NIGHT';
+        const isTwilight = celestial.mode === 'TWILIGHT';
 
-          // Background dial
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-          ctx.beginPath();
-          ctx.arc(widgetX, widgetY, radius, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#f59e0b';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
+        // Choose target celestial body for primary needle & dial
+        const targetAzimuth = isNight && celestial.moon ? celestial.moon.azimuthDeg : celestial.sun.azimuthDeg;
+        const targetAltitude = isNight && celestial.moon ? celestial.moon.altitudeDeg : celestial.sun.altitudeDeg;
+        const dialColor = isNight ? '#38bdf8' : (isTwilight ? '#f59e0b' : '#fbbf24');
+        const dialBorder = isNight ? 'rgba(56, 189, 248, 0.85)' : (isTwilight ? 'rgba(245, 158, 11, 0.9)' : '#f59e0b');
 
-          // Center crosshair
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(widgetX - radius + 4, widgetY); ctx.lineTo(widgetX + radius - 4, widgetY);
-          ctx.moveTo(widgetX, widgetY - radius + 4); ctx.lineTo(widgetX, widgetY + radius - 4);
-          ctx.stroke();
+        // Relative celestial azimuth with respect to camera heading (0° = straight ahead)
+        const relAzimuth = ((targetAzimuth - camYaw) % 360 + 360) % 360;
+        const relRad = (relAzimuth - 90) * (Math.PI / 180); // 0° ahead = pointing up (-Y in canvas)
 
-          // Sun bearing pointer arrow
-          const arrowLen = radius - 6;
-          const tipX = widgetX + arrowLen * Math.cos(relRad);
-          const tipY = widgetY + arrowLen * Math.sin(relRad);
+        // Top-right corner HUD widget position
+        const widgetX = canvas.width - 70;
+        const widgetY = 70;
+        const radius = 32;
 
-          ctx.strokeStyle = '#fbbf24';
-          ctx.lineWidth = 2.5;
-          ctx.beginPath();
-          ctx.moveTo(widgetX, widgetY);
-          ctx.lineTo(tipX, tipY);
-          ctx.stroke();
+        ctx.save();
 
-          // Sun head circle
-          ctx.fillStyle = '#fbbf24';
+        // Background dial
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.beginPath();
+        ctx.arc(widgetX, widgetY, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = dialBorder;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Center crosshair
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(widgetX - radius + 4, widgetY); ctx.lineTo(widgetX + radius - 4, widgetY);
+        ctx.moveTo(widgetX, widgetY - radius + 4); ctx.lineTo(widgetX, widgetY + radius - 4);
+        ctx.stroke();
+
+        // Bearing pointer arrow
+        const arrowLen = radius - 6;
+        const tipX = widgetX + arrowLen * Math.cos(relRad);
+        const tipY = widgetY + arrowLen * Math.sin(relRad);
+
+        ctx.strokeStyle = dialColor;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(widgetX, widgetY);
+        ctx.lineTo(tipX, tipY);
+        ctx.stroke();
+
+        // Celestial tip glyph / orb
+        if (isNight && celestial.moonIllum) {
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(celestial.moonIllum.icon || '🌙', tipX, tipY);
+        } else {
+          ctx.fillStyle = dialColor;
           ctx.beginPath();
           ctx.arc(tipX, tipY, 4.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 1;
           ctx.stroke();
+        }
 
-          // Text label underneath widget
-          ctx.font = 'bold 10px monospace';
-          ctx.fillStyle = '#fbbf24';
-          ctx.textAlign = 'center';
-          const altSign = sunPos.altitudeDeg >= 0 ? '+' : '';
-          ctx.fillText(`☀️ ${altSign}${sunPos.altitudeDeg.toFixed(0)}°`, widgetX, widgetY + radius + 14);
+        // Text label underneath widget
+        ctx.font = 'bold 10px monospace';
+        ctx.fillStyle = dialColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+
+        const altSign = targetAltitude >= 0 ? '+' : '';
+        if (isNight) {
+          const phaseName = celestial.moonIllum?.phaseName || 'Moon';
+          const pct = celestial.moonIllum ? `${(celestial.moonIllum.fraction * 100).toFixed(0)}%` : '';
+          ctx.fillText(`🌙 ${altSign}${targetAltitude.toFixed(0)}° (${pct})`, widgetX, widgetY + radius + 14);
           ctx.font = '9px monospace';
           ctx.fillStyle = '#94a3b8';
-          ctx.fillText(`Az ${sunPos.azimuthDeg.toFixed(0)}°`, widgetX, widgetY + radius + 25);
-
-          ctx.restore();
+          ctx.fillText(`Az ${targetAzimuth.toFixed(0)}° • ~${celestial.naturalLux.toFixed(2)} lx`, widgetX, widgetY + radius + 25);
+        } else if (isTwilight) {
+          ctx.fillText(`🌅 ${altSign}${targetAltitude.toFixed(0)}° Twilight`, widgetX, widgetY + radius + 14);
+          ctx.font = '9px monospace';
+          ctx.fillStyle = '#94a3b8';
+          const moonAlt = celestial.moon ? `🌙 ${celestial.moon.altitudeDeg.toFixed(0)}°` : '';
+          ctx.fillText(`Az ${targetAzimuth.toFixed(0)}° • ${moonAlt}`, widgetX, widgetY + radius + 25);
+        } else {
+          ctx.fillText(`☀️ ${altSign}${targetAltitude.toFixed(0)}°`, widgetX, widgetY + radius + 14);
+          ctx.font = '9px monospace';
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(`Az ${targetAzimuth.toFixed(0)}°`, widgetX, widgetY + radius + 25);
         }
+
+        ctx.restore();
       }
     }
   },
@@ -2342,6 +2400,19 @@ const PhotoInspector = {
       };
     }
 
+    const hudToggleBtn = document.getElementById('photo-toggle-hud-btn');
+    if (hudToggleBtn) {
+      hudToggleBtn.onclick = () => {
+        this.layers.solarAngle = !this.layers.solarAngle;
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('aalaapi_photo_layer_solar', this.layers.solarAngle ? 'true' : 'false');
+        }
+        this.updateHeaderUI();
+        this.updateDrawerUI();
+        this.renderCanvas();
+      };
+    }
+
     const planeToggleBtn = document.getElementById('inspector-plane-toggle-btn');
     if (planeToggleBtn) {
       planeToggleBtn.onclick = () => {
@@ -2884,3 +2955,20 @@ async function scanMediaDevices() {
 }
 
 // RC 2 Controller Flight Log Explorer & Manager
+
+if (typeof window !== 'undefined') {
+  window.PhotoInspector = PhotoInspector;
+}
+if (typeof global !== 'undefined') {
+  global.PhotoInspector = PhotoInspector;
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      PhotoInspector.setupEvents();
+    });
+  } else {
+    PhotoInspector.setupEvents();
+  }
+}

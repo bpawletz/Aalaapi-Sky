@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.162.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.163.0</span></h1>
         </div>
       </div>
 
@@ -3728,6 +3728,14 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🌙 Night Moon Position HUD, Nocturnal Map Layers &amp; Night Flight Settings (v1.163.0) (Closes #143)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Full nocturnal situational awareness for night operations! Features offline Jean Meeus astronomical lunar ephemeris with adaptive Day (Sun), Twilight, and Night (Moon) dials, real-time lunar phase glyphs (🌑 to 🌕), illumination percentage, and ambient natural lux. Includes an instant 1-click <code>☀️/🌙 HUD</code> toolbar button in Photo Review, CartoDB Dark Matter basemap, NASA Earth at Night (Black Marble VIIRS) overlay, 2D lunar vector &amp; moonlight shadow casting, 3D moonlight digital twin, and customizable night settings in Configuration.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎛️ Customizable Top Ribbon &amp; Clean Topbar Ergonomics (v1.161.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -5041,7 +5049,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.162.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.163.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5102,6 +5110,15 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.163.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Astronomical Lunar Ephemeris &amp; Adaptive HUD:</strong> Added offline Jean Meeus lunar position, phase cycle glyphs, illumination fraction, and ambient lux calculations, dynamically switching between Sun dial (day) and Moon dial (night) across Photo Review and 2D/3D flight maps.</li>
+              <li><strong>1-Click Celestial HUD Toggle:</strong> Added instant <code>☀️/🌙 HUD</code> button (<code>#photo-toggle-hud-btn</code>) to the Photo Inspector top toolbar to toggle solar and lunar overlays on captured inspection photos.</li>
+              <li><strong>Night Flight Basemap &amp; NASA VIIRS Overlay:</strong> Integrated CartoDB Dark Matter basemap (<code>darkCanvasLayer</code>) and NASA Black Marble VIIRS night lights (<code>nasaNightLightsLayer</code>) with proxy cache support.</li>
+              <li><strong>Night Flight Settings Card:</strong> Added dedicated controls in Configuration to customize automatic night basemap switching, NASA lights, and nocturnal celestial HUD.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.162.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -8203,7 +8220,50 @@
           </div>
         </div>
 
-        <!-- Card 3: Menu Minimization Options -->
+        <!-- Card 3: Night Flight & Nocturnal Layers (v1.161.0 - Issue #143) -->
+        <div class="settings-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
+            <span>🌙 Night Flight &amp; Nocturnal Layers</span>
+          </div>
+
+          <!-- Night Auto Basemap Toggle -->
+          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div>
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">Auto-Switch Dark Canvas at Night</span>
+              <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.74rem;">Automatically switch the 2D basemap to Night Flight (Dark Matter) when the sun descends below the horizon.</p>
+            </div>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0;">
+              <input type="checkbox" id="config-night-auto-basemap" checked style="opacity: 0; width: 0; height: 0;">
+              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+            </label>
+          </div>
+
+          <!-- NASA Black Marble Overlay Toggle -->
+          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div>
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">NASA Earth at Night (Black Marble VIIRS)</span>
+              <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.74rem;">Enable NASA VIIRS night lights overlay to spot high-radiance ground illuminations and urban clusters.</p>
+            </div>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0;">
+              <input type="checkbox" id="config-night-auto-nasa" style="opacity: 0; width: 0; height: 0;">
+              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+            </label>
+          </div>
+
+          <!-- Night Celestial HUD Toggle -->
+          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div>
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">Night Moon Position HUD &amp; Vector</span>
+              <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.74rem;">Show lunar ephemeris azimuth, elevation, phase cycle glyph, and moonlight shadow prediction when night falls.</p>
+            </div>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0;">
+              <input type="checkbox" id="config-night-celestial-hud" checked style="opacity: 0; width: 0; height: 0;">
+              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Card 4: Menu Minimization Options -->
         <div class="settings-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
           <div style="font-size: 0.8rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
             <span>📐 Menu Minimization Options</span>
@@ -9388,6 +9448,7 @@
           <button id="photo-detect-wireframe-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" title="Extract Architectural House Lines (Roof Ridges, Eaves, Gutters, Siding &amp; Wall Edges) on current photo">🏗️ Detect House Lines</button>
           <span id="photo-detect-status-pill" style="display: none; align-items: center; gap: 4px; font-size: 0.70rem; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.15); color: #4ade80;">🏷️ 0 Tags</span>
           <button id="photo-detect-tags-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" title="Run In-Browser Optical Tag Detector (AprilTag 25h9/36h11/16h5 &amp; ArUco 4x4/5x5) on current photo">🔍 Detect Tags</button>
+          <button id="photo-toggle-hud-btn" class="btn-secondary btn-sm active" type="button" style="font-size: 0.72rem; padding: 3px 8px; border-color: rgba(251, 191, 36, 0.4); color: #fbbf24;" title="Toggle Celestial Position HUD Overlay (Sun in Daytime / Moon &amp; Lunar Phase at Night)">☀️/🌙 HUD</button>
           <button id="inspector-plane-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Measurement Plane Calibration (Slant Optical Plane for Roofs/Elevated Structures vs Flat Ground Plane)">🏠 Slant (Structure)</button>
           <button id="inspector-unit-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Metric / Imperial Dimension Display">📏 Metric</button>
           <button id="close-photo-inspector-btn" class="close-btn" type="button" aria-label="Close photo inspector">&times;</button>
@@ -9495,7 +9556,7 @@
               </label>
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input type="checkbox" id="layer-toggle-solar" checked />
-                <span>☀️ Solar Position HUD</span>
+                <span>☀️/🌙 Celestial Position HUD</span>
               </label>
             </div>
           </div>

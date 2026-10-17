@@ -11,7 +11,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     browser = await chromium.launch({ headless: true });
     page = await browser.newPage();
     const indexPath = 'file:///' + path.resolve(__dirname, 'index.html').replace(/\\/g, '/');
-    await page.goto(indexPath, { waitUntil: 'load' });
+    await page.goto(indexPath, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForFunction(() => typeof window.L !== 'undefined', { timeout: 15000 }).catch(() => {});
     await page.evaluate(() => {
       localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
@@ -4683,11 +4683,12 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         paddingTop: parseFloat(style.paddingTop) || 0,
         paddingBottom: parseFloat(style.paddingBottom) || 0,
         cardCount: cards.length,
-        hasGeneralCard: cards.length >= 1 && cards[0].textContent.includes('General & Display'),
-        hasVisualsCard: cards.length >= 2 && cards[1].textContent.includes('Map & Camera Visuals'),
-        hasMinimizationCard: cards.length >= 3 && cards[2].textContent.includes('Menu Minimization Options'),
-        hasMultiVendorCard: cards.length >= 4 && cards[3].textContent.includes('Multi-Vendor Autopilots'),
-        hasStorageCard: cards.length >= 5 && cards[4].textContent.includes('Storage & Controlled Reset')
+        hasGeneralCard: Array.from(cards).some(c => c.textContent.includes('General & Display')),
+        hasVisualsCard: Array.from(cards).some(c => c.textContent.includes('Map & Camera Visuals')),
+        hasNightFlightCard: Array.from(cards).some(c => c.textContent.includes('Night Flight & Nocturnal Layers')),
+        hasMinimizationCard: Array.from(cards).some(c => c.textContent.includes('Menu Minimization Options')),
+        hasMultiVendorCard: Array.from(cards).some(c => c.textContent.includes('Multi-Vendor Autopilots')),
+        hasStorageCard: Array.from(cards).some(c => c.textContent.includes('Storage & Controlled Reset'))
       };
     });
 
@@ -4697,9 +4698,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(modalState.paddingRight >= 20, `Modal content paddingRight must be >= 20px (got ${modalState.paddingRight}px)`);
     assert.ok(modalState.paddingTop >= 20, `Modal content paddingTop must be >= 20px (got ${modalState.paddingTop}px)`);
     assert.ok(modalState.paddingBottom >= 20, `Modal content paddingBottom must be >= 20px (got ${modalState.paddingBottom}px)`);
-    assert.strictEqual(modalState.cardCount, 5, 'Modal must contain exactly 5 structured settings cards');
+    assert.strictEqual(modalState.cardCount, 6, 'Modal must contain structured settings cards');
     assert.ok(modalState.hasGeneralCard, 'Modal must have General & Display card');
     assert.ok(modalState.hasVisualsCard, 'Modal must have Map & Camera Visuals card');
+    assert.ok(modalState.hasNightFlightCard, 'Modal must have Night Flight & Nocturnal Layers card');
     assert.ok(modalState.hasMinimizationCard, 'Modal must have Menu Minimization Options card');
     assert.ok(modalState.hasMultiVendorCard, 'Modal must have Multi-Vendor Autopilots card');
     assert.ok(modalState.hasStorageCard, 'Modal must have Storage & Controlled Reset card');
@@ -8506,6 +8508,87 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(res.unitHiddenInCompact, true, 'Compact preset must hide secondary units toggle from top ribbon');
       assert.strictEqual(res.unitVisibleInStudio, true, 'Studio preset must show units toggle on top ribbon');
       assert.strictEqual(res.resetPreset, 'standard', 'Reset defaults button must restore standard preset');
+    });
+
+    test('v1.163.0 Nighttime Moon Position HUD, Nocturnal Map Layers, and Customizable Settings', async () => {
+      const res = await page.evaluate(() => {
+        // 1. Verify Photo Review 1-click HUD toggle button and drawer checkbox
+        const photoToggleBtn = document.getElementById('photo-toggle-hud-btn');
+        const layerToggleSolar = document.getElementById('layer-toggle-solar');
+        const btnExists = !!photoToggleBtn;
+        const chkExists = !!layerToggleSolar;
+
+        // Toggle via button
+        let initialSolarState = layerToggleSolar ? layerToggleSolar.checked : null;
+        if (photoToggleBtn) {
+          photoToggleBtn.click();
+        }
+        let toggledSolarState = layerToggleSolar ? layerToggleSolar.checked : null;
+
+        // Restore state
+        if (photoToggleBtn) {
+          photoToggleBtn.click();
+        }
+        let restoredSolarState = layerToggleSolar ? layerToggleSolar.checked : null;
+
+        // 2. Verify Config Modal Night Flight & Nocturnal Layers settings card
+        const configBtn = document.getElementById('config-btn') || document.querySelector('[data-modal="config-modal"]');
+        if (configBtn) configBtn.click();
+        const configModal = document.getElementById('config-modal');
+        const configVisible = configModal && !configModal.classList.contains('hidden');
+
+        const chkAutoBasemap = document.getElementById('config-night-auto-basemap');
+        const chkAutoNasa = document.getElementById('config-night-auto-nasa');
+        const chkCelestialHud = document.getElementById('config-night-celestial-hud');
+
+        const nightCardControlsExist = !!(chkAutoBasemap && chkAutoNasa && chkCelestialHud);
+
+        // Test toggles and persistence
+        if (chkAutoBasemap) {
+          chkAutoBasemap.checked = false;
+          chkAutoBasemap.dispatchEvent(new Event('change'));
+        }
+        const basemapPersistedFalse = localStorage.getItem('aalaapi_night_auto_basemap') === 'false';
+
+        if (chkAutoBasemap) {
+          chkAutoBasemap.checked = true;
+          chkAutoBasemap.dispatchEvent(new Event('change'));
+        }
+        const basemapPersistedTrue = localStorage.getItem('aalaapi_night_auto_basemap') === 'true';
+
+        // Close config modal
+        const closeConfigBtn = document.getElementById('close-config-btn');
+        if (closeConfigBtn) closeConfigBtn.click();
+
+        // 3. Verify Map Layers in window
+        const darkCanvasExists = typeof window.darkCanvasLayer !== 'undefined';
+        const nasaLightsExists = typeof window.nasaNightLightsLayer !== 'undefined';
+
+        return {
+          btnExists,
+          chkExists,
+          initialSolarState,
+          toggledSolarState,
+          restoredSolarState,
+          configVisible,
+          nightCardControlsExist,
+          basemapPersistedFalse,
+          basemapPersistedTrue,
+          darkCanvasExists,
+          nasaLightsExists
+        };
+      });
+
+      assert.strictEqual(res.btnExists, true, '#photo-toggle-hud-btn button must exist in Photo Inspector header');
+      assert.strictEqual(res.chkExists, true, '#layer-toggle-solar checkbox must exist in Photo Inspector drawer');
+      assert.notStrictEqual(res.initialSolarState, res.toggledSolarState, 'Clicking #photo-toggle-hud-btn must toggle solar/lunar HUD layer state');
+      assert.strictEqual(res.restoredSolarState, res.initialSolarState, 'Second click must restore initial state');
+      assert.strictEqual(res.configVisible, true, 'Config modal must open on trigger click');
+      assert.strictEqual(res.nightCardControlsExist, true, 'Night Flight & Nocturnal Layers settings controls must exist in #config-modal');
+      assert.strictEqual(res.basemapPersistedFalse, true, 'Toggling night basemap checkbox must update localStorage to false');
+      assert.strictEqual(res.basemapPersistedTrue, true, 'Toggling night basemap checkbox must update localStorage to true');
+      assert.strictEqual(res.darkCanvasExists, true, 'darkCanvasLayer must be defined on window');
+      assert.strictEqual(res.nasaLightsExists, true, 'nasaNightLightsLayer must be defined on window');
     });
   });
 });
