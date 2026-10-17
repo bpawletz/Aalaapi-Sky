@@ -27059,7 +27059,8 @@ print(json.dumps({'count': len(planes), 'types': list(types)}))
       hyperlapseEndPitch: -10,
       hyperlapseHeadingMode: 'keyframes',
       hyperlapseStartHeading: 0,
-      hyperlapseEndHeading: 90
+      hyperlapseEndHeading: 90,
+      hyperlapseWaypointMode: 'spline'
     };
 
     const genFn = vm.runInThisContext('generateHyperlapseWaypoints');
@@ -27798,7 +27799,8 @@ describe('Issue Fix & v1.149.3: Hyperlapse & Multi-Layer Non-Override Waypoint A
       pattern: 'hyperlapse',
       altitude: 32,
       speed: 4,
-      hyperlapseInterval: 3
+      hyperlapseInterval: 3,
+      hyperlapseWaypointMode: 'spline'
     };
     const res = generateHyperlapseWaypoints(rawWps, layer, 4, 32);
     assert.strictEqual(res.waypoints.length, 2);
@@ -27819,7 +27821,8 @@ describe('Issue Fix & v1.149.3: Hyperlapse & Multi-Layer Non-Override Waypoint A
       pattern: 'hyperlapse',
       altitude: 32,
       speed: 4,
-      hyperlapseInterval: 3
+      hyperlapseInterval: 3,
+      hyperlapseWaypointMode: 'spline'
     };
     const res = generateHyperlapseWaypoints(rawWps, layer, 4, 32);
     assert.strictEqual(res.waypoints[0].alt, 42, 'Modified waypoint must preserve explicit override (42m)');
@@ -27836,6 +27839,7 @@ describe('Issue Fix & v1.149.3: Hyperlapse & Multi-Layer Non-Override Waypoint A
       pattern: 'hyperlapse',
       altitude: 32,
       speed: 4,
+      hyperlapseWaypointMode: 'spline',
       freeformWaypoints: [
         { lat: 41.3216253, lon: -88.995059, alt: 50, isModified: false },
         { lat: 41.3213038, lon: -88.9950899, alt: 50, isModified: false }
@@ -28114,7 +28118,8 @@ describe('Issue Fix & v1.149.5: Multi-Layer Layer Menu Gimbal Pitch Matching & C
       altitude: 32,
       speed: 4,
       gimbalPitch: -60,
-      hyperlapseInterval: 3
+      hyperlapseInterval: 3,
+      hyperlapseWaypointMode: 'spline'
     };
     const res = generateHyperlapseWaypoints(rawWps, layer, 4, 32);
     assert.strictEqual(res.waypoints.length, 2);
@@ -28135,7 +28140,8 @@ describe('Issue Fix & v1.149.5: Multi-Layer Layer Menu Gimbal Pitch Matching & C
       altitude: 32,
       gimbalPitch: -60,
       hyperlapseStartPitch: -20,
-      hyperlapseEndPitch: -70
+      hyperlapseEndPitch: -70,
+      hyperlapseWaypointMode: 'spline'
     };
     const res = generateHyperlapseWaypoints(rawWps, layer, 4, 32);
     assert.strictEqual(res.waypoints[0].pitch, -20, 'WP 0 pitch should match sweep startPitch (-20°)');
@@ -28151,7 +28157,8 @@ describe('Issue Fix & v1.149.5: Multi-Layer Layer Menu Gimbal Pitch Matching & C
       id: 'layer-hl',
       pattern: 'hyperlapse',
       altitude: 32,
-      gimbalPitch: -60
+      gimbalPitch: -60,
+      hyperlapseWaypointMode: 'spline'
     };
     const res = generateHyperlapseWaypoints(rawWps, layer, 4, 32);
     assert.strictEqual(res.waypoints[0].pitch, -45, 'Modified waypoint must preserve explicit pitch override (-45°)');
@@ -28629,6 +28636,7 @@ describe('Issue Fix & v1.150.2: Hyperlapse Photo Count Diagnostics & Speed Casca
       speed: 0.8,
       gimbalPitch: 0,
       hyperlapseInterval: 2,
+      hyperlapseWaypointMode: 'spline',
       headingMode: 'smoothTransition',
       turnMode: 'curved',
       captureMode: 'continuous',
@@ -28679,6 +28687,7 @@ describe('Issue Fix & v1.150.2: Hyperlapse Photo Count Diagnostics & Speed Casca
       speed: 0.8,
       gimbalPitch: 0,
       hyperlapseInterval: 2,
+      hyperlapseWaypointMode: 'spline',
       waypoints: wps
     };
 
@@ -31970,20 +31979,7 @@ describe('v1.166.0 Weather-Coordinated Shadow Casting & Satellite Cloud Cover Ov
 
 describe('v1.166.1 Road Following Pattern Switch & Waypoint Retention', () => {
   test('Version Consistency across required locations for v1.166.1', () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.166.1', 'package.json version must be 1.166.1');
-
-    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.166.1]'), 'CHANGELOG.md must contain 1.166.1 header');
-
-    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('Version 1.166.1</span>'), 'index.html must contain Version 1.166.1');
-    assert.ok(indexHtml.includes('Changelog (v1.166.1):</strong>'), 'index.html must contain Changelog (v1.166.1)');
-
-    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(tpl.includes('Version 1.166.1</span>'), 'index_template.html must contain Version 1.166.1');
-    assert.ok(tpl.includes('Changelog (v1.166.1):</strong>'), 'index_template.html must contain Changelog (v1.166.1)');
-    assert.ok(tpl.includes('class="header-version-badge"') && tpl.includes('>v1.166.1</span>'), 'index_template.html header badge must be v1.166.1');
+    assertVersionConsistency('1.166.1');
   });
 
   test('generateLayerWaypoints resets stale custom road waypoints when pattern changes to single', () => {
@@ -32055,6 +32051,355 @@ describe('v1.166.1 Road Following Pattern Switch & Waypoint Retention', () => {
         document.getElementById = origGetById;
       }
     }
+  });
+});
+
+describe('v1.166.2 Photo Ingestion Modal Completion & Download Feedback Suite', () => {
+  test('Version consistency: v1.166.2 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.166.2');
+  });
+
+  test('executeMediaPull transitions buttons to Close and Done upon successful completion', async () => {
+    const origFetch = global.fetch;
+    const origGetElementById = global.document.getElementById;
+
+    const mockStartBtn = {
+      disabled: false,
+      textContent: '📥 Ingest & Correlate Photos',
+      attributes: {},
+      setAttribute(k, v) { this.attributes[k] = v; },
+      getAttribute(k) { return this.attributes[k]; },
+      removeAttribute(k) { delete this.attributes[k]; }
+    };
+    const mockCloseFooterBtn = { textContent: 'Cancel', style: {} };
+    const mockDlBtn = { style: {}, disabled: false, innerHTML: '' };
+    const mockContainer = { style: { display: 'none' } };
+    const mockBar = { style: { width: '0%' } };
+    const mockText = { textContent: '', style: {} };
+    const mockPct = { textContent: '0%' };
+
+    global.fetch = async (url) => {
+      if (String(url).includes('/api/media/pull')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            totalPhotos: 12,
+            missionUuid: 'mission_test_123',
+            manifest: { photos: [] }
+          })
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    };
+
+    global.document.getElementById = (id) => {
+      if (id === 'start-media-pull-btn') return mockStartBtn;
+      if (id === 'close-media-ingest-footer-btn') return mockCloseFooterBtn;
+      if (id === 'media-download-archive-btn') return mockDlBtn;
+      if (id === 'ingest-progress-container') return mockContainer;
+      if (id === 'ingest-progress-bar') return mockBar;
+      if (id === 'ingest-status-text') return mockText;
+      if (id === 'ingest-pct-text') return mockPct;
+      return null;
+    };
+
+    try {
+      const res = await executeMediaPull();
+      assert.ok(res && res.success);
+      assert.strictEqual(mockCloseFooterBtn.textContent, 'Close', 'Footer button must transition from Cancel to Close');
+      assert.strictEqual(mockStartBtn.textContent, '✓ Done', 'Primary button must transition to Done');
+      assert.strictEqual(mockStartBtn.getAttribute('data-action'), 'close', 'Primary button must have data-action="close"');
+      assert.strictEqual(mockStartBtn.disabled, false, 'Done button must be clickable');
+
+      // Test that clicking executeMediaPull when data-action="close" closes modal
+      let modalClosed = false;
+      const origCloseModal = global.closeMediaIngestModal;
+      global.closeMediaIngestModal = () => { modalClosed = true; };
+      try {
+        await executeMediaPull();
+        assert.strictEqual(modalClosed, true, 'Executing pull while in close mode must invoke closeMediaIngestModal');
+      } finally {
+        global.closeMediaIngestModal = origCloseModal;
+      }
+    } finally {
+      global.fetch = origFetch;
+      global.document.getElementById = origGetElementById;
+    }
+  });
+
+  test('openMediaIngestModal cleanly resets footer buttons, download button, and progress indicators', () => {
+    const origGetElementById = global.document.getElementById;
+    const mockModal = { classList: { remove: () => {}, add: () => {} } };
+    const mockStartBtn = {
+      disabled: true,
+      textContent: '✓ Done',
+      attributes: { 'data-action': 'close' },
+      removeAttribute(k) { delete this.attributes[k]; }
+    };
+    const mockCloseFooterBtn = { textContent: 'Close', style: { display: 'none' } };
+    const mockDlBtn = { style: { display: 'inline-flex' }, disabled: true, innerHTML: '✅ Downloaded (.zip)' };
+    const mockContainer = { style: { display: 'flex' } };
+    const mockBar = { style: { width: '100%' } };
+    const mockText = { textContent: 'Finished', style: { color: 'green' } };
+    const mockPct = { textContent: '100%' };
+
+    global.document.getElementById = (id) => {
+      if (id === 'media-ingest-modal') return mockModal;
+      if (id === 'start-media-pull-btn') return mockStartBtn;
+      if (id === 'close-media-ingest-footer-btn') return mockCloseFooterBtn;
+      if (id === 'media-download-archive-btn') return mockDlBtn;
+      if (id === 'ingest-progress-container') return mockContainer;
+      if (id === 'ingest-progress-bar') return mockBar;
+      if (id === 'ingest-status-text') return mockText;
+      if (id === 'ingest-pct-text') return mockPct;
+      return null;
+    };
+
+    try {
+      openMediaIngestModal();
+      assert.strictEqual(mockCloseFooterBtn.textContent, 'Cancel', 'Close button must reset to Cancel');
+      assert.strictEqual(mockCloseFooterBtn.style.display, '', 'Close button must be visible');
+      assert.strictEqual(mockStartBtn.textContent, '📥 Ingest & Correlate Photos', 'Start button text must reset');
+      assert.strictEqual(mockStartBtn.disabled, false, 'Start button must be enabled');
+      assert.strictEqual(mockStartBtn.attributes['data-action'], undefined, 'data-action must be removed');
+      assert.strictEqual(mockDlBtn.style.display, 'none', 'Download button must be hidden on reopen');
+      assert.strictEqual(mockDlBtn.innerHTML, '📦 Download Archive (.zip)', 'Download button label must reset');
+      assert.strictEqual(mockContainer.style.display, 'none', 'Progress container must be hidden on reopen');
+      assert.strictEqual(mockBar.style.width, '0%', 'Progress bar must reset to 0%');
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+
+  test('media-download-archive-btn provides interactive processing feedback during download', async () => {
+    const origFetch = global.fetch;
+    const origGetElementById = global.document.getElementById;
+    const origCreateObjectURL = (typeof URL !== 'undefined' && URL.createObjectURL) || (typeof window !== 'undefined' && window.URL && window.URL.createObjectURL);
+    const origRevokeObjectURL = (typeof URL !== 'undefined' && URL.revokeObjectURL) || (typeof window !== 'undefined' && window.URL && window.URL.revokeObjectURL);
+
+    const mockDlBtn = { style: {}, disabled: false, innerHTML: '' };
+    const mockText = { textContent: 'Completed! 15 photos ingested.' };
+    const mockStartBtn = { disabled: false, setAttribute: () => {}, removeAttribute: () => {} };
+
+    if (typeof window !== 'undefined' && window.URL) {
+      window.URL.createObjectURL = () => 'blob:mock-url';
+      window.URL.revokeObjectURL = () => {};
+    }
+    if (typeof URL !== 'undefined') {
+      URL.createObjectURL = () => 'blob:mock-url';
+      URL.revokeObjectURL = () => {};
+    }
+
+    let fetchCalled = false;
+    global.fetch = async (url) => {
+      if (String(url).includes('/api/media/pull')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            totalPhotos: 15,
+            missionUuid: 'mission_dl_test',
+            manifest: { photos: [] }
+          })
+        };
+      }
+      if (String(url).includes('/api/media/archive-zip')) {
+        fetchCalled = true;
+        return {
+          ok: true,
+          headers: { get: () => 'attachment; filename="mission_dl_test_archive.zip"' },
+          blob: async () => ({ size: 1024, type: 'application/zip' })
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    };
+
+    global.document.getElementById = (id) => {
+      if (id === 'media-download-archive-btn') return mockDlBtn;
+      if (id === 'ingest-status-text') return mockText;
+      if (id === 'start-media-pull-btn') return mockStartBtn;
+      return null;
+    };
+
+    try {
+      await executeMediaPull();
+      assert.strictEqual(typeof mockDlBtn.onclick, 'function', 'dlBtn.onclick must be assigned');
+      assert.strictEqual(mockDlBtn.disabled, false);
+
+      // Trigger download click handler
+      const downloadPromise = mockDlBtn.onclick();
+      assert.strictEqual(mockDlBtn.disabled, true, 'dlBtn must be disabled immediately to prevent duplicate requests');
+      assert.ok(mockDlBtn.innerHTML.includes('Preparing Download'), 'dlBtn must show Preparing Download state');
+
+      await downloadPromise;
+      assert.strictEqual(fetchCalled, true, 'Fetch must have been called for archive zip');
+      assert.ok(mockDlBtn.innerHTML.includes('Downloaded'), 'dlBtn must indicate download completion');
+    } finally {
+      global.fetch = origFetch;
+      global.document.getElementById = origGetElementById;
+      if (typeof window !== 'undefined' && window.URL) {
+        window.URL.createObjectURL = origCreateObjectURL;
+        window.URL.revokeObjectURL = origRevokeObjectURL;
+      }
+      if (typeof URL !== 'undefined') {
+        URL.createObjectURL = origCreateObjectURL;
+        URL.revokeObjectURL = origRevokeObjectURL;
+      }
+    }
+  });
+});
+
+describe('v1.167.0 Hyperlapse Discrete Frame Waypoints for RC 2', () => {
+  test('Version Consistency across required locations for v1.167.0', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.167.0', 'package.json version must be 1.167.0');
+
+    const changelog = fs.readFileSync(path.resolve(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.167.0] - 2026-10-17'), 'CHANGELOG.md must contain 1.167.0 header');
+
+    const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('Version 1.167.0'), 'index.html must contain Version 1.167.0');
+    assert.ok(indexHtml.includes('Changelog (v1.167.0):'), 'index.html must contain Changelog (v1.167.0):');
+
+    const templateHtml = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('Version 1.167.0'), 'index_template.html must contain Version 1.167.0');
+    assert.ok(templateHtml.includes('v1.167.0</span></h1>'), 'index_template.html must contain header badge v1.167.0');
+    assert.ok(templateHtml.includes('Changelog (v1.167.0):'), 'index_template.html must contain Changelog (v1.167.0):');
+  });
+
+  test('generateHyperlapseWaypoints defaults to dense mode and compiles all frame points into discrete flight waypoints', () => {
+    const rawWps = [
+      { lat: 41.3215, lon: -88.9950, x: 0, y: 0, alt: 24, isModified: false },
+      { lat: 41.3211446, lon: -88.9949249, x: 6.4, y: -39.6, alt: 24, isModified: false }
+    ];
+    const layer = {
+      id: 'test-hl-layer',
+      pattern: 'hyperlapse',
+      hyperlapseInterval: 3,
+      hyperlapseWaypointMode: 'dense',
+      altitude: 24,
+      gimbalPitch: 0
+    };
+
+    const gen = generateHyperlapseWaypoints(rawWps, layer, 1.4, 24);
+
+    assert.strictEqual(gen.waypointMode, 'dense');
+    assert.ok(gen.waypoints.length > 2, `Dense hyperlapse must have > 2 waypoints. Got: ${gen.waypoints.length}`);
+    assert.strictEqual(gen.waypoints.length, gen.framePoints.length, 'Waypoints length must match framePoints length in dense mode');
+
+    // First waypoint must be at the origin
+    const w0 = gen.waypoints[0];
+    assert.strictEqual(w0.idx, 0);
+    assert.strictEqual(w0.lat, 41.3215);
+    assert.strictEqual(w0.lon, -88.9950);
+    assert.strictEqual(w0.cameraAction, 'takePhoto');
+    assert.strictEqual(w0.skipPhoto, false);
+    assert.strictEqual(w0.isHyperlapse, true);
+    assert.strictEqual(w0.isHyperlapseFrame, true);
+
+    // Terminal waypoint must be near destination along the trajectory
+    const wEnd = gen.waypoints[gen.waypoints.length - 1];
+    assert.strictEqual(wEnd.idx, gen.waypoints.length - 1);
+    assert.ok(wEnd.lat < 41.3215 && wEnd.lat >= 41.3211446, 'Terminal dense waypoint must be along path toward destination');
+    assert.strictEqual(wEnd.cameraAction, 'takePhoto');
+    assert.strictEqual(wEnd.skipPhoto, false);
+
+    // All waypoints must have takePhoto action and smoothTransition
+    gen.waypoints.forEach((w, i) => {
+      assert.strictEqual(w.idx, i);
+      assert.strictEqual(w.cameraAction, 'takePhoto');
+      assert.strictEqual(w.headingMode, 'smoothTransition');
+      assert.strictEqual(w.turnMode, 'curved');
+      assert.strictEqual(w.pathMode, 'curved');
+    });
+  });
+
+  test('generateHyperlapseWaypoints in spline mode returns minimal control waypoints with frame points', () => {
+    const rawWps = [
+      { lat: 41.3215, lon: -88.9950, x: 0, y: 0, alt: 24, isModified: false },
+      { lat: 41.3211446, lon: -88.9949249, x: 6.4, y: -39.6, alt: 24, isModified: false }
+    ];
+    const layer = {
+      id: 'test-hl-layer',
+      pattern: 'hyperlapse',
+      hyperlapseInterval: 3,
+      hyperlapseWaypointMode: 'spline',
+      altitude: 24,
+      gimbalPitch: 0
+    };
+
+    const gen = generateHyperlapseWaypoints(rawWps, layer, 1.4, 24);
+
+    assert.strictEqual(gen.waypointMode, 'spline');
+    assert.strictEqual(gen.waypoints.length, 2, 'Spline mode must return exactly 2 control waypoints');
+    assert.ok(gen.framePoints.length > 2, 'Spline mode must still sample frame points for HUD/telemetry');
+  });
+
+  test('buildWaylinesWpml exports all discrete placemarks with reachPoint photos and suppresses multipleTiming in dense mode', () => {
+    const rawWps = [
+      { lat: 41.3215, lon: -88.9950, x: 0, y: 0, alt: 24, isModified: false },
+      { lat: 41.3211446, lon: -88.9949249, x: 6.4, y: -39.6, alt: 24, isModified: false }
+    ];
+    const layer = {
+      id: 'test-hl-layer',
+      pattern: 'hyperlapse',
+      hyperlapseInterval: 3,
+      hyperlapseWaypointMode: 'dense',
+      altitude: 24,
+      gimbalPitch: 0
+    };
+
+    const gen = generateHyperlapseWaypoints(rawWps, layer, 1.4, 24);
+    const wpml = buildWaylinesWpml(gen.waypoints, {
+      speed: 1.4,
+      altitude: 24,
+      gimbalPitch: 0,
+      flightPattern: 'hyperlapse',
+      droneModel: '68'
+    });
+
+    // Must contain Placemark tags matching the dense waypoints count
+    const placemarkMatches = wpml.match(/<Placemark>/g) || [];
+    assert.strictEqual(placemarkMatches.length, gen.waypoints.length,
+      `WPML placemarks (${placemarkMatches.length}) must match dense waypoints count (${gen.waypoints.length})`);
+
+    // Must NOT contain multipleTiming trigger
+    assert.strictEqual(wpml.includes('<wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>'), false,
+      'Dense hyperlapse mission must suppress multipleTiming trigger to avoid duplicate or conflicting photos');
+
+    // Must contain takePhoto action
+    assert.ok(wpml.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'),
+      'Dense hyperlapse waypoints must execute takePhoto action at each waypoint');
+  });
+
+  test('buildWaylinesWpml in spline mode exports 2 placemarks with multipleTiming action group', () => {
+    const rawWps = [
+      { lat: 41.3215, lon: -88.9950, x: 0, y: 0, alt: 24, isModified: false },
+      { lat: 41.3211446, lon: -88.9949249, x: 6.4, y: -39.6, alt: 24, isModified: false }
+    ];
+    const layer = {
+      id: 'test-hl-layer',
+      pattern: 'hyperlapse',
+      hyperlapseInterval: 3,
+      hyperlapseWaypointMode: 'spline',
+      altitude: 24,
+      gimbalPitch: 0
+    };
+
+    const gen = generateHyperlapseWaypoints(rawWps, layer, 1.4, 24);
+    const wpml = buildWaylinesWpml(gen.waypoints, {
+      speed: 1.4,
+      altitude: 24,
+      gimbalPitch: 0,
+      flightPattern: 'hyperlapse',
+      droneModel: '68'
+    });
+
+    const placemarkMatches = wpml.match(/<Placemark>/g) || [];
+    assert.strictEqual(placemarkMatches.length, 2, 'Spline mode must export exactly 2 Placemark tags');
+    assert.ok(wpml.includes('<wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>'),
+      'Spline mode must emit multipleTiming action group');
   });
 });
 

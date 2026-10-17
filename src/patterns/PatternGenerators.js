@@ -609,13 +609,15 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
 // ============================================================================
 function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
   if (!rawWps || !Array.isArray(rawWps) || rawWps.length === 0) {
-    return { waypoints: [], framePoints: [], interval: 3, frameSpacing: 0 };
+    return { waypoints: [], framePoints: [], controlWaypoints: [], denseWaypoints: [], waypointMode: 'dense', interval: 3, frameSpacing: 0 };
   }
 
   const rawInterval = layer ? layer.hyperlapseInterval : 3;
   let interval = parseInt(rawInterval, 10);
   if (isNaN(interval) || interval < 2) interval = 2;
   if (interval > 10) interval = 10;
+
+  const waypointMode = (layer && layer.hyperlapseWaypointMode) ? layer.hyperlapseWaypointMode : 'dense';
 
   const layerPitch = (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== 'auto' && !isNaN(layer.gimbalPitch))
     ? parseInt(layer.gimbalPitch, 10)
@@ -624,8 +626,8 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
   const rawStart = (layer && layer.hyperlapseStartPitch !== undefined && !isNaN(layer.hyperlapseStartPitch)) ? parseInt(layer.hyperlapseStartPitch, 10) : null;
   const rawEnd = (layer && layer.hyperlapseEndPitch !== undefined && !isNaN(layer.hyperlapseEndPitch)) ? parseInt(layer.hyperlapseEndPitch, 10) : null;
   const hasCustomSweep = (rawStart !== null && rawEnd !== null && rawStart !== rawEnd);
-  const startPitch = hasCustomSweep ? rawStart : (rawStart !== null && rawStart !== -15 ? rawStart : layerPitch);
-  const endPitch = hasCustomSweep ? rawEnd : (rawEnd !== null && rawEnd !== -15 ? rawEnd : layerPitch);
+  const startPitch = hasCustomSweep ? rawStart : (rawStart !== null ? rawStart : layerPitch);
+  const endPitch = hasCustomSweep ? rawEnd : (rawEnd !== null ? rawEnd : layerPitch);
 
   const headingMode = (layer && layer.hyperlapseHeadingMode) ? layer.hyperlapseHeadingMode : 'path';
   const startHeading = (layer && layer.hyperlapseStartHeading !== undefined && !isNaN(layer.hyperlapseStartHeading)) ? parseFloat(layer.hyperlapseStartHeading) % 360 : 0;
@@ -674,8 +676,8 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
     return 0;
   }
 
-  // Generate per-waypoint parameters
-  const waypoints = rawWps.map((wp, idx) => {
+  // Generate per-control-waypoint parameters
+  const controlWaypoints = rawWps.map((wp, idx) => {
     const t = totalDist > 0 ? cumDists[idx] / totalDist : (rawWps.length > 1 ? idx / (rawWps.length - 1) : 0);
     let pitch, heading;
 
@@ -738,15 +740,15 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
   const effectiveSpeed = Math.max(0.1, (speed !== undefined && !isNaN(speed) && speed > 0) ? Number(speed) : 2.0);
   const frameSpacing = Math.max(0.05, effectiveSpeed * interval);
 
-  if (waypoints.length >= 2 && totalDist > 0) {
+  if (controlWaypoints.length >= 2 && totalDist > 0) {
     let currentDist = 0;
     while (currentDist <= totalDist + 0.01) {
       let segIdx = 0;
       while (segIdx < cumDists.length - 2 && cumDists[segIdx + 1] < currentDist) {
         segIdx++;
       }
-      const pA = waypoints[segIdx];
-      const pB = waypoints[segIdx + 1] || pA;
+      const pA = controlWaypoints[segIdx];
+      const pB = controlWaypoints[segIdx + 1] || pA;
       const segLen = cumDists[segIdx + 1] - cumDists[segIdx];
       const segT = segLen > 0 ? Math.min(1, Math.max(0, (currentDist - cumDists[segIdx]) / segLen)) : 0;
       const globalT = currentDist / totalDist;
@@ -762,8 +764,11 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
         const samplePt = { lat: fLat, lon: fLon, x: fX, y: fY, alt: fAlt };
         fHeading = getBearingBetween(samplePt, targetPoi);
         fPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(samplePt, targetPoi, fAlt) : -45;
-      } else {
+      } else if (headingMode === 'keyframes') {
         fPitch = Math.round(startPitch + (endPitch - startPitch) * globalT);
+        fHeading = lerpAngleShortest(startHeading, endHeading, globalT);
+      } else {
+        fPitch = Math.round((pA.pitch !== undefined ? pA.pitch : startPitch) + ((pB.pitch !== undefined ? pB.pitch : endPitch) - (pA.pitch !== undefined ? pA.pitch : startPitch)) * segT);
         fHeading = lerpAngleShortest(pA.heading || 0, pB.heading || 0, segT);
       }
 
@@ -781,16 +786,72 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
 
       currentDist += frameSpacing;
     }
+  } else if (controlWaypoints.length === 1) {
+    const p0 = controlWaypoints[0];
+    framePoints.push({
+      lat: p0.lat,
+      lon: p0.lon,
+      x: p0.x,
+      y: p0.y,
+      alt: p0.alt,
+      pitch: p0.pitch,
+      heading: p0.heading,
+      distMeters: 0,
+      isHyperlapseFrame: true
+    });
   }
+
+  // Generate dense flight waypoints from frame points
+  const denseWaypoints = framePoints.map((fp, fIdx) => {
+    const isFirst = (fIdx === 0);
+    const isLast = (fIdx === framePoints.length - 1);
+    const matchedControl = isFirst ? controlWaypoints[0] : (isLast ? controlWaypoints[controlWaypoints.length - 1] : null);
+    const isMod = matchedControl ? Boolean(matchedControl.isModified) : false;
+
+    return {
+      idx: fIdx,
+      lat: fp.lat,
+      lon: fp.lon,
+      x: Math.round(fp.x * 100) / 100,
+      y: Math.round(fp.y * 100) / 100,
+      alt: Math.round(fp.alt * 10) / 10,
+      pitch: fp.pitch,
+      heading: fp.heading,
+      isModified: isMod,
+      headingMode: 'smoothTransition',
+      turnMode: 'curved',
+      pathMode: 'curved',
+      speed: effectiveSpeed,
+      captureMode: 'continuous',
+      cameraAction: 'takePhoto',
+      skipPhoto: false,
+      isHyperlapse: true,
+      isHyperlapseFrame: true,
+      layerId: layer ? layer.id : null,
+      layerName: layer ? layer.name : null,
+      layerPattern: 'hyperlapse',
+      layerAltitude: (layer && layer.altitude !== undefined) ? layer.altitude : altitude,
+      layerGimbalPitch: fp.pitch,
+      distMeters: fp.distMeters,
+      hyperlapseInterval: interval
+    };
+  });
 
   const totalFrames = framePoints.length;
   const flightDurationSec = (effectiveSpeed > 0 && totalDist > 0) ? (totalDist / effectiveSpeed) : 0;
   const videoDuration24fps = totalFrames / 24.0;
   const videoDuration30fps = totalFrames / 30.0;
 
+  const finalWaypoints = (waypointMode === 'dense' && denseWaypoints.length > 0)
+    ? denseWaypoints
+    : controlWaypoints;
+
   return {
-    waypoints,
-    framePoints,
+    waypoints: finalWaypoints,
+    framePoints: framePoints,
+    controlWaypoints: controlWaypoints,
+    denseWaypoints: denseWaypoints,
+    waypointMode: waypointMode,
     interval,
     frameSpacing,
     totalDist,

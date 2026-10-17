@@ -1063,6 +1063,8 @@ function initUIEventListeners() {
     const hlKeyframesBox = document.getElementById('hyperlapse-heading-keyframes-box');
     const hlUndoBtn = document.getElementById('hyperlapse-undo-btn');
     const hlClearBtn = document.getElementById('hyperlapse-clear-btn');
+    const hlWaypointMode = document.getElementById('hyperlapse-waypoint-mode');
+    const hlModeBadge = document.getElementById('hyperlapse-mode-badge');
 
     const updateHyperlapse = () => {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -1086,13 +1088,19 @@ function initUIEventListeners() {
       }
       if (hlStartHeading) activeLayer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
       if (hlEndHeading) activeLayer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
+      if (hlWaypointMode) {
+        activeLayer.hyperlapseWaypointMode = hlWaypointMode.value || 'dense';
+        if (hlModeBadge) {
+          hlModeBadge.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
+        }
+      }
 
       updateGrid();
       updateMapLegend();
       saveAllSettingsToLocalStorage();
     };
 
-    [hlInterval, hlStartPitch, hlEndPitch, hlHeadingMode, hlStartHeading, hlEndHeading].forEach(el => {
+    [hlInterval, hlStartPitch, hlEndPitch, hlHeadingMode, hlStartHeading, hlEndHeading, hlWaypointMode].forEach(el => {
       if (el) {
         el.addEventListener('input', updateHyperlapse);
         el.addEventListener('change', updateHyperlapse);

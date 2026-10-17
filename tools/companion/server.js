@@ -4539,11 +4539,13 @@ const server = http.createServer(async (req, res) => {
       if (pkgRes.success && pkgRes.zipPath && fs.existsSync(pkgRes.zipPath)) {
         res.writeHead(200, {
           'Content-Type': 'application/zip',
-          'Content-Disposition': `attachment; filename="${path.basename(pkgRes.zipPath)}"`
+          'Content-Disposition': `attachment; filename="${path.basename(pkgRes.zipPath)}"`,
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Expose-Headers': 'Content-Disposition'
         });
         fs.createReadStream(pkgRes.zipPath).pipe(res);
       } else {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.writeHead(404, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
         res.end(JSON.stringify({ success: false, error: pkgRes.error || 'Archive zip not found' }));
       }
       return;
