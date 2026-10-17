@@ -408,7 +408,15 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         }
       });
     } else {
-      if (idx === 0 || wp.isRingStart || isRoadFollowing || reposInfo.isGimbalChanged) {
+      const isVerticalFacade = (gridType === 'vertical-facade') || wp.isVerticalFacade || wp.layerPattern === 'vertical-facade' || (wpLayer && wpLayer.pattern === 'vertical-facade');
+      const isObliqueStopAndShoot = (isStopAndShoot || isPhotoSphere) && !wp.skipPhoto && !isVideo && effectivePitch > -85;
+      const shouldEmitGimbalRotate = idx === 0 ||
+        wp.isRingStart ||
+        isRoadFollowing ||
+        isVerticalFacade ||
+        reposInfo.isGimbalChanged ||
+        isObliqueStopAndShoot;
+      if (shouldEmitGimbalRotate) {
         const currentPitch = effectivePitch;
         waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>

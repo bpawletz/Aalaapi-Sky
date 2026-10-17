@@ -1,3 +1,26 @@
+## [1.167.1] - 2026-10-17
+
+Fixes reversed 3D/2D camera cone orientations in telemetry logs by prioritizing aircraft compass heading over raw gimbal potentiometer angles, eliminates falsy 0° pitch fallbacks to -60°, and prevents gimbal camera sag and pivoting between shots on Vertical Facade and oblique stop-and-shoot missions.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Authoritative Camera Cones & Heading in Telemetry Replay**:
+  - Resolved an issue in Flight Diagnostics 3D Telemetry Replay and 2D Map Replay where camera sight cones and drone markers pointed backwards or sideways (~160° Southeast) away from surveyed structures.
+  - Prioritized aircraft compass heading (`OSD.yaw`, `compass_heading`, `FlightYawDegree`) over raw gimbal potentiometer joint angles (`GIMBAL.yaw`) across all DJI flight logs (Mini 4 Pro, Air 3, Mavic 3, Matrice 350).
+  - Fixed horizontal pitch rendering in the telemetry HUD and 3D frustums, preventing genuine 0.0° horizontal facade shots from being incorrectly replaced with -60.0° nadir tilt.
+- **Gimbal Pitch Stability & Sag Prevention Between Shots**:
+  - Resolved an issue where consumer drones (DJI Mini 4 Pro, Air 3) dropped the gimbal downward (~-70°) during transit between waypoints and pivoted up to 0° only when triggering certain shots.
+  - Automatically emits a sequential `gimbalRotate` action at every stop-and-shoot waypoint during Vertical Facade and oblique missions, ensuring the flight controller firmly locks the camera at the intended pitch angle for all photo captures without intermediate pivoting.
+
+#### Under the Hood & Technical Details
+- **Telemetry Log Decoders (`tools/companion/log_decoder.js`, `src/import/TelemetryParsers.js`)**:
+  - Reordered CSV header detection to prioritize `osd.yaw`, `aircraft_yaw`, `flight_yaw`, and `compass_heading(degrees)` over `gimbal.yaw`.
+  - Replaced falsy `parseFloat(val) || -60.0` fallbacks with `!isNaN(parseFloat(val))` checks, cleanly preserving 0.0° horizontal camera pitches for both CSV rows and WPML Placemark XML parsing.
+  - Enhanced XMP photo metadata extraction in `tools/companion/server.js` to prioritize `FlightYawDegree` over `GimbalYawDegree` for photo heading.
+- **WPML Mission Compiler (`src/export/WpmlCompiler.js`)**:
+  - Updated `shouldEmitGimbalRotate` in `buildWaylinesWpml` to enforce `gimbalRotate` actions on all `vertical-facade` waypoints and oblique `stopAndShoot` photo points (`effectivePitch > -85`), eliminating gimbal drooping during transit.
+
 ## [1.167.0] - 2026-10-17
 
 Introduces Discrete Frame Waypoints for Hyperlapse missions, compiling all intermediate interval capture frames into explicit flight waypoints visible on the DJI RC 2 controller with smooth continuous transitions and guaranteed photo triggering.

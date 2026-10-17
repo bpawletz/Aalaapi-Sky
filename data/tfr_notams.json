@@ -1,5 +1,16 @@
 [
   {
+    "notam_id": "6/0050",
+    "facility": "ZTL",
+    "state": "NC",
+    "type": "VIP",
+    "description": "ASHEVILLE, NC, Monday, October 19, 2026 Local",
+    "mod_date": "10/17/2026 23:44:00",
+    "mod_abs_time": "202610172344",
+    "is_new": "Y",
+    "gid": "6/0050"
+  },
+  {
     "notam_id": "6/0048",
     "facility": "ZTL",
     "state": "NC",
@@ -106,7 +117,7 @@
     "description": "55NM SE SALEM, OR, Friday, October 16, 2026 through Saturday, October 31, 2026 UTC",
     "mod_date": "10/16/2026 23:47:00",
     "mod_abs_time": "202610162347",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/0009"
   },
   {

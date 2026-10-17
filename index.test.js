@@ -32252,20 +32252,7 @@ describe('v1.166.2 Photo Ingestion Modal Completion & Download Feedback Suite', 
 
 describe('v1.167.0 Hyperlapse Discrete Frame Waypoints for RC 2', () => {
   test('Version Consistency across required locations for v1.167.0', () => {
-    const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.167.0', 'package.json version must be 1.167.0');
-
-    const changelog = fs.readFileSync(path.resolve(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.167.0] - 2026-10-17'), 'CHANGELOG.md must contain 1.167.0 header');
-
-    const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('Version 1.167.0'), 'index.html must contain Version 1.167.0');
-    assert.ok(indexHtml.includes('Changelog (v1.167.0):'), 'index.html must contain Changelog (v1.167.0):');
-
-    const templateHtml = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('Version 1.167.0'), 'index_template.html must contain Version 1.167.0');
-    assert.ok(templateHtml.includes('v1.167.0</span></h1>'), 'index_template.html must contain header badge v1.167.0');
-    assert.ok(templateHtml.includes('Changelog (v1.167.0):'), 'index_template.html must contain Changelog (v1.167.0):');
+    assertVersionConsistency('1.167.0');
   });
 
   test('generateHyperlapseWaypoints defaults to dense mode and compiles all frame points into discrete flight waypoints', () => {
@@ -32400,6 +32387,185 @@ describe('v1.167.0 Hyperlapse Discrete Frame Waypoints for RC 2', () => {
     assert.strictEqual(placemarkMatches.length, 2, 'Spline mode must export exactly 2 Placemark tags');
     assert.ok(wpml.includes('<wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>'),
       'Spline mode must emit multipleTiming action group');
+  });
+});
+
+describe('v1.167.1 Authoritative Camera Cones & Gimbal Pitch Stability Suite', () => {
+  test('Version consistency: v1.167.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.167.1');
+  });
+
+  test('Companion log_decoder prioritizes OSD.yaw over GIMBAL.yaw and preserves 0.0 pitch without -60 fallback', () => {
+    const { parseCsvTelemetry } = require('./tools/companion/log_decoder.js');
+    const dummyCsv = [
+      'CUSTOM.dateTime,OSD.flyTime,OSD.latitude,OSD.longitude,OSD.height,OSD.yaw,GIMBAL.pitch,GIMBAL.yaw,CAMERA.isPhoto',
+      '2026-10-17T17:39:51Z,38.3,40.012837,-83.177068,30.0,0.0,0.0,160.1,true',
+      '2026-10-17T17:39:52Z,39.3,40.012837,-83.177066,30.0,0.1,0.0,159.7,true',
+      '2026-10-17T17:39:59Z,46.3,40.012837,-83.176986,30.1,-0.3,-70.0,157.1,true'
+    ].join('\n');
+
+    const telemetry = parseCsvTelemetry(dummyCsv, 'FlightRecord_test.txt');
+    assert.ok(telemetry && Array.isArray(telemetry.points), 'Must parse telemetry points');
+    const photos = telemetry.points.filter(p => p.isPhoto);
+    assert.strictEqual(photos.length, 3, 'Must detect 3 photo triggers');
+
+    // WP 0: OSD.yaw was 0.0, GIMBAL.yaw was 160.1 -> Must prioritize OSD.yaw (0)
+    assert.strictEqual(photos[0].yaw, 0, 'Photo 0 yaw must match OSD.yaw (0° North), NOT raw GIMBAL.yaw (160.1°)');
+    assert.strictEqual(photos[0].pitch, 0, 'Photo 0 pitch must be preserved as 0° horizontal, NOT falsy fallback -60°');
+
+    // WP 1: OSD.yaw was 0.1, GIMBAL.pitch was 0.0
+    assert.strictEqual(photos[1].yaw, 0.1, 'Photo 1 yaw must match OSD.yaw (0.1°)');
+    assert.strictEqual(photos[1].pitch, 0, 'Photo 1 pitch must be 0°');
+
+    // WP 2: GIMBAL.pitch was -70.0
+    assert.strictEqual(photos[2].pitch, -70, 'Photo 2 pitch must be -70°');
+  });
+
+  test('Client-side TelemetryParsers prioritizes OSD.yaw over GIMBAL.yaw and preserves 0.0 pitch', () => {
+    const fs = require('fs');
+    const parsersContent = fs.readFileSync('src/import/TelemetryParsers.js', 'utf8');
+    const vm = require('vm');
+    const sandbox = { console, Math, Date, parseFloat, parseInt, isNaN, Array, Object };
+    vm.createContext(sandbox);
+    vm.runInContext(parsersContent + '\nthis.parseCsvTelemetry = parseCsvTelemetry;', sandbox);
+
+    const dummyCsv = [
+      'CUSTOM.dateTime,OSD.flyTime,OSD.latitude,OSD.longitude,OSD.height,OSD.yaw,GIMBAL.pitch,GIMBAL.yaw,CAMERA.isPhoto',
+      '2026-10-17T17:39:51Z,38.3,40.012837,-83.177068,30.0,0.0,0.0,160.1,true'
+    ].join('\n');
+
+    const result = sandbox.parseCsvTelemetry(dummyCsv, 'client_test.txt');
+    assert.ok(result && Array.isArray(result.points), 'Must parse client-side points');
+    const pt = result.points.find(p => p.isPhoto);
+    assert.ok(pt, 'Photo point must be present');
+    assert.strictEqual(pt.yaw, 0, 'Client parser must prioritize OSD.yaw (0) over GIMBAL.yaw (160.1)');
+    assert.strictEqual(pt.pitch, 0, 'Client parser must preserve 0° horizontal pitch');
+  });
+
+  test('buildWaylinesWpml emits gimbalRotate to 0° across all photo waypoints in vertical-facade missions', () => {
+    const fs = require('fs');
+    const wpmlContent = fs.readFileSync('src/export/WpmlCompiler.js', 'utf8');
+    const vm = require('vm');
+    const sandbox = {
+      console,
+      Math,
+      Date,
+      parseFloat,
+      parseInt,
+      isNaN,
+      Array,
+      Object,
+      document: {
+        getElementById: (id) => {
+          if (id === 'gimbal-pitch') return { value: '0' };
+          if (id === 'rth-altitude') return { value: '50' };
+          return null;
+        }
+      },
+      flightLayers: [],
+      ConsumerMissionTemplate: {
+        buildFolderHeader: () => '<Folder>\n',
+        renderFolderHeader: () => '<Folder>\n',
+        resolveTurnMode: () => 'toPointAndStopWithContinuityCurvature',
+        resolveUseStraightLine: () => 0
+      },
+      EnterpriseMissionTemplate: {
+        buildFolderHeader: () => '<Folder>\n',
+        renderFolderHeader: () => '<Folder>\n',
+        resolveTurnMode: () => 'toPointAndStopWithContinuityCurvature',
+        resolveUseStraightLine: () => 0
+      },
+      getDroneProfile: () => ({ isConsumer: true, droneEnumValue: 68 }),
+      checkNeedsReposition: () => ({ needsReposition: false, isGimbalChanged: false, isHeadingChanged: false, headingDiff: 0 }),
+      parseGimbalPitch: (val, fallback) => (val !== undefined && val !== null && !isNaN(Number(val)) ? Number(val) : fallback)
+    };
+    vm.createContext(sandbox);
+    vm.runInContext(wpmlContent + '\nthis.buildWaylinesWpml = buildWaylinesWpml;', sandbox);
+
+    // 5-waypoint vertical facade mission
+    const wps = [
+      { lat: 41.32139, lon: -88.99508, alt: 30, pitch: 0, heading: 0, isRingStart: true, isVerticalFacade: true, gridType: 'vertical-facade' },
+      { lat: 41.32139, lon: -88.99500, alt: 30, pitch: 0, heading: 0, isRingStart: false, isVerticalFacade: true, gridType: 'vertical-facade' },
+      { lat: 41.32139, lon: -88.99491, alt: 30, pitch: 0, heading: 0, isRingStart: false, isVerticalFacade: true, gridType: 'vertical-facade' },
+      { lat: 41.32139, lon: -88.99491, alt: 25, pitch: 0, heading: 0, isRingStart: true, isVerticalFacade: true, gridType: 'vertical-facade' },
+      { lat: 41.32139, lon: -88.99500, alt: 25, pitch: 0, heading: 0, isRingStart: false, isVerticalFacade: true, gridType: 'vertical-facade' }
+    ];
+
+    const xml = sandbox.buildWaylinesWpml(wps, 30, 3.8, 'smoothTransition', 'goHome', 0, 'stopAndShoot', 'normal');
+    assert.ok(xml, 'WPML XML must be generated');
+
+    const placemarks = xml.split('<Placemark>').slice(1);
+    assert.strictEqual(placemarks.length, 5, 'Must have 5 placemarks');
+
+    // Every single placemark in vertical-facade must have a gimbalRotate action to 0°
+    placemarks.forEach((pm, idx) => {
+      assert.ok(pm.includes('<wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>'),
+        `Placemark ${idx} must contain gimbalRotate action`);
+      assert.ok(pm.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'),
+        `Placemark ${idx} gimbalRotate must command pitch angle 0`);
+      assert.ok(pm.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'),
+        `Placemark ${idx} must contain takePhoto action`);
+    });
+  });
+
+  test('buildWaylinesWpml locks oblique pitch at every stopAndShoot waypoint to prevent camera drooping', () => {
+    const fs = require('fs');
+    const wpmlContent = fs.readFileSync('src/export/WpmlCompiler.js', 'utf8');
+    const vm = require('vm');
+    const sandbox = {
+      console,
+      Math,
+      Date,
+      parseFloat,
+      parseInt,
+      isNaN,
+      Array,
+      Object,
+      document: {
+        getElementById: (id) => {
+          if (id === 'gimbal-pitch') return { value: '-45' };
+          if (id === 'rth-altitude') return { value: '50' };
+          return null;
+        }
+      },
+      flightLayers: [],
+      ConsumerMissionTemplate: {
+        buildFolderHeader: () => '<Folder>\n',
+        renderFolderHeader: () => '<Folder>\n',
+        resolveTurnMode: () => 'toPointAndStopWithContinuityCurvature',
+        resolveUseStraightLine: () => 0
+      },
+      EnterpriseMissionTemplate: {
+        buildFolderHeader: () => '<Folder>\n',
+        renderFolderHeader: () => '<Folder>\n',
+        resolveTurnMode: () => 'toPointAndStopWithContinuityCurvature',
+        resolveUseStraightLine: () => 0
+      },
+      getDroneProfile: () => ({ isConsumer: true, droneEnumValue: 68 }),
+      checkNeedsReposition: () => ({ needsReposition: false, isGimbalChanged: false, isHeadingChanged: false, headingDiff: 0 }),
+      parseGimbalPitch: (val, fallback) => (val !== undefined && val !== null && !isNaN(Number(val)) ? Number(val) : fallback)
+    };
+    vm.createContext(sandbox);
+    vm.runInContext(wpmlContent + '\nthis.buildWaylinesWpml = buildWaylinesWpml;', sandbox);
+
+    // 3 waypoints at constant -45° oblique pitch (e.g. 3D grid line)
+    const wps = [
+      { lat: 41.321, lon: -88.995, alt: 35, pitch: -45, heading: 90, isRingStart: true },
+      { lat: 41.321, lon: -88.994, alt: 35, pitch: -45, heading: 90, isRingStart: false },
+      { lat: 41.321, lon: -88.993, alt: 35, pitch: -45, heading: 90, isRingStart: false }
+    ];
+
+    const xml = sandbox.buildWaylinesWpml(wps, 35, 4.0, 'followWayline', 'goHome', -45, 'stopAndShoot', 'normal');
+    const placemarks = xml.split('<Placemark>').slice(1);
+    assert.strictEqual(placemarks.length, 3, 'Must have 3 placemarks');
+
+    // Intermediate waypoints (Index 1 & 2) must also emit gimbalRotate to -45 to prevent drooping
+    placemarks.forEach((pm, idx) => {
+      assert.ok(pm.includes('<wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>'),
+        `Placemark ${idx} must contain gimbalRotate action`);
+      assert.ok(pm.includes('<wpml:gimbalPitchRotateAngle>-45</wpml:gimbalPitchRotateAngle>'),
+        `Placemark ${idx} gimbalRotate must command pitch angle -45`);
+    });
   });
 });
 
