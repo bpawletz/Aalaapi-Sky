@@ -58,8 +58,9 @@ async function centerMapOnPoint(page, lat = DEFAULT_LAT, lon = DEFAULT_LON) {
  * Setup page state with default app location and accepted disclaimer
  */
 async function setupPage(page) {
-  page.setDefaultTimeout(5000);
-  await page.goto(INDEX_HTML_PATH, { waitUntil: 'load' });
+  page.setDefaultTimeout(15000);
+  await page.goto(INDEX_HTML_PATH, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => typeof window.L !== 'undefined', { timeout: 15000 }).catch(() => {});
   await page.evaluate(({ lat, lon }) => {
     localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
     const d = document.getElementById('disclaimer-modal');

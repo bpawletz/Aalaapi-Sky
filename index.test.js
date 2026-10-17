@@ -31079,11 +31079,12 @@ describe('v1.161.1 Condensed Ambient Buffer HUD Badge & v1.161.0 Top Ribbon Cust
     assertVersionConsistency('1.161.1');
   });
 
-  test('Topbar DOM architecture: #header-system-status-group, compact #locate-me-btn, and #more-menu-customize-ribbon-btn exist in templates', () => {
+  test('Topbar DOM architecture: #header-bridge-container, compact #locate-me-btn, and #more-menu-customize-ribbon-btn exist in templates', () => {
     const template = fs.readFileSync('index_template.html', 'utf8');
-    assert.ok(template.includes('id="header-system-status-group"'), 'Template must include #header-system-status-group');
+    assert.ok(template.includes('id="header-bridge-container"'), 'Template must include #header-bridge-container');
     assert.ok(template.includes('id="header-bridge-pill"'), 'Template must include #header-bridge-pill');
-    assert.ok(template.includes('id="header-ambient-buffer-pill"'), 'Template must include #header-ambient-buffer-pill');
+    assert.ok(template.includes('id="bridge-ambient-buffer-section"'), 'Template must include #bridge-ambient-buffer-section in bridge popover');
+    assert.ok(!template.includes('<button id="header-ambient-buffer-pill"'), 'Template must retire standalone #header-ambient-buffer-pill from topbar');
     assert.ok(template.includes('id="locate-me-btn"'), 'Template must include #locate-me-btn');
     assert.ok(template.includes('id="locate-me-label"'), 'Template must include #locate-me-label');
     assert.ok(template.includes('id="more-menu-customize-ribbon-btn"'), 'Template must include #more-menu-customize-ribbon-btn');
@@ -31379,6 +31380,64 @@ describe('v1.161.1 Condensed Ambient Buffer HUD Badge Suite', () => {
         const badge = dom.window.document.getElementById('header-buffer-traffic-badge');
         assert.strictEqual(label.textContent, 'Buffer: 1.25 MB');
         assert.strictEqual(badge.textContent, '3 ADS-B');
+      }
+    } finally {
+      global.document = prevDoc;
+      global.window = prevWin;
+    }
+  });
+});
+
+describe('v1.162.0 Streamlined Top Navigation Ribbon & Consolidated Bridge Buffer Suite', () => {
+  test('ambient buffer monitor controls and statistics reside inside #bridge-status-popover', () => {
+    assertVersionConsistency('1.162.0');
+    const template = fs.readFileSync('index_template.html', 'utf8');
+    assert.ok(template.includes('id="bridge-status-popover"'), 'Bridge status popover must exist');
+    assert.ok(template.includes('id="bridge-ambient-buffer-section"'), 'Ambient buffer section must exist inside bridge status popover');
+    assert.ok(template.includes('id="buffer-stat-ram"'), 'RAM stat element must exist inside bridge status popover');
+    assert.ok(template.includes('id="buffer-progress-bar"'), 'Progress bar element must exist');
+    assert.ok(template.includes('id="buffer-flush-btn"'), 'Buffer flush button must exist inside bridge status popover');
+    assert.ok(template.includes('id="buffer-snapshot-btn"'), 'Buffer snapshot button must exist inside bridge status popover');
+  });
+
+  test('updateBufferHud updates drawer buffer metrics and triggers memory pressure on bridge pill', () => {
+    const dom = new JSDOM(`
+      <div id="header-bridge-container">
+        <button id="header-bridge-pill" class="header-bridge-pill is-online">
+          <span id="header-bridge-summary">Bridge: Online</span>
+        </button>
+      </div>
+      <div id="bridge-status-popover">
+        <span id="buffer-stat-ram"></span>
+        <div id="buffer-progress-bar" style="width: 0%;"></div>
+        <span id="buffer-stat-window"></span>
+        <span id="buffer-stat-rid"></span>
+        <span id="buffer-stat-adsb"></span>
+        <span id="buffer-stat-radar"></span>
+      </div>
+    `);
+    const prevDoc = global.document;
+    const prevWin = global.window;
+    global.document = dom.window.document;
+    global.window = dom.window;
+
+    try {
+      if (typeof ApiClient !== 'undefined' && ApiClient.updateBufferHud) {
+        ApiClient.updateBufferHud({
+          mbUsed: 8.5,
+          activeWindowMinutes: 45,
+          counts: { remoteId: 3, adsb: 7, radar: 2 },
+          percentage: 85,
+          isMemoryPressure: true
+        });
+
+        const ram = dom.window.document.getElementById('buffer-stat-ram');
+        const bar = dom.window.document.getElementById('buffer-progress-bar');
+        const bridgePill = dom.window.document.getElementById('header-bridge-pill');
+        assert.ok(ram.textContent.includes('8.50 MB'), 'RAM stat should format mbUsed');
+        assert.ok(ram.textContent.includes('85%'), 'RAM stat should show percentage');
+        assert.strictEqual(bar.style.width, '85%', 'Bar width should match percentage');
+        assert.ok(bridgePill.classList.contains('is-pressure'), 'Bridge pill should gain is-pressure class on memory pressure >= 80%');
       }
     } finally {
       global.document = prevDoc;
