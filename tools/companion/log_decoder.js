@@ -712,12 +712,12 @@ function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
       if (isNaN(lat) || isNaN(lon)) continue;
 
       const spdMatch = pm.match(/<(?:wpml:)?waypointSpeed>([\s\S]*?)<\/(?:wpml:)?waypointSpeed>/i);
-      const speed = spdMatch ? (parseFloat(spdMatch[1]) || 4.0) : 4.0;
+      const speed = spdMatch && !isNaN(parseFloat(spdMatch[1])) ? parseFloat(spdMatch[1]) : 4.0;
       const pitchMatch = pm.match(/<(?:wpml:)?gimbalPitchRotateAngle>([\s\S]*?)<\/(?:wpml:)?gimbalPitchRotateAngle>/i) ||
                          pm.match(/<(?:wpml:)?waypointGimbalPitchAngle>([\s\S]*?)<\/(?:wpml:)?waypointGimbalPitchAngle>/i);
-      const pitch = pitchMatch ? (parseFloat(pitchMatch[1]) || -60.0) : -60.0;
+      const pitch = pitchMatch && !isNaN(parseFloat(pitchMatch[1])) ? parseFloat(pitchMatch[1]) : -60.0;
       const yawMatch = pm.match(/<(?:wpml:)?waypointHeadingAngle>([\s\S]*?)<\/(?:wpml:)?waypointHeadingAngle>/i);
-      const yaw = yawMatch ? (parseFloat(yawMatch[1]) || 0) : 0;
+      const yaw = yawMatch && !isNaN(parseFloat(yawMatch[1])) ? parseFloat(yawMatch[1]) : 0;
 
       if (alt > maxAlt) maxAlt = alt;
       const hasPhoto = pm.includes('takePhoto') || pm.includes('ShootPhoto');
