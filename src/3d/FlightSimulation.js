@@ -664,142 +664,75 @@ function recreate3DWaypointsAndPaths() {
     }
   }
 
-  // Plot 3D Ground Observer Acoustic Rings & Sound Cones (v1.164.0)
+  // Plot 3D Ground Observer Acoustic Footprint Contours (v1.165.1 - continuous dashed contours, no paint fill)
   try {
-    const summary = (typeof getMissionAcousticSummary === 'function')
-      ? getMissionAcousticSummary(waypoints)
-      : { profile: { refDba1m: 73.0 }, missionAltM: 50, missionSpeedMs: 4, ambientDba: 45, audibilityRadiusM: 35, noticeableRadius55M: 0, intrusiveRadius65M: 0 };
+    const origin = (typeof getMissionOrigin === 'function') ? getMissionOrigin() : { lat: 41.3215, lon: -88.9950 };
+    const acousticData = (typeof computeMissionAcousticFootprintContours === 'function')
+      ? computeMissionAcousticFootprintContours(waypoints, origin.lat, origin.lon)
+      : { tiers: [] };
 
-    const maxRings3D = 14;
-    const step3D = Math.max(1, Math.ceil(waypoints.length / maxRings3D));
+    if (acousticData && Array.isArray(acousticData.tiers)) {
+      acousticData.tiers.forEach(tier => {
+        const strokeColor = tier.colorHex !== undefined ? tier.colorHex : 0x10b981;
+        const dashSize = tier.dashSize3D || 8;
+        const gapSize = tier.gapSize3D || 5;
 
-    for (let i = 0; i < waypoints.length; i += step3D) {
-      const wp = waypoints[i];
-      if (!wp) continue;
-      const wx = wp.x || 0;
-      const wy = Math.max(2, wp.alt || summary.missionAltM || 50);
-      const wz = -(wp.y || 0);
-      const wSpd = (typeof wp.speed === 'number' && wp.speed > 0) ? wp.speed : summary.missionSpeedMs;
+        tier.loops.forEach(loop => {
+          if (!loop || loop.length < 3) return;
+          // In Three.js Preview: local meters x = wp.x, z = -wp.y, ground elevation y = 0.12
+          const points3D = loop.map(pt => new THREE.Vector3(pt.x, 0.12, -pt.y));
+          // Ensure closed loop
+          if (points3D.length > 0) {
+            const first = points3D[0];
+            const last = points3D[points3D.length - 1];
+            if (first.distanceTo(last) > 0.1) {
+              points3D.push(first.clone());
+            }
+          }
 
-      const rAud = (typeof calculateGroundRadiusForTargetDba === 'function')
-        ? calculateGroundRadiusForTargetDba(summary.profile.refDba1m, wy, summary.ambientDba, wSpd)
-        : summary.audibilityRadiusM;
-      const rNotice = (typeof calculateGroundRadiusForTargetDba === 'function')
-        ? calculateGroundRadiusForTargetDba(summary.profile.refDba1m, wy, 55, wSpd)
-        : summary.noticeableRadius55M;
-      const rIntrusive = (typeof calculateGroundRadiusForTargetDba === 'function')
-        ? calculateGroundRadiusForTargetDba(summary.profile.refDba1m, wy, 65, wSpd)
-        : summary.intrusiveRadius65M;
-
-      const effectiveOuterR = Math.min(220, Math.max(6, rAud > 1 ? rAud : 10));
-
-      // Outer Audibility Ground Ring (Emerald / Cyan)
-      const audRingGeom = new THREE.RingGeometry(Math.max(1, effectiveOuterR - 1.2), effectiveOuterR, 32);
-      const audRingMat = new THREE.MeshBasicMaterial({
-        color: rAud > 1 ? 0x10b981 : 0x06b6d4,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.55,
-        depthWrite: false
+          const lineGeo = new THREE.BufferGeometry().setFromPoints(points3D);
+          const lineMat = new THREE.LineDashedMaterial({
+            color: strokeColor,
+            dashSize: dashSize,
+            gapSize: gapSize,
+            linewidth: 2,
+            transparent: true,
+            opacity: 0.85
+          });
+          const lineMesh = new THREE.Line(lineGeo, lineMat);
+          if (typeof lineMesh.computeLineDistances === 'function') {
+            lineMesh.computeLineDistances();
+          }
+          acoustic3DGroup.add(lineMesh);
+        });
       });
-      const audRingMesh = new THREE.Mesh(audRingGeom, audRingMat);
-      audRingMesh.rotation.x = Math.PI / 2;
-      audRingMesh.position.set(wx, 0.08, wz);
-      acoustic3DGroup.add(audRingMesh);
-
-      // Soft ground fill disc
-      const fillGeom = new THREE.CircleGeometry(effectiveOuterR, 32);
-      const fillMat = new THREE.MeshBasicMaterial({
-        color: rAud > 1 ? 0x10b981 : 0x06b6d4,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.08,
-        depthWrite: false
-      });
-      const fillMesh = new THREE.Mesh(fillGeom, fillMat);
-      fillMesh.rotation.x = Math.PI / 2;
-      fillMesh.position.set(wx, 0.06, wz);
-      acoustic3DGroup.add(fillMesh);
-
-      // 55 dBA Noticeable Ground Ring (Amber)
-      if (rNotice > 1.5) {
-        const noticeR = Math.min(180, rNotice);
-        const noticeGeom = new THREE.RingGeometry(Math.max(0.8, noticeR - 1.0), noticeR, 32);
-        const noticeMat = new THREE.MeshBasicMaterial({
-          color: 0xf59e0b,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.65,
-          depthWrite: false
-        });
-        const noticeMesh = new THREE.Mesh(noticeGeom, noticeMat);
-        noticeMesh.rotation.x = Math.PI / 2;
-        noticeMesh.position.set(wx, 0.10, wz);
-        acoustic3DGroup.add(noticeMesh);
-      }
-
-      // 65 dBA Intrusive Core Ring (Red)
-      if (rIntrusive > 1.0) {
-        const intrR = Math.min(120, rIntrusive);
-        const intrGeom = new THREE.RingGeometry(Math.max(0.5, intrR - 1.0), intrR, 32);
-        const intrMat = new THREE.MeshBasicMaterial({
-          color: 0xef4444,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.75,
-          depthWrite: false
-        });
-        const intrMesh = new THREE.Mesh(intrGeom, intrMat);
-        intrMesh.rotation.x = Math.PI / 2;
-        intrMesh.position.set(wx, 0.12, wz);
-        acoustic3DGroup.add(intrMesh);
-      }
-
-      // Vertical Acoustic Propagation Cone from Drone to Ground (open-ended cylinder wireframe)
-      if (i === 0 || i === waypoints.length - 1 || i % (step3D * 2) === 0) {
-        const coneBottomR = Math.min(35, effectiveOuterR * 0.45);
-        const waveConeGeom = new THREE.CylinderGeometry(0.4, coneBottomR, wy, 16, 1, true);
-        const waveConeMat = new THREE.MeshBasicMaterial({
-          color: rNotice > 1.5 ? 0xf59e0b : 0x10b981,
-          wireframe: true,
-          transparent: true,
-          opacity: 0.16,
-          depthWrite: false
-        });
-        const waveConeMesh = new THREE.Mesh(waveConeGeom, waveConeMat);
-        waveConeMesh.position.set(wx, wy * 0.5, wz);
-        acoustic3DGroup.add(waveConeMesh);
-      }
     }
 
-    // Dynamic FPV Live Ground Acoustic Ripple Ring (follows drone during FPV Walkthrough)
-    const fpvOuterGeom = new THREE.RingGeometry(0.92, 1.0, 36);
-    const fpvOuterMat = new THREE.MeshBasicMaterial({
+    // Dynamic FPV Live Ground Acoustic Ripple Ring (follows drone during FPV Walkthrough - dashed ring, no fill)
+    const ringSegments = 64;
+    const liveRingPoints = [];
+    for (let s = 0; s <= ringSegments; s++) {
+      const theta = (s / ringSegments) * Math.PI * 2;
+      liveRingPoints.push(new THREE.Vector3(Math.cos(theta), 0.14, Math.sin(theta)));
+    }
+    const fpvRingGeo = new THREE.BufferGeometry().setFromPoints(liveRingPoints);
+    const fpvRingMat = new THREE.LineDashedMaterial({
       color: 0x10b981,
-      side: THREE.DoubleSide,
+      dashSize: 0.25,
+      gapSize: 0.18,
+      linewidth: 2,
       transparent: true,
-      opacity: 0.75,
-      depthWrite: false
+      opacity: 0.9
     });
-    const fpvOuterMesh = new THREE.Mesh(fpvOuterGeom, fpvOuterMat);
-    fpvOuterMesh.rotation.x = Math.PI / 2;
-    fpvAcousticRingGroup.add(fpvOuterMesh);
+    const fpvRingLine = new THREE.Line(fpvRingGeo, fpvRingMat);
+    if (typeof fpvRingLine.computeLineDistances === 'function') {
+      fpvRingLine.computeLineDistances();
+    }
+    fpvAcousticRingGroup.add(fpvRingLine);
 
-    const fpvInnerGeom = new THREE.CircleGeometry(1.0, 36);
-    const fpvInnerMat = new THREE.MeshBasicMaterial({
-      color: 0x06b6d4,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.14,
-      depthWrite: false
-    });
-    const fpvInnerMesh = new THREE.Mesh(fpvInnerGeom, fpvInnerMat);
-    fpvInnerMesh.rotation.x = Math.PI / 2;
-    fpvAcousticRingGroup.add(fpvInnerMesh);
-
-    fpvAcousticRingGroup.userData = { outerMesh: fpvOuterMesh, innerMesh: fpvInnerMesh };
+    fpvAcousticRingGroup.userData = { outerMesh: fpvRingLine, isLine: true };
   } catch (err) {
-    console.warn('Could not build 3D acoustic rings:', err);
+    console.warn('Could not build 3D acoustic footprint contours:', err);
   }
 
   threeScene.add(waypointsGroup);

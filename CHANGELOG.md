@@ -1,3 +1,71 @@
+## [1.166.0] - 2026-10-17
+
+Coordinates solar shadow casting, photogrammetry lighting quality, and camera glare avoidance with local weather reports (NWS/METAR cloud cover), introducing dissipated ambient zones under overcast skies, pilot Sky Condition overrides, and a free toggleable Satellite Cloud Cover overlay.
+
+### 🚀 Added | Changed
+
+#### Pilot & Operational Features
+- **Weather-Coordinated Shadow Dissipation**:
+  - Automatically modulates 2D and 3D shadow casting based on live METAR / NWS cloud observations (`CLR`, `FEW`, `SCT`, `BKN`, `OVC`, `VV`).
+  - Under overcast skies (`OVC` / 8/8 octas), harsh shadow lines dissipate into soft, low-opacity "Diffused Ambient Zones" (`fillOpacity: 0.08`, dashed outline `8, 8`, with tooltip highlighting shadow dissipation and ideal softbox illumination).
+- **Overcast Photogrammetry Lighting Quality Upgrades**:
+  - Upgraded solar advisor lighting quality for 3D Gaussian Splatting and photogrammetry during overcast daylight to `☁️ Diffused Overcast / Shadow-Free Capture` (`#38bdf8`), noting the elimination of moving shadow edges across complex 3D structures.
+- **Overcast Lens Glare Suppression**:
+  - Automatically suppresses direct solar flare and ground specular bounce warnings when overcast cloud decks obscure the solar disc.
+- **Pilot Sky Condition Override (`#sun-sky-condition-select`)**:
+  - Added a dedicated dropdown in Section 3 Card 4 (`#sun-lighting-subcard`) allowing pilots to force `Auto (Live METAR)`, `Clear (CLR)`, `Few (FEW)`, `Scattered (SCT)`, `Broken (BKN)`, or `Overcast (OVC)`.
+  - Added dynamic status readout (`#sun-advisor-sky-cover`) displaying active source and sky condition code (e.g. `Auto (OVC)` or `Manual (CLR)`).
+- **Satellite Cloud Cover Map Overlay (NOAA GOES / IEM IR)**:
+  - Added a toggleable `☁️ Satellite Cloud Cover (IR)` tile layer across all zoom levels (0 to 22) with zero external API keys and bridge proxy caching support.
+
+#### Under the Hood & Technical Details
+- **METAR & NWS Sky Cover Parsing (`src/patterns/AutoPlan.js`)**: Updated `parseMetar` to scan for cloud tokens (`FEW`, `SCT`, `BKN`, `OVC`, `VV`, `CLR`, `SKC`) and ranked dominant coverage octas. Updated `fetchAndProcessWeather` to parse NWS `obsData.properties.cloudLayers` and attach `skyCover` to station data.
+- **Astronomical Cloud Attenuation (`src/patterns/AutoPlan.js`)**: Added `SolarEphemeris.getCloudAttenuation` and `SolarEphemeris.getEffectiveSkyCover` calculating direct sunlight factor, diffuse ambient factor, and shadow sharpness.
+- **2D Shadow Rendering Modulation (`src/geo/MathUtils.js`)**: Modulated `renderSolarOverlay2D` shadow polygon fill opacity, dash array, stroke opacity, and tooltips based on `sky.shadowSharpness` and `sky.isOvercast`.
+- **3D Sunlight Attenuation (`src/3d/SceneManager.js`)**: Modulated `threeSunLight.intensity` and sky dome color tint based on `sky.directLightFactor`.
+- **Map Overlays & Bridge Proxy (`src/map/MapEngine.js`, `src/bridge/ApiClient.js`)**: Initialized `cloudCoverLayer`, registered in Leaflet layer control, added `mesonet.agron.iastate.edu` to `shouldProxyTileUrl()`, and added `sun-sky-condition-select` to `CONTROLS_LIST` and `FACTORY_DEFAULTS`.
+
+## [1.165.2] - 2026-10-17
+
+Introduces configurable Acoustic Contour Detail Mode, multi-ring sound falloff gradients focusing on Ambient and Noticeable levels by default, and streamlined hover tooltips.
+
+### 🚀 Added | Changed
+
+#### Pilot & Operational Features
+- **Configurable Acoustic Contour Detail Mode (`#acoustic-contour-display-mode`)**:
+  - Added a global setting in Section 3 allowing pilots to customize acoustic contour density:
+    - `Ambient & Noticeable Levels (Default)`: Displays the core Ambient Audibility threshold together with Noticeable (`≥ 55 dBA`) or relative half-power (`-3 dB`) dropoff ring so pilots always see multi-ring acoustic gradients.
+    - `Multi-Tier Gradient`: Shows Ambient, `-3 dB` half-power, Noticeable, and Intrusive boundaries.
+    - `Ambient Audibility Only`: Minimal single-boundary view for pilots focused strictly on ambient masking.
+    - `All Dynamic Tiers & Lobe Footprints`: Comprehensive visualization displaying Nadir Core, `-3 dB`, `-6 dB`, Ambient, Noticeable, and Intrusive contours.
+- **Streamlined Acoustic Tooltips**:
+  - Removed redundant visual style descriptions from map hover tooltips, presenting a clean, compact view with target dBA and delta over ambient background.
+
+#### Under the Hood & Technical Details
+- **Multi-Ring Tier Configuration (`src/geo/MathUtils.js`)**: Updated `computeMissionAcousticFootprintContours` to evaluate the active `acoustic-contour-display-mode` and dynamically generate multi-ring dashed contours even in quiet/stealth flight regimes.
+- **Settings & Defaults (`src/map/MapEngine.js`, `src/ui/EventBindings.js`)**: Registered `acoustic-contour-display-mode` in `CONTROLS_LIST` and `FACTORY_DEFAULTS`, with localStorage persistence.
+
+## [1.165.1] - 2026-10-17
+
+Fixes 2D and 3D ground acoustic footprint alignment, replaces filled circular noise discs with continuous unfilled colored dashed footprint contours signifying dB levels, and aligns Flight Diagnostics 3D simulation with the active workspace mission.
+
+### 🐛 Fixed | Added
+
+#### Pilot & Operational Features
+- **Continuous Dashed Ground Acoustic Footprint Contours**:
+  - Replaced discrete filled circles and cones with continuous, unfilled, colored dashed ground footprint contours signifying sound levels across 2D Leaflet, 3D Flight Path Preview, and 3D Flight Diagnostics replay.
+  - Supports 4 clear sound level tiers: Nadir `-3 dB` Footprint (`#06b6d4`, dashed `6, 6`), Audible Above Ambient (`#10b981`, dashed `8, 6`), Noticeable `≥ 55 dBA` (`#f59e0b`, dashed `10, 5`), and Intrusive Core `≥ 65 dBA` (`#ef4444`, dashed `10, 4`).
+- **Synchronized 3D Flight Diagnostics Acoustic Replay & HUD**:
+  - Fixed Flight Diagnostics simulation (`getActiveMissionWaypoints`) to correctly pull active workspace missions (e.g. Spiral, Lawn, Orbit) instead of defaulting to a hardcoded 6-point lawn grid fallback.
+  - Added dedicated **Noise Footprints** toggle button (`#diag-btn-toggle-noise`) and indicator (`#diag-indicator-noise`) in the Diagnostics HUD.
+  - Added real-time **GROUND NOISE** dBA readout (`#diag-hud-dba`) in the Diagnostics Cockpit HUD bar with dynamic color alerts.
+  - Added live moving dashed ground ripple ring beneath the drone avatar during replay.
+
+#### Under the Hood & Technical Details
+- **Marching Squares Footprint Contour Engine (`src/geo/MathUtils.js`)**: Implemented `computeMissionAcousticFootprintContours` evaluating ground SPL fields over regular 2D grids with linear edge interpolation and Chaikin smoothing to generate continuous closed iso-dBA boundary loops.
+- **3D Preview & Diagnostics Footprint Lines (`src/3d/FlightSimulation.js`, `src/3d/DigitalTwin.js`)**: Rendered contours using `THREE.Line` with `THREE.LineDashedMaterial` and `computeLineDistances()`, anchored 1-to-1 to `getMissionOrigin()` without paint fill.
+- **Diagnostics Active Route Synchronization (`src/3d/DigitalTwin.js`)**: Updated `getActiveMissionWaypoints()` to check `getCurrentWaypoints()` so generated multi-layer routes cleanly propagate into Flight Diagnostics.
+
 ## [1.165.0] - 2026-10-17
 
 Introduces GPU-accelerated Dark Mode, 620nm–650nm Tactical Red, and Full Night-Vision Goggle (NVG) visual filters for Street, Satellite, and Topography maps with zero external API keys and automatic nocturnal ephemeris transitions.

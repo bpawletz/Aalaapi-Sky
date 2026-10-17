@@ -81,7 +81,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.165.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.166.0</span></h1>
         </div>
       </div>
 
@@ -2545,6 +2545,20 @@
                 <span id="sun-advisor-noon" style="font-weight: 600; color: var(--text-main); font-family: monospace;">--:--</span>
               </div>
               <div id="sun-advisor-warning" class="legal-ceiling-notice" style="display: none; margin-top: 4px; padding: 6px 8px; border-radius: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.72rem; color: #fbbf24; line-height: 1.35;"></div>
+              <div class="control-group" style="margin-top: 4px; margin-bottom: 2px;">
+                <label for="sun-sky-condition-select" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 3px;">
+                  <span><span>☁️</span> Sky Condition (Lighting &amp; Shadows):</span>
+                  <span id="sun-advisor-sky-cover" style="font-weight: 600; color: #38bdf8; font-family: monospace;">Auto (CLR)</span>
+                </label>
+                <select id="sun-sky-condition-select" style="font-size: 0.76rem; padding: 4px 7px; width: 100%; border-radius: 4px; background: rgba(15, 23, 42, 0.6); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.12);">
+                  <option value="auto" selected>Auto (Live METAR / Weather Sync)</option>
+                  <option value="CLR">Clear / Sunny (CLR / 0-1 octas)</option>
+                  <option value="FEW">Few Clouds (FEW / 1-2 octas)</option>
+                  <option value="SCT">Scattered Clouds (SCT / 3-4 octas)</option>
+                  <option value="BKN">Broken Clouds (BKN / 5-7 octas)</option>
+                  <option value="OVC">Overcast / Diffused (OVC / 8 octas)</option>
+                </select>
+              </div>
             </div>
             <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">2D map renders active sun ray bearing &amp; cast shadows. 3D viewport matches real-world sun angle.</p>
           </div> <!-- /sun-lighting-subcard -->
@@ -2597,6 +2611,19 @@
                   <button type="button" id="btn-acoustic-apply-altitude" class="btn-secondary" style="padding: 2px 7px; font-size: 0.66rem; font-weight: 600; margin: 0;" title="Set mission altitude to recommended quiet altitude">Set Quiet Alt</button>
                 </div>
               </div>
+            </div>
+
+            <div class="control-group" style="margin-bottom: 6px;">
+              <label for="acoustic-contour-display-mode" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Acoustic Contour Detail Mode</span>
+                <span class="badge" style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 1px 5px; border-radius: 999px;">Configurable</span>
+              </label>
+              <select id="acoustic-contour-display-mode" style="font-size: 0.78rem; padding: 5px 8px;">
+                <option value="standard" selected>🎯 Ambient &amp; Noticeable Levels (Default)</option>
+                <option value="detailed">📊 Multi-Tier Gradient (Ambient, -3dB, Noticeable, Intrusive)</option>
+                <option value="minimal">⚡ Ambient Audibility Only</option>
+                <option value="all">🌈 All Dynamic Tiers &amp; Lobe Footprints</option>
+              </select>
             </div>
 
             <div class="control-group" style="margin-top: 6px; margin-bottom: 0; display: flex; flex-direction: column; gap: 5px;">
@@ -3803,6 +3830,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ☁️ Weather-Coordinated Shadows &amp; Satellite Cloud Cover (v1.166.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Coordinate solar shadow casting and photogrammetry lighting quality with local weather reports (NWS/METAR cloud cover)! When overcast (8/8 octas), harsh shadow lines dissipate into soft, low-opacity "Diffused Ambient Zones" with specialized 3D Gaussian Splatting and photogrammetry advisories. Includes pilot Sky Condition manual override (Auto/CLR/FEW/SCT/BKN/OVC) and a toggleable, zero-API-key <strong>Satellite Cloud Cover (IR)</strong> overlay across all zoom levels.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🔊 Ground Observer Acoustic Impact &amp; 2D/3D Noise Contours (v1.164.0)
@@ -5134,7 +5169,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.165.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.166.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5195,6 +5230,30 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.166.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Weather-Coordinated Shadow Dissipation:</strong> Coordinates 2D and 3D shadow casting with live METAR and NWS cloud reports. Overcast skies (8/8 octas) dissipate harsh shadows into soft Diffused Ambient Zones.</li>
+              <li><strong>Overcast Photogrammetry Lighting Quality:</strong> Upgrades low-sun photogrammetry advisory to Diffused Overcast / Shadow-Free Capture, eliminating moving shadow boundaries across 3D textures.</li>
+              <li><strong>Pilot Sky Condition Selector:</strong> Added Section 3 control allowing pilots to force Auto (Live METAR), Clear, Few, Scattered, Broken, or Overcast.</li>
+              <li><strong>Satellite Cloud Cover Overlay:</strong> Added free, zero-API-key NOAA GOES / IEM Infrared cloud layer with bridge tile proxy support across all zoom levels.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.165.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Configurable Acoustic Contour Detail Mode:</strong> Added global display mode in Section 3 allowing pilots to select between Ambient &amp; Noticeable Levels (default), Multi-Tier Gradient, Ambient Audibility Only, or All Dynamic Tiers.</li>
+              <li><strong>Streamlined Tooltips:</strong> Removed redundant visual style text from map hover tooltips, keeping sound metrics concise and scannable.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.165.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Continuous Dashed Ground Acoustic Contours:</strong> Replaced circular discs with continuous, unfilled, colored dashed ground footprint contours signifying sound levels across 2D Leaflet, 3D Preview, and 3D Diagnostics.</li>
+              <li><strong>Synchronized 3D Flight Diagnostics:</strong> Fixed 3D Diagnostics active route simulation to correctly execute workspace missions (e.g. Spiral, Lawn, Orbit) instead of the hardcoded fallback grid.</li>
+              <li><strong>Diagnostics Noise HUD &amp; Footprint Toggle:</strong> Added dedicated <code>Noise Footprints</code> toggle button, live moving dashed ground ripple, and real-time <code>GROUND NOISE</code> dBA telemetry in Diagnostics Cockpit HUD.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.165.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -9090,6 +9149,10 @@
                 <div style="color: var(--text-muted); font-size: 0.65rem;">DRIFT ERROR</div>
                 <div id="diag-hud-drift" style="font-weight: 700; color: #c084fc; font-size: 0.95rem;">0 cm</div>
               </div>
+              <div id="diag-hud-dba-container">
+                <div style="color: var(--text-muted); font-size: 0.65rem;">GROUND NOISE</div>
+                <div id="diag-hud-dba" style="font-weight: 700; color: #10b981; font-size: 0.95rem;">-- dBA</div>
+              </div>
             </div>
 
             <!-- Exclusion Zone Warning Banner in 3D Replay -->
@@ -9108,6 +9171,8 @@
               <button id="diag-btn-toggle-footprints" class="btn-secondary"><span>⌘</span> Footprints</button>
               <span id="diag-indicator-footprints" class="diag-indicator"></span>
               <button id="diag-btn-reset-footprints" class="btn-secondary" title="Clear and reset all painted ground coverage footprints"><span>🧹</span> Clear Footprints</button>
+              <button id="diag-btn-toggle-noise" class="btn-secondary active" title="Toggle 3D Ground Acoustic Footprints and Live Drone Noise Ripple"><span>🔊</span> Noise Footprints</button>
+              <span id="diag-indicator-noise" class="diag-indicator active"></span>
               <button id="diag-btn-toggle-drones" class="btn-secondary"><span>✈</span> 3D Drones</button>
               <span id="diag-indicator-drones" class="diag-indicator"></span>
               <button id="diag-btn-toggle-wireframe" class="btn-secondary active" title="Toggle 3D Architectural Wireframe Extrusion"><span>🏗️</span> Wireframe</button>

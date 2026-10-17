@@ -127,7 +127,8 @@ function shouldProxyTileUrl(url) {
          lower.includes('services6.arcgis.com') ||
          lower.includes('services1.arcgis.com') ||
          lower.includes('opengeo.ncep.noaa.gov') ||
-         lower.includes('gibs.earthdata.nasa.gov');
+         lower.includes('gibs.earthdata.nasa.gov') ||
+         lower.includes('mesonet.agron.iastate.edu');
 }
 
 function getBridgeProxyUrl(rawUrl) {
