@@ -31530,7 +31530,7 @@ describe('v1.163.1 Open-Source Night Layers Cleanup & NASA VIIRS All-Zoom Select
 
   test('NASA VIIRS night lights layer supports maxZoom 22 with maxNativeZoom 8 and tile proxy caching', () => {
     const mapEngineJs = fs.readFileSync(path.join(__dirname, 'src', 'map', 'MapEngine.js'), 'utf8');
-    assert.ok(mapEngineJs.includes('maxZoom: 22, maxNativeZoom: 8'), 'nasaNightLightsLayer must set maxZoom: 22 and maxNativeZoom: 8 so it is selectable at all zoom levels');
+    assert.ok(mapEngineJs.includes('VIIRS_Black_Marble') && mapEngineJs.includes('maxZoom: 22,') && mapEngineJs.includes('maxNativeZoom: 8,'), 'nasaNightLightsLayer must set maxZoom: 22 and maxNativeZoom: 8 so it is selectable at all zoom levels');
     assert.strictEqual(shouldProxyTileUrl('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8/6/23/16.png'), true, 'shouldProxyTileUrl must include gibs.earthdata.nasa.gov');
   });
 });
