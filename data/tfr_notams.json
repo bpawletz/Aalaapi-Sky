@@ -1,5 +1,27 @@
 [
   {
+    "notam_id": "6/0014",
+    "facility": "ZLA",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "8NM N OCEANSIDE, CA, Saturday, October 17, 2026 through Tuesday, October 20, 2026 UTC",
+    "mod_date": "10/17/2026 03:35:00",
+    "mod_abs_time": "202610170335",
+    "is_new": "Y",
+    "gid": "6/0014"
+  },
+  {
+    "notam_id": "6/0013",
+    "facility": "ZOA",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "38NM E FRESNO, CA, Saturday, October 17, 2026 through Tuesday, October 20, 2026 UTC",
+    "mod_date": "10/17/2026 02:42:00",
+    "mod_abs_time": "202610170242",
+    "is_new": "Y",
+    "gid": "6/0013"
+  },
+  {
     "notam_id": "6/0009",
     "facility": "ZSE",
     "state": "OR",
@@ -64,17 +86,6 @@
     "mod_abs_time": "202610161825",
     "is_new": "Y",
     "gid": "6/9979"
-  },
-  {
-    "notam_id": "6/9971",
-    "facility": "ZLA",
-    "state": "CA",
-    "type": "HAZARDS",
-    "description": "8NM N OCEANSIDE, CA, Friday, October 16, 2026 through Saturday, October 17, 2026 UTC",
-    "mod_date": "10/16/2026 17:32:00",
-    "mod_abs_time": "202610161732",
-    "is_new": "Y",
-    "gid": "6/9971"
   },
   {
     "notam_id": "6/9965",
@@ -273,17 +284,6 @@
     "mod_abs_time": "202610150347",
     "is_new": "N",
     "gid": "6/9735"
-  },
-  {
-    "notam_id": "6/9731",
-    "facility": "ZOA",
-    "state": "CA",
-    "type": "HAZARDS",
-    "description": "38NM E FRESNO, CA, Friday, October 16, 2026 through Tuesday, October 20, 2026 UTC",
-    "mod_date": "10/15/2026 02:57:00",
-    "mod_abs_time": "202610150257",
-    "is_new": "N",
-    "gid": "6/9731"
   },
   {
     "notam_id": "6/9717",

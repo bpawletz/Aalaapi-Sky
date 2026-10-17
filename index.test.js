@@ -15024,14 +15024,15 @@ describe('v1.94.14 Configuration Settings Modal Redesign & Cyber Scrollbar Tests
     assert.ok(cssContent.includes('scrollbar-color: rgba(56, 189, 248,'), 'index.css must define cyan cyber scrollbar-color');
   });
 
-  test('Settings modal contains 5 structured settings-card category sections', () => {
+  test('Settings modal contains structured settings-card category sections', () => {
     const cardRegex = /class="settings-card"/g;
     const templateCardMatches = templateHtml.match(cardRegex) || [];
-    assert.strictEqual(templateCardMatches.length, 5, 'index_template.html must contain exactly 5 settings-card sections');
+    assert.strictEqual(templateCardMatches.length, 6, 'index_template.html must contain exactly 6 settings-card sections');
 
     const expectedHeaders = [
       'General &amp; Display',
       'Map &amp; Camera Visuals',
+      'Night Flight &amp; Nocturnal Layers',
       'Menu Minimization Options',
       'Multi-Vendor Autopilots',
       'Storage &amp; Controlled Reset'
@@ -31443,6 +31444,85 @@ describe('v1.162.0 Streamlined Top Navigation Ribbon & Consolidated Bridge Buffe
       global.document = prevDoc;
       global.window = prevWin;
     }
+  });
+});
+
+describe('v1.163.0 Nighttime Moon Position HUD, Nocturnal Map Layers, and Customizable Settings (Closes #143)', () => {
+  test('Version Consistency across required locations for v1.163.0', () => {
+    assertVersionConsistency('1.163.0');
+  });
+
+  test('SolarEphemeris calculates Jean Meeus lunar position, parallax, phase, and natural lux', () => {
+    assert.ok(typeof SolarEphemeris !== 'undefined', 'SolarEphemeris must be defined');
+    assert.ok(typeof SolarEphemeris.getMoonPosition === 'function', 'getMoonPosition must be a function');
+    assert.ok(typeof SolarEphemeris.getMoonIllumination === 'function', 'getMoonIllumination must be a function');
+    assert.ok(typeof SolarEphemeris.getCelestialSummary === 'function', 'getCelestialSummary must be a function');
+
+    const testDate = new Date('2026-10-17T02:00:00Z'); // Nighttime in Utica, IL
+    const lat = 41.3215;
+    const lon = -88.9950;
+
+    const moonPos = SolarEphemeris.getMoonPosition(testDate, lat, lon);
+    assert.ok(moonPos !== null, 'Moon position should not be null');
+    assert.ok(typeof moonPos.altitudeDeg === 'number' && !isNaN(moonPos.altitudeDeg), 'Moon altitudeDeg must be a valid number');
+    assert.ok(typeof moonPos.azimuthDeg === 'number' && !isNaN(moonPos.azimuthDeg), 'Moon azimuthDeg must be a valid number');
+    assert.ok(moonPos.azimuthDeg >= 0 && moonPos.azimuthDeg <= 360, 'Moon azimuthDeg must be between 0 and 360');
+    assert.ok(typeof moonPos.distanceKm === 'number' && moonPos.distanceKm > 350000 && moonPos.distanceKm < 410000, 'Moon distance should be within lunar orbit range');
+    assert.ok(typeof moonPos.compassDirection === 'string' && moonPos.compassDirection.length > 0, 'Compass direction should be present');
+
+    const illum = SolarEphemeris.getMoonIllumination(testDate);
+    assert.ok(illum !== null, 'Moon illumination should not be null');
+    assert.ok(illum.fraction >= 0 && illum.fraction <= 1, 'Illumination fraction must be between 0.0 and 1.0');
+    assert.ok(illum.phaseCycle >= 0 && illum.phaseCycle <= 1, 'Phase cycle must be between 0.0 and 1.0');
+    assert.ok(typeof illum.phaseName === 'string', 'Phase name must be a string');
+    assert.ok(typeof illum.icon === 'string', 'Icon glyph must be a string');
+
+    const summary = SolarEphemeris.getCelestialSummary(testDate, lat, lon);
+    assert.ok(summary !== null, 'Celestial summary should not be null');
+    assert.ok(['DAY', 'TWILIGHT', 'NIGHT'].includes(summary.mode), 'Mode must be DAY, TWILIGHT, or NIGHT');
+    assert.ok(typeof summary.naturalLux === 'number' && !isNaN(summary.naturalLux), 'naturalLux must be a valid number');
+  });
+
+  test('Night flight configuration settings and ThemeManager persistence', () => {
+    assert.ok(typeof isNightAutoBasemapEnabled === 'function', 'isNightAutoBasemapEnabled must be a function');
+    assert.ok(typeof setNightAutoBasemapEnabled === 'function', 'setNightAutoBasemapEnabled must be a function');
+    assert.ok(typeof isNightAutoNasaEnabled === 'function', 'isNightAutoNasaEnabled must be a function');
+    assert.ok(typeof setNightAutoNasaEnabled === 'function', 'setNightAutoNasaEnabled must be a function');
+    assert.ok(typeof isNightCelestialHudEnabled === 'function', 'isNightCelestialHudEnabled must be a function');
+    assert.ok(typeof setNightCelestialHudEnabled === 'function', 'setNightCelestialHudEnabled must be a function');
+
+    setNightAutoBasemapEnabled(false);
+    assert.strictEqual(isNightAutoBasemapEnabled(), false);
+    setNightAutoBasemapEnabled(true);
+    assert.strictEqual(isNightAutoBasemapEnabled(), true);
+
+    setNightAutoNasaEnabled(true);
+    assert.strictEqual(isNightAutoNasaEnabled(), true);
+    setNightAutoNasaEnabled(false);
+    assert.strictEqual(isNightAutoNasaEnabled(), false);
+
+    setNightCelestialHudEnabled(false);
+    assert.strictEqual(isNightCelestialHudEnabled(), false);
+    setNightCelestialHudEnabled(true);
+    assert.strictEqual(isNightCelestialHudEnabled(), true);
+  });
+
+  test('Photo Inspector includes 1-click photo-toggle-hud-btn and layer-toggle-solar checkbox', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('id="photo-toggle-hud-btn"'), 'index_template.html must contain #photo-toggle-hud-btn');
+    assert.ok(template.includes('id="layer-toggle-solar"'), 'index_template.html must contain #layer-toggle-solar');
+    assert.ok(template.includes('id="config-night-auto-basemap"'), 'index_template.html must contain #config-night-auto-basemap');
+    assert.ok(template.includes('id="config-night-auto-nasa"'), 'index_template.html must contain #config-night-auto-nasa');
+    assert.ok(template.includes('id="config-night-celestial-hud"'), 'index_template.html must contain #config-night-celestial-hud');
+  });
+
+  test('MapEngine exports darkCanvasLayer and nasaNightLightsLayer', () => {
+    const mapEngineJs = fs.readFileSync(path.join(__dirname, 'src', 'map', 'MapEngine.js'), 'utf8');
+    assert.ok(mapEngineJs.includes('darkCanvasLayer'), 'MapEngine.js must declare darkCanvasLayer');
+    assert.ok(mapEngineJs.includes('nasaNightLightsLayer'), 'MapEngine.js must declare nasaNightLightsLayer');
+    assert.ok(mapEngineJs.includes('"Night Flight (Dark Canvas)"'), 'MapEngine.js must include Night Flight in baseMaps');
+    assert.ok(mapEngineJs.includes('"NASA Earth at Night (VIIRS Lights)"'), 'MapEngine.js must include NASA Earth at Night in overlays');
+    assert.ok(mapEngineJs.includes('"☀️/🌙 Celestial Vector & Shadow Casting (2D)"'), 'MapEngine.js must include Celestial Vector in overlays');
   });
 });
 

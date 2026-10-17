@@ -98,11 +98,13 @@ function isLocalhostEnvironment() {
   );
 }
 
-// Standard satellite and street map layers
+// Standard satellite, street and night map layers
 let streetLayer;
 let esriStreetLayer;
 let satelliteLayer;
 let topoLayer;
+let darkCanvasLayer;
+let nasaNightLightsLayer;
 
 // FAA Airspace Overlay layers
 let vfrSectionalLayer;
@@ -308,6 +310,31 @@ function initMap() {
     attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
   });
 
+  // Night Flight Basemap (Dark Canvas / CartoDB Dark Matter) (v1.161.0 - Issue #143)
+  darkCanvasLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 22,
+    maxNativeZoom: 19,
+    subdomains: 'abcd',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  });
+
+  // NASA Earth at Night (Black Marble / VIIRS Night Lights) Overlay (v1.161.0 - Issue #143)
+  nasaNightLightsLayer = L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default//GoogleMapsCompatible_Level8/{z}/{y}/{x}.png', {
+    maxZoom: 8,
+    maxNativeZoom: 8,
+    opacity: 0.65,
+    attribution: 'Imagery &copy; NASA Earth Applied Sciences / GIBS Black Marble'
+  });
+
+  if (typeof window !== 'undefined') {
+    window.darkCanvasLayer = darkCanvasLayer;
+    window.nasaNightLightsLayer = nasaNightLightsLayer;
+  }
+  if (typeof global !== 'undefined') {
+    global.darkCanvasLayer = darkCanvasLayer;
+    global.nasaNightLightsLayer = nasaNightLightsLayer;
+  }
+
   // Default to Satellite View (best for drone planning)
   satelliteLayer.addTo(map);
 
@@ -446,12 +473,14 @@ function initMap() {
   // Add Layer Control — include only layers that successfully initialized
   const baseMaps = {
     "Satellite View": satelliteLayer,
+    "Night Flight (Dark Canvas)": darkCanvasLayer,
     "Street Map (Esri)": esriStreetLayer,
     [osmStreetLabel]: streetLayer,
     "Topography Map": topoLayer
   };
 
   const overlays = {
+    "NASA Earth at Night (VIIRS Lights)": nasaNightLightsLayer,
     "VFR Sectional Chart (US Only)": vfrSectionalLayer
   };
   if (classAirspaceLayer) overlays["Controlled Airspace (Class B/C/D/E) (US Only)"] = classAirspaceLayer;
@@ -575,11 +604,11 @@ function initMap() {
   overlays["Photo Coverage Footprints (2D)"] = photoFootprintsGroup;
   overlays["Photo Inspection Pins (2D)"] = photoInspectionGroup;
 
-  // Solar Ephemeris & Shadow Vector Overlay (2D) (v1.157.0 - Issue #141)
+  // Solar & Lunar Ephemeris & Shadow Vector Overlay (2D) (v1.157.0 - Issue #141, v1.161.0 - Issue #143)
   if (!solarOverlaysGroup) {
     solarOverlaysGroup = L.layerGroup().addTo(map);
   }
-  overlays["Sun Vector & Shadow Casting (2D)"] = solarOverlaysGroup;
+  overlays["☀️/🌙 Celestial Vector & Shadow Casting (2D)"] = solarOverlaysGroup;
 
   const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
 
@@ -1285,3 +1314,13 @@ function initReplay2dBarListeners() {
 
 
 // Computes current state of modified settings across all 5 domains
+
+// Night Flight Map Layer exports (v1.161.0 - Issue #143)
+if (typeof window !== 'undefined') {
+  window.darkCanvasLayer = darkCanvasLayer;
+  window.nasaNightLightsLayer = nasaNightLightsLayer;
+}
+if (typeof global !== 'undefined') {
+  global.darkCanvasLayer = darkCanvasLayer;
+  global.nasaNightLightsLayer = nasaNightLightsLayer;
+}

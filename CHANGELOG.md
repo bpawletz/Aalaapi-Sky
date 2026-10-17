@@ -1,3 +1,34 @@
+## [1.163.0] - 2026-10-17
+
+Introduces an astronomical lunar ephemeris engine, nighttime Moon position HUD, nocturnal basemap & NASA VIIRS night lights layers, and customizable night flight settings. (Closes #143)
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Astronomical Lunar Ephemeris & Moon Position HUD**:
+  - Implemented high-precision Jean Meeus lunar position, parallax, distance, and topocentric coordinate algorithms.
+  - Dynamically transitions the celestial telemetry HUD between daytime Sun dial (`#fbbf24`), sunset/sunrise golden hour, and nocturnal Moon dial (`#38bdf8`) with lunar phase glyphs (🌑 to 🌕), illumination fraction percentage, and natural ambient lux calculations.
+  - Added instant 1-click `☀️/🌙 HUD` toggle button (`#photo-toggle-hud-btn`) directly on the Photo Inspector toolbar to instantly show or hide celestial azimuth and elevation overlays without opening drawers.
+- **Night Flight Basemap (Dark Canvas)**:
+  - Added high-contrast CartoDB Dark Matter tile layer (`darkCanvasLayer`) specifically tuned for night missions, low-light operations, and glare reduction.
+- **NASA Earth at Night (VIIRS Black Marble Overlay)**:
+  - Integrated NASA GIBS VIIRS Black Marble night lights layer (`nasaNightLightsLayer`) to reveal illuminated urban perimeters, highway corridors, industrial complexes, and ambient ground radiance.
+- **Nocturnal 2D Celestial Vector & Moon Shadow Projection**:
+  - Automatically transitions the 2D map vector ray from daytime solar angle to silver/cyan lunar azimuth and projects predicted moonlight shadow cones when the Moon is above 8° elevation.
+- **3D Night Flight Digital Twin & Directional Moonlight**:
+  - Extends the Three.js 3D viewport to position an illuminated 3D Moon sphere with soft silvery directional moonlight (`0xbae6fd`) and nighttime ambient illumination when the Sun dips below the horizon.
+- **Night Flight & Nocturnal Layers Customization Card**:
+  - Added a dedicated configuration card in `#config-modal` allowing pilots to customize night behavior:
+    - Auto-Switch Dark Canvas at Night (`#config-night-auto-basemap`, default: enabled).
+    - NASA Earth at Night VIIRS Overlay (`#config-night-auto-nasa`, default: disabled).
+    - Night Moon Position HUD & Vector (`#config-night-celestial-hud`, default: enabled).
+
+#### Under the Hood & Technical Details
+- **SolarEphemeris Ephemeris Algorithms**: Added `getMoonPosition()`, `getMoonIllumination()`, and `getCelestialSummary()` in `src/patterns/AutoPlan.js`.
+- **Photo Inspector Celestial HUD**: Updated `renderCanvas()`, `updateHeaderUI()`, and `setupEvents()` in `src/ui/Modals/PhotoInspector.js` to render the adaptive solar/lunar HUD dial and persist toggle states to `aalaapi_photo_layer_solar`.
+- **ThemeManager & EventBindings**: Added getters, setters, and localStorage synchronizers for `aalaapi_night_auto_basemap`, `aalaapi_night_auto_nasa`, and `aalaapi_night_celestial_hud`.
+- **Leaflet & Three.js Integration**: Configured `darkCanvasLayer` and `nasaNightLightsLayer` in `src/map/MapEngine.js` with tile proxy hook support, updated `renderSolarOverlay2D` in `src/geo/MathUtils.js`, and updated `update3DSunPosition` in `src/3d/SceneManager.js`.
+
 ## [1.162.0] - 2026-10-16
 
 Streamlines the top navigation ribbon by retiring technical buffer RAM metrics and consolidating the Ambient Airspace & Replay Buffer monitor inside the Bridge & Hardware drawer.

@@ -3066,47 +3066,6 @@
     },
     {
       "type": "Feature",
-      "id": "V_TFR_LOC.6/9731",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              -118.97916667,
-              36.7375
-            ],
-            [
-              -118.95833333,
-              36.7375
-            ],
-            [
-              -118.95833333,
-              36.75833333
-            ],
-            [
-              -118.97916667,
-              36.75833333
-            ],
-            [
-              -118.97916667,
-              36.7375
-            ]
-          ]
-        ]
-      },
-      "geometry_name": "SHAPE",
-      "properties": {
-        "GID": 234925,
-        "CNS_LOCATION_ID": "ZOA",
-        "NOTAM_KEY": "6/9731-1-FDC-F",
-        "TITLE": "38NM E FRESNO, CA, Friday, October 16, 2026 through Tuesday, October 20, 2026 UTC",
-        "LAST_MODIFICATION_DATETIME": "202610150257",
-        "STATE": "CA",
-        "LEGAL": "HAZARDS"
-      }
-    },
-    {
-      "type": "Feature",
       "id": "V_TFR_LOC.5/3679",
       "geometry": {
         "type": "Polygon",
@@ -9901,59 +9860,6 @@
     },
     {
       "type": "Feature",
-      "id": "V_TFR_LOC.6/9971",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              -117.5375,
-              33.35833333
-            ],
-            [
-              -117.4625,
-              33.25833333
-            ],
-            [
-              -117.40833333,
-              33.29583333
-            ],
-            [
-              -117.40833333,
-              33.325
-            ],
-            [
-              -117.38333333,
-              33.34166667
-            ],
-            [
-              -117.325,
-              33.36666667
-            ],
-            [
-              -117.4375,
-              33.40416667
-            ],
-            [
-              -117.5375,
-              33.35833333
-            ]
-          ]
-        ]
-      },
-      "geometry_name": "SHAPE",
-      "properties": {
-        "GID": 234987,
-        "CNS_LOCATION_ID": "ZLA",
-        "NOTAM_KEY": "6/9971-1-FDC-F",
-        "TITLE": "8NM N OCEANSIDE, CA, Friday, October 16, 2026 through Saturday, October 17, 2026 UTC",
-        "LAST_MODIFICATION_DATETIME": "202610161732",
-        "STATE": "CA",
-        "LEGAL": "HAZARDS"
-      }
-    },
-    {
-      "type": "Feature",
       "id": "V_TFR_LOC.6/9864",
       "geometry": {
         "type": "Polygon",
@@ -14536,6 +14442,47 @@
     },
     {
       "type": "Feature",
+      "id": "V_TFR_LOC.6/0013",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -118.9875,
+              36.7375
+            ],
+            [
+              -118.95833333,
+              36.7375
+            ],
+            [
+              -118.95833333,
+              36.75833333
+            ],
+            [
+              -118.9875,
+              36.75833333
+            ],
+            [
+              -118.9875,
+              36.7375
+            ]
+          ]
+        ]
+      },
+      "geometry_name": "SHAPE",
+      "properties": {
+        "GID": 235006,
+        "CNS_LOCATION_ID": "ZOA",
+        "NOTAM_KEY": "6/0013-1-FDC-F",
+        "TITLE": "38NM E FRESNO, CA, Saturday, October 17, 2026 through Tuesday, October 20, 2026 UTC",
+        "LAST_MODIFICATION_DATETIME": "202610170242",
+        "STATE": "CA",
+        "LEGAL": "HAZARDS"
+      }
+    },
+    {
+      "type": "Feature",
       "id": "V_TFR_LOC.6/0004",
       "geometry": {
         "type": "Polygon",
@@ -15381,6 +15328,59 @@
     },
     {
       "type": "Feature",
+      "id": "V_TFR_LOC.6/0014",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -117.5375,
+              33.35833333
+            ],
+            [
+              -117.4625,
+              33.25833333
+            ],
+            [
+              -117.40833333,
+              33.29583333
+            ],
+            [
+              -117.40833333,
+              33.325
+            ],
+            [
+              -117.38333333,
+              33.34166667
+            ],
+            [
+              -117.325,
+              33.36666667
+            ],
+            [
+              -117.4375,
+              33.40416667
+            ],
+            [
+              -117.5375,
+              33.35833333
+            ]
+          ]
+        ]
+      },
+      "geometry_name": "SHAPE",
+      "properties": {
+        "GID": 235012,
+        "CNS_LOCATION_ID": "ZLA",
+        "NOTAM_KEY": "6/0014-1-FDC-F",
+        "TITLE": "8NM N OCEANSIDE, CA, Saturday, October 17, 2026 through Tuesday, October 20, 2026 UTC",
+        "LAST_MODIFICATION_DATETIME": "202610170335",
+        "STATE": "CA",
+        "LEGAL": "HAZARDS"
+      }
+    },
+    {
+      "type": "Feature",
       "id": "V_TFR_LOC.6/2520",
       "geometry": {
         "type": "Polygon",
@@ -15709,7 +15709,7 @@
   "totalFeatures": 95,
   "numberMatched": 95,
   "numberReturned": 95,
-  "timeStamp": "2026-10-17T01:42:15.239Z",
+  "timeStamp": "2026-10-17T04:25:05.186Z",
   "crs": {
     "type": "name",
     "properties": {

@@ -372,25 +372,57 @@ function update3DSunPosition() {
 
   if (!pos) return;
 
-  const azRad = (pos.azimuthDeg || 180) * (Math.PI / 180);
-  const altRad = Math.max(0.02, (pos.altitudeDeg || 45)) * (Math.PI / 180);
+  const isNight = pos.altitudeDeg <= 0;
+  let targetAzDeg = pos.azimuthDeg || 180;
+  let targetAltDeg = pos.altitudeDeg || 45;
+  let isMoonMode = false;
+
+  const isNightAllowed = (typeof isNightCelestialHudEnabled === 'function') ? isNightCelestialHudEnabled() : true;
+
+  if (isNight && isNightAllowed && typeof SolarEphemeris.getMoonPosition === 'function') {
+    const effectiveTime = (typeof MissionClock !== 'undefined' && typeof MissionClock.getEffectiveTime === 'function')
+      ? MissionClock.getEffectiveTime()
+      : (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris && currentSolarEphemeris.now ? currentSolarEphemeris.now : new Date());
+
+    let lat = 41.3215, lon = -88.9950;
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+      const ll = centerMarker.getLatLng();
+      lat = ll.lat;
+      lon = ll.lng;
+    }
+    const moonPos = SolarEphemeris.getMoonPosition(effectiveTime, lat, lon);
+    if (moonPos && moonPos.altitudeDeg > 0) {
+      targetAzDeg = moonPos.azimuthDeg;
+      targetAltDeg = moonPos.altitudeDeg;
+      isMoonMode = true;
+    }
+  }
+
+  const azRad = targetAzDeg * (Math.PI / 180);
+  const altRad = Math.max(0.02, targetAltDeg) * (Math.PI / 180);
 
   const radius = 600;
-  // Sun position in sky:
+  // Celestial position in sky:
   // Azimuth 0 = North (-Z), 90 = East (+X), 180 = South (+Z), 270 = West (-X)
-  const sunX = radius * Math.cos(altRad) * Math.sin(azRad);
-  const sunY = Math.max(20, radius * Math.sin(altRad));
-  const sunZ = -radius * Math.cos(altRad) * Math.cos(azRad);
+  const celX = radius * Math.cos(altRad) * Math.sin(azRad);
+  const celY = Math.max(20, radius * Math.sin(altRad));
+  const celZ = -radius * Math.cos(altRad) * Math.cos(azRad);
 
-  threeSunLight.position.set(sunX, sunY, sunZ);
+  threeSunLight.position.set(celX, celY, celZ);
   if (threeSunLight.target && typeof threeScene !== 'undefined' && threeScene) {
     threeSunLight.target.position.set(0, 0, 0);
   }
 
-  // Update physical Sun Sphere position & appearance
+  // Update physical Celestial Sphere position & appearance
   if (threeSunMesh) {
-    threeSunMesh.position.set(sunX, sunY, sunZ);
-    if (pos.altitudeDeg <= 0) {
+    threeSunMesh.position.set(celX, celY, celZ);
+    if (isMoonMode) {
+      threeSunMesh.visible = true;
+      if (threeSunMesh.material) {
+        // Soft silvery moonlight glow
+        threeSunMesh.material.color.setHex(0xe0f2fe);
+      }
+    } else if (pos.altitudeDeg <= 0) {
       threeSunMesh.visible = false;
     } else {
       threeSunMesh.visible = true;
@@ -409,13 +441,27 @@ function update3DSunPosition() {
     }
   }
 
-  // Modulate intensity based on sun elevation (dim at twilight/night)
-  if (pos.altitudeDeg <= 0) {
+  // Modulate intensity & color based on solar/lunar elevation
+  if (isMoonMode) {
+    threeSunLight.intensity = 0.35;
+    if (threeSunLight.color && typeof threeSunLight.color.setHex === 'function') {
+      threeSunLight.color.setHex(0xbae6fd); // Silvery moonlight tint
+    }
+  } else if (pos.altitudeDeg <= 0) {
     threeSunLight.intensity = 0.15;
+    if (threeSunLight.color && typeof threeSunLight.color.setHex === 'function') {
+      threeSunLight.color.setHex(0xffffff);
+    }
   } else if (pos.altitudeDeg < 15) {
     threeSunLight.intensity = 0.5 + (pos.altitudeDeg / 15) * 0.5;
+    if (threeSunLight.color && typeof threeSunLight.color.setHex === 'function') {
+      threeSunLight.color.setHex(0xffffff);
+    }
   } else {
     threeSunLight.intensity = 1.2;
+    if (threeSunLight.color && typeof threeSunLight.color.setHex === 'function') {
+      threeSunLight.color.setHex(0xffffff);
+    }
   }
 }
 

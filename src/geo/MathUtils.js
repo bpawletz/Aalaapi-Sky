@@ -2354,43 +2354,78 @@ function renderSolarOverlay2D(centerLat, centerLon) {
   const sunPos = SolarEphemeris.getSunPosition(now, centerLat, centerLon);
   if (!sunPos) return;
 
-  const { altitudeDeg, azimuthDeg, compassDirection } = sunPos;
-  const isDay = altitudeDeg > 0;
+  const isNightHudAllowed = (typeof isNightCelestialHudEnabled === 'function') ? isNightCelestialHudEnabled() : true;
+  const isNight = sunPos.altitudeDeg <= 0;
 
-  // 1. Draw Sun Ray / Bearing Vector originating from center
-  // Ray points in the direction of the sun azimuth (or from sun into scene)
+  // Retrieve celestial summary or moon position if at night
+  let celestialTarget = {
+    isMoon: false,
+    icon: '☀️',
+    label: 'Solar Vector',
+    altitudeDeg: sunPos.altitudeDeg,
+    azimuthDeg: sunPos.azimuthDeg,
+    compassDirection: sunPos.compassDirection,
+    color: '#fbbf24',
+    shadowEligible: sunPos.altitudeDeg > 0
+  };
+
+  if (isNight && isNightHudAllowed && typeof SolarEphemeris.getMoonPosition === 'function') {
+    const moonPos = SolarEphemeris.getMoonPosition(now, centerLat, centerLon);
+    const moonIllum = (typeof SolarEphemeris.getMoonIllumination === 'function') ? SolarEphemeris.getMoonIllumination(now) : null;
+    const moonGlyph = (moonIllum && moonIllum.icon) ? moonIllum.icon : '🌙';
+    const phaseName = (moonIllum && moonIllum.phaseName) ? moonIllum.phaseName : 'Moon';
+    const illumPct = moonIllum ? (moonIllum.fraction * 100).toFixed(0) : '';
+
+    if (moonPos) {
+      celestialTarget = {
+        isMoon: true,
+        icon: moonGlyph,
+        label: `Lunar Vector (${phaseName} ${illumPct}%)`,
+        altitudeDeg: moonPos.altitudeDeg,
+        azimuthDeg: moonPos.azimuthDeg,
+        compassDirection: moonPos.compassDirection,
+        color: '#38bdf8',
+        shadowEligible: moonPos.altitudeDeg > 8 // Moon casts detectable shadows above 8-10 deg elevation
+      };
+    }
+  }
+
+  const { altitudeDeg, azimuthDeg, compassDirection, color, icon, label, shadowEligible, isMoon } = celestialTarget;
+
+  // 1. Draw Celestial Ray / Bearing Vector originating from center
+  // Ray points in the direction of the celestial azimuth
   const vectorLengthMeters = 80;
-  // Calculate endpoint of sun vector
-  const sunBearingRad = (azimuthDeg * Math.PI) / 180.0;
-  const dNorth = vectorLengthMeters * Math.cos(sunBearingRad);
-  const dEast = vectorLengthMeters * Math.sin(sunBearingRad);
+  // Calculate endpoint of celestial vector
+  const bearingRad = (azimuthDeg * Math.PI) / 180.0;
+  const dNorth = vectorLengthMeters * Math.cos(bearingRad);
+  const dEast = vectorLengthMeters * Math.sin(bearingRad);
   const R = 6378137.0;
   const dLat = (dNorth / R) * (180.0 / Math.PI);
   const dLon = ((dEast / R) * (180.0 / Math.PI)) / Math.cos((centerLat * Math.PI) / 180.0);
-  const sunVectorEnd = [centerLat + dLat, centerLon + dLon];
+  const vectorEnd = [centerLat + dLat, centerLon + dLon];
 
-  // Draw dashed golden ray towards sun
-  const sunRayLine = L.polyline([[centerLat, centerLon], sunVectorEnd], {
-    color: isDay ? '#fbbf24' : '#64748b',
+  // Draw dashed ray towards sun/moon
+  const rayLine = L.polyline([[centerLat, centerLon], vectorEnd], {
+    color: color,
     weight: 2.5,
     dashArray: '6, 6',
-    opacity: isDay ? 0.85 : 0.4
+    opacity: (altitudeDeg > 0) ? 0.85 : 0.45
   }).addTo(solarOverlaysGroup);
 
-  // Add Sun Icon at vector tip
-  const sunIcon = L.divIcon({
+  // Add Celestial Icon at vector tip
+  const tipIcon = L.divIcon({
     className: 'solar-azimuth-tip-icon',
     html: `
-      <div style="display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: rgba(15, 23, 42, 0.85); border: 2px solid ${isDay ? '#fbbf24' : '#64748b'}; box-shadow: 0 0 10px rgba(251, 191, 36, 0.5); font-size: 13px; cursor: help;" title="Sun Azimuth: ${azimuthDeg.toFixed(1)}° (${compassDirection}) • Elevation: ${altitudeDeg.toFixed(1)}°">
-        ${isDay ? '☀️' : '🌙'}
+      <div style="display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: rgba(15, 23, 42, 0.85); border: 2px solid ${color}; box-shadow: 0 0 10px ${isMoon ? 'rgba(56, 189, 248, 0.5)' : 'rgba(251, 191, 36, 0.5)'}; font-size: 13px; cursor: help;" title="${label}: ${azimuthDeg.toFixed(1)}° (${compassDirection}) • Elevation: ${altitudeDeg.toFixed(1)}°">
+        ${icon}
       </div>
     `,
     iconSize: [26, 26],
     iconAnchor: [13, 13]
   });
 
-  const sunMarker = L.marker(sunVectorEnd, { icon: sunIcon, interactive: true }).addTo(solarOverlaysGroup);
-  sunMarker.bindTooltip(`☀️ Solar Vector: Azimuth ${azimuthDeg.toFixed(1)}° (${compassDirection}), Elev: ${altitudeDeg.toFixed(1)}°`, { direction: 'top' });
+  const celestialMarker = L.marker(vectorEnd, { icon: tipIcon, interactive: true }).addTo(solarOverlaysGroup);
+  celestialMarker.bindTooltip(`${icon} ${label}: Azimuth ${azimuthDeg.toFixed(1)}° (${compassDirection}), Elev: ${altitudeDeg.toFixed(1)}°`, { direction: 'top' });
 
   // 2. Cast Predicted Shadow Cones for POI Structures / Target Splats
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -2400,7 +2435,7 @@ function renderSolarOverlay2D(centerLat, centerLon) {
       ? (parseFloat(document.getElementById('target-splat-height').value) || 8)
       : 8);
 
-  if (isDay && structureHeight > 0) {
+  if (shadowEligible && structureHeight > 0) {
     const shadowInfo = SolarEphemeris.calculateShadow
       ? SolarEphemeris.calculateShadow(structureHeight, altitudeDeg, azimuthDeg)
       : { shadowLengthMeters: structureHeight / Math.tan(Math.max(1, altitudeDeg) * (Math.PI / 180)), shadowAzimuthDeg: (azimuthDeg + 180) % 360 };
@@ -2429,14 +2464,15 @@ function renderSolarOverlay2D(centerLat, centerLon) {
       shadowTip,
       [baseLat2, baseLon2]
     ], {
-      color: '#475569',
+      color: isMoon ? '#38bdf8' : '#475569',
       weight: 1.5,
       dashArray: '4, 4',
-      fillColor: '#0f172a',
-      fillOpacity: 0.35
+      fillColor: isMoon ? '#0284c7' : '#0f172a',
+      fillOpacity: isMoon ? 0.25 : 0.35
     }).addTo(solarOverlaysGroup);
 
-    shadowPolygon.bindTooltip(`👥 Predicted Shadow Cast: ${shadowLen.toFixed(1)}m (Structure Height: ${structureHeight}m)`, { direction: 'center', permanent: false });
+    const shadowPrefix = isMoon ? '🌙 Predicted Moonlight Shadow' : '👥 Predicted Shadow Cast';
+    shadowPolygon.bindTooltip(`${shadowPrefix}: ${shadowLen.toFixed(1)}m (Structure Height: ${structureHeight}m)`, { direction: 'center', permanent: false });
   }
 }
 
