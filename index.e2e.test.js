@@ -8617,6 +8617,188 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(res.nasaMaxNativeZoom, 8, 'nasaNightLightsLayer maxNativeZoom must be 8 for tile upscaling');
       assert.strictEqual(res.nasaCheckboxDisabled, false, 'NASA Earth at Night checkbox in Leaflet layer control must NOT be disabled at zoom 17');
     });
+
+    test('v1.164.0 Ground Observer Acoustic Impact Advisor & Toggleable 2D/3D Noise Contours', async () => {
+      const res = await page.evaluate(async () => {
+        const subcard = document.getElementById('acoustic-noise-subcard');
+        const nadirEl = document.getElementById('acoustic-nadir-dba');
+        const peakEl = document.getElementById('acoustic-peak-dba');
+        const refLabelEl = document.getElementById('acoustic-drone-ref-label');
+        const ambientSelect = document.getElementById('acoustic-ambient-preset');
+        const stealthAltEl = document.getElementById('acoustic-stealth-alt');
+        const applyAltBtn = document.getElementById('btn-acoustic-apply-altitude');
+        const toggle2D = document.getElementById('acoustic-map-overlay-toggle');
+        const toggle3D = document.getElementById('acoustic-3d-overlay-toggle');
+        const btn3DNoise = document.getElementById('btn-3d-toggle-noise');
+        const ind3DNoise = document.getElementById('indicator-3d-noise');
+        const fpvDbaEl = document.getElementById('fpv-telemetry-dba');
+
+        if (!subcard || !nadirEl || !peakEl || !ambientSelect || !applyAltBtn || !toggle2D || !toggle3D || !btn3DNoise || !ind3DNoise || !fpvDbaEl) {
+          return { missingElements: true };
+        }
+
+        // Set low altitude (15m) with Matrice 350 RTK ('60') to produce loud ground noise
+        const droneSelect = document.getElementById('drone-model');
+        const altInput = document.getElementById('altitude');
+        droneSelect.value = '60';
+        droneSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        altInput.value = '15';
+        altInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+        const m350LowAltNadirText = nadirEl.textContent;
+        const m350RefText = refLabelEl.textContent;
+
+        // Switch to Mini 4 Pro ('68') at 80m altitude -> quieter
+        droneSelect.value = '68';
+        droneSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        altInput.value = '80';
+        altInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+        const mini4HighAltNadirText = nadirEl.textContent;
+        const mini4RefText = refLabelEl.textContent;
+
+        // Test 1-click Set Quiet Alt button in Rural environment (35 dBA) at 15m altitude
+        altInput.value = '15';
+        altInput.dispatchEvent(new Event('input', { bubbles: true }));
+        ambientSelect.value = '35';
+        ambientSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        const altBeforeStealth = parseFloat(altInput.value);
+        applyAltBtn.click();
+        const altAfterStealth = parseFloat(altInput.value);
+
+        // Test 2D ground noise overlay enable & disable toggle
+        toggle2D.checked = true;
+        toggle2D.dispatchEvent(new Event('change', { bubbles: true }));
+        const mapHas2DWhenEnabled = window.map && window.acousticOverlaysGroup ? window.map.hasLayer(window.acousticOverlaysGroup) : false;
+        const layerCount2DWhenEnabled = window.acousticOverlaysGroup ? window.acousticOverlaysGroup.getLayers().length : 0;
+
+        toggle2D.checked = false;
+        toggle2D.dispatchEvent(new Event('change', { bubbles: true }));
+        const mapHas2DWhenDisabled = window.map && window.acousticOverlaysGroup ? window.map.hasLayer(window.acousticOverlaysGroup) : true;
+
+        // Test 3D ground noise overlay enable & disable toggle synchronization
+        toggle3D.checked = false;
+        toggle3D.dispatchEvent(new Event('change', { bubbles: true }));
+        const show3DAfterUncheck = window.showAcoustic3D;
+        const indBgWhenDisabled = ind3DNoise.style.background;
+
+        // Click the 3D HUD Noise Rings button to re-enable
+        btn3DNoise.click();
+        const show3DAfterHudClick = window.showAcoustic3D;
+        const checkboxSyncedAfterHudClick = toggle3D.checked;
+        const indBgWhenEnabled = ind3DNoise.style.background;
+
+        return {
+          missingElements: false,
+          m350LowAltNadirDba: parseFloat(m350LowAltNadirText),
+          m350RefText,
+          mini4HighAltNadirDba: parseFloat(mini4HighAltNadirText),
+          mini4RefText,
+          altBeforeStealth,
+          altAfterStealth,
+          mapHas2DWhenEnabled,
+          layerCount2DWhenEnabled,
+          mapHas2DWhenDisabled,
+          show3DAfterUncheck,
+          indBgWhenDisabled,
+          show3DAfterHudClick,
+          checkboxSyncedAfterHudClick,
+          indBgWhenEnabled
+        };
+      });
+
+      assert.strictEqual(res.missingElements, false, 'All acoustic advisor DOM elements must exist');
+      assert.ok(res.m350RefText.includes('88.0 dBA'), 'Matrice 300/350 RTK reference noise label must show 88.0 dBA');
+      assert.ok(res.mini4RefText.includes('73.0 dBA'), 'Mini 4 Pro reference noise label must show 73.0 dBA');
+      assert.ok(res.m350LowAltNadirDba > res.mini4HighAltNadirDba + 20, 'Matrice 350 at 15m must be >20 dBA louder on the ground than Mini 4 Pro at 80m');
+      assert.ok(res.altAfterStealth > res.altBeforeStealth, 'Clicking Set Quiet Alt at 15m in Rural environment must raise mission altitude');
+      assert.strictEqual(res.mapHas2DWhenEnabled, true, 'Enabling 2D Ground Noise toggle must add acousticOverlaysGroup to the map');
+      assert.ok(res.layerCount2DWhenEnabled > 0, '2D Ground Noise overlay must render contour rings and flight path swath layers');
+      assert.strictEqual(res.mapHas2DWhenDisabled, false, 'Disabling 2D Ground Noise toggle must remove acousticOverlaysGroup from the map');
+      assert.strictEqual(res.show3DAfterUncheck, false, 'Unchecking 3D Ground Noise toggle must disable showAcoustic3D');
+      assert.ok(res.indBgWhenDisabled.includes('239, 68, 68') || res.indBgWhenDisabled.includes('#ef4444'), '3D Noise indicator must turn red when disabled');
+      assert.strictEqual(res.show3DAfterHudClick, true, 'Clicking #btn-3d-toggle-noise in 3D HUD must re-enable showAcoustic3D');
+      assert.strictEqual(res.checkboxSyncedAfterHudClick, true, 'Clicking #btn-3d-toggle-noise must sync #acoustic-3d-overlay-toggle checkbox to checked');
+      assert.ok(res.indBgWhenEnabled.includes('16, 185, 129') || res.indBgWhenEnabled.includes('#10b981'), '3D Noise indicator must turn green when enabled');
+    });
+
+    test('v1.165.0 Dark Map, Tactical Red, and Full NVG Map Visual Filters', async () => {
+      const res = await page.evaluate(() => {
+        // Open Settings Modal
+        const configBtn = document.getElementById('config-btn') || document.querySelector('[data-modal="config-modal"]');
+        if (configBtn) configBtn.click();
+
+        const filterSelect = document.getElementById('config-map-visual-filter');
+        const autoNightToggle = document.getElementById('config-night-auto-filter');
+        const badge = document.getElementById('map-filter-mode-badge');
+
+        const controlsExist = !!(filterSelect && autoNightToggle && badge);
+
+        // 1. Test Dark Mode selection
+        if (filterSelect) {
+          filterSelect.value = 'dark';
+          filterSelect.dispatchEvent(new Event('change'));
+        }
+        const darkAttr = document.documentElement.dataset.mapFilter;
+        const darkPersisted = localStorage.getItem('aalaapi_map_visual_filter');
+
+        // 2. Test Tactical Red selection
+        if (filterSelect) {
+          filterSelect.value = 'red-map';
+          filterSelect.dispatchEvent(new Event('change'));
+        }
+        const redMapAttr = document.documentElement.dataset.mapFilter;
+        const redMapPersisted = localStorage.getItem('aalaapi_map_visual_filter');
+
+        // 3. Test Full NVG selection
+        if (filterSelect) {
+          filterSelect.value = 'red-nvg';
+          filterSelect.dispatchEvent(new Event('change'));
+        }
+        const redNvgAttr = document.documentElement.dataset.mapFilter;
+        const redNvgPersisted = localStorage.getItem('aalaapi_map_visual_filter');
+
+        // 4. Test Auto-Night Filter Toggle
+        if (autoNightToggle) {
+          autoNightToggle.checked = true;
+          autoNightToggle.dispatchEvent(new Event('change'));
+        }
+        const autoNightPersisted = localStorage.getItem('aalaapi_night_auto_filter');
+
+        // Revert to normal
+        if (filterSelect) {
+          filterSelect.value = 'normal';
+          filterSelect.dispatchEvent(new Event('change'));
+        }
+        if (autoNightToggle) {
+          autoNightToggle.checked = false;
+          autoNightToggle.dispatchEvent(new Event('change'));
+        }
+
+        const closeConfigBtn = document.getElementById('close-config-btn');
+        if (closeConfigBtn) closeConfigBtn.click();
+
+        return {
+          controlsExist,
+          darkAttr,
+          darkPersisted,
+          redMapAttr,
+          redMapPersisted,
+          redNvgAttr,
+          redNvgPersisted,
+          autoNightPersisted
+        };
+      });
+
+      assert.strictEqual(res.controlsExist, true, 'Map visual filter controls must exist in config modal');
+      assert.strictEqual(res.darkAttr, 'dark', 'Selecting dark filter must set data-map-filter="dark"');
+      assert.strictEqual(res.darkPersisted, 'dark', 'Dark filter selection must persist to localStorage');
+      assert.strictEqual(res.redMapAttr, 'red-map', 'Selecting red-map filter must set data-map-filter="red-map"');
+      assert.strictEqual(res.redMapPersisted, 'red-map', 'Tactical red filter selection must persist to localStorage');
+      assert.strictEqual(res.redNvgAttr, 'red-nvg', 'Selecting red-nvg filter must set data-map-filter="red-nvg"');
+      assert.strictEqual(res.redNvgPersisted, 'red-nvg', 'Full NVG filter selection must persist to localStorage');
+      assert.strictEqual(res.autoNightPersisted, 'true', 'Auto-apply at night toggle must persist to localStorage');
+    });
   });
 });
 

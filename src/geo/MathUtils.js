@@ -2503,12 +2503,12 @@ function getMissionAcousticSummary(waypoints) {
   const ambientEl = (typeof document !== 'undefined') ? document.getElementById('acoustic-ambient-preset') : null;
 
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
-  const missionAltM = (activeLayer && typeof activeLayer.altitude === 'number' && activeLayer.altitude > 0)
-    ? activeLayer.altitude
-    : (altEl ? (parseFloat(altEl.value) || 50) : 50);
-  const missionSpeedMs = (activeLayer && typeof activeLayer.speed === 'number' && activeLayer.speed > 0)
-    ? activeLayer.speed
-    : (speedEl ? (parseFloat(speedEl.value) || 4) : 4);
+  const missionAltM = (altEl && !isNaN(parseFloat(altEl.value)) && parseFloat(altEl.value) > 0)
+    ? parseFloat(altEl.value)
+    : ((activeLayer && typeof activeLayer.altitude === 'number' && activeLayer.altitude > 0) ? activeLayer.altitude : 50);
+  const missionSpeedMs = (speedEl && !isNaN(parseFloat(speedEl.value)) && parseFloat(speedEl.value) > 0)
+    ? parseFloat(speedEl.value)
+    : ((activeLayer && typeof activeLayer.speed === 'number' && activeLayer.speed > 0) ? activeLayer.speed : 4);
   const ambientDba = ambientEl ? (parseFloat(ambientEl.value) || 45) : 45;
 
   const wps = Array.isArray(waypoints) ? waypoints : ((typeof getCurrentWaypoints === 'function') ? (getCurrentWaypoints() || []) : []);
@@ -2594,39 +2594,43 @@ function updateAcousticAdvisorUI(waypoints) {
     badgeEl.style.background = `${impact.color}22`;
   }
 
-  const droneRefEl = document.getElementById('acoustic-drone-ref');
+  const droneRefEl = document.getElementById('acoustic-drone-ref-label') || document.getElementById('acoustic-drone-ref');
   if (droneRefEl) {
-    droneRefEl.textContent = `${profile.name} (${profile.refDba1m.toFixed(0)} dBA @ 1m)`;
+    droneRefEl.textContent = `${profile.name} (${profile.refDba1m.toFixed(1)} dBA @ 1m)`;
   }
 
   const nadirEl = document.getElementById('acoustic-nadir-dba');
   if (nadirEl) {
-    nadirEl.textContent = (peakDba > nadirDba + 0.3)
-      ? `${nadirDba.toFixed(1)} dBA (Peak: ${peakDba.toFixed(1)} dBA)`
-      : `${nadirDba.toFixed(1)} dBA`;
+    nadirEl.textContent = `${nadirDba.toFixed(1)} dBA`;
     nadirEl.style.color = impact.color;
   }
 
-  const humanEl = document.getElementById('acoustic-human-equiv');
+  const peakEl = document.getElementById('acoustic-peak-dba');
+  if (peakEl) {
+    peakEl.textContent = `${peakDba.toFixed(1)} dBA`;
+    peakEl.style.color = peakDba >= 65 ? '#ef4444' : (peakDba >= 55 ? '#f59e0b' : 'var(--text-main)');
+  }
+
+  const humanEl = document.getElementById('acoustic-equiv-text') || document.getElementById('acoustic-human-equiv');
   if (humanEl) {
     humanEl.textContent = impact.humanEquivalent;
   }
 
-  const deltaEl = document.getElementById('acoustic-delta-ambient');
+  const deltaEl = document.getElementById('acoustic-delta-text') || document.getElementById('acoustic-delta-ambient');
   if (deltaEl) {
     const sign = impact.deltaDb > 0 ? '+' : '';
-    deltaEl.textContent = `${sign}${impact.deltaDb.toFixed(1)} dB vs Ambient (${ambientDba} dBA)`;
+    deltaEl.textContent = `${sign}${impact.deltaDb.toFixed(1)} dB (${impact.label})`;
     deltaEl.style.color = impact.deltaDb <= 0 ? '#10b981' : (impact.deltaDb <= 6 ? '#38bdf8' : (impact.deltaDb <= 12 ? '#fbbf24' : '#f87171'));
   }
 
   const radiusEl = document.getElementById('acoustic-audibility-radius');
   if (radiusEl) {
     radiusEl.textContent = audibilityRadiusM <= 0
-      ? `0 ${useImp ? 'ft' : 'm'} (Masked by Ambient)`
+      ? `0 ${useImp ? 'ft' : 'm'} (Masked)`
       : `${formatDist(audibilityRadiusM)} radius`;
   }
 
-  const stealthEl = document.getElementById('acoustic-stealth-alt-readout');
+  const stealthEl = document.getElementById('acoustic-stealth-alt') || document.getElementById('acoustic-stealth-alt-readout');
   if (stealthEl) {
     stealthEl.textContent = `≥ ${formatDist(stealthAltM)} AGL`;
   }

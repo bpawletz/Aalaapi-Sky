@@ -2592,6 +2592,14 @@ function initUIEventListeners() {
         if (nightHudToggle) {
           nightHudToggle.checked = isNightCelestialHudEnabled();
         }
+        const mapFilterSelect = document.getElementById('config-map-visual-filter');
+        if (mapFilterSelect) {
+          mapFilterSelect.value = getMapVisualFilter();
+        }
+        const nightAutoFilterToggle = document.getElementById('config-night-auto-filter');
+        if (nightAutoFilterToggle) {
+          nightAutoFilterToggle.checked = isNightAutoFilterEnabled();
+        }
         if (typeof updateModifiedSettingsIndicators === 'function') updateModifiedSettingsIndicators();
         if (window.innerWidth <= 768) {
           document.querySelector('.sidebar')?.classList.remove('open');
@@ -2625,7 +2633,24 @@ function initUIEventListeners() {
       });
     }
 
-    // Night Flight & Nocturnal Layers event listeners (v1.163.1 - Issue #143)
+    // Night Flight & Nocturnal Layers event listeners (v1.165.0 - Issue #143)
+    const mapFilterSelect = document.getElementById('config-map-visual-filter');
+    if (mapFilterSelect) {
+      mapFilterSelect.value = getMapVisualFilter();
+      mapFilterSelect.addEventListener('change', () => {
+        setMapVisualFilter(mapFilterSelect.value);
+      });
+    }
+
+    const nightAutoFilterToggle = document.getElementById('config-night-auto-filter');
+    if (nightAutoFilterToggle) {
+      nightAutoFilterToggle.checked = isNightAutoFilterEnabled();
+      nightAutoFilterToggle.addEventListener('change', () => {
+        setNightAutoFilterEnabled(nightAutoFilterToggle.checked);
+        if (typeof updateSolarEphemeris === 'function') updateSolarEphemeris();
+      });
+    }
+
     const nightNasaToggle = document.getElementById('config-night-auto-nasa');
     if (nightNasaToggle) {
       nightNasaToggle.checked = isNightAutoNasaEnabled();
@@ -2781,6 +2806,10 @@ function initUIEventListeners() {
       if (preview3dModal) {
         preview3dModal.classList.remove('hidden');
         init3DPreview();
+        const noiseInd = document.getElementById('indicator-3d-noise');
+        if (noiseInd && typeof showAcoustic3D !== 'undefined') {
+          noiseInd.style.background = showAcoustic3D ? '#10b981' : '#ef4444';
+        }
         setTimeout(handle3DResize, 50);
         setTimeout(handle3DResize, 250);
       }
@@ -2893,6 +2922,68 @@ function initUIEventListeners() {
       if (indicator) {
         indicator.style.background = showDroneModels ? '#10b981' : '#ef4444';
       }
+    });
+  }
+
+  const btnToggleNoise3D = document.getElementById('btn-3d-toggle-noise');
+  if (btnToggleNoise3D) {
+    btnToggleNoise3D.addEventListener('click', () => {
+      if (typeof set3DAcousticOverlayEnabled === 'function') {
+        set3DAcousticOverlayEnabled(!showAcoustic3D);
+      }
+    });
+  }
+
+  // Ground Observer Acoustic Impact & Noise Contour Controls (v1.164.0)
+  const acoustic2dToggleEl = document.getElementById('acoustic-map-overlay-toggle');
+  if (acoustic2dToggleEl) {
+    try {
+      const saved2d = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_sky_show_2d_acoustic') : null;
+      if (saved2d === 'true' && typeof set2DAcousticOverlayEnabled === 'function') {
+        acoustic2dToggleEl.checked = true;
+        set2DAcousticOverlayEnabled(true);
+      }
+    } catch (e) {}
+    acoustic2dToggleEl.addEventListener('change', () => {
+      if (typeof set2DAcousticOverlayEnabled === 'function') {
+        set2DAcousticOverlayEnabled(acoustic2dToggleEl.checked);
+      }
+    });
+  }
+
+  const acoustic3dToggleEl = document.getElementById('acoustic-3d-overlay-toggle');
+  if (acoustic3dToggleEl) {
+    try {
+      const saved3d = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_sky_show_3d_acoustic') : null;
+      if (saved3d !== null && typeof set3DAcousticOverlayEnabled === 'function') {
+        const enabled3d = saved3d === 'true';
+        acoustic3dToggleEl.checked = enabled3d;
+        set3DAcousticOverlayEnabled(enabled3d);
+      }
+    } catch (e) {}
+    acoustic3dToggleEl.addEventListener('change', () => {
+      if (typeof set3DAcousticOverlayEnabled === 'function') {
+        set3DAcousticOverlayEnabled(acoustic3dToggleEl.checked);
+      }
+    });
+  }
+
+  const btnAcousticApplyAlt = document.getElementById('btn-acoustic-apply-altitude');
+  if (btnAcousticApplyAlt) {
+    btnAcousticApplyAlt.addEventListener('click', () => {
+      const summary = (typeof getMissionAcousticSummary === 'function') ? getMissionAcousticSummary() : null;
+      const targetAltM = parseInt(btnAcousticApplyAlt.dataset.stealthAlt, 10) || (summary ? summary.stealthAltM : 60);
+      const altSlider = document.getElementById('altitude');
+      if (altSlider) {
+        altSlider.value = String(targetAltM);
+      }
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.altitude = targetAltM;
+      }
+      if (typeof syncDisplayValues === 'function') syncDisplayValues();
+      if (typeof updateGrid === 'function') updateGrid();
+      if (typeof saveAllSettingsToLocalStorage === 'function') saveAllSettingsToLocalStorage();
     });
   }
 

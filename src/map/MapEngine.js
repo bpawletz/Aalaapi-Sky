@@ -291,23 +291,27 @@ function initMap() {
   streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 22,
     maxNativeZoom: 19,
+    className: 'aalaapi-base-tile-layer aalaapi-base-street',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   });
 
   esriStreetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 22,
     maxNativeZoom: 19,
+    className: 'aalaapi-base-tile-layer aalaapi-base-street',
     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
   });
 
   satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 22,
     maxNativeZoom: 19,
+    className: 'aalaapi-base-tile-layer aalaapi-base-satellite',
     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
   });
 
   topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
     maxZoom: 17,
+    className: 'aalaapi-base-tile-layer aalaapi-base-topo',
     attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
   });
 
@@ -609,6 +613,9 @@ function initMap() {
   // Ground Observer Acoustic Contours Overlay (2D) (v1.164.0)
   if (!acousticOverlaysGroup) {
     acousticOverlaysGroup = L.layerGroup();
+  }
+  if (typeof window !== 'undefined') {
+    window.acousticOverlaysGroup = acousticOverlaysGroup;
   }
   const savedShow2dAcoustic = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_show_2d_acoustic_contours') : null;
   if (savedShow2dAcoustic === 'true') {

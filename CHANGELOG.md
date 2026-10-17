@@ -1,3 +1,52 @@
+## [1.165.0] - 2026-10-17
+
+Introduces GPU-accelerated Dark Mode, 620nm–650nm Tactical Red, and Full Night-Vision Goggle (NVG) visual filters for Street, Satellite, and Topography maps with zero external API keys and automatic nocturnal ephemeris transitions.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Dark Mode Map Filter (`🌑`)**:
+  - Transforms OpenStreetMap, Esri Street, and Topography maps into deep Cyber Dark Slate (`invert + hue-rotate`) for night operations and low-light glare reduction.
+  - Automatically dims Satellite View tiles with elevated contrast to reduce screen glow while preserving natural landscape features and ground textures.
+- **Tactical Red Basemap Filter (`🔴`)**:
+  - Converts Street, Topography, and Satellite basemaps into 620nm–650nm monochromatic tactical red using an inline SVG `<feColorMatrix>` filter to preserve rhodopsin dark adaptation during nighttime flight operations and astronomical observation.
+  - Keeps overlay markings, waypoint pins, flight path lines, and airspace polygons vividly color-coded on top of the red basemap.
+- **Full Tactical Red NVG Mode (`🥽`)**:
+  - Activates a complete night-vision goggle environment across both the 2D map and the entire app studio UI, ensuring zero blue/white light emissions from toolbars, modals, or sidebars.
+- **Auto-Apply Filter at Night (`#config-night-auto-filter`)**:
+  - Automatically transitions the map into the pilot's selected nocturnal filter whenever the sun dips below the horizon (`altitudeDeg <= 0°`) according to live or scheduled solar ephemeris.
+
+#### Under the Hood & Technical Details
+- **SVG Color Matrix Filter (`index_template.html`)**: Added inline `<filter id="aalaapi-tactical-red-filter">` mapping tile luminance strictly into the red channel (`0.35 R + 0.55 G + 0.10 B`).
+- **CSS Filter Engine (`index.css`)**: Implemented attribute selectors for `html[data-map-filter="dark"]`, `html[data-map-filter="red-map"]`, and `html[data-map-filter="red-nvg"]` targeting `.aalaapi-base-tile-layer` classes.
+- **Base Tile Layer Classification (`src/map/MapEngine.js`)**: Configured `.aalaapi-base-street`, `.aalaapi-base-satellite`, and `.aalaapi-base-topo` classes on base tile layers so overlays like NASA Black Marble and NEXRAD are unaffected.
+- **ThemeManager & Solar Synchronization (`src/ui/ThemeManager.js`, `src/patterns/AutoPlan.js`, `src/ui/EventBindings.js`)**: Added `getMapVisualFilter`, `setMapVisualFilter`, `isNightAutoFilterEnabled`, `setNightAutoFilterEnabled`, and `applyEffectiveMapFilter`, integrated with `updateSolarEphemeris()`.
+
+## [1.164.0] - 2026-10-17
+
+Introduces the Ground Observer Acoustic Impact & Noise Contour Advisor, giving pilots real-time ground sound pressure level (`dBA`) predictions, selectable ambient noise environments, 1-click stealth altitude recommendations, and toggleable 2D and 3D ground noise visualizations.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Ground Observer Acoustic Impact Advisor (`#acoustic-noise-subcard`)**:
+  - Added a dedicated Section 3 advisor card displaying real-time **Ground Observer SPL (Nadir)** and **Peak Mission Ground Noise** in `dBA` across all supported DJI aircraft models (from ultra-quiet sub-250g Mini series at `67.5 dBA @ 1m` up to Matrice 350 RTK at `79.5 dBA @ 1m`).
+  - Displays human-intuitive **Perceived Sound Equivalent** descriptions (`Quiet Library / Rustling Leaves` up to `Vacuum Cleaner / Loud Street Traffic`), **Prominence Above Ambient** (`+Δ dB`), and **Ground Audibility Radius** (`m` / `ft`).
+  - Includes 4 selectable **Observer Environment (Ambient Noise)** presets: `Rural / Wildlife Sanctuary (35 dBA)`, `Suburban Residential (45 dBA)`, `Urban / Commercial Street (60 dBA)`, and `Industrial / Highway Corridor (70 dBA)`.
+  - Added a 1-click **`Set Quiet Alt`** stealth button (`#btn-acoustic-apply-altitude`) that automatically raises mission altitude to keep ground observer noise within `≤ Ambient + 5 dB`.
+- **Toggleable 2D Ground Noise Contours (`acousticOverlaysGroup`)**:
+  - Renders color-coded flight path acoustic swath corridors (`55 dBA` moderate and `65 dBA` loud footprints), waypoint ground noise halos, and dashed concentric `65 / 55 / 45 dBA` contour rings around the mission center.
+  - Can be enabled or disabled anytime via the Section 3 checkbox (`#acoustic-map-overlay-toggle`) or the Leaflet layer control (`🔊 Ground Noise Contours (dBA) (2D)`).
+- **Toggleable 3D Ground Noise Rings, Sound Cones & Live FPV SPL Telemetry**:
+  - Renders concentric `65 dBA`, `55 dBA`, and `45 dBA` ground noise rings (`acoustic3DGroup`) directly on the 3D terrain plane beneath waypoints along with translucent vertical acoustic propagation cones extending from each 3D drone down to the ground.
+  - During 3D FPV Walkthrough mode, renders a live moving ground acoustic footprint ripple ring (`fpvAcousticRingGroup`) directly beneath the aircraft and displays real-time ground observer `SPL: XX.X dBA` telemetry (`#fpv-telemetry-dba`) in the top-right FPV HUD bar.
+  - Can be enabled or disabled anytime via the `Noise Rings` 3D HUD toggle button (`#btn-3d-toggle-noise`) or the Section 3 checkbox (`#acoustic-3d-overlay-toggle`).
+
+#### Under the Hood & Technical Details
+- **Acoustic Physics Engine (`src/export/DroneProfiles.js`)**: Implemented `DRONE_ACOUSTIC_PROFILES`, `getDroneAcousticProfile`, `calculateGroundNoiseDba` (modeling inverse-square spherical spreading $20\log_{10}(d)$, ISO 9613-1 atmospheric absorption $\alpha \cdot d$, ground reflection, forward pitch/speed load, climb thrust penalty, and wind compensation), `calculateGroundRadiusForTargetDba`, `calculateRecommendedQuietAltitude`, and `classifyAcousticImpact`.
+- **2D Map & Mission Analytics (`src/geo/MathUtils.js`, `src/map/MapEngine.js`, `src/state/MissionStore.js`)**: Implemented `getMissionAcousticSummary`, `updateAcousticAdvisorUI`, `renderAcousticOverlay2D`, and `set2DAcousticOverlayEnabled`, integrated into `drawFlightPath()` and `syncDisplayValues()`.
+- **3D Scene & FPV HUD (`src/3d/FlightSimulation.js`, `src/3d/FpvHud.js`, `src/ui/EventBindings.js`)**: Added `showAcoustic3D`, `acoustic3DGroup`, `fpvAcousticRingGroup`, `set3DAcousticOverlayEnabled`, and synchronized toggle bindings across `#btn-3d-toggle-noise`, `#acoustic-3d-overlay-toggle`, and `#acoustic-map-overlay-toggle`.
+
 ## [1.163.1] - 2026-10-17
 
 ### 🐛 Fixed
