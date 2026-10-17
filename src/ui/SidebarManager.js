@@ -579,8 +579,40 @@ function togglePatternParameters() {
   const gridType = gridTypeEl.value;
 
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const previousPattern = activeLayer ? activeLayer.pattern : null;
+  const isPatternChanging = Boolean(activeLayer && previousPattern && previousPattern !== gridType);
+
   if (activeLayer) {
+    if (isPatternChanging) {
+      if (previousPattern === 'road-following') {
+        activeLayer.roadWaypoints = [];
+        roadWaypoints = [];
+        if (typeof roadPathGroup !== 'undefined' && roadPathGroup && typeof roadPathGroup.clearLayers === 'function') {
+          roadPathGroup.clearLayers();
+        }
+      } else if (previousPattern === 'corridor') {
+        activeLayer.corridorCenterline = null;
+        if (typeof corridorCenterline !== 'undefined') corridorCenterline = null;
+      } else if (previousPattern === 'freeform') {
+        activeLayer.freeformWaypoints = [];
+        activeLayer.freeformPhotos = [];
+      }
+      activeLayer.hasCustomWaypoints = false;
+      activeLayer.waypoints = [];
+      if (activeLayer.gimbalPitch === 'auto' && gridType !== 'road-following') {
+        activeLayer.gimbalPitch = (gridType === 'single') ? -90 : ((gridType === 'double') ? -60 : -45);
+      }
+    }
     activeLayer.pattern = gridType;
+    if (gridType !== 'road-following') {
+      if (activeLayer.roadWaypoints && activeLayer.roadWaypoints.length > 0) {
+        activeLayer.roadWaypoints = [];
+      }
+      roadWaypoints = [];
+      if (typeof roadPathGroup !== 'undefined' && roadPathGroup && typeof roadPathGroup.clearLayers === 'function') {
+        roadPathGroup.clearLayers();
+      }
+    }
     activeLayer.isExclusionZone = (gridType === 'exclusion-box' || gridType === 'exclusion-freeform');
     activeLayer.isDrawingLayer = (gridType === 'boundary-polygon' || gridType === 'fiducial-markers');
     activeLayer.isFiducialLayer = (gridType === 'fiducial-markers');
@@ -1516,6 +1548,7 @@ function togglePatternParameters() {
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
 
   } else {
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
     if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "📐 Coverage & Geometry";

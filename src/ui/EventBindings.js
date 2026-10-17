@@ -7,6 +7,7 @@ function initUIEventListeners() {
   controls.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
+    if (id === 'grid-type') return;
     
     // Listen to changes to trigger redrawing of the grid
     el.addEventListener('input', () => {

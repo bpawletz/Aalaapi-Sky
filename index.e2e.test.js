@@ -1084,12 +1084,15 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const serviceHasLabel = serviceText.textContent.includes('Aalaapi Bridge:');
       const usbHasLabel = usbText.textContent.includes('RC 2 USB Link:');
       const diagPullHidden = diagPullBtn.style.display === 'none' || window.getComputedStyle(diagPullBtn).display === 'none';
+      const isRc2Connected = usbText.textContent.includes('Connected');
+      const diagPullCorrect = isRc2Connected ? !diagPullHidden : diagPullHidden;
 
       return {
-        success: serviceHasLabel && usbHasLabel && diagPullHidden,
+        success: serviceHasLabel && usbHasLabel && diagPullCorrect,
         serviceText: serviceText.textContent,
         usbText: usbText.textContent,
-        diagPullHidden
+        diagPullHidden,
+        isRc2Connected
       };
     });
 
@@ -9019,6 +9022,65 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(result.hasCloudCoverLayer, true, 'Satellite Cloud Cover Layer should be instantiated');
     });
   });
+
+  describe('v1.166.1 Road Following Pattern Switch & Waypoint Retention E2E', () => {
+    test('E2E: Switching from Road Following to 2D Nadir Grid generates clean grid without retaining road waypoints or dynamics', async () => {
+      const evalResult = await page.evaluate(async () => {
+        // 1. Ensure center marker is positioned
+        if (typeof setGridCenter === 'function') {
+          setGridCenter(41.3215, -88.9950);
+        }
+
+        // 2. Switch to road-following
+        const gridTypeSelect = document.getElementById('grid-type');
+        gridTypeSelect.value = 'road-following';
+        gridTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // 3. Add road waypoints
+        if (typeof addRoadWaypoint === 'function') {
+          addRoadWaypoint(41.3216, -88.9949);
+          addRoadWaypoint(41.3217, -88.9960);
+        }
+
+        // 4. Modify one of the road waypoints
+        const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+        if (activeLayer && activeLayer.waypoints && activeLayer.waypoints.length > 0) {
+          activeLayer.waypoints[0].alt = 50;
+          activeLayer.waypoints[0].pitch = -80;
+          activeLayer.waypoints[0].heading = 7.2;
+          activeLayer.waypoints[0].isModified = true;
+          activeLayer.hasCustomWaypoints = true;
+        }
+
+        // 5. Switch to 2D Nadir Grid (single)
+        gridTypeSelect.value = 'single';
+        gridTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+        const waypoints = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : [];
+        const wp0 = waypoints[0] || {};
+        const wp1 = waypoints[1] || {};
+
+        return {
+          totalWaypoints: waypoints.length,
+          wp0Alt: wp0.alt,
+          wp0Pitch: wp0.pitch,
+          wp0IsRoad: Boolean(wp0.isRoadDroneWaypoint),
+          wp1Alt: wp1.alt,
+          wp1Pitch: wp1.pitch,
+          roadWaypointsLength: (activeLayer && activeLayer.roadWaypoints) ? activeLayer.roadWaypoints.length : 0,
+          hasCustomWaypoints: Boolean(activeLayer && activeLayer.hasCustomWaypoints)
+        };
+      });
+
+      assert.ok(evalResult.totalWaypoints > 2, 'Grid must generate multiple waypoints');
+      assert.strictEqual(evalResult.wp0IsRoad, false, 'Waypoint 0 must not be a road drone waypoint');
+      assert.strictEqual(evalResult.wp0Pitch, -90, 'Waypoint 0 pitch must be -90 for 2D Nadir Grid');
+      assert.notStrictEqual(evalResult.wp0Pitch, -80, 'Waypoint 0 must not retain road pitch -80');
+      assert.strictEqual(evalResult.roadWaypointsLength, 0, 'activeLayer.roadWaypoints must be cleared');
+      assert.strictEqual(evalResult.hasCustomWaypoints, false, 'hasCustomWaypoints must be cleared');
+    });
+  });
 });
+
 
 
