@@ -441,7 +441,11 @@ function update3DSunPosition() {
     }
   }
 
-  // Modulate intensity & color based on solar/lunar elevation
+  // Modulate intensity & color based on solar/lunar elevation and cloud attenuation
+  const sky = (typeof SolarEphemeris !== 'undefined' && typeof SolarEphemeris.getEffectiveSkyCover === 'function')
+    ? SolarEphemeris.getEffectiveSkyCover()
+    : { directLightFactor: 1.0, isOvercast: false };
+
   if (isMoonMode) {
     threeSunLight.intensity = 0.35;
     if (threeSunLight.color && typeof threeSunLight.color.setHex === 'function') {
@@ -453,14 +457,16 @@ function update3DSunPosition() {
       threeSunLight.color.setHex(0xffffff);
     }
   } else if (pos.altitudeDeg < 15) {
-    threeSunLight.intensity = 0.5 + (pos.altitudeDeg / 15) * 0.5;
+    const baseIntensity = 0.5 + (pos.altitudeDeg / 15) * 0.5;
+    threeSunLight.intensity = baseIntensity * Math.max(0.25, sky.directLightFactor);
     if (threeSunLight.color && typeof threeSunLight.color.setHex === 'function') {
       threeSunLight.color.setHex(0xffffff);
     }
   } else {
-    threeSunLight.intensity = 1.2;
+    const baseIntensity = 1.2;
+    threeSunLight.intensity = baseIntensity * Math.max(0.25, sky.directLightFactor);
     if (threeSunLight.color && typeof threeSunLight.color.setHex === 'function') {
-      threeSunLight.color.setHex(0xffffff);
+      threeSunLight.color.setHex(sky.isOvercast ? 0xe2e8f0 : 0xffffff);
     }
   }
 }

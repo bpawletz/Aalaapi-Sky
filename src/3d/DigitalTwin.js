@@ -1,4 +1,10 @@
 function getActiveMissionWaypoints() {
+  if (typeof getCurrentWaypoints === 'function') {
+    const active = getCurrentWaypoints();
+    if (active && active.length > 0) {
+      return active;
+    }
+  }
   if (typeof importedWaypoints !== 'undefined' && importedWaypoints && importedWaypoints.length > 0) {
     return importedWaypoints;
   }
@@ -455,10 +461,19 @@ const FlightDiagnostics = {
   diagAutoRotate: false,
   diagShowCones: true,
   diagShowFootprints: true,
+  diagShowNoise: (function() {
+    try {
+      return localStorage.getItem('aalaapi_show_3d_acoustic_rings') !== 'false';
+    } catch (e) {
+      return true;
+    }
+  })(),
   diagShowDrones: true,
   diagShowWireframe: true,
   diagShowPlanes: false,
   diagFpvMode: false,
+  diagAcoustic3DGroup: null,
+  diagLiveAcousticRingGroup: null,
   wireframeData: null,
   wireframeLinesMesh: null,
   wireframePlanesMesh: null,
@@ -1033,9 +1048,29 @@ const FlightDiagnostics = {
     // Initialise indicators to match initial state
     _setDiagIndicator('diag-indicator-cones', this.diagShowCones);
     _setDiagIndicator('diag-indicator-footprints', this.diagShowFootprints);
+    _setDiagIndicator('diag-indicator-noise', this.diagShowNoise);
     _setDiagIndicator('diag-indicator-drones', this.diagShowDrones);
     _setDiagIndicator('diag-indicator-autorotate', this.diagAutoRotate);
     _setDiagIndicator('diag-indicator-fpv', this.diagFpvMode);
+
+    const diagBtnNoise = document.getElementById('diag-btn-toggle-noise');
+    if (diagBtnNoise && typeof diagBtnNoise.addEventListener === 'function') {
+      diagBtnNoise.classList.toggle('active', this.diagShowNoise);
+      diagBtnNoise.addEventListener('click', () => {
+        this.diagShowNoise = !this.diagShowNoise;
+        if (typeof set3DAcousticOverlayEnabled === 'function') {
+          set3DAcousticOverlayEnabled(this.diagShowNoise);
+        }
+        if (this.diagAcoustic3DGroup) {
+          this.diagAcoustic3DGroup.visible = this.diagShowNoise;
+        }
+        if (this.diagLiveAcousticRingGroup) {
+          this.diagLiveAcousticRingGroup.visible = this.diagShowNoise;
+        }
+        diagBtnNoise.classList.toggle('active', this.diagShowNoise);
+        _setDiagIndicator('diag-indicator-noise', this.diagShowNoise);
+      });
+    }
 
     const diagBtnAutoRotate = document.getElementById('diag-btn-autorotate');
     if (diagBtnAutoRotate && typeof diagBtnAutoRotate.addEventListener === 'function') {
@@ -2023,6 +2058,12 @@ const FlightDiagnostics = {
   },
 
   getSceneOrigin() {
+    if (this.selectedFlightId === 'active-mission' && typeof getMissionOrigin === 'function') {
+      const mOrigin = getMissionOrigin();
+      if (mOrigin && typeof mOrigin.lat === 'number' && typeof mOrigin.lon === 'number') {
+        return mOrigin;
+      }
+    }
     if (this.telemetryData && this.telemetryData.homePoint) {
       return this.telemetryData.homePoint;
     }
@@ -2816,6 +2857,32 @@ const FlightDiagnostics = {
       legendPlannedText.textContent = isActual ? 'Planned WPML' : 'Planned Flight Path';
     }
 
+    if (this.diagAcoustic3DGroup && this.threeScene) {
+      this.threeScene.remove(this.diagAcoustic3DGroup);
+      if (typeof this.diagAcoustic3DGroup.traverse === 'function') {
+        this.diagAcoustic3DGroup.traverse(c => {
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) {
+            if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+            else c.material.dispose();
+          }
+        });
+      }
+      this.diagAcoustic3DGroup = null;
+    }
+    if (this.diagLiveAcousticRingGroup && this.threeScene) {
+      this.threeScene.remove(this.diagLiveAcousticRingGroup);
+      if (typeof this.diagLiveAcousticRingGroup.traverse === 'function') {
+        this.diagLiveAcousticRingGroup.traverse(c => {
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) {
+            if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+            else c.material.dispose();
+          }
+        });
+      }
+      this.diagLiveAcousticRingGroup = null;
+    }
     if (this.actualLineMesh && this.threeScene) {
       this.threeScene.remove(this.actualLineMesh);
       if (this.actualLineMesh.geometry) this.actualLineMesh.geometry.dispose();
@@ -3037,6 +3104,92 @@ const FlightDiagnostics = {
           this.boundaryMeshes.push(padMesh);
         }
       });
+    }
+
+    // Render 3D Ground Observer Acoustic Footprint Contours (v1.165.1 - continuous dashed contours, no paint fill)
+    try {
+      this.diagAcoustic3DGroup = new THREE.Group();
+      const origin = this.getSceneOrigin();
+      const missionWps = (this.plannedWaypoints && this.plannedWaypoints.length > 0)
+        ? this.plannedWaypoints
+        : (this.telemetryData?.points || []);
+
+      const acousticData = (typeof computeMissionAcousticFootprintContours === 'function')
+        ? computeMissionAcousticFootprintContours(missionWps, origin.lat, origin.lon)
+        : { tiers: [] };
+
+      if (acousticData && Array.isArray(acousticData.tiers)) {
+        acousticData.tiers.forEach(tier => {
+          const strokeColor = tier.colorHex !== undefined ? tier.colorHex : 0x10b981;
+          const dashSize = tier.dashSize3D || 8;
+          const gapSize = tier.gapSize3D || 5;
+
+          tier.loops.forEach(loop => {
+            if (!loop || loop.length < 3) return;
+            // Project each geodetic or local point into world coordinates
+            const points3D = loop.map(pt => {
+              if (typeof pt.lat === 'number' && typeof pt.lon === 'number') {
+                return this.projectToWorld(pt.lat, pt.lon, 0.12);
+              }
+              return new THREE.Vector3(pt.x, 0.12, -pt.y);
+            });
+
+            if (points3D.length > 0) {
+              const first = points3D[0];
+              const last = points3D[points3D.length - 1];
+              if (first.distanceTo(last) > 0.1) {
+                points3D.push(first.clone());
+              }
+            }
+
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(points3D);
+            const lineMat = new THREE.LineDashedMaterial({
+              color: strokeColor,
+              dashSize: dashSize,
+              gapSize: gapSize,
+              linewidth: 2,
+              transparent: true,
+              opacity: 0.85
+            });
+            const lineMesh = new THREE.Line(lineGeo, lineMat);
+            if (typeof lineMesh.computeLineDistances === 'function') {
+              lineMesh.computeLineDistances();
+            }
+            this.diagAcoustic3DGroup.add(lineMesh);
+          });
+        });
+      }
+
+      this.diagAcoustic3DGroup.visible = !!this.diagShowNoise;
+      this.threeScene.add(this.diagAcoustic3DGroup);
+
+      // Live Ground Drone Footprint Ring (follows drone avatar during 3D replay)
+      this.diagLiveAcousticRingGroup = new THREE.Group();
+      const ringSegments = 64;
+      const liveRingPoints = [];
+      for (let s = 0; s <= ringSegments; s++) {
+        const theta = (s / ringSegments) * Math.PI * 2;
+        liveRingPoints.push(new THREE.Vector3(Math.cos(theta), 0.14, Math.sin(theta)));
+      }
+      const liveRingGeo = new THREE.BufferGeometry().setFromPoints(liveRingPoints);
+      const liveRingMat = new THREE.LineDashedMaterial({
+        color: 0x10b981,
+        dashSize: 0.25,
+        gapSize: 0.18,
+        linewidth: 2,
+        transparent: true,
+        opacity: 0.9
+      });
+      const liveRingLine = new THREE.Line(liveRingGeo, liveRingMat);
+      if (typeof liveRingLine.computeLineDistances === 'function') {
+        liveRingLine.computeLineDistances();
+      }
+      this.diagLiveAcousticRingGroup.add(liveRingLine);
+      this.diagLiveAcousticRingGroup.userData = { outerMesh: liveRingLine, isLine: true };
+      this.diagLiveAcousticRingGroup.visible = !!this.diagShowNoise;
+      this.threeScene.add(this.diagLiveAcousticRingGroup);
+    } catch (err) {
+      console.warn('Could not build 3D diagnostics acoustic footprints:', err);
     }
   },
 
@@ -3336,6 +3489,43 @@ const FlightDiagnostics = {
         breachBanner.style.display = 'none';
       }
     }
+
+    // Acoustic Telemetry & Live Ground Footprint Ring (v1.165.1)
+    try {
+      const droneProfile = (typeof getDroneAcousticProfile === 'function')
+        ? getDroneAcousticProfile()
+        : { refDba1m: 73.0, groundAbsorptionCoeff: 0.005 };
+      const curSpeed = (pt.speed !== undefined && pt.speed !== null) ? pt.speed : 4.0;
+      const curAlt = Math.max(1, (pt.alt !== undefined && pt.alt !== null) ? pt.alt : 20.0);
+      const ambDba = (typeof getActiveAmbientNoiseDba === 'function') ? getActiveAmbientNoiseDba() : 45.0;
+
+      const liveNadirDba = (typeof calculateAcousticSplDba === 'function')
+        ? calculateAcousticSplDba(droneProfile.refDba1m, curAlt, curSpeed, droneProfile.groundAbsorptionCoeff)
+        : 50.0;
+
+      const telemDba = document.getElementById('diag-hud-dba');
+      if (telemDba) {
+        telemDba.textContent = `${liveNadirDba.toFixed(1)} dBA`;
+        telemDba.style.color = liveNadirDba >= 65 ? '#ef4444' : (liveNadirDba >= 55 ? '#f59e0b' : '#10b981');
+      }
+
+      if (this.diagLiveAcousticRingGroup) {
+        this.diagLiveAcousticRingGroup.visible = !!this.diagShowNoise;
+        if (this.diagLiveAcousticRingGroup.visible) {
+          const liveAudRadius = (typeof calculateGroundRadiusForTargetDba === 'function')
+            ? calculateGroundRadiusForTargetDba(droneProfile.refDba1m, curAlt, ambDba, curSpeed)
+            : 25;
+          const scaleR = Math.min(200, Math.max(6, liveAudRadius > 1 ? liveAudRadius : 8));
+          const droneWorldPos = this.projectToWorld(pt.lat, pt.lon, 0.14);
+          this.diagLiveAcousticRingGroup.position.set(droneWorldPos.x, 0.14, droneWorldPos.z);
+          this.diagLiveAcousticRingGroup.scale.set(scaleR, 1, scaleR);
+          if (this.diagLiveAcousticRingGroup.userData && this.diagLiveAcousticRingGroup.userData.outerMesh && this.diagLiveAcousticRingGroup.userData.outerMesh.material) {
+            const ringColor = liveNadirDba >= 65 ? 0xef4444 : (liveNadirDba >= 55 ? 0xf59e0b : 0x10b981);
+            this.diagLiveAcousticRingGroup.userData.outerMesh.material.color.setHex(ringColor);
+          }
+        }
+      }
+    } catch (_) {}
 
     // 4D Synchronized Airspace Traffic in 3D (Issue #142)
     this.updateReplayedTraffic3D(pt, safeIdx);

@@ -31680,6 +31680,294 @@ describe('v1.165.0 Dark Map, Tactical Red & NVG Visual Filters', () => {
   });
 });
 
+describe('Continuous Dashed Acoustic Footprint Contours & DigitalTwin Alignment (v1.165.1)', () => {
+  test('computeMissionAcousticFootprintContours returns closed dashed contours without paint fill', () => {
+    const centerLat = 41.3215;
+    const centerLon = -88.9950;
+    const waypoints = [
+      { lat: 41.3215, lon: -88.9950, x: 0, y: 0, alt: 30, speed: 4 },
+      { lat: 41.3217, lon: -88.9950, x: 0, y: 22, alt: 30, speed: 4 },
+      { lat: 41.3217, lon: -88.9946, x: 33, y: 22, alt: 30, speed: 4 },
+      { lat: 41.3215, lon: -88.9946, x: 33, y: 0, alt: 30, speed: 4 }
+    ];
+
+    const result = computeMissionAcousticFootprintContours(waypoints, centerLat, centerLon);
+    assert.ok(result, 'Result should exist');
+    assert.ok(result.summary, 'Summary must be returned');
+    assert.ok(Array.isArray(result.tiers), 'Tiers must be an array');
+    assert.ok(result.tiers.length >= 1, 'Should have at least 1 acoustic tier contour');
+
+    result.tiers.forEach(tier => {
+      assert.ok(tier.id, 'Tier must have id');
+      assert.ok(tier.colorHex, 'Tier must have colorHex');
+      assert.ok(tier.dashArray2D, 'Tier must have 2D dash array for line styling');
+      assert.ok(tier.dashSize3D, 'Tier must have 3D dash size');
+      assert.ok(Array.isArray(tier.loops), 'Tier must have loops');
+      assert.ok(tier.loops.length > 0, 'Tier must have at least one contour loop');
+      tier.loops.forEach(loop => {
+        assert.ok(loop.length >= 3, 'Loop must have at least 3 points');
+        const first = loop[0];
+        const last = loop[loop.length - 1];
+        // Must be closed loop
+        assert.ok(first.lat !== undefined && first.lon !== undefined, 'Points must have geodetic coordinates');
+        assert.ok(first.x !== undefined && first.y !== undefined, 'Points must have local metric coordinates');
+      });
+    });
+  });
+
+  test('DigitalTwin getActiveMissionWaypoints prioritizes getCurrentWaypoints over fallback lawn grid', () => {
+    const originalGetCurrent = global.getCurrentWaypoints;
+    try {
+      const mockWaypoints = [
+        { lat: 41.3215, lon: -88.9950, alt: 45, speed: 5 },
+        { lat: 41.3220, lon: -88.9940, alt: 45, speed: 5 },
+        { lat: 41.3225, lon: -88.9930, alt: 45, speed: 5 }
+      ];
+      global.getCurrentWaypoints = () => mockWaypoints;
+
+      const activeWps = getActiveMissionWaypoints();
+      assert.strictEqual(activeWps.length, 3, 'Must return the 3 mock waypoints');
+      assert.strictEqual(activeWps[0].lat, 41.3215);
+      assert.strictEqual(activeWps[2].lat, 41.3225);
+    } finally {
+      global.getCurrentWaypoints = originalGetCurrent;
+    }
+  });
+
+  test('DigitalTwin.js includes diagShowNoise toggle and acoustic groups', () => {
+    const dtJs = fs.readFileSync(path.join(__dirname, 'src', '3d', 'DigitalTwin.js'), 'utf8');
+    assert.ok(dtJs.includes('diagShowNoise'), 'DigitalTwin must have diagShowNoise state');
+    assert.ok(dtJs.includes('diagAcoustic3DGroup'), 'DigitalTwin must have diagAcoustic3DGroup');
+    assert.ok(dtJs.includes('diagLiveAcousticRingGroup'), 'DigitalTwin must have diagLiveAcousticRingGroup');
+    assert.ok(dtJs.includes('diag-btn-toggle-noise'), 'DigitalTwin must bind diag-btn-toggle-noise');
+    assert.ok(dtJs.includes('diag-hud-dba'), 'DigitalTwin must update diag-hud-dba');
+  });
+
+  test('index_template.html includes #diag-hud-dba and #diag-btn-toggle-noise', () => {
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tpl.includes('id="diag-hud-dba"'), 'index_template.html must contain #diag-hud-dba');
+    assert.ok(tpl.includes('id="diag-btn-toggle-noise"'), 'index_template.html must contain #diag-btn-toggle-noise');
+    assert.ok(tpl.includes('id="diag-indicator-noise"'), 'index_template.html must contain #diag-indicator-noise');
+  });
+});
+
+describe('Configurable Multi-Ring Noise Contours & Clean Tooltips (v1.165.2)', () => {
+  test('index_template.html includes #acoustic-contour-display-mode with standard default', () => {
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tpl.includes('id="acoustic-contour-display-mode"'), 'Must have #acoustic-contour-display-mode select element');
+    assert.ok(tpl.includes('value="standard" selected'), 'Default mode must be standard');
+    assert.ok(tpl.includes('Ambient &amp; Noticeable Levels'), 'Must have label for Ambient & Noticeable');
+  });
+
+  test('renderAcousticOverlay2D tooltips do not contain redundant Style line', () => {
+    const mathUtilsJs = fs.readFileSync(path.join(__dirname, 'src', 'geo', 'MathUtils.js'), 'utf8');
+    assert.ok(!mathUtilsJs.includes('Style: Unfilled colored dashed contour'), 'Tooltips must not state the obvious style info');
+    assert.ok(!mathUtilsJs.includes('No paint fill'), 'Tooltips must not contain No paint fill text');
+  });
+
+  test('computeMissionAcousticFootprintContours standard mode returns multiple concentric rings', () => {
+    const centerLat = 41.3215;
+    const centerLon = -88.9950;
+    const waypoints = [
+      { lat: 41.3215, lon: -88.9950, x: 0, y: 0, alt: 45, speed: 5 },
+      { lat: 41.3220, lon: -88.9950, x: 0, y: 55, alt: 45, speed: 5 },
+      { lat: 41.3220, lon: -88.9940, x: 80, y: 55, alt: 45, speed: 5 },
+      { lat: 41.3215, lon: -88.9940, x: 80, y: 0, alt: 45, speed: 5 }
+    ];
+
+    // Standard mode (default)
+    const stdResult = computeMissionAcousticFootprintContours(waypoints, centerLat, centerLon, {
+      displayMode: 'standard',
+      ambientDBA: 38
+    });
+    assert.ok(stdResult && stdResult.tiers, 'Result must contain tiers');
+    assert.ok(stdResult.tiers.length >= 2, `Standard mode must return multiple rings (ambient + noticeable/half-power), got ${stdResult.tiers.length}`);
+    const tierIds = stdResult.tiers.map(t => t.id);
+    assert.ok(tierIds.includes('audible') || tierIds.includes('nadir-lobe'), 'Must include audible ambient ring');
+    assert.ok(tierIds.includes('noticeable') || tierIds.includes('nadir-3db') || tierIds.includes('nadir-core'), 'Must include noticeable or nadir half-power ring');
+
+    // Minimal mode (should return 1 ring)
+    const minResult = computeMissionAcousticFootprintContours(waypoints, centerLat, centerLon, {
+      displayMode: 'minimal',
+      ambientDBA: 38
+    });
+    assert.strictEqual(minResult.tiers.length, 1, 'Minimal mode should return exactly 1 ring');
+
+    // Detailed mode (should return multiple rings, up to 4)
+    const detResult = computeMissionAcousticFootprintContours(waypoints, centerLat, centerLon, {
+      displayMode: 'detailed',
+      ambientDBA: 38
+    });
+    assert.ok(detResult.tiers.length >= 2, 'Detailed mode should return multiple rings');
+  });
+});
+
+describe('v1.166.0 Weather-Coordinated Shadow Casting & Satellite Cloud Cover Overlay', () => {
+  test('parseMetar correctly extracts skyCover and dominant coverage octas', () => {
+    assert.ok(typeof parseMetar === 'function', 'parseMetar must be a function');
+
+    // 1. Clear sky
+    const metarClr = parseMetar('KORD 171451Z 24010KT 10SM CLR 18/08 A3002');
+    assert.ok(metarClr, 'Must parse clear METAR');
+    assert.strictEqual(metarClr.skyCover, 'CLR');
+
+    // 2. CAVOK
+    const metarCavok = parseMetar('EGLL 171500Z 27012KT CAVOK 16/10 Q1018');
+    assert.ok(metarCavok, 'Must parse CAVOK METAR');
+    assert.strictEqual(metarCavok.skyCover, 'CLR');
+
+    // 3. Scattered layer
+    const metarSct = parseMetar('KJOT 171500Z 22008KT 10SM SCT035 20/12 A2998');
+    assert.ok(metarSct, 'Must parse SCT METAR');
+    assert.strictEqual(metarSct.skyCover, 'SCT');
+
+    // 4. Overcast layer
+    const metarOvc = parseMetar('KVYS 171515Z 18012KT 6SM OVC012 14/12 A2990');
+    assert.ok(metarOvc, 'Must parse OVC METAR');
+    assert.strictEqual(metarOvc.skyCover, 'OVC');
+    assert.strictEqual(metarOvc.ceilingFt, 1200);
+
+    // 5. Multi-layer: FEW020 SCT040 BKN070 OVC100 -> highest rank is OVC
+    const metarMulti = parseMetar('KIKK 171530Z 20015KT 10SM FEW020 SCT040 BKN070 OVC100 19/11 A2995');
+    assert.ok(metarMulti, 'Must parse multi-layer METAR');
+    assert.strictEqual(metarMulti.skyCover, 'OVC');
+
+    // 6. Vertical visibility indefinite ceiling: VV002 -> treated as OVC
+    const metarVv = parseMetar('KORD 171600Z 00000KT 1/4SM FG VV002 10/10 A2985');
+    assert.ok(metarVv, 'Must parse VV METAR');
+    assert.strictEqual(metarVv.skyCover, 'OVC');
+    assert.strictEqual(metarVv.ceilingFt, 200);
+  });
+
+  test('SolarEphemeris.getCloudAttenuation calculates physics-based factors across sky cover levels', () => {
+    assert.ok(typeof SolarEphemeris.getCloudAttenuation === 'function', 'getCloudAttenuation must be a function');
+
+    // CLR
+    const clr = SolarEphemeris.getCloudAttenuation('CLR');
+    assert.strictEqual(clr.directLightFactor, 1.0);
+    assert.strictEqual(clr.shadowSharpness, 1.0);
+    assert.strictEqual(clr.isOvercast, false);
+
+    // FEW
+    const few = SolarEphemeris.getCloudAttenuation('FEW');
+    assert.strictEqual(few.directLightFactor, 0.90);
+    assert.strictEqual(few.shadowSharpness, 0.90);
+    assert.strictEqual(few.isOvercast, false);
+
+    // SCT
+    const sct = SolarEphemeris.getCloudAttenuation('SCT');
+    assert.strictEqual(sct.directLightFactor, 0.70);
+    assert.strictEqual(sct.shadowSharpness, 0.75);
+    assert.strictEqual(sct.isOvercast, false);
+
+    // BKN
+    const bkn = SolarEphemeris.getCloudAttenuation('BKN');
+    assert.strictEqual(bkn.directLightFactor, 0.40);
+    assert.strictEqual(bkn.shadowSharpness, 0.45);
+    assert.strictEqual(bkn.isOvercast, false);
+
+    // OVC
+    const ovc = SolarEphemeris.getCloudAttenuation('OVC');
+    assert.strictEqual(ovc.directLightFactor, 0.12);
+    assert.strictEqual(ovc.shadowSharpness, 0.15);
+    assert.strictEqual(ovc.isOvercast, true);
+    assert.strictEqual(ovc.octas, '8/8');
+  });
+
+  test('SolarEphemeris.getEffectiveSkyCover prioritizes manual override before live weather fallback', () => {
+    assert.ok(typeof SolarEphemeris.getEffectiveSkyCover === 'function', 'getEffectiveSkyCover must be a function');
+
+    // 1. Without select element or override -> resolves from currentWeatherDirections or defaults to CLR
+    const def = SolarEphemeris.getEffectiveSkyCover();
+    assert.ok(['CLR', 'FEW', 'SCT', 'BKN', 'OVC'].includes(def.code));
+
+    // 2. Mock manual override element in DOM
+    const mockSelect = { value: 'OVC' };
+    const origGetById = document.getElementById;
+    try {
+      document.getElementById = (id) => (id === 'sun-sky-condition-select' ? mockSelect : origGetById.call(document, id));
+      const effectiveOvc = SolarEphemeris.getEffectiveSkyCover();
+      assert.strictEqual(effectiveOvc.code, 'OVC');
+      assert.strictEqual(effectiveOvc.source, 'manual');
+      assert.strictEqual(effectiveOvc.isOvercast, true);
+
+      // Change manual override to CLR
+      mockSelect.value = 'CLR';
+      const effectiveClr = SolarEphemeris.getEffectiveSkyCover();
+      assert.strictEqual(effectiveClr.code, 'CLR');
+      assert.strictEqual(effectiveClr.source, 'manual');
+      assert.strictEqual(effectiveClr.isOvercast, false);
+
+      // Auto mode with active weather station overcast
+      mockSelect.value = 'auto';
+      if (typeof currentWeatherDirections !== 'undefined') {
+        currentWeatherDirections = { closest: { skyCover: 'BKN' } };
+      }
+      global.currentWeatherDirections = { closest: { skyCover: 'BKN' } };
+      if (typeof window !== 'undefined') window.currentWeatherDirections = global.currentWeatherDirections;
+
+      const effectiveAuto = SolarEphemeris.getEffectiveSkyCover();
+      assert.strictEqual(effectiveAuto.code, 'BKN');
+      assert.strictEqual(effectiveAuto.source, 'auto');
+      assert.strictEqual(effectiveAuto.shadowSharpness, 0.45);
+    } finally {
+      document.getElementById = origGetById;
+      if (typeof currentWeatherDirections !== 'undefined') {
+        currentWeatherDirections = null;
+      }
+      delete global.currentWeatherDirections;
+      if (typeof window !== 'undefined') delete window.currentWeatherDirections;
+    }
+  });
+
+  test('SolarEphemeris.getLightingQuality upgrades low-sun photogrammetry advisory under overcast softbox skies', () => {
+    const origEffective = SolarEphemeris.getEffectiveSkyCover;
+    try {
+      // Clear sky with sun elevation 22 deg -> Low Sun / Long Shadows warning
+      SolarEphemeris.getEffectiveSkyCover = () => ({ isOvercast: false, shadowSharpness: 1.0 });
+      const clearQuality = SolarEphemeris.getLightingQuality(22);
+      assert.strictEqual(clearQuality.category, 'LOW_SUN');
+      assert.ok(clearQuality.badge.includes('Low Sun'));
+
+      // Overcast sky with sun elevation 22 deg -> Upgrades to DIFFUSED_OPTIMAL / Shadow-Free Capture!
+      SolarEphemeris.getEffectiveSkyCover = () => ({ isOvercast: true, shadowSharpness: 0.15 });
+      const ovcQuality = SolarEphemeris.getLightingQuality(22);
+      assert.strictEqual(ovcQuality.category, 'DIFFUSED_OPTIMAL');
+      assert.ok(ovcQuality.badge.includes('Diffused Overcast'));
+      assert.ok(ovcQuality.warning.includes('Ideal for 3D Gaussian Splats'));
+    } finally {
+      SolarEphemeris.getEffectiveSkyCover = origEffective;
+    }
+  });
+
+  test('SolarEphemeris.calculateGlareRisk suppresses direct lens flare and specular reflections under overcast', () => {
+    const origEffective = SolarEphemeris.getEffectiveSkyCover;
+    try {
+      // Clear sky with direct solar alignment: heading 180, pitch 20, sun Az 180, sun El 20 -> CRITICAL
+      SolarEphemeris.getEffectiveSkyCover = () => ({ isOvercast: false });
+      const clearGlare = SolarEphemeris.calculateGlareRisk(180, 20, 180, 20);
+      assert.strictEqual(clearGlare.isDirectFlare, true);
+      assert.strictEqual(clearGlare.riskLevel, 'CRITICAL');
+
+      // Overcast sky with direct alignment -> Flare suppressed due to cloud deck diffusion
+      SolarEphemeris.getEffectiveSkyCover = () => ({ isOvercast: true });
+      const ovcGlare = SolarEphemeris.calculateGlareRisk(180, 20, 180, 20);
+      assert.strictEqual(ovcGlare.isDirectFlare, false);
+      assert.strictEqual(ovcGlare.isSpecularBounce, false);
+      assert.strictEqual(ovcGlare.riskLevel, 'LOW');
+      assert.ok(ovcGlare.details.includes('Overcast cloud deck'));
+    } finally {
+      SolarEphemeris.getEffectiveSkyCover = origEffective;
+    }
+  });
+
+  test('shouldProxyTileUrl recognizes NOAA GOES / IEM mesonet satellite cloud tile domains', () => {
+    assert.ok(typeof shouldProxyTileUrl === 'function', 'shouldProxyTileUrl must be a function');
+    const cloudTileUrl = 'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes_east_ir/5/8/12.png';
+    assert.strictEqual(shouldProxyTileUrl(cloudTileUrl), true, 'mesonet satellite cloud tiles must be eligible for bridge proxy caching');
+  });
+});
+
 after(() => {
   for (const h of process._getActiveHandles()) {
     if (h && h.constructor && h.constructor.name === 'Socket' && !h._isStdio && h.fd === undefined) {

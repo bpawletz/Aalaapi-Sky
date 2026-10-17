@@ -676,6 +676,8 @@ function parseMetar(raw) {
   let visSM = null;
   let ceilingFt = null;
   let fltCat = null;
+  let skyCover = null;
+  const skyCoverRank = { 'CLR': 0, 'SKC': 0, 'NCD': 0, 'NSC': 0, 'FEW': 1, 'SCT': 2, 'BKN': 3, 'OVC': 4, 'VV': 5 };
 
   let idx = 0;
   if (tokens[idx] === 'METAR' || tokens[idx] === 'SPECI') idx++;
@@ -740,6 +742,7 @@ function parseMetar(raw) {
     if (t === 'CAVOK') {
       visSM = 10;
       ceilingFt = 99999;
+      if (skyCover === null) skyCover = 'CLR';
       continue;
     }
     if (/^\d{4}$/.test(t) && visSM === null && i < 7) {
@@ -751,15 +754,24 @@ function parseMetar(raw) {
     // Sky conditions: CLR, SKC, NCD, NSC
     if (t === 'CLR' || t === 'SKC' || t === 'NCD' || t === 'NSC') {
       if (ceilingFt === null) ceilingFt = 99999;
+      if (skyCover === null) skyCover = 'CLR';
       continue;
     }
 
-    // Cloud layers: BKN015, OVC020, VV002, etc. (FEW and SCT do not form a ceiling)
-    const cloudMatch = t.match(/^(BKN|OVC|VV)(\d{3})/);
+    // Cloud layers: FEW025, SCT040, BKN015, OVC020, VV002, etc. (FEW and SCT do not form a ceiling)
+    const cloudMatch = t.match(/^(FEW|SCT|BKN|OVC|VV)(\d{3})?/);
     if (cloudMatch) {
-      const baseFt = parseInt(cloudMatch[2], 10) * 100;
-      if (ceilingFt === null || baseFt < ceilingFt) {
-        ceilingFt = baseFt;
+      const layerType = cloudMatch[1];
+      if (cloudMatch[2] && (layerType === 'BKN' || layerType === 'OVC' || layerType === 'VV')) {
+        const baseFt = parseInt(cloudMatch[2], 10) * 100;
+        if (ceilingFt === null || baseFt < ceilingFt) {
+          ceilingFt = baseFt;
+        }
+      }
+      const curRank = skyCoverRank[skyCover] !== undefined ? skyCoverRank[skyCover] : -1;
+      const newRank = skyCoverRank[layerType] !== undefined ? skyCoverRank[layerType] : -1;
+      if (newRank > curRank) {
+        skyCover = (layerType === 'VV') ? 'OVC' : layerType;
       }
     }
   }
@@ -784,6 +796,7 @@ function parseMetar(raw) {
     visSM,
     ceilingFt: (ceilingFt === 99999) ? null : ceilingFt,
     fltCat,
+    skyCover: skyCover || 'CLR',
     raw: cleaned
   };
 }
@@ -1012,7 +1025,114 @@ var SolarEphemeris = {
   },
 
   /**
+   * Computes cloud attenuation factors and lighting diffusion based on METAR / NWS sky cover codes.
+   * OVC / VV: 8/8 octas, diffuse softbox illumination, shadows dissipated to faint ambient zones.
+   * BKN: 5-7/8 octas, partially diffused lighting with soft shadow boundaries.
+   * SCT: 3-4/8 octas, intermittent shadows.
+   * FEW: 1-2/8 octas, bright direct sun with minor cloud interference.
+   * CLR / SKC: 0/8 octas, full direct sunlight and sharp shadow casting.
+   * @param {string} skyCoverCode (CLR, FEW, SCT, BKN, OVC, VV)
+   */
+  getCloudAttenuation(skyCoverCode) {
+    const code = String(skyCoverCode || 'CLR').toUpperCase();
+    switch (code) {
+      case 'OVC':
+      case 'VV':
+        return {
+          code: 'OVC',
+          octas: '8/8',
+          label: 'Overcast (Diffused Light)',
+          directLightFactor: 0.12,
+          diffuseAmbientFactor: 0.88,
+          shadowSharpness: 0.15,
+          isOvercast: true
+        };
+      case 'BKN':
+        return {
+          code: 'BKN',
+          octas: '5-7/8',
+          label: 'Broken Clouds',
+          directLightFactor: 0.40,
+          diffuseAmbientFactor: 0.60,
+          shadowSharpness: 0.45,
+          isOvercast: false
+        };
+      case 'SCT':
+        return {
+          code: 'SCT',
+          octas: '3-4/8',
+          label: 'Scattered Clouds',
+          directLightFactor: 0.70,
+          diffuseAmbientFactor: 0.30,
+          shadowSharpness: 0.75,
+          isOvercast: false
+        };
+      case 'FEW':
+        return {
+          code: 'FEW',
+          octas: '1-2/8',
+          label: 'Few Clouds',
+          directLightFactor: 0.90,
+          diffuseAmbientFactor: 0.10,
+          shadowSharpness: 0.90,
+          isOvercast: false
+        };
+      case 'CLR':
+      case 'SKC':
+      case 'NCD':
+      case 'NSC':
+      default:
+        return {
+          code: 'CLR',
+          octas: '0/8',
+          label: 'Clear Sky',
+          directLightFactor: 1.0,
+          diffuseAmbientFactor: 0.0,
+          shadowSharpness: 1.0,
+          isOvercast: false
+        };
+    }
+  },
+
+  /**
+   * Resolves the effective sky condition by prioritizing user manual override (if selected),
+   * falling back to live METAR / NWS weather observations from active station.
+   */
+  getEffectiveSkyCover() {
+    const selectEl = (typeof document !== 'undefined') ? document.getElementById('sun-sky-condition-select') : null;
+    const userOverride = (selectEl && typeof selectEl.value === 'string') ? selectEl.value : 'auto';
+    const validCodes = ['CLR', 'SKC', 'FEW', 'SCT', 'BKN', 'OVC', 'VV'];
+    if (userOverride && userOverride !== 'auto' && validCodes.includes(userOverride.toUpperCase())) {
+      return {
+        ...this.getCloudAttenuation(userOverride),
+        source: 'manual',
+        selectedCode: userOverride
+      };
+    }
+
+    // Resolve from active weather station
+    let weatherCode = 'CLR';
+    const weatherDirs = (typeof currentWeatherDirections !== 'undefined' && currentWeatherDirections)
+      ? currentWeatherDirections
+      : ((typeof global !== 'undefined' && global.currentWeatherDirections)
+          ? global.currentWeatherDirections
+          : ((typeof window !== 'undefined' && window.currentWeatherDirections) ? window.currentWeatherDirections : null));
+
+    if (weatherDirs && weatherDirs.closest && weatherDirs.closest.skyCover) {
+      weatherCode = weatherDirs.closest.skyCover;
+    }
+    return {
+      ...this.getCloudAttenuation(weatherCode),
+      source: 'auto',
+      selectedCode: weatherCode
+    };
+  },
+
+  /**
    * Classifies lighting window quality for 3D photogrammetry & Gaussian splatting.
+   * Modulated by live weather / cloud cover:
+   * Overcast (OVC) provides a natural outdoor softbox that eliminates harsh moving shadow lines,
+   * upgrading photogrammetry capture advisories when solar elevation is above twilight.
    * Optimal: Sun elevation >= 40° (or within ±2h of solar noon) -> High Sun / Minimal Shadows
    * Acceptable: Sun elevation 25° - 40° -> Moderate Shadows
    * Low: Sun elevation 10° - 25° -> Low Sun / Long Facade Shadows
@@ -1030,6 +1150,10 @@ var SolarEphemeris = {
       if (diffHours <= 2.0) isNearNoon = true;
     }
 
+    const sky = (typeof this.getEffectiveSkyCover === 'function')
+      ? this.getEffectiveSkyCover()
+      : { isOvercast: false };
+
     if (el < 0) {
       return {
         category: 'NIGHT',
@@ -1037,6 +1161,22 @@ var SolarEphemeris = {
         badge: '🌙 Night / Artificial Illumination Required',
         color: '#ef4444',
         warning: 'Zero ambient sunlight. Active strobes / artificial lighting required.'
+      };
+    } else if (sky.isOvercast && el >= 15) {
+      return {
+        category: 'DIFFUSED_OPTIMAL',
+        label: 'Overcast / Diffused Softbox',
+        badge: '☁️ Diffused Overcast / Shadow-Free Capture',
+        color: '#38bdf8',
+        warning: 'Soft, even illumination with zero harsh moving shadow lines or direct specular glare. Ideal for 3D Gaussian Splats & photogrammetry (monitor shutter speed/ISO for lower lux).'
+      };
+    } else if (sky.isOvercast && el >= 5) {
+      return {
+        category: 'DIFFUSED_LOW',
+        label: 'Overcast Low Sun',
+        badge: '☁️ Diffused Low Sun',
+        color: '#38bdf8',
+        warning: 'Diffused ambient light with soft shadow transitions. Verify drone exposure time in low ambient lux.'
       };
     } else if (el < 10) {
       return {
@@ -1079,6 +1219,7 @@ var SolarEphemeris = {
    * lens flare and direct glare blind the sensor.
    * Also computes ground specular bounce vector (flat plane): if camera looks down toward a ground point at angle theta,
    * and the sun shines from opposite azimuth at angle theta, specular reflection from roofs/water/metal/targets bounces directly into lens.
+   * Under overcast sky (OVC), direct solar disc is obscured and direct flare / specular bounce is eliminated.
    * @param {number} cameraHeadingDeg
    * @param {number} gimbalPitchDeg (e.g. -90 to 0)
    * @param {number} sunAzimuthDeg
@@ -1092,6 +1233,22 @@ var SolarEphemeris = {
 
     if (sunEl <= 0) {
       return { riskLevel: 'NONE', isDirectFlare: false, isSpecularBounce: false, angularSeparationDeg: 180, details: 'Sun below horizon.' };
+    }
+
+    const sky = (typeof this.getEffectiveSkyCover === 'function')
+      ? this.getEffectiveSkyCover()
+      : { isOvercast: false };
+
+    if (sky.isOvercast) {
+      return {
+        riskLevel: 'LOW',
+        isDirectFlare: false,
+        isSpecularBounce: false,
+        angularSeparationDeg: 180,
+        specularAzimuthDiffDeg: 180,
+        specularElevationDiffDeg: 90,
+        details: 'Overcast cloud deck diffuses direct solar rays and eliminates specular surface flare.'
+      };
     }
 
     // 1. Direct Sun in Lens (Looking up or level towards sun)
@@ -1476,6 +1633,14 @@ function renderSolarCardUI(ephemeris) {
     }
   }
 
+  const advisorSkyCover = document.getElementById('sun-advisor-sky-cover');
+  if (advisorSkyCover) {
+    const sky = (typeof SolarEphemeris.getEffectiveSkyCover === 'function')
+      ? SolarEphemeris.getEffectiveSkyCover()
+      : { code: 'CLR', source: 'auto' };
+    advisorSkyCover.textContent = `${sky.source === 'manual' ? 'Manual' : 'Auto'} (${sky.code})`;
+  }
+
   // Hook toggle button listeners if not already bound
   initSolarEphemerisEventListeners();
 }
@@ -1503,6 +1668,16 @@ function initSolarEphemerisEventListeners() {
       const isHidden = statTimeline.classList.toggle('hidden');
       statToggleBtn.textContent = isHidden ? '▾ 24h Timeline' : '▴ 24h Timeline';
     };
+  }
+
+  const skySelect = document.getElementById('sun-sky-condition-select');
+  if (skySelect && typeof skySelect.addEventListener === 'function') {
+    skySelect.addEventListener('change', () => {
+      if (typeof updateSolarEphemeris === 'function') updateSolarEphemeris();
+      if (typeof renderSolarOverlay2D === 'function') renderSolarOverlay2D();
+      if (typeof update3DSunPosition === 'function') update3DSunPosition();
+      if (typeof saveAllSettingsToLocalStorage === 'function') saveAllSettingsToLocalStorage();
+    });
   }
 }
 
@@ -1626,6 +1801,7 @@ async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
       let windSpeedKmH = null;
       let timestamp = null;
       let raw = null;
+      let skyCover = 'CLR';
 
       // Extract NWS data if available
       let nwsTimestamp = null;
@@ -1650,7 +1826,15 @@ async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
         }
 
         if (Array.isArray(obsData.properties.cloudLayers)) {
+          const rank = { 'CLR': 0, 'SKC': 0, 'FEW': 1, 'SCT': 2, 'BKN': 3, 'OVC': 4, 'VV': 5 };
           for (let layer of obsData.properties.cloudLayers) {
+            const amt = String(layer.amount || '').toUpperCase();
+            if (amt && rank[amt] !== undefined) {
+              const curR = rank[skyCover] !== undefined ? rank[skyCover] : -1;
+              if (rank[amt] > curR) {
+                skyCover = (amt === 'VV') ? 'OVC' : amt;
+              }
+            }
             if (layer.amount === 'OVC' || layer.amount === 'BKN' || layer.amount === 'VV') {
               if (layer.base && layer.base.value != null) {
                 let baseFt = layer.base.value * 3.28084;
@@ -1706,6 +1890,7 @@ async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
           ceilingFt = liveMetar.ceilingFt;
           if (liveMetar.windSpeedKmH !== null) windSpeedKmH = liveMetar.windSpeedKmH;
           if (liveMetar.timestamp) timestamp = liveMetar.timestamp;
+          if (liveMetar.skyCover) skyCover = liveMetar.skyCover;
           if (liveMetar.raw) raw = liveMetar.raw;
         }
       }
@@ -1717,6 +1902,7 @@ async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
           fltCat = parsedNwsRaw.fltCat;
           if (visSM === null && parsedNwsRaw.visSM !== null) visSM = parsedNwsRaw.visSM;
           if (ceilingFt === null && parsedNwsRaw.ceilingFt !== null) ceilingFt = parsedNwsRaw.ceilingFt;
+          if (skyCover === 'CLR' && parsedNwsRaw.skyCover) skyCover = parsedNwsRaw.skyCover;
         }
       }
 
@@ -1736,6 +1922,7 @@ async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
         ceilingFt: ceilingFt,
         windSpeedKmH: windSpeedKmH,
         timestamp: timestamp,
+        skyCover: skyCover || 'CLR',
         raw: raw || "No raw METAR"
       });
     });

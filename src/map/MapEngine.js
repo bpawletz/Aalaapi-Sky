@@ -136,6 +136,7 @@ let tfrFilterRadiusNM = 30;
 let weatherRadarLayer;
 let weatherWarningsLayer;
 let weatherStationLayer;
+let cloudCoverLayer;
 let weatherStationMarker = null;
 let weatherStationMarkers = [];
 let weatherStationLine = null;
@@ -468,6 +469,14 @@ function initMap() {
     attribution: 'NOAA/NWS Hazards'
   });
 
+  // Satellite Cloud Cover Overlay (NOAA GOES / IEM Infrared - Free, Open, Zero API Key)
+  cloudCoverLayer = L.tileLayer('https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes_east_ir/{z}/{x}/{y}.png', {
+    maxZoom: 22,
+    maxNativeZoom: 8,
+    opacity: 0.50,
+    attribution: 'NOAA GOES / IEM'
+  });
+
   const isLocal = isLocalhostEnvironment();
   const osmStreetLabel = isLocal ? "Street Map (OSM - Disabled on Localhost)" : "Street Map (OpenStreetMap)";
 
@@ -572,6 +581,7 @@ function initMap() {
   overlays["Weather Observation Station (NWS)"] = weatherStationLayer;
   overlays["Weather Radar (NEXRAD) (US Only)"] = weatherRadarLayer;
   overlays["Weather Warnings (NWS Hazards) (US Only)"] = weatherWarningsLayer;
+  overlays["☁️ Satellite Cloud Cover (IR)"] = cloudCoverLayer;
 
   // Live Remote ID Airspace Overlay (Drones & Takeoff Locations)
   remoteIdAirspaceLayer = L.layerGroup().addTo(map);
@@ -844,7 +854,7 @@ const CONTROLS_LIST = [
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
   'camera-model', 'drone-model', 'camera-zoom', 'camera-aspect-ratio', 'camera-hfov', 'camera-vfov', 'road-offset',
   'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer',
-  'max-flight-height', 'rth-altitude', 'acoustic-ambient-preset',
+  'max-flight-height', 'rth-altitude', 'acoustic-ambient-preset', 'acoustic-contour-display-mode', 'sun-sky-condition-select',
   'target-splat-radius', 'target-splat-height', 'target-splat-culling-mode', 'target-splat-grid-pass',
   'tower-min-height', 'tower-max-height', 'tower-radius', 'tower-guy-wire-buffer', 'tower-movement-mode', 'tower-altitude-order'
 ];
@@ -907,6 +917,8 @@ const FACTORY_DEFAULTS = {
   'global-exclusion-clearance-buffer': '10',
   'max-flight-time': '25',
   'acoustic-ambient-preset': '45',
+  'acoustic-contour-display-mode': 'standard',
+  'sun-sky-condition-select': 'auto',
   // UI & Layout Preferences
   'unit-system': 'imperial',
   'theme': 'dark',
@@ -1359,10 +1371,12 @@ function initReplay2dBarListeners() {
 
 // Computes current state of modified settings across all 5 domains
 
-// Night Flight Map Layer exports (v1.161.0 - Issue #143)
+// Night Flight Map Layer & Cloud Cover Layer exports (v1.161.0 - Issue #143, v1.166.0)
 if (typeof window !== 'undefined') {
   window.nasaNightLightsLayer = nasaNightLightsLayer;
+  window.cloudCoverLayer = cloudCoverLayer;
 }
 if (typeof global !== 'undefined') {
   global.nasaNightLightsLayer = nasaNightLightsLayer;
+  global.cloudCoverLayer = cloudCoverLayer;
 }

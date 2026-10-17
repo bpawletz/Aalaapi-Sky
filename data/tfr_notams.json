@@ -1,5 +1,16 @@
 [
   {
+    "notam_id": "6/0024",
+    "facility": "ZLA",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "19 NM NW OCEANSIDE, CA, Saturday, October 17, 2026 through Saturday, October 24, 2026 UTC",
+    "mod_date": "10/17/2026 14:44:00",
+    "mod_abs_time": "202610171444",
+    "is_new": "Y",
+    "gid": "6/0024"
+  },
+  {
     "notam_id": "6/0014",
     "facility": "ZLA",
     "state": "CA",
@@ -53,17 +64,6 @@
     "mod_abs_time": "202610162337",
     "is_new": "Y",
     "gid": "6/0007"
-  },
-  {
-    "notam_id": "6/0006",
-    "facility": "ZLA",
-    "state": "CA",
-    "type": "HAZARDS",
-    "description": "19 NM NW OCEANSIDE, CA, Friday, October 16, 2026 through Saturday, October 24, 2026 UTC",
-    "mod_date": "10/16/2026 22:34:00",
-    "mod_abs_time": "202610162234",
-    "is_new": "Y",
-    "gid": "6/0006"
   },
   {
     "notam_id": "6/0004",
@@ -194,7 +194,7 @@
     "description": "ARLINGTON, KS, Monday, October 19, 2026 UTC",
     "mod_date": "10/16/2026 14:14:00",
     "mod_abs_time": "202610161414",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9930"
   },
   {
@@ -205,7 +205,7 @@
     "description": "Middleburg, VA, Saturday, October 17, 2026 through Sunday, October 18, 2026 Local",
     "mod_date": "10/16/2026 11:50:00",
     "mod_abs_time": "202610161150",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9923"
   },
   {
@@ -216,7 +216,7 @@
     "description": "AUSTIN, TX, Wednesday, October 21, 2026 through Sunday, October 25, 2026 Local",
     "mod_date": "10/16/2026 11:37:00",
     "mod_abs_time": "202610161137",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9922"
   },
   {
@@ -361,17 +361,6 @@
     "mod_abs_time": "202610132307",
     "is_new": "N",
     "gid": "6/9370"
-  },
-  {
-    "notam_id": "6/9368",
-    "facility": "ZMA",
-    "state": "FL",
-    "type": "VIP",
-    "description": "West Palm Beach, FL, Friday, October 16, 2026 through Saturday, October 17, 2026 Local",
-    "mod_date": "10/13/2026 22:12:00",
-    "mod_abs_time": "202610132212",
-    "is_new": "N",
-    "gid": "6/9368"
   },
   {
     "notam_id": "6/9278",

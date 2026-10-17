@@ -1064,6 +1064,13 @@ async function showPreflightGateModal(onPassCallback = null) {
     gateToggle.onchange = () => setPreflightGateEnabled(gateToggle.checked);
   }
 
+  const closeBtn = document.getElementById('preflight-close-btn');
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      modal.classList.add('hidden');
+    };
+  }
+
   renderPreflightStepper();
   renderPreflightPhase(0);
   initSignatureCanvas();
