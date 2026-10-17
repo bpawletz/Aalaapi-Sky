@@ -1,3 +1,24 @@
+## [1.162.0] - 2026-10-16
+
+Streamlines the top navigation ribbon by retiring technical buffer RAM metrics and consolidating the Ambient Airspace & Replay Buffer monitor inside the Bridge & Hardware drawer.
+
+### 🔄 Changed
+
+#### Pilot & Operational Features
+- **Streamlined Top Navigation Ribbon**:
+  - Retired the ambient telemetry buffer RAM pill (`Buffer: 0.00 MB [Clear]`) from the primary top navigation ribbon to eliminate pilot confusion between clearing memory buffers and active airspace clearance.
+  - Ensures a single, authoritative air traffic alert presence via the dedicated manned aircraft ADS-B alert button on the right toolbar.
+  - Upgraded the Bridge status pill (`#header-bridge-pill`) to a standalone first-class capsule pill matching Flight Time and Weather/TFR.
+- **Consolidated Bridge & Hardware Drawer Buffer Monitor**:
+  - Relocated the rolling ring buffer statistics, packet counters (ASTM Remote ID frames, ADS-B tracks, cached NEXRAD tiles), and transient flush/snapshot controls directly inside the Bridge & Hardware popout drawer (`#bridge-status-popover`).
+  - Added real-time telemetry buffer refresh whenever the Bridge popout drawer is opened.
+- **Automated Memory Pressure Warning Cascade**:
+  - Integrated automated memory pressure monitoring into `#header-bridge-pill`, applying a high-visibility warning indicator if rolling buffer memory allocation reaches or exceeds 80%.
+
+#### Under the Hood & Technical Details
+- **Topbar Ribbon Architecture**: Updated `DEFAULT_RIBBON_ITEMS` in `src/ui/SidebarManager.js` to target `#header-bridge-container` as `Bridge & Hardware Link`.
+- **Drawer Telemetry Binding**: Updated `updateBufferHud()` in `src/bridge/ApiClient.js` and `toggleBridgePopover()` in `src/ui/EventBindings.js` to refresh `#bridge-ambient-buffer-section` metrics and toggle `.is-pressure` on the Bridge pill.
+
 ## [1.161.1] - 2026-10-16
 
 ### 🔄 Changed

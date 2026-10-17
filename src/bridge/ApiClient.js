@@ -1573,6 +1573,16 @@ const AmbientBufferManager = {
       }
     }
 
+    // Bridge Pill memory pressure awareness
+    const bridgePill = document.getElementById('header-bridge-pill');
+    if (bridgePill) {
+      if (pct >= 80 || metrics.isMemoryPressure) {
+        bridgePill.classList.add('is-pressure');
+      } else {
+        bridgePill.classList.remove('is-pressure');
+      }
+    }
+
     // Update Popover elements
     const ramEl = document.getElementById('buffer-stat-ram');
     if (ramEl) ramEl.textContent = `${mbUsed} MB / ${metrics.mbMax || 10} MB (${pct}%)`;

@@ -12,6 +12,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     page = await browser.newPage();
     const indexPath = 'file:///' + path.resolve(__dirname, 'index.html').replace(/\\/g, '/');
     await page.goto(indexPath, { waitUntil: 'load' });
+    await page.waitForFunction(() => typeof window.L !== 'undefined', { timeout: 15000 }).catch(() => {});
     await page.evaluate(() => {
       localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
       const d = document.getElementById('disclaimer-modal');
@@ -8300,20 +8301,21 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(res.popClosed, true, 'Clicking close button should hide popover');
     });
 
-    test('E2E: Ambient Buffer Pill, Popover Interactivity, and Memory Metrics (v1.160.0, Issue #142)', async () => {
+    test('E2E: Ambient Buffer Section in Bridge Popover, Interactivity, and Memory Metrics (v1.162.0, Issue #142)', async () => {
       await page.setViewportSize({ width: 1280, height: 800 });
       const res = await page.evaluate(async () => {
-        const pill = document.getElementById('header-ambient-buffer-pill');
-        const popover = document.getElementById('buffer-monitor-popover');
-        const closeBtn = document.getElementById('buffer-popover-close-btn');
+        const bridgePill = document.getElementById('header-bridge-pill');
+        const popover = document.getElementById('bridge-status-popover');
+        const bufferSection = document.getElementById('bridge-ambient-buffer-section');
+        const closeBtn = document.getElementById('bridge-popover-close-btn');
         const flushBtn = document.getElementById('buffer-flush-btn');
         const snapBtn = document.getElementById('buffer-snapshot-btn');
         const fillBar = document.getElementById('buffer-progress-bar');
 
         const initialPopHidden = popover.classList.contains('hidden');
 
-        // Click pill to open popover
-        pill.click();
+        // Click bridge pill to open popover
+        bridgePill.click();
         const popOpened = !popover.classList.contains('hidden');
 
         // Update with mock metrics
@@ -8330,8 +8332,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
           });
         }
 
-        const labelText = document.getElementById('header-buffer-label')?.textContent;
-        const trafficBadge = document.getElementById('header-buffer-traffic-badge')?.textContent;
+        const ramText = document.getElementById('buffer-stat-ram')?.textContent;
+        const ridText = document.getElementById('buffer-stat-rid')?.textContent;
+        const adsbText = document.getElementById('buffer-stat-adsb')?.textContent;
         const barWidth = fillBar?.style.width;
 
         // Close popover
@@ -8339,27 +8342,29 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         const popClosed = popover.classList.contains('hidden');
 
         return {
-          pillExists: !!pill,
-          popoverExists: !!popover,
+          bridgePillExists: !!bridgePill,
+          bufferSectionExists: !!bufferSection,
           flushBtnExists: !!flushBtn,
           snapBtnExists: !!snapBtn,
           initialPopHidden,
           popOpened,
-          labelText,
-          trafficBadge,
+          ramText,
+          ridText,
+          adsbText,
           barWidth,
           popClosed
         };
       });
 
-      assert.strictEqual(res.pillExists, true, 'Ambient buffer pill must exist');
-      assert.strictEqual(res.popoverExists, true, 'Buffer monitor popover must exist');
-      assert.strictEqual(res.flushBtnExists, true, 'Buffer flush button must exist');
+      assert.strictEqual(res.bridgePillExists, true, 'Bridge pill must exist on top ribbon');
+      assert.strictEqual(res.bufferSectionExists, true, 'Buffer section must exist inside Bridge popover');
+      assert.strictEqual(res.flushBtnExists, true, 'Buffer flush button must exist inside Bridge popover');
       assert.strictEqual(res.snapBtnExists, true, 'Buffer snapshot commit button must exist');
-      assert.strictEqual(res.initialPopHidden, true, 'Popover must default to hidden');
-      assert.strictEqual(res.popOpened, true, 'Clicking pill must open popover');
-      assert.ok(res.labelText.includes('3.34 MB'), 'Buffer label must reflect formatted memory');
-      assert.ok(res.trafficBadge.includes('RID') && res.trafficBadge.includes('ADS-B'), 'Traffic badge must reflect traffic counts');
+      assert.strictEqual(res.initialPopHidden, true, 'Bridge popover must default to hidden');
+      assert.strictEqual(res.popOpened, true, 'Clicking bridge pill must open popover');
+      assert.ok(res.ramText.includes('3.34 MB') && res.ramText.includes('35%'), 'RAM stat must reflect formatted memory and capacity percentage');
+      assert.ok(res.ridText.includes('2 frames'), 'RID text must reflect 2 frames');
+      assert.ok(res.adsbText.includes('4 points'), 'ADS-B text must reflect 4 points');
       assert.strictEqual(res.barWidth, '35%', 'Progress bar fill must reflect capacity percentage');
       assert.strictEqual(res.popClosed, true, 'Clicking close button must hide popover');
     });
@@ -8407,11 +8412,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         const searchInput = document.getElementById('location-input');
         const searchContainer = document.getElementById('header-search-container');
         const missionTimePill = document.getElementById('header-mission-time-pill');
-        const systemGroup = document.getElementById('header-system-status-group');
+        const bridgeContainer = document.getElementById('header-bridge-container');
         const bridgePill = document.getElementById('header-bridge-pill');
-        const bufferPill = document.getElementById('header-ambient-buffer-pill');
         const bridgePop = document.getElementById('bridge-status-popover');
-        const bufferPop = document.getElementById('buffer-monitor-popover');
         const configModal = document.getElementById('config-modal');
         const ribbonCard = document.getElementById('ribbon-settings-card');
         const presetSelect = document.getElementById('ribbon-preset-select');
@@ -8432,14 +8435,13 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         const timeRect = missionTimePill.getBoundingClientRect();
         const noOverlap = timeRect.left >= locateRect.right - 2;
 
-        // 3. Unified System Group structure & popover clicking
-        const systemGroupExists = !!systemGroup && systemGroup.contains(bridgePill) && systemGroup.contains(bufferPill);
+        // 3. Bridge Pill & consolidated Bridge drawer with ambient buffer section
+        const bridgeContainerExists = !!bridgeContainer && bridgeContainer.contains(bridgePill);
+        const bufferPillRetiredFromHeader = !document.querySelector('.topbar-center #header-ambient-buffer-pill');
         bridgePill.click();
         const bridgeOpened = !bridgePop.classList.contains('hidden');
-        bufferPill.click();
-        const bufferOpened = !bufferPop.classList.contains('hidden');
-        const bridgeClosedOnBufferOpen = bridgePop.classList.contains('hidden');
-        document.getElementById('buffer-popover-close-btn').click();
+        const bufferSectionExistsInDrawer = !!bridgePop.querySelector('#bridge-ambient-buffer-section');
+        document.getElementById('bridge-popover-close-btn').click();
 
         // 4. More menu Customize Ribbon action
         moreBtn.click();
@@ -8476,10 +8478,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
           locateLabelHidden,
           locateCompact,
           noOverlap,
-          systemGroupExists,
+          bridgeContainerExists,
+          bufferPillRetiredFromHeader,
           bridgeOpened,
-          bufferOpened,
-          bridgeClosedOnBufferOpen,
+          bufferSectionExistsInDrawer,
           moreMenuOpen,
           configOpened,
           moreMenuClosedOnSelect,
@@ -8494,10 +8496,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(res.locateLabelHidden, true, 'Locate text label must be visually hidden inside search bar');
       assert.strictEqual(res.locateCompact, true, 'Locate button must render as compact icon pin (<= 32px)');
       assert.strictEqual(res.noOverlap, true, 'Mission time pill must not overlap with locate pin');
-      assert.strictEqual(res.systemGroupExists, true, 'Unified #header-system-status-group must contain bridge and buffer pills');
-      assert.strictEqual(res.bridgeOpened, true, 'Clicking bridge segment must open bridge popover');
-      assert.strictEqual(res.bufferOpened, true, 'Clicking buffer segment must open buffer monitor popover');
-      assert.strictEqual(res.bridgeClosedOnBufferOpen, true, 'Opening buffer popover must close bridge popover');
+      assert.strictEqual(res.bridgeContainerExists, true, 'Top ribbon must contain #header-bridge-container with #header-bridge-pill');
+      assert.strictEqual(res.bufferPillRetiredFromHeader, true, 'Standalone buffer pill must be retired from topbar ribbon');
+      assert.strictEqual(res.bridgeOpened, true, 'Clicking bridge pill must open bridge popover');
+      assert.strictEqual(res.bufferSectionExistsInDrawer, true, 'Ambient buffer section must exist inside bridge drawer');
       assert.strictEqual(res.moreMenuOpen, true, 'Clicking More button must reveal dropdown');
       assert.strictEqual(res.configOpened, true, 'Clicking Customize Ribbon in More menu must open config modal');
       assert.strictEqual(res.moreMenuClosedOnSelect, true, 'Selecting Customize Ribbon must close More menu');

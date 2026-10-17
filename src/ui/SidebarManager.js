@@ -295,7 +295,7 @@ const DEFAULT_RIBBON_ITEMS = [
   { id: 'search', label: 'Search & Location Bar', selector: '#header-search-container', defaultVisible: true },
   { id: 'mission-time', label: 'Mission Flight Time', selector: '.header-mission-time-container', defaultVisible: true },
   { id: 'weather', label: 'Weather & TFR Status', selector: '.header-telemetry-container', defaultVisible: true },
-  { id: 'system-bridge', label: 'Bridge & Ambient Buffer', selector: '#header-system-status-group', defaultVisible: true },
+  { id: 'system-bridge', label: 'Bridge & Hardware Link', selector: '#header-bridge-container, #header-system-status-group', defaultVisible: true },
   { id: 'units', label: 'Units Toggle (FT / MPH)', selector: '#header-unit-toggle-btn', defaultVisible: true },
   { id: 'theme', label: 'Theme Toggle (Light / Dark)', selector: '#theme-toggle-btn', defaultVisible: true },
   { id: 'adsb', label: 'ADS-B Airspace Alerts', selector: '#adsb-topbar-btn', defaultVisible: true },
