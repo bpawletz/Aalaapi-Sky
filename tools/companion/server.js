@@ -2083,9 +2083,14 @@ function extractDjiXmpMetadata(buf) {
   }
   if (absAltStr !== null && !isNaN(parseFloat(absAltStr))) result.altMsl = parseFloat(absAltStr);
   if (gimbalPitchStr !== null && !isNaN(parseFloat(gimbalPitchStr))) result.gimbalPitch = parseFloat(gimbalPitchStr);
-  if (gimbalYawStr !== null && !isNaN(parseFloat(gimbalYawStr))) result.heading = parseFloat(gimbalYawStr);
+  if (gimbalYawStr !== null && !isNaN(parseFloat(gimbalYawStr))) result.gimbalYaw = parseFloat(gimbalYawStr);
   if (flightPitchStr !== null && !isNaN(parseFloat(flightPitchStr))) result.flightPitch = parseFloat(flightPitchStr);
-  if (flightYawStr !== null && !isNaN(parseFloat(flightYawStr))) result.flightYaw = parseFloat(flightYawStr);
+  if (flightYawStr !== null && !isNaN(parseFloat(flightYawStr))) {
+    result.flightYaw = parseFloat(flightYawStr);
+    result.heading = result.flightYaw;
+  } else if (gimbalYawStr !== null && !isNaN(parseFloat(gimbalYawStr))) {
+    result.heading = parseFloat(gimbalYawStr);
+  }
   if (flightRollStr !== null && !isNaN(parseFloat(flightRollStr))) result.flightRoll = parseFloat(flightRollStr);
   if (modelStr) result.droneModel = modelStr;
   if (createDateMatch) result.createDate = createDateMatch[1].trim();

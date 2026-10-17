@@ -106,7 +106,18 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
   const altIdx = findCol([h => h === 'osd.height [m]', h => h === 'osd.height', h => h === 'height_above_takeoff(meters)', h => h.includes('height [m]'), h => h === 'altitude', h => h.includes('alt') || h.includes('height')]);
   const speedIdx = findCol([h => h === 'osd.hspeed [m/s]', h => h === 'osd.hspeed', h => h === 'speed(m/s)', h => h.includes('speed') || h.includes('spd')]);
   const pitchIdx = findCol([h => h === 'gimbal.pitch', h => h === 'gimbal_pitch', h => h.includes('gimbal.pitch') || h.includes('gimbal_pitch'), h => h.includes('pitch')]);
-  const yawIdx = findCol([h => h === 'gimbal.yaw', h => h === 'osd.yaw', h => h === 'yaw', h => h.includes('yaw') || h.includes('heading')]);
+  const yawIdx = findCol([
+    h => h === 'osd.yaw',
+    h => h === 'aircraft_yaw',
+    h => h === 'flight_yaw',
+    h => h === 'compass_heading(degrees)',
+    h => h === 'yaw',
+    h => h.includes('osd.yaw'),
+    h => h.includes('compass_heading'),
+    h => h.includes('flight_yaw') || h.includes('aircraft_yaw'),
+    h => h === 'gimbal.yaw',
+    h => h.includes('yaw') || h.includes('heading')
+  ]);
   const battIdx = findCol([h => h === 'battery.charge_level', h => h.includes('chargelevel') || h.includes('charge_level'), h => h.includes('battery_percent') || h.includes('battery')]);
   const satsIdx = findCol([h => h === 'osd.gps_num', h => h === 'osd.gpsnum', h => h.includes('gps_num') || h.includes('gpsnum'), h => h.includes('satellites')]);
   const photoIdx = findCol([h => h === 'camera.is_photo', h => h === 'is_photo', h => h.includes('photo') || h.includes('trigger')]);
@@ -135,13 +146,16 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
       }
     }
 
+    const rowPitch = pitchIdx !== -1 && !isNaN(parseFloat(cols[pitchIdx])) ? parseFloat(cols[pitchIdx]) : -60.0;
+    const rowYaw = yawIdx !== -1 && !isNaN(parseFloat(cols[yawIdx])) ? parseFloat(cols[yawIdx]) : 0.0;
+
     rawRows.push({
       lat,
       lon,
-      alt: altIdx !== -1 ? parseFloat(cols[altIdx]) || 0 : 21.0,
-      speed: speedIdx !== -1 ? parseFloat(cols[speedIdx]) || 0 : 4.0,
-      pitch: pitchIdx !== -1 ? parseFloat(cols[pitchIdx]) || -60.0 : -60.0,
-      yaw: yawIdx !== -1 ? parseFloat(cols[yawIdx]) || 0 : 0,
+      alt: altIdx !== -1 && !isNaN(parseFloat(cols[altIdx])) ? parseFloat(cols[altIdx]) : 21.0,
+      speed: speedIdx !== -1 && !isNaN(parseFloat(cols[speedIdx])) ? parseFloat(cols[speedIdx]) : 4.0,
+      pitch: rowPitch,
+      yaw: rowYaw,
       battery: battIdx !== -1 ? parseFloat(cols[battIdx]) || null : null,
       satellites: satsIdx !== -1 ? parseInt(cols[satsIdx], 10) || 24 : 24,
       isPhoto: photoIdx !== -1 ? (cols[photoIdx] === '1' || cols[photoIdx].toLowerCase() === 'true' || cols[photoIdx].toLowerCase() === 'yes') : false,
@@ -264,12 +278,12 @@ function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
       if (isNaN(lat) || isNaN(lon)) continue;
 
       const spdMatch = pm.match(/<(?:wpml:)?waypointSpeed>([\s\S]*?)<\/(?:wpml:)?waypointSpeed>/i);
-      const speed = spdMatch ? (parseFloat(spdMatch[1]) || 4.0) : 4.0;
+      const speed = spdMatch && !isNaN(parseFloat(spdMatch[1])) ? parseFloat(spdMatch[1]) : 4.0;
       const pitchMatch = pm.match(/<(?:wpml:)?gimbalPitchRotateAngle>([\s\S]*?)<\/(?:wpml:)?gimbalPitchRotateAngle>/i) ||
                          pm.match(/<(?:wpml:)?waypointGimbalPitchAngle>([\s\S]*?)<\/(?:wpml:)?waypointGimbalPitchAngle>/i);
-      const pitch = pitchMatch ? (parseFloat(pitchMatch[1]) || -60.0) : -60.0;
+      const pitch = pitchMatch && !isNaN(parseFloat(pitchMatch[1])) ? parseFloat(pitchMatch[1]) : -60.0;
       const yawMatch = pm.match(/<(?:wpml:)?waypointHeadingAngle>([\s\S]*?)<\/(?:wpml:)?waypointHeadingAngle>/i);
-      const yaw = yawMatch ? (parseFloat(yawMatch[1]) || 0) : 0;
+      const yaw = yawMatch && !isNaN(parseFloat(yawMatch[1])) ? parseFloat(yawMatch[1]) : 0;
 
       if (alt > maxAlt) maxAlt = alt;
       const hasPhoto = pm.includes('takePhoto') || pm.includes('ShootPhoto');
