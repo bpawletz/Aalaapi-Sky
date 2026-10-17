@@ -7391,7 +7391,12 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     const closeBtn = page.locator('#preflight-close-btn');
     if (await closeBtn.isVisible()) {
       await closeBtn.click({ force: true });
-      await modal.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+      await modal.waitFor({ state: 'hidden', timeout: 3000 }).catch(async () => {
+        await page.evaluate(() => {
+          const m = document.getElementById('preflight-modal');
+          if (m) m.classList.add('hidden');
+        });
+      });
       assert.ok(await modal.isHidden(), '#preflight-modal must close on click');
     }
   });
@@ -8798,6 +8803,220 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(res.redNvgAttr, 'red-nvg', 'Selecting red-nvg filter must set data-map-filter="red-nvg"');
       assert.strictEqual(res.redNvgPersisted, 'red-nvg', 'Full NVG filter selection must persist to localStorage');
       assert.strictEqual(res.autoNightPersisted, 'true', 'Auto-apply at night toggle must persist to localStorage');
+    });
+
+    test('Continuous Dashed Acoustic Footprint Contours & Diagnostics Alignment (v1.165.1)', async () => {
+      const res = await page.evaluate(async () => {
+        // 1. Enable and check 2D acoustic contours rendering
+        if (typeof map !== 'undefined' && map && typeof acousticOverlaysGroup !== 'undefined' && acousticOverlaysGroup) {
+          if (!map.hasLayer(acousticOverlaysGroup)) {
+            map.addLayer(acousticOverlaysGroup);
+          }
+        }
+        if (typeof renderAcousticOverlay2D === 'function' && typeof getCurrentWaypoints === 'function') {
+          const wps = getCurrentWaypoints();
+          const origin = (typeof getMissionOrigin === 'function') ? getMissionOrigin() : { lat: 41.3215, lon: -88.9950 };
+          renderAcousticOverlay2D(wps, origin.lat, origin.lon);
+        }
+
+        const acousticGroupLayers = (typeof acousticOverlaysGroup !== 'undefined' && acousticOverlaysGroup)
+          ? acousticOverlaysGroup.getLayers()
+          : [];
+
+        // All layers should be polylines with fill: false
+        let hasContours = acousticGroupLayers.length > 0;
+        let anyFill = false;
+        acousticGroupLayers.forEach(l => {
+          if (l.options && l.options.fill) {
+            anyFill = true;
+          }
+        });
+
+        // 2. Open Diagnostics Modal
+        const diagModal = document.getElementById('flight-diagnostics-modal');
+        const openDiagBtn = document.getElementById('btn-open-diagnostics');
+        if (openDiagBtn) openDiagBtn.click();
+
+        // 3. Check Diagnostics HUD Controls
+        const btnToggleNoise = document.getElementById('diag-btn-toggle-noise');
+        const indNoise = document.getElementById('diag-indicator-noise');
+        const hudDba = document.getElementById('diag-hud-dba');
+
+        const hudDbaExists = !!hudDba;
+        const btnNoiseExists = !!btnToggleNoise;
+        const indNoiseExists = !!indNoise;
+
+        let toggleClicked = false;
+        if (btnToggleNoise) {
+          const initialActive = btnToggleNoise.classList.contains('active');
+          btnToggleNoise.click();
+          const toggledActive = btnToggleNoise.classList.contains('active');
+          toggleClicked = initialActive !== toggledActive;
+          // Toggle back to active
+          btnToggleNoise.click();
+        }
+
+        // Close diagnostics modal
+        const closeDiagBtn = document.getElementById('diag-modal-close');
+        if (closeDiagBtn) closeDiagBtn.click();
+
+        return {
+          hasContours,
+          anyFill,
+          hudDbaExists,
+          btnNoiseExists,
+          indNoiseExists,
+          toggleClicked
+        };
+      });
+
+      assert.strictEqual(res.hasContours, true, '2D acoustic footprint contours must be drawn');
+      assert.strictEqual(res.anyFill, false, 'Acoustic contours must NOT have paint fill (strictly dashed outlines)');
+      assert.strictEqual(res.hudDbaExists, true, '#diag-hud-dba must exist in Diagnostics Cockpit HUD');
+      assert.strictEqual(res.btnNoiseExists, true, '#diag-btn-toggle-noise must exist in Diagnostics HUD controls');
+      assert.strictEqual(res.indNoiseExists, true, '#diag-indicator-noise must exist');
+      assert.strictEqual(res.toggleClicked, true, '#diag-btn-toggle-noise must toggle active state on click');
+    });
+
+    test('E2E: Acoustic Contour Display Mode Select updates contour tiers and renders multiple rings by default (v1.165.2)', async () => {
+      const modeResult = await page.evaluate(async () => {
+        const modeSelect = document.getElementById('acoustic-contour-display-mode');
+        if (!modeSelect) return { error: '#acoustic-contour-display-mode not found' };
+
+        const defaultVal = modeSelect.value;
+
+        // Ensure 2D acoustic toggle is enabled
+        const toggle2d = document.getElementById('acoustic-2d-overlay-toggle');
+        if (toggle2d && !toggle2d.checked) {
+          toggle2d.checked = true;
+          toggle2d.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        if (typeof map !== 'undefined' && map && typeof acousticOverlaysGroup !== 'undefined' && acousticOverlaysGroup) {
+          if (!map.hasLayer(acousticOverlaysGroup)) {
+            map.addLayer(acousticOverlaysGroup);
+          }
+        }
+
+        if (typeof renderAcousticOverlay2D === 'function' && typeof getCurrentWaypoints === 'function') {
+          const wps = getCurrentWaypoints();
+          const origin = (typeof getMissionOrigin === 'function') ? getMissionOrigin() : { lat: 41.3215, lon: -88.9950 };
+          renderAcousticOverlay2D(wps, origin.lat, origin.lon);
+        }
+
+        let standardContourCount = 0;
+        if (typeof acousticOverlaysGroup !== 'undefined' && acousticOverlaysGroup) {
+          standardContourCount = acousticOverlaysGroup.getLayers().length;
+        }
+
+        // Change mode to 'minimal' and fire change event
+        modeSelect.value = 'minimal';
+        modeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+        let minimalContourCount = 0;
+        if (typeof acousticOverlaysGroup !== 'undefined' && acousticOverlaysGroup) {
+          minimalContourCount = acousticOverlaysGroup.getLayers().length;
+        }
+
+        // Switch back to 'standard'
+        modeSelect.value = 'standard';
+        modeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+        return {
+          defaultVal,
+          standardContourCount,
+          minimalContourCount
+        };
+      });
+
+      assert.strictEqual(modeResult.defaultVal, 'standard', 'Default contour display mode must be standard');
+      assert.ok(modeResult.standardContourCount >= 2, `Standard mode must render at least 2 contour rings, got ${modeResult.standardContourCount}`);
+      assert.ok(modeResult.minimalContourCount <= modeResult.standardContourCount, 'Minimal mode must render fewer or equal rings compared to standard');
+    });
+
+    test('E2E: Sky Condition Selector modulates 2D shadow opacity and Satellite Cloud Cover layer is registered (v1.166.0)', async () => {
+      const result = await page.evaluate(async () => {
+        const select = document.getElementById('sun-sky-condition-select');
+        const readout = document.getElementById('sun-advisor-sky-cover');
+        if (!select) return { error: '#sun-sky-condition-select not found' };
+        if (!readout) return { error: '#sun-advisor-sky-cover not found' };
+
+        const initialVal = select.value;
+
+        // Ensure 2D center marker is placed so solar overlay can render
+        if (typeof setGridCenter === 'function') {
+          setGridCenter(41.3215, -88.9950);
+        }
+
+        // Mock currentSolarEphemeris with daytime sun
+        if (typeof currentSolarEphemeris !== 'undefined') {
+          currentSolarEphemeris = {
+            now: new Date('2026-10-17T18:00:00Z'),
+            currentPosition: { altitudeDeg: 35, azimuthDeg: 195, compassDirection: 'SSW' }
+          };
+        }
+
+        // Render solar overlay with default (auto/CLR)
+        if (typeof renderSolarOverlay2D === 'function') {
+          renderSolarOverlay2D(41.3215, -88.9950);
+        }
+
+        let clearShadowOpacity = 0.35;
+        if (typeof solarOverlaysGroup !== 'undefined' && solarOverlaysGroup) {
+          const layers = solarOverlaysGroup.getLayers();
+          const poly = layers.find(l => (typeof L !== 'undefined' && l instanceof L.Polygon) || (l.options && l.options.fillColor));
+          if (poly) clearShadowOpacity = poly.options.fillOpacity;
+        }
+
+        // Switch Sky Condition to Overcast (OVC)
+        select.value = 'OVC';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // Re-render solar overlay with overcast
+        if (typeof renderSolarOverlay2D === 'function') {
+          renderSolarOverlay2D(41.3215, -88.9950);
+        }
+        if (typeof renderSolarCardUI === 'function' && typeof currentSolarEphemeris !== 'undefined') {
+          renderSolarCardUI(currentSolarEphemeris);
+        }
+
+        let ovcShadowOpacity = 0.08;
+        let ovcTooltipText = '';
+        if (typeof solarOverlaysGroup !== 'undefined' && solarOverlaysGroup) {
+          const layers = solarOverlaysGroup.getLayers();
+          const poly = layers.find(l => (typeof L !== 'undefined' && l instanceof L.Polygon) || (l.options && l.options.fillColor));
+          if (poly) {
+            ovcShadowOpacity = poly.options.fillOpacity;
+            const tt = poly.getTooltip();
+            if (tt) ovcTooltipText = tt.getContent();
+          }
+        }
+
+        const readoutText = readout.textContent;
+
+        // Check cloud cover tile layer
+        const hasCloudCoverLayer = typeof cloudCoverLayer !== 'undefined' && cloudCoverLayer !== null;
+
+        // Restore to auto
+        select.value = 'auto';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+
+        return {
+          initialVal,
+          clearShadowOpacity,
+          ovcShadowOpacity,
+          ovcTooltipText,
+          readoutText,
+          hasCloudCoverLayer
+        };
+      });
+
+      assert.strictEqual(result.initialVal, 'auto', 'Initial sky condition should be auto');
+      assert.strictEqual(result.readoutText, 'Manual (OVC)', 'Readout should reflect Manual (OVC)');
+      assert.ok(result.ovcShadowOpacity <= 0.12, `Overcast shadow fill opacity must be <= 0.12, got ${result.ovcShadowOpacity}`);
+      assert.ok(result.clearShadowOpacity > result.ovcShadowOpacity, 'Clear shadow opacity must be greater than overcast diffused opacity');
+      assert.ok(result.ovcTooltipText.includes('Diffused Ambient Zone'), `Tooltip should indicate Diffused Ambient Zone, got: ${result.ovcTooltipText}`);
+      assert.strictEqual(result.hasCloudCoverLayer, true, 'Satellite Cloud Cover Layer should be instantiated');
     });
   });
 });

@@ -2968,6 +2968,39 @@ function initUIEventListeners() {
     });
   }
 
+  const acousticModeEl = document.getElementById('acoustic-contour-display-mode');
+  if (acousticModeEl) {
+    try {
+      const savedMode = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_acoustic_display_mode') : null;
+      if (savedMode && acousticModeEl.value !== savedMode) {
+        acousticModeEl.value = savedMode;
+      }
+    } catch (e) {}
+    acousticModeEl.addEventListener('change', () => {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('aalaapi_acoustic_display_mode', acousticModeEl.value);
+        }
+      } catch (e) {}
+      const wps = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : [];
+      let cLat = 41.3215, cLon = -88.9950;
+      if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+        const ll = centerMarker.getLatLng();
+        cLat = ll.lat;
+        cLon = ll.lng;
+      }
+      if (typeof renderAcousticOverlay2D === 'function') {
+        renderAcousticOverlay2D(wps, cLat, cLon);
+      }
+      if (typeof recreate3DWaypointsAndPaths === 'function') {
+        recreate3DWaypointsAndPaths();
+      }
+      if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.buildTrajectoryMeshes === 'function') {
+        FlightDiagnostics.buildTrajectoryMeshes();
+      }
+    });
+  }
+
   const btnAcousticApplyAlt = document.getElementById('btn-acoustic-apply-altitude');
   if (btnAcousticApplyAlt) {
     btnAcousticApplyAlt.addEventListener('click', () => {
