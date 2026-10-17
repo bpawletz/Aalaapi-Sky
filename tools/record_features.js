@@ -1259,6 +1259,45 @@ const scenarios = [
     }
   },
   {
+    id: 'road_pattern_switch',
+    name: 'Road-Following to Grid Pattern Switch & Waypoint Isolation',
+    description: 'Demonstrates cleanly switching from Road-Following to Single Photogrammetry Grid, verifying complete road control node teardown and zero waypoint bleed.',
+    issueRef: 'v1.166.1',
+    run: async (page) => {
+      // 1. Center squarely on Utica default rural location
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+
+      // 2. Select Road Following Pattern
+      await selectPattern(page, 'road-following');
+      await page.waitForTimeout(800);
+
+      // 3. Add road centerline nodes with high altitude & custom pitch
+      await page.evaluate(({ lat, lon }) => {
+        const layer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+        if (layer) {
+          layer.pattern = 'road-following';
+          layer.altitude = 50;
+          layer.gimbalPitch = -80;
+          layer.roadWaypoints = [
+            { lat: lat, lon: lon, idx: 0 },
+            { lat: lat + 0.001, lon: lon + 0.001, idx: 1 },
+            { lat: lat + 0.002, lon: lon + 0.002, idx: 2 }
+          ];
+          roadWaypoints = layer.roadWaypoints;
+        }
+        if (typeof updateGrid === 'function') updateGrid();
+      }, { lat: DEFAULT_LAT, lon: DEFAULT_LON });
+      await page.waitForTimeout(1500);
+
+      // 4. Switch from Road-Following to Single Nadir Grid
+      await selectPattern(page, 'single');
+      await page.waitForTimeout(1500);
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+    }
+  },
+  {
     id: 'feature_3d_plane_wireframe',
     name: 'Plane-Aware 3D Edge Finder & Multi-View Surface Extraction',
     description: 'RANSAC 3D architectural plane fitting, ray-to-plane snapping, adjacent plane-plane intersection synthesis, and translucent surface mesh toggle.',
