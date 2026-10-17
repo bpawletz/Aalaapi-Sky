@@ -1811,6 +1811,9 @@ function initUIEventListeners() {
       if (bufferPopover) bufferPopover.classList.add('hidden');
       const timePop = document.getElementById('mission-time-popover');
       if (timePop) timePop.classList.add('hidden');
+      if (typeof ApiClient !== 'undefined' && typeof ApiClient.fetchBufferMetrics === 'function') {
+        ApiClient.fetchBufferMetrics();
+      }
     } else {
       bridgePopover.classList.add('hidden');
     }
@@ -1833,7 +1836,11 @@ function initUIEventListeners() {
   if (bufferPill) {
     bufferPill.addEventListener('click', (e) => {
       e.stopPropagation();
-      toggleBufferPopover();
+      if (bufferPopover) {
+        toggleBufferPopover();
+      } else {
+        toggleBridgePopover();
+      }
     });
   }
   if (bufferCloseBtn && bufferPopover) {
