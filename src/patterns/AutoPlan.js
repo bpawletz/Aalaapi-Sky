@@ -849,7 +849,140 @@ var SolarEphemeris = {
   },
 
   /**
-   * Calculates horizontal shadow cast length and shadow direction vector.
+   * Offline Astronomical Lunar Ephemeris (Jean Meeus / NOAA algorithms)
+   * Computes geocentric/topocentric Moon altitude, azimuth, and distance.
+   */
+  getMoonPosition(date, lat, lon) {
+    const d = this.toDays(date);
+    const phi = (parseFloat(lat) || 0) * this.RAD;
+    const lw = -(parseFloat(lon) || 0) * this.RAD;
+
+    // Mean orbital elements (degrees)
+    const L = (218.316 + 13.176396 * d) % 360;
+    const M = (134.963 + 13.064993 * d) % 360;
+    const F = (93.272 + 13.229350 * d) % 360;
+    const D = (297.850 + 12.190749 * d) % 360;
+    const Ms = (357.529 + 0.98560028 * d) % 360;
+
+    // Ecliptic coordinates with primary perturbation terms
+    const l = L + 6.289 * Math.sin(M * this.RAD) + 1.274 * Math.sin((2 * D - M) * this.RAD) + 0.658 * Math.sin(2 * D * this.RAD) + 0.214 * Math.sin(2 * M * this.RAD) - 0.186 * Math.sin(Ms * this.RAD);
+    const b = 5.128 * Math.sin(F * this.RAD) + 0.281 * Math.sin((M + F) * this.RAD) + 0.277 * Math.sin((M - F) * this.RAD) + 0.173 * Math.sin((2 * D - F) * this.RAD);
+    const distKm = 385001 - 20905 * Math.cos(M * this.RAD) - 3699 * Math.cos((2 * D - M) * this.RAD) - 2956 * Math.cos(2 * D * this.RAD) - 570 * Math.cos(2 * M * this.RAD);
+
+    const lRad = l * this.RAD;
+    const bRad = b * this.RAD;
+    const e = 23.4397 * this.RAD;
+
+    // Convert to Equatorial coordinates (Right Ascension & Declination)
+    const sinDec = Math.sin(bRad) * Math.cos(e) + Math.cos(bRad) * Math.sin(e) * Math.sin(lRad);
+    const dec = Math.asin(Math.max(-1, Math.min(1, sinDec)));
+    const y = Math.sin(lRad) * Math.cos(e) - Math.tan(bRad) * Math.sin(e);
+    const x = Math.cos(lRad);
+    const ra = Math.atan2(y, x);
+
+    // Sidereal time & local hour angle
+    const theta = (280.1600 + 360.9856235 * d) * this.RAD - lw;
+    const H = theta - ra;
+
+    // Topocentric altitude with parallax correction
+    let sinAlt = Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H);
+    let alt = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+    alt = alt - (6378.137 / distKm) * Math.cos(alt);
+
+    // Azimuth (degrees from North)
+    const az = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi));
+    let azDeg = (az * this.DEG + 180) % 360;
+    if (azDeg < 0) azDeg += 360;
+
+    return {
+      altitudeDeg: alt * this.DEG,
+      azimuthDeg: azDeg,
+      compassDirection: this.bearingToCompassDirection(azDeg),
+      distanceKm: distKm
+    };
+  },
+
+  /**
+   * Calculates lunar phase, illuminated fraction (0.0 to 1.0), phase glyph, and estimated ambient lux.
+   */
+  getMoonIllumination(date) {
+    const d = this.toDays(date);
+    const D = ((297.850 + 12.190749 * d) % 360 + 360) % 360;
+    const fraction = (1 - Math.cos(D * this.RAD)) / 2;
+    const phaseCycle = D / 360.0;
+
+    let icon = '🌕';
+    let phaseName = 'Full Moon';
+    if (phaseCycle < 0.03 || phaseCycle > 0.97) {
+      icon = '🌑'; phaseName = 'New Moon';
+    } else if (phaseCycle < 0.22) {
+      icon = '🌒'; phaseName = 'Waxing Crescent';
+    } else if (phaseCycle < 0.28) {
+      icon = '🌓'; phaseName = 'First Quarter';
+    } else if (phaseCycle < 0.47) {
+      icon = '🌔'; phaseName = 'Waxing Gibbous';
+    } else if (phaseCycle < 0.53) {
+      icon = '🌕'; phaseName = 'Full Moon';
+    } else if (phaseCycle < 0.72) {
+      icon = '🌖'; phaseName = 'Waning Gibbous';
+    } else if (phaseCycle < 0.78) {
+      icon = '🌗'; phaseName = 'Last Quarter';
+    } else {
+      icon = '🌘'; phaseName = 'Waning Crescent';
+    }
+
+    return {
+      fraction,
+      phaseCycle,
+      icon,
+      phaseName
+    };
+  },
+
+  /**
+   * Unified celestial resolver determining dominant light source (Sun vs Moon),
+   * sky condition (Day vs Twilight vs Night), and ambient natural illuminance.
+   */
+  getCelestialSummary(date, lat, lon) {
+    const sun = this.getSunPosition(date, lat, lon);
+    const moon = this.getMoonPosition(date, lat, lon);
+    const moonIllum = this.getMoonIllumination(date);
+
+    let mode = 'DAY';
+    if (sun.altitudeDeg < -12) {
+      mode = 'NIGHT';
+    } else if (sun.altitudeDeg < 0) {
+      mode = 'TWILIGHT';
+    }
+
+    // Natural ambient lux calculation:
+    let naturalLux = 0.001; // Starlight baseline
+    if (mode === 'DAY') {
+      naturalLux = Math.max(1000, 100000 * Math.sin(Math.max(0.01, sun.altitudeDeg) * this.RAD));
+    } else if (mode === 'TWILIGHT') {
+      // Drops exponentially from ~400 lux at 0° to ~0.01 lux at -12°
+      const twilFactor = Math.pow(10, sun.altitudeDeg / 3);
+      naturalLux = Math.max(0.005, 400 * twilFactor);
+    } else {
+      // Night: governed by Moon if above horizon
+      if (moon.altitudeDeg > 0) {
+        naturalLux = Math.max(0.001, moonIllum.fraction * 0.25 * Math.sin(Math.max(0.05, moon.altitudeDeg * this.RAD)));
+      }
+    }
+
+    return {
+      mode,
+      isDay: mode === 'DAY',
+      isTwilight: mode === 'TWILIGHT',
+      isNight: mode === 'NIGHT',
+      sun,
+      moon,
+      moonIllum,
+      naturalLux
+    };
+  },
+
+  /**
    * Shadows cast in the direction opposite to solar azimuth: (azimuth + 180) % 360.
    * @param {number} objectHeightMeters Height of structure/pole
    * @param {number} elevationDeg Sun elevation angle above horizon

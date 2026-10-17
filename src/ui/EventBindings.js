@@ -2584,6 +2584,18 @@ function initUIEventListeners() {
         if (camConesToggle) {
           camConesToggle.checked = isCameraConeEnabled();
         }
+        const nightBasemapToggle = document.getElementById('config-night-auto-basemap');
+        if (nightBasemapToggle) {
+          nightBasemapToggle.checked = isNightAutoBasemapEnabled();
+        }
+        const nightNasaToggle = document.getElementById('config-night-auto-nasa');
+        if (nightNasaToggle) {
+          nightNasaToggle.checked = isNightAutoNasaEnabled();
+        }
+        const nightHudToggle = document.getElementById('config-night-celestial-hud');
+        if (nightHudToggle) {
+          nightHudToggle.checked = isNightCelestialHudEnabled();
+        }
         if (typeof updateModifiedSettingsIndicators === 'function') updateModifiedSettingsIndicators();
         if (window.innerWidth <= 768) {
           document.querySelector('.sidebar')?.classList.remove('open');
@@ -2614,6 +2626,34 @@ function initUIEventListeners() {
       camConesToggle.checked = isCameraConeEnabled();
       camConesToggle.addEventListener('change', () => {
         setCameraConeEnabled(camConesToggle.checked);
+      });
+    }
+
+    // Night Flight & Nocturnal Layers event listeners (v1.161.0 - Issue #143)
+    const nightBasemapToggle = document.getElementById('config-night-auto-basemap');
+    if (nightBasemapToggle) {
+      nightBasemapToggle.checked = isNightAutoBasemapEnabled();
+      nightBasemapToggle.addEventListener('change', () => {
+        setNightAutoBasemapEnabled(nightBasemapToggle.checked);
+        if (typeof updateSolarEphemeris === 'function') updateSolarEphemeris();
+      });
+    }
+
+    const nightNasaToggle = document.getElementById('config-night-auto-nasa');
+    if (nightNasaToggle) {
+      nightNasaToggle.checked = isNightAutoNasaEnabled();
+      nightNasaToggle.addEventListener('change', () => {
+        setNightAutoNasaEnabled(nightNasaToggle.checked);
+        if (typeof updateSolarEphemeris === 'function') updateSolarEphemeris();
+      });
+    }
+
+    const nightHudToggle = document.getElementById('config-night-celestial-hud');
+    if (nightHudToggle) {
+      nightHudToggle.checked = isNightCelestialHudEnabled();
+      nightHudToggle.addEventListener('change', () => {
+        setNightCelestialHudEnabled(nightHudToggle.checked);
+        if (typeof updateSolarEphemeris === 'function') updateSolarEphemeris();
       });
     }
   }
