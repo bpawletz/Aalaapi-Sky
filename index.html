@@ -6599,7 +6599,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.170.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.171.0</span></h1>
         </div>
       </div>
 
@@ -7627,12 +7627,45 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                       <input type="number" id="hyperlapse-end-pitch" class="form-control form-control-sm" min="-90" max="0" value="-15" style="font-size: 0.72rem; padding: 2px 6px;">
                     </div>
                   </div>
-                  <!-- Quick Pitch Presets -->
-                  <div style="display: flex; gap: 3px;">
-                    <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-90" style="flex: 1; padding: 2px 0; font-size: 0.62rem;">Nadir (-90°)</button>
-                    <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-60" style="flex: 1; padding: 2px 0; font-size: 0.62rem;">Oblique (-60°)</button>
-                    <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-45" style="flex: 1; padding: 2px 0; font-size: 0.62rem;">45°</button>
-                    <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-15" style="flex: 1; padding: 2px 0; font-size: 0.62rem;">Horizon (-15°)</button>
+                  <!-- Interactive Visual Gimbal Pitch Dial & Sweep Sector -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; padding: 4px 6px; background: rgba(15, 23, 42, 0.4); border-radius: 6px;">
+                    <!-- SVG Gimbal Pitch Elevation Dial -->
+                    <div style="width: 60px; height: 60px; flex-shrink: 0; position: relative;">
+                      <svg id="hyperlapse-pitch-dial" viewBox="0 0 100 100" width="60" height="60" style="overflow: visible; cursor: pointer;">
+                        <!-- Outer Ring -->
+                        <circle cx="50" cy="50" r="42" fill="rgba(30, 41, 59, 0.7)" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2"/>
+                        <!-- Horizon Reference Axis (Level Forward) -->
+                        <line x1="20" y1="50" x2="84" y2="50" stroke="rgba(255, 255, 255, 0.25)" stroke-width="1" stroke-dasharray="3,2"/>
+                        <!-- Nadir Reference Axis (Straight Down) -->
+                        <line x1="50" y1="50" x2="50" y2="84" stroke="rgba(255, 255, 255, 0.25)" stroke-width="1" stroke-dasharray="3,2"/>
+                        <!-- Elevation Tick Labels -->
+                        <text x="84" y="47" font-size="9" font-weight="bold" fill="#38bdf8" text-anchor="middle">0°</text>
+                        <text x="50" y="93" font-size="9" font-weight="bold" fill="#ef4444" text-anchor="middle">-90°</text>
+                        <text x="76" y="78" font-size="8" font-weight="600" fill="#94a3b8" text-anchor="middle">-45°</text>
+                        <!-- Dynamic Pitch Sweep Arc Sector -->
+                        <path id="hyperlapse-pitch-sweep-arc" d="M 50 50 L 84 50 A 35 35 0 0 1 50 84 Z" fill="rgba(245, 158, 11, 0.22)" stroke="rgba(245, 158, 11, 0.4)" stroke-width="1"/>
+                        <!-- Start Pitch Needle (Amber) -->
+                        <line id="hyperlapse-pitch-needle-start" x1="50" y1="50" x2="84" y2="50" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+                        <!-- End Pitch Needle (Cyan) -->
+                        <line id="hyperlapse-pitch-needle-end" x1="50" y1="50" x2="50" y2="84" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3,2"/>
+                        <!-- Center Pivot (Gimbal Axis) -->
+                        <circle cx="50" cy="50" r="4" fill="#f59e0b"/>
+                      </svg>
+                    </div>
+
+                    <!-- Quick Pitch Chips & Sweep Summary -->
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 3px;">
+                      <div style="display: flex; gap: 2px;">
+                        <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-90" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">-90°</button>
+                        <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-60" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">-60°</button>
+                        <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-45" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">-45°</button>
+                        <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-15" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">-15°</button>
+                      </div>
+                      <div style="font-size: 0.64rem; color: var(--text-muted); line-height: 1.2;">
+                        <span style="color: #f59e0b;">● Start:</span> <span id="hyperlapse-pitch-start-text">-15° (Horizon)</span><br>
+                        <span style="color: #06b6d4;">--- End:</span> <span id="hyperlapse-pitch-end-text">-15° (Horizon)</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -11809,7 +11842,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.170.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.171.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -11870,6 +11903,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.171.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Interactive Gimbal Pitch Elevation Dial:</strong> Added circular SVG pitch elevation dial mirroring the Yaw compass rose with Start Pitch (amber) and End Pitch (cyan) needles, dynamic sweep arc sector, click-to-tilt interaction, and descriptive elevation readouts.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.170.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -28053,6 +28092,27 @@ function initUIEventListeners() {
       });
     });
 
+    // Pitch dial click to adjust End Pitch
+    const pitchSvg = document.getElementById('hyperlapse-pitch-dial');
+    if (pitchSvg) {
+      pitchSvg.addEventListener('click', (e) => {
+        const rect = pitchSvg.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = e.clientX - cx;
+        const dy = e.clientY - cy;
+        // Screen angle from horizontal right:
+        const screenDeg = Math.atan2(dy, dx) * 180 / Math.PI;
+        // Camera pitch is -screenDeg:
+        let pitch = -screenDeg;
+        if (pitch < -90) pitch = -90;
+        if (pitch > 20) pitch = 20;
+        const roundedPitch = Math.round(pitch / 5) * 5;
+        if (hlEndPitch) hlEndPitch.value = roundedPitch;
+        updateHyperlapse();
+      });
+    }
+
     // Compass dial click to rotate End Yaw
     const compassSvg = document.getElementById('hyperlapse-compass-dial');
     if (compassSvg) {
@@ -33075,12 +33135,56 @@ function updateHyperlapseKeyframeVisuals() {
     if (lockBadge) lockBadge.classList.add('hidden');
   }
 
-  // Update Pitch Sweep Label
+  // Update Pitch Sweep Label & Dial Visuals
   const startP = (hlStartPitch && !isNaN(parseInt(hlStartPitch.value, 10))) ? parseInt(hlStartPitch.value, 10) : -15;
   const endP = (hlEndPitch && !isNaN(parseInt(hlEndPitch.value, 10))) ? parseInt(hlEndPitch.value, 10) : -15;
   const pitchSweepLbl = document.getElementById('hyperlapse-pitch-sweep-label');
   if (pitchSweepLbl) {
     pitchSweepLbl.textContent = `${startP}° → ${endP}°`;
+  }
+
+  const pitchToDesc = (p) => {
+    if (p <= -85) return 'Nadir';
+    if (p <= -55) return 'Steep Oblique';
+    if (p <= -30) return 'Oblique';
+    if (p <= -10) return 'Horizon';
+    if (p <= 0) return 'Level';
+    return 'Upward';
+  };
+
+  const pitchStartTxt = document.getElementById('hyperlapse-pitch-start-text');
+  const pitchEndTxt = document.getElementById('hyperlapse-pitch-end-text');
+  if (pitchStartTxt) pitchStartTxt.textContent = `${startP}° (${pitchToDesc(startP)})`;
+  if (pitchEndTxt) pitchEndTxt.textContent = `${endP}° (${pitchToDesc(endP)})`;
+
+  // Update Pitch Needles & Sweep Arc on SVG (center at 50, 50, radius 35)
+  // Screen angle = -pitch: 0° horizon is along +X (85, 50), -90° nadir is along +Y (50, 85)
+  const radPitchStart = (-startP) * Math.PI / 180;
+  const radPitchEnd = (-endP) * Math.PI / 180;
+  const pStartX = 50 + 35 * Math.cos(radPitchStart);
+  const pStartY = 50 + 35 * Math.sin(radPitchStart);
+  const pEndX = 50 + 35 * Math.cos(radPitchEnd);
+  const pEndY = 50 + 35 * Math.sin(radPitchEnd);
+
+  const needlePitchStart = document.getElementById('hyperlapse-pitch-needle-start');
+  const needlePitchEnd = document.getElementById('hyperlapse-pitch-needle-end');
+  if (needlePitchStart && typeof needlePitchStart.setAttribute === 'function') {
+    needlePitchStart.setAttribute('x2', pStartX.toFixed(1));
+    needlePitchStart.setAttribute('y2', pStartY.toFixed(1));
+  }
+  if (needlePitchEnd && typeof needlePitchEnd.setAttribute === 'function') {
+    needlePitchEnd.setAttribute('x2', pEndX.toFixed(1));
+    needlePitchEnd.setAttribute('y2', pEndY.toFixed(1));
+  }
+
+  const pitchArc = document.getElementById('hyperlapse-pitch-sweep-arc');
+  if (pitchArc && typeof pitchArc.setAttribute === 'function') {
+    if (startP === endP) {
+      pitchArc.setAttribute('d', `M 50 50 L ${pStartX.toFixed(1)} ${pStartY.toFixed(1)} Z`);
+    } else {
+      const sweepFlag = (endP <= startP) ? 1 : 0;
+      pitchArc.setAttribute('d', `M 50 50 L ${pStartX.toFixed(1)} ${pStartY.toFixed(1)} A 35 35 0 0 ${sweepFlag} ${pEndX.toFixed(1)} ${pEndY.toFixed(1)} Z`);
+    }
   }
 
   // Highlight active pitch preset chip if start and end match

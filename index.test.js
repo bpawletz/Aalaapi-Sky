@@ -32793,12 +32793,12 @@ describe('Capture Mode-Driven Hyperlapse Waypoint Generation & Sync Suite (v1.16
   });
 });
 
-describe('Issue & v1.170.0: Hyperlapse Visual Compass Rose, Gimbal Pitch Presets & POI Conflict Lock Suite', () => {
-  test('Version consistency: v1.170.0 across package.json, changelog, index_template.html, and index.html', () => {
-    assertVersionConsistency('1.170.0');
+describe('Issue & v1.171.0: Hyperlapse Visual Compass Rose, Gimbal Pitch Elevation Dial & POI Conflict Lock Suite', () => {
+  test('Version consistency: v1.171.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.171.0');
   });
 
-  test('updateHyperlapseKeyframeVisuals applies .hyperlapse-locked and shows lock banner when Target POI is assigned', () => {
+  test('updateHyperlapseKeyframeVisuals applies .hyperlapse-locked, updates pitch dial, and shows lock banner when Target POI is assigned', () => {
     const cardEl = { classList: { add: () => {}, remove: () => {} } };
     const bodyEl = { classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
     const bannerEl = { classList: { classes: new Set(['hidden']), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
@@ -32807,14 +32807,20 @@ describe('Issue & v1.170.0: Hyperlapse Visual Compass Rose, Gimbal Pitch Presets
     const yawLbl = { textContent: '' };
     const startPitchInput = { value: '-45' };
     const endPitchInput = { value: '-15' };
+    const startPitchText = { textContent: '' };
+    const endPitchText = { textContent: '' };
+    const needlePitchStart = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } };
+    const needlePitchEnd = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } };
+    const pitchArc = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } };
+
     const headingModeSelect = { value: 'keyframes' };
     const startYawInput = { value: '0' };
     const endYawInput = { value: '90' };
     const startYawText = { textContent: '' };
     const endYawText = { textContent: '' };
-    const needleStart = { setAttribute: () => {} };
-    const needleEnd = { setAttribute: () => {} };
-    const arc = { setAttribute: () => {} };
+    const needleStart = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } };
+    const needleEnd = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } };
+    const arc = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } };
 
     const elements = {
       'hyperlapse-keyframes-card': cardEl,
@@ -32825,6 +32831,11 @@ describe('Issue & v1.170.0: Hyperlapse Visual Compass Rose, Gimbal Pitch Presets
       'hyperlapse-yaw-sweep-label': yawLbl,
       'hyperlapse-start-pitch': startPitchInput,
       'hyperlapse-end-pitch': endPitchInput,
+      'hyperlapse-pitch-start-text': startPitchText,
+      'hyperlapse-pitch-end-text': endPitchText,
+      'hyperlapse-pitch-needle-start': needlePitchStart,
+      'hyperlapse-pitch-needle-end': needlePitchEnd,
+      'hyperlapse-pitch-sweep-arc': pitchArc,
       'hyperlapse-heading-mode': headingModeSelect,
       'hyperlapse-start-heading': startYawInput,
       'hyperlapse-end-heading': endYawInput,
@@ -32870,6 +32881,12 @@ describe('Issue & v1.170.0: Hyperlapse Visual Compass Rose, Gimbal Pitch Presets
       assert.strictEqual(bannerEl.classList.contains('hidden'), true, 'Banner must be hidden when POI cleared');
       assert.strictEqual(badgeEl.classList.contains('hidden'), true, 'Lock badge must be hidden when POI cleared');
       assert.strictEqual(pitchLbl.textContent, '-45° → -15°', 'Pitch sweep label must reflect start and end pitch');
+      assert.strictEqual(startPitchText.textContent, '-45° (Oblique)', 'Start pitch text must show angle and description');
+      assert.strictEqual(endPitchText.textContent, '-15° (Horizon)', 'End pitch text must show angle and description');
+      assert.ok(needlePitchStart.attrs.x2 !== undefined, 'Needle start pitch x2 must be computed');
+      assert.ok(needlePitchEnd.attrs.x2 !== undefined, 'Needle end pitch x2 must be computed');
+      assert.ok(pitchArc.attrs.d.startsWith('M 50 50 L'), 'Pitch sweep arc path must be computed');
+
       assert.strictEqual(yawLbl.textContent, 'Keyframe Sweep', 'Yaw sweep label must show Keyframe Sweep when keyframes mode active');
       assert.strictEqual(startYawText.textContent, '0° (N)', 'Start yaw text must indicate 0° (N)');
       assert.strictEqual(endYawText.textContent, '90° (E)', 'End yaw text must indicate 90° (E)');
