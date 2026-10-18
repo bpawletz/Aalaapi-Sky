@@ -922,7 +922,6 @@ const FACTORY_DEFAULTS = {
   // UI & Layout Preferences
   'unit-system': 'imperial',
   'theme': 'dark',
-  'nav-layout-select': 'header',
   'camera-palette-select': 'high-viz-amber',
   'camera-cones-toggle': true,
   'accordion-mode-toggle': true,

@@ -39,6 +39,18 @@ function buildTemplateKml(finishAction, speed) {
 function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode) {
   if (!waypoints || !Array.isArray(waypoints)) waypoints = [];
   const timestamp = Date.now();
+
+  let opts = {};
+  if (typeof altitude === 'object' && altitude !== null) {
+    opts = altitude;
+    altitude = opts.altitude;
+    speed = opts.speed;
+    headingMode = opts.headingMode;
+    finishAction = opts.finishAction;
+    gimbalPitch = opts.gimbalPitch;
+    captureMode = opts.captureMode;
+    pathMode = opts.pathMode;
+  }
   
   const zoomEl = document.getElementById('camera-zoom');
   const cameraZoom = zoomEl ? parseFloat(zoomEl.value) : 1.0;
@@ -64,9 +76,11 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
   const droneModelEl = typeof document !== 'undefined' ? document.getElementById('drone-model') : null;
   const parsedDroneVal = (droneModelEl && droneModelEl.value) ? parseInt(droneModelEl.value, 10) : NaN;
-  const targetDrone = (typeof global !== 'undefined' && global.selectedDroneTarget)
-    ? global.selectedDroneTarget
-    : ((typeof selectedDroneTarget !== 'undefined' && selectedDroneTarget) ? selectedDroneTarget : null);
+  const targetDrone = opts.droneModel
+    ? opts.droneModel
+    : ((typeof global !== 'undefined' && global.selectedDroneTarget)
+      ? global.selectedDroneTarget
+      : ((typeof selectedDroneTarget !== 'undefined' && selectedDroneTarget) ? selectedDroneTarget : null));
   const droneEnumValue = targetDrone
     ? normalizeDroneEnum(targetDrone)
     : (!isNaN(parsedDroneVal) ? parsedDroneVal : 68);
@@ -96,7 +110,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   let actionGroupId = 1;
 
   const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
-  const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
+  const gridType = opts.flightPattern || opts.gridType || opts.pattern || ((gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && (w.gridType || w.layerPattern))?.gridType || waypoints.find(w => w && (w.gridType || w.layerPattern))?.layerPattern || ''));
 
   // Sanitize consecutive duplicate coordinates (DJI APAS collision & zero-distance trajectory solver rule)
   // When consecutive waypoints share identical coordinates (distance < 0.6m, e.g., in-place 360 photo spheres or stacked points),
@@ -889,7 +903,7 @@ ${waypointActions.join('\n')}
         : 'toPointAndStopWithDiscontinuityCurvature';
       actualUseStraightLine = 0;
     } else if (isHyperlapse) {
-      actualTurnMode = (idx === 0 || idx === sanitizedWps.length - 1)
+      actualTurnMode = (isStopAndShoot || idx === 0 || idx === sanitizedWps.length - 1)
         ? 'toPointAndStopWithContinuityCurvature'
         : 'toPointAndPassWithContinuityCurvature';
       actualUseStraightLine = 0;
@@ -911,7 +925,7 @@ ${waypointActions.join('\n')}
     }
 
     // Per-waypoint turnMode override
-    if (wp.turnMode && wp.turnMode !== 'inherit') {
+    if (wp.turnMode && wp.turnMode !== 'inherit' && !(isHyperlapse && isStopAndShoot && !wp.isModified)) {
       if (isConsumer) {
         actualTurnMode = wp.turnMode === 'stop'
           ? 'toPointAndStopWithContinuityCurvature'

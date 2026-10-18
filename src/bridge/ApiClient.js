@@ -2408,6 +2408,7 @@ const AdsbAirspaceManager = {
   serverPort: 30003,
   isSyncingAdsbConfig: false,
   isConnectingAdsbServer: false,
+  activeTab: 'operations', // 'operations' | 'settings'
   externalProvider: 'adsb.lol', // 'adsb.lol' | 'custom'
   externalRadiusNM: 15,
   externalCustomUrl: '',
@@ -2907,6 +2908,40 @@ const AdsbAirspaceManager = {
     this.updateControlsUI();
   },
 
+  switchTab(tabName) {
+    this.activeTab = (tabName === 'settings') ? 'settings' : 'operations';
+    if (typeof document === 'undefined') return;
+
+    const btnOps = document.getElementById('adsb-tab-btn-ops');
+    const btnSettings = document.getElementById('adsb-tab-btn-settings');
+    const paneOps = document.getElementById('adsb-pane-operations');
+    const paneSettings = document.getElementById('adsb-pane-settings');
+
+    if (this.activeTab === 'operations') {
+      if (btnOps) {
+        btnOps.classList.add('active');
+        btnOps.setAttribute('aria-selected', 'true');
+      }
+      if (btnSettings) {
+        btnSettings.classList.remove('active');
+        btnSettings.setAttribute('aria-selected', 'false');
+      }
+      if (paneOps) paneOps.classList.remove('hidden');
+      if (paneSettings) paneSettings.classList.add('hidden');
+    } else {
+      if (btnOps) {
+        btnOps.classList.remove('active');
+        btnOps.setAttribute('aria-selected', 'false');
+      }
+      if (btnSettings) {
+        btnSettings.classList.add('active');
+        btnSettings.setAttribute('aria-selected', 'true');
+      }
+      if (paneOps) paneOps.classList.add('hidden');
+      if (paneSettings) paneSettings.classList.remove('hidden');
+    }
+  },
+
   toggleDrawer(forceState) {
     const drawer = typeof document !== 'undefined' ? document.getElementById('adsb-control-drawer') : null;
     if (!drawer) return;
@@ -2916,6 +2951,7 @@ const AdsbAirspaceManager = {
       this.initAudioContext();
       this.updateDrawerAircraftList();
       this.fetchAirspaceStatus();
+      this.switchTab(this.activeTab || 'operations');
     } else {
       drawer.classList.add('hidden');
     }
@@ -2993,6 +3029,11 @@ const AdsbAirspaceManager = {
         summaryEl.textContent = 'OFFLINE';
         summaryEl.style.background = 'rgba(239, 68, 68, 0.2)';
         summaryEl.style.color = '#ef4444';
+      }
+      const tabDot = document.getElementById('adsb-tab-status-dot');
+      if (tabDot) {
+        tabDot.className = 'adsb-tab-dot is-offline';
+        tabDot.title = 'Bridge Offline';
       }
       return;
     }
@@ -3083,6 +3124,18 @@ const AdsbAirspaceManager = {
         hwDriverEl.textContent = `TCP Stream (${targetPort})`;
       } else if (st.driverType) {
         hwDriverEl.textContent = st.driverType;
+      }
+    }
+
+    const tabDot = document.getElementById('adsb-tab-status-dot');
+    if (tabDot) {
+      tabDot.className = 'adsb-tab-dot';
+      if (!st.connected) {
+        tabDot.classList.add('is-waiting');
+        tabDot.title = `Waiting on ${hostPortStr}`;
+      } else {
+        tabDot.classList.add('is-connected');
+        tabDot.title = `Connected to ${hostPortStr}`;
       }
     }
 
@@ -3667,6 +3720,22 @@ const AdsbAirspaceManager = {
       }
     }
 
+    const tabPill = document.getElementById('adsb-tab-traffic-badge');
+    if (tabPill) {
+      const count = this.aircraft.length;
+      if (count > 0) {
+        tabPill.textContent = count;
+        tabPill.classList.remove('hidden');
+        if (this.breachedAircraft.length > 0) {
+          tabPill.classList.add('is-breached');
+        } else {
+          tabPill.classList.remove('is-breached');
+        }
+      } else {
+        tabPill.classList.add('hidden');
+      }
+    }
+
     if (!listEl) return;
     if (this.aircraft.length === 0) {
       listEl.innerHTML = '<div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No aircraft currently in range</div>';
@@ -4033,6 +4102,17 @@ const AdsbAirspaceManager = {
     // Drawer close button
     const closeBtn = document.getElementById('adsb-drawer-close-btn');
     if (closeBtn) closeBtn.addEventListener('click', () => this.toggleDrawer(false));
+
+    // ADS-B Drawer Segmented Tab Navigation
+    const tabBtnOps = document.getElementById('adsb-tab-btn-ops');
+    if (tabBtnOps) {
+      tabBtnOps.addEventListener('click', () => this.switchTab('operations'));
+    }
+
+    const tabBtnSettings = document.getElementById('adsb-tab-btn-settings');
+    if (tabBtnSettings) {
+      tabBtnSettings.addEventListener('click', () => this.switchTab('settings'));
+    }
 
     // Drawer controls
     const enableToggle = document.getElementById('adsb-enable-toggle');

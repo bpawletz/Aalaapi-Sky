@@ -617,7 +617,25 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
   if (isNaN(interval) || interval < 2) interval = 2;
   if (interval > 10) interval = 10;
 
-  const waypointMode = (layer && layer.hyperlapseWaypointMode) ? layer.hyperlapseWaypointMode : 'dense';
+  const effectiveCaptureMode = (layer && layer.captureMode && layer.captureMode !== 'inherit')
+    ? layer.captureMode
+    : ((typeof document !== 'undefined' && document.getElementById('capture-mode')?.value) || 'stopAndShoot');
+
+  // Capture Mode directly determines the waypoint architecture:
+  // - 'stopAndShoot' -> ALWAYS 'dense' (all frame points become explicit waypoints with stop turn mode & settling hover)
+  // - 'continuous' or 'video' -> 'spline' by default (2 control waypoints with DJI automated multipleTiming trigger), or 'dense' if explicitly selected
+  let waypointMode;
+  if (layer && layer.hyperlapseWaypointMode) {
+    waypointMode = layer.hyperlapseWaypointMode;
+  } else if (layer && layer.captureMode === 'stopAndShoot') {
+    waypointMode = 'dense';
+  } else if (layer && (layer.captureMode === 'continuous' || layer.captureMode === 'video')) {
+    waypointMode = 'spline';
+  } else if (effectiveCaptureMode === 'continuous' || effectiveCaptureMode === 'video') {
+    waypointMode = 'spline';
+  } else {
+    waypointMode = 'dense';
+  }
 
   const layerPitch = (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== 'auto' && !isNaN(layer.gimbalPitch))
     ? parseInt(layer.gimbalPitch, 10)
@@ -822,7 +840,7 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
       turnMode: 'curved',
       pathMode: 'curved',
       speed: effectiveSpeed,
-      captureMode: 'continuous',
+      captureMode: effectiveCaptureMode,
       cameraAction: 'takePhoto',
       skipPhoto: false,
       isHyperlapse: true,

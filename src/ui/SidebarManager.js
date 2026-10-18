@@ -1289,7 +1289,9 @@ function togglePatternParameters() {
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
 
     if (activeLayer) {
-      activeLayer.captureMode = 'continuous';
+      if (!activeLayer.captureMode || activeLayer.captureMode === 'inherit') {
+        activeLayer.captureMode = 'continuous';
+      }
       activeLayer.pathMode = 'curved';
       activeLayer.headingMode = 'smoothTransition';
       const curPitch = (activeLayer.gimbalPitch !== undefined && !isNaN(activeLayer.gimbalPitch) && activeLayer.gimbalPitch !== 'auto') ? activeLayer.gimbalPitch : -60;
@@ -1307,11 +1309,15 @@ function togglePatternParameters() {
       if (hlModeBdg) hlModeBdg.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
     }
     const layerCapSelect = document.getElementById('layer-capture-mode');
-    if (layerCapSelect) layerCapSelect.value = 'continuous';
+    if (layerCapSelect && activeLayer) layerCapSelect.value = activeLayer.captureMode || 'continuous';
     const layerPathSelect = document.getElementById('layer-path-mode');
     if (layerPathSelect) layerPathSelect.value = 'curved';
     const layerHeadingSelect = document.getElementById('layer-heading-mode');
     if (layerHeadingSelect) layerHeadingSelect.value = 'smoothTransition';
+
+    if (typeof updateHyperlapseKeyframeVisuals === 'function') {
+      updateHyperlapseKeyframeVisuals();
+    }
 
   } else if (gridType === 'light-art') {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -2985,6 +2991,127 @@ function addCorridorNodeAction() {
   if (typeof renderCorridorNodeTable === 'function') renderCorridorNodeTable();
 }
 
+function updateHyperlapseKeyframeVisuals() {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (!activeLayer) return;
+
+  const card = document.getElementById('hyperlapse-keyframes-card');
+  const body = document.getElementById('hyperlapse-keyframes-body');
+  const lockBanner = document.getElementById('hyperlapse-poi-lock-banner');
+  const lockBadge = document.getElementById('hyperlapse-lock-badge');
+
+  const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
+  const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
+  const hlHeadingMode = document.getElementById('hyperlapse-heading-mode');
+  const hlStartHeading = document.getElementById('hyperlapse-start-heading');
+  const hlEndHeading = document.getElementById('hyperlapse-end-heading');
+
+  // Check POI lock state (Tier 2 layer or Tier 1 global POI tracking)
+  const hasPoiTarget = Boolean(activeLayer.targetPoiId);
+  const effHeading = (typeof getEffectiveLayerHeadingMode === 'function')
+    ? getEffectiveLayerHeadingMode(activeLayer)
+    : (activeLayer.headingMode || 'smoothTransition');
+  const isPoiLocked = hasPoiTarget || (effHeading === 'towardPOI');
+
+  if (isPoiLocked) {
+    if (body) body.classList.add('hyperlapse-locked');
+    if (lockBanner) lockBanner.classList.remove('hidden');
+    if (lockBadge) lockBadge.classList.remove('hidden');
+  } else {
+    if (body) body.classList.remove('hyperlapse-locked');
+    if (lockBanner) lockBanner.classList.add('hidden');
+    if (lockBadge) lockBadge.classList.add('hidden');
+  }
+
+  // Update Pitch Sweep Label
+  const startP = (hlStartPitch && !isNaN(parseInt(hlStartPitch.value, 10))) ? parseInt(hlStartPitch.value, 10) : -15;
+  const endP = (hlEndPitch && !isNaN(parseInt(hlEndPitch.value, 10))) ? parseInt(hlEndPitch.value, 10) : -15;
+  const pitchSweepLbl = document.getElementById('hyperlapse-pitch-sweep-label');
+  if (pitchSweepLbl) {
+    pitchSweepLbl.textContent = `${startP}° → ${endP}°`;
+  }
+
+  // Highlight active pitch preset chip if start and end match
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    const pitchChips = document.querySelectorAll('.hyperlapse-pitch-chip');
+    if (pitchChips && pitchChips.forEach) {
+      pitchChips.forEach(chip => {
+        const pVal = parseInt(chip.getAttribute('data-pitch'), 10);
+        if (startP === pVal && endP === pVal) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  // Update Yaw Sweep Label & Compass Visuals
+  const yawSweepLbl = document.getElementById('hyperlapse-yaw-sweep-label');
+  const mode = (hlHeadingMode && hlHeadingMode.value) || 'path';
+  if (yawSweepLbl) {
+    yawSweepLbl.textContent = (mode === 'keyframes') ? 'Keyframe Sweep' : 'Path Tangent';
+  }
+
+  if (mode === 'keyframes') {
+    const startY = (hlStartHeading && !isNaN(parseFloat(hlStartHeading.value))) ? ((parseFloat(hlStartHeading.value) % 360) + 360) % 360 : 0;
+    const endY = (hlEndHeading && !isNaN(parseFloat(hlEndHeading.value))) ? ((parseFloat(hlEndHeading.value) % 360) + 360) % 360 : 90;
+
+    const startTxt = document.getElementById('hyperlapse-compass-start-text');
+    const endTxt = document.getElementById('hyperlapse-compass-end-text');
+    const bearingToDir = (deg) => {
+      const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const idx = Math.round(deg / 45) % 8;
+      return dirs[idx];
+    };
+    if (startTxt) startTxt.textContent = `${Math.round(startY)}° (${bearingToDir(startY)})`;
+    if (endTxt) endTxt.textContent = `${Math.round(endY)}° (${bearingToDir(endY)})`;
+
+    // Update Needle Lines on SVG (center at 50, 50, radius 35)
+    const radStart = (startY - 90) * Math.PI / 180;
+    const radEnd = (endY - 90) * Math.PI / 180;
+    const nStartX = 50 + 35 * Math.cos(radStart);
+    const nStartY = 50 + 35 * Math.sin(radStart);
+    const nEndX = 50 + 35 * Math.cos(radEnd);
+    const nEndY = 50 + 35 * Math.sin(radEnd);
+
+    const needleStart = document.getElementById('hyperlapse-compass-needle-start');
+    const needleEnd = document.getElementById('hyperlapse-compass-needle-end');
+    if (needleStart && typeof needleStart.setAttribute === 'function') {
+      needleStart.setAttribute('x2', nStartX.toFixed(1));
+      needleStart.setAttribute('y2', nStartY.toFixed(1));
+    }
+    if (needleEnd && typeof needleEnd.setAttribute === 'function') {
+      needleEnd.setAttribute('x2', nEndX.toFixed(1));
+      needleEnd.setAttribute('y2', nEndY.toFixed(1));
+    }
+
+    // Draw sweep arc between start and end
+    const arc = document.getElementById('hyperlapse-compass-sweep-arc');
+    if (arc && typeof arc.setAttribute === 'function') {
+      let diff = (endY - startY) % 360;
+      if (diff < 0) diff += 360;
+      const largeArc = diff > 180 ? 1 : 0;
+      arc.setAttribute('d', `M 50 50 L ${nStartX.toFixed(1)} ${nStartY.toFixed(1)} A 35 35 0 ${largeArc} 1 ${nEndX.toFixed(1)} ${nEndY.toFixed(1)} Z`);
+    }
+
+    // Highlight matching yaw chip for end heading
+    if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+      const yawChips = document.querySelectorAll('.hyperlapse-yaw-chip');
+      if (yawChips && yawChips.forEach) {
+        yawChips.forEach(chip => {
+          const yVal = parseFloat(chip.getAttribute('data-yaw'));
+          if (Math.round(endY) === yVal) {
+            chip.classList.add('active');
+          } else {
+            chip.classList.remove('active');
+          }
+        });
+      }
+    }
+  }
+}
+
 if (typeof window !== 'undefined') {
   window.initMissionDbUI = initMissionDbUI;
   window.refreshMissionDbList = refreshMissionDbList;
@@ -2993,6 +3120,7 @@ if (typeof window !== 'undefined') {
   window.setIsMissionDbOnline = (v) => { isMissionDbOnline = v; };
   window.getCachedMissionDbItems = () => cachedMissionDbItems;
   window.setCachedMissionDbItems = (items) => { cachedMissionDbItems = items; };
+  window.updateHyperlapseKeyframeVisuals = updateHyperlapseKeyframeVisuals;
 }
 
 if (typeof global !== 'undefined') {
@@ -3003,6 +3131,7 @@ if (typeof global !== 'undefined') {
   global.setIsMissionDbOnline = (v) => { isMissionDbOnline = v; };
   global.getCachedMissionDbItems = () => cachedMissionDbItems;
   global.setCachedMissionDbItems = (items) => { cachedMissionDbItems = items; };
+  global.updateHyperlapseKeyframeVisuals = updateHyperlapseKeyframeVisuals;
 }
 
 // Search Address via OpenStreetMap Nominatim API

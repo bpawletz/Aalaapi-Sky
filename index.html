@@ -604,6 +604,22 @@ html, body {
   color: var(--accent-cyan) !important;
 }
 
+/* Hyperlapse Keyframes Visual Controls & POI Lock State */
+.hyperlapse-locked {
+  opacity: 0.40 !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  filter: grayscale(0.6) !important;
+}
+
+.hyperlapse-pitch-chip.active,
+.hyperlapse-yaw-chip.active {
+  background: rgba(6, 182, 212, 0.22) !important;
+  border: 1px solid rgba(6, 182, 212, 0.5) !important;
+  color: var(--accent-cyan) !important;
+  font-weight: 700 !important;
+}
+
 /* Unified System / Bridge & Buffer Status Group (Issue: Topbar Cleanup) */
 .header-system-status-group {
   display: inline-flex;
@@ -5972,6 +5988,120 @@ html, body {
   max-height: calc(100vh - 120px);
 }
 
+/* ADS-B Segmented Tab Navigation Bar */
+.adsb-nav-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 2px;
+}
+
+.adsb-tab-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.adsb-tab-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.adsb-tab-btn.active {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.adsb-tab-pill {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+  line-height: 1.2;
+}
+
+.adsb-tab-pill.is-breached {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.adsb-tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #94a3b8;
+}
+
+.adsb-tab-dot.is-connected {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.adsb-tab-dot.is-waiting {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.adsb-tab-dot.is-offline {
+  background: #ef4444;
+}
+
+.adsb-tab-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.adsb-tab-pane.hidden {
+  display: none !important;
+}
+
+.adsb-sim-details {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.adsb-sim-details[open] {
+  border-style: solid;
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.adsb-sim-summary {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.adsb-sim-summary:hover {
+  color: var(--text-main);
+}
+
 .adsb-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-color);
@@ -6469,7 +6599,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.167.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.170.0</span></h1>
         </div>
       </div>
 
@@ -7445,11 +7575,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <span id="hyperlapse-mode-badge" class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-size: 0.65rem; padding: 1px 6px;">Discrete Frames</span>
               </div>
               <select id="hyperlapse-waypoint-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
-                <option value="dense" selected>Discrete Frame Waypoints (Full RC 2 Visibility)</option>
-                <option value="spline">Keyframe Spline (2 Control Points + Auto Timer)</option>
+                <option value="dense" selected>Discrete Frame Waypoints (Stop &amp; Shoot / Full RC 2 Visibility)</option>
+                <option value="spline">Keyframe Spline (Continuous Flight / Auto Timer)</option>
               </select>
               <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; line-height: 1.3;">
-                In Discrete Frame mode, every intermediate interval photo position is compiled as an explicit waypoint visible on the RC 2 controller.
+                Synchronized with Layer Capture Mode: <b>Stop &amp; Shoot</b> compiles all frame positions as individual waypoints; <b>Continuous</b> compiles 2 navigation endpoints with continuous DJI interval shooting.
               </div>
             </div>
 
@@ -7463,37 +7593,111 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             </div>
 
             <!-- Dynamic Camera Sweep Keyframes -->
-            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 10px; margin-bottom: 10px;">
-              <div style="font-size: 0.72rem; font-weight: 700; color: #f59e0b; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
-                <span>📷 Dynamic Camera Sweep Keyframes</span>
+            <div id="hyperlapse-keyframes-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; transition: opacity 0.2s ease, filter 0.2s ease;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <div style="font-size: 0.72rem; font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 4px;">
+                  <span>📷 Dynamic Camera Sweep Keyframes</span>
+                </div>
+                <span id="hyperlapse-lock-badge" class="badge hidden" style="font-size: 0.62rem; background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.4); padding: 2px 6px;">🎯 POI Tracking</span>
               </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.72rem; margin-bottom: 6px;">
-                <div>
-                  <label for="hyperlapse-start-pitch" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">Start Pitch (°)</label>
-                  <input type="number" id="hyperlapse-start-pitch" class="form-control form-control-sm" min="-90" max="0" value="-15" style="font-size: 0.72rem; padding: 2px 6px;">
+
+              <!-- Locked to POI Overlay Banner -->
+              <div id="hyperlapse-poi-lock-banner" class="hidden" style="background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 6px; padding: 6px 8px; margin-bottom: 8px; font-size: 0.70rem; color: #a5f3fc; line-height: 1.35;">
+                <div style="font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                  <span>🔒 Locked to Target POI Focus</span>
                 </div>
-                <div>
-                  <label for="hyperlapse-end-pitch" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">End Pitch (°)</label>
-                  <input type="number" id="hyperlapse-end-pitch" class="form-control form-control-sm" min="-90" max="0" value="-15" style="font-size: 0.72rem; padding: 2px 6px;">
-                </div>
+                <div>Camera pitch and yaw are mathematically tracking the selected Point of Interest. Manual keyframe sweep angles are overridden while a POI target is active.</div>
               </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.72rem;">
-                <div>
-                  <label for="hyperlapse-heading-mode" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">Heading Mode</label>
-                  <select id="hyperlapse-heading-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 2px 6px;">
-                    <option value="path" selected>Follow Flight Path</option>
-                    <option value="keyframes">Keyframe Interpolation</option>
-                  </select>
-                </div>
-                <div id="hyperlapse-heading-keyframes-box" class="hidden">
-                  <div style="display: flex; gap: 4px;">
+
+              <!-- Keyframe Controls Container (Dimmed when locked) -->
+              <div id="hyperlapse-keyframes-body">
+                <!-- Gimbal Pitch Controls & Visual Presets -->
+                <div style="margin-bottom: 8px; background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.04); border-radius: 5px; padding: 6px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 0.68rem; font-weight: 600; color: #cbd5e1;">🔭 Gimbal Tilt Sweep</span>
+                    <span id="hyperlapse-pitch-sweep-label" style="font-size: 0.65rem; color: #f59e0b; font-weight: 600;">-15° → -15°</span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.72rem; margin-bottom: 6px;">
                     <div>
-                      <label for="hyperlapse-start-heading" style="display: block; color: var(--text-muted); font-size: 0.65rem; margin-bottom: 2px;">Start Yaw</label>
-                      <input type="number" id="hyperlapse-start-heading" class="form-control form-control-sm" min="0" max="360" value="0" style="font-size: 0.70rem; padding: 2px 4px;">
+                      <label for="hyperlapse-start-pitch" style="display: block; color: var(--text-muted); font-size: 0.65rem; margin-bottom: 2px;">Start Pitch (°)</label>
+                      <input type="number" id="hyperlapse-start-pitch" class="form-control form-control-sm" min="-90" max="0" value="-15" style="font-size: 0.72rem; padding: 2px 6px;">
                     </div>
                     <div>
-                      <label for="hyperlapse-end-heading" style="display: block; color: var(--text-muted); font-size: 0.65rem; margin-bottom: 2px;">End Yaw</label>
-                      <input type="number" id="hyperlapse-end-heading" class="form-control form-control-sm" min="0" max="360" value="90" style="font-size: 0.70rem; padding: 2px 4px;">
+                      <label for="hyperlapse-end-pitch" style="display: block; color: var(--text-muted); font-size: 0.65rem; margin-bottom: 2px;">End Pitch (°)</label>
+                      <input type="number" id="hyperlapse-end-pitch" class="form-control form-control-sm" min="-90" max="0" value="-15" style="font-size: 0.72rem; padding: 2px 6px;">
+                    </div>
+                  </div>
+                  <!-- Quick Pitch Presets -->
+                  <div style="display: flex; gap: 3px;">
+                    <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-90" style="flex: 1; padding: 2px 0; font-size: 0.62rem;">Nadir (-90°)</button>
+                    <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-60" style="flex: 1; padding: 2px 0; font-size: 0.62rem;">Oblique (-60°)</button>
+                    <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-45" style="flex: 1; padding: 2px 0; font-size: 0.62rem;">45°</button>
+                    <button type="button" class="btn btn-secondary btn-sm hyperlapse-pitch-chip" data-pitch="-15" style="flex: 1; padding: 2px 0; font-size: 0.62rem;">Horizon (-15°)</button>
+                  </div>
+                </div>
+
+                <!-- Heading Mode & Compass Yaw Visual Selector -->
+                <div style="background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.04); border-radius: 5px; padding: 6px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 0.68rem; font-weight: 600; color: #cbd5e1;">🧭 Drone Yaw Sweep</span>
+                    <span id="hyperlapse-yaw-sweep-label" style="font-size: 0.65rem; color: #38bdf8; font-weight: 600;">Path Tangent</span>
+                  </div>
+                  <div class="control-group" style="margin-bottom: 6px;">
+                    <label for="hyperlapse-heading-mode" style="display: block; color: var(--text-muted); font-size: 0.65rem; margin-bottom: 2px;">Heading Mode</label>
+                    <select id="hyperlapse-heading-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 2px 6px;">
+                      <option value="path" selected>Follow Flight Path</option>
+                      <option value="keyframes">Keyframe Interpolation</option>
+                    </select>
+                  </div>
+
+                  <div id="hyperlapse-heading-keyframes-box" class="hidden">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.72rem; margin-bottom: 6px;">
+                      <div>
+                        <label for="hyperlapse-start-heading" style="display: block; color: var(--text-muted); font-size: 0.65rem; margin-bottom: 2px;">Start Yaw (°)</label>
+                        <input type="number" id="hyperlapse-start-heading" class="form-control form-control-sm" min="0" max="360" value="0" style="font-size: 0.70rem; padding: 2px 4px;">
+                      </div>
+                      <div>
+                        <label for="hyperlapse-end-heading" style="display: block; color: var(--text-muted); font-size: 0.65rem; margin-bottom: 2px;">End Yaw (°)</label>
+                        <input type="number" id="hyperlapse-end-heading" class="form-control form-control-sm" min="0" max="360" value="90" style="font-size: 0.70rem; padding: 2px 4px;">
+                      </div>
+                    </div>
+
+                    <!-- Interactive Visual Compass Dial & Sweep Sector -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; padding: 4px 6px; background: rgba(15, 23, 42, 0.4); border-radius: 6px;">
+                      <!-- SVG Compass Rose -->
+                      <div style="width: 60px; height: 60px; flex-shrink: 0; position: relative;">
+                        <svg id="hyperlapse-compass-dial" viewBox="0 0 100 100" width="60" height="60" style="overflow: visible; cursor: pointer;">
+                          <!-- Outer Ring -->
+                          <circle cx="50" cy="50" r="42" fill="rgba(30, 41, 59, 0.7)" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2"/>
+                          <!-- Cardinal Markers -->
+                          <text x="50" y="18" font-size="11" font-weight="bold" fill="#ef4444" text-anchor="middle">N</text>
+                          <text x="84" y="54" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="middle">E</text>
+                          <text x="50" y="88" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="middle">S</text>
+                          <text x="16" y="54" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="middle">W</text>
+                          <!-- Sweep Sector (Dynamic) -->
+                          <path id="hyperlapse-compass-sweep-arc" d="M 50 50 L 50 15 A 35 35 0 0 1 85 50 Z" fill="rgba(6, 182, 212, 0.22)" stroke="rgba(6, 182, 212, 0.4)" stroke-width="1"/>
+                          <!-- Start Yaw Needle (Amber) -->
+                          <line id="hyperlapse-compass-needle-start" x1="50" y1="50" x2="50" y2="16" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+                          <!-- End Yaw Needle (Cyan) -->
+                          <line id="hyperlapse-compass-needle-end" x1="50" y1="50" x2="84" y2="50" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3,2"/>
+                          <!-- Center Pivot -->
+                          <circle cx="50" cy="50" r="4" fill="#38bdf8"/>
+                        </svg>
+                      </div>
+
+                      <!-- Quick Cardinal Chips & Sweep Summary -->
+                      <div style="flex: 1; display: flex; flex-direction: column; gap: 3px;">
+                        <div style="display: flex; gap: 2px;">
+                          <button type="button" class="btn btn-secondary btn-sm hyperlapse-yaw-chip" data-target="end" data-yaw="0" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">N (0°)</button>
+                          <button type="button" class="btn btn-secondary btn-sm hyperlapse-yaw-chip" data-target="end" data-yaw="90" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">E (90°)</button>
+                          <button type="button" class="btn btn-secondary btn-sm hyperlapse-yaw-chip" data-target="end" data-yaw="180" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">S (180°)</button>
+                          <button type="button" class="btn btn-secondary btn-sm hyperlapse-yaw-chip" data-target="end" data-yaw="270" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">W (270°)</button>
+                        </div>
+                        <div style="font-size: 0.64rem; color: var(--text-muted); line-height: 1.2;">
+                          <span style="color: #f59e0b;">● Start:</span> <span id="hyperlapse-compass-start-text">0° (N)</span><br>
+                          <span style="color: #06b6d4;">--- End:</span> <span id="hyperlapse-compass-end-text">90° (E)</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -9722,256 +9926,281 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
 
         <div class="adsb-drawer-body">
-          <!-- Hardware & Daemon Diagnostics Card -->
-          <div class="adsb-card" id="adsb-diag-card" style="margin-bottom: 12px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-weight: 700; font-size: 0.74rem; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;">Receiver Diagnostics</span>
-              <span id="adsb-diag-summary" class="badge" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.15); color: #94a3b8;">Scanning...</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 3px;">
-              <span style="color: var(--text-muted);">USB Hardware:</span>
-              <span id="adsb-hw-status" style="font-weight: 600; color: #94a3b8;">Checking...</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 3px;">
-              <span style="color: var(--text-muted);">dump1090 Feed:</span>
-              <span id="adsb-stream-status" style="font-weight: 600; color: #94a3b8;">Connecting (Port 30003)...</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 3px;">
-              <span style="color: var(--text-muted);">Delivery Mode:</span>
-              <span id="adsb-transport-badge" style="font-weight: 600; color: #38bdf8;">Connecting...</span>
-            </div>
-            <div id="adsb-diag-tip" style="display: none; margin-top: 6px; padding: 6px 8px; border-radius: 5px; font-size: 0.7rem; line-height: 1.35; background: rgba(245, 158, 11, 0.12); border-left: 3px solid #f59e0b; color: #fbbf24;"></div>
+          <!-- Segmented Navigation Tab Bar -->
+          <div class="adsb-nav-tabs" role="tablist" aria-label="ADS-B Radar Navigation">
+            <button id="adsb-tab-btn-ops" type="button" class="adsb-tab-btn active" role="tab" aria-selected="true" aria-controls="adsb-pane-operations">
+              <span>📡 Airspace &amp; Traffic</span>
+              <span id="adsb-tab-traffic-badge" class="adsb-tab-pill hidden">0</span>
+            </button>
+            <button id="adsb-tab-btn-settings" type="button" class="adsb-tab-btn" role="tab" aria-selected="false" aria-controls="adsb-pane-settings">
+              <span>⚙️ Feed &amp; Hardware</span>
+              <span id="adsb-tab-status-dot" class="adsb-tab-dot is-connecting" title="Receiver Status"></span>
+            </button>
           </div>
 
-          <!-- Master Controls Card -->
-          <div class="adsb-card">
-            <div class="adsb-card-row">
-              <label for="adsb-enable-toggle" class="adsb-control-label">
-                <span style="font-weight: 600;">Airspace Monitoring</span>
-                <span class="adsb-control-sub">Real-time sub-second deconfliction stream</span>
-              </label>
-              <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
-                <input type="checkbox" id="adsb-enable-toggle" checked style="opacity: 0; width: 0; height: 0;">
-                <span class="slider round"></span>
-              </label>
-            </div>
-            
-            <div class="adsb-card-row" style="margin-top: 10px;">
-              <label for="adsb-sound-toggle" class="adsb-control-label">
-                <span style="font-weight: 600;">Auditory Warning Chime</span>
-                <span class="adsb-control-sub">30s cooldown per aircraft</span>
-              </label>
-              <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
-                <input type="checkbox" id="adsb-sound-toggle" checked style="opacity: 0; width: 0; height: 0;">
-                <span class="slider round"></span>
-              </label>
-            </div>
-
-            <div class="adsb-card-row" style="margin-top: 10px;">
-              <label for="adsb-trails-toggle" class="adsb-control-label">
-                <span style="font-weight: 600;">Flight History Trails</span>
-                <span class="adsb-control-sub">Breadcrumb track vectors on map</span>
-              </label>
-              <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
-                <input type="checkbox" id="adsb-trails-toggle" checked style="opacity: 0; width: 0; height: 0;">
-                <span class="slider round"></span>
-              </label>
-            </div>
-
-            <div class="adsb-card-row" style="margin-top: 8px;">
-              <span class="adsb-control-label" style="font-size: 0.74rem;">Alert Audio Mode:</span>
-              <select id="adsb-sound-type-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.72rem; border-radius: 5px; padding: 2px 6px;">
-                <option value="both" selected>Chime &amp; Voice</option>
-                <option value="chime">Dual-Tone Chime Only</option>
-                <option value="voice">Vocal Advisory Only</option>
-              </select>
-            </div>
-
-            <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
-              <div style="display: flex; gap: 6px;">
-                <button id="adsb-test-audio-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer;" title="Test Audio Synth &amp; Speech">
-                  <span>🔊</span> Test Audio
-                </button>
-                <button id="adsb-sim-trigger-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); cursor: pointer;" title="Simulate Approaching Aircraft Breach">
-                  <span>⚠️</span> Simulate Traffic
-                </button>
+          <!-- TAB 1: Real-Time Airspace Operations & Alerting -->
+          <div id="adsb-pane-operations" class="adsb-tab-pane" role="tabpanel" aria-labelledby="adsb-tab-btn-ops">
+            <!-- Live Tracked Aircraft List (Elevated to top of Operations) -->
+            <div class="adsb-card">
+              <div class="adsb-card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Tracked Aircraft</span>
+                <span id="adsb-tracked-count-badge" class="badge-tag" style="font-size: 0.62rem; padding: 1px 5px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">0 in Range</span>
               </div>
-              <div style="display: flex; gap: 4px;">
-                <button id="adsb-sim-prop-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(16, 185, 129, 0.12); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); cursor: pointer;" title="Simulate GA Propeller Traffic (C172)">
-                  <span>🛩️</span> Prop
-                </button>
-                <button id="adsb-sim-heli-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(234, 179, 8, 0.12); color: #fde047; border-color: rgba(234, 179, 8, 0.35); cursor: pointer;" title="Simulate Helicopter Traffic (Bell 407 / R44)">
-                  <span>🚁</span> Heli
-                </button>
-                <button id="adsb-sim-jet-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); cursor: pointer;" title="Simulate Commercial / Jet Traffic (B738)">
-                  <span>✈️</span> Jet
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Spatial Boundaries Card -->
-          <div class="adsb-card">
-            <div class="adsb-card-title">Spatial Alert Boundaries</div>
-
-            <!-- Proximity Radius Slider -->
-            <div class="adsb-slider-group">
-              <div class="adsb-slider-header">
-                <label for="adsb-radius-slider" style="font-size: 0.72rem; color: var(--text-muted);">Horizontal Proximity Radius:</label>
-                <span id="adsb-radius-val" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan);">3.0 mi (4.8 km)</span>
-              </div>
-              <input type="range" id="adsb-radius-slider" min="1.0" max="10.0" step="0.5" value="3.0" style="width: 100%; cursor: pointer;">
-              <div class="adsb-slider-range-labels">
-                <span>1.0 mi</span>
-                <span>5.0 mi</span>
-                <span>10.0 mi</span>
+              <div id="adsb-aircraft-list" class="adsb-aircraft-list">
+                <div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No aircraft currently in range</div>
               </div>
             </div>
 
-            <!-- Warning Ceiling Slider -->
-            <div class="adsb-slider-group" style="margin-top: 8px;">
-              <div class="adsb-slider-header">
-                <label for="adsb-ceiling-slider" style="font-size: 0.72rem; color: var(--text-muted);">Vertical Ceiling Buffer:</label>
-                <span id="adsb-ceiling-val" style="font-size: 0.75rem; font-weight: 700; color: #fbbf24;">2,500 ft (762 m)</span>
-              </div>
-              <input type="range" id="adsb-ceiling-slider" min="500" max="5000" step="250" value="2500" style="width: 100%; cursor: pointer;">
-              <div class="adsb-slider-range-labels">
-                <span>500 ft</span>
-                <span>2,500 ft</span>
-                <span>5,000 ft</span>
-              </div>
-            </div>
-          </div>
+            <!-- Spatial Boundaries Card -->
+            <div class="adsb-card">
+              <div class="adsb-card-title">Spatial Alert Boundaries</div>
 
-          <!-- Online ADS-B Public Cloud Feeds Card -->
-          <div class="adsb-card" id="adsb-external-card" style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-weight: 700; font-size: 0.74rem; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;">Online Cloud Feed (Concurrent)</span>
-              <span id="adsb-external-badge" class="badge" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.15); color: #94a3b8;">IDLE</span>
-            </div>
-            
-            <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 8px;">
-              Polls public ADS-B networks (at most 1x/30s) alongside local SDR hardware.
-            </div>
-
-            <div class="adsb-card-row" style="margin-bottom: 6px;">
-              <span class="adsb-control-label" style="font-size: 0.72rem;">Feed Provider:</span>
-              <select id="adsb-external-provider-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.72rem; border-radius: 5px; padding: 2px 6px; max-width: 170px;">
-                <option value="adsb.lol" selected>adsb.lol (Open Community)</option>
-                <option value="custom">Custom Endpoint</option>
-              </select>
-            </div>
-
-            <div id="adsb-external-custom-url-container" style="display: none; margin-bottom: 6px;">
-              <input type="text" id="adsb-external-custom-url" placeholder="https://.../v2/point/{lat}/{lon}/{radius}" style="width: 100%; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
-            </div>
-
-            <div class="adsb-card-row" style="margin-bottom: 8px;">
-              <span class="adsb-control-label" style="font-size: 0.72rem;">Search Radius:</span>
-              <select id="adsb-external-radius-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.72rem; border-radius: 5px; padding: 2px 6px;">
-                <option value="5">5 NM (~5.8 mi)</option>
-                <option value="10">10 NM (~11.5 mi)</option>
-                <option value="15" selected>15 NM (~17.3 mi)</option>
-                <option value="25">25 NM (~28.8 mi)</option>
-                <option value="50">50 NM (~57.5 mi)</option>
-              </select>
-            </div>
-
-            <!-- Watch Control Button & Status -->
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <button id="adsb-external-watch-btn" type="button" class="btn-primary" style="width: 100%; padding: 6px 10px; font-size: 0.75rem; font-weight: 600; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; color: #38bdf8;">
-                <span>▶</span> <span id="adsb-external-watch-btn-text">Start Watching (10m)</span>
-              </button>
-              <div id="adsb-external-watch-status" style="font-size: 0.66rem; color: var(--text-muted); text-align: center; margin-top: 2px; line-height: 1.3;">
-                Rate limit: 30s interval • Auto-stops after 10m
-              </div>
-            </div>
-          </div>
-
-          <!-- Receiver & Hardware Card -->
-          <div class="adsb-card">
-            <div class="adsb-card-title" style="display: flex; justify-content: space-between; align-items: center;">
-              <span>Receiver &amp; Hardware</span>
-              <span id="adsb-hardware-badge" style="font-size: 0.62rem; color: #34d399; font-weight: 600;">READY</span>
-            </div>
-            <div class="adsb-hw-grid">
-              <div class="adsb-hw-item">
-                <span class="adsb-hw-lbl">Driver</span>
-                <span class="adsb-hw-val" id="adsb-hw-driver">RTL-SDR / dump1090</span>
-              </div>
-              <div class="adsb-hw-item">
-                <span class="adsb-hw-lbl">Frequency</span>
-                <span class="adsb-hw-val">1090 MHz</span>
-              </div>
-              <div class="adsb-hw-item">
-                <span class="adsb-hw-lbl">Packets</span>
-                <span class="adsb-hw-val" id="adsb-hw-packets">0</span>
-              </div>
-              <div class="adsb-hw-item">
-                <span class="adsb-hw-lbl">Aircraft</span>
-                <span class="adsb-hw-val" id="adsb-hw-count">0</span>
-              </div>
-            </div>
-
-            <!-- ADS-B Feed Server Host & Port Config -->
-            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
-              <div style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">
-                dump1090 / SBS Server Settings:
-              </div>
-              <div style="display: flex; gap: 6px; align-items: center;">
-                <input type="text" id="adsb-host-input" placeholder="Server Host (e.g. 127.0.0.1)" value="127.0.0.1" style="flex: 2; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
-                <input type="number" id="adsb-port-input" placeholder="Port" value="30003" min="1" max="65535" style="width: 65px; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
-                <button type="button" id="adsb-server-save-btn" class="btn-sm" style="padding: 3px 8px; font-size: 0.68rem; cursor: pointer; white-space: nowrap;">Connect</button>
-              </div>
-
-              <!-- Port Presets & Remote Host Port Setup Helper -->
-              <div style="display: flex; gap: 4px; margin-top: 6px; align-items: center; flex-wrap: wrap;">
-                <span style="font-size: 0.64rem; color: var(--text-muted);">Presets:</span>
-                <button type="button" class="btn-xs adsb-port-chip" data-port="30003" style="font-size: 0.62rem; padding: 1px 5px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 3px; color: #93c5fd;" title="Standard BaseStation / SBS-1 CSV stream (Port 30003)">30003 (SBS)</button>
-                <button type="button" class="btn-xs adsb-port-chip" data-port="30002" style="font-size: 0.62rem; padding: 1px 5px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 3px; color: #93c5fd;" title="Raw Mode S AVR hex stream (*...; frames) (Port 30002)">30002 (Mode S)</button>
-                <button type="button" class="btn-xs adsb-port-chip" data-port="8080" style="font-size: 0.62rem; padding: 1px 5px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 3px; color: #93c5fd;" title="dump1090 / readsb HTTP Web interface (Port 8080)">8080 (Web)</button>
-                <button type="button" id="adsb-probe-host-btn" class="btn-xs" style="font-size: 0.62rem; padding: 1px 6px; margin-left: auto; cursor: pointer; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 3px; color: #38bdf8;" title="Auto-detect open ADS-B ports on the target host">🔍 Probe Host</button>
-              </div>
-
-              <!-- Diagnostic Probe Feedback Display -->
-              <div id="adsb-probe-feedback" style="display: none; margin-top: 6px; padding: 6px 8px; border-radius: 4px; font-size: 0.65rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(56,189,248,0.25);"></div>
-
-              <!-- Collapsible Remote Receiver Port Setup Helper Cheat Sheet -->
-              <details id="adsb-ports-cheatsheet" style="margin-top: 6px; font-size: 0.66rem; color: var(--text-muted);">
-                <summary style="cursor: pointer; user-select: none; color: #93c5fd;">Remote Port Setup Helper &amp; Cheat Sheet</summary>
-                <div style="margin-top: 5px; line-height: 1.4; background: rgba(0,0,0,0.25); padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">
-                  <div style="font-weight: 600; color: #e2e8f0; margin-bottom: 2px;">Standard Receiver Ports:</div>
-                  <div>• <code>30003</code>: SBS-1 BaseStation CSV (dump1090, readsb, PiAware)</div>
-                  <div>• <code>30002</code>: Raw Mode S AVR (*...; frames)</div>
-                  <div>• <code>30005</code>: Beast Binary stream</div>
-                  <div>• <code>80 / 8080</code>: Web Map JSON (<code>/data/aircraft.json</code>)</div>
-                  <div style="font-weight: 600; color: #e2e8f0; margin-top: 5px; margin-bottom: 2px;">Daemon Launch Flags:</div>
-                  <div style="font-family: monospace; font-size: 0.62rem; color: #a5f3fc;">dump1090 --net --net-sbs-port 30003</div>
-                  <div style="font-family: monospace; font-size: 0.62rem; color: #a5f3fc;">readsb --net --net-sbs-port 30003 --net-bo-port 30005</div>
+              <!-- Proximity Radius Slider -->
+              <div class="adsb-slider-group">
+                <div class="adsb-slider-header">
+                  <label for="adsb-radius-slider" style="font-size: 0.72rem; color: var(--text-muted);">Horizontal Proximity Radius:</label>
+                  <span id="adsb-radius-val" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan);">3.0 mi (4.8 km)</span>
                 </div>
-              </details>
+                <input type="range" id="adsb-radius-slider" min="1.0" max="10.0" step="0.5" value="3.0" style="width: 100%; cursor: pointer;">
+                <div class="adsb-slider-range-labels">
+                  <span>1.0 mi</span>
+                  <span>5.0 mi</span>
+                  <span>10.0 mi</span>
+                </div>
+              </div>
+
+              <!-- Warning Ceiling Slider -->
+              <div class="adsb-slider-group" style="margin-top: 8px;">
+                <div class="adsb-slider-header">
+                  <label for="adsb-ceiling-slider" style="font-size: 0.72rem; color: var(--text-muted);">Vertical Ceiling Buffer:</label>
+                  <span id="adsb-ceiling-val" style="font-size: 0.75rem; font-weight: 700; color: #fbbf24;">2,500 ft (762 m)</span>
+                </div>
+                <input type="range" id="adsb-ceiling-slider" min="500" max="5000" step="250" value="2500" style="width: 100%; cursor: pointer;">
+                <div class="adsb-slider-range-labels">
+                  <span>500 ft</span>
+                  <span>2,500 ft</span>
+                  <span>5,000 ft</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Custom ADS-B Endpoint Config (Collapsible/Optional) -->
-            <div style="margin-top: 8px;">
-              <details style="font-size: 0.7rem; color: var(--text-muted);">
-                <summary style="cursor: pointer; user-select: none;">Bridge API Bounds URL (Optional)</summary>
-                <div style="margin-top: 6px; display: flex; gap: 4px;">
-                  <input type="text" id="adsb-endpoint-input" placeholder="e.g. http://localhost:8765/api/airspace/bounds" style="flex: 1; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
-                  <button type="button" id="adsb-endpoint-save-btn" class="btn-sm" style="padding: 2px 8px; font-size: 0.68rem; cursor: pointer;">Save</button>
-                </div>
-              </details>
+            <!-- Master Airspace & Auditory Alert Controls Card -->
+            <div class="adsb-card">
+              <div class="adsb-card-row">
+                <label for="adsb-enable-toggle" class="adsb-control-label">
+                  <span style="font-weight: 600;">Airspace Monitoring</span>
+                  <span class="adsb-control-sub">Real-time sub-second deconfliction stream</span>
+                </label>
+                <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
+                  <input type="checkbox" id="adsb-enable-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+              
+              <div class="adsb-card-row" style="margin-top: 10px;">
+                <label for="adsb-sound-toggle" class="adsb-control-label">
+                  <span style="font-weight: 600;">Auditory Warning Chime</span>
+                  <span class="adsb-control-sub">30s cooldown per aircraft</span>
+                </label>
+                <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
+                  <input type="checkbox" id="adsb-sound-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <div class="adsb-card-row" style="margin-top: 10px;">
+                <label for="adsb-trails-toggle" class="adsb-control-label">
+                  <span style="font-weight: 600;">Flight History Trails</span>
+                  <span class="adsb-control-sub">Breadcrumb track vectors on map</span>
+                </label>
+                <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
+                  <input type="checkbox" id="adsb-trails-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <div class="adsb-card-row" style="margin-top: 8px;">
+                <span class="adsb-control-label" style="font-size: 0.74rem;">Alert Audio Mode:</span>
+                <select id="adsb-sound-type-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.72rem; border-radius: 5px; padding: 2px 6px;">
+                  <option value="both" selected>Chime &amp; Voice</option>
+                  <option value="chime">Dual-Tone Chime Only</option>
+                  <option value="voice">Vocal Advisory Only</option>
+                </select>
+              </div>
             </div>
+
+            <!-- Pre-Flight Audio & Traffic Simulation -->
+            <details class="adsb-sim-details">
+              <summary class="adsb-sim-summary">
+                <span>🧪 Pre-Flight Audio &amp; Traffic Simulation</span>
+                <span style="font-size: 0.65rem; color: #38bdf8;">▾</span>
+              </summary>
+              <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; gap: 6px;">
+                  <button id="adsb-test-audio-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer;" title="Test Audio Synth &amp; Speech">
+                    <span>🔊</span> Test Audio
+                  </button>
+                  <button id="adsb-sim-trigger-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); cursor: pointer;" title="Simulate Approaching Aircraft Breach">
+                    <span>⚠️</span> Simulate Traffic
+                  </button>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                  <button id="adsb-sim-prop-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(16, 185, 129, 0.12); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); cursor: pointer;" title="Simulate GA Propeller Traffic (C172)">
+                    <span>🛩️</span> Prop
+                  </button>
+                  <button id="adsb-sim-heli-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(234, 179, 8, 0.12); color: #fde047; border-color: rgba(234, 179, 8, 0.35); cursor: pointer;" title="Simulate Helicopter Traffic (Bell 407 / R44)">
+                    <span>🚁</span> Heli
+                  </button>
+                  <button id="adsb-sim-jet-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); cursor: pointer;" title="Simulate Commercial / Jet Traffic (B738)">
+                    <span>✈️</span> Jet
+                  </button>
+                </div>
+              </div>
+            </details>
           </div>
 
-          <!-- Live Tracked Aircraft List -->
-          <div class="adsb-card">
-            <div class="adsb-card-title" style="display: flex; justify-content: space-between; align-items: center;">
-              <span>Tracked Aircraft</span>
-              <span id="adsb-tracked-count-badge" class="badge-tag" style="font-size: 0.62rem; padding: 1px 5px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">0 in Range</span>
+          <!-- TAB 2: Feed Connection, Online Sources & Diagnostics -->
+          <div id="adsb-pane-settings" class="adsb-tab-pane hidden" role="tabpanel" aria-labelledby="adsb-tab-btn-settings">
+            <!-- Receiver & Hardware Card -->
+            <div class="adsb-card">
+              <div class="adsb-card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Local Receiver &amp; Server</span>
+                <span id="adsb-hardware-badge" style="font-size: 0.62rem; color: #34d399; font-weight: 600;">READY</span>
+              </div>
+
+              <!-- ADS-B Feed Server Host & Port Config -->
+              <div style="padding-top: 4px;">
+                <div style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">
+                  dump1090 / SBS Server Settings:
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <input type="text" id="adsb-host-input" placeholder="Server Host (e.g. 127.0.0.1)" value="127.0.0.1" style="flex: 2; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
+                  <input type="number" id="adsb-port-input" placeholder="Port" value="30003" min="1" max="65535" style="width: 65px; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
+                  <button type="button" id="adsb-server-save-btn" class="btn-sm" style="padding: 3px 8px; font-size: 0.68rem; cursor: pointer; white-space: nowrap;">Connect</button>
+                </div>
+
+                <!-- Port Presets & Remote Host Port Setup Helper -->
+                <div style="display: flex; gap: 4px; margin-top: 6px; align-items: center; flex-wrap: wrap;">
+                  <span style="font-size: 0.64rem; color: var(--text-muted);">Presets:</span>
+                  <button type="button" class="btn-xs adsb-port-chip" data-port="30003" style="font-size: 0.62rem; padding: 1px 5px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 3px; color: #93c5fd;" title="Standard BaseStation / SBS-1 CSV stream (Port 30003)">30003 (SBS)</button>
+                  <button type="button" class="btn-xs adsb-port-chip" data-port="30002" style="font-size: 0.62rem; padding: 1px 5px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 3px; color: #93c5fd;" title="Raw Mode S AVR hex stream (*...; frames) (Port 30002)">30002 (Mode S)</button>
+                  <button type="button" class="btn-xs adsb-port-chip" data-port="8080" style="font-size: 0.62rem; padding: 1px 5px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 3px; color: #93c5fd;" title="dump1090 / readsb HTTP Web interface (Port 8080)">8080 (Web)</button>
+                  <button type="button" id="adsb-probe-host-btn" class="btn-xs" style="font-size: 0.62rem; padding: 1px 6px; margin-left: auto; cursor: pointer; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 3px; color: #38bdf8;" title="Auto-detect open ADS-B ports on the target host">🔍 Probe Host</button>
+                </div>
+
+                <!-- Diagnostic Probe Feedback Display -->
+                <div id="adsb-probe-feedback" style="display: none; margin-top: 6px; padding: 6px 8px; border-radius: 4px; font-size: 0.65rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(56,189,248,0.25);"></div>
+
+                <!-- Collapsible Remote Receiver Port Setup Helper Cheat Sheet -->
+                <details id="adsb-ports-cheatsheet" style="margin-top: 6px; font-size: 0.66rem; color: var(--text-muted);">
+                  <summary style="cursor: pointer; user-select: none; color: #93c5fd;">Remote Port Setup Helper &amp; Cheat Sheet</summary>
+                  <div style="margin-top: 5px; line-height: 1.4; background: rgba(0,0,0,0.25); padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">
+                    <div style="font-weight: 600; color: #e2e8f0; margin-bottom: 2px;">Standard Receiver Ports:</div>
+                    <div>• <code>30003</code>: SBS-1 BaseStation CSV (dump1090, readsb, PiAware)</div>
+                    <div>• <code>30002</code>: Raw Mode S AVR (*...; frames)</div>
+                    <div>• <code>30005</code>: Beast Binary stream</div>
+                    <div>• <code>80 / 8080</code>: Web Map JSON (<code>/data/aircraft.json</code>)</div>
+                    <div style="font-weight: 600; color: #e2e8f0; margin-top: 5px; margin-bottom: 2px;">Daemon Launch Flags:</div>
+                    <div style="font-family: monospace; font-size: 0.62rem; color: #a5f3fc;">dump1090 --net --net-sbs-port 30003</div>
+                    <div style="font-family: monospace; font-size: 0.62rem; color: #a5f3fc;">readsb --net --net-sbs-port 30003 --net-bo-port 30005</div>
+                  </div>
+                </details>
+              </div>
+
+              <!-- Custom ADS-B Endpoint Config (Collapsible/Optional) -->
+              <div style="margin-top: 8px;">
+                <details style="font-size: 0.7rem; color: var(--text-muted);">
+                  <summary style="cursor: pointer; user-select: none;">Bridge API Bounds URL (Optional)</summary>
+                  <div style="margin-top: 6px; display: flex; gap: 4px;">
+                    <input type="text" id="adsb-endpoint-input" placeholder="e.g. http://localhost:8765/api/airspace/bounds" style="flex: 1; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
+                    <button type="button" id="adsb-endpoint-save-btn" class="btn-sm" style="padding: 2px 8px; font-size: 0.68rem; cursor: pointer;">Save</button>
+                  </div>
+                </details>
+              </div>
             </div>
-            <div id="adsb-aircraft-list" class="adsb-aircraft-list">
-              <div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No aircraft currently in range</div>
+
+            <!-- Online ADS-B Public Cloud Feeds Card -->
+            <div class="adsb-card" id="adsb-external-card" style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-weight: 700; font-size: 0.74rem; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;">Online Cloud Feed (Concurrent)</span>
+                <span id="adsb-external-badge" class="badge" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.15); color: #94a3b8;">IDLE</span>
+              </div>
+              
+              <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 8px;">
+                Polls public ADS-B networks (at most 1x/30s) alongside local SDR hardware.
+              </div>
+
+              <div class="adsb-card-row" style="margin-bottom: 6px;">
+                <span class="adsb-control-label" style="font-size: 0.72rem;">Feed Provider:</span>
+                <select id="adsb-external-provider-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.72rem; border-radius: 5px; padding: 2px 6px; max-width: 170px;">
+                  <option value="adsb.lol" selected>adsb.lol (Open Community)</option>
+                  <option value="custom">Custom Endpoint</option>
+                </select>
+              </div>
+
+              <div id="adsb-external-custom-url-container" style="display: none; margin-bottom: 6px;">
+                <input type="text" id="adsb-external-custom-url" placeholder="https://.../v2/point/{lat}/{lon}/{radius}" style="width: 100%; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
+              </div>
+
+              <div class="adsb-card-row" style="margin-bottom: 8px;">
+                <span class="adsb-control-label" style="font-size: 0.72rem;">Search Radius:</span>
+                <select id="adsb-external-radius-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.72rem; border-radius: 5px; padding: 2px 6px;">
+                  <option value="5">5 NM (~5.8 mi)</option>
+                  <option value="10">10 NM (~11.5 mi)</option>
+                  <option value="15" selected>15 NM (~17.3 mi)</option>
+                  <option value="25">25 NM (~28.8 mi)</option>
+                  <option value="50">50 NM (~57.5 mi)</option>
+                </select>
+              </div>
+
+              <!-- Watch Control Button & Status -->
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <button id="adsb-external-watch-btn" type="button" class="btn-primary" style="width: 100%; padding: 6px 10px; font-size: 0.75rem; font-weight: 600; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; color: #38bdf8;">
+                  <span>▶</span> <span id="adsb-external-watch-btn-text">Start Watching (10m)</span>
+                </button>
+                <div id="adsb-external-watch-status" style="font-size: 0.66rem; color: var(--text-muted); text-align: center; margin-top: 2px; line-height: 1.3;">
+                  Rate limit: 30s interval • Auto-stops after 10m
+                </div>
+              </div>
+            </div>
+
+            <!-- Hardware & Daemon Diagnostics Card -->
+            <div class="adsb-card" id="adsb-diag-card" style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-weight: 700; font-size: 0.74rem; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;">Receiver Diagnostics</span>
+                <span id="adsb-diag-summary" class="badge" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.15); color: #94a3b8;">Scanning...</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 3px;">
+                <span style="color: var(--text-muted);">USB Hardware:</span>
+                <span id="adsb-hw-status" style="font-weight: 600; color: #94a3b8;">Checking...</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 3px;">
+                <span style="color: var(--text-muted);">dump1090 Feed:</span>
+                <span id="adsb-stream-status" style="font-weight: 600; color: #94a3b8;">Connecting (Port 30003)...</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 3px;">
+                <span style="color: var(--text-muted);">Delivery Mode:</span>
+                <span id="adsb-transport-badge" style="font-weight: 600; color: #38bdf8;">Connecting...</span>
+              </div>
+              <div class="adsb-hw-grid" style="margin-top: 8px;">
+                <div class="adsb-hw-item">
+                  <span class="adsb-hw-lbl">Driver</span>
+                  <span class="adsb-hw-val" id="adsb-hw-driver">RTL-SDR / dump1090</span>
+                </div>
+                <div class="adsb-hw-item">
+                  <span class="adsb-hw-lbl">Frequency</span>
+                  <span class="adsb-hw-val">1090 MHz</span>
+                </div>
+                <div class="adsb-hw-item">
+                  <span class="adsb-hw-lbl">Packets</span>
+                  <span class="adsb-hw-val" id="adsb-hw-packets">0</span>
+                </div>
+                <div class="adsb-hw-item">
+                  <span class="adsb-hw-lbl">Aircraft</span>
+                  <span class="adsb-hw-val" id="adsb-hw-count">0</span>
+                </div>
+              </div>
+              <div id="adsb-diag-tip" style="display: none; margin-top: 6px; padding: 6px 8px; border-radius: 5px; font-size: 0.7rem; line-height: 1.35; background: rgba(245, 158, 11, 0.12); border-left: 3px solid #f59e0b; color: #fbbf24;"></div>
             </div>
           </div>
         </div>
@@ -10233,6 +10462,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ✈️ Segmented ADS-B Operations &amp; Settings Architecture (v1.168.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Separated the ADS-B Manned Aircraft Radar drawer into a clean Two-Tab Architecture! Real-time flight operations (tracked aircraft list, audio chime toggles, spatial proximity and ceiling sliders) are now isolated in <strong>📡 Airspace &amp; Traffic</strong>, while local receiver settings (dump1090/readsb host/port, port probe, cheatsheet), online cloud feeds, and dongle diagnostics are organized in <strong>⚙️ Feed &amp; Hardware</strong>.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ☁️ Weather-Coordinated Shadows &amp; Satellite Cloud Cover (v1.166.0)
@@ -11572,7 +11809,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.167.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.170.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -11633,6 +11870,38 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.170.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Interactive Compass Rose for Hyperlapse:</strong> Added visual SVG Compass Rose displaying Start Yaw (amber) and End Yaw (cyan) needles with turn sweep sectors, click-to-aim compass dial, and quick cardinal direction buttons.</li>
+              <li><strong>Gimbal Tilt Visual Presets &amp; Sweep Indicators:</strong> Added quick-select pitch presets (-90°, -60°, -45°, -15°) and dynamic tilt sweep range indicators.</li>
+              <li><strong>Automated POI Conflict Lock &amp; Dimming:</strong> Proactively dims manual keyframe sweep inputs with a clear <code>🔒 Locked to Target POI Focus</code> badge whenever a Target POI is assigned or Heading Mode is Point of Interest, resolving conflicting camera instructions.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.169.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Search &amp; Navigation Layout Setting Removal:</strong> Removed the inactive "Search &amp; Navigation Layout" dropdown from the Settings modal, eliminating pilot confusion regarding address search placement.</li>
+              <li><strong>Settings Hygiene &amp; Code Cleanup:</strong> Cleaned up dead event listeners, orphaned configuration keys, and unimplemented stubs across the settings management subsystem.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.169.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Capture Mode-Driven Hyperlapse Compilation:</strong> Bound Hyperlapse waypoint generation directly to the Layer and Global Capture Mode setting (<code>stopAndShoot</code> vs <code>continuous</code>), making Capture Mode the authoritative decider for waypoint density.</li>
+              <li><strong>Automated Stop &amp; Shoot Frame Waypoints:</strong> Setting Capture Mode to <strong>Stop &amp; Shoot</strong> compiles all intermediate frame positions (e.g. ~156 waypoints along a 47m path at 0.1 m/s) into explicit, discrete flight waypoints in the KMZ with settling hovers and <code>reachPoint</code> camera actions.</li>
+              <li><strong>Continuous Flight with multipleTiming:</strong> Setting Capture Mode to <strong>Continuous Flight</strong> compiles 2 navigation endpoints paired with DJI's automated <code>multipleTiming</code> shutter trigger, gliding smoothly at 0.1 m/s while taking photos every 3s.</li>
+              <li><strong>Default Layer Name Auto-Synchronization:</strong> Automatically updates default layer titles upon switching flight patterns (e.g. updating <code>Layer 2: 3D Double Grid</code> to <code>Layer 2: Hyperlapse Time-Lapse</code>).</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.168.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Segmented ADS-B Operations &amp; Settings Architecture:</strong> Replaced the single-scrolling ADS-B side drawer with a clean, responsive segmented tab interface separating real-time flight operations and safety deconfliction (<strong>📡 Airspace &amp; Traffic</strong>) from local receiver connections, cloud feeds, and hardware diagnostics (<strong>⚙️ Feed &amp; Hardware</strong>).</li>
+              <li><strong>Front-and-Center Live Radar &amp; Pre-Flight Simulation:</strong> Elevated the live tracked aircraft radar list to the top of the Operations tab for immediate situational awareness, and tucked audio synth tests and approaching aircraft simulations into a collapsible pre-flight verification card.</li>
+              <li><strong>Dynamic Traffic Pill &amp; Status Dot:</strong> Added a real-time badge pill displaying detected traffic count on the Operations tab and a glowing connection health dot on the Settings tab.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.167.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -14739,17 +15008,6 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               <option value="light">☀️ High-Contrast Light Mode (Daylight Field)</option>
             </select>
             <p class="help-text" style="margin-top: 4px; font-size: 0.74rem;">Switch between high-contrast sunlight field mode and cyber dark mode.</p>
-          </div>
-
-          <!-- Search & Navigation Layout Setting -->
-          <div class="control-group">
-            <label for="nav-layout-select" style="font-weight: 600; font-size: 0.82rem; color: var(--text-main); margin-bottom: 6px; display: block;">Search &amp; Navigation Layout</label>
-            <select id="nav-layout-select" class="form-select" style="width: 100%;">
-              <option value="header" selected>App Header (Integrated Studio)</option>
-              <option value="floating">Floating Map HUD (Map Pill)</option>
-              <option value="sidebar">Sidebar (Classic Top)</option>
-            </select>
-            <p class="help-text" style="margin-top: 4px; font-size: 0.74rem;">Choose where address search and location controls appear.</p>
           </div>
 
           <!-- Top Ribbon & Toolbar Layout Customizer -->
@@ -21906,8 +22164,8 @@ function updateLayerPoiSelectOptions() {
   select.value = currentVal;
 }
 
-function saveActiveLayerFromUi() {
-  const layer = getActiveLayer();
+function saveActiveLayerFromUi(targetLayer) {
+  const layer = targetLayer || getActiveLayer();
   if (!layer) return;
 
   if (typeof document === 'undefined') return;
@@ -21957,10 +22215,23 @@ function saveActiveLayerFromUi() {
   const globalClearanceEl = document.getElementById('global-exclusion-clearance-buffer');
 
   if (gridTypeEl && gridTypeEl.value) {
+    const prevPattern = layer.pattern;
     layer.pattern = gridTypeEl.value;
     layer.isExclusionZone = (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform');
     layer.isDrawingLayer = (layer.pattern === 'boundary-polygon' || layer.pattern === 'fiducial-markers');
     layer.isFiducialLayer = (layer.pattern === 'fiducial-markers');
+
+    // Auto-synchronize default layer name if not customized by user
+    if (prevPattern && prevPattern !== layer.pattern && layer.name) {
+      const prevDisplay = getPatternDisplayName(prevPattern);
+      const newDisplay = getPatternDisplayName(layer.pattern);
+      const layerIdxMatch = layer.name.match(/^Layer\s+(\d+):\s+/i);
+      if (layerIdxMatch && (layer.name.endsWith(prevDisplay) || layer.name.includes(prevDisplay))) {
+        layer.name = `${layerIdxMatch[0]}${newDisplay}`;
+        const nameInput = document.getElementById('layer-name-input');
+        if (nameInput) nameInput.value = layer.name;
+      }
+    }
   }
   const fTypeEl = document.getElementById('fiducial-default-type');
   const fRoleEl = document.getElementById('fiducial-default-role');
@@ -22481,6 +22752,10 @@ function syncUiWithActiveLayer() {
   const hlModeBadgeUi = document.getElementById('hyperlapse-mode-badge');
   if (hlWpModeUi) hlWpModeUi.value = layer.hyperlapseWaypointMode || 'dense';
   if (hlModeBadgeUi) hlModeBadgeUi.textContent = (layer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
+
+  if (typeof updateHyperlapseKeyframeVisuals === 'function') {
+    updateHyperlapseKeyframeVisuals();
+  }
 
   // Sync Light Art Controls
   const laPreset = document.getElementById('light-art-preset');
@@ -25455,7 +25730,6 @@ const FACTORY_DEFAULTS = {
   // UI & Layout Preferences
   'unit-system': 'imperial',
   'theme': 'dark',
-  'nav-layout-select': 'header',
   'camera-palette-select': 'high-viz-amber',
   'camera-cones-toggle': true,
   'accordion-mode-toggle': true,
@@ -25980,11 +26254,6 @@ function getModifiedSettingsState() {
         state.ui.count++;
         state.ui.items.push('Theme (Light)');
       }
-      const nav = localStorage.getItem('aalaapi_nav_layout');
-      if (nav && nav !== 'header') {
-        state.ui.count++;
-        state.ui.items.push('Nav Layout');
-      }
       const units = localStorage.getItem('aalaapi_sky_unit_system');
       if (units && units !== 'imperial') {
         state.ui.count++;
@@ -26225,7 +26494,6 @@ function resetStoredSettings(options = {}) {
   // 3. UI, Theme & Layout
   if (opts.uiPreferences) {
     if (typeof setAppTheme === 'function') setAppTheme('dark');
-    if (typeof setNavLayout === 'function') setNavLayout('header');
     if (typeof setCameraPalette === 'function') setCameraPalette('high-viz-amber');
     if (typeof setCameraConeEnabled === 'function') setCameraConeEnabled(true);
 
@@ -27717,6 +27985,10 @@ function initUIEventListeners() {
     const hlWaypointMode = document.getElementById('hyperlapse-waypoint-mode');
     const hlModeBadge = document.getElementById('hyperlapse-mode-badge');
 
+    const updateHyperlapseVisuals = () => {
+      updateHyperlapseKeyframeVisuals();
+    };
+
     const updateHyperlapse = () => {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (!activeLayer) return;
@@ -27744,12 +28016,59 @@ function initUIEventListeners() {
         if (hlModeBadge) {
           hlModeBadge.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
         }
+        const layerCapSelect = document.getElementById('layer-capture-mode');
+        if (activeLayer.hyperlapseWaypointMode === 'dense') {
+          activeLayer.captureMode = 'stopAndShoot';
+          if (layerCapSelect) layerCapSelect.value = 'stopAndShoot';
+        } else if (activeLayer.hyperlapseWaypointMode === 'spline') {
+          activeLayer.captureMode = 'continuous';
+          if (layerCapSelect) layerCapSelect.value = 'continuous';
+        }
       }
 
+      updateHyperlapseVisuals();
       updateGrid();
       updateMapLegend();
       saveAllSettingsToLocalStorage();
     };
+
+    // Pitch preset chip clicks
+    document.querySelectorAll('.hyperlapse-pitch-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pVal = parseInt(chip.getAttribute('data-pitch'), 10);
+        if (hlStartPitch) hlStartPitch.value = pVal;
+        if (hlEndPitch) hlEndPitch.value = pVal;
+        updateHyperlapse();
+      });
+    });
+
+    // Yaw cardinal chip clicks
+    document.querySelectorAll('.hyperlapse-yaw-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.preventDefault();
+        const yVal = parseFloat(chip.getAttribute('data-yaw'));
+        if (hlEndHeading) hlEndHeading.value = yVal;
+        updateHyperlapse();
+      });
+    });
+
+    // Compass dial click to rotate End Yaw
+    const compassSvg = document.getElementById('hyperlapse-compass-dial');
+    if (compassSvg) {
+      compassSvg.addEventListener('click', (e) => {
+        const rect = compassSvg.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = e.clientX - cx;
+        const dy = e.clientY - cy;
+        let deg = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+        deg = ((deg % 360) + 360) % 360;
+        const roundedDeg = Math.round(deg / 5) * 5; // Snap to 5 degrees
+        if (hlEndHeading) hlEndHeading.value = roundedDeg;
+        updateHyperlapse();
+      });
+    }
 
     [hlInterval, hlStartPitch, hlEndPitch, hlHeadingMode, hlStartHeading, hlEndHeading, hlWaypointMode].forEach(el => {
       if (el) {
@@ -28057,6 +28376,14 @@ function initUIEventListeners() {
         }
       }
       updateInheritOptionLabels();
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer && activeLayer.pattern === 'hyperlapse' && (!activeLayer.captureMode || activeLayer.captureMode === 'inherit')) {
+        activeLayer.hyperlapseWaypointMode = (e.target.value === 'stopAndShoot') ? 'dense' : 'spline';
+        const hlModeSel = document.getElementById('hyperlapse-waypoint-mode');
+        const hlModeBdg = document.getElementById('hyperlapse-mode-badge');
+        if (hlModeSel) hlModeSel.value = activeLayer.hyperlapseWaypointMode;
+        if (hlModeBdg) hlModeBdg.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
+      }
     });
   }
 
@@ -28137,6 +28464,16 @@ function initUIEventListeners() {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.captureMode = layerCaptureModeEl.value;
+        if (activeLayer.pattern === 'hyperlapse') {
+          const effCap = (layerCaptureModeEl.value === 'inherit')
+            ? ((typeof document !== 'undefined') ? document.getElementById('capture-mode')?.value : 'stopAndShoot')
+            : layerCaptureModeEl.value;
+          activeLayer.hyperlapseWaypointMode = (effCap === 'stopAndShoot') ? 'dense' : 'spline';
+          const hlModeSel = document.getElementById('hyperlapse-waypoint-mode');
+          const hlModeBdg = document.getElementById('hyperlapse-mode-badge');
+          if (hlModeSel) hlModeSel.value = activeLayer.hyperlapseWaypointMode;
+          if (hlModeBdg) hlModeBdg.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
+        }
       }
       updateGrid();
     });
@@ -28177,6 +28514,9 @@ function initUIEventListeners() {
           }
         }
       }
+      if (typeof updateHyperlapseKeyframeVisuals === 'function') {
+        updateHyperlapseKeyframeVisuals();
+      }
       updateGrid();
     });
   }
@@ -28215,6 +28555,9 @@ function initUIEventListeners() {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.targetPoiId = layerPoiSelectEl.value || null;
+      }
+      if (typeof updateHyperlapseKeyframeVisuals === 'function') {
+        updateHyperlapseKeyframeVisuals();
       }
       updateGrid();
     });
@@ -28710,16 +29053,6 @@ function initUIEventListeners() {
       }
     }
   });
-
-  // Navigation Layout setting
-  const navLayoutSelect = document.getElementById('nav-layout-select');
-  if (navLayoutSelect) {
-    const savedLayout = localStorage.getItem('aalaapi_nav_layout') || 'header';
-    navLayoutSelect.value = savedLayout;
-    navLayoutSelect.addEventListener('change', () => {
-      localStorage.setItem('aalaapi_nav_layout', navLayoutSelect.value);
-    });
-  }
 
   // Add POI button
   const addPoiBtn = document.getElementById('add-poi-btn');
@@ -31008,7 +31341,9 @@ function togglePatternParameters() {
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
 
     if (activeLayer) {
-      activeLayer.captureMode = 'continuous';
+      if (!activeLayer.captureMode || activeLayer.captureMode === 'inherit') {
+        activeLayer.captureMode = 'continuous';
+      }
       activeLayer.pathMode = 'curved';
       activeLayer.headingMode = 'smoothTransition';
       const curPitch = (activeLayer.gimbalPitch !== undefined && !isNaN(activeLayer.gimbalPitch) && activeLayer.gimbalPitch !== 'auto') ? activeLayer.gimbalPitch : -60;
@@ -31026,11 +31361,15 @@ function togglePatternParameters() {
       if (hlModeBdg) hlModeBdg.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
     }
     const layerCapSelect = document.getElementById('layer-capture-mode');
-    if (layerCapSelect) layerCapSelect.value = 'continuous';
+    if (layerCapSelect && activeLayer) layerCapSelect.value = activeLayer.captureMode || 'continuous';
     const layerPathSelect = document.getElementById('layer-path-mode');
     if (layerPathSelect) layerPathSelect.value = 'curved';
     const layerHeadingSelect = document.getElementById('layer-heading-mode');
     if (layerHeadingSelect) layerHeadingSelect.value = 'smoothTransition';
+
+    if (typeof updateHyperlapseKeyframeVisuals === 'function') {
+      updateHyperlapseKeyframeVisuals();
+    }
 
   } else if (gridType === 'light-art') {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -32704,6 +33043,127 @@ function addCorridorNodeAction() {
   if (typeof renderCorridorNodeTable === 'function') renderCorridorNodeTable();
 }
 
+function updateHyperlapseKeyframeVisuals() {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (!activeLayer) return;
+
+  const card = document.getElementById('hyperlapse-keyframes-card');
+  const body = document.getElementById('hyperlapse-keyframes-body');
+  const lockBanner = document.getElementById('hyperlapse-poi-lock-banner');
+  const lockBadge = document.getElementById('hyperlapse-lock-badge');
+
+  const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
+  const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
+  const hlHeadingMode = document.getElementById('hyperlapse-heading-mode');
+  const hlStartHeading = document.getElementById('hyperlapse-start-heading');
+  const hlEndHeading = document.getElementById('hyperlapse-end-heading');
+
+  // Check POI lock state (Tier 2 layer or Tier 1 global POI tracking)
+  const hasPoiTarget = Boolean(activeLayer.targetPoiId);
+  const effHeading = (typeof getEffectiveLayerHeadingMode === 'function')
+    ? getEffectiveLayerHeadingMode(activeLayer)
+    : (activeLayer.headingMode || 'smoothTransition');
+  const isPoiLocked = hasPoiTarget || (effHeading === 'towardPOI');
+
+  if (isPoiLocked) {
+    if (body) body.classList.add('hyperlapse-locked');
+    if (lockBanner) lockBanner.classList.remove('hidden');
+    if (lockBadge) lockBadge.classList.remove('hidden');
+  } else {
+    if (body) body.classList.remove('hyperlapse-locked');
+    if (lockBanner) lockBanner.classList.add('hidden');
+    if (lockBadge) lockBadge.classList.add('hidden');
+  }
+
+  // Update Pitch Sweep Label
+  const startP = (hlStartPitch && !isNaN(parseInt(hlStartPitch.value, 10))) ? parseInt(hlStartPitch.value, 10) : -15;
+  const endP = (hlEndPitch && !isNaN(parseInt(hlEndPitch.value, 10))) ? parseInt(hlEndPitch.value, 10) : -15;
+  const pitchSweepLbl = document.getElementById('hyperlapse-pitch-sweep-label');
+  if (pitchSweepLbl) {
+    pitchSweepLbl.textContent = `${startP}° → ${endP}°`;
+  }
+
+  // Highlight active pitch preset chip if start and end match
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    const pitchChips = document.querySelectorAll('.hyperlapse-pitch-chip');
+    if (pitchChips && pitchChips.forEach) {
+      pitchChips.forEach(chip => {
+        const pVal = parseInt(chip.getAttribute('data-pitch'), 10);
+        if (startP === pVal && endP === pVal) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  // Update Yaw Sweep Label & Compass Visuals
+  const yawSweepLbl = document.getElementById('hyperlapse-yaw-sweep-label');
+  const mode = (hlHeadingMode && hlHeadingMode.value) || 'path';
+  if (yawSweepLbl) {
+    yawSweepLbl.textContent = (mode === 'keyframes') ? 'Keyframe Sweep' : 'Path Tangent';
+  }
+
+  if (mode === 'keyframes') {
+    const startY = (hlStartHeading && !isNaN(parseFloat(hlStartHeading.value))) ? ((parseFloat(hlStartHeading.value) % 360) + 360) % 360 : 0;
+    const endY = (hlEndHeading && !isNaN(parseFloat(hlEndHeading.value))) ? ((parseFloat(hlEndHeading.value) % 360) + 360) % 360 : 90;
+
+    const startTxt = document.getElementById('hyperlapse-compass-start-text');
+    const endTxt = document.getElementById('hyperlapse-compass-end-text');
+    const bearingToDir = (deg) => {
+      const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const idx = Math.round(deg / 45) % 8;
+      return dirs[idx];
+    };
+    if (startTxt) startTxt.textContent = `${Math.round(startY)}° (${bearingToDir(startY)})`;
+    if (endTxt) endTxt.textContent = `${Math.round(endY)}° (${bearingToDir(endY)})`;
+
+    // Update Needle Lines on SVG (center at 50, 50, radius 35)
+    const radStart = (startY - 90) * Math.PI / 180;
+    const radEnd = (endY - 90) * Math.PI / 180;
+    const nStartX = 50 + 35 * Math.cos(radStart);
+    const nStartY = 50 + 35 * Math.sin(radStart);
+    const nEndX = 50 + 35 * Math.cos(radEnd);
+    const nEndY = 50 + 35 * Math.sin(radEnd);
+
+    const needleStart = document.getElementById('hyperlapse-compass-needle-start');
+    const needleEnd = document.getElementById('hyperlapse-compass-needle-end');
+    if (needleStart && typeof needleStart.setAttribute === 'function') {
+      needleStart.setAttribute('x2', nStartX.toFixed(1));
+      needleStart.setAttribute('y2', nStartY.toFixed(1));
+    }
+    if (needleEnd && typeof needleEnd.setAttribute === 'function') {
+      needleEnd.setAttribute('x2', nEndX.toFixed(1));
+      needleEnd.setAttribute('y2', nEndY.toFixed(1));
+    }
+
+    // Draw sweep arc between start and end
+    const arc = document.getElementById('hyperlapse-compass-sweep-arc');
+    if (arc && typeof arc.setAttribute === 'function') {
+      let diff = (endY - startY) % 360;
+      if (diff < 0) diff += 360;
+      const largeArc = diff > 180 ? 1 : 0;
+      arc.setAttribute('d', `M 50 50 L ${nStartX.toFixed(1)} ${nStartY.toFixed(1)} A 35 35 0 ${largeArc} 1 ${nEndX.toFixed(1)} ${nEndY.toFixed(1)} Z`);
+    }
+
+    // Highlight matching yaw chip for end heading
+    if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+      const yawChips = document.querySelectorAll('.hyperlapse-yaw-chip');
+      if (yawChips && yawChips.forEach) {
+        yawChips.forEach(chip => {
+          const yVal = parseFloat(chip.getAttribute('data-yaw'));
+          if (Math.round(endY) === yVal) {
+            chip.classList.add('active');
+          } else {
+            chip.classList.remove('active');
+          }
+        });
+      }
+    }
+  }
+}
+
 if (typeof window !== 'undefined') {
   window.initMissionDbUI = initMissionDbUI;
   window.refreshMissionDbList = refreshMissionDbList;
@@ -32712,6 +33172,7 @@ if (typeof window !== 'undefined') {
   window.setIsMissionDbOnline = (v) => { isMissionDbOnline = v; };
   window.getCachedMissionDbItems = () => cachedMissionDbItems;
   window.setCachedMissionDbItems = (items) => { cachedMissionDbItems = items; };
+  window.updateHyperlapseKeyframeVisuals = updateHyperlapseKeyframeVisuals;
 }
 
 if (typeof global !== 'undefined') {
@@ -32722,6 +33183,7 @@ if (typeof global !== 'undefined') {
   global.setIsMissionDbOnline = (v) => { isMissionDbOnline = v; };
   global.getCachedMissionDbItems = () => cachedMissionDbItems;
   global.setCachedMissionDbItems = (items) => { cachedMissionDbItems = items; };
+  global.updateHyperlapseKeyframeVisuals = updateHyperlapseKeyframeVisuals;
 }
 
 // Search Address via OpenStreetMap Nominatim API
@@ -34423,7 +34885,25 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
   if (isNaN(interval) || interval < 2) interval = 2;
   if (interval > 10) interval = 10;
 
-  const waypointMode = (layer && layer.hyperlapseWaypointMode) ? layer.hyperlapseWaypointMode : 'dense';
+  const effectiveCaptureMode = (layer && layer.captureMode && layer.captureMode !== 'inherit')
+    ? layer.captureMode
+    : ((typeof document !== 'undefined' && document.getElementById('capture-mode')?.value) || 'stopAndShoot');
+
+  // Capture Mode directly determines the waypoint architecture:
+  // - 'stopAndShoot' -> ALWAYS 'dense' (all frame points become explicit waypoints with stop turn mode & settling hover)
+  // - 'continuous' or 'video' -> 'spline' by default (2 control waypoints with DJI automated multipleTiming trigger), or 'dense' if explicitly selected
+  let waypointMode;
+  if (layer && layer.hyperlapseWaypointMode) {
+    waypointMode = layer.hyperlapseWaypointMode;
+  } else if (layer && layer.captureMode === 'stopAndShoot') {
+    waypointMode = 'dense';
+  } else if (layer && (layer.captureMode === 'continuous' || layer.captureMode === 'video')) {
+    waypointMode = 'spline';
+  } else if (effectiveCaptureMode === 'continuous' || effectiveCaptureMode === 'video') {
+    waypointMode = 'spline';
+  } else {
+    waypointMode = 'dense';
+  }
 
   const layerPitch = (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== 'auto' && !isNaN(layer.gimbalPitch))
     ? parseInt(layer.gimbalPitch, 10)
@@ -34628,7 +35108,7 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
       turnMode: 'curved',
       pathMode: 'curved',
       speed: effectiveSpeed,
-      captureMode: 'continuous',
+      captureMode: effectiveCaptureMode,
       cameraAction: 'takePhoto',
       skipPhoto: false,
       isHyperlapse: true,
@@ -40649,6 +41129,18 @@ function buildTemplateKml(finishAction, speed) {
 function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode) {
   if (!waypoints || !Array.isArray(waypoints)) waypoints = [];
   const timestamp = Date.now();
+
+  let opts = {};
+  if (typeof altitude === 'object' && altitude !== null) {
+    opts = altitude;
+    altitude = opts.altitude;
+    speed = opts.speed;
+    headingMode = opts.headingMode;
+    finishAction = opts.finishAction;
+    gimbalPitch = opts.gimbalPitch;
+    captureMode = opts.captureMode;
+    pathMode = opts.pathMode;
+  }
   
   const zoomEl = document.getElementById('camera-zoom');
   const cameraZoom = zoomEl ? parseFloat(zoomEl.value) : 1.0;
@@ -40674,9 +41166,11 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
   const droneModelEl = typeof document !== 'undefined' ? document.getElementById('drone-model') : null;
   const parsedDroneVal = (droneModelEl && droneModelEl.value) ? parseInt(droneModelEl.value, 10) : NaN;
-  const targetDrone = (typeof global !== 'undefined' && global.selectedDroneTarget)
-    ? global.selectedDroneTarget
-    : ((typeof selectedDroneTarget !== 'undefined' && selectedDroneTarget) ? selectedDroneTarget : null);
+  const targetDrone = opts.droneModel
+    ? opts.droneModel
+    : ((typeof global !== 'undefined' && global.selectedDroneTarget)
+      ? global.selectedDroneTarget
+      : ((typeof selectedDroneTarget !== 'undefined' && selectedDroneTarget) ? selectedDroneTarget : null));
   const droneEnumValue = targetDrone
     ? normalizeDroneEnum(targetDrone)
     : (!isNaN(parsedDroneVal) ? parsedDroneVal : 68);
@@ -40706,7 +41200,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   let actionGroupId = 1;
 
   const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
-  const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
+  const gridType = opts.flightPattern || opts.gridType || opts.pattern || ((gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && (w.gridType || w.layerPattern))?.gridType || waypoints.find(w => w && (w.gridType || w.layerPattern))?.layerPattern || ''));
 
   // Sanitize consecutive duplicate coordinates (DJI APAS collision & zero-distance trajectory solver rule)
   // When consecutive waypoints share identical coordinates (distance < 0.6m, e.g., in-place 360 photo spheres or stacked points),
@@ -41499,7 +41993,7 @@ ${waypointActions.join('\n')}
         : 'toPointAndStopWithDiscontinuityCurvature';
       actualUseStraightLine = 0;
     } else if (isHyperlapse) {
-      actualTurnMode = (idx === 0 || idx === sanitizedWps.length - 1)
+      actualTurnMode = (isStopAndShoot || idx === 0 || idx === sanitizedWps.length - 1)
         ? 'toPointAndStopWithContinuityCurvature'
         : 'toPointAndPassWithContinuityCurvature';
       actualUseStraightLine = 0;
@@ -41521,7 +42015,7 @@ ${waypointActions.join('\n')}
     }
 
     // Per-waypoint turnMode override
-    if (wp.turnMode && wp.turnMode !== 'inherit') {
+    if (wp.turnMode && wp.turnMode !== 'inherit' && !(isHyperlapse && isStopAndShoot && !wp.isModified)) {
       if (isConsumer) {
         actualTurnMode = wp.turnMode === 'stop'
           ? 'toPointAndStopWithContinuityCurvature'
@@ -45855,6 +46349,7 @@ const AdsbAirspaceManager = {
   serverPort: 30003,
   isSyncingAdsbConfig: false,
   isConnectingAdsbServer: false,
+  activeTab: 'operations', // 'operations' | 'settings'
   externalProvider: 'adsb.lol', // 'adsb.lol' | 'custom'
   externalRadiusNM: 15,
   externalCustomUrl: '',
@@ -46354,6 +46849,40 @@ const AdsbAirspaceManager = {
     this.updateControlsUI();
   },
 
+  switchTab(tabName) {
+    this.activeTab = (tabName === 'settings') ? 'settings' : 'operations';
+    if (typeof document === 'undefined') return;
+
+    const btnOps = document.getElementById('adsb-tab-btn-ops');
+    const btnSettings = document.getElementById('adsb-tab-btn-settings');
+    const paneOps = document.getElementById('adsb-pane-operations');
+    const paneSettings = document.getElementById('adsb-pane-settings');
+
+    if (this.activeTab === 'operations') {
+      if (btnOps) {
+        btnOps.classList.add('active');
+        btnOps.setAttribute('aria-selected', 'true');
+      }
+      if (btnSettings) {
+        btnSettings.classList.remove('active');
+        btnSettings.setAttribute('aria-selected', 'false');
+      }
+      if (paneOps) paneOps.classList.remove('hidden');
+      if (paneSettings) paneSettings.classList.add('hidden');
+    } else {
+      if (btnOps) {
+        btnOps.classList.remove('active');
+        btnOps.setAttribute('aria-selected', 'false');
+      }
+      if (btnSettings) {
+        btnSettings.classList.add('active');
+        btnSettings.setAttribute('aria-selected', 'true');
+      }
+      if (paneOps) paneOps.classList.add('hidden');
+      if (paneSettings) paneSettings.classList.remove('hidden');
+    }
+  },
+
   toggleDrawer(forceState) {
     const drawer = typeof document !== 'undefined' ? document.getElementById('adsb-control-drawer') : null;
     if (!drawer) return;
@@ -46363,6 +46892,7 @@ const AdsbAirspaceManager = {
       this.initAudioContext();
       this.updateDrawerAircraftList();
       this.fetchAirspaceStatus();
+      this.switchTab(this.activeTab || 'operations');
     } else {
       drawer.classList.add('hidden');
     }
@@ -46440,6 +46970,11 @@ const AdsbAirspaceManager = {
         summaryEl.textContent = 'OFFLINE';
         summaryEl.style.background = 'rgba(239, 68, 68, 0.2)';
         summaryEl.style.color = '#ef4444';
+      }
+      const tabDot = document.getElementById('adsb-tab-status-dot');
+      if (tabDot) {
+        tabDot.className = 'adsb-tab-dot is-offline';
+        tabDot.title = 'Bridge Offline';
       }
       return;
     }
@@ -46530,6 +47065,18 @@ const AdsbAirspaceManager = {
         hwDriverEl.textContent = `TCP Stream (${targetPort})`;
       } else if (st.driverType) {
         hwDriverEl.textContent = st.driverType;
+      }
+    }
+
+    const tabDot = document.getElementById('adsb-tab-status-dot');
+    if (tabDot) {
+      tabDot.className = 'adsb-tab-dot';
+      if (!st.connected) {
+        tabDot.classList.add('is-waiting');
+        tabDot.title = `Waiting on ${hostPortStr}`;
+      } else {
+        tabDot.classList.add('is-connected');
+        tabDot.title = `Connected to ${hostPortStr}`;
       }
     }
 
@@ -47114,6 +47661,22 @@ const AdsbAirspaceManager = {
       }
     }
 
+    const tabPill = document.getElementById('adsb-tab-traffic-badge');
+    if (tabPill) {
+      const count = this.aircraft.length;
+      if (count > 0) {
+        tabPill.textContent = count;
+        tabPill.classList.remove('hidden');
+        if (this.breachedAircraft.length > 0) {
+          tabPill.classList.add('is-breached');
+        } else {
+          tabPill.classList.remove('is-breached');
+        }
+      } else {
+        tabPill.classList.add('hidden');
+      }
+    }
+
     if (!listEl) return;
     if (this.aircraft.length === 0) {
       listEl.innerHTML = '<div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No aircraft currently in range</div>';
@@ -47480,6 +48043,17 @@ const AdsbAirspaceManager = {
     // Drawer close button
     const closeBtn = document.getElementById('adsb-drawer-close-btn');
     if (closeBtn) closeBtn.addEventListener('click', () => this.toggleDrawer(false));
+
+    // ADS-B Drawer Segmented Tab Navigation
+    const tabBtnOps = document.getElementById('adsb-tab-btn-ops');
+    if (tabBtnOps) {
+      tabBtnOps.addEventListener('click', () => this.switchTab('operations'));
+    }
+
+    const tabBtnSettings = document.getElementById('adsb-tab-btn-settings');
+    if (tabBtnSettings) {
+      tabBtnSettings.addEventListener('click', () => this.switchTab('settings'));
+    }
 
     // Drawer controls
     const enableToggle = document.getElementById('adsb-enable-toggle');
@@ -52274,7 +52848,19 @@ const KMZInspector = {
     const summaryTarget = document.getElementById('inspector-drone-target');
     if (summaryTarget) summaryTarget.textContent = droneText;
     const summaryWps = document.getElementById('inspector-wp-count');
-    if (summaryWps) summaryWps.textContent = `${report.placemarkCount} waypoints`;
+    if (summaryWps) {
+      const activeWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+      const isHl = activeWps.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse' || w.layerPattern === 'hyperlapse'));
+      if (isHl && report.placemarkCount <= 2) {
+        const stats = (typeof calculateStats === 'function') ? calculateStats(activeWps, typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : null) : null;
+        const photoCnt = stats?.photoCount || (typeof getCurrentPhotos === 'function' ? getCurrentPhotos()?.length : 0);
+        summaryWps.textContent = `${report.placemarkCount} waypoints (${photoCnt > 0 ? photoCnt + ' interval photos' : 'Continuous'})`;
+      } else if (isHl && report.placemarkCount > 2) {
+        summaryWps.textContent = `${report.placemarkCount} waypoints (Stop & Shoot)`;
+      } else {
+        summaryWps.textContent = `${report.placemarkCount} waypoints`;
+      }
+    }
     const summaryRules = document.getElementById('inspector-rules-score');
     if (summaryRules) {
       summaryRules.textContent = `${report.rulesPassed}/10 Passed`;

@@ -64,11 +64,6 @@ function getModifiedSettingsState() {
         state.ui.count++;
         state.ui.items.push('Theme (Light)');
       }
-      const nav = localStorage.getItem('aalaapi_nav_layout');
-      if (nav && nav !== 'header') {
-        state.ui.count++;
-        state.ui.items.push('Nav Layout');
-      }
       const units = localStorage.getItem('aalaapi_sky_unit_system');
       if (units && units !== 'imperial') {
         state.ui.count++;
@@ -309,7 +304,6 @@ function resetStoredSettings(options = {}) {
   // 3. UI, Theme & Layout
   if (opts.uiPreferences) {
     if (typeof setAppTheme === 'function') setAppTheme('dark');
-    if (typeof setNavLayout === 'function') setNavLayout('header');
     if (typeof setCameraPalette === 'function') setCameraPalette('high-viz-amber');
     if (typeof setCameraConeEnabled === 'function') setCameraConeEnabled(true);
 

@@ -599,8 +599,8 @@ function updateLayerPoiSelectOptions() {
   select.value = currentVal;
 }
 
-function saveActiveLayerFromUi() {
-  const layer = getActiveLayer();
+function saveActiveLayerFromUi(targetLayer) {
+  const layer = targetLayer || getActiveLayer();
   if (!layer) return;
 
   if (typeof document === 'undefined') return;
@@ -650,10 +650,23 @@ function saveActiveLayerFromUi() {
   const globalClearanceEl = document.getElementById('global-exclusion-clearance-buffer');
 
   if (gridTypeEl && gridTypeEl.value) {
+    const prevPattern = layer.pattern;
     layer.pattern = gridTypeEl.value;
     layer.isExclusionZone = (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform');
     layer.isDrawingLayer = (layer.pattern === 'boundary-polygon' || layer.pattern === 'fiducial-markers');
     layer.isFiducialLayer = (layer.pattern === 'fiducial-markers');
+
+    // Auto-synchronize default layer name if not customized by user
+    if (prevPattern && prevPattern !== layer.pattern && layer.name) {
+      const prevDisplay = getPatternDisplayName(prevPattern);
+      const newDisplay = getPatternDisplayName(layer.pattern);
+      const layerIdxMatch = layer.name.match(/^Layer\s+(\d+):\s+/i);
+      if (layerIdxMatch && (layer.name.endsWith(prevDisplay) || layer.name.includes(prevDisplay))) {
+        layer.name = `${layerIdxMatch[0]}${newDisplay}`;
+        const nameInput = document.getElementById('layer-name-input');
+        if (nameInput) nameInput.value = layer.name;
+      }
+    }
   }
   const fTypeEl = document.getElementById('fiducial-default-type');
   const fRoleEl = document.getElementById('fiducial-default-role');
@@ -1174,6 +1187,10 @@ function syncUiWithActiveLayer() {
   const hlModeBadgeUi = document.getElementById('hyperlapse-mode-badge');
   if (hlWpModeUi) hlWpModeUi.value = layer.hyperlapseWaypointMode || 'dense';
   if (hlModeBadgeUi) hlModeBadgeUi.textContent = (layer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
+
+  if (typeof updateHyperlapseKeyframeVisuals === 'function') {
+    updateHyperlapseKeyframeVisuals();
+  }
 
   // Sync Light Art Controls
   const laPreset = document.getElementById('light-art-preset');

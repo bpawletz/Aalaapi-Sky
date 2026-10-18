@@ -1,5 +1,27 @@
 [
   {
+    "notam_id": "6/0068",
+    "facility": "ZDC",
+    "state": "NC",
+    "type": "VIP",
+    "description": "Greenville, NC, Tuesday, October 20, 2026 through Tuesday, October 20, 2026 Local",
+    "mod_date": "10/18/2026 12:11:00",
+    "mod_abs_time": "202610181211",
+    "is_new": "Y",
+    "gid": "6/0068"
+  },
+  {
+    "notam_id": "6/0067",
+    "facility": "ZOA",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "38NM E FRESNO, CA, Sunday, October 18, 2026 through Tuesday, October 20, 2026 UTC",
+    "mod_date": "10/18/2026 04:37:00",
+    "mod_abs_time": "202610180437",
+    "is_new": "Y",
+    "gid": "6/0067"
+  },
+  {
     "notam_id": "6/0050",
     "facility": "ZTL",
     "state": "NC",
@@ -86,39 +108,6 @@
     "mod_abs_time": "202610171444",
     "is_new": "Y",
     "gid": "6/0024"
-  },
-  {
-    "notam_id": "6/0014",
-    "facility": "ZLA",
-    "state": "CA",
-    "type": "HAZARDS",
-    "description": "8NM N OCEANSIDE, CA, Saturday, October 17, 2026 through Tuesday, October 20, 2026 UTC",
-    "mod_date": "10/17/2026 03:35:00",
-    "mod_abs_time": "202610170335",
-    "is_new": "Y",
-    "gid": "6/0014"
-  },
-  {
-    "notam_id": "6/0013",
-    "facility": "ZOA",
-    "state": "CA",
-    "type": "HAZARDS",
-    "description": "38NM E FRESNO, CA, Saturday, October 17, 2026 through Tuesday, October 20, 2026 UTC",
-    "mod_date": "10/17/2026 02:42:00",
-    "mod_abs_time": "202610170242",
-    "is_new": "Y",
-    "gid": "6/0013"
-  },
-  {
-    "notam_id": "6/0009",
-    "facility": "ZSE",
-    "state": "OR",
-    "type": "HAZARDS",
-    "description": "55NM SE SALEM, OR, Friday, October 16, 2026 through Saturday, October 31, 2026 UTC",
-    "mod_date": "10/16/2026 23:47:00",
-    "mod_abs_time": "202610162347",
-    "is_new": "N",
-    "gid": "6/0009"
   },
   {
     "notam_id": "6/0008",
@@ -297,17 +286,6 @@
     "gid": "6/9885"
   },
   {
-    "notam_id": "6/9864",
-    "facility": "ZAB",
-    "state": "AZ",
-    "type": "SECURITY",
-    "description": "Libby AAF, AZ, Friday, October 16, 2026 through Sunday, October 18, 2026 Local",
-    "mod_date": "10/15/2026 20:04:00",
-    "mod_abs_time": "202610152004",
-    "is_new": "N",
-    "gid": "6/9864"
-  },
-  {
     "notam_id": "6/9778",
     "facility": "ZFW",
     "state": "TX",
@@ -462,28 +440,6 @@
     "gid": "6/9058"
   },
   {
-    "notam_id": "6/8802",
-    "facility": "ZBW",
-    "state": "MA",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Foxborough, MA, Saturday, October 17, 2026 through Sunday, October 18, 2026 UTC",
-    "mod_date": "10/11/2026 13:36:00",
-    "mod_abs_time": "202610111336",
-    "is_new": "N",
-    "gid": "6/8802"
-  },
-  {
-    "notam_id": "6/8713",
-    "facility": "ZDC",
-    "state": "NC",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "Maxton, NC, Friday, October 16, 2026 through Sunday, October 18, 2026 UTC",
-    "mod_date": "10/09/2026 19:12:00",
-    "mod_abs_time": "202610091912",
-    "is_new": "N",
-    "gid": "6/8713"
-  },
-  {
     "notam_id": "6/8389",
     "facility": "ZJX",
     "state": "FL",
@@ -614,17 +570,6 @@
     "mod_abs_time": "202607021345",
     "is_new": "N",
     "gid": "6/2652"
-  },
-  {
-    "notam_id": "6/0299",
-    "facility": "ZMA",
-    "state": "FL",
-    "type": "SECURITY",
-    "description": "Key West, FL, Friday, June 26, 2026 through Saturday, October 17, 2026 Local",
-    "mod_date": "06/24/2026 13:21:00",
-    "mod_abs_time": "202606241321",
-    "is_new": "N",
-    "gid": "6/0299"
   },
   {
     "notam_id": "6/2520",

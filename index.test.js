@@ -15050,7 +15050,6 @@ describe('v1.94.14 Configuration Settings Modal Redesign & Cyber Scrollbar Tests
     const expectedControlIds = [
       'unit-system',
       'theme-mode-select',
-      'nav-layout-select',
       'camera-palette-select',
       'palette-swatch-preview',
       'camera-cones-toggle',
@@ -15078,6 +15077,19 @@ describe('v1.94.14 Configuration Settings Modal Redesign & Cyber Scrollbar Tests
         `compiled index.html #config-modal must preserve control with id="${id}"`
       );
     }
+  });
+
+  test('v1.169.1: Inactive nav-layout-select control is removed from index_template.html and index.html', () => {
+    assert.strictEqual(
+      templateHtml.includes('id="nav-layout-select"'),
+      false,
+      'index_template.html must not contain obsolete id="nav-layout-select"'
+    );
+    assert.strictEqual(
+      compiledHtml.includes('id="nav-layout-select"'),
+      false,
+      'compiled index.html must not contain obsolete id="nav-layout-select"'
+    );
   });
 });
 
@@ -32566,6 +32578,305 @@ describe('v1.167.1 Authoritative Camera Cones & Gimbal Pitch Stability Suite', (
       assert.ok(pm.includes('<wpml:gimbalPitchRotateAngle>-45</wpml:gimbalPitchRotateAngle>'),
         `Placemark ${idx} gimbalRotate must command pitch angle -45`);
     });
+  });
+});
+
+describe('v1.168.0 Segmented ADS-B Operations & Settings Architecture Suite', () => {
+  test('Version consistency: v1.168.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.168.0');
+  });
+
+  test('DOM Architecture: ADS-B segmented tabs and two panes exist in template and bundle', () => {
+    const template = fs.readFileSync('index_template.html', 'utf8');
+    const bundle = fs.readFileSync('index.html', 'utf8');
+
+    for (const html of [template, bundle]) {
+      assert.ok(html.includes('id="adsb-tab-btn-ops"'), 'Must contain #adsb-tab-btn-ops');
+      assert.ok(html.includes('id="adsb-tab-btn-settings"'), 'Must contain #adsb-tab-btn-settings');
+      assert.ok(html.includes('id="adsb-pane-operations"'), 'Must contain #adsb-pane-operations');
+      assert.ok(html.includes('id="adsb-pane-settings"'), 'Must contain #adsb-pane-settings');
+      assert.ok(html.includes('id="adsb-tab-traffic-badge"'), 'Must contain #adsb-tab-traffic-badge');
+      assert.ok(html.includes('id="adsb-tab-status-dot"'), 'Must contain #adsb-tab-status-dot');
+      assert.ok(html.includes('class="adsb-sim-details"'), 'Must contain .adsb-sim-details collapsible container');
+    }
+  });
+
+  test('AdsbAirspaceManager switchTab switches between operations and settings cleanly', () => {
+    function createMockClassList(initial = []) {
+      const set = new Set(initial);
+      return {
+        add: (c) => set.add(c),
+        remove: (c) => set.delete(c),
+        contains: (c) => set.has(c),
+        has: (c) => set.has(c)
+      };
+    }
+
+    const mockOpsBtn = { classList: createMockClassList(['active']), setAttribute: (k, v) => {} };
+    const mockSettingsBtn = { classList: createMockClassList(), setAttribute: (k, v) => {} };
+    const mockOpsPane = { classList: createMockClassList() };
+    const mockSettingsPane = { classList: createMockClassList(['hidden']) };
+    const mockPill = { textContent: '', classList: createMockClassList(['hidden']) };
+    const mockDot = { className: '', title: '' };
+
+    const origDoc = global.document;
+    global.document = {
+      getElementById: (id) => {
+        if (id === 'adsb-tab-btn-ops') return mockOpsBtn;
+        if (id === 'adsb-tab-btn-settings') return mockSettingsBtn;
+        if (id === 'adsb-pane-operations') return mockOpsPane;
+        if (id === 'adsb-pane-settings') return mockSettingsPane;
+        if (id === 'adsb-tab-traffic-badge') return mockPill;
+        if (id === 'adsb-tab-status-dot') return mockDot;
+        return null;
+      }
+    };
+
+    try {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      assert.strictEqual(AdsbAirspaceManager.activeTab, 'operations');
+
+      // Switch to settings
+      AdsbAirspaceManager.switchTab('settings');
+      assert.strictEqual(AdsbAirspaceManager.activeTab, 'settings');
+      assert.strictEqual(mockSettingsBtn.classList.has('active'), true);
+      assert.strictEqual(mockOpsBtn.classList.has('active'), false);
+      assert.strictEqual(mockSettingsPane.classList.has('hidden'), false);
+      assert.strictEqual(mockOpsPane.classList.has('hidden'), true);
+
+      // Switch back to operations
+      AdsbAirspaceManager.switchTab('operations');
+      assert.strictEqual(AdsbAirspaceManager.activeTab, 'operations');
+      assert.strictEqual(mockOpsBtn.classList.has('active'), true);
+      assert.strictEqual(mockSettingsBtn.classList.has('active'), false);
+      assert.strictEqual(mockOpsPane.classList.has('hidden'), false);
+      assert.strictEqual(mockSettingsPane.classList.has('hidden'), true);
+    } finally {
+      global.document = origDoc;
+    }
+  });
+});
+
+describe('Capture Mode-Driven Hyperlapse Waypoint Generation & Sync Suite (v1.169.0)', () => {
+  test('Version consistency: v1.169.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.169.0');
+  });
+
+  test('generateHyperlapseWaypoints resolves dense waypoints when captureMode is stopAndShoot', () => {
+    const rawWps = [
+      { lat: 41.3216, lon: -88.9951, alt: 24, pitch: 0, x: 0, y: 0 },
+      { lat: 41.3211, lon: -88.9950, alt: 24, pitch: 0, x: 0, y: 50 }
+    ];
+    const layer = {
+      id: 'test-hl-layer',
+      pattern: 'hyperlapse',
+      captureMode: 'stopAndShoot',
+      hyperlapseInterval: 3,
+      altitude: 24,
+      gimbalPitch: 0
+    };
+    const speed = 0.1;
+    const res = generateHyperlapseWaypoints(rawWps, layer, speed, 24);
+
+    assert.strictEqual(res.waypointMode, 'dense');
+    assert.ok(res.waypoints.length > 2, `Expected > 2 dense waypoints for stopAndShoot, got ${res.waypoints.length}`);
+    assert.strictEqual(res.waypoints[0].captureMode, 'stopAndShoot');
+    assert.strictEqual(res.waypoints[0].pathMode, 'curved');
+    assert.strictEqual(res.waypoints[0].skipPhoto, false);
+    assert.strictEqual(res.waypoints[0].cameraAction, 'takePhoto');
+  });
+
+  test('generateHyperlapseWaypoints resolves 2 spline control waypoints when captureMode is continuous', () => {
+    const rawWps = [
+      { lat: 41.3216, lon: -88.9951, alt: 24, pitch: 0, x: 0, y: 0 },
+      { lat: 41.3211, lon: -88.9950, alt: 24, pitch: 0, x: 0, y: 50 }
+    ];
+    const layer = {
+      id: 'test-hl-layer-continuous',
+      pattern: 'hyperlapse',
+      captureMode: 'continuous',
+      hyperlapseInterval: 3,
+      altitude: 24,
+      gimbalPitch: 0
+    };
+    const speed = 0.1;
+    const res = generateHyperlapseWaypoints(rawWps, layer, speed, 24);
+
+    assert.strictEqual(res.waypointMode, 'spline');
+    assert.strictEqual(res.waypoints.length, 2, 'Expected exactly 2 control waypoints for continuous flight');
+    assert.ok(res.framePoints.length > 2, 'framePoints must still contain calculated photo sampling locations');
+  });
+
+  test('buildWaylinesWpml compiles all dense waypoints as placemarks with takePhoto for stopAndShoot hyperlapse', () => {
+    const rawWps = [
+      { lat: 41.3216, lon: -88.9951, alt: 24, pitch: 0, x: 0, y: 0 },
+      { lat: 41.3211, lon: -88.9950, alt: 24, pitch: 0, x: 0, y: 50 }
+    ];
+    const layer = {
+      id: 'test-layer-dense-wpml',
+      pattern: 'hyperlapse',
+      captureMode: 'stopAndShoot',
+      hyperlapseInterval: 3,
+      altitude: 24,
+      gimbalPitch: 0
+    };
+    const gen = generateHyperlapseWaypoints(rawWps, layer, 0.1, 24);
+    const origFlightLayers = global.flightLayers;
+    global.flightLayers = [layer];
+
+    try {
+      const wpml = buildWaylinesWpml(gen.waypoints, 24, 0.1, 'smoothTransition', 'goHome', 0, 'stopAndShoot', 'curved');
+      assert.ok(!wpml.includes('multipleTiming'), 'Dense stopAndShoot hyperlapse must not emit multipleTiming action group');
+      assert.ok(wpml.includes('toPointAndStopWithContinuityCurvature'), 'stopAndShoot hyperlapse must use toPointAndStopWithContinuityCurvature');
+      const matches = wpml.match(/<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>/g) || [];
+      assert.strictEqual(matches.length, gen.waypoints.length, 'Every dense waypoint must have a takePhoto action');
+    } finally {
+      global.flightLayers = origFlightLayers;
+    }
+  });
+
+  test('buildWaylinesWpml compiles 2 placemarks with multipleTiming for continuous hyperlapse', () => {
+    const rawWps = [
+      { lat: 41.3216, lon: -88.9951, alt: 24, pitch: 0, x: 0, y: 0 },
+      { lat: 41.3211, lon: -88.9950, alt: 24, pitch: 0, x: 0, y: 50 }
+    ];
+    const layer = {
+      id: 'test-layer-spline-wpml',
+      pattern: 'hyperlapse',
+      captureMode: 'continuous',
+      hyperlapseInterval: 3,
+      altitude: 24,
+      gimbalPitch: 0
+    };
+    const gen = generateHyperlapseWaypoints(rawWps, layer, 0.1, 24);
+    const origFlightLayers = global.flightLayers;
+    global.flightLayers = [layer];
+
+    try {
+      const wpml = buildWaylinesWpml(gen.waypoints, 24, 0.1, 'smoothTransition', 'goHome', 0, 'continuous', 'curved');
+      assert.ok(wpml.includes('<wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>'), 'Continuous hyperlapse must emit multipleTiming');
+      assert.ok(wpml.includes('<wpml:actionTriggerParam>3</wpml:actionTriggerParam>'), 'multipleTiming must specify 3s interval');
+      const placemarkCount = (wpml.match(/<Placemark>/g) || []).length;
+      assert.strictEqual(placemarkCount, 2, 'Continuous hyperlapse must emit exactly 2 Placemarks');
+    } finally {
+      global.flightLayers = origFlightLayers;
+    }
+  });
+
+  test('saveActiveLayerFromUi automatically synchronizes default layer name on pattern change', () => {
+    const testLayer = {
+      id: 'sync-test-layer',
+      name: 'Layer 2: 3D Double Grid',
+      pattern: 'double',
+      enabled: true
+    };
+    const origGetElementById = document.getElementById;
+    document.getElementById = (id) => {
+      if (id === 'grid-type') return { value: 'hyperlapse' };
+      if (id === 'layer-name-input') return { value: '' };
+      return null;
+    };
+
+    try {
+      saveActiveLayerFromUi(testLayer);
+      assert.strictEqual(testLayer.pattern, 'hyperlapse');
+      assert.strictEqual(testLayer.name, 'Layer 2: Hyperlapse Time-Lapse');
+    } finally {
+      document.getElementById = origGetElementById;
+    }
+  });
+
+  test('Companion server exports VERSION dynamically without cache staleness', () => {
+    const server = require('./tools/companion/server.js');
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    assert.strictEqual(server.VERSION, pkg.version);
+  });
+});
+
+describe('Issue & v1.170.0: Hyperlapse Visual Compass Rose, Gimbal Pitch Presets & POI Conflict Lock Suite', () => {
+  test('Version consistency: v1.170.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.170.0');
+  });
+
+  test('updateHyperlapseKeyframeVisuals applies .hyperlapse-locked and shows lock banner when Target POI is assigned', () => {
+    const cardEl = { classList: { add: () => {}, remove: () => {} } };
+    const bodyEl = { classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const bannerEl = { classList: { classes: new Set(['hidden']), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const badgeEl = { classList: { classes: new Set(['hidden']), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const pitchLbl = { textContent: '' };
+    const yawLbl = { textContent: '' };
+    const startPitchInput = { value: '-45' };
+    const endPitchInput = { value: '-15' };
+    const headingModeSelect = { value: 'keyframes' };
+    const startYawInput = { value: '0' };
+    const endYawInput = { value: '90' };
+    const startYawText = { textContent: '' };
+    const endYawText = { textContent: '' };
+    const needleStart = { setAttribute: () => {} };
+    const needleEnd = { setAttribute: () => {} };
+    const arc = { setAttribute: () => {} };
+
+    const elements = {
+      'hyperlapse-keyframes-card': cardEl,
+      'hyperlapse-keyframes-body': bodyEl,
+      'hyperlapse-poi-lock-banner': bannerEl,
+      'hyperlapse-lock-badge': badgeEl,
+      'hyperlapse-pitch-sweep-label': pitchLbl,
+      'hyperlapse-yaw-sweep-label': yawLbl,
+      'hyperlapse-start-pitch': startPitchInput,
+      'hyperlapse-end-pitch': endPitchInput,
+      'hyperlapse-heading-mode': headingModeSelect,
+      'hyperlapse-start-heading': startYawInput,
+      'hyperlapse-end-heading': endYawInput,
+      'hyperlapse-compass-start-text': startYawText,
+      'hyperlapse-compass-end-text': endYawText,
+      'hyperlapse-compass-needle-start': needleStart,
+      'hyperlapse-compass-needle-end': needleEnd,
+      'hyperlapse-compass-sweep-arc': arc
+    };
+
+    const origGetElementById = document.getElementById;
+    document.getElementById = (id) => elements[id] || null;
+
+    const layerWithPoi = {
+      id: 'layer-hl-poi',
+      pattern: 'hyperlapse',
+      headingMode: 'towardPOI',
+      targetPoiId: 'poi-target-1'
+    };
+
+    const layerWithoutPoi = {
+      id: 'layer-hl-free',
+      pattern: 'hyperlapse',
+      headingMode: 'smoothTransition',
+      targetPoiId: null
+    };
+
+    let currentActiveLayer = layerWithPoi;
+    const origGetActiveLayer = global.getActiveLayer;
+    global.getActiveLayer = () => currentActiveLayer;
+
+    try {
+      // 1. With POI active -> must be locked and dimmed
+      updateHyperlapseKeyframeVisuals();
+      assert.strictEqual(bodyEl.classList.contains('hyperlapse-locked'), true, 'Body must have hyperlapse-locked class when POI active');
+      assert.strictEqual(bannerEl.classList.contains('hidden'), false, 'Banner must be visible when POI active');
+      assert.strictEqual(badgeEl.classList.contains('hidden'), false, 'Lock badge must be visible when POI active');
+
+      // 2. Without POI active -> must be unlocked and interactive
+      currentActiveLayer = layerWithoutPoi;
+      updateHyperlapseKeyframeVisuals();
+      assert.strictEqual(bodyEl.classList.contains('hyperlapse-locked'), false, 'Body must not have hyperlapse-locked class when POI cleared');
+      assert.strictEqual(bannerEl.classList.contains('hidden'), true, 'Banner must be hidden when POI cleared');
+      assert.strictEqual(badgeEl.classList.contains('hidden'), true, 'Lock badge must be hidden when POI cleared');
+      assert.strictEqual(pitchLbl.textContent, '-45° → -15°', 'Pitch sweep label must reflect start and end pitch');
+      assert.strictEqual(yawLbl.textContent, 'Keyframe Sweep', 'Yaw sweep label must show Keyframe Sweep when keyframes mode active');
+      assert.strictEqual(startYawText.textContent, '0° (N)', 'Start yaw text must indicate 0° (N)');
+      assert.strictEqual(endYawText.textContent, '90° (E)', 'End yaw text must indicate 90° (E)');
+    } finally {
+      document.getElementById = origGetElementById;
+      global.getActiveLayer = origGetActiveLayer;
+    }
   });
 });
 

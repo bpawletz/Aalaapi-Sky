@@ -2096,14 +2096,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       await new Promise(r => setTimeout(r, 40));
       const popoverClosedAfterBtn = telemetryPopover.classList.contains('hidden');
 
-      // 4. Verify Configuration Layout Dropdown
+      // 4. Verify Obsolete Nav Layout Dropdown is cleanly removed (v1.169.1)
       const navLayoutSelect = document.getElementById('nav-layout-select');
-      const hasNavLayoutSelect = navLayoutSelect !== null;
-      if (navLayoutSelect) {
-        navLayoutSelect.value = 'floating';
-        navLayoutSelect.dispatchEvent(new Event('change'));
-      }
-      const savedLayout = localStorage.getItem('aalaapi_nav_layout');
+      const navLayoutSelectRemoved = (navLayoutSelect === null);
 
       return {
         success: true,
@@ -2114,8 +2109,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         popoverInitiallyHidden,
         popoverOpenAfterClick,
         popoverClosedAfterBtn,
-        hasNavLayoutSelect,
-        savedLayout
+        navLayoutSelectRemoved
       };
     });
 
@@ -2127,8 +2121,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(uiResult.popoverInitiallyHidden, true, 'Telemetry popover should be hidden initially');
     assert.strictEqual(uiResult.popoverOpenAfterClick, true, 'Telemetry popover should open on pill click');
     assert.strictEqual(uiResult.popoverClosedAfterBtn, true, 'Telemetry popover should close on close btn click');
-    assert.strictEqual(uiResult.hasNavLayoutSelect, true, 'Config modal must contain nav layout selector');
-    assert.strictEqual(uiResult.savedLayout, 'floating', 'Nav layout selection should persist to localStorage');
+    assert.strictEqual(uiResult.navLayoutSelectRemoved, true, 'Config modal must not contain obsolete nav layout selector');
   });
 
   test('E2E: Intro Guide Hub, Welcome Banner, and In-Situ Spotlight Tour (v1.66.0)', async () => {
@@ -9091,6 +9084,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     test('E2E: Hyperlapse Discrete Frame Waypoints generation, UI mode selector, and RC 2 WPML export (v1.167.0)', async () => {
       const evalResult = await page.evaluate(async () => {
+        // 0. Ensure grid center is positioned
+        if (typeof setGridCenter === 'function') setGridCenter(41.3215, -88.9950);
+
         // 1. Select Hyperlapse pattern
         const gridTypeSelect = document.getElementById('grid-type');
         gridTypeSelect.value = 'hyperlapse';
@@ -9162,6 +9158,84 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(evalResult.placemarkCount, evalResult.wpCount, 'WPML placemarks must match total discrete waypoints');
       assert.strictEqual(evalResult.hasMultipleTiming, false, 'Dense mode must suppress multipleTiming action group');
       assert.strictEqual(evalResult.hasTakePhoto, true, 'WPML must contain takePhoto actions');
+    });
+
+    test('E2E: Segmented ADS-B Operations & Settings Tabs (v1.168.0)', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const topbarBtn = document.getElementById('adsb-topbar-btn');
+        const drawer = document.getElementById('adsb-control-drawer');
+        const btnOps = document.getElementById('adsb-tab-btn-ops');
+        const btnSettings = document.getElementById('adsb-tab-btn-settings');
+        const paneOps = document.getElementById('adsb-pane-operations');
+        const paneSettings = document.getElementById('adsb-pane-settings');
+        const list = document.getElementById('adsb-aircraft-list');
+        const hostInput = document.getElementById('adsb-host-input');
+        const manager = window.AdsbAirspaceManager;
+
+        if (!topbarBtn || !drawer || !btnOps || !btnSettings || !paneOps || !paneSettings) {
+          return { error: 'Missing ADS-B drawer or tab elements' };
+        }
+
+        // Open drawer
+        topbarBtn.click();
+
+        // 1. Initial State: Operations tab should be active
+        const initOpsActive = btnOps.classList.contains('active');
+        const initSettingsActive = btnSettings.classList.contains('active');
+        const initOpsHidden = paneOps.classList.contains('hidden');
+        const initSettingsHidden = paneSettings.classList.contains('hidden');
+
+        // 2. Switch to Settings Tab
+        btnSettings.click();
+        const settingsActiveAfterClick = btnSettings.classList.contains('active');
+        const opsActiveAfterClick = btnOps.classList.contains('active');
+        const settingsHiddenAfterClick = paneSettings.classList.contains('hidden');
+        const opsHiddenAfterClick = paneOps.classList.contains('hidden');
+
+        // 3. Switch back to Operations Tab
+        btnOps.click();
+        const finalOpsActive = btnOps.classList.contains('active');
+        const finalSettingsActive = btnSettings.classList.contains('active');
+        const finalOpsHidden = paneOps.classList.contains('hidden');
+        const finalSettingsHidden = paneSettings.classList.contains('hidden');
+
+        // Close drawer
+        const closeBtn = document.getElementById('adsb-drawer-close-btn');
+        if (closeBtn) closeBtn.click();
+
+        return {
+          initOpsActive,
+          initSettingsActive,
+          initOpsHidden,
+          initSettingsHidden,
+          settingsActiveAfterClick,
+          opsActiveAfterClick,
+          settingsHiddenAfterClick,
+          opsHiddenAfterClick,
+          finalOpsActive,
+          finalSettingsActive,
+          finalOpsHidden,
+          finalSettingsHidden,
+          managerActiveTab: manager ? manager.activeTab : null
+        };
+      });
+
+      assert.strictEqual(evalResult.error, undefined, 'Evaluation error: ' + JSON.stringify(evalResult));
+      assert.strictEqual(evalResult.initOpsActive, true, 'Operations tab must be active initially');
+      assert.strictEqual(evalResult.initSettingsActive, false, 'Settings tab must be inactive initially');
+      assert.strictEqual(evalResult.initOpsHidden, false, 'Operations pane must be visible initially');
+      assert.strictEqual(evalResult.initSettingsHidden, true, 'Settings pane must be hidden initially');
+
+      assert.strictEqual(evalResult.settingsActiveAfterClick, true, 'Settings tab must become active upon click');
+      assert.strictEqual(evalResult.opsActiveAfterClick, false, 'Operations tab must become inactive');
+      assert.strictEqual(evalResult.settingsHiddenAfterClick, false, 'Settings pane must be visible');
+      assert.strictEqual(evalResult.opsHiddenAfterClick, true, 'Operations pane must be hidden');
+
+      assert.strictEqual(evalResult.finalOpsActive, true, 'Operations tab must be active after switching back');
+      assert.strictEqual(evalResult.finalSettingsActive, false, 'Settings tab must be inactive after switching back');
+      assert.strictEqual(evalResult.finalOpsHidden, false, 'Operations pane must be visible after switching back');
+      assert.strictEqual(evalResult.finalSettingsHidden, true, 'Settings pane must be hidden after switching back');
+      assert.strictEqual(evalResult.managerActiveTab, 'operations', 'AdsbAirspaceManager.activeTab must be operations');
     });
   });
 });
