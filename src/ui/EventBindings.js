@@ -1134,6 +1134,27 @@ function initUIEventListeners() {
       });
     });
 
+    // Pitch dial click to adjust End Pitch
+    const pitchSvg = document.getElementById('hyperlapse-pitch-dial');
+    if (pitchSvg) {
+      pitchSvg.addEventListener('click', (e) => {
+        const rect = pitchSvg.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = e.clientX - cx;
+        const dy = e.clientY - cy;
+        // Screen angle from horizontal right:
+        const screenDeg = Math.atan2(dy, dx) * 180 / Math.PI;
+        // Camera pitch is -screenDeg:
+        let pitch = -screenDeg;
+        if (pitch < -90) pitch = -90;
+        if (pitch > 20) pitch = 20;
+        const roundedPitch = Math.round(pitch / 5) * 5;
+        if (hlEndPitch) hlEndPitch.value = roundedPitch;
+        updateHyperlapse();
+      });
+    }
+
     // Compass dial click to rotate End Yaw
     const compassSvg = document.getElementById('hyperlapse-compass-dial');
     if (compassSvg) {

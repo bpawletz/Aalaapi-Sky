@@ -1,3 +1,26 @@
+## [1.171.0] - 2026-10-18
+
+Introduces an interactive visual Gimbal Pitch Elevation Dial with dual Start/End tilt needles, dynamic elevation sweep arc, and direct click-to-tilt interaction mirroring the Yaw Compass Rose.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Visual Gimbal Pitch Elevation Dial**:
+  - Added an interactive circular SVG elevation dial (`#hyperlapse-pitch-dial`) representing camera pitch from Horizon ($0^\circ$) to Nadir ($-90^\circ$).
+  - Features dual-needle choreography:
+    - **Start Pitch** needle in amber (`#f59e0b`).
+    - **End Pitch** needle in cyan (`#06b6d4`, dashed).
+  - Displays a dynamic shaded sweep arc sector (`#hyperlapse-pitch-sweep-arc`) illustrating the camera tilt range from initial to final waypoint.
+  - Interactive click-to-pitch: clicking directly on the elevation dial calculates the angle, clamps to valid gimbal limits, snaps to $5^\circ$, and sets the end pitch angle instantly.
+  - Added real-time descriptive elevation readouts: `#hyperlapse-pitch-start-text` and `#hyperlapse-pitch-end-text` (e.g. `Horizon`, `Oblique`, `Steep Oblique`, `Nadir`).
+
+#### Under the Hood & Technical Details
+- **DOM & SVG Architecture (`index_template.html`)**:
+  - Added `#hyperlapse-pitch-dial` with horizon/nadir dashed reference guides, elevation tick labels ($0^\circ$, $-45^\circ$, $-90^\circ$), and dual needle elements.
+- **Elevation Math & Interactivity (`src/ui/SidebarManager.js`, `src/ui/EventBindings.js`)**:
+  - Implemented pitch coordinate mapping converting pitch angles into screen coordinates and arc paths in `updateHyperlapseKeyframeVisuals()`.
+  - Added click listener to `#hyperlapse-pitch-dial` in `setupHyperlapseListeners()` with angle snapping and reactive sync.
+
 ## [1.170.0] - 2026-10-18
 
 Introduces interactive visual Compass Rose and Gimbal Tilt sweep selectors for Hyperlapse flight keyframes, paired with automatic Target POI conflict detection and lock dimming.
