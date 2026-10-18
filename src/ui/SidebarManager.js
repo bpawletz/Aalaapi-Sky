@@ -3023,12 +3023,56 @@ function updateHyperlapseKeyframeVisuals() {
     if (lockBadge) lockBadge.classList.add('hidden');
   }
 
-  // Update Pitch Sweep Label
+  // Update Pitch Sweep Label & Dial Visuals
   const startP = (hlStartPitch && !isNaN(parseInt(hlStartPitch.value, 10))) ? parseInt(hlStartPitch.value, 10) : -15;
   const endP = (hlEndPitch && !isNaN(parseInt(hlEndPitch.value, 10))) ? parseInt(hlEndPitch.value, 10) : -15;
   const pitchSweepLbl = document.getElementById('hyperlapse-pitch-sweep-label');
   if (pitchSweepLbl) {
     pitchSweepLbl.textContent = `${startP}° → ${endP}°`;
+  }
+
+  const pitchToDesc = (p) => {
+    if (p <= -85) return 'Nadir';
+    if (p <= -55) return 'Steep Oblique';
+    if (p <= -30) return 'Oblique';
+    if (p <= -10) return 'Horizon';
+    if (p <= 0) return 'Level';
+    return 'Upward';
+  };
+
+  const pitchStartTxt = document.getElementById('hyperlapse-pitch-start-text');
+  const pitchEndTxt = document.getElementById('hyperlapse-pitch-end-text');
+  if (pitchStartTxt) pitchStartTxt.textContent = `${startP}° (${pitchToDesc(startP)})`;
+  if (pitchEndTxt) pitchEndTxt.textContent = `${endP}° (${pitchToDesc(endP)})`;
+
+  // Update Pitch Needles & Sweep Arc on SVG (center at 50, 50, radius 35)
+  // Screen angle = -pitch: 0° horizon is along +X (85, 50), -90° nadir is along +Y (50, 85)
+  const radPitchStart = (-startP) * Math.PI / 180;
+  const radPitchEnd = (-endP) * Math.PI / 180;
+  const pStartX = 50 + 35 * Math.cos(radPitchStart);
+  const pStartY = 50 + 35 * Math.sin(radPitchStart);
+  const pEndX = 50 + 35 * Math.cos(radPitchEnd);
+  const pEndY = 50 + 35 * Math.sin(radPitchEnd);
+
+  const needlePitchStart = document.getElementById('hyperlapse-pitch-needle-start');
+  const needlePitchEnd = document.getElementById('hyperlapse-pitch-needle-end');
+  if (needlePitchStart && typeof needlePitchStart.setAttribute === 'function') {
+    needlePitchStart.setAttribute('x2', pStartX.toFixed(1));
+    needlePitchStart.setAttribute('y2', pStartY.toFixed(1));
+  }
+  if (needlePitchEnd && typeof needlePitchEnd.setAttribute === 'function') {
+    needlePitchEnd.setAttribute('x2', pEndX.toFixed(1));
+    needlePitchEnd.setAttribute('y2', pEndY.toFixed(1));
+  }
+
+  const pitchArc = document.getElementById('hyperlapse-pitch-sweep-arc');
+  if (pitchArc && typeof pitchArc.setAttribute === 'function') {
+    if (startP === endP) {
+      pitchArc.setAttribute('d', `M 50 50 L ${pStartX.toFixed(1)} ${pStartY.toFixed(1)} Z`);
+    } else {
+      const sweepFlag = (endP <= startP) ? 1 : 0;
+      pitchArc.setAttribute('d', `M 50 50 L ${pStartX.toFixed(1)} ${pStartY.toFixed(1)} A 35 35 0 0 ${sweepFlag} ${pEndX.toFixed(1)} ${pEndY.toFixed(1)} Z`);
+    }
   }
 
   // Highlight active pitch preset chip if start and end match
