@@ -1,3 +1,93 @@
+## [1.170.0] - 2026-10-18
+
+Introduces interactive visual Compass Rose and Gimbal Tilt sweep selectors for Hyperlapse flight keyframes, paired with automatic Target POI conflict detection and lock dimming.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Visual Compass Rose & Heading Dial for Hyperlapse**:
+  - Added an interactive SVG Compass Rose dial in Section 2 Hyperlapse settings displaying **Start Yaw** (amber needle) and **End Yaw** (cyan needle) alongside a dynamic shaded arc sector illustrating flight turn direction.
+  - Added quick-click cardinal direction chips (`N 0°`, `E 90°`, `S 180°`, `W 270°`) and direct click-to-rotate interaction on the compass rose to set headings visually without manual typing.
+- **Visual Gimbal Tilt Presets & Sweep Indicators**:
+  - Added quick-select gimbal tilt chips (`Nadir -90°`, `Oblique -60°`, `45°`, `Horizon -15°`) and dynamic tilt sweep range labels (`Start Pitch → End Pitch`) for camera choreography.
+- **Automated Target POI Conflict Lock & Dimming**:
+  - Added proactive conflict management: whenever a Target POI is assigned to the layer or Heading Mode is set to `Point of Interest (Target-Facing)`, the manual Keyframe Yaw and Pitch controls automatically dim with a clear `🔒 Locked to Target POI Focus` banner and badge.
+  - Clarifies that camera pitch and yaw are mathematically tracking the POI subject across the path, completely eliminating pilot confusion over competing heading instructions.
+  - Switching back to path-following or clearing the POI instantly un-dims and re-enables interactive keyframe controls.
+
+#### Under the Hood & Technical Details
+- **DOM & Visual Styling (`index_template.html`, `index.css`)**:
+  - Structured `#hyperlapse-keyframes-card` with SVG compass dial `#hyperlapse-compass-dial`, needle lines, sweep arc path, and `#hyperlapse-poi-lock-banner`.
+  - Added `.hyperlapse-locked` (opacity, grayscale, pointer-events: none) and `.hyperlapse-pitch-chip.active` / `.hyperlapse-yaw-chip.active` styles.
+- **Reactive UI Synchronization (`src/ui/EventBindings.js`, `src/layers/LayerManager.js`, `src/ui/SidebarManager.js`)**:
+  - Implemented `updateHyperlapseKeyframeVisuals` syncing compass angles, needle coordinates, sector arcs, and POI lock states.
+  - Wired live event triggers across heading mode changes, POI selection changes, and layer switching.
+
+### 🗑️ Removed
+
+#### Pilot & Operational Features
+- **Search & Navigation Layout Control**:
+  - Removed the non-functional "Search & Navigation Layout" dropdown (`#nav-layout-select`) from the Settings modal (`#config-modal`), eliminating pilot confusion regarding address search placement.
+
+#### Under the Hood & Technical Details
+- **DOM & Templates (`index_template.html`, `index.html`)**:
+  - Removed the `<select id="nav-layout-select">` form control group from the UI Preferences card in the Settings modal.
+- **UI & Event Management (`src/ui/EventBindings.js`, `src/ui/ResetManager.js`, `src/map/MapEngine.js`)**:
+  - Removed dead event listener and `nav-layout-select` default initialization from `EventBindings.js` and `MapEngine.js`.
+  - Removed orphaned `Nav Layout` preference counter and uncalled `setNavLayout` stub from `ResetManager.js` while retaining `localStorage.removeItem('aalaapi_nav_layout')` for backward-compatible storage hygiene.
+- **Automated Regression Test Suite (`index.test.js`, `index.e2e.test.js`)**:
+  - Updated Settings modal interactive control validation in `index.test.js` and E2E modal testing in `index.e2e.test.js`.
+  - Added dedicated unit test asserting the removal of `#nav-layout-select` and verified clean residual key removal.
+
+## [1.169.0] - 2026-10-18
+
+Binds Hyperlapse flight waypoint generation directly to the Layer and Global Capture Mode hierarchy, compiling discrete Stop & Shoot frame waypoints with settling hovers when Stop & Shoot is chosen, and continuous 2-waypoint splines with DJI automated interval timing when Continuous Flight is active.
+
+### 🚀 Added | Changed
+
+#### Pilot & Operational Features
+- **Capture Mode-Driven Hyperlapse Waypoint Compilation**:
+  - Bound Hyperlapse waypoint generation directly to the Tier 1 (Global) and Tier 2 (Layer) **Capture Mode** dropdowns (`stopAndShoot` vs `continuous`), making Capture Mode the single source of truth for waypoint density.
+  - **Stop & Shoot at Waypoints (Automated)**: Automatically compiles all calculated frame positions (e.g. ~156 photo stops along a 47m path at 0.1 m/s) into explicit, discrete flight waypoints in the KMZ, with automated settling hovers and `reachPoint` `takePhoto` actions. The drone stops, settles, and takes a sharp photo at every position.
+  - **Continuous Flight (Timed / Interval Shot)**: Automatically compiles the lightweight 2-waypoint navigation vector (Start and Finish nodes) paired with DJI's automated `<wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>` shutter trigger, allowing smooth, continuous gliding at 0.1 m/s while shooting every 3 seconds.
+  - **RC 2 Waypoint Mode Synchronization**: Synchronized the Section 2 RC 2 Waypoint Mode selector (`#hyperlapse-waypoint-mode`) bidirectionally with Layer Capture Mode (`#layer-capture-mode`), ensuring instant updates across all controls.
+- **KMZ Inspector & Pre-Flight Audit Transparency**:
+  - Updated the KMZ Inspector waypoint summary to clearly distinguish between modes: reporting `2 waypoints (Continuous Hyperlapse: X interval photos @ Ys)` for continuous routes, and `X waypoints (Stop & Shoot)` when discrete frames are compiled.
+  - Added advisory descriptions explaining that DJI Fly shows 2 navigation points during continuous flights while interval photos trigger automatically on the move.
+- **Automatic Default Layer Name Synchronization**:
+  - Automatically updates default layer titles upon switching flight patterns (e.g. updating `"Layer 2: 3D Double Grid"` to `"Layer 2: Hyperlapse Time-Lapse"`) whenever the layer retains its default auto-generated name, preventing pattern confusion.
+
+#### Under the Hood & Technical Details
+- **Pattern Generators (`src/patterns/PatternGenerators.js`)**:
+  - Updated `generateHyperlapseWaypoints` to resolve `effectiveCaptureMode` and dynamically select `waypointMode = (effectiveCaptureMode === 'stopAndShoot') ? 'dense' : 'spline'`.
+  - Added `turnMode: (effectiveCaptureMode === 'stopAndShoot') ? 'stop' : 'curved'` and `captureMode: effectiveCaptureMode` to all generated dense frame points.
+- **WPML Compiler (`src/export/WpmlCompiler.js`)**:
+  - Updated `buildWaylinesWpml` to enforce `toPointAndStopWithContinuityCurvature` across all placemarks for `stopAndShoot` hyperlapses on consumer drones (DJI Mini 4 Pro [68] / Air 3 [89]).
+- **UI & Event Bindings (`src/ui/SidebarManager.js`, `src/ui/EventBindings.js`, `src/layers/LayerManager.js`)**:
+  - Added bidirectional event synchronization between `layer-capture-mode`, `capture-mode`, and `hyperlapse-waypoint-mode`.
+  - Updated `saveActiveLayerFromUi` to auto-synchronize default layer titles on pattern changes.
+- **Node Companion Bridge (`tools/companion/server.js`)**:
+  - Exported dynamic getter for `VERSION` reading `package.json` on demand to prevent module cache mismatches during test runner executions.
+
+## [1.168.0] - 2026-10-17
+
+Redesigns the Manned Aircraft ADS-B Radar drawer into a clean Two-Tab Architecture separating real-time flight operations and safety alerting from feed configuration, network probes, and hardware diagnostics.
+
+### 🚀 Added | Changed
+
+#### Pilot & Operational Features
+- **Segmented ADS-B Operations & Settings Architecture**:
+  - Replaced the congested, single-scrolling ADS-B side drawer with a clean, responsive segmented tab interface: **📡 Airspace & Traffic** and **⚙️ Feed & Hardware**.
+  - **Airspace & Traffic (Operations)**: Elevates the live tracked aircraft radar list to the top of the drawer, providing immediate situational awareness of nearby aircraft (altitude, distance, bearing, speed, and deconfliction breach status) alongside spatial proximity radius and vertical ceiling sliders.
+  - **Quick Pre-Flight Verification & Simulation**: Tucks audio synthesis tests and approaching traffic simulations (Prop, Heli, Jet) into a collapsible pre-flight section, keeping primary flight controls clean and accessible.
+  - **Live Tab Traffic Pill & Receiver Status Dot**: Adds a dynamic badge pill displaying the active aircraft count on the Operations tab and a glowing connection health dot (connected green, waiting amber, offline red) on the Settings tab.
+
+#### Under the Hood & Technical Details
+- **UI & DOM Modernization (`index_template.html`, `index.css`, `src/bridge/ApiClient.js`)**:
+  - Implemented `.adsb-nav-tabs`, `.adsb-tab-btn`, `.adsb-tab-pane`, `.adsb-tab-pill`, and `.adsb-tab-dot` styles with dark glassmorphic styling.
+  - Added `switchTab(tabName)` and `activeTab` state management in `AdsbAirspaceManager` with full ARIA accessibility attributes (`role="tab"`, `aria-selected`, `aria-controls`).
+  - Preserved 100% of existing DOM element IDs (`#adsb-host-input`, `#adsb-port-input`, `#adsb-radius-slider`, `#adsb-ceiling-slider`, `#adsb-external-watch-btn`, `#adsb-aircraft-list`, etc.) and event listener bindings, guaranteeing complete backward compatibility.
+
 ## [1.167.1] - 2026-10-17
 
 Fixes reversed 3D/2D camera cone orientations in telemetry logs by prioritizing aircraft compass heading over raw gimbal potentiometer angles, eliminates falsy 0° pitch fallbacks to -60°, and prevents gimbal camera sag and pivoting between shots on Vertical Facade and oblique stop-and-shoot missions.
