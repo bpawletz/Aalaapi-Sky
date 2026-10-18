@@ -5895,8 +5895,16 @@ module.exports = {
   fetchUpstreamBinary,
   bridgeMetrics,
   Dashboard,
-  startDashboard,
-  VERSION,
+  get VERSION() {
+    try {
+      const p = path.join(__dirname, '../../package.json');
+      if (fs.existsSync(p)) {
+        const d = JSON.parse(fs.readFileSync(p, 'utf8'));
+        if (d && d.version) return d.version;
+      }
+    } catch (_) {}
+    return VERSION;
+  },
   PORT
 };
 

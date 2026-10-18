@@ -390,15 +390,25 @@ const scenarios = [
     run: async (page) => {
       // 1. Open ADS-B Airspace Drawer
       await page.evaluate(() => {
+        const topbarBtn = document.getElementById('adsb-topbar-btn');
         const pill = document.getElementById('adsb-status-pill') || document.getElementById('btn-adsb-airspace');
-        if (pill) {
+        if (topbarBtn) {
+          topbarBtn.click();
+        } else if (pill) {
           pill.click();
         } else {
-          const drawer = document.getElementById('adsb-drawer');
+          const drawer = document.getElementById('adsb-control-drawer') || document.getElementById('adsb-drawer');
           if (drawer) drawer.classList.remove('hidden', 'drawer-closed');
         }
       });
       await page.waitForTimeout(800);
+
+      // Switch to Feed & Hardware settings tab
+      await page.evaluate(() => {
+        const settingsTab = document.getElementById('adsb-tab-btn-settings');
+        if (settingsTab) settingsTab.click();
+      });
+      await page.waitForTimeout(600);
 
       // 2. Fill remote host input with generic test server
       await fillInput(page, '#adsb-host-input', '192.168.1.150');
@@ -412,9 +422,16 @@ const scenarios = [
       });
       await page.waitForTimeout(700);
 
+      // Switch back to Operations tab to show clear live airspace view
+      await page.evaluate(() => {
+        const opsTab = document.getElementById('adsb-tab-btn-ops');
+        if (opsTab) opsTab.click();
+      });
+      await page.waitForTimeout(600);
+
       // 4. Close drawer
       await page.evaluate(() => {
-        const close = document.getElementById('close-adsb-drawer-btn') || document.querySelector('#adsb-drawer .close-btn');
+        const close = document.getElementById('adsb-drawer-close-btn') || document.getElementById('close-adsb-drawer-btn') || document.querySelector('#adsb-control-drawer .popover-close-btn');
         if (close) close.click();
       });
       await centerMapOnPoint(page);

@@ -1066,6 +1066,10 @@ function initUIEventListeners() {
     const hlWaypointMode = document.getElementById('hyperlapse-waypoint-mode');
     const hlModeBadge = document.getElementById('hyperlapse-mode-badge');
 
+    const updateHyperlapseVisuals = () => {
+      updateHyperlapseKeyframeVisuals();
+    };
+
     const updateHyperlapse = () => {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (!activeLayer) return;
@@ -1093,12 +1097,59 @@ function initUIEventListeners() {
         if (hlModeBadge) {
           hlModeBadge.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
         }
+        const layerCapSelect = document.getElementById('layer-capture-mode');
+        if (activeLayer.hyperlapseWaypointMode === 'dense') {
+          activeLayer.captureMode = 'stopAndShoot';
+          if (layerCapSelect) layerCapSelect.value = 'stopAndShoot';
+        } else if (activeLayer.hyperlapseWaypointMode === 'spline') {
+          activeLayer.captureMode = 'continuous';
+          if (layerCapSelect) layerCapSelect.value = 'continuous';
+        }
       }
 
+      updateHyperlapseVisuals();
       updateGrid();
       updateMapLegend();
       saveAllSettingsToLocalStorage();
     };
+
+    // Pitch preset chip clicks
+    document.querySelectorAll('.hyperlapse-pitch-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pVal = parseInt(chip.getAttribute('data-pitch'), 10);
+        if (hlStartPitch) hlStartPitch.value = pVal;
+        if (hlEndPitch) hlEndPitch.value = pVal;
+        updateHyperlapse();
+      });
+    });
+
+    // Yaw cardinal chip clicks
+    document.querySelectorAll('.hyperlapse-yaw-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.preventDefault();
+        const yVal = parseFloat(chip.getAttribute('data-yaw'));
+        if (hlEndHeading) hlEndHeading.value = yVal;
+        updateHyperlapse();
+      });
+    });
+
+    // Compass dial click to rotate End Yaw
+    const compassSvg = document.getElementById('hyperlapse-compass-dial');
+    if (compassSvg) {
+      compassSvg.addEventListener('click', (e) => {
+        const rect = compassSvg.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = e.clientX - cx;
+        const dy = e.clientY - cy;
+        let deg = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+        deg = ((deg % 360) + 360) % 360;
+        const roundedDeg = Math.round(deg / 5) * 5; // Snap to 5 degrees
+        if (hlEndHeading) hlEndHeading.value = roundedDeg;
+        updateHyperlapse();
+      });
+    }
 
     [hlInterval, hlStartPitch, hlEndPitch, hlHeadingMode, hlStartHeading, hlEndHeading, hlWaypointMode].forEach(el => {
       if (el) {
@@ -1406,6 +1457,14 @@ function initUIEventListeners() {
         }
       }
       updateInheritOptionLabels();
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer && activeLayer.pattern === 'hyperlapse' && (!activeLayer.captureMode || activeLayer.captureMode === 'inherit')) {
+        activeLayer.hyperlapseWaypointMode = (e.target.value === 'stopAndShoot') ? 'dense' : 'spline';
+        const hlModeSel = document.getElementById('hyperlapse-waypoint-mode');
+        const hlModeBdg = document.getElementById('hyperlapse-mode-badge');
+        if (hlModeSel) hlModeSel.value = activeLayer.hyperlapseWaypointMode;
+        if (hlModeBdg) hlModeBdg.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
+      }
     });
   }
 
@@ -1486,6 +1545,16 @@ function initUIEventListeners() {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.captureMode = layerCaptureModeEl.value;
+        if (activeLayer.pattern === 'hyperlapse') {
+          const effCap = (layerCaptureModeEl.value === 'inherit')
+            ? ((typeof document !== 'undefined') ? document.getElementById('capture-mode')?.value : 'stopAndShoot')
+            : layerCaptureModeEl.value;
+          activeLayer.hyperlapseWaypointMode = (effCap === 'stopAndShoot') ? 'dense' : 'spline';
+          const hlModeSel = document.getElementById('hyperlapse-waypoint-mode');
+          const hlModeBdg = document.getElementById('hyperlapse-mode-badge');
+          if (hlModeSel) hlModeSel.value = activeLayer.hyperlapseWaypointMode;
+          if (hlModeBdg) hlModeBdg.textContent = (activeLayer.hyperlapseWaypointMode === 'spline') ? 'Keyframe Spline' : 'Discrete Frames';
+        }
       }
       updateGrid();
     });
@@ -1526,6 +1595,9 @@ function initUIEventListeners() {
           }
         }
       }
+      if (typeof updateHyperlapseKeyframeVisuals === 'function') {
+        updateHyperlapseKeyframeVisuals();
+      }
       updateGrid();
     });
   }
@@ -1564,6 +1636,9 @@ function initUIEventListeners() {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.targetPoiId = layerPoiSelectEl.value || null;
+      }
+      if (typeof updateHyperlapseKeyframeVisuals === 'function') {
+        updateHyperlapseKeyframeVisuals();
       }
       updateGrid();
     });
@@ -2059,16 +2134,6 @@ function initUIEventListeners() {
       }
     }
   });
-
-  // Navigation Layout setting
-  const navLayoutSelect = document.getElementById('nav-layout-select');
-  if (navLayoutSelect) {
-    const savedLayout = localStorage.getItem('aalaapi_nav_layout') || 'header';
-    navLayoutSelect.value = savedLayout;
-    navLayoutSelect.addEventListener('change', () => {
-      localStorage.setItem('aalaapi_nav_layout', navLayoutSelect.value);
-    });
-  }
 
   // Add POI button
   const addPoiBtn = document.getElementById('add-poi-btn');

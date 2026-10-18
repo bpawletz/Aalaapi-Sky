@@ -4456,7 +4456,19 @@ const KMZInspector = {
     const summaryTarget = document.getElementById('inspector-drone-target');
     if (summaryTarget) summaryTarget.textContent = droneText;
     const summaryWps = document.getElementById('inspector-wp-count');
-    if (summaryWps) summaryWps.textContent = `${report.placemarkCount} waypoints`;
+    if (summaryWps) {
+      const activeWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+      const isHl = activeWps.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse' || w.layerPattern === 'hyperlapse'));
+      if (isHl && report.placemarkCount <= 2) {
+        const stats = (typeof calculateStats === 'function') ? calculateStats(activeWps, typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : null) : null;
+        const photoCnt = stats?.photoCount || (typeof getCurrentPhotos === 'function' ? getCurrentPhotos()?.length : 0);
+        summaryWps.textContent = `${report.placemarkCount} waypoints (${photoCnt > 0 ? photoCnt + ' interval photos' : 'Continuous'})`;
+      } else if (isHl && report.placemarkCount > 2) {
+        summaryWps.textContent = `${report.placemarkCount} waypoints (Stop & Shoot)`;
+      } else {
+        summaryWps.textContent = `${report.placemarkCount} waypoints`;
+      }
+    }
     const summaryRules = document.getElementById('inspector-rules-score');
     if (summaryRules) {
       summaryRules.textContent = `${report.rulesPassed}/10 Passed`;
