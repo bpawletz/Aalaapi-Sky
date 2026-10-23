@@ -2642,6 +2642,17 @@ const AdsbAirspaceManager = {
     this.initMapLayer();
     this.bindEvents();
     this.updateControlsUI();
+    if (typeof fetch === 'function') {
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+      fetch(apiBase + '/api/config/adsb')
+        .then(res => res.ok ? res.json() : null)
+        .then(cfg => {
+          if (cfg && cfg.adsbHost) {
+            this.syncAdsbConfigWithBridge({ tcpHost: cfg.adsbHost, tcpPort: cfg.adsbPort, connected: !!cfg.connected });
+          }
+        })
+        .catch(() => {});
+    }
     if (this.enabled) {
       this.startPolling();
     }

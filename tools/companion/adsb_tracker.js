@@ -896,6 +896,7 @@ class AdsbAirspaceTracker extends EventEmitter {
           clearTimeout(this.reconnectTimer);
           this.reconnectTimer = null;
         }
+        this.emit('connected', { tcpHost: this.tcpHost, tcpPort: this.tcpPort });
       });
 
       this.socket.on('data', (chunk) => {
