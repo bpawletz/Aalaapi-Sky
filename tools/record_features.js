@@ -2607,6 +2607,129 @@ const scenarios = [
         }
       }
     }
+  },
+  {
+    id: 'terrain_following_dem_aware_grid',
+    name: 'Terrain Following (DEM-Aware Grid) for Constant AGL & GSD',
+    description: 'Demonstrates DEM-aware terrain following, gradient smoothing, target AGL modulation, 2D elevation cross-section profiling, and 3D terrain relief visualization (Issue #129).',
+    issueRef: '#129',
+    run: async (page) => {
+      // 1. Center map at default rural benchmark location [41.3215, -88.9950]
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Expand Section 2 (Layer Properties)
+      const sec2Hdr = await page.locator('#grid-geometry-title');
+      if (await sec2Hdr.isVisible()) {
+        await sec2Hdr.click();
+        await page.waitForTimeout(800);
+      }
+
+      // 3. Enable Terrain Following in Section 2
+      await page.evaluate(() => {
+        const tfSelect = document.getElementById('layer-terrain-follow');
+        if (tfSelect) {
+          tfSelect.value = 'enabled';
+          tfSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 4. Open Elevation Cross-Section Profile Drawer
+      const openProfileBtn = await page.locator('#open-elevation-profile-btn');
+      if (await openProfileBtn.isVisible()) {
+        await openProfileBtn.click();
+        await page.waitForTimeout(1500);
+      }
+
+      // 5. Adjust Target AGL using quick preset pill (80m)
+      const pill80 = await page.locator('.preset-pill-btn[data-agl="80"]');
+      if (await pill80.isVisible()) {
+        await pill80.click();
+        await page.waitForTimeout(1200);
+      }
+
+      // 6. Launch 3D FPV HUD to showcase 3D Terrain Relief Mesh & Undulating Flight Path
+      const fpvBtn = await page.locator('#fpv-btn, #view-3d-btn');
+      if (await fpvBtn.first().isVisible()) {
+        await fpvBtn.first().click();
+        await page.waitForTimeout(2500);
+
+        // Close 3D Viewport
+        const close3d = await page.locator('#close-fpv-btn, #fpv-close-btn');
+        if (await close3d.first().isVisible()) {
+          await close3d.first().click();
+          await page.waitForTimeout(1000);
+        }
+      }
+
+      // 7. Dismiss Elevation Profile Drawer
+      const closeProfileBtn = await page.locator('#close-elevation-profile-btn');
+      if (await closeProfileBtn.isVisible()) {
+        await closeProfileBtn.click();
+        await page.waitForTimeout(800);
+      }
+    }
+  },
+  {
+    id: 'feature_ai_3d_mesh',
+    name: 'Bridge-Hosted AI 3D Reconstruction Architecture & Live Streaming',
+    description: 'Demonstrates sparse drone photo ingestion, automated orthogonal N/S/E/W facade selection, dual-engine AI 3D mesh compilation, active progress bar, and Three.js 3D solid mesh streaming (Issue #96).',
+    issueRef: '#96',
+    run: async (page) => {
+      // 1. Center map at default rural benchmark location [41.3215, -88.9950]
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Open 3D Flight Diagnostics & Digital Twin Viewport
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.open === 'function') {
+          FlightDiagnostics.open('3d');
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 3. Open 3D Wireframe & AI Reconstruction Toolkit Panel
+      await page.evaluate(() => {
+        const panel = document.getElementById('diag-wireframe-panel');
+        if (panel) panel.style.display = 'block';
+      });
+      await page.waitForTimeout(1000);
+
+      // 4. Trigger AI 3D Reconstruction
+      await page.evaluate(() => {
+        const btn = document.getElementById('diag-btn-generate-ai-mesh');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(2000);
+
+      // 5. Adjust opacity slider
+      await page.evaluate(() => {
+        const slider = document.getElementById('diag-ai-mesh-opacity-slider');
+        if (slider) {
+          slider.value = '75';
+          slider.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 6. Toggle Mesh Button in 3D HUD
+      const toggleBtn = await page.locator('#diag-btn-toggle-mesh');
+      if (await toggleBtn.isVisible()) {
+        await toggleBtn.click();
+        await page.waitForTimeout(800);
+        await toggleBtn.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 7. Close 3D Diagnostics
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.close === 'function') {
+          FlightDiagnostics.close();
+        }
+      });
+      await page.waitForTimeout(800);
+    }
   }
 ];
 

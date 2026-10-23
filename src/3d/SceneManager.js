@@ -141,7 +141,29 @@ function init3DPreview() {
     const planeOffsetX = (1.5 - distX_tiles) * tileWidthMeters;
     const planeOffsetZ = (1.5 - distY_tiles) * tileWidthMeters;
 
-    const groundGeom = new THREE.PlaneGeometry(planeSize, planeSize);
+    const groundGeom = new THREE.PlaneGeometry(planeSize, planeSize, 32, 32);
+
+    const hasElevation = (typeof elevationServiceInstance !== 'undefined') &&
+      ((elevationServiceInstance.cachedDem !== null) || (waypoints && waypoints.some(wp => typeof wp.surfaceElevation === 'number' && wp.surfaceElevation !== 0)));
+
+    if (hasElevation && groundGeom.attributes && groundGeom.attributes.position) {
+      const pos = groundGeom.attributes.position;
+      const refLat = cLat;
+      const refLon = cLon;
+      const rot = (typeof document !== 'undefined' && document.getElementById('grid-rotation')) ? (parseFloat(document.getElementById('grid-rotation').value) || 0) : 0;
+      for (let i = 0; i < pos.count; i++) {
+        const lx = pos.getX(i) + planeOffsetX;
+        const ly = pos.getY(i) - planeOffsetZ;
+        const geo = (typeof localToGeodetic === 'function')
+          ? localToGeodetic(lx, ly, refLat, refLon, rot)
+          : { lat: refLat, lon: refLon };
+        const elevs = elevationServiceInstance.sampleElevationsSync([geo]);
+        const elev = (elevs && typeof elevs[0] === 'number') ? elevs[0] : 0;
+        pos.setZ(i, elev);
+      }
+      groundGeom.computeVertexNormals();
+      pos.needsUpdate = true;
+    }
     
     // Create temporary canvas to merge the 9 tiles
     const groundCanvas = document.createElement('canvas');

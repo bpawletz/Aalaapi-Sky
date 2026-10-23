@@ -7156,6 +7156,37 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   font-weight: 700;
 }
 
+
+/* Elevation Cross-Section Profile Drawer (Issue #129) */
+.elevation-profile-drawer {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(850px, calc(100vw - 360px));
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65);
+  padding: 10px 14px;
+  z-index: 1000;
+  transition: all 0.25s ease-in-out;
+}
+
+.elevation-profile-drawer.hidden {
+  display: none !important;
+}
+
+.elevation-profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 </style>
   
   <!-- App Icon & Favicon -->
@@ -7223,7 +7254,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.184.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.186.0</span></h1>
         </div>
       </div>
 
@@ -8928,6 +8959,71 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             </div>
             <input type="range" id="side-overlap" min="50" max="95" value="75" class="slider" aria-label="Side overlap percentage">
           </div>
+                    <!-- Terrain Following Controls (Issue #129) -->
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 12px; padding-top: 10px;">
+            <div class="control-label" style="margin-bottom: 6px;">
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--accent-cyan);">
+                🏔️ Terrain Following (DEM-Aware)
+              </span>
+              <span id="layer-terrain-follow-badge" class="badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px;">Tier 2</span>
+            </div>
+
+            <div class="control-group" style="margin-bottom: 8px;">
+              <label for="layer-terrain-follow" style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 3px;">Terrain Elevation Mode</label>
+              <select id="layer-terrain-follow" class="form-select" style="font-size: 0.8rem; padding: 4px 8px;">
+                <option value="inherit" id="layer-terrain-follow-inherit-opt">🌐 Inherit Global (Disabled)</option>
+                <option value="enabled">🏔️ Enabled (Follow Terrain)</option>
+                <option value="disabled">Flat Plane (Disabled)</option>
+              </select>
+            </div>
+
+            <div id="layer-terrain-follow-settings-wrapper" style="display: none; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 6px; padding: 8px; margin-top: 6px;">
+              <div class="control-group" style="margin-bottom: 8px;">
+                <div class="control-label">
+                  <span>Target AGL Height</span>
+                  <span class="value-display"><span id="layer-target-agl-val">50</span> <span id="layer-target-agl-unit">m</span></span>
+                </div>
+                <input type="range" id="layer-target-agl" min="10" max="150" value="50" class="slider" aria-label="Target AGL Height">
+                <div style="display: flex; gap: 4px; margin-top: 4px;">
+                  <button type="button" class="preset-pill-btn" data-agl="30" style="font-size: 0.68rem; padding: 1px 6px;">30m</button>
+                  <button type="button" class="preset-pill-btn" data-agl="50" style="font-size: 0.68rem; padding: 1px 6px;">50m</button>
+                  <button type="button" class="preset-pill-btn" data-agl="80" style="font-size: 0.68rem; padding: 1px 6px;">80m</button>
+                  <button type="button" class="preset-pill-btn" data-agl="100" style="font-size: 0.68rem; padding: 1px 6px;">100m</button>
+                </div>
+              </div>
+
+              <div class="control-group" style="margin-bottom: 8px;">
+                <div class="control-label">
+                  <span>Max Climb/Descent Slope</span>
+                  <span class="value-display"><span id="layer-max-slope-val">20</span>°</span>
+                </div>
+                <input type="range" id="layer-max-slope-angle" min="10" max="35" value="20" class="slider" aria-label="Max Climb/Descent Slope">
+                <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.68rem;">Gradient smoothing prevents sudden vertical stair-stepping.</p>
+              </div>
+
+              <div class="control-group" style="margin-bottom: 8px;">
+                <label for="layer-terrain-source" style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 3px;">Elevation Data Source</label>
+                <select id="layer-terrain-source" class="form-select" style="font-size: 0.78rem; padding: 3px 6px;">
+                  <option value="auto">Auto (Bridge Cache / Open-Meteo)</option>
+                  <option value="open-meteo">Open-Meteo Copernicus DEM (Global 30m)</option>
+                  <option value="bridge">Companion Bridge Local Cache</option>
+                  <option value="geotiff">Uploaded Local GeoTIFF DEM</option>
+                </select>
+              </div>
+
+              <div id="layer-dem-upload-container" style="display: none; margin-bottom: 8px; border: 1px dashed rgba(6, 182, 212, 0.35); border-radius: 6px; padding: 8px; text-align: center; background: rgba(6, 182, 212, 0.05);">
+                <label for="layer-dem-file-input" style="font-size: 0.75rem; color: var(--accent-cyan); cursor: pointer; display: block;">
+                  📂 Choose GeoTIFF DEM (.tif / .dem)
+                </label>
+                <input type="file" id="layer-dem-file-input" accept=".tif,.tiff,.dem" style="display: none;">
+                <div id="layer-dem-status-badge" style="font-size: 0.68rem; color: var(--text-muted); margin-top: 4px;">No DEM loaded</div>
+              </div>
+
+              <button type="button" id="open-elevation-profile-btn" class="btn btn-secondary" style="width: 100%; font-size: 0.75rem; padding: 4px 8px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; margin-top: 4px;">
+                📊 View Elevation Cross-Section Profile
+              </button>
+            </div>
+          </div>
           </div> <!-- /layer-card-flight -->
 
           <!-- Card 3: Camera & Gimbal Optics -->
@@ -9785,6 +9881,26 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               </div>
               <p class="help-text" style="margin-top: 3px; margin-bottom: 0;">Global default for routing flights around or over restricted airspace.</p>
             </div>
+                      <!-- Global Terrain Following Default (Tier 1, Issue #129) -->
+            <div class="control-group" id="global-terrain-follow-container" style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px; margin-top: 8px;">
+              <div class="control-label" style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="display: inline-flex; align-items: center; gap: 6px;">
+                  🏔️ Global Terrain Following
+                </span>
+                <label class="switch" style="margin-bottom: 0;">
+                  <input type="checkbox" id="global-terrain-follow">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+              <p class="help-text">When enabled globally, all flight layers dynamically modulate waypoint altitudes to match ground elevation + Target AGL.</p>
+              <div id="global-target-agl-wrapper" style="display: none; margin-top: 6px;">
+                <div class="control-label">
+                  <span>Default Target AGL</span>
+                  <span class="value-display"><span id="global-target-agl-val">50</span> <span id="global-target-agl-unit">m</span></span>
+                </div>
+                <input type="range" id="global-target-agl" min="10" max="150" value="50" class="slider" aria-label="Global Default Target AGL">
+              </div>
+            </div>
           </div> <!-- /global-defaults-subcard -->
 
           <!-- Card 2: Emergency & Safety Failsafes -->
@@ -10163,6 +10279,35 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
     <!-- Main Content Area (Map and Floating Info) -->
     <main class="main-map-container">
       <div id="map"></div>
+
+      <!-- 2D Elevation Profile Drawer (Issue #129) -->
+      <div id="elevation-profile-drawer" class="elevation-profile-drawer hidden" role="region" aria-label="Flight Elevation Profile">
+        <div class="elevation-profile-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: 700; color: var(--accent-cyan); display: inline-flex; align-items: center; gap: 4px;">
+              🏔️ Flight Elevation Cross-Section Profile
+            </span>
+            <span id="elev-profile-relief-badge" class="badge" style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 1px 6px; border-radius: 999px;">Relief: 0m</span>
+            <span id="elev-profile-dist-badge" class="badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px;">Distance: 0m</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span id="elev-profile-stats" style="font-size: 0.7rem; color: var(--text-muted);"></span>
+            <button id="close-elevation-profile-btn" type="button" aria-label="Close Elevation Profile" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; line-height: 1; padding: 2px 4px;">&times;</button>
+          </div>
+        </div>
+        <div style="position: relative; width: 100%; height: 110px; margin-top: 4px;">
+          <canvas id="elevation-profile-canvas" height="110" style="width: 100%; height: 110px; display: block;"></canvas>
+          <div id="elevation-profile-tooltip" style="display: none; position: absolute; pointer-events: none; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--accent-cyan); border-radius: 4px; padding: 4px 8px; font-size: 0.68rem; color: #fff; z-index: 10; white-space: nowrap;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; padding: 0 4px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 3px; background: #10b981; border-radius: 2px;"></span> Ground Surface (MSL)</span>
+            <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 3px; background: #06b6d4; border-radius: 2px;"></span> Flight Altitude (MSL)</span>
+            <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 1px; border-top: 1px dashed #f59e0b;"></span> Target AGL Clearance</span>
+          </div>
+          <div>Hover along profile to inspect waypoint altitude &amp; terrain gradient</div>
+        </div>
+      </div>
 
       <!-- Floating 2D Flight Replay HUD & Scrubber Bar (Issue #123) -->
       <div id="replay-2d-bar" class="replay-2d-bar hidden" role="region" aria-label="2D Flight Replay Controls">
@@ -11337,6 +11482,23 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(192, 132, 252, 0.08); border: 1px solid rgba(192, 132, 252, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #c084fc; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🤖 AI 3D Reconstruction Architecture (v1.186.0) (Closes #96)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Transform sparse drone photos into complete 3D digital twins right inside your browser! Companion Bridge acts as an intelligent AI gateway featuring dual-engine pipelines (secure Cloud API streaming and offline local ONNX/geometry synthesis), automatic orthogonal multi-view facade ingestion (N, S, E, W), live static GLB/OBJ streaming with active HUD progress tracking, real-time opacity controls, and seamless KMZ mission package bundling.
+            </p>
+          </div>
+          
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🏔️ Terrain Following &amp; DEM-Aware Grid (v1.186.0) (Closes #129)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Fly constant Above Ground Level (AGL) and achieve perfectly uniform Ground Sampling Distance (GSD) across hilly topography, open-pit quarries, and undulating valleys! Features global Copernicus 30m DEM sampling, client-side GeoTIFF uploads, automated climb/descent slope gradient smoothing (&le; 20&deg;), 2D cross-section elevation profiling, and Three.js 3D terrain relief visualization.
+            </p>
+          </div>
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🟢 Dynamic Live Stream Dropdown &amp; Zero-Latency Ingest (v1.184.0)
@@ -13463,7 +13625,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.184.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.186.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -13523,9 +13685,83 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           </div>
         </div>
 
+        
+        <!-- Third-Party Credits & Open Source Libraries -->
+        <div id="about-credits-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; margin-top: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <strong style="color: var(--accent-cyan); font-size: 0.82rem; display: flex; align-items: center; gap: 6px;">
+              <span>🏛️</span> Third-Party Credits &amp; Open-Source Licenses
+            </strong>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">See CREDITS.md</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.74rem; line-height: 1.35;">
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 6px 8px;">
+              <strong style="color: var(--text-main); display: block;">Leaflet (v1.9.4)</strong>
+              <span style="color: var(--text-muted);">BSD 2-Clause &copy; Vladimir Agafonkin &amp; CloudMade. Interactive 2D mapping engine.</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 6px 8px;">
+              <strong style="color: var(--text-main); display: block;">Three.js (r128)</strong>
+              <span style="color: var(--text-muted);">MIT License &copy; Ricardo Cabello (mrdoob). 3D Digital Twin, FPV Cockpit, and FOV cones.</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 6px 8px;">
+              <strong style="color: var(--text-main); display: block;">Esri Leaflet (v3.0.12)</strong>
+              <span style="color: var(--text-muted);">Apache-2.0 &copy; Esri. Consuming FAA ArcGIS REST FeatureServer airspace layers.</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 6px 8px;">
+              <strong style="color: var(--text-main); display: block;">JSZip (v3.10.1)</strong>
+              <span style="color: var(--text-muted);">MIT License &copy; Stuart Knightley et al. In-browser KMZ and zip package creation.</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 6px 8px;">
+              <strong style="color: var(--text-main); display: block;">OpenStreetMap &amp; OpenTopoMap</strong>
+              <span style="color: var(--text-muted);">ODbL &copy; OpenStreetMap contributors; CC-BY-SA 3.0 &copy; OpenTopoMap &amp; SRTM.</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 6px 8px;">
+              <strong style="color: var(--text-main); display: block;">FAA, NOAA/NWS, NASA &amp; HIFLD</strong>
+              <span style="color: var(--text-muted);">U.S. Public Domain &amp; Open Data: VFR Sectionals, NEXRAD radar, GOES IR &amp; VIIRS lights.</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 6px 8px;">
+              <strong style="color: var(--text-main); display: block;">Open-Meteo &amp; Project OSRM</strong>
+              <span style="color: var(--text-muted);">CC-BY 4.0 Elevation API; BSD 2-Clause road-following snapping and driving routing.</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 6px 8px;">
+              <strong style="color: var(--text-main); display: block;">Google Fonts: Outfit &amp; Jakarta</strong>
+              <span style="color: var(--text-muted);">SIL Open Font License 1.1 by On caps, Rodrigo Fuenzalida, and Tokotype.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trademark Legal Disclaimers ("The Legalize") -->
+        <div id="about-trademarks-section" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 12px 14px; margin-top: 8px;">
+          <strong style="color: #38bdf8; font-size: 0.82rem; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <span>⚖️</span> Trademark Notices &amp; Legal Disclaimers ("The Legalize")
+          </strong>
+          <p style="margin: 0 0 6px 0; font-size: 0.73rem; line-height: 1.4; color: var(--text-muted);">
+            <strong>DJI:</strong> <em>DJI, DJI Fly, DJI Pilot, DJI RC, DJI RC 2, DJI RC Pro, Mini 4 Pro, Air 3, Mavic, Inspire, Matrice, and WPML (Waypoint Markup Language)</em> are trademarks or registered trademarks of <strong>SZ DJI Technology Co., Ltd.</strong> Aalaapi Sky is an independent third-party flight planning tool and is <strong>NOT affiliated with, authorized by, sponsored by, or endorsed by SZ DJI Technology Co., Ltd.</strong>
+          </p>
+          <p style="margin: 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-muted);">
+            <strong>Other Marks:</strong> <em>Google, Google Earth, Google Maps, KML, GPano, Android</em> (Google LLC); <em>Esri, ArcGIS, ArcGIS Online</em> (Environmental Systems Research Institute, Inc.); <em>OpenStreetMap</em> (OpenStreetMap Foundation); <em>Apple, iPad, iPhone, macOS</em> (Apple Inc.); <em>Node-RED</em> (OpenJS Foundation); <em>WebGL</em> (Khronos Group Inc.). All other trademarks belong to their respective holders and are used strictly for compatibility identification.
+          </p>
+        </div>
+
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
-                        <li style="margin-bottom: 8px;">
+                                    <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.186.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li>Terrain Following (DEM-Aware Grid for Constant AGL &amp; GSD): Added dynamic client-side digital elevation model sampling and slope gradient smoothing engine. Supports Open-Meteo Global Copernicus 30m DEM, local Companion Bridge caching proxy, and client-side GeoTIFF DEM file parsing (Closes #129).</li>
+                <li>2D Cross-Section Elevation Profile Drawer: Added interactive collapsible elevation profile beneath flight path charting terrain relief, dynamic flight altitude, and ground clearance tethers.</li>
+                <li>3D FPV HUD Terrain Relief Surface: Displaces 3D ground plane vertices in Three.js FPV HUD to authentically model contoured topography and undulating flight lines.</li>
+                <li>Three-Tier Altitude Cascade &amp; WPML Preservation: Configured layer target AGL and global defaults with per-waypoint altitude overrides preserved in DJI WPML mission export.</li>
+              </ul>
+            </li>
+            <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.185.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li>Third-Party Credits &amp; Attribution: Added comprehensive attribution cards in the About modal and created repository CREDITS.md acknowledging Leaflet, Three.js, Esri Leaflet, JSZip, Google Fonts, and open geospatial/weather feeds (Closes #156).</li>
+                <li>Trademark Legal Disclaimers: Formulated formal trademark disclaimers and non-affiliation legal notices covering DJI, Google, Esri, OpenStreetMap, Apple, and OpenJS Foundation.</li>
+              </ul>
+            </li>
+<li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.184.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li>Dynamic Live Stream Source Dropdown: Live Video Cast source dropdown dynamically lists active RTMP streams with publisher IPs and green indicator, auto-switches from test pattern, and injects multi-drone stream options (Closes #155).</li>
@@ -17657,6 +17893,8 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               <span id="diag-indicator-noise" class="diag-indicator active"></span>
               <button id="diag-btn-toggle-drones" class="btn-secondary"><span>✈</span> 3D Drones</button>
               <span id="diag-indicator-drones" class="diag-indicator"></span>
+              <button id="diag-btn-toggle-mesh" class="btn-secondary active" title="Toggle AI 3D Reconstructed Solid Building Mesh"><span>🤖</span> AI Mesh</button>
+              <span id="diag-indicator-mesh" class="diag-indicator active"></span>
               <button id="diag-btn-toggle-wireframe" class="btn-secondary active" title="Toggle 3D Architectural Wireframe Extrusion"><span>🏗️</span> Wireframe</button>
               <span id="diag-indicator-wireframe" class="diag-indicator active"></span>
               <button id="diag-btn-fpv" class="btn-secondary"><span>📡</span> FPV Mode</button>
@@ -17703,6 +17941,38 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                   <button id="diag-btn-toggle-planes" class="btn-secondary" style="flex: 1.1; padding: 4px 6px; font-size: 0.68rem; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" title="Toggle visualization of fitted 3D plane facets">📐 Planes</button>
                   <button id="diag-wireframe-save-btn" class="btn-secondary" style="flex: 1.3; padding: 4px 6px; font-size: 0.68rem; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.08);" title="Make wireframe part of the inspection deliverable package">📦 Save to Package</button>
                   <button id="diag-wireframe-threejs-btn" class="btn-secondary" style="flex: 1.1; padding: 4px 6px; font-size: 0.68rem; color: #a78bfa; border-color: rgba(167, 139, 250, 0.4); background: rgba(167, 139, 250, 0.08);" title="Export for Three.js Editor (threejs.org/editor)">🎨 Three.js</button>
+                </div>
+                <!-- AI 3D Reconstruction Toolkit Card -->
+                <div style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 8px; padding-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-weight: 700; color: #c084fc; display: flex; align-items: center; gap: 4px; font-size: 0.7rem;">
+                      <span>🤖 AI 3D Mesh Reconstruction</span>
+                    </span>
+                    <select id="diag-ai-mesh-engine-select" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(192,132,252,0.3); border-radius: 4px; color: #c084fc; font-size: 0.65rem; padding: 1px 4px;">
+                      <option value="auto">Auto Engine</option>
+                      <option value="local">Local Engine</option>
+                      <option value="cloud">Cloud API</option>
+                    </select>
+                  </div>
+                  <button id="diag-btn-generate-ai-mesh" class="btn-secondary" style="width: 100%; padding: 5px 8px; font-size: 0.72rem; font-weight: 600; color: #c084fc; border-color: rgba(192, 132, 252, 0.4); background: rgba(192, 132, 252, 0.1);" title="Trigger Bridge-Hosted AI 3D Reconstruction from multi-view drone photos">
+                    ⚡ Reconstruct AI 3D Mesh
+                  </button>
+                  <div id="diag-ai-mesh-progress-card" style="display: none; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; border: 1px solid rgba(192, 132, 252, 0.2);">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.65rem;">
+                      <span id="diag-ai-mesh-status-text" style="color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px;">Reconstructing...</span>
+                      <span id="diag-ai-mesh-progress-pct" style="color: #c084fc; font-weight: 700;">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                      <div id="diag-ai-mesh-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #9333ea, #38bdf8); transition: width 0.3s ease;"></div>
+                    </div>
+                  </div>
+                  <div id="diag-ai-mesh-controls-card" style="display: none; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted);">
+                      <span>Mesh Opacity:</span>
+                      <span id="diag-ai-mesh-opacity-val" style="color: #38bdf8; font-family: monospace;">90%</span>
+                    </div>
+                    <input id="diag-ai-mesh-opacity-slider" type="range" min="10" max="100" value="90" step="5" style="width: 100%; accent-color: #38bdf8; cursor: pointer;" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -18003,6 +18273,9 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
           <div style="display: flex; align-items: center; gap: 8px;">
             <span id="diag-photos-summary-text" style="font-size: 0.72rem; color: var(--text-muted);">0 Photos</span>
+            <button id="diag-btn-ai-mesh-gallery" type="button" class="btn-secondary diag-photos-btn" style="padding: 5px 10px; font-size: 0.75rem; border-color: rgba(192, 132, 252, 0.4); color: #c084fc; background: rgba(192, 132, 252, 0.1);" title="Run AI 3D Reconstruction from orthogonal photos">
+              <span>🤖</span> AI 3D Assist
+            </button>
             <button id="diag-btn-extract-wireframe" type="button" class="btn-secondary diag-photos-btn" style="padding: 5px 10px; font-size: 0.75rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; background: rgba(56, 189, 248, 0.1);" title="Run OpenCV edge extraction and project 3D wireframe">
               <span>🏗️</span> Project 3D Wireframe
             </button>
@@ -24053,6 +24326,11 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     roadOffset: 15,
     roadSnap: true,
     roadFocusMode: 'focusRoad',
+    terrainFollow: 'inherit',
+    targetAgl: 'inherit',
+    terrainSource: 'auto',
+    maxSlopeAngle: 20,
+    elevationData: null,
     targetPoly: [],
     targetMode: 'radius', // 'polygon' or 'radius'
     targetRadius: 25,
@@ -24209,6 +24487,27 @@ function getEffectiveLayerHoverTime(layer) {
   }
   const globalEl = typeof document !== 'undefined' ? document.getElementById('global-hover-time') : null;
   return globalEl ? (parseInt(globalEl.value, 10) || 0) : 0;
+}
+
+function getEffectiveLayerTerrainFollow(layer) {
+  if (layer && layer.terrainFollow !== undefined && layer.terrainFollow !== null && layer.terrainFollow !== 'inherit') {
+    return layer.terrainFollow === 'enabled' || layer.terrainFollow === true;
+  }
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('global-terrain-follow') : null;
+  return globalEl ? globalEl.checked : false;
+}
+
+function getEffectiveLayerTargetAgl(layer) {
+  if (layer && layer.targetAgl !== undefined && layer.targetAgl !== null && layer.targetAgl !== 'inherit') {
+    const parsed = parseFloat(layer.targetAgl);
+    if (!isNaN(parsed)) return parsed;
+  }
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('global-target-agl') : null;
+  if (globalEl && !isNaN(parseFloat(globalEl.value))) {
+    return parseFloat(globalEl.value);
+  }
+  const altEl = typeof document !== 'undefined' ? document.getElementById('altitude') : null;
+  return altEl ? (parseFloat(altEl.value) || 50) : 50;
 }
 
 // Safely parse gimbal pitch angles preserving 0° horizontal camera tilt without falsy-zero fallback bugs
@@ -24413,8 +24712,10 @@ function updateLayerHierarchyBadge() {
   const hoverMode = document.getElementById('layer-hover-time-mode')?.value;
   const hoverVal = hoverMode ? (hoverMode === 'custom' ? 'custom' : 'inherit') : ((layer.hoverTime !== 'inherit' && layer.hoverTime !== undefined && layer.hoverTime !== null) ? 'custom' : 'inherit');
   const detourMode = document.getElementById('exclusion-detour-mode')?.value || layer.detourMode || 'inherit';
+  const tfVal = document.getElementById('layer-terrain-follow')?.value || layer.terrainFollow || 'inherit';
 
   const overrides = [];
+  if (tfVal !== 'inherit') overrides.push('Terrain Following');
   if (headingMode !== 'inherit') overrides.push('Heading');
   if (pathMode !== 'inherit') overrides.push('Path Type');
   if (captureMode !== 'inherit') overrides.push('Capture Mode');
@@ -24444,6 +24745,12 @@ function updateInheritOptionLabels() {
   const globalPathModeEl = document.getElementById('path-mode');
   const globalHeadingModeEl = document.getElementById('heading-mode');
   const globalHoverTimeEl = document.getElementById('global-hover-time');
+
+  const tfOpt = document.getElementById('layer-terrain-follow-inherit-opt');
+  const globalTfEl = document.getElementById('global-terrain-follow');
+  if (tfOpt && globalTfEl) {
+    tfOpt.textContent = `🌐 Inherit Global (${globalTfEl.checked ? 'Enabled' : 'Disabled'})`;
+  }
 
   const captureOpt = document.getElementById('layer-capture-mode-inherit-opt');
   if (captureOpt && globalCaptureModeEl) {
@@ -24628,6 +24935,21 @@ function saveActiveLayerFromUi(targetLayer) {
   if (sideOverlapEl) layer.sideOverlap = parseFloat(sideOverlapEl.value) || 75;
   if (altitudeEl) layer.altitude = parseFloat(altitudeEl.value) || 50;
   if (speedEl) layer.speed = parseFloat(speedEl.value) || 4;
+
+  const layerTfEl = document.getElementById('layer-terrain-follow');
+  if (layerTfEl) layer.terrainFollow = layerTfEl.value;
+
+  const layerTargetAglEl = document.getElementById('layer-target-agl');
+  if (layerTargetAglEl) {
+    const val = layerTargetAglEl.value;
+    layer.targetAgl = (val === 'inherit' || val === '') ? 'inherit' : (parseFloat(val) || 50);
+  }
+
+  const layerTfSourceEl = document.getElementById('layer-terrain-source');
+  if (layerTfSourceEl) layer.terrainSource = layerTfSourceEl.value;
+
+  const layerMaxSlopeEl = document.getElementById('layer-max-slope-angle');
+  if (layerMaxSlopeEl) layer.maxSlopeAngle = parseInt(layerMaxSlopeEl.value, 10) || 20;
   if (gimbalPitchEl) layer.gimbalPitch = parseGimbalPitch(gimbalPitchEl.value, -60);
 
   if (layerCaptureModeEl && layerCaptureModeEl.value) {
@@ -24918,6 +25240,21 @@ function syncUiWithActiveLayer() {
   setVal('altitude', layer.altitude);
   setVal('speed', layer.speed);
   setVal('gimbal-pitch', layer.gimbalPitch);
+
+  setVal('layer-terrain-follow', layer.terrainFollow || 'inherit');
+  setVal('layer-target-agl', layer.targetAgl !== undefined ? layer.targetAgl : 'inherit');
+  setVal('layer-terrain-source', layer.terrainSource || 'auto');
+  setVal('layer-max-slope-angle', layer.maxSlopeAngle !== undefined ? layer.maxSlopeAngle : 20);
+
+  const tfSettingsWrapper = document.getElementById('layer-terrain-follow-settings-wrapper');
+  if (tfSettingsWrapper) {
+    const isTfActive = getEffectiveLayerTerrainFollow(layer);
+    tfSettingsWrapper.style.display = isTfActive ? 'block' : 'none';
+  }
+  const demUploadWrapper = document.getElementById('layer-dem-upload-container');
+  if (demUploadWrapper) {
+    demUploadWrapper.style.display = (layer.terrainSource === 'geotiff') ? 'block' : 'none';
+  }
 
   // Section 2 Layer Controls
   setVal('layer-capture-mode', layer.captureMode || 'inherit');
@@ -26612,6 +26949,29 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     });
   }
 
+  const isTerrainFollow = (typeof getEffectiveLayerTerrainFollow === 'function')
+    ? getEffectiveLayerTerrainFollow(layer)
+    : false;
+
+  if (isTerrainFollow && typeof elevationServiceInstance !== 'undefined' && elevationServiceInstance.applyTerrainFollowingSync) {
+    const targetAgl = (typeof getEffectiveLayerTargetAgl === 'function')
+      ? getEffectiveLayerTargetAgl(layer)
+      : (typeof layer.altitude === 'number' ? layer.altitude : 50);
+    const maxSlope = layer.maxSlopeAngle !== undefined ? layer.maxSlopeAngle : 20;
+
+    waypoints = elevationServiceInstance.applyTerrainFollowingSync(waypoints, {
+      targetAgl,
+      maxSlopeAngle: maxSlope,
+      elevations: layer.elevationData
+    });
+
+    if (!layer.elevationData && elevationServiceInstance.hasMissingElevations(waypoints)) {
+      if (typeof refreshLayerElevationsAsync === 'function') {
+        refreshLayerElevationsAsync(layer.id);
+      }
+    }
+  }
+
   waypoints.forEach((wp, wIdx) => {
     wp.layerId = layer.id;
     wp.layerName = layer.name;
@@ -27243,6 +27603,39 @@ if (typeof global !== 'undefined') {
   global.handleFlightSpeedChange = handleFlightSpeedChange;
 }
 
+
+
+let isRefreshingLayerElevations = false;
+async function refreshLayerElevationsAsync(layerId) {
+  if (isRefreshingLayerElevations) return;
+  const layersList = (typeof flightLayers !== 'undefined') ? flightLayers : null;
+  const layer = layersList ? layersList.find(l => l.id === layerId) : null;
+  if (!layer || !layer.waypoints || layer.waypoints.length === 0) return;
+  isRefreshingLayerElevations = true;
+  try {
+    const coords = layer.waypoints.map(wp => ({ lat: wp.lat, lon: wp.lon }));
+    const elevations = await elevationServiceInstance.fetchElevations(coords, { source: layer.terrainSource || 'auto' });
+    layer.elevationData = elevations;
+    const targetAgl = getEffectiveLayerTargetAgl(layer);
+    layer.waypoints = elevationServiceInstance.applyTerrainFollowingSync(layer.waypoints, {
+      targetAgl,
+      maxSlopeAngle: layer.maxSlopeAngle || 20,
+      elevations
+    });
+    if (typeof updateElevationProfileUi === 'function') {
+      updateElevationProfileUi();
+    }
+    if (typeof redrawCurrentMission === 'function') {
+      redrawCurrentMission();
+    }
+  } catch (err) {
+    if (typeof Logger !== 'undefined' && Logger.warn) {
+      Logger.warn('Background terrain elevation fetch error:', err);
+    }
+  } finally {
+    isRefreshingLayerElevations = false;
+  }
+}
 // -------------------- src/map/MapEngine.js --------------------
 function getCurrentWaypoints() {
   return importedWaypoints || generatedWaypoints;
@@ -32847,6 +33240,180 @@ function initUIEventListeners() {
   // Setup Draggable Modals across all overlays (v1.180.0)
   if (typeof initAllModalsDraggable === 'function') {
     initAllModalsDraggable();
+  }
+
+  // Setup Terrain Following & Elevation Profile Listeners (Issue #129)
+  initTerrainFollowListeners();
+}
+
+function initTerrainFollowListeners() {
+  const layerTfSelect = document.getElementById('layer-terrain-follow');
+  const layerTargetAglInput = document.getElementById('layer-target-agl');
+  const layerTargetAglVal = document.getElementById('layer-target-agl-val');
+  const layerMaxSlopeInput = document.getElementById('layer-max-slope-angle');
+  const layerMaxSlopeVal = document.getElementById('layer-max-slope-val');
+  const layerTfSourceSelect = document.getElementById('layer-terrain-source');
+  const tfSettingsWrapper = document.getElementById('layer-terrain-follow-settings-wrapper');
+  const demUploadWrapper = document.getElementById('layer-dem-upload-container');
+  const demFileInput = document.getElementById('layer-dem-file-input');
+  const demStatusBadge = document.getElementById('layer-dem-status-badge');
+
+  const globalTfToggle = document.getElementById('global-terrain-follow');
+  const globalTargetAglWrapper = document.getElementById('global-target-agl-wrapper');
+  const globalTargetAglInput = document.getElementById('global-target-agl');
+  const globalTargetAglVal = document.getElementById('global-target-agl-val');
+
+  const openProfileBtn = document.getElementById('open-elevation-profile-btn');
+  const closeProfileBtn = document.getElementById('close-elevation-profile-btn');
+  const profileDrawer = document.getElementById('elevation-profile-drawer');
+
+  if (layerTfSelect) {
+    layerTfSelect.addEventListener('change', () => {
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer) {
+        layer.terrainFollow = layerTfSelect.value;
+        const isTfActive = (typeof getEffectiveLayerTerrainFollow === 'function')
+          ? getEffectiveLayerTerrainFollow(layer)
+          : false;
+        if (tfSettingsWrapper) {
+          tfSettingsWrapper.style.display = isTfActive ? 'block' : 'none';
+        }
+        if (typeof updateLayerHierarchyBadge === 'function') updateLayerHierarchyBadge();
+        if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+        if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+      }
+    });
+  }
+
+  if (layerTargetAglInput) {
+    layerTargetAglInput.addEventListener('input', () => {
+      const val = parseFloat(layerTargetAglInput.value) || 50;
+      if (layerTargetAglVal) layerTargetAglVal.textContent = Math.round(val);
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer) {
+        layer.targetAgl = val;
+        if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+        if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+      }
+    });
+  }
+
+  if (typeof document !== 'undefined') {
+    document.querySelectorAll('.preset-pill-btn[data-agl]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const agl = parseFloat(btn.getAttribute('data-agl'));
+        if (layerTargetAglInput && !isNaN(agl)) {
+          layerTargetAglInput.value = agl;
+          if (layerTargetAglVal) layerTargetAglVal.textContent = Math.round(agl);
+          const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+          if (layer) {
+            layer.targetAgl = agl;
+            if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+            if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+          }
+        }
+      });
+    });
+  }
+
+  if (layerMaxSlopeInput) {
+    layerMaxSlopeInput.addEventListener('input', () => {
+      const val = parseInt(layerMaxSlopeInput.value, 10) || 20;
+      if (layerMaxSlopeVal) layerMaxSlopeVal.textContent = val;
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer) {
+        layer.maxSlopeAngle = val;
+        if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+        if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+      }
+    });
+  }
+
+  if (layerTfSourceSelect) {
+    layerTfSourceSelect.addEventListener('change', () => {
+      const src = layerTfSourceSelect.value;
+      if (demUploadWrapper) {
+        demUploadWrapper.style.display = (src === 'geotiff') ? 'block' : 'none';
+      }
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer) {
+        layer.terrainSource = src;
+        layer.elevationData = null;
+        if (typeof refreshLayerElevationsAsync === 'function') {
+          refreshLayerElevationsAsync(layer.id);
+        } else if (typeof redrawCurrentMission === 'function') {
+          redrawCurrentMission();
+        }
+      }
+    });
+  }
+
+  if (demFileInput) {
+    demFileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          if (typeof elevationServiceInstance !== 'undefined') {
+            const dem = elevationServiceInstance.parseGeoTiff(event.target.result);
+            if (demStatusBadge) {
+              demStatusBadge.textContent = '✓ Loaded: ' + dem.width + '×' + dem.height + ' (' + Math.round(dem.minElev) + 'm–' + Math.round(dem.maxElev) + 'm MSL)';
+              demStatusBadge.style.color = 'var(--accent-green, #10b981)';
+            }
+            const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+            if (layer) {
+              layer.elevationData = null;
+              if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+              if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+            }
+          }
+        } catch (err) {
+          if (demStatusBadge) {
+            demStatusBadge.textContent = '⚠️ Error parsing DEM: ' + err.message;
+            demStatusBadge.style.color = '#ef4444';
+          }
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  if (globalTfToggle) {
+    globalTfToggle.addEventListener('change', () => {
+      const isGlobalOn = globalTfToggle.checked;
+      if (globalTargetAglWrapper) {
+        globalTargetAglWrapper.style.display = isGlobalOn ? 'block' : 'none';
+      }
+      if (typeof updateInheritOptionLabels === 'function') updateInheritOptionLabels();
+      if (typeof updateLayerHierarchyBadge === 'function') updateLayerHierarchyBadge();
+      if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+      if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+    });
+  }
+
+  if (globalTargetAglInput) {
+    globalTargetAglInput.addEventListener('input', () => {
+      const val = parseFloat(globalTargetAglInput.value) || 50;
+      if (globalTargetAglVal) globalTargetAglVal.textContent = Math.round(val);
+      if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+      if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+    });
+  }
+
+  if (openProfileBtn && profileDrawer) {
+    openProfileBtn.addEventListener('click', () => {
+      profileDrawer.classList.toggle('hidden');
+      if (!profileDrawer.classList.contains('hidden') && typeof updateElevationProfileUi === 'function') {
+        updateElevationProfileUi();
+      }
+    });
+  }
+  if (closeProfileBtn && profileDrawer) {
+    closeProfileBtn.addEventListener('click', () => {
+      profileDrawer.classList.add('hidden');
+    });
   }
 }
 
@@ -43546,6 +44113,831 @@ if (typeof window !== 'undefined') {
   window.set2DAcousticOverlayEnabled = set2DAcousticOverlayEnabled;
 }
 
+// -------------------- src/geo/ElevationService.js --------------------
+/**
+ * src/geo/ElevationService.js
+ *
+ * Dynamic Digital Elevation Model (DEM) and Terrain Following Engine for Aalaapi Sky.
+ * Implements:
+ * - Client-side batch coordinate elevation sampling via Open-Meteo Global Copernicus DEM
+ * - Local Companion Bridge tile/elevation caching proxy integration
+ * - Pure JavaScript GeoTIFF DEM parser with bilinear interpolation
+ * - Two-pass slope gradient smoother ensuring vertical climbs/descents <= 20°
+ * - 2D cross-section elevation profiling (ground vs. flight path)
+ * - Three-tier cascade resolution (Layer Target AGL -> Global Default AGL -> Waypoint Override)
+ */
+
+class ElevationService {
+  constructor() {
+    this.cache = new Map(); // "lat,lon" -> elevationMeters
+    this.cachedDem = null;   // Active parsed GeoTIFF DEM object
+    this.bridgeUrl = 'http://127.0.0.1:8765';
+    this.isBridgeAvailable = null;
+  }
+
+  /**
+   * Check if companion bridge is running locally
+   */
+  async checkBridgeHealth() {
+    if (typeof fetch === 'undefined') return false;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 800);
+      const res = await fetch(`${this.bridgeUrl}/api/status`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      this.isBridgeAvailable = res.ok;
+      return res.ok;
+    } catch (e) {
+      this.isBridgeAvailable = false;
+      return false;
+    }
+  }
+
+  /**
+   * Format coordinate key for cache
+   */
+  coordKey(lat, lon) {
+    return `${Number(lat).toFixed(6)},${Number(lon).toFixed(6)}`;
+  }
+
+  /**
+   * Fetch surface elevations for an array of coordinates.
+   * Uses in-memory cache, Companion Bridge caching proxy, or direct Open-Meteo API.
+   *
+   * @param {Array<{lat: number, lon: number}>} coordinates
+   * @param {Object} [options]
+   * @param {string} [options.source='auto'] 'auto' | 'open-meteo' | 'bridge' | 'geotiff'
+   * @returns {Promise<number[]>} Array of elevation numbers in meters MSL
+   */
+  async fetchElevations(coordinates, options = {}) {
+    if (!Array.isArray(coordinates) || coordinates.length === 0) return [];
+    const source = options.source || 'auto';
+
+    // 1. If GeoTIFF DEM is loaded and selected or auto-active, sample locally
+    if ((source === 'geotiff' || (source === 'auto' && this.cachedDem)) && this.cachedDem) {
+      return coordinates.map(coord => {
+        const val = this.cachedDem.sampleAt(coord.lat, coord.lon);
+        return typeof val === 'number' && !isNaN(val) ? val : 0;
+      });
+    }
+
+    // 2. Check in-memory cache for coordinates
+    const results = new Array(coordinates.length);
+    const missingIndices = [];
+    const missingCoords = [];
+
+    coordinates.forEach((c, idx) => {
+      const key = this.coordKey(c.lat, c.lon);
+      if (this.cache.has(key)) {
+        results[idx] = this.cache.get(key);
+      } else {
+        missingIndices.push(idx);
+        missingCoords.push(c);
+      }
+    });
+
+    if (missingCoords.length === 0) {
+      return results;
+    }
+
+    // 3. Batch query missing coordinates in chunks of up to 100 (Open-Meteo max per request)
+    const BATCH_SIZE = 100;
+    const fetchedElevations = [];
+
+    for (let i = 0; i < missingCoords.length; i += BATCH_SIZE) {
+      const chunk = missingCoords.slice(i, i + BATCH_SIZE);
+      const chunkElevations = await this._queryElevationBatch(chunk, options);
+      fetchedElevations.push(...chunkElevations);
+    }
+
+    // Populate results and cache
+    missingIndices.forEach((origIdx, i) => {
+      const elev = (typeof fetchedElevations[i] === 'number' && !isNaN(fetchedElevations[i]))
+        ? fetchedElevations[i]
+        : 0;
+      results[origIdx] = elev;
+      const c = coordinates[origIdx];
+      this.cache.set(this.coordKey(c.lat, c.lon), elev);
+    });
+
+    return results;
+  }
+
+  /**
+   * Synchronously sample surface elevations for an array of coordinates from
+   * in-memory cache or active GeoTIFF DEM. Returns 0 for uncached coordinates.
+   *
+   * @param {Array<{lat: number, lon: number}>} coordinates
+   * @returns {number[]} Array of elevation numbers in meters MSL
+   */
+  sampleElevationsSync(coordinates) {
+    if (!Array.isArray(coordinates)) return [];
+    return coordinates.map(c => {
+      if (this.cachedDem) {
+        const v = this.cachedDem.sampleAt(c.lat, c.lon);
+        if (typeof v === 'number' && !isNaN(v)) return v;
+      }
+      const key = this.coordKey(c.lat, c.lon);
+      if (this.cache.has(key)) {
+        return this.cache.get(key);
+      }
+      return 0;
+    });
+  }
+
+  /**
+   * Check if any coordinates in the list are missing from the cache
+   */
+  hasMissingElevations(coordinates) {
+    if (!Array.isArray(coordinates) || coordinates.length === 0) return false;
+    if (this.cachedDem) return false;
+    return coordinates.some(c => !this.cache.has(this.coordKey(c.lat, c.lon)));
+  }
+
+  /**
+   * Synchronously apply terrain-following elevation adjustment and slope smoothing.
+   * Follows the 3-tier cascade: Layer Target AGL -> Global Default AGL -> Waypoint Override.
+   *
+   * @param {Array<Object>} waypoints
+   * @param {Object} [options]
+   * @returns {Array<Object>}
+   */
+  applyTerrainFollowingSync(waypoints, options = {}) {
+    if (!Array.isArray(waypoints) || waypoints.length === 0) return waypoints;
+
+    const targetAgl = typeof options.targetAgl === 'number' ? options.targetAgl : 50;
+    const maxSlopeAngle = typeof options.maxSlopeAngle === 'number' ? options.maxSlopeAngle : 20;
+
+    const coords = waypoints.map(wp => ({ lat: wp.lat, lon: wp.lon }));
+    const elevations = (options && Array.isArray(options.elevations))
+      ? options.elevations
+      : this.sampleElevationsSync(coords);
+
+    const initializedWps = waypoints.map((wp, idx) => {
+      const surfaceElev = elevations[idx] || 0;
+      const hasWpOverride = wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit';
+      const agl = hasWpOverride ? (wp.alt - surfaceElev) : targetAgl;
+
+      return {
+        ...wp,
+        surfaceElevation: surfaceElev,
+        agl: agl,
+        alt: hasWpOverride ? wp.alt : (surfaceElev + agl),
+        isTerrainFollow: true
+      };
+    });
+
+    return this.smoothAltitudes(initializedWps, maxSlopeAngle);
+  }
+
+  /**
+   * Internal batch query handler (routes via Bridge or Open-Meteo)
+   */
+  async _queryElevationBatch(chunk, options = {}) {
+    if (typeof fetch === 'undefined') {
+      return chunk.map(() => 0);
+    }
+
+    const lats = chunk.map(c => Number(c.lat).toFixed(6)).join(',');
+    const lons = chunk.map(c => Number(c.lon).toFixed(6)).join(',');
+
+    const openMeteoUrl = `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`;
+
+    // Try Companion Bridge first if not explicitly disabled
+    const useBridge = options.source !== 'open-meteo' && this.isBridgeAvailable !== false;
+    if (useBridge) {
+      try {
+        const proxyUrl = `${this.bridgeUrl}/api/elevation?latitude=${lats}&longitude=${lons}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.elevation)) {
+            this.isBridgeAvailable = true;
+            return data.elevation;
+          }
+        }
+      } catch (err) {
+        // Bridge failed or timed out, fallback to direct Open-Meteo
+        this.isBridgeAvailable = false;
+      }
+    }
+
+    // Direct Open-Meteo query
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch(openMeteoUrl, { credentials: 'omit', signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!res.ok) {
+        throw new Error(`Elevation API HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (Array.isArray(data.elevation)) {
+        return data.elevation;
+      }
+      if (typeof data.elevation === 'number') {
+        return [data.elevation];
+      }
+    } catch (err) {
+      if (typeof Logger !== 'undefined' && Logger.warn) {
+        Logger.warn('Elevation lookup failed, defaulting to 0 MSL:', err.message);
+      }
+    }
+
+    return chunk.map(() => 0);
+  }
+
+  /**
+   * Pure JavaScript GeoTIFF DEM parser for single-band Float32 / Int16 elevation rasters.
+   * Supports standard TIFF 6.0 uncompressed rasters with ModelTiepointTag and ModelPixelScaleTag.
+   *
+   * @param {ArrayBuffer} arrayBuffer
+   * @returns {Object} Parsed DEM object
+   */
+  parseGeoTiff(arrayBuffer) {
+    if (!arrayBuffer || !(arrayBuffer instanceof ArrayBuffer)) {
+      throw new Error('Invalid GeoTIFF input: expected ArrayBuffer');
+    }
+
+    const dataView = new DataView(arrayBuffer);
+    if (arrayBuffer.byteLength < 8) {
+      throw new Error('File too small to be a valid TIFF');
+    }
+
+    // 1. Determine Endianness
+    const byteOrder = dataView.getUint16(0, false);
+    let littleEndian;
+    if (byteOrder === 0x4949) {
+      littleEndian = true; // "II" Intel
+    } else if (byteOrder === 0x4D4D) {
+      littleEndian = false; // "MM" Motorola
+    } else {
+      throw new Error('Invalid TIFF header: unknown byte order');
+    }
+
+    // Check magic number 42
+    const magic = dataView.getUint16(2, littleEndian);
+    if (magic !== 42) {
+      throw new Error(`Invalid TIFF magic number: ${magic}`);
+    }
+
+    // Read first IFD offset
+    const firstIfdOffset = dataView.getUint32(4, littleEndian);
+    if (firstIfdOffset >= arrayBuffer.byteLength) {
+      throw new Error('Corrupt TIFF: IFD offset out of bounds');
+    }
+
+    const numEntries = dataView.getUint16(firstIfdOffset, littleEndian);
+    const tags = {};
+
+    let entryOffset = firstIfdOffset + 2;
+    for (let i = 0; i < numEntries; i++) {
+      if (entryOffset + 12 > arrayBuffer.byteLength) break;
+      const tagId = dataView.getUint16(entryOffset, littleEndian);
+      const type = dataView.getUint16(entryOffset + 2, littleEndian);
+      const count = dataView.getUint32(entryOffset + 4, littleEndian);
+      const valueOrOffset = dataView.getUint32(entryOffset + 8, littleEndian);
+
+      tags[tagId] = { type, count, valueOrOffset, entryOffset };
+      entryOffset += 12;
+    }
+
+    // Helper to read tag values
+    const readTagValues = (tagId) => {
+      const entry = tags[tagId];
+      if (!entry) return null;
+      const { type, count, valueOrOffset } = entry;
+
+      let valueOffset = valueOrOffset;
+      // If data fits in 4 bytes, valueOffset is the value itself
+      const typeSizes = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 8: 2, 9: 4, 11: 4, 12: 8 };
+      const size = typeSizes[type] || 1;
+      const totalSize = count * size;
+
+      if (totalSize <= 4) {
+        valueOffset = entry.entryOffset + 8;
+      }
+
+      if (valueOffset + totalSize > arrayBuffer.byteLength) return null;
+
+      const vals = [];
+      for (let j = 0; j < count; j++) {
+        const off = valueOffset + j * size;
+        if (type === 1) vals.push(dataView.getUint8(off));
+        else if (type === 3) vals.push(dataView.getUint16(off, littleEndian));
+        else if (type === 4) vals.push(dataView.getUint32(off, littleEndian));
+        else if (type === 5) {
+          // RATIONAL
+          const num = dataView.getUint32(off, littleEndian);
+          const den = dataView.getUint32(off + 4, littleEndian);
+          vals.push(den !== 0 ? num / den : 0);
+        } else if (type === 8) vals.push(dataView.getInt16(off, littleEndian));
+        else if (type === 9) vals.push(dataView.getInt32(off, littleEndian));
+        else if (type === 11) vals.push(dataView.getFloat32(off, littleEndian));
+        else if (type === 12) vals.push(dataView.getFloat64(off, littleEndian));
+      }
+      return vals;
+    };
+
+    const width = (readTagValues(256) || [])[0]; // ImageWidth
+    const height = (readTagValues(257) || [])[0]; // ImageLength
+    const bitsPerSample = (readTagValues(258) || [32])[0];
+    const sampleFormat = (readTagValues(339) || [1])[0]; // 1=uint, 2=int, 3=float
+    const stripOffsets = readTagValues(273) || [];
+    const rowsPerStrip = (readTagValues(278) || [height])[0];
+    const stripByteCounts = readTagValues(279) || [];
+    const pixelScale = readTagValues(33550); // ModelPixelScaleTag [scaleX, scaleY, scaleZ]
+    const tiepoints = readTagValues(33922);  // ModelTiepointTag [i, j, k, x, y, z]
+
+    if (!width || !height || stripOffsets.length === 0) {
+      throw new Error('TIFF missing essential raster dimensions or strip offsets');
+    }
+
+    // Extract elevation raster matrix
+    let raster;
+    if (sampleFormat === 3 || bitsPerSample === 32) {
+      raster = new Float32Array(width * height);
+    } else if (sampleFormat === 2 || bitsPerSample === 16) {
+      raster = new Int16Array(width * height);
+    } else {
+      raster = new Float32Array(width * height);
+    }
+
+    let currentRow = 0;
+    for (let s = 0; s < stripOffsets.length; s++) {
+      const offset = stripOffsets[s];
+      const rowsInThisStrip = Math.min(rowsPerStrip, height - currentRow);
+      const numPixels = rowsInThisStrip * width;
+
+      if (offset + numPixels * (bitsPerSample / 8) <= arrayBuffer.byteLength) {
+        for (let p = 0; p < numPixels; p++) {
+          const pixelOffset = offset + p * (bitsPerSample / 8);
+          let val = 0;
+          if (bitsPerSample === 32 && sampleFormat === 3) {
+            val = dataView.getFloat32(pixelOffset, littleEndian);
+          } else if (bitsPerSample === 16 && sampleFormat === 2) {
+            val = dataView.getInt16(pixelOffset, littleEndian);
+          } else if (bitsPerSample === 16) {
+            val = dataView.getUint16(pixelOffset, littleEndian);
+          } else if (bitsPerSample === 32) {
+            val = dataView.getInt32(pixelOffset, littleEndian);
+          }
+          raster[currentRow * width + p] = val;
+        }
+      }
+      currentRow += rowsInThisStrip;
+    }
+
+    // Georeferencing parameters
+    let originX = 0, originY = 0;
+    let scaleX = 1, scaleY = 1;
+
+    if (tiepoints && tiepoints.length >= 6) {
+      // tiepoint: [i, j, k, x, y, z]
+      originX = tiepoints[3] - tiepoints[0] * (pixelScale ? pixelScale[0] : 1);
+      originY = tiepoints[4] + tiepoints[1] * (pixelScale ? pixelScale[1] : 1);
+    }
+
+    if (pixelScale && pixelScale.length >= 2) {
+      scaleX = pixelScale[0];
+      scaleY = pixelScale[1];
+    }
+
+    // Calculate bounds & stats
+    let minElev = Infinity, maxElev = -Infinity;
+    for (let i = 0; i < raster.length; i++) {
+      const v = raster[i];
+      // Filter out typical NODATA values (-9999, -32767, etc.)
+      if (v > -9000 && v < 10000) {
+        if (v < minElev) minElev = v;
+        if (v > maxElev) maxElev = v;
+      }
+    }
+
+    if (minElev === Infinity) {
+      minElev = 0;
+      maxElev = 0;
+    }
+
+    const minX = originX;
+    const maxX = originX + width * scaleX;
+    const maxY = originY;
+    const minY = originY - height * scaleY;
+
+    const dem = {
+      width,
+      height,
+      minElev,
+      maxElev,
+      originX,
+      originY,
+      scaleX,
+      scaleY,
+      minX,
+      maxX,
+      minY,
+      maxY,
+      raster,
+      /**
+       * Sample elevation at georeferenced coordinate (lon/lat or X/Y) with bilinear interpolation
+       */
+      sampleAt: (lat, lon) => {
+        // Assume X is lon, Y is lat for WGS84 GeoTIFFs
+        const x = lon;
+        const y = lat;
+
+        const colFloat = (x - originX) / scaleX;
+        const rowFloat = (originY - y) / scaleY;
+
+        if (colFloat < 0 || colFloat >= width - 1 || rowFloat < 0 || rowFloat >= height - 1) {
+          // Clamp to boundary edge if closely adjacent
+          const c = Math.max(0, Math.min(width - 1, Math.round(colFloat)));
+          const r = Math.max(0, Math.min(height - 1, Math.round(rowFloat)));
+          const v = raster[r * width + c];
+          return (v > -9000 && v < 10000) ? v : minElev;
+        }
+
+        const c0 = Math.floor(colFloat);
+        const c1 = c0 + 1;
+        const r0 = Math.floor(rowFloat);
+        const r1 = r0 + 1;
+
+        const dx = colFloat - c0;
+        const dy = rowFloat - r0;
+
+        const v00 = raster[r0 * width + c0];
+        const v10 = raster[r0 * width + c1];
+        const v01 = raster[r1 * width + c0];
+        const v11 = raster[r1 * width + c1];
+
+        // Bilinear interpolation
+        const val = (1 - dx) * (1 - dy) * v00 +
+                    dx * (1 - dy) * v10 +
+                    (1 - dx) * dy * v01 +
+                    dx * dy * v11;
+
+        return (val > -9000 && val < 10000) ? val : minElev;
+      }
+    };
+
+    this.cachedDem = dem;
+    return dem;
+  }
+
+  /**
+   * Two-pass slope gradient smoother ensuring climb/descent slope between sequential
+   * waypoints does not exceed maxGradientAngleDeg (default 20°).
+   *
+   * Crucially guarantees that smoothed altitude never breaches safety clearance (target AGL)
+   * by raising earlier waypoints during the backward pass if rising terrain is encountered ahead.
+   *
+   * @param {Array<Object>} waypoints
+   * @param {number} [maxGradientAngleDeg=20] Max slope angle in degrees
+   * @returns {Array<Object>} Waypoints with smoothed altitudes
+   */
+  smoothAltitudes(waypoints, maxGradientAngleDeg = 20) {
+    if (!Array.isArray(waypoints) || waypoints.length === 0) return waypoints;
+    const maxSlope = Math.tan((maxGradientAngleDeg * Math.PI) / 180.0);
+
+    const n = waypoints.length;
+    const targetAlts = waypoints.map(wp => {
+      const surface = typeof wp.surfaceElevation === 'number' ? wp.surfaceElevation : 0;
+      const agl = typeof wp.agl === 'number' ? wp.agl : 50;
+      return surface + agl;
+    });
+
+    const smoothed = [...targetAlts];
+
+    // Compute horizontal distances between sequential points
+    const distances = new Array(n - 1);
+    for (let i = 0; i < n - 1; i++) {
+      const p1 = waypoints[i];
+      const p2 = waypoints[i + 1];
+      let dist = 10; // fallback minimum distance
+
+      if (typeof p1.x === 'number' && typeof p2.x === 'number') {
+        dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+      } else if (typeof p1.lat === 'number' && typeof p2.lat === 'number') {
+        dist = this.haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+      }
+      distances[i] = Math.max(0.5, dist);
+    }
+
+    // 1. Backward pass: If terrain rises steeply ahead at i+1, start climbing early at i
+    // ensuring we don't violate minimum target clearance at i+1 while respecting max climb angle
+    for (let i = n - 2; i >= 0; i--) {
+      const maxDeltaZ = distances[i] * maxSlope;
+      if (smoothed[i] < smoothed[i + 1] - maxDeltaZ) {
+        smoothed[i] = smoothed[i + 1] - maxDeltaZ;
+      }
+    }
+
+    // 2. Forward pass: Limit descent rate so the drone does not dive steeper than max slope
+    for (let i = 1; i < n; i++) {
+      const maxDeltaZ = distances[i - 1] * maxSlope;
+      // Also ensure we never drop below minimum ground clearance (targetAlts[i])
+      if (smoothed[i] < smoothed[i - 1] - maxDeltaZ) {
+        smoothed[i] = Math.max(targetAlts[i], smoothed[i - 1] - maxDeltaZ);
+      }
+    }
+
+    // Apply back to waypoints
+    return waypoints.map((wp, idx) => {
+      const alt = Math.round(smoothed[idx] * 10) / 10;
+      const surface = typeof wp.surfaceElevation === 'number' ? wp.surfaceElevation : 0;
+      return {
+        ...wp,
+        alt: alt,
+        smoothedAlt: alt,
+        actualAgl: Math.round((alt - surface) * 10) / 10,
+        isTerrainFollow: true
+      };
+    });
+  }
+
+  /**
+   * Calculate distance between two geodetic coordinates in meters
+   */
+  haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  /**
+   * Generate 2D cross-section elevation profile along the wayline track
+   *
+   * @param {Array<Object>} waypoints
+   * @returns {Object} Elevation profile statistics and sample points
+   */
+  generateElevationProfile(waypoints) {
+    if (!Array.isArray(waypoints) || waypoints.length === 0) {
+      return { totalDistance: 0, points: [], minGround: 0, maxGround: 0, minFlight: 0, maxFlight: 0 };
+    }
+
+    const points = [];
+    let cumulativeDist = 0;
+
+    let minGround = Infinity, maxGround = -Infinity;
+    let minFlight = Infinity, maxFlight = -Infinity;
+
+    for (let i = 0; i < waypoints.length; i++) {
+      const wp = waypoints[i];
+      if (i > 0) {
+        const prev = waypoints[i - 1];
+        let d = 0;
+        if (typeof wp.x === 'number' && typeof prev.x === 'number') {
+          d = Math.sqrt(Math.pow(wp.x - prev.x, 2) + Math.pow(wp.y - prev.y, 2));
+        } else if (typeof wp.lat === 'number' && typeof prev.lat === 'number') {
+          d = this.haversineDistance(prev.lat, prev.lon, wp.lat, wp.lon);
+        }
+        cumulativeDist += d;
+      }
+
+      const groundElev = typeof wp.surfaceElevation === 'number' ? wp.surfaceElevation : 0;
+      const flightAlt = typeof wp.alt === 'number' ? wp.alt : (groundElev + 50);
+      const agl = flightAlt - groundElev;
+
+      if (groundElev < minGround) minGround = groundElev;
+      if (groundElev > maxGround) maxGround = groundElev;
+      if (flightAlt < minFlight) minFlight = flightAlt;
+      if (flightAlt > maxFlight) maxFlight = flightAlt;
+
+      points.push({
+        wpIndex: i,
+        s: Math.round(cumulativeDist * 10) / 10,
+        groundElev: Math.round(groundElev * 10) / 10,
+        flightAlt: Math.round(flightAlt * 10) / 10,
+        agl: Math.round(agl * 10) / 10
+      });
+    }
+
+    if (minGround === Infinity) {
+      minGround = 0;
+      maxGround = 0;
+      minFlight = 50;
+      maxFlight = 50;
+    }
+
+    return {
+      totalDistance: Math.round(cumulativeDist * 10) / 10,
+      points,
+      minGround: Math.round(minGround * 10) / 10,
+      maxGround: Math.round(maxGround * 10) / 10,
+      minFlight: Math.round(minFlight * 10) / 10,
+      maxFlight: Math.round(maxFlight * 10) / 10,
+      reliefMeters: Math.round((maxGround - minGround) * 10) / 10
+    };
+  }
+
+  /**
+   * Apply terrain-following elevation adjustment and slope smoothing to a waypoint list.
+   * Follows the 3-tier cascade: Layer Target AGL -> Global Default AGL -> Waypoint Override.
+   *
+   * @param {Array<Object>} waypoints
+   * @param {Object} [options]
+   * @returns {Promise<Array<Object>>}
+   */
+  async applyTerrainFollowing(waypoints, options = {}) {
+    if (!Array.isArray(waypoints) || waypoints.length === 0) return waypoints;
+
+    const targetAgl = typeof options.targetAgl === 'number' ? options.targetAgl : 50;
+    const maxSlopeAngle = typeof options.maxSlopeAngle === 'number' ? options.maxSlopeAngle : 20;
+
+    // Fetch surface elevations for waypoints
+    const coords = waypoints.map(wp => ({ lat: wp.lat, lon: wp.lon }));
+    const elevations = await this.fetchElevations(coords, options);
+
+    // Apply raw elevation and target AGL
+    const initializedWps = waypoints.map((wp, idx) => {
+      const surfaceElev = elevations[idx] || 0;
+      // If individual waypoint has an explicit override that is not 'inherit', preserve it
+      const hasWpOverride = wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit';
+      const agl = hasWpOverride ? (wp.alt - surfaceElev) : targetAgl;
+
+      return {
+        ...wp,
+        surfaceElevation: surfaceElev,
+        agl: agl,
+        alt: hasWpOverride ? wp.alt : (surfaceElev + agl),
+        isTerrainFollow: true
+      };
+    });
+
+    // Apply two-pass slope gradient smoothing
+    return this.smoothAltitudes(initializedWps, maxSlopeAngle);
+  }
+}
+
+// Global Singleton Instance
+const elevationServiceInstance = new ElevationService();
+
+
+function drawElevationProfileChart(canvas, profileData) {
+  if (!canvas || !profileData || !profileData.points || profileData.points.length === 0) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const w = canvas.width = canvas.parentElement ? canvas.parentElement.clientWidth : 700;
+  const h = canvas.height = 110;
+
+  ctx.clearRect(0, 0, w, h);
+
+  const padLeft = 45;
+  const padRight = 20;
+  const padTop = 15;
+  const padBottom = 22;
+  const chartW = w - padLeft - padRight;
+  const chartH = h - padTop - padBottom;
+
+  const totalDist = Math.max(1, profileData.totalDistance);
+  const minVal = Math.floor(Math.min(profileData.minGround, profileData.minFlight) - 5);
+  const maxVal = Math.ceil(Math.max(profileData.maxGround, profileData.maxFlight) + 5);
+  const valRange = Math.max(10, maxVal - minVal);
+
+  const getX = (dist) => padLeft + (dist / totalDist) * chartW;
+  const getY = (val) => padTop + chartH - ((val - minVal) / valRange) * chartH;
+
+  // Background Grid Lines
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+  ctx.lineWidth = 1;
+  const yTicks = 4;
+  ctx.fillStyle = '#64748b';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'right';
+
+  for (let i = 0; i <= yTicks; i++) {
+    const val = minVal + (valRange / yTicks) * i;
+    const y = getY(val);
+    ctx.beginPath();
+    ctx.moveTo(padLeft, y);
+    ctx.lineTo(w - padRight, y);
+    ctx.stroke();
+    ctx.fillText(Math.round(val) + "m", padLeft - 4, y + 3);
+  }
+
+  // Draw Ground Fill & Surface Line
+  ctx.beginPath();
+  profileData.points.forEach((pt, idx) => {
+    const x = getX(pt.s);
+    const y = getY(pt.groundElev);
+    if (idx === 0) {
+      ctx.moveTo(x, padTop + chartH);
+      ctx.lineTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  });
+  ctx.lineTo(getX(profileData.totalDistance), padTop + chartH);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+  ctx.fill();
+
+  // Ground Line stroke
+  ctx.beginPath();
+  profileData.points.forEach((pt, idx) => {
+    const x = getX(pt.s);
+    const y = getY(pt.groundElev);
+    if (idx === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Vertical clearance tethers (AGL dashes)
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 3]);
+  profileData.points.forEach(pt => {
+    const x = getX(pt.s);
+    ctx.beginPath();
+    ctx.moveTo(x, getY(pt.groundElev));
+    ctx.lineTo(x, getY(pt.flightAlt));
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  // Draw Flight Trajectory Line
+  ctx.beginPath();
+  profileData.points.forEach((pt, idx) => {
+    const x = getX(pt.s);
+    const y = getY(pt.flightAlt);
+    if (idx === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#06b6d4';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Waypoint Dots on Flight Trajectory
+  profileData.points.forEach(pt => {
+    const x = getX(pt.s);
+    const y = getY(pt.flightAlt);
+    ctx.beginPath();
+    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+
+  // X-axis distance labels
+  ctx.fillStyle = '#64748b';
+  ctx.textAlign = 'center';
+  const xTicks = 5;
+  for (let i = 0; i <= xTicks; i++) {
+    const dist = (totalDist / xTicks) * i;
+    const x = getX(dist);
+    ctx.fillText(Math.round(dist) + "m", x, h - 5);
+  }
+}
+
+function updateElevationProfileUi() {
+  if (typeof document === 'undefined') return;
+  const canvas = document.getElementById('elevation-profile-canvas');
+  const drawer = document.getElementById('elevation-profile-drawer');
+  if (!canvas || !drawer || drawer.classList.contains('hidden')) return;
+
+  const waypoints = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : [];
+  if (!waypoints || waypoints.length === 0) return;
+
+  const profile = elevationServiceInstance.generateElevationProfile(waypoints);
+  drawElevationProfileChart(canvas, profile);
+
+  const reliefBadge = document.getElementById('elev-profile-relief-badge');
+  if (reliefBadge) reliefBadge.textContent = 'Relief: ' + profile.reliefMeters + 'm';
+
+  const distBadge = document.getElementById('elev-profile-dist-badge');
+  if (distBadge) distBadge.textContent = 'Distance: ' + profile.totalDistance + 'm';
+
+  const stats = document.getElementById('elev-profile-stats');
+  if (stats) stats.textContent = 'Ground: ' + profile.minGround + 'm–' + profile.maxGround + 'm | Flight: ' + profile.minFlight + 'm–' + profile.maxFlight + 'm';
+}
+
+if (typeof window !== 'undefined') {
+  window.ElevationService = elevationServiceInstance;
+  window.ElevationServiceClass = ElevationService;
+  window.drawElevationProfileChart = drawElevationProfileChart;
+  window.updateElevationProfileUi = updateElevationProfileUi;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    ElevationService,
+    elevationServiceInstance,
+    drawElevationProfileChart,
+    updateElevationProfileUi
+  };
+}
 // -------------------- src/ui/TelemetryHud.js --------------------
 function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, captureMode) {
   if (waypoints.length < 2) return null;
@@ -45127,6 +46519,8 @@ ${waypointActions.join('\n')}
     let currentAltitude;
     if (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit') {
       currentAltitude = wp.alt;
+    } else if (wp.isTerrainFollow || (wpLayer && (wpLayer.terrainFollow === 'enabled' || wpLayer.terrainFollow === true))) {
+      currentAltitude = (wp.alt !== undefined && wp.alt !== null) ? wp.alt : altitude;
     } else if (wp.layerAltitude !== undefined && wp.layerAltitude !== null && wp.layerAltitude !== 'inherit') {
       currentAltitude = wp.layerAltitude;
     } else if (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit') {
@@ -45605,8 +46999,8 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
             ? wpLayer.altitude
             : (options && options.altitude !== undefined && options.altitude !== null ? options.altitude : null));
 
-        const isVariableAltPattern = (wpLayer && (wpLayer.pattern === 'tower' || wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix' || (wpLayer.pattern === 'light-art' && (wpLayer.lightArtOrientation === 'vertical' || wpLayer.lightArtPreset === 'helix')))) ||
-          (wpObj && (wpObj.isMultiOrbit || wpObj.gridType === 'tower' || wpObj.gridType === 'vertical-facade' || wpObj.gridType === 'continuous-helix' || wpObj.layerPattern === 'vertical-facade' || wpObj.layerPattern === 'continuous-helix' || wpObj.isVerticalFacade || wpObj.isContinuousHelix));
+        const isVariableAltPattern = (wpLayer && (wpLayer.pattern === 'tower' || wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix' || wpLayer.terrainFollow === 'enabled' || wpLayer.terrainFollow === true || (wpLayer.pattern === 'light-art' && (wpLayer.lightArtOrientation === 'vertical' || wpLayer.lightArtPreset === 'helix')))) ||
+          (wpObj && (wpObj.isMultiOrbit || wpObj.gridType === 'tower' || wpObj.gridType === 'vertical-facade' || wpObj.gridType === 'continuous-helix' || wpObj.layerPattern === 'vertical-facade' || wpObj.layerPattern === 'continuous-helix' || wpObj.isVerticalFacade || wpObj.isContinuousHelix || wpObj.isTerrainFollow === true || wpObj.surfaceElevation !== undefined));
 
         if (targetAlt !== null && !isNaN(targetAlt) && !isVariableAltPattern) {
           pms[i] = pms[i].replace(
@@ -47048,6 +48442,25 @@ function generateKMZBlob(wps = null) {
           object: { type: "LineSegments", name: "Aalaapi_Wireframe" }
         };
     zip.file("wpmz/res/wireframe_threejs.json", JSON.stringify(threeJson, null, 2), { createFolders: false });
+  }
+
+  // If AI 3D Mesh is present, embed it as part of the package (Issue #96)
+  if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.aiMeshObject && FlightDiagnostics.aiMeshObject.geometry) {
+    try {
+      const geom = FlightDiagnostics.aiMeshObject.geometry;
+      const posAttr = geom.getAttribute('position');
+      if (posAttr && posAttr.count > 0) {
+        let aiObjStr = `# Aalaapi Sky AI 3D Reconstructed Mesh\n# Generated: ${new Date().toISOString()}\n\n`;
+        const count = posAttr.count;
+        for (let i = 0; i < count; i++) {
+          aiObjStr += `v ${posAttr.getX(i).toFixed(4)} ${posAttr.getY(i).toFixed(4)} ${posAttr.getZ(i).toFixed(4)}\n`;
+        }
+        for (let i = 1; i <= count; i += 3) {
+          aiObjStr += `f ${i} ${i+1} ${i+2}\n`;
+        }
+        zip.file("wpmz/res/ai_mesh.obj", aiObjStr, { createFolders: false });
+      }
+    } catch (_) {}
   }
 
   return zip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(blob => ({
@@ -57735,6 +59148,12 @@ const FlightDiagnostics = {
   diagShowDrones: true,
   diagShowWireframe: true,
   diagShowPlanes: false,
+  diagShowAiMesh: true,
+  aiMeshObject: null,
+  aiMeshWireframe: false,
+  aiMeshOpacity: 0.9,
+  aiMeshElevationOffset: 0.0,
+  aiMeshLoading: false,
   diagFpvMode: false,
   diagAcoustic3DGroup: null,
   diagLiveAcousticRingGroup: null,
@@ -58504,6 +59923,37 @@ const FlightDiagnostics = {
       diagWfThreeBtn.addEventListener('click', () => {
         this.exportWireframe('threejs');
         if (typeof showToast === 'function') showToast('🎨 Three.js Editor JSON exported! Drag into threejs.org/editor', 'info');
+      });
+    }
+
+    const diagBtnToggleMesh = document.getElementById('diag-btn-toggle-mesh');
+    if (diagBtnToggleMesh && typeof diagBtnToggleMesh.addEventListener === 'function') {
+      diagBtnToggleMesh.addEventListener('click', () => {
+        this.toggleAiMesh();
+      });
+    }
+
+    const diagBtnGenAiMesh = document.getElementById('diag-btn-generate-ai-mesh');
+    if (diagBtnGenAiMesh && typeof diagBtnGenAiMesh.addEventListener === 'function') {
+      diagBtnGenAiMesh.addEventListener('click', () => {
+        this.triggerAiMeshReconstruction();
+      });
+    }
+
+    const diagBtnAiMeshGal = document.getElementById('diag-btn-ai-mesh-gallery');
+    if (diagBtnAiMeshGal && typeof diagBtnAiMeshGal.addEventListener === 'function') {
+      diagBtnAiMeshGal.addEventListener('click', () => {
+        this.triggerAiMeshReconstruction();
+      });
+    }
+
+    const diagMeshOpacitySlider = document.getElementById('diag-ai-mesh-opacity-slider');
+    const diagMeshOpacityVal = document.getElementById('diag-ai-mesh-opacity-val');
+    if (diagMeshOpacitySlider && typeof diagMeshOpacitySlider.addEventListener === 'function') {
+      diagMeshOpacitySlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 90;
+        this.updateAiMeshOpacity(val / 100);
+        if (diagMeshOpacityVal) diagMeshOpacityVal.textContent = `${val}%`;
       });
     }
 
@@ -61632,6 +63082,229 @@ const FlightDiagnostics = {
         btn.innerHTML = '<span>🏗️</span> Project 3D Wireframe';
       }
     }
+  },
+
+  toggleAiMesh(visible) {
+    if (visible === undefined) {
+      this.diagShowAiMesh = !this.diagShowAiMesh;
+    } else {
+      this.diagShowAiMesh = Boolean(visible);
+    }
+    if (this.aiMeshObject) {
+      this.aiMeshObject.visible = this.diagShowAiMesh;
+    }
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-toggle-mesh') : null;
+    if (btn) btn.classList.toggle('active', this.diagShowAiMesh);
+    if (typeof _setDiagIndicator === 'function') {
+      _setDiagIndicator('diag-indicator-mesh', this.diagShowAiMesh);
+    }
+    if (this.threeRenderer && this.threeScene && this.threeCamera) {
+      this.threeRenderer.render(this.threeScene, this.threeCamera);
+    }
+  },
+
+  updateAiMeshOpacity(opacity) {
+    this.aiMeshOpacity = Math.max(0.05, Math.min(1.0, opacity));
+    if (this.aiMeshObject && this.aiMeshObject.material) {
+      this.aiMeshObject.material.opacity = this.aiMeshOpacity;
+      this.aiMeshObject.material.transparent = this.aiMeshOpacity < 1.0;
+      this.aiMeshObject.material.needsUpdate = true;
+    }
+    if (this.threeRenderer && this.threeScene && this.threeCamera) {
+      this.threeRenderer.render(this.threeScene, this.threeCamera);
+    }
+  },
+
+  loadAiMeshGeometry(objText) {
+    if (!objText || typeof objText !== 'string') return;
+    if (typeof THREE === 'undefined') return;
+
+    if (this.aiMeshObject && this.threeScene) {
+      this.threeScene.remove(this.aiMeshObject);
+      if (this.aiMeshObject.geometry) this.aiMeshObject.geometry.dispose();
+      if (this.aiMeshObject.material) this.aiMeshObject.material.dispose();
+      this.aiMeshObject = null;
+    }
+
+    const lines = objText.split('\n');
+    const positions = [];
+    const rawVertices = [];
+    const rawNormals = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line || line.startsWith('#')) continue;
+      const parts = line.split(/\s+/);
+      const tag = parts[0];
+
+      if (tag === 'v' && parts.length >= 4) {
+        rawVertices.push([parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3])]);
+      } else if (tag === 'vn' && parts.length >= 4) {
+        rawNormals.push([parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3])]);
+      } else if (tag === 'f' && parts.length >= 4) {
+        const faceIndices = [];
+        for (let j = 1; j < parts.length; j++) {
+          const vertPart = parts[j].split('/')[0];
+          const vIdx = parseInt(vertPart, 10) - 1;
+          faceIndices.push(vIdx);
+        }
+        for (let j = 1; j < faceIndices.length - 1; j++) {
+          const v0 = rawVertices[faceIndices[0]];
+          const v1 = rawVertices[faceIndices[j]];
+          const v2 = rawVertices[faceIndices[j + 1]];
+          if (v0 && v1 && v2) {
+            positions.push(v0[0], v0[1], v0[2]);
+            positions.push(v1[0], v1[1], v1[2]);
+            positions.push(v2[0], v2[1], v2[2]);
+          }
+        }
+      }
+    }
+
+    if (positions.length === 0) return;
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.computeVertexNormals();
+
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      metalness: 0.15,
+      roughness: 0.65,
+      transparent: true,
+      opacity: this.aiMeshOpacity,
+      side: THREE.DoubleSide,
+      wireframe: this.aiMeshWireframe
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = 'AI_Reconstructed_3D_Mesh';
+    mesh.position.set(0, this.aiMeshElevationOffset, 0);
+    mesh.visible = this.diagShowAiMesh;
+
+    this.aiMeshObject = mesh;
+    if (this.threeScene) {
+      this.threeScene.add(mesh);
+      if (this.threeRenderer && this.threeCamera) {
+        this.threeRenderer.render(this.threeScene, this.threeCamera);
+      }
+    }
+
+    const panel = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-panel') : null;
+    if (panel) panel.style.display = 'block';
+    const controlsCard = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-controls-card') : null;
+    if (controlsCard) controlsCard.style.display = 'flex';
+  },
+
+  async triggerAiMeshReconstruction() {
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-generate-ai-mesh') : null;
+    const progressCard = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-card') : null;
+    const progressBar = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-bar') : null;
+    const progressPct = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-pct') : null;
+    const statusText = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-status-text') : null;
+    const engineSelect = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-engine-select') : null;
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Processing 3D...';
+    }
+    if (progressCard) progressCard.style.display = 'flex';
+    if (progressBar) progressBar.style.width = '10%';
+    if (progressPct) progressPct.textContent = '10%';
+    if (statusText) statusText.textContent = 'Analyzing photo telemetry...';
+
+    try {
+      const apiBase = (typeof RC2_API_BASE !== 'undefined') ? RC2_API_BASE : 'http://127.0.0.1:8765';
+      const missionUuid = (typeof activeLayerId !== 'undefined' && activeLayerId)
+        || (this.selectedFlightId && `mission_${this.selectedFlightId.replace(/[^a-zA-Z0-9_-]/g, '_')}`)
+        || 'mission_latest';
+
+      const engine = engineSelect ? engineSelect.value : 'auto';
+
+      const res = await fetch(`${apiBase}/api/ai3d/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          missionUuid,
+          engine,
+          elevationOffset: this.wireframeElevationOffset || 0,
+          photos: (this.flightPhotos && this.flightPhotos.length > 0) ? this.flightPhotos : []
+        })
+      });
+
+      if (!res.ok) throw new Error(`Bridge returned HTTP ${res.status}`);
+      const startData = await res.json();
+      if (!startData.success) throw new Error(startData.error || 'Failed to start AI 3D job');
+
+      // Poll status
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        try {
+          const sRes = await fetch(`${apiBase}/api/ai3d/status`);
+          if (sRes.ok) {
+            const sData = await sRes.json();
+            const job = sData.job;
+            if (job) {
+              const pct = job.progress || 10;
+              if (progressBar) progressBar.style.width = `${pct}%`;
+              if (progressPct) progressPct.textContent = `${pct}%`;
+              if (statusText && job.stage) statusText.textContent = job.stage;
+
+              if (job.status === 'completed') {
+                clearInterval(poll);
+                if (progressBar) progressBar.style.width = '100%';
+                if (progressPct) progressPct.textContent = '100%';
+                if (statusText) statusText.textContent = 'Mesh ready! Loading 3D...';
+
+                // Fetch OBJ mesh to render
+                const meshRes = await fetch(`${apiBase}/api/ai3d/mesh?format=obj&missionUuid=${encodeURIComponent(missionUuid)}`);
+                if (meshRes.ok) {
+                  const objText = await meshRes.text();
+                  this.loadAiMeshGeometry(objText);
+                  this.switchTab('3d');
+                  if (typeof showToast === 'function') {
+                    showToast('🤖 AI 3D Reconstructed Mesh loaded into viewport!', 'success');
+                  }
+                }
+
+                if (btn) {
+                  btn.disabled = false;
+                  btn.textContent = '⚡ Reconstruct AI 3D Mesh';
+                }
+              } else if (job.status === 'error') {
+                clearInterval(poll);
+                throw new Error(job.error || 'AI reconstruction failed');
+              }
+            }
+          }
+        } catch (err) {
+          clearInterval(poll);
+          if (statusText) statusText.textContent = `Error: ${err.message}`;
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '⚡ Reconstruct AI 3D Mesh';
+          }
+          if (typeof showToast === 'function') showToast(`AI 3D Assist: ${err.message}`, 'error');
+        }
+
+        if (attempts > 60) {
+          clearInterval(poll);
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '⚡ Reconstruct AI 3D Mesh';
+          }
+        }
+      }, 500);
+
+    } catch (err) {
+      if (statusText) statusText.textContent = `Error: ${err.message}`;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '⚡ Reconstruct AI 3D Mesh';
+      }
+      if (typeof showToast === 'function') showToast(`AI 3D Assist: ${err.message}`, 'error');
+    }
   }
 };
 
@@ -62230,6 +63903,19 @@ const KMZInspector = {
   }
 };
 
+
+if (typeof window !== 'undefined') {
+  window.FlightDiagnostics = FlightDiagnostics;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    FlightDiagnostics,
+    buildThreeDigitalTwinJson,
+    createCameraPyramidGeometry,
+    getActiveMissionWaypoints
+  };
+}
 // -------------------- src/import/TelemetryParsers.js --------------------
 function formatTime(totalSec) {
   const m = Math.floor(totalSec / 60);
@@ -66369,9 +68055,10 @@ function recreate3DWaypointsAndPaths() {
     }
 
     // Plot Ground Line Projection
+    const groundY = (typeof wp.surfaceElevation === 'number') ? wp.surfaceElevation : 0;
     const groundLinePoints = [
       new THREE.Vector3(x3d, y3d, z3d),
-      new THREE.Vector3(x3d, 0, z3d)
+      new THREE.Vector3(x3d, groundY, z3d)
     ];
     const groundLineGeom = new THREE.BufferGeometry().setFromPoints(groundLinePoints);
     const groundLineMat = new THREE.LineDashedMaterial({
@@ -66895,7 +68582,29 @@ function init3DPreview() {
     const planeOffsetX = (1.5 - distX_tiles) * tileWidthMeters;
     const planeOffsetZ = (1.5 - distY_tiles) * tileWidthMeters;
 
-    const groundGeom = new THREE.PlaneGeometry(planeSize, planeSize);
+    const groundGeom = new THREE.PlaneGeometry(planeSize, planeSize, 32, 32);
+
+    const hasElevation = (typeof elevationServiceInstance !== 'undefined') &&
+      ((elevationServiceInstance.cachedDem !== null) || (waypoints && waypoints.some(wp => typeof wp.surfaceElevation === 'number' && wp.surfaceElevation !== 0)));
+
+    if (hasElevation && groundGeom.attributes && groundGeom.attributes.position) {
+      const pos = groundGeom.attributes.position;
+      const refLat = cLat;
+      const refLon = cLon;
+      const rot = (typeof document !== 'undefined' && document.getElementById('grid-rotation')) ? (parseFloat(document.getElementById('grid-rotation').value) || 0) : 0;
+      for (let i = 0; i < pos.count; i++) {
+        const lx = pos.getX(i) + planeOffsetX;
+        const ly = pos.getY(i) - planeOffsetZ;
+        const geo = (typeof localToGeodetic === 'function')
+          ? localToGeodetic(lx, ly, refLat, refLon, rot)
+          : { lat: refLat, lon: refLon };
+        const elevs = elevationServiceInstance.sampleElevationsSync([geo]);
+        const elev = (elevs && typeof elevs[0] === 'number') ? elevs[0] : 0;
+        pos.setZ(i, elev);
+      }
+      groundGeom.computeVertexNormals();
+      pos.needsUpdate = true;
+    }
     
     // Create temporary canvas to merge the 9 tiles
     const groundCanvas = document.createElement('canvas');

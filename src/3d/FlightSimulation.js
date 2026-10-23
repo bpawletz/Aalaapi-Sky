@@ -522,9 +522,10 @@ function recreate3DWaypointsAndPaths() {
     }
 
     // Plot Ground Line Projection
+    const groundY = (typeof wp.surfaceElevation === 'number') ? wp.surfaceElevation : 0;
     const groundLinePoints = [
       new THREE.Vector3(x3d, y3d, z3d),
-      new THREE.Vector3(x3d, 0, z3d)
+      new THREE.Vector3(x3d, groundY, z3d)
     ];
     const groundLineGeom = new THREE.BufferGeometry().setFromPoints(groundLinePoints);
     const groundLineMat = new THREE.LineDashedMaterial({

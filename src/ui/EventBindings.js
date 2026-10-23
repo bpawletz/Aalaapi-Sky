@@ -3381,6 +3381,180 @@ function initUIEventListeners() {
   if (typeof initAllModalsDraggable === 'function') {
     initAllModalsDraggable();
   }
+
+  // Setup Terrain Following & Elevation Profile Listeners (Issue #129)
+  initTerrainFollowListeners();
+}
+
+function initTerrainFollowListeners() {
+  const layerTfSelect = document.getElementById('layer-terrain-follow');
+  const layerTargetAglInput = document.getElementById('layer-target-agl');
+  const layerTargetAglVal = document.getElementById('layer-target-agl-val');
+  const layerMaxSlopeInput = document.getElementById('layer-max-slope-angle');
+  const layerMaxSlopeVal = document.getElementById('layer-max-slope-val');
+  const layerTfSourceSelect = document.getElementById('layer-terrain-source');
+  const tfSettingsWrapper = document.getElementById('layer-terrain-follow-settings-wrapper');
+  const demUploadWrapper = document.getElementById('layer-dem-upload-container');
+  const demFileInput = document.getElementById('layer-dem-file-input');
+  const demStatusBadge = document.getElementById('layer-dem-status-badge');
+
+  const globalTfToggle = document.getElementById('global-terrain-follow');
+  const globalTargetAglWrapper = document.getElementById('global-target-agl-wrapper');
+  const globalTargetAglInput = document.getElementById('global-target-agl');
+  const globalTargetAglVal = document.getElementById('global-target-agl-val');
+
+  const openProfileBtn = document.getElementById('open-elevation-profile-btn');
+  const closeProfileBtn = document.getElementById('close-elevation-profile-btn');
+  const profileDrawer = document.getElementById('elevation-profile-drawer');
+
+  if (layerTfSelect) {
+    layerTfSelect.addEventListener('change', () => {
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer) {
+        layer.terrainFollow = layerTfSelect.value;
+        const isTfActive = (typeof getEffectiveLayerTerrainFollow === 'function')
+          ? getEffectiveLayerTerrainFollow(layer)
+          : false;
+        if (tfSettingsWrapper) {
+          tfSettingsWrapper.style.display = isTfActive ? 'block' : 'none';
+        }
+        if (typeof updateLayerHierarchyBadge === 'function') updateLayerHierarchyBadge();
+        if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+        if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+      }
+    });
+  }
+
+  if (layerTargetAglInput) {
+    layerTargetAglInput.addEventListener('input', () => {
+      const val = parseFloat(layerTargetAglInput.value) || 50;
+      if (layerTargetAglVal) layerTargetAglVal.textContent = Math.round(val);
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer) {
+        layer.targetAgl = val;
+        if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+        if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+      }
+    });
+  }
+
+  if (typeof document !== 'undefined') {
+    document.querySelectorAll('.preset-pill-btn[data-agl]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const agl = parseFloat(btn.getAttribute('data-agl'));
+        if (layerTargetAglInput && !isNaN(agl)) {
+          layerTargetAglInput.value = agl;
+          if (layerTargetAglVal) layerTargetAglVal.textContent = Math.round(agl);
+          const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+          if (layer) {
+            layer.targetAgl = agl;
+            if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+            if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+          }
+        }
+      });
+    });
+  }
+
+  if (layerMaxSlopeInput) {
+    layerMaxSlopeInput.addEventListener('input', () => {
+      const val = parseInt(layerMaxSlopeInput.value, 10) || 20;
+      if (layerMaxSlopeVal) layerMaxSlopeVal.textContent = val;
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer) {
+        layer.maxSlopeAngle = val;
+        if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+        if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+      }
+    });
+  }
+
+  if (layerTfSourceSelect) {
+    layerTfSourceSelect.addEventListener('change', () => {
+      const src = layerTfSourceSelect.value;
+      if (demUploadWrapper) {
+        demUploadWrapper.style.display = (src === 'geotiff') ? 'block' : 'none';
+      }
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer) {
+        layer.terrainSource = src;
+        layer.elevationData = null;
+        if (typeof refreshLayerElevationsAsync === 'function') {
+          refreshLayerElevationsAsync(layer.id);
+        } else if (typeof redrawCurrentMission === 'function') {
+          redrawCurrentMission();
+        }
+      }
+    });
+  }
+
+  if (demFileInput) {
+    demFileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          if (typeof elevationServiceInstance !== 'undefined') {
+            const dem = elevationServiceInstance.parseGeoTiff(event.target.result);
+            if (demStatusBadge) {
+              demStatusBadge.textContent = '✓ Loaded: ' + dem.width + '×' + dem.height + ' (' + Math.round(dem.minElev) + 'm–' + Math.round(dem.maxElev) + 'm MSL)';
+              demStatusBadge.style.color = 'var(--accent-green, #10b981)';
+            }
+            const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+            if (layer) {
+              layer.elevationData = null;
+              if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+              if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+            }
+          }
+        } catch (err) {
+          if (demStatusBadge) {
+            demStatusBadge.textContent = '⚠️ Error parsing DEM: ' + err.message;
+            demStatusBadge.style.color = '#ef4444';
+          }
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  if (globalTfToggle) {
+    globalTfToggle.addEventListener('change', () => {
+      const isGlobalOn = globalTfToggle.checked;
+      if (globalTargetAglWrapper) {
+        globalTargetAglWrapper.style.display = isGlobalOn ? 'block' : 'none';
+      }
+      if (typeof updateInheritOptionLabels === 'function') updateInheritOptionLabels();
+      if (typeof updateLayerHierarchyBadge === 'function') updateLayerHierarchyBadge();
+      if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+      if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+    });
+  }
+
+  if (globalTargetAglInput) {
+    globalTargetAglInput.addEventListener('input', () => {
+      const val = parseFloat(globalTargetAglInput.value) || 50;
+      if (globalTargetAglVal) globalTargetAglVal.textContent = Math.round(val);
+      if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+      if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+    });
+  }
+
+  if (openProfileBtn && profileDrawer) {
+    openProfileBtn.addEventListener('click', () => {
+      profileDrawer.classList.toggle('hidden');
+      if (!profileDrawer.classList.contains('hidden') && typeof updateElevationProfileUi === 'function') {
+        updateElevationProfileUi();
+      }
+    });
+  }
+  if (closeProfileBtn && profileDrawer) {
+    closeProfileBtn.addEventListener('click', () => {
+      profileDrawer.classList.add('hidden');
+    });
+  }
 }
 
 /**
