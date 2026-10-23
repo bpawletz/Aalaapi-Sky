@@ -808,18 +808,20 @@ function saveActiveLayerFromUi(targetLayer) {
   if (towerGuyBuf) layer.towerGuyWireBuffer = parseFloat(towerGuyBuf.value) || 0;
   if (towerMovMode && towerMovMode.value) layer.towerMovementMode = towerMovMode.value;
   if (towerAltOrd && towerAltOrd.value) layer.towerAltitudeOrder = towerAltOrd.value;
+  const psRZenith = document.getElementById('photo-sphere-ring-zenith');
   const psR1 = document.getElementById('photo-sphere-ring-1');
   const psR2 = document.getElementById('photo-sphere-ring-2');
   const psR3 = document.getElementById('photo-sphere-ring-3');
   const psNadir = document.getElementById('photo-sphere-ring-nadir');
-  if (psR1 || psR2 || psR3 || psNadir) {
+  if (psRZenith || psR1 || psR2 || psR3 || psNadir) {
     layer.photoSphereRings = {
+      zenith: psRZenith ? psRZenith.checked : false,
       ring1: psR1 ? psR1.checked : true,
       ring2: psR2 ? psR2.checked : true,
       ring3: psR3 ? psR3.checked : true,
       nadir: psNadir ? psNadir.checked : true
     };
-    if (!layer.photoSphereRings.ring1 && !layer.photoSphereRings.ring2 && !layer.photoSphereRings.ring3 && !layer.photoSphereRings.nadir) {
+    if (!layer.photoSphereRings.zenith && !layer.photoSphereRings.ring1 && !layer.photoSphereRings.ring2 && !layer.photoSphereRings.ring3 && !layer.photoSphereRings.nadir) {
       layer.photoSphereRings.ring1 = true;
       if (psR1) psR1.checked = true;
     }
@@ -829,10 +831,17 @@ function saveActiveLayerFromUi(targetLayer) {
   const psShots = document.getElementById('photo-sphere-shots-per-ring');
   const psSettling = document.getElementById('photo-sphere-settling-time');
   const psAeb = document.getElementById('photo-sphere-aeb');
+  const psAebMode = document.getElementById('photo-sphere-aeb-mode');
   if (psMode && psMode.value) layer.photoSphereMode = psMode.value;
   if (psShots && psShots.value) layer.photoSphereShotsPerRing = parseInt(psShots.value, 10) || 12;
   if (psSettling && psSettling.value) layer.photoSphereSettlingTime = parseFloat(psSettling.value) || 2.0;
-  if (psAeb) layer.photoSphereAebEnabled = psAeb.checked;
+  if (psAebMode && psAebMode.value) {
+    layer.photoSphereAebMode = psAebMode.value;
+    layer.photoSphereAebEnabled = (psAebMode.value !== 'none');
+  } else if (psAeb) {
+    layer.photoSphereAebEnabled = psAeb.checked;
+    layer.photoSphereAebMode = psAeb.checked ? '3' : 'none';
+  }
 
   const spSpokes = document.getElementById('star-pass-spokes');
   const spRadius = document.getElementById('star-pass-radius');
@@ -1134,11 +1143,13 @@ function syncUiWithActiveLayer() {
   }
 
   // Sync 360 Photo Sphere Ring Checkboxes
-  const psRings = layer.photoSphereRings || { ring1: true, ring2: true, ring3: true, nadir: true };
+  const psRings = layer.photoSphereRings || { zenith: false, ring1: true, ring2: true, ring3: true, nadir: true };
+  const psRZenith = document.getElementById('photo-sphere-ring-zenith');
   const psR1 = document.getElementById('photo-sphere-ring-1');
   const psR2 = document.getElementById('photo-sphere-ring-2');
   const psR3 = document.getElementById('photo-sphere-ring-3');
   const psNadir = document.getElementById('photo-sphere-ring-nadir');
+  if (psRZenith) psRZenith.checked = Boolean(psRings.zenith);
   if (psR1) psR1.checked = (psRings.ring1 !== false);
   if (psR2) psR2.checked = (psRings.ring2 !== false);
   if (psR3) psR3.checked = (psRings.ring3 !== false);
@@ -1149,11 +1160,14 @@ function syncUiWithActiveLayer() {
   const psSettling = document.getElementById('photo-sphere-settling-time');
   const psSettlingVal = document.getElementById('photo-sphere-settling-time-val');
   const psAeb = document.getElementById('photo-sphere-aeb');
+  const psAebMode = document.getElementById('photo-sphere-aeb-mode');
   if (psMode) psMode.value = layer.photoSphereMode || 'actionGroup';
   if (psShots) psShots.value = layer.photoSphereShotsPerRing !== undefined ? layer.photoSphereShotsPerRing : 12;
   if (psSettling) psSettling.value = layer.photoSphereSettlingTime !== undefined ? layer.photoSphereSettlingTime : 2.0;
   if (psSettlingVal) psSettlingVal.textContent = `${layer.photoSphereSettlingTime !== undefined ? layer.photoSphereSettlingTime : 2.0}s`;
-  if (psAeb) psAeb.checked = Boolean(layer.photoSphereAebEnabled);
+  const resolvedAebMode = layer.photoSphereAebMode || (layer.photoSphereAebEnabled ? '3' : 'none');
+  if (psAebMode) psAebMode.value = resolvedAebMode;
+  if (psAeb) psAeb.checked = Boolean(layer.photoSphereAebEnabled || resolvedAebMode !== 'none');
 
   if (typeof updatePhotoSphereBadge === 'function') {
     updatePhotoSphereBadge();

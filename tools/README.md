@@ -65,7 +65,21 @@ A collection of lightweight automation tools for seamless DJI RC 2 synchronizati
   - `aalaapi-radar`: Live ASTM F3411 Remote ID drone detection stream.
   - `aalaapi-ingest-watch`: Triggers immediately on USB MTP / SD card photo ingestion completion.
   - `aalaapi-splat-prep`: Generates Nerfstudio `transforms.json` ($4 \times 4$ camera matrices) and COLMAP priors for automated Gaussian Splatting (`splatfacto`).
+- **Documentation:** See the complete [Node-RED Integration Guide](file:///docs/NODE_RED_INTEGRATION_GUIDE.md) for coordinate frames, camera matrix derivations, and training flows.
 - **Sample Pipeline:** [`tools/node-red-contrib-aalaapi/examples/auto-splat-pipeline.json`](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/tools/node-red-contrib-aalaapi/examples/auto-splat-pipeline.json)
+
+---
+
+### 5. `Embedded RTMP Ingest & Video Casting Service` — Direct DJI RC 2 Live Feed
+**Files:** [`tools/companion/rtmp_server.js`](file:///tools/companion/rtmp_server.js), [`tools/companion/video_service.js`](file:///tools/companion/video_service.js), [`tools/companion/setup-rtmp-firewall.bat`](file:///tools/companion/setup-rtmp-firewall.bat)
+
+- **Purpose:** Receives live RTMP video streams directly from DJI RC 2 / DJI Fly controllers on port `1935` (`0.0.0.0:1935`), eliminating third-party relay servers (like MediaMTX or OBS).
+- **Features:**
+  - **Zero External Dependencies:** Handshake, chunk framing, and AMF0 serialization implemented via pure Node.js (`node:net` and `node:crypto`).
+  - **In-App Pilot Interface:** Live Video Cast Panel (`#video-cast-panel`) displays auto-detected LAN streaming URL (`rtmp://<PC_IP>:1935/live/stream`) with 1-click clipboard copy.
+  - **Automated Windows Firewall Configuration:** Elevated launcher [`setup-rtmp-firewall.bat`](file:///tools/companion/setup-rtmp-firewall.bat) automatically configures inbound TCP port 1935 with real-time in-app status indication.
+  - **Low-Latency Binary Casting:** Broadcasts decoded frames over WebSockets (`/api/video/stream`) directly to 2D canvas viewports and the 3D FPV cockpit HUD.
+  - **Lossless Local Recording:** One-click REC button writes concurrent `.mp4` video files to `scratch/recordings/`.
 
 ---
 

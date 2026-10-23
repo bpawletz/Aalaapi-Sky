@@ -81,7 +81,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.171.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.175.0</span></h1>
         </div>
       </div>
 
@@ -949,34 +949,43 @@
 
             <!-- Quick Presets -->
             <div style="display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;">
-              <button type="button" id="photo-sphere-preset-full" class="btn btn-secondary btn-sm" style="flex: 1; min-width: 90px; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Row 1, 2, 3 + Nadir (37 shots)">Full Sphere (37)</button>
-              <button type="button" id="photo-sphere-preset-pano" class="btn btn-secondary btn-sm" style="flex: 1; min-width: 90px; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Row 1 only: 360° horizon cylinder (12 shots)">Horizon Pano (12)</button>
-              <button type="button" id="photo-sphere-preset-oblique" class="btn btn-secondary btn-sm" style="flex: 1; min-width: 90px; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Rows 1 & 2: Wide oblique panorama (24 shots)">Wide Oblique (24)</button>
+              <button type="button" id="photo-sphere-preset-full" class="btn btn-secondary btn-sm" style="flex: 1; min-width: 80px; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Row 1, 2, 3 + Nadir (37 shots)">Standard Sphere (37)</button>
+              <button type="button" id="photo-sphere-preset-zenith" class="btn btn-secondary btn-sm" style="flex: 1; min-width: 80px; padding: 4px 6px; font-size: 0.72rem; text-align: center; border-color: rgba(56, 189, 248, 0.4);" title="Zenith Sky (+20°) + Rows 1, 2, 3 + Nadir (49 shots)">Zenith Sphere (49)</button>
+              <button type="button" id="photo-sphere-preset-pano" class="btn btn-secondary btn-sm" style="flex: 1; min-width: 80px; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Row 1 only: 360° horizon cylinder (12 shots)">Horizon (12)</button>
+              <button type="button" id="photo-sphere-preset-oblique" class="btn btn-secondary btn-sm" style="flex: 1; min-width: 80px; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Rows 1 & 2: Wide oblique panorama (24 shots)">Oblique (24)</button>
             </div>
 
             <!-- Shot Breakdown Grid & Layer Toggles -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; font-size: 0.72rem;">
-              <label style="display: flex; align-items: flex-start; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px; cursor: pointer; user-select: none;">
-                <input type="checkbox" id="photo-sphere-ring-1" checked style="margin-top: 2px; accent-color: #38bdf8;">
+              <label style="display: flex; align-items: flex-start; gap: 8px; background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 6px 8px; cursor: pointer; user-select: none; grid-column: span 2;">
+                <input type="checkbox" id="photo-sphere-ring-zenith" style="margin-top: 2px; accent-color: #38bdf8;">
                 <div>
-                  <div style="color: #38bdf8; font-weight: 700;">Row 1: Pitch -15°</div>
-                  <div style="color: var(--text-muted); font-size: 0.70rem;">12 shots (every 30°)</div>
+                  <div style="color: #38bdf8; font-weight: 700;">Row 0: Pitch +20° (Zenith Sky)</div>
+                  <div style="color: var(--text-muted); font-size: 0.70rem;">Upward sky capture for drones supporting upward gimbal tilt (Mini 4 Pro, Air 3)</div>
                 </div>
               </label>
 
               <label style="display: flex; align-items: flex-start; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px; cursor: pointer; user-select: none;">
-                <input type="checkbox" id="photo-sphere-ring-2" checked style="margin-top: 2px; accent-color: #06b6d4;">
+                <input type="checkbox" id="photo-sphere-ring-1" checked style="margin-top: 2px; accent-color: #06b6d4;">
                 <div>
-                  <div style="color: #06b6d4; font-weight: 700;">Row 2: Pitch -45°</div>
-                  <div style="color: var(--text-muted); font-size: 0.70rem;">12 shots (every 30°)</div>
+                  <div style="color: #06b6d4; font-weight: 700;">Row 1: Pitch -15°</div>
+                  <div style="color: var(--text-muted); font-size: 0.70rem;">Horizon level ring</div>
                 </div>
               </label>
 
               <label style="display: flex; align-items: flex-start; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px; cursor: pointer; user-select: none;">
-                <input type="checkbox" id="photo-sphere-ring-3" checked style="margin-top: 2px; accent-color: #f59e0b;">
+                <input type="checkbox" id="photo-sphere-ring-2" checked style="margin-top: 2px; accent-color: #f59e0b;">
                 <div>
-                  <div style="color: #f59e0b; font-weight: 700;">Row 3: Pitch -75°</div>
-                  <div style="color: var(--text-muted); font-size: 0.70rem;">12 shots (every 30°)</div>
+                  <div style="color: #f59e0b; font-weight: 700;">Row 2: Pitch -45°</div>
+                  <div style="color: var(--text-muted); font-size: 0.70rem;">Mid-oblique ring</div>
+                </div>
+              </label>
+
+              <label style="display: flex; align-items: flex-start; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="photo-sphere-ring-3" checked style="margin-top: 2px; accent-color: #a855f7;">
+                <div>
+                  <div style="color: #a855f7; font-weight: 700;">Row 3: Pitch -75°</div>
+                  <div style="color: var(--text-muted); font-size: 0.70rem;">Steep oblique ring</div>
                 </div>
               </label>
 
@@ -988,13 +997,14 @@
                 </div>
               </label>
             </div>
-            <!-- Engine & Advanced Capture Controls (v1.154.0 - Issue #134) -->
+
+            <!-- Engine & Advanced Capture Controls (v1.157.0 - Issue #134 Expansion) -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
               <div>
                 <label for="photo-sphere-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Execution Engine</label>
                 <select id="photo-sphere-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 2px 6px;">
-                  <option value="discreteNodes" selected>Discrete Waypoints (Multi-Node)</option>
-                  <option value="actionGroup">Stationary Action Group (Single Point)</option>
+                  <option value="discreteNodes">Discrete Waypoints (Multi-Node)</option>
+                  <option value="actionGroup" selected>Stationary Action Group (Single Point)</option>
                 </select>
               </div>
               <div>
@@ -1003,21 +1013,43 @@
                   <option value="8">8 Shots / Ring (45° Step)</option>
                   <option value="10">10 Shots / Ring (36° Step)</option>
                   <option value="12" selected>12 Shots / Ring (30° Step)</option>
+                  <option value="16">16 Shots / Ring (22.5° Step - Ultra)</option>
                 </select>
               </div>
             </div>
-            <div style="margin-bottom: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                <label for="photo-sphere-settling-time" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Settling Delay (<span id="photo-sphere-settling-time-val" style="color: #38bdf8;">2.0s</span>)</label>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                  <label for="photo-sphere-settling-time" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Settling Delay (<span id="photo-sphere-settling-time-val" style="color: #38bdf8;">2.0s</span>)</label>
+                </div>
+                <input type="range" id="photo-sphere-settling-time" class="form-range" min="0.5" max="5.0" step="0.1" value="2.0" style="accent-color: #38bdf8;">
               </div>
-              <input type="range" id="photo-sphere-settling-time" class="form-range" min="0.5" max="5.0" step="0.1" value="2.0" style="accent-color: #38bdf8;">
+              <div>
+                <label for="photo-sphere-aeb-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">AEB Bracketing</label>
+                <select id="photo-sphere-aeb-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 2px 6px;">
+                  <option value="none" selected>Single (1x Standard)</option>
+                  <option value="3">3-Shot AEB (HDR Stack)</option>
+                  <option value="5">5-Shot AEB (Wide Dynamic)</option>
+                </select>
+                <input type="checkbox" id="photo-sphere-aeb" style="display: none;">
+              </div>
             </div>
-            <div style="margin-bottom: 8px;">
-              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-main); cursor: pointer; user-select: none;">
-                <input type="checkbox" id="photo-sphere-aeb" style="accent-color: #38bdf8; width: 14px; height: 14px;">
-                <span style="font-weight: 600;">AEB Exposure Bracketing (3-Shot HDR Stack)</span>
-              </label>
+
+            <!-- Live Overlap & Capture Duration Advisor (v1.157.0 - Issue #134) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; padding: 6px 8px; margin-bottom: 8px; font-size: 0.71rem;">
+              <span id="photo-sphere-overlap-advisor" style="font-weight: 600; color: #38bdf8;">Overlap: 63% Horiz / 43% Vert (Optimal)</span>
+              <span id="photo-sphere-duration-badge" style="font-weight: 700; color: #f59e0b;">⏱️ 2m 15s | ~8% Battery</span>
             </div>
+
+            <!-- GPano XMP Sidecar Export Action -->
+            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+              <button type="button" id="photo-sphere-download-xmp-btn" class="btn btn-secondary btn-sm" style="width: 100%; padding: 4px 8px; font-size: 0.72rem; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Download GPano equirectangular XMP sidecar for PTGui, Lightroom, or Photoshop stitching">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download GPano XMP Sidecar
+              </button>
+            </div>
+
             <!-- Shutter Mode Notice -->
             <div style="display: flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: #34d399;">
               <span style="font-size: 0.9rem;">🛡️</span>
@@ -3228,6 +3260,15 @@
             <button id="direct-rc2-photos-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; cursor: pointer; margin-top: 4px;" title="Ingest photos from Mini 4 Pro, SD Card, or RC 2 and open Inspection Layer">
               <span>📸</span>
               Ingest &amp; Inspect Photos
+            </button>
+            <!-- Live Video Cast & Recording Launcher (Issue #97) -->
+            <button id="sidebar-video-cast-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: space-between; background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.35); color: #22d3ee; cursor: pointer; margin-top: 4px;" title="Open Live Video Cast &amp; Lossless Recording Monitor">
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <span>📹</span>
+                <span>Live Video Cast &amp; REC</span>
+              </span>
+              <span id="sidebar-video-status-pill" class="badge-tag" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700;">OFFLINE</span>
+            </button>
             <!-- Ambient Telemetry & Airspace Replay Buffer Section (Issue #142) -->
             <div id="bridge-ambient-buffer-section" class="bridge-ambient-buffer-section" style="margin-top: 6px; padding: 10px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -3910,6 +3951,9 @@
           <button id="intro-tab-tips" class="intro-tab-btn" type="button">
             💡 Pro Pilot Tips
           </button>
+          <button id="intro-tab-matrix" class="intro-tab-btn" type="button">
+            🧭 Settings Matrix &amp; Decision Trees
+          </button>
         </div>
       </header>
 
@@ -3977,6 +4021,30 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🌐 360° Spherical Panorama Stationary Capture Engine Expansion (v1.175.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Major expansion for 360° spherical photogrammetry! Adds a dedicated <strong>Zenith Sky (+20°)</strong> ring for drones with upward gimbal tilt, multi-tier <strong>AEB Exposure Bracketing (3-Shot &amp; 5-Shot HDR)</strong>, a 16-shot ultra-dense preset (22.5° steps), real-time <strong>FOV &amp; Overlap Advisor</strong>, live <strong>Capture Duration &amp; Battery Estimator</strong>, an interactive <strong>3D Spherical Ray Cage</strong> in the 3D HUD, and one-click <strong>GPano XMP Sidecar Metadata Export</strong> for seamless stitching in PTGui and Lightroom.
+            </p>
+          </div>
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📡 Embedded RTMP Ingest &amp; Windows Firewall Automation (v1.174.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Aalaapi Companion Bridge now hosts an embedded, zero-dependency RTMP 1.0 listener on standard port 1935 (<code>0.0.0.0:1935</code>)! Stream live drone video directly from your DJI RC 2 / DJI Fly app into Aalaapi Sky without third-party relay servers (like MediaMTX or OBS). Includes 1-click clipboard URL copying, real-time firewall port readiness detection, and automated elevated firewall setup scripts (<code>setup-rtmp-firewall.bat</code>).
+            </p>
+          </div>
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📹 Low-Latency Live Video Cast &amp; Lossless Local Recording (v1.173.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Monitor incoming drone video feeds directly in Aalaapi Sky over high-speed binary WebSockets! Features a dockable <strong>Live Video Cast Panel</strong> supporting DJI Fly RTMP streams, USB/HDMI capture cards (UVC), and synthetic HUD test patterns. Includes one-click <strong>Lossless Local MP4 Recording</strong> directly to host disk, pulsing REC indicators with live duration timer, cockpit HUD overlay in 3D FPV mode, and an integrated MP4 clips gallery.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ✈️ Segmented ADS-B Operations &amp; Settings Architecture (v1.168.0)
@@ -4761,6 +4829,494 @@
             </div>
           </div>
         </div>
+
+        <!-- Pane 4: Settings Matrix & Decision Trees -->
+        <div id="intro-pane-matrix" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 14px;">
+          
+          <!-- Live Active Layer Configuration & Deep-Link Inspector -->
+          <div id="matrix-active-layer-card" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 6px;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.15); padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">Active Layer Settings</span>
+                <strong id="matrix-active-layer-name" style="font-size: 0.88rem; color: #fff;">Layer 1</strong>
+                <span id="matrix-active-pattern-badge" style="font-size: 0.74rem; color: #22d3ee; background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.25); border-radius: 4px; padding: 1px 6px;">3D Splat (Double Grid)</span>
+              </div>
+              <button type="button" class="jump-setting-btn" data-jump-to="grid-type" title="Scroll to pattern selector in sidebar">
+                <span>Select Pattern ↗</span>
+              </button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 0.74rem;">
+              <div style="background: rgba(0,0,0,0.3); padding: 6px 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-muted); font-size: 0.68rem;">Altitude</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="altitude" style="padding: 1px 4px; font-size: 0.62rem;" title="Jump to Altitude">↗</button>
+                </div>
+                <strong id="matrix-active-alt-val" style="color: var(--accent-cyan);">50m</strong>
+              </div>
+              <div style="background: rgba(0,0,0,0.3); padding: 6px 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-muted); font-size: 0.68rem;">Gimbal Pitch</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="gimbal-pitch" style="padding: 1px 4px; font-size: 0.62rem;" title="Jump to Gimbal Pitch">↗</button>
+                </div>
+                <strong id="matrix-active-pitch-val" style="color: #fbbf24;">-60°</strong>
+              </div>
+              <div style="background: rgba(0,0,0,0.3); padding: 6px 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-muted); font-size: 0.68rem;">Capture Mode</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="layer-capture-mode" style="padding: 1px 4px; font-size: 0.62rem;" title="Jump to Capture Mode">↗</button>
+                </div>
+                <strong id="matrix-active-capture-val" style="color: #34d399;">Continuous</strong>
+              </div>
+              <div style="background: rgba(0,0,0,0.3); padding: 6px 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-muted); font-size: 0.68rem;">Heading Mode</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="layer-heading-mode" style="padding: 1px 4px; font-size: 0.62rem;" title="Jump to Heading Mode">↗</button>
+                </div>
+                <strong id="matrix-active-heading-val" style="color: #a5b4fc;">Follow Wayline</strong>
+              </div>
+              <div style="background: rgba(0,0,0,0.3); padding: 6px 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-muted); font-size: 0.68rem;">Turn / Path</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="layer-path-mode" style="padding: 1px 4px; font-size: 0.62rem;" title="Jump to Path Mode">↗</button>
+                </div>
+                <strong id="matrix-active-turn-val" style="color: #cbd5e1;">Curved</strong>
+              </div>
+              <div style="background: rgba(0,0,0,0.3); padding: 6px 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-muted); font-size: 0.68rem;">Overlap (F/S)</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="front-overlap" style="padding: 1px 4px; font-size: 0.62rem;" title="Jump to Overlap">↗</button>
+                </div>
+                <strong id="matrix-active-overlap-val" style="color: #cbd5e1;">75% / 70%</strong>
+              </div>
+              <div style="background: rgba(0,0,0,0.3); padding: 6px 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-muted); font-size: 0.68rem;">Speed</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="speed" style="padding: 1px 4px; font-size: 0.62rem;" title="Jump to Speed">↗</button>
+                </div>
+                <strong id="matrix-active-speed-val" style="color: #cbd5e1;">5.0 m/s</strong>
+              </div>
+              <div style="background: rgba(0,0,0,0.3); padding: 6px 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-muted); font-size: 0.68rem;">Mission Finish</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="finish-action" style="padding: 1px 4px; font-size: 0.62rem;" title="Jump to Mission Finish">↗</button>
+                </div>
+                <strong id="matrix-active-finish-val" style="color: #38bdf8;">Return to Home</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Decision Trees Carousel / Quick Guidance Cards -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="font-size: 0.85rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                <span>🌳</span> Pilot Flight Plan Decision Trees
+              </strong>
+              <span style="font-size: 0.7rem; color: var(--text-muted);">Click any decision badge to jump directly to that setting</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+              <!-- Decision 1: Flight Pattern Selection -->
+              <div style="background: rgba(15, 23, 42, 0.45); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.72rem; font-weight: 700; color: #38bdf8;">1. Pattern Selection</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="grid-type">Pattern ↗</button>
+                </div>
+                <p style="margin: 0; font-size: 0.72rem; color: #cbd5e1; line-height: 1.35;">
+                  • <strong>Flat Topo / Farm:</strong> <code>single</code> (2D Nadir Grid, -90°)<br>
+                  • <strong>3D Asset / Stockpile:</strong> <code>double</code> (3D Splat, -60°)<br>
+                  • <strong>Isolated Structure:</strong> <code>orbit</code>, <code>multi-orbit</code>, or <code>tower</code><br>
+                  • <strong>Linear Road / Utility:</strong> <code>corridor</code> or <code>road-following</code><br>
+                  • <strong>360 Tour / Cinematic:</strong> <code>photo-sphere</code> or <code>hyperlapse</code>
+                </p>
+              </div>
+
+              <!-- Decision 2: Capture Mode -->
+              <div style="background: rgba(15, 23, 42, 0.45); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.72rem; font-weight: 700; color: #34d399;">2. Capture Mode</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="layer-capture-mode">Capture ↗</button>
+                </div>
+                <p style="margin: 0; font-size: 0.72rem; color: #cbd5e1; line-height: 1.35;">
+                  • <strong>Continuous (Distance Interval):</strong> Daylight (SS ≥ 1/500s). Drone never stops; saves 35-50% battery.<br>
+                  • <strong>Stop &amp; Shoot:</strong> Low light, ND filters, close facade inspection, or Photo Spheres to eliminate rolling shutter blur.
+                </p>
+              </div>
+
+              <!-- Decision 3: Gimbal Pitch -->
+              <div style="background: rgba(15, 23, 42, 0.45); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.72rem; font-weight: 700; color: #fbbf24;">3. Gimbal Pitch</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="gimbal-pitch">Pitch ↗</button>
+                </div>
+                <p style="margin: 0; font-size: 0.72rem; color: #cbd5e1; line-height: 1.35;">
+                  • <strong>-90° (Nadir):</strong> 2D Orthomosaics &amp; terrain elevation.<br>
+                  • <strong>-60° to -45° (Oblique):</strong> 3D Splatting &amp; building facades.<br>
+                  • <strong>0° (Horizontal):</strong> Vertical Facades &amp; Tower inspection.<br>
+                  • <strong>Auto (Road Focus):</strong> Automatically aims at road centerline.
+                </p>
+              </div>
+
+              <!-- Decision 4: Heading & Path Mode -->
+              <div style="background: rgba(15, 23, 42, 0.45); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.72rem; font-weight: 700; color: #a5b4fc;">4. Heading &amp; Turn Mode</span>
+                  <button type="button" class="jump-setting-btn" data-jump-to="layer-heading-mode">Heading ↗</button>
+                </div>
+                <p style="margin: 0; font-size: 0.72rem; color: #cbd5e1; line-height: 1.35;">
+                  • <strong>Follow Wayline:</strong> Aircraft nose aligns with flight vector.<br>
+                  • <strong>Toward Center:</strong> Nose locked onto central POI coordinate.<br>
+                  • <strong>Curved Turns:</strong> Coordinated turns preserve speed and battery.<br>
+                  • <strong>Straight Path:</strong> Sharp corners, required for Stop &amp; Shoot.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category Filter Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; flex-wrap: wrap; gap: 6px;">
+            <strong style="font-size: 0.85rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+              <span>📊</span> Settings Applicability Matrix (All 21 Patterns)
+            </strong>
+            <div id="matrix-category-filters" style="display: flex; gap: 4px; flex-wrap: wrap;">
+              <button type="button" class="matrix-filter-btn active" data-category="all">All (21)</button>
+              <button type="button" class="matrix-filter-btn" data-category="mapping">2D Mapping</button>
+              <button type="button" class="matrix-filter-btn" data-category="splat">3D Splat &amp; Object</button>
+              <button type="button" class="matrix-filter-btn" data-category="structure">Tower &amp; Facade</button>
+              <button type="button" class="matrix-filter-btn" data-category="corridor">Linear Corridor</button>
+              <button type="button" class="matrix-filter-btn" data-category="creative">Panoramic &amp; Creative</button>
+              <button type="button" class="matrix-filter-btn" data-category="spatial">Spatial &amp; Safety</button>
+            </div>
+          </div>
+
+          <!-- Applicability Matrix Table -->
+          <div style="border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; overflow-x: auto; background: rgba(15, 23, 42, 0.5); max-height: 380px;">
+            <table class="matrix-table" id="flight-pattern-matrix-table">
+              <thead>
+                <tr>
+                  <th style="min-width: 140px;">Flight Pattern</th>
+                  <th>Category</th>
+                  <th>Altitude</th>
+                  <th>Dimensions</th>
+                  <th>Overlap (F/S)</th>
+                  <th>Pitch</th>
+                  <th>Heading</th>
+                  <th>Capture</th>
+                  <th>Turn</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="matrix-table-body">
+                <!-- 1. single -->
+                <tr data-pattern="single" data-category="mapping">
+                  <td><strong>2D Map (Nadir Grid)</strong></td>
+                  <td><span class="badge" style="background: rgba(6,182,212,0.15); color: #22d3ee;">Mapping</span></td>
+                  <td>✅ Layer Alt</td>
+                  <td>Width &times; Height</td>
+                  <td>✅ Front &amp; Side</td>
+                  <td>-90° (Nadir)</td>
+                  <td>Follow Wayline</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Straight / Curved</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 2. double -->
+                <tr data-pattern="double" data-category="splat">
+                  <td><strong>3D Splat (Double Grid)</strong></td>
+                  <td><span class="badge" style="background: rgba(168,85,247,0.15); color: #c084fc;">3D Splat</span></td>
+                  <td>✅ Layer Alt</td>
+                  <td>Width &times; Height</td>
+                  <td>✅ Front &amp; Side</td>
+                  <td>-60° (Oblique)</td>
+                  <td>Follow Wayline</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Straight / Curved</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 3. target-splat -->
+                <tr data-pattern="target-splat" data-category="splat">
+                  <td><strong>Target Splat (Frustum Grid)</strong></td>
+                  <td><span class="badge" style="background: rgba(168,85,247,0.15); color: #c084fc;">3D Splat</span></td>
+                  <td>✅ Layer Alt</td>
+                  <td>Width &times; Height</td>
+                  <td>✅ Front &amp; Side</td>
+                  <td>-45° to -60°</td>
+                  <td>Follow / POI</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Straight / Curved</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 4. orbit -->
+                <tr data-pattern="orbit" data-category="splat">
+                  <td><strong>Circular Orbit</strong></td>
+                  <td><span class="badge" style="background: rgba(168,85,247,0.15); color: #c084fc;">3D Object</span></td>
+                  <td>✅ Layer Alt</td>
+                  <td>Radius</td>
+                  <td>✅ Photo Spacing</td>
+                  <td>-45° to -30°</td>
+                  <td>Toward Center</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Curved (Circle)</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 5. multi-orbit -->
+                <tr data-pattern="multi-orbit" data-category="splat">
+                  <td><strong>Multi-Tier Orbit</strong></td>
+                  <td><span class="badge" style="background: rgba(168,85,247,0.15); color: #c084fc;">3D Object</span></td>
+                  <td>Min / Max Alt</td>
+                  <td>Radius</td>
+                  <td>✅ Photo Spacing</td>
+                  <td>-60° to -30°</td>
+                  <td>Toward Center</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Curved</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 6. tower -->
+                <tr data-pattern="tower" data-category="structure">
+                  <td><strong>Tower Audit</strong></td>
+                  <td><span class="badge" style="background: rgba(234,179,8,0.15); color: #facc15;">Structure</span></td>
+                  <td>Min / Max Alt</td>
+                  <td>Radius + Guy Wire</td>
+                  <td>✅ Front &amp; Side</td>
+                  <td>0° to -30°</td>
+                  <td>Toward Center</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Straight / Curved</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 7. vertical-facade -->
+                <tr data-pattern="vertical-facade" data-category="structure">
+                  <td><strong>Vertical Facade</strong></td>
+                  <td><span class="badge" style="background: rgba(234,179,8,0.15); color: #facc15;">Structure</span></td>
+                  <td>Min / Max Alt</td>
+                  <td>Width + Standoff</td>
+                  <td>✅ Front &amp; Side</td>
+                  <td>0° (Horizontal)</td>
+                  <td>Facing Wall</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Straight / Curved</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 8. continuous-helix -->
+                <tr data-pattern="continuous-helix" data-category="structure">
+                  <td><strong>Continuous Helix</strong></td>
+                  <td><span class="badge" style="background: rgba(234,179,8,0.15); color: #facc15;">Structure</span></td>
+                  <td>Start / End Alt</td>
+                  <td>Start / End Rad</td>
+                  <td>✅ Interval</td>
+                  <td>Auto / POI</td>
+                  <td>Toward Center</td>
+                  <td>Continuous (Locked)</td>
+                  <td>Curved (Spiral)</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 9. star-pass -->
+                <tr data-pattern="star-pass" data-category="structure">
+                  <td><strong>Star Pass (Cross-Hatch)</strong></td>
+                  <td><span class="badge" style="background: rgba(234,179,8,0.15); color: #facc15;">Structure</span></td>
+                  <td>✅ Layer Alt</td>
+                  <td>Radius (Spokes)</td>
+                  <td>✅ Photo Spacing</td>
+                  <td>-60° to -90°</td>
+                  <td>Follow Wayline</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Straight</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 10. photo-sphere -->
+                <tr data-pattern="photo-sphere" data-category="creative">
+                  <td><strong>360° Photo Sphere</strong></td>
+                  <td><span class="badge" style="background: rgba(236,72,153,0.15); color: #f472b6;">Creative</span></td>
+                  <td>✅ Layer Alt</td>
+                  <td>Pano Node</td>
+                  <td>❌ (Pano Rings)</td>
+                  <td>Multi-Ring Auto</td>
+                  <td>Multi-Yaw Auto</td>
+                  <td>Stop&amp;Shoot (Locked)</td>
+                  <td>Straight</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 11. hyperlapse -->
+                <tr data-pattern="hyperlapse" data-category="creative">
+                  <td><strong>Hyperlapse Time-Lapse</strong></td>
+                  <td><span class="badge" style="background: rgba(236,72,153,0.15); color: #f472b6;">Creative</span></td>
+                  <td>✅ Layer Alt</td>
+                  <td>Transit Path</td>
+                  <td>❌ (Time Interval)</td>
+                  <td>Keyframe Spline</td>
+                  <td>Smooth Transition</td>
+                  <td>Continuous (Locked)</td>
+                  <td>Curved (Spline)</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 12. light-art -->
+                <tr data-pattern="light-art" data-category="creative">
+                  <td><strong>Light Art (Sky Painting)</strong></td>
+                  <td><span class="badge" style="background: rgba(236,72,153,0.15); color: #f472b6;">Creative</span></td>
+                  <td>✅ Layer Alt</td>
+                  <td>Vector Shape</td>
+                  <td>❌ (LED Trail)</td>
+                  <td>Ground Locked</td>
+                  <td>Follow Wayline</td>
+                  <td>Continuous</td>
+                  <td>Curved (Spline)</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 13. grid-orbit-combo -->
+                <tr data-pattern="grid-orbit-combo" data-category="splat">
+                  <td><strong>Grid + Orbit Combo</strong></td>
+                  <td><span class="badge" style="background: rgba(168,85,247,0.15); color: #c084fc;">3D Hybrid</span></td>
+                  <td>✅ Layer Alt</td>
+                  <td>Grid + Orbit Rad</td>
+                  <td>✅ Front &amp; Side</td>
+                  <td>-45° to -60°</td>
+                  <td>Follow + Center</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Straight / Curved</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 14. grid-multi-orbit-combo -->
+                <tr data-pattern="grid-multi-orbit-combo" data-category="splat">
+                  <td><strong>Grid + Multi-Orbit</strong></td>
+                  <td><span class="badge" style="background: rgba(168,85,247,0.15); color: #c084fc;">3D Hybrid</span></td>
+                  <td>Min / Max Alt</td>
+                  <td>Grid + Multi-Rad</td>
+                  <td>✅ Front &amp; Side</td>
+                  <td>-45° to -60°</td>
+                  <td>Follow + Center</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Straight / Curved</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 15. road-following -->
+                <tr data-pattern="road-following" data-category="corridor">
+                  <td><strong>Road Following</strong></td>
+                  <td><span class="badge" style="background: rgba(16,185,129,0.15); color: #34d399;">Corridor</span></td>
+                  <td>✅ Layer Alt</td>
+                  <td>Centerline + Offset</td>
+                  <td>✅ Spacing</td>
+                  <td>Auto (Road Focus)</td>
+                  <td>Road Focus / Follow</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Straight / Curved</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 16. corridor -->
+                <tr data-pattern="corridor" data-category="corridor">
+                  <td><strong>Corridor Mapping</strong></td>
+                  <td><span class="badge" style="background: rgba(16,185,129,0.15); color: #34d399;">Corridor</span></td>
+                  <td>✅ Layer Alt</td>
+                  <td>Swath Width + Passes</td>
+                  <td>✅ Front Overlap</td>
+                  <td>-90° to -60°</td>
+                  <td>Follow Wayline</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Straight / Curved</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 17. freeform -->
+                <tr data-pattern="freeform" data-category="mapping">
+                  <td><strong>Freeform (Manual Waypoints)</strong></td>
+                  <td><span class="badge" style="background: rgba(6,182,212,0.15); color: #22d3ee;">Mapping</span></td>
+                  <td>✅ Per-WP Alt</td>
+                  <td>Manual Nodes</td>
+                  <td>❌ Manual</td>
+                  <td>Manual / Per-WP</td>
+                  <td>Manual / Follow</td>
+                  <td>Cont / Stop&amp;Shoot</td>
+                  <td>Straight / Curved</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 18. exclusion-box -->
+                <tr data-pattern="exclusion-box" data-category="spatial">
+                  <td><strong>Exclusion Zone (Box)</strong></td>
+                  <td><span class="badge" style="background: rgba(239,68,68,0.15); color: #f87171;">Safety</span></td>
+                  <td>Floor / Ceiling</td>
+                  <td>Box Width &times; Height</td>
+                  <td>❌ N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 19. exclusion-freeform -->
+                <tr data-pattern="exclusion-freeform" data-category="spatial">
+                  <td><strong>Exclusion Zone (Polygon)</strong></td>
+                  <td><span class="badge" style="background: rgba(239,68,68,0.15); color: #f87171;">Safety</span></td>
+                  <td>Floor / Ceiling</td>
+                  <td>Polygon Vertices</td>
+                  <td>❌ N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 20. boundary-polygon -->
+                <tr data-pattern="boundary-polygon" data-category="spatial">
+                  <td><strong>Boundary / Parcel</strong></td>
+                  <td><span class="badge" style="background: rgba(59,130,246,0.15); color: #60a5fa;">Cadastral</span></td>
+                  <td>Elevation Offset</td>
+                  <td>Parcel Polygon</td>
+                  <td>❌ N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+
+                <!-- 21. fiducial-markers -->
+                <tr data-pattern="fiducial-markers" data-category="spatial">
+                  <td><strong>Fiducials / GCPs</strong></td>
+                  <td><span class="badge" style="background: rgba(245,158,11,0.15); color: #fbbf24;">Survey GCP</span></td>
+                  <td>Survey Terrain</td>
+                  <td>Target Sheet &times; Size</td>
+                  <td>❌ N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td><button type="button" class="jump-setting-btn" data-jump-to="grid-type">Apply ↗</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Documentation Reference Footer -->
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 1rem;">📖</span>
+              <span style="font-size: 0.75rem; color: #cbd5e1;">
+                Full offline guide available in <strong><code>docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md</code></strong> with complete Mermaid diagrams, math formulations, and camera sensor tables.
+              </span>
+            </div>
+            <button type="button" class="jump-setting-btn" data-jump-to="mission-failsafes-section" style="padding: 4px 8px;">
+              <span>Mission Failsafes (Tier 1) ↗</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Modal Footer -->
@@ -5324,7 +5880,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.171.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.175.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5385,6 +5941,38 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.174.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Embedded RTMP Ingest Server (Closes #97):</strong> Companion Bridge now hosts an embedded zero-dependency RTMP 1.0 listener on port 1935 (<code>0.0.0.0:1935</code>), receiving direct live video streams from DJI RC 2 / DJI Fly controllers without requiring external relay servers.</li>
+              <li><strong>In-App RTMP Ingest Bar &amp; Clipboard Copy:</strong> Live Video Cast Panel displays auto-detected local network RTMP URLs with 1-click clipboard copy and step-by-step DJI Fly setup instructions.</li>
+              <li><strong>Automated Windows Firewall Setup:</strong> Added elevated one-click setup scripts (<code>setup-rtmp-firewall.bat</code>) and in-app port readiness indicator for inbound TCP port 1935.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.173.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Satellite Cloud Cover Overlay Fix (Closes #145):</strong> Corrected tile service endpoint to NOAA GOES-East IR Channel 13 (<code>goes_east_conus_ch13</code>), resolving "Invalid TMS Request" tile errors and restoring real-time cloud imagery.</li>
+              <li><strong>Companion Live Tile Bypass:</strong> Configured Mesonet real-time satellite tiles to bypass multi-day caching on the Companion bridge server during live flights.</li>
+            </ul>
+          </div>
+<div>
+            <strong style="color: var(--text-main);">Changelog (v1.173.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Low-Latency Video Casting (Closes #97):</strong> Integrated real-time video streaming over persistent WebSockets (<code>/api/video/stream</code>) with multi-protocol support for DJI Fly RTMP streams, USB/HDMI capture cards (UVC), and synthetic HUD test patterns.</li>
+              <li><strong>Local Lossless MP4 Video Recording:</strong> Added isolated background recording worker piping uncompressed raw frames to H.264 MP4 containers on the host machine, controlled via prominent pulsing REC button overlays on both the Video Cast Panel and 3D FPV HUD.</li>
+              <li><strong>3D FPV Live Viewfinder &amp; Clips Browser:</strong> Live video canvas embedded directly into the 3D cockpit HUD with HUD REC button, alongside a dedicated saved MP4 clips browser modal.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.172.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Interactive Decision Trees &amp; Settings Matrix:</strong> Added dedicated Guide Hub tab with interactive flowcharts for pattern selection, capture modes, gimbal pitch, heading modes, and turn types, paired with a complete 21-pattern settings applicability matrix.</li>
+              <li><strong>Live Layer Telemetry &amp; Jump-to-Setting Deep-Links:</strong> Integrated real-time parameter badges directly in the Guide Hub with one-click deep-link navigation that auto-scrolls to and illuminates target settings in the sidebar.</li>
+              <li><strong>Offline Reference Guide:</strong> Published complete architectural manual and decision tree flowcharts in <code>docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md</code>.</li>
+              <li><strong>Node-RED Integration Framework &amp; Guide:</strong> Released dedicated <code>node-red-contrib-aalaapi</code> node package and comprehensive integration manual in <code>docs/NODE_RED_INTEGRATION_GUIDE.md</code> covering ENU coordinate conversion, Nerfstudio ($c2w$) and COLMAP ($w2c$, $t = -R \cdot C$) camera poses, and automated 3D Gaussian Splatting pipelines.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.171.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -5563,6 +6151,12 @@
             <strong style="color: var(--text-main);">Changelog (v1.157.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Solar Ephemeris Engine, Shadow Vectors &amp; Glare-Aware Mission Planning:</strong> Integrated client-side solar positioning with Section 3 Sun &amp; Lighting Advisor, real-time 2D Leaflet shadow projection cones and sun ray bearing vectors, Three.js 3D directional sunlight synchronization, specular glare warnings for camera angles and optical GCPs, and embedded DJI XMP solar angle metrology with dial overlay in Photo Inspector. (Closes #141)</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.175.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>360° Spherical Panorama Stationary Capture Engine Expansion:</strong> Upgraded photo sphere capture with dedicated Upward Zenith Sky (+20°) elevation ring, multi-tier AEB exposure bracketing (Single, 3-Shot, and 5-Shot HDR stacks), 16-shot ultra-dense ring density, automated FOV &amp; overlap advisor, live capture duration &amp; battery estimator, interactive 3D spherical ray cage &amp; wireframe dome in 3D HUD, and 1-click GPano equirectangular XMP sidecar download.</li>
             </ul>
           </div>
           <div>
@@ -8853,16 +9447,25 @@
 
         <!-- FPV Walkthrough HUD Overlay -->
         <div id="fpv-hud-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; padding: 16px; font-family: 'Outfit', sans-serif; color: #f8fafc;">
+          <!-- FPV Live Video Canvas (Rendered directly behind reticle and flight HUD) -->
+          <canvas id="fpv-video-canvas" width="1280" height="720" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none; opacity: 0.85;"></canvas>
+
           <!-- FPV Top Row (Blends into header, shows media recording/ready status and current telemetry) -->
           <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
             <!-- Left spacer to prevent overlap with HUD controls -->
             <div style="width: 160px; flex-shrink: 0;"></div>
             
-            <!-- Top Center: Media status -->
+            <!-- Top Center: Media status & Live Bridge REC Toggle -->
             <div id="fpv-media-status-container" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.08); padding: 8px 12px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; pointer-events: auto; backdrop-filter: blur(8px); margin: 0 auto;">
               <span id="fpv-media-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
               <span id="fpv-media-text" style="font-size: 0.8rem; text-transform: uppercase;">Ready</span>
               <span id="fpv-media-timer" class="hidden" style="font-size: 0.8rem; color: #94a3b8; font-family: monospace;">00:00</span>
+              <button id="fpv-hud-rec-btn" class="btn-rec" type="button" style="padding: 3px 8px; font-size: 0.70rem; margin-left: 6px;" title="Start Local Recording to .mp4">
+                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span>
+                <span>REC</span>
+                <span id="fpv-hud-rec-timer" class="hidden" style="font-family: monospace; font-size: 0.68rem; margin-left: 2px;">00:00</span>
+              </button>
+              <button id="fpv-video-toggle-btn" class="btn-secondary" type="button" style="padding: 3px 6px; font-size: 0.70rem; border-radius: 4px;" title="Toggle FPV Live Video Feed Background">📹 Video</button>
             </div>
             
             <!-- Top Right: Telemetry Details -->
@@ -10405,6 +11008,106 @@
 
   <!-- Universal Floating Breadcrumb Tooltip (v1.86.5) -->
   <div id="wp-leg-floating-tooltip" class="wp-leg-breadcrumb-tooltip" style="display: none; position: fixed; z-index: 10000000; pointer-events: none;"></div>
+
+  <!-- Floating Live Video Cast & Lossless Recording Panel (Issue #97) -->
+  <div id="video-cast-panel" class="video-cast-panel hidden" style="position: absolute; top: 60px; right: 16px; width: 440px; max-width: calc(100vw - 32px); z-index: 1040;">
+    <div class="video-cast-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span id="video-cast-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
+        <span style="font-weight: 700; font-size: 0.82rem; color: var(--text-main);">📹 Live Video Cast</span>
+        <span id="video-cast-status-text" style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">OFFLINE</span>
+        <span id="video-cast-fps-badge" class="badge-tag" style="font-size: 0.62rem; padding: 1px 5px; border-radius: 4px; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3);">0 FPS</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <button id="video-cast-minimize-btn" type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 2px 4px;" title="Minimize/Expand Video Cast">▼</button>
+        <button id="video-cast-close-btn" type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 4px;" title="Close Video Cast Panel">✕</button>
+      </div>
+    </div>
+    <div id="video-cast-body" class="video-cast-body">
+      <!-- 16:9 Live Video Canvas -->
+      <div class="video-cast-canvas-wrap">
+        <canvas id="video-cast-canvas" width="1280" height="720" class="video-cast-canvas"></canvas>
+      </div>
+      <!-- Controls Toolbar -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+          <!-- REC Button -->
+          <button id="video-cast-rec-btn" class="btn-rec" type="button" aria-pressed="false" title="Start Local Recording to .mp4">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor;"></span>
+            <span>REC</span>
+            <span id="video-cast-rec-timer" class="hidden" style="font-family: monospace; font-size: 0.72rem; margin-left: 2px;">00:00</span>
+          </button>
+
+          <!-- Source Selector Dropdown -->
+          <div style="display: flex; align-items: center; gap: 6px; flex: 1;">
+            <select id="video-cast-source-select" class="form-select" style="font-size: 0.72rem; padding: 4px 6px; flex: 1; border-radius: 6px; background: rgba(0,0,0,0.3); color: var(--text-main); border: 1px solid var(--border-color);">
+              <option value="test">Synthetic FPV HUD (Test Pattern)</option>
+              <option value="rtmp://127.0.0.1:1935/live/stream">Embedded RTMP Ingest (DJI RC 2 / Live Push)</option>
+              <option value="0">USB/HDMI Capture Card (UVC 0)</option>
+              <option value="1">Secondary Capture Card (UVC 1)</option>
+              <option value="custom">Custom Stream URL...</option>
+            </select>
+          </div>
+
+          <!-- Utility buttons: Gallery & Fullscreen -->
+          <div style="display: flex; gap: 4px;">
+            <button id="video-cast-gallery-btn" type="button" class="btn-secondary" style="padding: 5px 8px; font-size: 0.72rem;" title="View &amp; Download Saved Local Recordings">📁 Clips</button>
+            <button id="video-cast-fullscreen-btn" type="button" class="btn-secondary" style="padding: 5px 8px; font-size: 0.72rem;" title="Fullscreen View">⛶</button>
+          </div>
+        </div>
+
+        <!-- Custom URL container (toggled when 'custom' is selected) -->
+        <div id="video-cast-custom-url-container" style="display: none; gap: 6px;">
+          <input id="video-cast-custom-url-input" type="text" placeholder="rtmp://... or rtsp://..." style="flex: 1; font-size: 0.72rem; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main);">
+          <button id="video-cast-custom-url-save" type="button" class="btn-primary" style="padding: 4px 8px; font-size: 0.70rem;">Set</button>
+        </div>
+
+        <!-- Embedded RTMP Ingest & Firewall Information Banner (Issue #97) -->
+        <div id="video-cast-rtmp-bar" class="video-cast-rtmp-bar">
+          <div class="video-cast-rtmp-row">
+            <span style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 4px;">
+              <span>📡</span>
+              <span>RC 2 RTMP Ingest:</span>
+            </span>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span id="video-cast-fw-badge" class="video-cast-fw-badge is-open" title="Windows Firewall TCP Port 1935 status">🟢 Port 1935</span>
+              <button id="video-cast-copy-rtmp-btn" type="button" class="btn-secondary" style="font-size: 0.65rem; padding: 2px 6px; cursor: pointer;" title="Copy RTMP Ingest URL for DJI Fly">📋 Copy</button>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <code id="video-cast-rtmp-url-text" class="video-cast-rtmp-code" style="flex: 1;" title="Paste this URL into DJI Fly -> Settings -> Transmission -> Live Streaming Platforms -> RTMP">rtmp://127.0.0.1:1935/live/stream</code>
+          </div>
+          <div id="video-cast-rtmp-tip" style="font-size: 0.65rem; color: var(--text-muted); line-height: 1.3;">
+            In DJI Fly: Settings &rarr; Transmission &rarr; Live Streaming &rarr; RTMP.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recorded MP4 Clips Browser Modal (Issue #97) -->
+  <div id="video-recordings-modal" class="modal-overlay hidden" style="z-index: 1060;">
+    <div class="modal glass" style="max-width: 520px; width: 92%;">
+      <header class="modal-header">
+        <h2 style="font-size: 1rem; display: flex; align-items: center; gap: 6px;">
+          <span>🎞️</span>
+          <span>Saved Flight Video Recordings</span>
+        </h2>
+        <button id="video-recordings-modal-close" class="close-btn" type="button" aria-label="Close recordings modal">&times;</button>
+      </header>
+      <div class="modal-content" style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.4;">
+          Lossless H.264 MP4 recordings captured directly by the Aalaapi Sky Bridge service. Files are saved in <code>scratch/recordings/</code> on your host PC.
+        </div>
+        <div id="video-recordings-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; padding-right: 4px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+      <footer class="modal-footer" style="padding: 10px 16px;">
+        <button type="button" class="btn-secondary" onclick="document.getElementById('video-recordings-modal').classList.add('hidden')" style="font-size: 0.75rem; padding: 6px 12px;">Close</button>
+      </footer>
+    </div>
+  </div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>

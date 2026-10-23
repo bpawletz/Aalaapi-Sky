@@ -538,7 +538,7 @@ const TOUR_STEPS = [
 
 function switchIntroTab(tabName) {
   if (typeof document === 'undefined') return;
-  const tabs = ['workflow', 'features', 'tips'];
+  const tabs = ['workflow', 'features', 'tips', 'matrix'];
   tabs.forEach(t => {
     const btn = document.getElementById(`intro-tab-${t}`);
     const pane = document.getElementById(`intro-pane-${t}`);
@@ -562,11 +562,120 @@ function switchIntroTab(tabName) {
     if (pane) {
       if (t === tabName) {
         pane.classList.remove('hidden');
+        if (t === 'matrix' && typeof updateMatrixActiveLayerTelemetry === 'function') {
+          updateMatrixActiveLayerTelemetry();
+        }
       } else {
         pane.classList.add('hidden');
       }
     }
   });
+}
+
+function updateMatrixActiveLayerTelemetry() {
+  if (typeof document === 'undefined') return;
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const gridType = (activeLayer && activeLayer.pattern) 
+    ? activeLayer.pattern 
+    : (document.getElementById('grid-type')?.value || 'double');
+  
+  const layerNameEl = document.getElementById('matrix-active-layer-name');
+  if (layerNameEl) layerNameEl.textContent = activeLayer?.name || 'Layer 1';
+
+  const patternBadge = document.getElementById('matrix-active-pattern-badge');
+  const patternSelect = document.getElementById('grid-type');
+  const options = (patternSelect && patternSelect.options && typeof patternSelect.options[Symbol.iterator] === 'function')
+    ? Array.from(patternSelect.options)
+    : (Array.isArray(patternSelect?.options) ? patternSelect.options : []);
+  const selectedOpt = options.find(o => o && o.value === gridType);
+  const patternName = selectedOpt ? selectedOpt.textContent : gridType;
+  if (patternBadge) patternBadge.textContent = patternName;
+
+  // Altitude
+  const altVal = document.getElementById('matrix-active-alt-val');
+  if (altVal) {
+    const alt = activeLayer?.altitude ?? document.getElementById('altitude')?.value ?? 50;
+    altVal.textContent = `${alt}m`;
+  }
+
+  // Pitch
+  const pitchVal = document.getElementById('matrix-active-pitch-val');
+  if (pitchVal) {
+    const pitch = activeLayer?.gimbalPitch ?? document.getElementById('gimbal-pitch')?.value ?? -60;
+    pitchVal.textContent = `${pitch}°`;
+  }
+
+  // Capture Mode
+  const capVal = document.getElementById('matrix-active-capture-val');
+  if (capVal) {
+    const cap = activeLayer?.captureMode ?? document.getElementById('layer-capture-mode')?.value ?? 'continuous';
+    capVal.textContent = (cap === 'stopAndShoot') ? 'Stop & Shoot' : 'Continuous';
+  }
+
+  // Heading Mode
+  const headVal = document.getElementById('matrix-active-heading-val');
+  if (headVal) {
+    const head = activeLayer?.headingMode ?? document.getElementById('layer-heading-mode')?.value ?? 'followWayline';
+    const labels = {
+      'followWayline': 'Follow Wayline',
+      'towardCenter': 'Toward Center (POI)',
+      'fixed': 'Fixed Heading',
+      'smoothTransition': 'Smooth Transition',
+      'manual': 'Manual'
+    };
+    headVal.textContent = labels[head] || head;
+  }
+
+  // Turn Mode
+  const turnVal = document.getElementById('matrix-active-turn-val');
+  if (turnVal) {
+    const turn = activeLayer?.pathMode ?? document.getElementById('layer-path-mode')?.value ?? 'curved';
+    turnVal.textContent = (turn === 'straight') ? 'Straight (Sharp)' : 'Curved Coordinated';
+  }
+
+  // Overlap
+  const ovVal = document.getElementById('matrix-active-overlap-val');
+  if (ovVal) {
+    const fo = activeLayer?.frontOverlap ?? document.getElementById('front-overlap')?.value ?? 75;
+    const so = activeLayer?.sideOverlap ?? document.getElementById('side-overlap')?.value ?? 70;
+    ovVal.textContent = `${fo}% / ${so}%`;
+  }
+
+  // Speed
+  const spdVal = document.getElementById('matrix-active-speed-val');
+  if (spdVal) {
+    const spd = activeLayer?.speed ?? document.getElementById('speed')?.value ?? 5.0;
+    spdVal.textContent = `${spd} m/s`;
+  }
+
+  // Mission Finish
+  const finVal = document.getElementById('matrix-active-finish-val');
+  if (finVal) {
+    const fin = document.getElementById('finish-action')?.value ?? 'goHome';
+    const finLabels = {
+      'goHome': 'Return to Home',
+      'autoLand': 'Auto Land',
+      'hover': 'Hover at End',
+      'goFirst': 'Return to First WP'
+    };
+    finVal.textContent = finLabels[fin] || fin;
+  }
+
+  // Highlight active row in matrix table
+  const rows = (typeof document.querySelectorAll === 'function')
+    ? (document.querySelectorAll('#matrix-table-body tr') || [])
+    : [];
+  if (rows && typeof rows.forEach === 'function') {
+    rows.forEach(r => {
+      if (r && typeof r.getAttribute === 'function' && r.classList) {
+        if (r.getAttribute('data-pattern') === gridType) {
+          r.classList.add('active-matrix-row');
+        } else {
+          r.classList.remove('active-matrix-row');
+        }
+      }
+    });
+  }
 }
 
 function openIntroModal(targetTab = 'workflow') {
@@ -609,6 +718,7 @@ if (typeof window !== 'undefined') {
   window.openIntroModal = openIntroModal;
   window.closeIntroModal = closeIntroModal;
   window.switchIntroTab = switchIntroTab;
+  window.updateMatrixActiveLayerTelemetry = updateMatrixActiveLayerTelemetry;
   window.startInteractiveUITour = startInteractiveUITour;
 }
 

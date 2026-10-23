@@ -176,7 +176,7 @@ class TileCacheManager {
         lower.includes('conus_bref_qcd') ||
         lower.includes('wwa:hazards') ||
         lower.includes('radar.weather.gov') ||
-        lower.includes('mesonet.agron.iastate.edu/cgi-bin/wms/nexrad') ||
+        lower.includes('mesonet.agron.iastate.edu') ||
         lower.includes('rainviewer.com')) {
       return true;
     }
