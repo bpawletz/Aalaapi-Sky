@@ -122,6 +122,11 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     roadOffset: 15,
     roadSnap: true,
     roadFocusMode: 'focusRoad',
+    terrainFollow: 'inherit',
+    targetAgl: 'inherit',
+    terrainSource: 'auto',
+    maxSlopeAngle: 20,
+    elevationData: null,
     targetPoly: [],
     targetMode: 'radius', // 'polygon' or 'radius'
     targetRadius: 25,
@@ -278,6 +283,27 @@ function getEffectiveLayerHoverTime(layer) {
   }
   const globalEl = typeof document !== 'undefined' ? document.getElementById('global-hover-time') : null;
   return globalEl ? (parseInt(globalEl.value, 10) || 0) : 0;
+}
+
+function getEffectiveLayerTerrainFollow(layer) {
+  if (layer && layer.terrainFollow !== undefined && layer.terrainFollow !== null && layer.terrainFollow !== 'inherit') {
+    return layer.terrainFollow === 'enabled' || layer.terrainFollow === true;
+  }
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('global-terrain-follow') : null;
+  return globalEl ? globalEl.checked : false;
+}
+
+function getEffectiveLayerTargetAgl(layer) {
+  if (layer && layer.targetAgl !== undefined && layer.targetAgl !== null && layer.targetAgl !== 'inherit') {
+    const parsed = parseFloat(layer.targetAgl);
+    if (!isNaN(parsed)) return parsed;
+  }
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('global-target-agl') : null;
+  if (globalEl && !isNaN(parseFloat(globalEl.value))) {
+    return parseFloat(globalEl.value);
+  }
+  const altEl = typeof document !== 'undefined' ? document.getElementById('altitude') : null;
+  return altEl ? (parseFloat(altEl.value) || 50) : 50;
 }
 
 // Safely parse gimbal pitch angles preserving 0° horizontal camera tilt without falsy-zero fallback bugs
@@ -482,8 +508,10 @@ function updateLayerHierarchyBadge() {
   const hoverMode = document.getElementById('layer-hover-time-mode')?.value;
   const hoverVal = hoverMode ? (hoverMode === 'custom' ? 'custom' : 'inherit') : ((layer.hoverTime !== 'inherit' && layer.hoverTime !== undefined && layer.hoverTime !== null) ? 'custom' : 'inherit');
   const detourMode = document.getElementById('exclusion-detour-mode')?.value || layer.detourMode || 'inherit';
+  const tfVal = document.getElementById('layer-terrain-follow')?.value || layer.terrainFollow || 'inherit';
 
   const overrides = [];
+  if (tfVal !== 'inherit') overrides.push('Terrain Following');
   if (headingMode !== 'inherit') overrides.push('Heading');
   if (pathMode !== 'inherit') overrides.push('Path Type');
   if (captureMode !== 'inherit') overrides.push('Capture Mode');
@@ -513,6 +541,12 @@ function updateInheritOptionLabels() {
   const globalPathModeEl = document.getElementById('path-mode');
   const globalHeadingModeEl = document.getElementById('heading-mode');
   const globalHoverTimeEl = document.getElementById('global-hover-time');
+
+  const tfOpt = document.getElementById('layer-terrain-follow-inherit-opt');
+  const globalTfEl = document.getElementById('global-terrain-follow');
+  if (tfOpt && globalTfEl) {
+    tfOpt.textContent = `🌐 Inherit Global (${globalTfEl.checked ? 'Enabled' : 'Disabled'})`;
+  }
 
   const captureOpt = document.getElementById('layer-capture-mode-inherit-opt');
   if (captureOpt && globalCaptureModeEl) {
@@ -697,6 +731,21 @@ function saveActiveLayerFromUi(targetLayer) {
   if (sideOverlapEl) layer.sideOverlap = parseFloat(sideOverlapEl.value) || 75;
   if (altitudeEl) layer.altitude = parseFloat(altitudeEl.value) || 50;
   if (speedEl) layer.speed = parseFloat(speedEl.value) || 4;
+
+  const layerTfEl = document.getElementById('layer-terrain-follow');
+  if (layerTfEl) layer.terrainFollow = layerTfEl.value;
+
+  const layerTargetAglEl = document.getElementById('layer-target-agl');
+  if (layerTargetAglEl) {
+    const val = layerTargetAglEl.value;
+    layer.targetAgl = (val === 'inherit' || val === '') ? 'inherit' : (parseFloat(val) || 50);
+  }
+
+  const layerTfSourceEl = document.getElementById('layer-terrain-source');
+  if (layerTfSourceEl) layer.terrainSource = layerTfSourceEl.value;
+
+  const layerMaxSlopeEl = document.getElementById('layer-max-slope-angle');
+  if (layerMaxSlopeEl) layer.maxSlopeAngle = parseInt(layerMaxSlopeEl.value, 10) || 20;
   if (gimbalPitchEl) layer.gimbalPitch = parseGimbalPitch(gimbalPitchEl.value, -60);
 
   if (layerCaptureModeEl && layerCaptureModeEl.value) {
@@ -987,6 +1036,21 @@ function syncUiWithActiveLayer() {
   setVal('altitude', layer.altitude);
   setVal('speed', layer.speed);
   setVal('gimbal-pitch', layer.gimbalPitch);
+
+  setVal('layer-terrain-follow', layer.terrainFollow || 'inherit');
+  setVal('layer-target-agl', layer.targetAgl !== undefined ? layer.targetAgl : 'inherit');
+  setVal('layer-terrain-source', layer.terrainSource || 'auto');
+  setVal('layer-max-slope-angle', layer.maxSlopeAngle !== undefined ? layer.maxSlopeAngle : 20);
+
+  const tfSettingsWrapper = document.getElementById('layer-terrain-follow-settings-wrapper');
+  if (tfSettingsWrapper) {
+    const isTfActive = getEffectiveLayerTerrainFollow(layer);
+    tfSettingsWrapper.style.display = isTfActive ? 'block' : 'none';
+  }
+  const demUploadWrapper = document.getElementById('layer-dem-upload-container');
+  if (demUploadWrapper) {
+    demUploadWrapper.style.display = (layer.terrainSource === 'geotiff') ? 'block' : 'none';
+  }
 
   // Section 2 Layer Controls
   setVal('layer-capture-mode', layer.captureMode || 'inherit');
@@ -2681,6 +2745,29 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     });
   }
 
+  const isTerrainFollow = (typeof getEffectiveLayerTerrainFollow === 'function')
+    ? getEffectiveLayerTerrainFollow(layer)
+    : false;
+
+  if (isTerrainFollow && typeof elevationServiceInstance !== 'undefined' && elevationServiceInstance.applyTerrainFollowingSync) {
+    const targetAgl = (typeof getEffectiveLayerTargetAgl === 'function')
+      ? getEffectiveLayerTargetAgl(layer)
+      : (typeof layer.altitude === 'number' ? layer.altitude : 50);
+    const maxSlope = layer.maxSlopeAngle !== undefined ? layer.maxSlopeAngle : 20;
+
+    waypoints = elevationServiceInstance.applyTerrainFollowingSync(waypoints, {
+      targetAgl,
+      maxSlopeAngle: maxSlope,
+      elevations: layer.elevationData
+    });
+
+    if (!layer.elevationData && elevationServiceInstance.hasMissingElevations(waypoints)) {
+      if (typeof refreshLayerElevationsAsync === 'function') {
+        refreshLayerElevationsAsync(layer.id);
+      }
+    }
+  }
+
   waypoints.forEach((wp, wIdx) => {
     wp.layerId = layer.id;
     wp.layerName = layer.name;
@@ -3312,3 +3399,36 @@ if (typeof global !== 'undefined') {
   global.handleFlightSpeedChange = handleFlightSpeedChange;
 }
 
+
+
+let isRefreshingLayerElevations = false;
+async function refreshLayerElevationsAsync(layerId) {
+  if (isRefreshingLayerElevations) return;
+  const layersList = (typeof flightLayers !== 'undefined') ? flightLayers : null;
+  const layer = layersList ? layersList.find(l => l.id === layerId) : null;
+  if (!layer || !layer.waypoints || layer.waypoints.length === 0) return;
+  isRefreshingLayerElevations = true;
+  try {
+    const coords = layer.waypoints.map(wp => ({ lat: wp.lat, lon: wp.lon }));
+    const elevations = await elevationServiceInstance.fetchElevations(coords, { source: layer.terrainSource || 'auto' });
+    layer.elevationData = elevations;
+    const targetAgl = getEffectiveLayerTargetAgl(layer);
+    layer.waypoints = elevationServiceInstance.applyTerrainFollowingSync(layer.waypoints, {
+      targetAgl,
+      maxSlopeAngle: layer.maxSlopeAngle || 20,
+      elevations
+    });
+    if (typeof updateElevationProfileUi === 'function') {
+      updateElevationProfileUi();
+    }
+    if (typeof redrawCurrentMission === 'function') {
+      redrawCurrentMission();
+    }
+  } catch (err) {
+    if (typeof Logger !== 'undefined' && Logger.warn) {
+      Logger.warn('Background terrain elevation fetch error:', err);
+    }
+  } finally {
+    isRefreshingLayerElevations = false;
+  }
+}

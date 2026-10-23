@@ -20,6 +20,7 @@ import './map/MapInteraction.js';
 import './patterns/PatternGenerators.js';
 import './3d/GeometryBuilder.js';
 import './geo/MathUtils.js';
+import './geo/ElevationService.js';
 import './ui/TelemetryHud.js';
 import './export/DroneProfiles.js';
 import './export/WpmlCompiler.js';

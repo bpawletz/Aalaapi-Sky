@@ -1018,6 +1018,25 @@ function generateKMZBlob(wps = null) {
     zip.file("wpmz/res/wireframe_threejs.json", JSON.stringify(threeJson, null, 2), { createFolders: false });
   }
 
+  // If AI 3D Mesh is present, embed it as part of the package (Issue #96)
+  if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.aiMeshObject && FlightDiagnostics.aiMeshObject.geometry) {
+    try {
+      const geom = FlightDiagnostics.aiMeshObject.geometry;
+      const posAttr = geom.getAttribute('position');
+      if (posAttr && posAttr.count > 0) {
+        let aiObjStr = `# Aalaapi Sky AI 3D Reconstructed Mesh\n# Generated: ${new Date().toISOString()}\n\n`;
+        const count = posAttr.count;
+        for (let i = 0; i < count; i++) {
+          aiObjStr += `v ${posAttr.getX(i).toFixed(4)} ${posAttr.getY(i).toFixed(4)} ${posAttr.getZ(i).toFixed(4)}\n`;
+        }
+        for (let i = 1; i <= count; i += 3) {
+          aiObjStr += `f ${i} ${i+1} ${i+2}\n`;
+        }
+        zip.file("wpmz/res/ai_mesh.obj", aiObjStr, { createFolders: false });
+      }
+    } catch (_) {}
+  }
+
   return zip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(blob => ({
     blob,
     templateKml: finalTemplate,

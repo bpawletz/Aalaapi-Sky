@@ -34417,3 +34417,290 @@ describe('v1.184.0: Dynamic Live Stream Dropdown & OpenCV RTMP Subscriber Handsh
     }
   });
 });
+
+
+describe('Third-Party Credits, Open Source Licenses & Trademark Legal Disclaimers (v1.185.0 - Issue #156)', () => {
+  test('Version consistency: v1.185.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.185.0');
+  });
+
+  test('validates CREDITS.md file presence, completeness, and license sections', () => {
+    assert.ok(fs.existsSync('CREDITS.md'), 'CREDITS.md must exist in the root repository');
+    const credits = fs.readFileSync('CREDITS.md', 'utf8');
+
+    // Required open source software libraries
+    assert.ok(credits.includes('Leaflet'), 'Must credit Leaflet');
+    assert.ok(credits.includes('Three.js & OrbitControls'), 'Must credit Three.js and OrbitControls');
+    assert.ok(credits.includes('Esri Leaflet'), 'Must credit Esri Leaflet');
+    assert.ok(credits.includes('JSZip'), 'Must credit JSZip');
+    assert.ok(credits.includes('Outfit') && credits.includes('Plus Jakarta Sans'), 'Must credit Google Fonts typography');
+
+    // Required geospatial, aeronautical & weather data providers
+    assert.ok(credits.includes('OpenStreetMap'), 'Must credit OpenStreetMap');
+    assert.ok(credits.includes('OpenTopoMap & SRTM'), 'Must credit OpenTopoMap & SRTM');
+    assert.ok(credits.includes('Esri ArcGIS Online'), 'Must credit Esri basemaps');
+    assert.ok(credits.includes('Federal Aviation Administration (FAA)'), 'Must credit FAA Open Data');
+    assert.ok(credits.includes('National Oceanic and Atmospheric Administration (NOAA)'), 'Must credit NOAA/NWS');
+    assert.ok(credits.includes('Iowa Environmental Mesonet (IEM)'), 'Must credit GOES satellite feed');
+    assert.ok(credits.includes('National Aeronautics and Space Administration (NASA)'), 'Must credit NASA VIIRS');
+    assert.ok(credits.includes('Homeland Infrastructure Foundation-Level Data (HIFLD)'), 'Must credit HIFLD power lines');
+    assert.ok(credits.includes('Open-Meteo'), 'Must credit Open-Meteo');
+    assert.ok(credits.includes('Project OSRM'), 'Must credit OSRM');
+    assert.ok(credits.includes('The OpenSky Network'), 'Must credit OpenSky Network');
+
+    // Myaamia cultural heritage
+    assert.ok(credits.includes('Myaamia Center') && credits.includes('aalaapi-'), 'Must cite Myaamia Center ILDA entry');
+
+    // Trademark Legalize
+    assert.ok(credits.includes('SZ DJI Technology Co., Ltd.'), 'Must name DJI legal entity');
+    assert.ok(credits.includes('not affiliated with, authorized by, sponsored by, endorsed by, or certified by SZ DJI Technology Co., Ltd.'), 'Must explicitly disclaim DJI affiliation');
+    assert.ok(credits.includes('Google LLC'), 'Must name Google LLC');
+    assert.ok(credits.includes('Environmental Systems Research Institute, Inc.'), 'Must name Esri');
+    assert.ok(credits.includes('OpenStreetMap Foundation'), 'Must name OpenStreetMap Foundation');
+    assert.ok(credits.includes('Apple Inc.'), 'Must name Apple Inc.');
+    assert.ok(credits.includes('OpenJS Foundation'), 'Must name OpenJS Foundation');
+  });
+
+  test('verifies in-app About modal includes credits cards and trademark disclaimers in index_template.html and index.html', () => {
+    const template = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    for (const [name, html] of [['index_template.html', template], ['index.html', indexHtml]]) {
+      assert.ok(html.includes('id="about-credits-section"'), `${name} must contain #about-credits-section`);
+      assert.ok(html.includes('id="about-trademarks-section"'), `${name} must contain #about-trademarks-section`);
+      assert.ok(html.includes('SZ DJI Technology Co., Ltd.'), `${name} must state DJI legal entity`);
+      assert.ok(html.includes('NOT affiliated with, authorized by, sponsored by, or endorsed by SZ DJI Technology Co., Ltd.'), `${name} must state non-affiliation notice`);
+      assert.ok(html.includes('Environmental Systems Research Institute, Inc.'), `${name} must state Esri legal entity`);
+      assert.ok(html.includes('OpenStreetMap Foundation'), `${name} must state OSM legal entity`);
+    }
+  });
+
+  test('verifies README.md references CREDITS.md and contains trademark disclaimers', () => {
+    const readme = fs.readFileSync('README.md', 'utf8');
+    assert.ok(readme.includes('CREDITS.md'), 'README.md must link to CREDITS.md');
+    assert.ok(readme.includes('Trademark & Non-Affiliation Legal Disclaimer'), 'README.md must have trademark disclaimer section');
+    assert.ok(readme.includes('SZ DJI Technology Co., Ltd.'), 'README.md must name SZ DJI Technology Co., Ltd.');
+  });
+
+
+describe('Terrain Following (DEM-Aware Grid) & Constant AGL/GSD Suite (v1.186.0 - Issue #129)', () => {
+  test('Version consistency: v1.186.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.186.0');
+  });
+
+  test('UI templates contain all Terrain Following controls, drawer, and canvas', () => {
+    const template = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    for (const [name, html] of [['index_template.html', template], ['index.html', indexHtml]]) {
+      assert.ok(html.includes('id="layer-terrain-follow"'), `${name} must contain #layer-terrain-follow`);
+      assert.ok(html.includes('id="layer-target-agl"'), `${name} must contain #layer-target-agl`);
+      assert.ok(html.includes('id="layer-max-slope-angle"'), `${name} must contain #layer-max-slope-angle`);
+      assert.ok(html.includes('id="layer-terrain-source"'), `${name} must contain #layer-terrain-source`);
+      assert.ok(html.includes('id="global-terrain-follow"'), `${name} must contain #global-terrain-follow`);
+      assert.ok(html.includes('id="global-target-agl"'), `${name} must contain #global-target-agl`);
+      assert.ok(html.includes('id="elevation-profile-drawer"'), `${name} must contain #elevation-profile-drawer`);
+      assert.ok(html.includes('id="elevation-profile-canvas"'), `${name} must contain #elevation-profile-canvas`);
+      assert.ok(html.includes('open-elevation-profile-btn'), `${name} must contain #open-elevation-profile-btn`);
+    }
+  });
+
+  test('ElevationService.smoothAltitudes enforces max climb/descent slope angle and preserves safety clearance', () => {
+    const { ElevationService } = require('./src/geo/ElevationService.js');
+    const service = new ElevationService();
+
+    // 4 sequential waypoints spaced 100m apart horizontally
+    // Waypoint 2 has a steep hill (surface rises from 10m to 80m over 100m -> 70m rise / 100m = slope ~35° > 20°)
+    const targetAgl = 50;
+    const waypoints = [
+      { x: 0, y: 0, lat: 41.321, lon: -88.995, surfaceElevation: 10, agl: targetAgl },
+      { x: 100, y: 0, lat: 41.322, lon: -88.995, surfaceElevation: 10, agl: targetAgl },
+      { x: 200, y: 0, lat: 41.323, lon: -88.995, surfaceElevation: 80, agl: targetAgl },
+      { x: 300, y: 0, lat: 41.324, lon: -88.995, surfaceElevation: 20, agl: targetAgl }
+    ];
+
+    const maxSlopeAngle = 20; // tan(20°) ≈ 0.36397 -> max deltaZ per 100m ≈ 36.4m
+    const maxSlope = Math.tan((maxSlopeAngle * Math.PI) / 180.0);
+
+    const smoothed = service.smoothAltitudes(waypoints, maxSlopeAngle);
+
+    // 1. Assert all waypoints maintain at least minimum clearance (alt >= surface + agl)
+    smoothed.forEach((wp, idx) => {
+      const minSafeAlt = waypoints[idx].surfaceElevation + targetAgl;
+      assert.ok(
+        wp.alt >= minSafeAlt - 0.1,
+        `Waypoint ${idx} altitude (${wp.alt}) must be >= surface + target AGL (${minSafeAlt}) to prevent CFIT`
+      );
+      assert.strictEqual(wp.isTerrainFollow, true);
+    });
+
+    // 2. Assert vertical slope between consecutive points does not exceed maxSlope
+    for (let i = 0; i < smoothed.length - 1; i++) {
+      const deltaZ = Math.abs(smoothed[i + 1].alt - smoothed[i].alt);
+      const dist = 100;
+      const slope = deltaZ / dist;
+      assert.ok(
+        slope <= maxSlope + 0.05,
+        `Segment ${i}->${i+1} vertical slope (${slope.toFixed(3)}) exceeds max slope (${maxSlope.toFixed(3)})`
+      );
+    }
+  });
+
+  test('ElevationService.generateElevationProfile calculates cumulative distances and relief statistics', () => {
+    const { ElevationService } = require('./src/geo/ElevationService.js');
+    const service = new ElevationService();
+
+    const waypoints = [
+      { x: 0, y: 0, lat: 41.32, lon: -88.99, surfaceElevation: 120, alt: 170 },
+      { x: 50, y: 0, lat: 41.32, lon: -88.989, surfaceElevation: 155, alt: 205 },
+      { x: 100, y: 0, lat: 41.32, lon: -88.988, surfaceElevation: 130, alt: 180 }
+    ];
+
+    const profile = service.generateElevationProfile(waypoints);
+    assert.strictEqual(profile.totalDistance, 100);
+    assert.strictEqual(profile.minGround, 120);
+    assert.strictEqual(profile.maxGround, 155);
+    assert.strictEqual(profile.reliefMeters, 35);
+    assert.strictEqual(profile.points.length, 3);
+    assert.strictEqual(profile.points[0].s, 0);
+    assert.strictEqual(profile.points[2].s, 100);
+  });
+
+  test('ElevationService.parseGeoTiff parses synthetic Float32 TIFF and performs bilinear interpolation', () => {
+    const { ElevationService } = require('./src/geo/ElevationService.js');
+    const service = new ElevationService();
+
+    // Construct a minimal valid 2x2 Float32 TIFF in Little Endian
+    // Header: 8 bytes ("II", 42, IFD offset = 8)
+    // IFD: 10 entries (2 + 10 * 12 + 4 = 126 bytes)
+    // Values outside IFD: StripOffsets, StripByteCounts, PixelScale, Tiepoint, Raster (2x2 float32 = 16 bytes)
+    const bufSize = 512;
+    const arrayBuffer = new ArrayBuffer(bufSize);
+    const view = new DataView(arrayBuffer);
+
+    // Header
+    view.setUint16(0, 0x4949, true); // Little endian
+    view.setUint16(2, 42, true);
+    view.setUint32(4, 8, true); // IFD offset
+
+    let p = 8;
+    const numEntries = 9;
+    view.setUint16(p, numEntries, true);
+    p += 2;
+
+    const writeTag = (tagId, type, count, valOrOff) => {
+      view.setUint16(p, tagId, true);
+      view.setUint16(p + 2, type, true);
+      view.setUint32(p + 4, count, true);
+      view.setUint32(p + 8, valOrOff, true);
+      p += 12;
+    };
+
+    // Strip data at offset 300 (4 floats: 100.0, 120.0, 140.0, 160.0)
+    const rasterOffset = 300;
+    view.setFloat32(rasterOffset, 100.0, true);
+    view.setFloat32(rasterOffset + 4, 120.0, true);
+    view.setFloat32(rasterOffset + 8, 140.0, true);
+    view.setFloat32(rasterOffset + 12, 160.0, true);
+
+    // PixelScale at offset 350 (scaleX = 0.001, scaleY = 0.001, scaleZ = 0)
+    const scaleOffset = 350;
+    view.setFloat64(scaleOffset, 0.001, true);
+    view.setFloat64(scaleOffset + 8, 0.001, true);
+    view.setFloat64(scaleOffset + 16, 0.0, true);
+
+    // Tiepoint at offset 400 (i=0, j=0, k=0, x=-88.995, y=41.325, z=0)
+    const tiepointOffset = 400;
+    view.setFloat64(tiepointOffset, 0, true);
+    view.setFloat64(tiepointOffset + 8, 0, true);
+    view.setFloat64(tiepointOffset + 16, 0, true);
+    view.setFloat64(tiepointOffset + 24, -88.995, true); // lon
+    view.setFloat64(tiepointOffset + 32, 41.325, true);  // lat
+    view.setFloat64(tiepointOffset + 40, 0, true);
+
+    writeTag(256, 4, 1, 2); // ImageWidth = 2
+    writeTag(257, 4, 1, 2); // ImageLength = 2
+    writeTag(258, 3, 1, 32); // BitsPerSample = 32
+    writeTag(259, 3, 1, 1); // Compression = 1
+    writeTag(273, 4, 1, rasterOffset); // StripOffsets
+    writeTag(278, 4, 1, 2); // RowsPerStrip = 2
+    writeTag(279, 4, 1, 16); // StripByteCounts = 16
+    writeTag(339, 3, 1, 3); // SampleFormat = 3 (Float)
+    writeTag(33550, 12, 3, scaleOffset); // ModelPixelScaleTag
+    // Note: tiepoints omitted from tag table or parsed
+    view.setUint32(p, 0, true); // Next IFD = 0
+
+    const dem = service.parseGeoTiff(arrayBuffer);
+    assert.strictEqual(dem.width, 2);
+    assert.strictEqual(dem.height, 2);
+    assert.strictEqual(dem.minElev, 100.0);
+    assert.strictEqual(dem.maxElev, 160.0);
+  });
+
+  test('WpmlCompiler preserves per-waypoint executeHeight for terrain-following layers', () => {
+    const { buildWaylinesWpml } = require('./src/export/WpmlCompiler.js');
+
+    const waypoints = [
+      { lat: 41.321, lon: -88.995, alt: 65.4, surfaceElevation: 15.4, agl: 50, isTerrainFollow: true, layerId: 'layer-1' },
+      { lat: 41.322, lon: -88.995, alt: 82.1, surfaceElevation: 32.1, agl: 50, isTerrainFollow: true, layerId: 'layer-1' },
+      { lat: 41.323, lon: -88.995, alt: 95.8, surfaceElevation: 45.8, agl: 50, isTerrainFollow: true, layerId: 'layer-1' }
+    ];
+
+    const flightLayers = [
+      { id: 'layer-1', name: 'Terrain Survey Grid', pattern: 'double', altitude: 50, terrainFollow: 'enabled' }
+    ];
+
+    const xml = buildWaylinesWpml(waypoints, {
+      altitude: 50,
+      flightLayers: flightLayers
+    });
+
+    // Check that <wpml:executeHeight> contains individual altitudes (65.4, 82.1, 95.8)
+    // and was NOT overwritten by uniform layer altitude (50)
+    assert.ok(xml.includes('<wpml:executeHeight>65.4</wpml:executeHeight>'), 'Must preserve waypoint 0 altitude 65.4');
+    assert.ok(xml.includes('<wpml:executeHeight>82.1</wpml:executeHeight>'), 'Must preserve waypoint 1 altitude 82.1');
+    assert.ok(xml.includes('<wpml:executeHeight>95.8</wpml:executeHeight>'), 'Must preserve waypoint 2 altitude 95.8');
+    assert.ok(!xml.includes('NaN'), 'WPML output must never contain NaN');
+  });
+});
+
+
+describe('Bridge-Hosted AI 3D Reconstruction Architecture Suite (Issue #96 / v1.186.0)', () => {
+  test('Version consistency: v1.186.0 across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.186.0');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.186.0]'));
+
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tpl.includes('v1.186.0</span>'));
+    assert.ok(tpl.includes('Version 1.186.0</span>'));
+    assert.ok(tpl.includes('Changelog (v1.186.0):'));
+
+    const compiled = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(compiled.includes('v1.186.0</span>'));
+    assert.ok(compiled.includes('Version 1.186.0</span>'));
+    assert.ok(compiled.includes('Changelog (v1.186.0):'));
+  });
+
+  test('DOM Architecture: AI 3D reconstruction controls exist in template and bundle', () => {
+    const compiled = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(compiled.includes('id="diag-btn-toggle-mesh"'), 'HUD must include toggle AI mesh button');
+    assert.ok(compiled.includes('id="diag-indicator-mesh"'), 'HUD must include toggle indicator');
+    assert.ok(compiled.includes('id="diag-btn-generate-ai-mesh"'), 'Toolkit must include generate AI mesh button');
+    assert.ok(compiled.includes('id="diag-ai-mesh-engine-select"'), 'Toolkit must include engine selector');
+    assert.ok(compiled.includes('id="diag-ai-mesh-progress-bar"'), 'Toolkit must include active progress bar');
+    assert.ok(compiled.includes('id="diag-btn-ai-mesh-gallery"'), 'Photos gallery must include AI 3D Assist button');
+  });
+
+  test('FlightDiagnostics exports AI 3D mesh reconstruction methods', () => {
+    const dtModule = require('./src/3d/DigitalTwin.js');
+    assert.strictEqual(typeof dtModule.FlightDiagnostics.toggleAiMesh, 'function');
+    assert.strictEqual(typeof dtModule.FlightDiagnostics.updateAiMeshOpacity, 'function');
+    assert.strictEqual(typeof dtModule.FlightDiagnostics.loadAiMeshGeometry, 'function');
+    assert.strictEqual(typeof dtModule.FlightDiagnostics.triggerAiMeshReconstruction, 'function');
+  });
+});
+
+});

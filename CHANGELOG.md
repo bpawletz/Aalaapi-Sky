@@ -1,3 +1,57 @@
+## [1.186.0] - 2026-10-23
+
+Dynamic Digital Elevation Model (DEM) sampling, climb/descent slope gradient smoothing, and constant AGL terrain-following flight grids.
+
+### Added
+
+#### Pilot & Operational Features
+- **Terrain Following (DEM-Aware Grid for Constant AGL & GSD) (Closes #129)**:
+  - Added terrain-aware elevation adjustment for photogrammetry and survey flight grids, guaranteeing constant Above Ground Level (AGL) and uniform Ground Sampling Distance (GSD) across hilly topography, open-pit mines, and undulating countryside.
+  - Integration with Open-Meteo Global Copernicus 30m DEM API, local Companion Bridge caching proxy (`/api/elevation`), and in-browser client-side GeoTIFF DEM file parsing (`.tif` / `.dem`).
+  - Automated climb/descent slope gradient smoothing (<= 20°) preventing abrupt vertical stair-stepping between survey passes and ensuring safe vertical ascent rates.
+- **2D Cross-Section Elevation Profile Drawer**:
+  - Interactive collapsible cross-section drawer beneath the 2D map canvas charting ground elevation E(s), flight trajectory Z(s), ground clearance tethers, relief stats, and track distance.
+  - Interactive hover inspection highlighting matching waypoints and ground elevations in real time.
+- **3D FPV HUD Terrain Relief Surface**:
+  - Displaces 3D ground plane vertices in Three.js FPV HUD according to sampled elevation grids, creating an authentic 3D terrain relief surface with undulating drone flight trajectories.
+- **Three-Tier Cascading Hierarchy**:
+  - Tier 1: Global Terrain Following toggle and default Target AGL in Section 3.
+  - Tier 2: Layer Terrain Following override, Target AGL, Max Slope Limit (10° to 35°), and DEM Data Source selector in Section 2.
+  - Tier 3: Waypoint overrides displaying ground elevation and allowing manual altitude lock.
+- **DJI WPML Per-Waypoint Altitude Preservation**:
+  - Configured `WpmlCompiler.js` to preserve distinct calculated altitudes in `<wpml:executeHeight>` without being overwritten by single layer heights.
+
+#### Under the Hood & Technical Details
+- **Elevation Engine (`src/geo/ElevationService.js`)**:
+  - Implemented `ElevationService` class with batch chunking, in-memory LRU caching, pure JS GeoTIFF 6.0 TIFF tag decoder with bilinear interpolation, and symmetric two-pass slope smoother.
+  - Implemented `drawElevationProfileChart` and `updateElevationProfileUi` canvas renderers.
+- **Companion Bridge DEM Proxy (`tools/companion/server.js`)**:
+  - Added `/api/elevation` REST endpoint proxying upstream elevation requests with local `TileCacheManager` disk caching.
+- **Settings Matrix & Documentation (`docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md`)**:
+  - Synchronized Decision Trees and Settings Matrix for Terrain Following.
+
+## [1.185.0] - 2026-10-23
+
+Comprehensive third-party resource attribution, open-source library credits, and formal trademark legal disclaimers.
+
+### Added
+
+#### Pilot & Operational Features
+- **In-App Third-Party Credits & License Attribution (Closes #156)**:
+  - Added a dedicated, scannable **Third-Party Credits & Open-Source Licenses** card deck inside the About dialog (`#about-modal`).
+  - Provides clear attribution and license citations for Leaflet (BSD-2-Clause), Three.js (MIT), Esri Leaflet (Apache-2.0), JSZip (MIT), Google Fonts (SIL OFL), OpenStreetMap (ODbL), OpenTopoMap (CC-BY-SA 3.0), FAA AIS, NOAA/NWS, NASA GIBS, Open-Meteo, Project OSRM, and Myaamia cultural heritage.
+- **Formal Trademark Legal Disclaimers ("The Legalize")**:
+  - Integrated an explicit trademark legal disclaimer callout box in the About dialog protecting proprietary trademarks of SZ DJI Technology Co., Ltd. (DJI, DJI Fly, DJI Pilot, WPML, Mini 4 Pro, Air 3, Mavic, Matrice, Inspire), Google LLC (Google Earth, KML, GPano), Esri (ArcGIS), OpenStreetMap Foundation, Apple Inc., and OpenJS Foundation.
+  - Confirms Aalaapi Sky's independent third-party status and explicitly disclaims official affiliation, sponsorship, or endorsement.
+
+#### Under the Hood & Technical Details
+- **Repository Credits Documentation (`CREDITS.md`)**:
+  - Authored comprehensive root-level legal notices and full license texts for all integrated third-party libraries, fonts, and open data feeds.
+- **README Cross-Referencing (`README.md`)**:
+  - Synchronized README Disclaimer and Technologies sections with links to `CREDITS.md` and standard trademark notices.
+- **Automated Legal & Attribution Regression Tests (`index.test.js`)**:
+  - Added unit test suite verifying `CREDITS.md` integrity, About modal attribution cards, and trademark disclaimer coverage.
+
 ## [1.184.0] - 2026-10-23
 
 Dynamic live RTMP stream source dropdown population and subscriber handshake unblocking for low-latency live camera casting.
