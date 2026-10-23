@@ -132,17 +132,6 @@
     "gid": "6/1691"
   },
   {
-    "notam_id": "6/1679",
-    "facility": "ZOB",
-    "state": "OH",
-    "type": "HAZARDS",
-    "description": "TOLEDO, OH, Thursday, October 22, 2026 through Friday, October 23, 2026 UTC",
-    "mod_date": "10/22/2026 15:49:00",
-    "mod_abs_time": "202610221549",
-    "is_new": "Y",
-    "gid": "6/1679"
-  },
-  {
     "notam_id": "6/1671",
     "facility": "ZHU",
     "state": "TX",

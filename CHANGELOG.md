@@ -1,3 +1,19 @@
+## [1.177.1] - 2026-10-23
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Dedicated ADS-B Working Connection File Persistence (dsb_connection.json)**:
+  - Automatically records and caches working ADS-B station connections (host, port, and timestamp) directly into a dedicated, gitignored workspace file (dsb_connection.json) upon successful TCP connection or user configuration save.
+  - Ensures remote ADS-B receivers (e.g. Raspberry Pi dump1090/readsb feeds) survive companion bridge restarts, directory moves, and clean checkouts without defaulting to localhost.
+  - Transparently integrates with existing multi-tier retention (browser localStorage and user-profile persistent config), ensuring immediate boot recovery.
+
+#### Under the Hood & Technical Details
+- **	ools/companion/server.js**: Added WORKING_ADSB_FILE resolution and saveWorkingAdsbConnection(). Enhanced loadCompanionConfig() to prioritize verified workspace connection settings over localhost fallbacks.
+- **	ools/companion/adsb_tracker.js**: Emits connected event on successful dump1090 TCP stream establishment to trigger working connection persistence.
+- **src/bridge/ApiClient.js**: AdsbAirspaceManager.init() proactively queries /api/config/adsb on startup to re-harmonize custom host preferences.
+- **.gitignore**: Added dsb_connection.json and config/adsb_connection.json to enforce strict zero-sensitive-data hygiene.
+
 ## [1.177.0] - 2026-10-23
 
 Introduces an adaptive hardware synchronization architecture in Aalaapi Sky that conditionally detects operating system platforms and progressively discloses the optimal USB transfer method! On Android tablets and ChromeOS, dynamically surfaces direct WebUSB OTG communication via `navigator.usb` for zero-install 1-click KMZ pushing and telemetry log pulling without background services or Termux, while preserving the robust Aalaapi Bridge companion architecture on Windows/macOS.

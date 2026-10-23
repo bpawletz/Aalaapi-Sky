@@ -60,9 +60,32 @@ let cachedWeatherTelemetry = null;
 const CONFIG_FILE = path.resolve(__dirname, '../../scratch/companion_config.json');
 const PERSISTENT_CONFIG_DIR = path.join(os.homedir(), '.aalaapi');
 const PERSISTENT_CONFIG_FILE = path.join(PERSISTENT_CONFIG_DIR, 'companion_config.json');
+const WORKING_ADSB_FILE = path.resolve(__dirname, '../../adsb_connection.json');
 const DJI_LOG_EXE = path.resolve(__dirname, 'bin/dji-log.exe');
 
+function saveWorkingAdsbConnection(host, port, extra = {}) {
+  if (!host || typeof host !== 'string' || !host.trim()) return;
+  const cleanHost = host.trim();
+  const parsedPort = parseInt(port, 10) || 30003;
+  try {
+    const data = {
+      host: cleanHost,
+      port: parsedPort,
+      lastConnected: new Date().toISOString(),
+      ...extra
+    };
+    fs.writeFileSync(WORKING_ADSB_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (_) {}
+}
+
 function loadCompanionConfig() {
+  let workingConn = {};
+  try {
+    if (fs.existsSync(WORKING_ADSB_FILE)) {
+      workingConn = JSON.parse(fs.readFileSync(WORKING_ADSB_FILE, 'utf8')) || {};
+    }
+  } catch (e) {}
+
   let scratchCfg = {};
   try {
     if (fs.existsSync(CONFIG_FILE)) {
@@ -82,6 +105,13 @@ function loadCompanionConfig() {
     merged.adsbHost = userCfg.adsbHost;
     if (userCfg.adsbPort) merged.adsbPort = userCfg.adsbPort;
   }
+
+  // Working connection file takes precedence if it defines a valid host
+  if (workingConn.host && typeof workingConn.host === 'string' && workingConn.host.trim()) {
+    merged.adsbHost = workingConn.host.trim();
+    if (workingConn.port) merged.adsbPort = parseInt(workingConn.port, 10) || merged.adsbPort || 30003;
+  }
+
   return merged;
 }
 
@@ -208,6 +238,7 @@ function saveAdsbConfig(host, port) {
   const cleanPort = parsedPort;
 
   saveCompanionConfig({ adsbHost: cleanHost, adsbPort: cleanPort });
+  saveWorkingAdsbConnection(cleanHost, cleanPort);
   if (adsbTracker && typeof adsbTracker.updateServerConfig === 'function') {
     adsbTracker.updateServerConfig({ tcpHost: cleanHost, tcpPort: cleanPort });
   }
@@ -409,6 +440,10 @@ const adsbTracker = new AdsbAirspaceTracker({
   tcpHost: initialAdsbCfg.adsbHost,
   tcpPort: initialAdsbCfg.adsbPort,
   autoConnect: process.env.NODE_ENV !== 'test' && !process.env.npm_lifecycle_event?.includes('test') && !process.argv.includes('--test')
+});
+
+adsbTracker.on('connected', ({ tcpHost, tcpPort }) => {
+  saveWorkingAdsbConnection(tcpHost, tcpPort, { driverType: 'dump1090-tcp' });
 });
 
 // Cache for external online ADS-B feeds (adsb.lol / airplanes.live)
@@ -6001,6 +6036,8 @@ module.exports = {
   maskApiKey,
   getAdsbConfig,
   saveAdsbConfig,
+  loadCompanionConfig,
+  saveWorkingAdsbConnection,
   probeAdsbHost,
   probeTcpPort,
   decryptFlightRecordWithDjiCli,

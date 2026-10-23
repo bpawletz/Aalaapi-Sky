@@ -32,3 +32,7 @@ tools/companion/bin/
 # Generated JS bundle (index.html is the committed artifact)
 dist/
 
+# ADS-B working connection cache
+adsb_connection.json
+config/adsb_connection.json
+

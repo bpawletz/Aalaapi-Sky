@@ -33585,3 +33585,57 @@ after(() => {
   }
   setTimeout(() => process.exit(0), 200).unref();
 });
+
+
+describe('v1.177.1 Dedicated ADS-B Working Connection File Persistence Suite', () => {
+  test('Version Consistency across required locations for v1.177.1', () => {
+    assertVersionConsistency('1.177.1');
+  });
+
+  test('loadCompanionConfig prioritizes working ADS-B file when present', () => {
+    const companion = require('./tools/companion/server.js');
+    const testFile = path.resolve(__dirname, 'adsb_connection.json');
+    const originalContent = fs.existsSync(testFile) ? fs.readFileSync(testFile, 'utf8') : null;
+
+    try {
+      const dummyConfig = {
+        host: '192.168.1.188',
+        port: 30005,
+        lastConnected: new Date().toISOString()
+      };
+      fs.writeFileSync(testFile, JSON.stringify(dummyConfig, null, 2), 'utf8');
+
+      const loaded = companion.loadCompanionConfig();
+      assert.strictEqual(loaded.adsbHost, '192.168.1.188', 'Must load host from adsb_connection.json');
+      assert.strictEqual(loaded.adsbPort, 30005, 'Must load port from adsb_connection.json');
+    } finally {
+      if (originalContent !== null) {
+        fs.writeFileSync(testFile, originalContent, 'utf8');
+      } else if (fs.existsSync(testFile)) {
+        fs.unlinkSync(testFile);
+      }
+    }
+  });
+
+  test('saveAdsbConfig automatically writes to adsb_connection.json', () => {
+    const companion = require('./tools/companion/server.js');
+    const testFile = path.resolve(__dirname, 'adsb_connection.json');
+    const originalContent = fs.existsSync(testFile) ? fs.readFileSync(testFile, 'utf8') : null;
+
+    try {
+      companion.saveAdsbConfig('10.0.0.99', 30002);
+      assert.ok(fs.existsSync(testFile), 'adsb_connection.json must exist after saveAdsbConfig');
+
+      const data = JSON.parse(fs.readFileSync(testFile, 'utf8'));
+      assert.strictEqual(data.host, '10.0.0.99', 'Saved host must match');
+      assert.strictEqual(data.port, 30002, 'Saved port must match');
+      assert.ok(data.lastConnected, 'Timestamp must be recorded');
+    } finally {
+      if (originalContent !== null) {
+        fs.writeFileSync(testFile, originalContent, 'utf8');
+      } else if (fs.existsSync(testFile)) {
+        fs.unlinkSync(testFile);
+      }
+    }
+  });
+});
