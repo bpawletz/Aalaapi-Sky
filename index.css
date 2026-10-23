@@ -1548,6 +1548,43 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.photo-inspector-header,
+[data-modal-drag-handle] {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.modal.modal-dragging {
+  user-select: none;
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(56, 189, 248, 0.4);
+  transition: none !important;
+  will-change: transform;
+}
+
+.modal.modal-dragging .modal-header,
+.modal.modal-dragging .photo-inspector-header,
+.modal.modal-dragging [data-modal-drag-handle] {
+  cursor: grabbing !important;
+}
+
+body.modal-drag-active {
+  user-select: none !important;
+}
+
+.modal-header button,
+.modal-header input,
+.modal-header select,
+.modal-header a,
+.photo-inspector-header button {
+  cursor: pointer;
+  touch-action: auto;
+  user-select: auto;
 }
 
 .modal-header h2 {

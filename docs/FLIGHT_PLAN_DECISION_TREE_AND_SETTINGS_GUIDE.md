@@ -184,7 +184,7 @@ This matrix details exactly which parameters apply to each of Aalaapi Sky's **21
 | **Star Pass (star-pass)** | ✅ | Radius | ❌ | ✅ | ✅ (Spacing) | ❌ | ❌ | -60° to -90° | Follow Wayline | Straight | Cont / Stop&Shoot | ✅ | ❌ | Spoke / Radial count (3-12), Diametric passes |
 | **360° Photo Sphere (photo-sphere)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Multi-Ring Auto | Procedural Multi-Yaw | Straight | Stop&Shoot (Locked) | ✅ | ❌ | Ring Tiers (+30°, 0°, -30°, -90°), Shots/Ring |
 | **Hyperlapse (hyperlapse)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Keyframe Start/End | Smooth Transition | Curved (Spline) | Continuous (Locked) | ✅ | ❌ | Interval seconds, Keyframe interpolation |
-| **Light Art (light-art)** | ✅ | Radius / Time Limit | ❌ | ❌ | ❌ | ❌ | ❌ | Ground Locked | Follow Wayline | Curved (Spline) | Continuous | 1–5 m/s | ❌ | Sky Drawing Shape, Shutter Auto-Sizing, Auxiliary LED beacon |
+| **Light Art (light-art)** | ✅ | Radius / Time Limit | ❌ | ❌ | ❌ | ❌ | ❌ | Ground Locked | Follow Wayline | Curved (Spline) | Continuous | 1–5 m/s | ❌ | Sky Drawing Shape, Shutter Auto-Sizing, 3D Canvas Tilt (0-90°), Compass Dial, Ground Safety Deck, Auxiliary LED beacon |
 | **Grid + Orbit Combo (grid-orbit-combo)** | ✅ | Radius | ❌ | ✅ | ✅ | ✅ | ✅ (Orbit Standoff) | -45° to -60° | Follow (Grid) + Center (Orbit) | Straight / Curved | Cont / Stop&Shoot | ✅ | ✅ | Top Grid Nadir + Single Outer Orbit Ring |
 | **Grid + Multi-Orbit (grid-multi-orbit-combo)** | Min/Max Alt | Radius | ❌ | ✅ | ✅ | ✅ | ✅ (Orbit Standoff) | -45° to -60° | Follow (Grid) + Center (Orbit) | Straight / Curved | Cont / Stop&Shoot | ✅ | ✅ | Top Grid Nadir + Multi-Tier Facade Orbit Rings |
 | **Road Following (road-following)** | ✅ | ❌ | ❌ | ❌ | ✅ (Spacing) | ❌ | ❌ | Auto (Road Focus) | Road Focus / Follow | Straight / Curved | Cont / Stop&Shoot | ✅ | ❌ | Road Offset (Left/Right), Road Snap |
@@ -259,4 +259,4 @@ This matrix details exactly which parameters apply to each of Aalaapi Sky's **21
 
 ---
 
-*Document Version: 1.179.0 — Maintained by Aalaapi Sky Mission Systems*
+*Document Version: 1.182.0 — Maintained by Aalaapi Sky Mission Systems*

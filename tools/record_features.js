@@ -1690,7 +1690,28 @@ const scenarios = [
         await page.waitForTimeout(1500);
       }
 
-      // 4. Verify center marker and trajectory squarely centered
+      // 4. Demonstrate 3D Canvas Tilt & Compass Rose (v1.182.0)
+      const orientationSelect = await page.$('#light-art-orientation');
+      if (orientationSelect) {
+        await orientationSelect.selectOption('tilted');
+        await page.waitForTimeout(1000);
+      }
+
+      // Tap 45° tilt preset
+      const tilt45 = await page.$('.light-art-tilt-preset-btn[data-tilt="45"]');
+      if (tilt45) {
+        await tilt45.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // Tap East (90°) camera bearing chip
+      const eastChip = await page.$('.light-art-az-chip[data-az="90"]');
+      if (eastChip) {
+        await eastChip.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 5. Verify center marker and trajectory squarely centered
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(2000);
     }
@@ -2523,6 +2544,66 @@ const scenarios = [
         if (await closePopBtn.isVisible()) {
           await closePopBtn.click();
           await page.waitForTimeout(500);
+        }
+      }
+    }
+  },
+  {
+    id: 'feature_draggable_modals',
+    name: 'Universal Draggable Modal Windows & Position Persistence',
+    description: 'Interactive mouse/touch dragging of modal windows by header, position retention across open/close to clear waypoints, and double-click re-centering.',
+    issueRef: 'v1.181.0',
+    run: async (page) => {
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 1. Open the About Modal
+      const aboutBtn = await page.locator('#about-btn');
+      if (await aboutBtn.isVisible()) {
+        await aboutBtn.click();
+        await page.waitForTimeout(800);
+      }
+
+      // 2. Perform smooth mouse drag on the header
+      const header = await page.locator('#about-modal .modal-header');
+      if (await header.isVisible()) {
+        const box = await header.boundingBox();
+        if (box) {
+          const startX = box.x + box.width / 2;
+          const startY = box.y + box.height / 2;
+
+          await page.mouse.move(startX, startY);
+          await page.mouse.down();
+          await page.waitForTimeout(200);
+
+          // Drag modal to the right and down to reveal center map
+          await page.mouse.move(startX + 180, startY + 120, { steps: 20 });
+          await page.waitForTimeout(300);
+          await page.mouse.up();
+          await page.waitForTimeout(800);
+
+          // 3. Close the modal
+          const closeBtn = await page.locator('#about-modal .close-btn');
+          if (await closeBtn.isVisible()) {
+            await closeBtn.click();
+            await page.waitForTimeout(800);
+          }
+
+          // 4. Reopen About Modal to demonstrate session position persistence (waypoints stay visible!)
+          if (await aboutBtn.isVisible()) {
+            await aboutBtn.click();
+            await page.waitForTimeout(1000);
+          }
+
+          // 5. Double-click the header to demonstrate instant re-centering
+          await page.mouse.dblclick(startX + 180, startY + 120);
+          await page.waitForTimeout(1200);
+
+          // 6. Close modal
+          if (await closeBtn.isVisible()) {
+            await closeBtn.click();
+            await page.waitForTimeout(600);
+          }
         }
       }
     }

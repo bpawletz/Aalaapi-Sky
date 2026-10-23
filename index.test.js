@@ -34058,3 +34058,215 @@ describe('v1.180.0: ADS-B Flight History Trails Purge & Radar Reset (Option C)',
     }
   });
 });
+
+describe('v1.181.0: Universal Draggable Modal Dialogs Suite', () => {
+  test('Version consistency: v1.181.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.181.0');
+  });
+
+  test('UI templates contain data-modal-drag-handle or modal-header on all modal overlays', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const overlayMatches = [...template.matchAll(/id=["']([^"']+)["'][^>]*class=["'][^"']*modal-overlay/g)];
+    assert.ok(overlayMatches.length >= 18, `Expected at least 18 modal overlays, got ${overlayMatches.length}`);
+    for (const match of overlayMatches) {
+      const modalId = match[1];
+      const start = template.indexOf(match[0]);
+      // Search the next 1500 chars inside this modal container
+      const slice = template.substring(start, start + 1500);
+      const hasHeader = slice.includes('modal-header') || slice.includes('photo-inspector-header') || slice.includes('<header');
+      assert.ok(hasHeader, `Modal overlay #${modalId} must have a recognizable header drag handle`);
+    }
+  });
+
+  test('clampModalPosition correctly bounds modal coordinates to screen limits', () => {
+    const clampFn = window.clampModalPosition || global.clampModalPosition;
+    assert.strictEqual(typeof clampFn, 'function', 'clampModalPosition must be defined');
+
+    const mockModal = {
+      getBoundingClientRect: () => ({ left: 200, top: 150, width: 600, height: 400 }),
+      style: { transform: '' }
+    };
+    const mockHandle = {
+      getBoundingClientRect: () => ({ left: 200, top: 150, width: 600, height: 50 })
+    };
+
+    const origInnerWidth = window.innerWidth;
+    const origInnerHeight = window.innerHeight;
+    window.innerWidth = 1280;
+    window.innerHeight = 800;
+
+    try {
+      const normal = clampFn(mockModal, mockHandle, 50, 40);
+      assert.strictEqual(normal.x, 50);
+      assert.strictEqual(normal.y, 40);
+
+      const pushedUp = clampFn(mockModal, mockHandle, 0, -400);
+      assert.strictEqual(pushedUp.y, -150);
+
+      const pushedDown = clampFn(mockModal, mockHandle, 0, 1200);
+      assert.strictEqual(pushedDown.y, 800 - 50 - 150);
+    } finally {
+      window.innerWidth = origInnerWidth;
+      window.innerHeight = origInnerHeight;
+    }
+  });
+
+  test('initModalDraggable attaches pointer and dblclick listeners, supporting drag and re-centering', () => {
+    const initFn = window.initModalDraggable || global.initModalDraggable;
+    const resetFn = window.resetModalPosition || global.resetModalPosition;
+    assert.strictEqual(typeof initFn, 'function', 'initModalDraggable must be defined');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay hidden';
+    overlay.id = 'test-modal-drag-v1181';
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+
+    const header = document.createElement('header');
+    header.className = 'modal-header';
+    header.innerHTML = '<h3>Draggable Title</h3><button class="close-btn">&times;</button>';
+
+    modal.appendChild(header);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    try {
+      const res = initFn(overlay);
+      assert.strictEqual(res, true);
+      assert.strictEqual(modal.getAttribute('data-draggable-modal'), 'true');
+      assert.strictEqual(header.getAttribute('data-modal-drag-handle'), 'true');
+
+      // Test double click reset
+      modal.style.transform = 'translate3d(120px, 80px, 0)';
+      header.dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+      assert.strictEqual(modal.style.transform, '');
+
+      // Test resetModalPosition helper
+      modal.style.transform = 'translate3d(80px, 60px, 0)';
+      resetFn(overlay);
+      assert.strictEqual(modal.style.transform, '');
+    } finally {
+      overlay.remove();
+    }
+  });
+});
+
+describe('Issue & v1.182.0: Light Art Continuous 3D Canvas Tilt, Compass Rose & Ground Safety Deck Suite', () => {
+  test('Version consistency: v1.182.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.182.0');
+  });
+
+  test('generateLightArtCoordinates with lightArtTilt = 0 produces flat horizontal coordinates', () => {
+    const layer = {
+      lightArtPreset: 'circle',
+      lightArtOrientation: 'horizontal',
+      lightArtTilt: 0,
+      lightArtRadius: 30,
+      lightArtCameraAzimuth: 0
+    };
+    const res = generateLightArtCoordinates(layer, 50, -60, 3.0);
+    assert.strictEqual(res.tilt, 0);
+    assert.strictEqual(res.waypoints.length > 0, true);
+    // All altitudes should be baseAltitude (50)
+    res.waypoints.forEach(wp => {
+      assert.strictEqual(wp.alt, 50);
+    });
+  });
+
+  test('generateLightArtCoordinates with lightArtTilt = 90 produces vertical billboard facing cameraAzimuth', () => {
+    const layer = {
+      lightArtPreset: 'circle',
+      lightArtOrientation: 'vertical',
+      lightArtTilt: 90,
+      lightArtRadius: 20,
+      lightArtCameraAzimuth: 0 // North
+    };
+    const res = generateLightArtCoordinates(layer, 50, -60, 3.0);
+    assert.strictEqual(res.tilt, 90);
+    // When cameraAzimuth is 0, cos(0)=1, sin(0)=0. y should be ~0 and alt should vary between 50 - 20 = 30 and 50 + 20 = 70
+    const alts = res.waypoints.map(wp => wp.alt);
+    const minAlt = Math.min(...alts);
+    const maxAlt = Math.max(...alts);
+    assert.ok(minAlt <= 30.1, `minAlt ${minAlt} should be around 30`);
+    assert.ok(maxAlt >= 69.9, `maxAlt ${maxAlt} should be around 70`);
+    res.waypoints.forEach(wp => {
+      assert.ok(Math.abs(wp.y) < 1e-4, `y should be ~0 in billboard mode at azimuth 0, got ${wp.y}`);
+    });
+  });
+
+  test('generateLightArtCoordinates with intermediate tilt (45°) produces true 3D oblique inclination', () => {
+    const layer = {
+      lightArtPreset: 'circle',
+      lightArtOrientation: 'tilted',
+      lightArtTilt: 45,
+      lightArtRadius: 20,
+      lightArtCameraAzimuth: 0
+    };
+    const res = generateLightArtCoordinates(layer, 50, -60, 3.0);
+    assert.strictEqual(res.tilt, 45);
+    // At 45 deg, vertical span is 20 * sin(45°) ~ 14.14m
+    const alts = res.waypoints.map(wp => wp.alt);
+    const minAlt = Math.min(...alts);
+    const maxAlt = Math.max(...alts);
+    const expectedAltSpan = 20 * Math.sin(45 * Math.PI / 180);
+    assert.ok(Math.abs((50 - minAlt) - expectedAltSpan) < 0.5, `minAlt span should be ~${expectedAltSpan}, got ${50 - minAlt}`);
+    assert.ok(Math.abs((maxAlt - 50) - expectedAltSpan) < 0.5, `maxAlt span should be ~${expectedAltSpan}, got ${maxAlt - 50}`);
+  });
+
+  test('generateLightArtCoordinates flags ground clearance warning when lowest stroke breaches safety deck', () => {
+    const layer = {
+      lightArtPreset: 'circle',
+      lightArtOrientation: 'vertical',
+      lightArtTilt: 90,
+      lightArtRadius: 35,
+      lightArtMinClearance: 15,
+      lightArtEnforceClearance: false
+    };
+    // Base altitude 40m, radius 35m -> bottom reaches 40 - 35 = 5m, which is below 15m minClearance
+    const res = generateLightArtCoordinates(layer, 40, -60, 3.0);
+    assert.strictEqual(res.hasClearanceWarning, true);
+    assert.strictEqual(res.minClearance, 15);
+    assert.ok(res.minArtAlt <= 5.1);
+    assert.strictEqual(res.recommendedBaseAltitude, 50); // 15 + 35 = 50m
+  });
+
+  test('generateLightArtCoordinates with enforceClearance auto-elevates base altitude to protect safety floor', () => {
+    const layer = {
+      lightArtPreset: 'circle',
+      lightArtOrientation: 'vertical',
+      lightArtTilt: 90,
+      lightArtRadius: 35,
+      lightArtMinClearance: 15,
+      lightArtEnforceClearance: true
+    };
+    // Base altitude 40m, enforceClearance = true -> auto-elevates effectiveBaseAltitude to 50m
+    const res = generateLightArtCoordinates(layer, 40, -60, 3.0);
+    assert.strictEqual(res.effectiveBaseAltitude, 50);
+    const alts = res.waypoints.map(wp => wp.alt);
+    const minAlt = Math.min(...alts);
+    assert.ok(minAlt >= 15, `minAlt ${minAlt} must be >= minClearance (15)`);
+  });
+
+  test('createDefaultLayer initializes with lightArtTilt, lightArtMinClearance, and lightArtEnforceClearance', () => {
+    const layer = createDefaultLayer('test-layer', 'Test Layer');
+    assert.strictEqual(layer.lightArtTilt, 0);
+    assert.strictEqual(layer.lightArtMinClearance, 10);
+    assert.strictEqual(layer.lightArtEnforceClearance, false);
+  });
+
+  test('DOM Architecture: UI templates contain tilt, compass dial, and clearance safety controls', () => {
+    const html = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(html.includes('id="light-art-tilt"'), 'must contain #light-art-tilt');
+    assert.ok(html.includes('id="light-art-tilt-opts"'), 'must contain #light-art-tilt-opts');
+    assert.ok(html.includes('light-art-tilt-preset-btn'), 'must contain .light-art-tilt-preset-btn');
+    assert.ok(html.includes('id="light-art-compass-dial"'), 'must contain #light-art-compass-dial');
+    assert.ok(html.includes('id="light-art-compass-needle"'), 'must contain #light-art-compass-needle');
+    assert.ok(html.includes('light-art-az-chip'), 'must contain .light-art-az-chip');
+    assert.ok(html.includes('id="light-art-clearance-container"'), 'must contain #light-art-clearance-container');
+    assert.ok(html.includes('id="light-art-min-clearance"'), 'must contain #light-art-min-clearance');
+    assert.ok(html.includes('id="light-art-enforce-clearance"'), 'must contain #light-art-enforce-clearance');
+    assert.ok(html.includes('id="light-art-clearance-warning"'), 'must contain #light-art-clearance-warning');
+    assert.ok(html.includes('id="light-art-elevate-btn"'), 'must contain #light-art-elevate-btn');
+  });
+});

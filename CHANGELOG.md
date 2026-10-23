@@ -1,6 +1,57 @@
+## [1.182.0] - 2026-10-23
+
+Continuous 3D canvas tilt, interactive SVG compass rose observer alignment, and ground clearance safety deck for Light Art (Sky Painting) long-exposure aerial photography.
+
+### Added
+
+#### Pilot & Operational Features
+- **Continuous 3D Canvas Tilt (Closes #151)**:
+  - Light Art (Sky Painting) canvases can now be smoothly tilted to any angle between 0° (flat overhead horizontal) and 90° (fully upright vertical billboard), or intermediate oblique angles (15°, 30°, 45°, 60°, 75°).
+  - Quick preset buttons (`0° Flat`, `30°`, `45°`, `60°`, `90° Upright`) allow instantaneous one-tap canvas inclination adjustments.
+  - Aligns the plane of the artwork perpendicularly to the camera's upward sightline for distortion-free ground photography from hilltops, tripods, or viewing stands.
+- **Interactive SVG Compass Rose Dial**:
+  - Ground Camera Bearing control now features an interactive circular compass rose with cardinal markers (`N`, `E`, `S`, `W`) and a dynamic pink bearing needle.
+  - Directly click or drag on the compass dial to orient the artwork facing the photographer's position, or tap quick cardinal snap buttons (`N 0°`, `E 90°`, `S 180°`, `W 270°`).
+- **Ground Clearance Safety Deck & Prevention**:
+  - Configurable minimum ground safety floor (default 10m AGL, adjustable 5m–30m).
+  - Dynamic low-clearance alert badge appears whenever artwork inclination would bring the lowest stroke below the safe altitude deck.
+  - **Elevate Base Altitude Helper**: Single-click button instantly raises the flight layer's base altitude to clear the ground safely.
+  - **Enforce Floor (Auto-Shift)**: Toggle option automatically elevates the canvas base altitude so no stroke waypoint ever violates the regulatory safety deck.
+
+#### Under the Hood & Technical Details
+- **PatternGenerators (`src/patterns/PatternGenerators.js`)**:
+  - Implemented continuous 3D oblique transformation matrix decomposing stroke coordinates $(u, v)$ into ground displacement $v_{\text{ground}} = v \cos\theta$ and vertical elevation $v_{\text{alt}} = v \sin\theta$, with horizontal azimuth rotation $x = u \cos\psi + v_{\text{ground}} \sin\psi$, $y = -u \sin\psi + v_{\text{ground}} \cos\psi$ and altitude deck protection.
+  - Preserves exact Euclidean proportionality and 1:1 backward compatibility with legacy horizontal ($0^\circ$) and vertical ($90^\circ$) modes.
+- **LayerManager (`src/layers/LayerManager.js`)**:
+  - Extended layer schema with `lightArtTilt`, `lightArtMinClearance`, and `lightArtEnforceClearance`.
+  - Added full UI synchronization across layer switching, storage persistence, and waypoint generation.
+- **SidebarManager & EventBindings (`src/ui/SidebarManager.js`, `src/ui/EventBindings.js`)**:
+  - Added dynamic compass needle projection, cardinal chip state tracking, clearance warning rendering, and elevate button event binding.
+
+## [1.181.0] - 2026-10-23
+
+Universal draggable modal dialogs across all operational panels with session position persistence and double-click re-centering.
+
+### Added
+
+#### Pilot & Operational Features
+- **Universal Draggable Modal Windows (Closes #149)**:
+  - All modal dialogs (including Intro Guide, Preflight Safety Gate, ND Filter Advisor, 3D Preview, Flight Diagnostics, and About) can now be smoothly dragged anywhere on screen by their header bar.
+  - Allows pilots and operators to move dialogs out of the way to inspect underlying map waypoints, flight telemetry, or satellite imagery without closing the modal.
+  - **Session Position Persistence**: Reopening a modal retains its dragged location throughout the session so it never snaps back over active waypoints or areas of interest.
+  - **Header Double-Click Reset**: Double-clicking the modal header instantly re-centers the dialog.
+  - **Tactile Grab & Elevation Cues**: Modal headers show a grab hand cursor on hover and grabbing cursor while moving, accompanied by active elevation shadows.
+
+#### Under the Hood & Technical Details
+- **ModalDragManager (`src/ui/ModalDragManager.js`)**:
+  - Implemented `initModalDraggable()` and `initAllModalsDraggable()` using Pointer Events (`pointerdown`, `pointermove`, `pointerup`, `pointercancel`) with `setPointerCapture` for unified mouse, stylus, and touch support.
+  - Excluded interactive controls (`button`, `input`, `select`, `a`, `.close-btn`, etc.) from initiating drag.
+  - Hardware-accelerated `translate3d(x, y, 0)` movement with dynamic viewport boundary clamping to prevent off-screen header or close button loss.
+  - Automatic boundary realignment on window resize and observer-assisted clamp on modal unhide.
+
 ## [1.180.0] - 2026-10-23
 
-Added 1-click ADS-B flight history trail purging and radar state reset for clean airspace decluttering.
+Added 1-click ADS-B flight history trail purging and radar state reset for clean airspace decluttering (Closes #146).
 
 ### Added
 
@@ -118,7 +169,7 @@ Introduces interactive visual step cards and concise instructional text across t
 ### 🚀 Added
 
 #### Pilot & Operational Features
-- **Visual RC 2 to Companion Bridge Connection Cards (`.rc2-connect-cards-grid`)**:
+- **Visual RC 2 to Companion Bridge Connection Cards (.rc2-connect-cards-grid) (Closes #147)**:
   - Replaces dense setup instructions with a responsive, scannable 5-step visual card deck in the **DJI RC 2 Sync & Transfer Guide (`#guide-modal`)** and the **Pilot Guide Hub (`#quickstart-modal`)**.
   - **Card 1 (Acquire & Run)**: Clear instructions on where to find the bridge code (bundled in workspace as `start-bridge.bat` / `tools/companion/server.js`, or downloaded from GitHub for web pilots) with 1-click copy buttons for `npm run bridge` and `git clone`.
   - **Card 2 (Hardware State)**: Guides powering on the DJI RC 2 controller completely before connecting.
@@ -181,7 +232,7 @@ Introduces an automated, scientifically calibrated Camera Neutral Density (ND) F
 ### 🚀 Added
 
 #### Pilot & Operational Features
-- **Topbar Weather Pill ND Filter Indicator (`#header-nd-filter-badge`)**:
+- **Topbar Weather Pill ND Filter Indicator (`#header-nd-filter-badge`) (Closes #150)**:
   - Live filter badge directly inside `#header-telemetry-pill` displaying the recommended neutral density filter (e.g. `📷 ND16` or `📷 None`).
   - Clicking the badge opens the Camera ND Filter Advisor modal directly from the top navigation bar.
 - **Floating Weather Popover ND Filter Card (`#pop-nd-filter-card`)**:
