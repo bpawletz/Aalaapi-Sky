@@ -17,6 +17,7 @@ A waypoint mission generator and editor for drone flight planning. Designed for 
 > * **Pilot Responsibility:** The remote pilot-in-command (PIC) is solely responsible for the safe and lawful operation of their aircraft. You must independently verify all flight altitudes, waypoint clearances, local obstacles, weather conditions, and active airspace restrictions (including obtaining appropriate FAA LAANC authorizations). All flights must comply with applicable regulations, such as **FAA Part 107** for commercial operations or **FAA Section 44809 / TRUST** for recreational flyers, including keeping the aircraft within Visual Line of Sight (VLOS) at all times.
 > * **Third-Party Data & Live Feeds:** This software displays data retrieved directly from external, third-party government servers (such as live FAA airspace grids, NOAA/NWS weather radar, and HIFLD infrastructure assets). The developers and contributors assume no responsibility for any inaccuracies, omissions, service outages, or latency in these external data feeds. Pilots must independently cross-reference and verify all flight planning constraints using official source publications (such as aeronautical charts, active NOTAMs, and direct NOAA briefings).
 > * **Emergency Procedures & Fail-Safes:** The pilot is solely responsible for knowing how to immediately abort an automated waypoint mission and resume manual control on their specific aircraft. Before takeoff, you must verify and configure all fail-safe emergency procedures—including signal loss behaviors and Return-to-Home (RTH) altitudes—to ensure the drone safely clears all local terrain, trees, power lines, and obstacles in the event of an emergency or connection loss.
+> * **Trademark & Non-Affiliation Legal Disclaimer:** DJI, DJI Fly, DJI Pilot, WPML, Mini 4 Pro, Air 3, Mavic, Matrice, and Inspire are trademarks or registered trademarks of SZ DJI Technology Co., Ltd. Google, Google Earth, KML, and GPano are trademarks of Google LLC. Esri, ArcGIS, and ArcGIS Online are trademarks of Environmental Systems Research Institute, Inc. OpenStreetMap is a trademark of the OpenStreetMap Foundation. Aalaapi Sky is an independent third-party flight planning tool and is **NOT** affiliated with, authorized by, sponsored by, or endorsed by DJI, Google, Esri, or any mentioned manufacturer. For complete third-party open-source software licenses, data provider attributions, and legal notices, see [CREDITS.md](CREDITS.md).
 
 ---
 
@@ -68,6 +69,8 @@ Toggleable aviation overlays mapped from official FAA REST endpoints (covers the
 ---
 
 ## Technologies Used
+
+*For detailed licenses, copyright notices, and third-party terms, see [CREDITS.md](CREDITS.md).*
 
 - **Vanilla HTML5 / CSS3 / ES6+ JavaScript:** Designed to be clean, fast, and dependency-free (no build/bundling step required to run).
 - **[Leaflet (v1.9.4)](https://leafletjs.com/):** Core interactive 2D map engine.

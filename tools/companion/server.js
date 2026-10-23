@@ -48,6 +48,7 @@ const checklistDb = new ChecklistDatabase();
 const SCRATCH_DIR = path.resolve(__dirname, '../../scratch');
 const TagDetector = require('../wasm/tag_detector.js');
 const wireframeEngine = require('./wireframe_engine.js');
+const aiMeshEngine = require('./ai_mesh_engine.js');
 const SolarEphemeris = require('./solar_ephemeris.js');
 const { TileCacheManager } = require('./tile_cache.js');
 const tileCache = new TileCacheManager();
@@ -4310,6 +4311,157 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Bridge-Hosted AI 3D Reconstruction Architecture (Issue #96)
+    if (pathname === '/api/ai3d/generate' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const host = req.headers.host || `127.0.0.1:${PORT}`;
+          payload.hostBase = `http://${host}`;
+
+          // If photos not supplied directly, attempt resolving from mission archive manifest
+          if ((!payload.photos || payload.photos.length === 0) && payload.missionUuid) {
+            const rec = loadOrRecoverManifest(path.join(ARCHIVE_DIR, payload.missionUuid));
+            if (rec && rec.manifest && Array.isArray(rec.manifest.photos)) {
+              payload.photos = rec.manifest.photos.map(p => {
+                const rawP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'raw', p.filename || p.id);
+                const prevP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'previews', p.filename || p.id);
+                const photoPath = fs.existsSync(rawP) ? rawP : (fs.existsSync(prevP) ? prevP : (p.rawPath || p.filePath));
+                return {
+                  ...p,
+                  filePath: photoPath
+                };
+              });
+              if (!payload.origin && rec.manifest.homePoint) {
+                payload.origin = rec.manifest.homePoint;
+              }
+            }
+          }
+
+          const job = await aiMeshEngine.startReconstructionJob(payload);
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Private-Network': 'true'
+          });
+          res.end(JSON.stringify({ success: true, job }));
+        } catch (err) {
+          res.writeHead(500, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Private-Network': 'true'
+          });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (pathname === '/api/ai3d/status' && req.method === 'GET') {
+      const status = aiMeshEngine.getActiveJobStatus();
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Private-Network': 'true'
+      });
+      res.end(JSON.stringify({ success: true, job: status }));
+      return;
+    }
+
+    if (pathname === '/api/ai3d/views' && (req.method === 'GET' || req.method === 'POST')) {
+      const handleViews = (photosPayload, origin) => {
+        let photos = photosPayload || [];
+        const missionUuid = url.searchParams.get('missionUuid') || url.searchParams.get('uuid');
+        if ((!photos || photos.length === 0) && missionUuid) {
+          const rec = loadOrRecoverManifest(path.join(ARCHIVE_DIR, missionUuid));
+          if (rec && rec.manifest && Array.isArray(rec.manifest.photos)) {
+            photos = rec.manifest.photos;
+            if (!origin && rec.manifest.homePoint) origin = rec.manifest.homePoint;
+          }
+        }
+        return aiMeshEngine.selectOrthogonalViews(photos, { center: origin });
+      };
+
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          try {
+            const payload = body ? JSON.parse(body) : {};
+            const result = handleViews(payload.photos, payload.origin);
+            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.end(JSON.stringify(result));
+          } catch (err) {
+            res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.end(JSON.stringify({ success: false, error: err.message }));
+          }
+        });
+        return;
+      } else {
+        const result = handleViews([], null);
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify(result));
+        return;
+      }
+    }
+
+    if (pathname === '/api/ai3d/config' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ success: true, config: aiMeshEngine.getClientSafeConfig() }));
+      return;
+    }
+
+    if (pathname === '/api/ai3d/config' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const updates = body ? JSON.parse(body) : {};
+          aiMeshEngine.saveAi3dConfig(updates);
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ success: true, config: aiMeshEngine.getClientSafeConfig() }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (pathname === '/api/ai3d/mesh' && (req.method === 'GET' || req.method === 'HEAD')) {
+      const format = (url.searchParams.get('format') || 'glb').toLowerCase();
+      const filename = format === 'obj' ? 'latest_building.obj' : 'latest_building.glb';
+      const missionUuid = url.searchParams.get('missionUuid');
+      let targetPath = path.join(SCRATCH_DIR, 'models', filename);
+
+      if (missionUuid) {
+        const mPath = path.join(ARCHIVE_DIR, missionUuid, 'models', filename);
+        if (fs.existsSync(mPath)) targetPath = mPath;
+      }
+
+      if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
+        const contentType = format === 'obj' ? 'model/obj' : 'model/gltf-binary';
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Private-Network': 'true',
+          'Cache-Control': 'no-cache'
+        });
+        if (req.method === 'HEAD') {
+          res.end();
+          return;
+        }
+        fs.createReadStream(targetPath).pipe(res);
+        return;
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: false, error: 'AI 3D mesh has not been generated yet' }));
+        return;
+      }
+    }
+
     if (pathname === '/api/media/manifest' && req.method === 'GET') {
       let rawUuid = url.searchParams.get('uuid') || url.searchParams.get('mission');
       let rawFlight = url.searchParams.get('flight') || '';
@@ -5591,6 +5743,65 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 10c-2. Digital Elevation Model (DEM) Caching Proxy (Issue #129)
+    if (pathname === '/api/elevation' && (req.method === 'GET' || req.method === 'POST')) {
+      let lats = url.searchParams.get('latitude') || url.searchParams.get('lats');
+      let lons = url.searchParams.get('longitude') || url.searchParams.get('lons');
+
+      if (req.method === 'POST') {
+        let body = '';
+        await new Promise((resolve) => {
+          req.on('data', chunk => { body += chunk; });
+          req.on('end', resolve);
+        });
+        try {
+          const parsed = JSON.parse(body);
+          if (Array.isArray(parsed.coordinates)) {
+            lats = parsed.coordinates.map(c => Number(c.lat).toFixed(6)).join(',');
+            lons = parsed.coordinates.map(c => Number(c.lon).toFixed(6)).join(',');
+          }
+        } catch (e) {}
+      }
+
+      if (!lats || !lons) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: false, error: 'Missing latitude or longitude coordinates' }));
+        return;
+      }
+
+      const upstreamUrl = 'https://api.open-meteo.com/v1/elevation?latitude=' + lats + '&longitude=' + lons;
+      try {
+        const cached = tileCache.get(upstreamUrl);
+        if (cached && cached.buffer) {
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'X-Aalaapi-Cache': 'HIT',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(cached.buffer);
+          return;
+        }
+
+        const upstream = await fetchUpstreamBinary(upstreamUrl, { 'User-Agent': 'Aalaapi-Sky-Bridge/' + VERSION });
+        if (upstream.statusCode === 200 && upstream.buffer) {
+          tileCache.put(upstreamUrl, upstream.buffer, 'application/json', { isStatic: true });
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'X-Aalaapi-Cache': 'MISS',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(upstream.buffer);
+        } else {
+          res.writeHead(upstream.statusCode || 502, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(upstream.buffer || JSON.stringify({ success: false, error: 'Upstream elevation fetch failed' }));
+        }
+      } catch (err) {
+        res.writeHead(502, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
     // 10d. Ambient Telemetry Buffer & 4D Environmental Replay Endpoints (Issue #142)
     if ((pathname === '/api/buffer/metrics' || pathname === '/api/telemetry/buffer') && req.method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
@@ -5689,6 +5900,10 @@ const server = http.createServer(async (req, res) => {
           '.ico': 'image/x-icon',
           '.kml': 'application/vnd.google-earth.kml+xml',
           '.kmz': 'application/vnd.google-earth.kmz',
+          '.glb': 'model/gltf-binary',
+          '.gltf': 'model/gltf+json',
+          '.obj': 'model/obj',
+          '.mtl': 'model/mtl',
           '.txt': 'text/plain; charset=utf-8'
         };
         const contentType = mimeTypes[ext] || 'application/octet-stream';
@@ -6075,6 +6290,7 @@ module.exports = {
   decryptFlightRecordWithDjiCli,
   extractWireframe: wireframeEngine.extractWireframe,
   wireframeEngine,
+  aiMeshEngine,
   packageInspectionArchive,
   adsbTracker,
   getSseAirspaceClientsCount,

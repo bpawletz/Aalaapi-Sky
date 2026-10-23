@@ -74,6 +74,7 @@ flowchart TD
     Flat -->|"Flat / Broad Topography"| SingleGrid["2D Map (single)<br>Nadir Grid -90° Gimbal<br>Orthomosaics & DEMs"]
     Flat -->|"Complex 3D Terrain / Stockpiles"| DoubleGrid["3D Splat (double)<br>Crosshatch Grid -60° Gimbal<br>Gaussian Splatting & Photogrammetry"]
     Flat -->|"Specific Bounded Compound / Frustum"| TargetSplat["Target Splat (target-splat)<br>Auto-Trimmed Oblique Grid<br>Max Battery Savings"]
+    Flat -->|"Undulating Hills / Mines / Variable Terrain"| TerrainFollow["Terrain Following (DEM-Aware Grid)<br>Constant AGL & GSD<br>Copernicus 30m / GeoTIFF DEM"]
 
     Structure --> Geometry{"Structure Geometry?"}
     Geometry -->|"Cylindrical / Symmetrical Monolith"| OrbitChoice{"Single vs Multi-Tier?"}
@@ -260,3 +261,25 @@ This matrix details exactly which parameters apply to each of Aalaapi Sky's **21
 ---
 
 *Document Version: 1.182.0 — Maintained by Aalaapi Sky Mission Systems*
+
+
+---
+
+## 4. Terrain Following & Digital Elevation Model (DEM) Engine
+
+When surveying undulating topography, valleys, open-pit quarries, or hilly terrain, traditional flat-plane photogrammetry missions produce non-uniform Ground Sampling Distance (GSD) and risk Controlled Flight Into Terrain (CFIT). Aalaapi Sky includes an automated **Terrain Following & DEM Engine** (Issue #129):
+
+1. **Elevation Data Sources**:
+   - **Open-Meteo Global Copernicus DEM**: Global 30m/90m resolution elevation sampling requiring zero API keys.
+   - **Companion Bridge Caching Proxy**: Local offline tile and elevation response cache (`/api/elevation`).
+   - **Local GeoTIFF Upload**: Direct in-browser parsing of surveyor `.tif` / `.dem` DTM files for air-gapped field operations.
+2. **Dynamic Waypoint Modulation**:
+   - Computes target altitude $Z_i = E(x_i, y_i) + \text{Target AGL}$.
+   - Applies automated two-pass slope gradient smoothing (maximum climb/descent slope angle $\le 20^\circ$) to eliminate abrupt vertical stair-stepping.
+3. **Visualization & Profiling**:
+   - **2D Elevation Cross-Section Profile**: Collapsible bottom drawer beneath 2D Leaflet canvas.
+   - **3D Terrain Relief**: Displaces Three.js ground mesh vertices to visualize contoured ground topography and undulating flight lines.
+4. **Three-Tier Cascade**:
+   - Tier 1: Global Terrain Following toggle and default Target AGL in Section 3.
+   - Tier 2: Layer Terrain Following override, Target AGL, Max Slope Limit ($10^\circ$ to $35^\circ$), and DEM source selector in Section 2.
+   - Tier 3: Waypoint overrides displaying surface elevation with manual altitude lock.

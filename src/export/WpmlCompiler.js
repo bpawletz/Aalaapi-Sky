@@ -847,6 +847,8 @@ ${waypointActions.join('\n')}
     let currentAltitude;
     if (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit') {
       currentAltitude = wp.alt;
+    } else if (wp.isTerrainFollow || (wpLayer && (wpLayer.terrainFollow === 'enabled' || wpLayer.terrainFollow === true))) {
+      currentAltitude = (wp.alt !== undefined && wp.alt !== null) ? wp.alt : altitude;
     } else if (wp.layerAltitude !== undefined && wp.layerAltitude !== null && wp.layerAltitude !== 'inherit') {
       currentAltitude = wp.layerAltitude;
     } else if (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit') {
@@ -1325,8 +1327,8 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
             ? wpLayer.altitude
             : (options && options.altitude !== undefined && options.altitude !== null ? options.altitude : null));
 
-        const isVariableAltPattern = (wpLayer && (wpLayer.pattern === 'tower' || wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix' || (wpLayer.pattern === 'light-art' && (wpLayer.lightArtOrientation === 'vertical' || wpLayer.lightArtPreset === 'helix')))) ||
-          (wpObj && (wpObj.isMultiOrbit || wpObj.gridType === 'tower' || wpObj.gridType === 'vertical-facade' || wpObj.gridType === 'continuous-helix' || wpObj.layerPattern === 'vertical-facade' || wpObj.layerPattern === 'continuous-helix' || wpObj.isVerticalFacade || wpObj.isContinuousHelix));
+        const isVariableAltPattern = (wpLayer && (wpLayer.pattern === 'tower' || wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix' || wpLayer.terrainFollow === 'enabled' || wpLayer.terrainFollow === true || (wpLayer.pattern === 'light-art' && (wpLayer.lightArtOrientation === 'vertical' || wpLayer.lightArtPreset === 'helix')))) ||
+          (wpObj && (wpObj.isMultiOrbit || wpObj.gridType === 'tower' || wpObj.gridType === 'vertical-facade' || wpObj.gridType === 'continuous-helix' || wpObj.layerPattern === 'vertical-facade' || wpObj.layerPattern === 'continuous-helix' || wpObj.isVerticalFacade || wpObj.isContinuousHelix || wpObj.isTerrainFollow === true || wpObj.surfaceElevation !== undefined));
 
         if (targetAlt !== null && !isNaN(targetAlt) && !isVariableAltPattern) {
           pms[i] = pms[i].replace(

@@ -7138,3 +7138,34 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   color: #38bdf8;
   font-weight: 700;
 }
+
+
+/* Elevation Cross-Section Profile Drawer (Issue #129) */
+.elevation-profile-drawer {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(850px, calc(100vw - 360px));
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65);
+  padding: 10px 14px;
+  z-index: 1000;
+  transition: all 0.25s ease-in-out;
+}
+
+.elevation-profile-drawer.hidden {
+  display: none !important;
+}
+
+.elevation-profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}

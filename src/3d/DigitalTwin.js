@@ -471,6 +471,12 @@ const FlightDiagnostics = {
   diagShowDrones: true,
   diagShowWireframe: true,
   diagShowPlanes: false,
+  diagShowAiMesh: true,
+  aiMeshObject: null,
+  aiMeshWireframe: false,
+  aiMeshOpacity: 0.9,
+  aiMeshElevationOffset: 0.0,
+  aiMeshLoading: false,
   diagFpvMode: false,
   diagAcoustic3DGroup: null,
   diagLiveAcousticRingGroup: null,
@@ -1240,6 +1246,37 @@ const FlightDiagnostics = {
       diagWfThreeBtn.addEventListener('click', () => {
         this.exportWireframe('threejs');
         if (typeof showToast === 'function') showToast('🎨 Three.js Editor JSON exported! Drag into threejs.org/editor', 'info');
+      });
+    }
+
+    const diagBtnToggleMesh = document.getElementById('diag-btn-toggle-mesh');
+    if (diagBtnToggleMesh && typeof diagBtnToggleMesh.addEventListener === 'function') {
+      diagBtnToggleMesh.addEventListener('click', () => {
+        this.toggleAiMesh();
+      });
+    }
+
+    const diagBtnGenAiMesh = document.getElementById('diag-btn-generate-ai-mesh');
+    if (diagBtnGenAiMesh && typeof diagBtnGenAiMesh.addEventListener === 'function') {
+      diagBtnGenAiMesh.addEventListener('click', () => {
+        this.triggerAiMeshReconstruction();
+      });
+    }
+
+    const diagBtnAiMeshGal = document.getElementById('diag-btn-ai-mesh-gallery');
+    if (diagBtnAiMeshGal && typeof diagBtnAiMeshGal.addEventListener === 'function') {
+      diagBtnAiMeshGal.addEventListener('click', () => {
+        this.triggerAiMeshReconstruction();
+      });
+    }
+
+    const diagMeshOpacitySlider = document.getElementById('diag-ai-mesh-opacity-slider');
+    const diagMeshOpacityVal = document.getElementById('diag-ai-mesh-opacity-val');
+    if (diagMeshOpacitySlider && typeof diagMeshOpacitySlider.addEventListener === 'function') {
+      diagMeshOpacitySlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 90;
+        this.updateAiMeshOpacity(val / 100);
+        if (diagMeshOpacityVal) diagMeshOpacityVal.textContent = `${val}%`;
       });
     }
 
@@ -4368,6 +4405,229 @@ const FlightDiagnostics = {
         btn.innerHTML = '<span>🏗️</span> Project 3D Wireframe';
       }
     }
+  },
+
+  toggleAiMesh(visible) {
+    if (visible === undefined) {
+      this.diagShowAiMesh = !this.diagShowAiMesh;
+    } else {
+      this.diagShowAiMesh = Boolean(visible);
+    }
+    if (this.aiMeshObject) {
+      this.aiMeshObject.visible = this.diagShowAiMesh;
+    }
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-toggle-mesh') : null;
+    if (btn) btn.classList.toggle('active', this.diagShowAiMesh);
+    if (typeof _setDiagIndicator === 'function') {
+      _setDiagIndicator('diag-indicator-mesh', this.diagShowAiMesh);
+    }
+    if (this.threeRenderer && this.threeScene && this.threeCamera) {
+      this.threeRenderer.render(this.threeScene, this.threeCamera);
+    }
+  },
+
+  updateAiMeshOpacity(opacity) {
+    this.aiMeshOpacity = Math.max(0.05, Math.min(1.0, opacity));
+    if (this.aiMeshObject && this.aiMeshObject.material) {
+      this.aiMeshObject.material.opacity = this.aiMeshOpacity;
+      this.aiMeshObject.material.transparent = this.aiMeshOpacity < 1.0;
+      this.aiMeshObject.material.needsUpdate = true;
+    }
+    if (this.threeRenderer && this.threeScene && this.threeCamera) {
+      this.threeRenderer.render(this.threeScene, this.threeCamera);
+    }
+  },
+
+  loadAiMeshGeometry(objText) {
+    if (!objText || typeof objText !== 'string') return;
+    if (typeof THREE === 'undefined') return;
+
+    if (this.aiMeshObject && this.threeScene) {
+      this.threeScene.remove(this.aiMeshObject);
+      if (this.aiMeshObject.geometry) this.aiMeshObject.geometry.dispose();
+      if (this.aiMeshObject.material) this.aiMeshObject.material.dispose();
+      this.aiMeshObject = null;
+    }
+
+    const lines = objText.split('\n');
+    const positions = [];
+    const rawVertices = [];
+    const rawNormals = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line || line.startsWith('#')) continue;
+      const parts = line.split(/\s+/);
+      const tag = parts[0];
+
+      if (tag === 'v' && parts.length >= 4) {
+        rawVertices.push([parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3])]);
+      } else if (tag === 'vn' && parts.length >= 4) {
+        rawNormals.push([parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3])]);
+      } else if (tag === 'f' && parts.length >= 4) {
+        const faceIndices = [];
+        for (let j = 1; j < parts.length; j++) {
+          const vertPart = parts[j].split('/')[0];
+          const vIdx = parseInt(vertPart, 10) - 1;
+          faceIndices.push(vIdx);
+        }
+        for (let j = 1; j < faceIndices.length - 1; j++) {
+          const v0 = rawVertices[faceIndices[0]];
+          const v1 = rawVertices[faceIndices[j]];
+          const v2 = rawVertices[faceIndices[j + 1]];
+          if (v0 && v1 && v2) {
+            positions.push(v0[0], v0[1], v0[2]);
+            positions.push(v1[0], v1[1], v1[2]);
+            positions.push(v2[0], v2[1], v2[2]);
+          }
+        }
+      }
+    }
+
+    if (positions.length === 0) return;
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.computeVertexNormals();
+
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      metalness: 0.15,
+      roughness: 0.65,
+      transparent: true,
+      opacity: this.aiMeshOpacity,
+      side: THREE.DoubleSide,
+      wireframe: this.aiMeshWireframe
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = 'AI_Reconstructed_3D_Mesh';
+    mesh.position.set(0, this.aiMeshElevationOffset, 0);
+    mesh.visible = this.diagShowAiMesh;
+
+    this.aiMeshObject = mesh;
+    if (this.threeScene) {
+      this.threeScene.add(mesh);
+      if (this.threeRenderer && this.threeCamera) {
+        this.threeRenderer.render(this.threeScene, this.threeCamera);
+      }
+    }
+
+    const panel = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-panel') : null;
+    if (panel) panel.style.display = 'block';
+    const controlsCard = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-controls-card') : null;
+    if (controlsCard) controlsCard.style.display = 'flex';
+  },
+
+  async triggerAiMeshReconstruction() {
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-generate-ai-mesh') : null;
+    const progressCard = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-card') : null;
+    const progressBar = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-bar') : null;
+    const progressPct = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-pct') : null;
+    const statusText = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-status-text') : null;
+    const engineSelect = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-engine-select') : null;
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Processing 3D...';
+    }
+    if (progressCard) progressCard.style.display = 'flex';
+    if (progressBar) progressBar.style.width = '10%';
+    if (progressPct) progressPct.textContent = '10%';
+    if (statusText) statusText.textContent = 'Analyzing photo telemetry...';
+
+    try {
+      const apiBase = (typeof RC2_API_BASE !== 'undefined') ? RC2_API_BASE : 'http://127.0.0.1:8765';
+      const missionUuid = (typeof activeLayerId !== 'undefined' && activeLayerId)
+        || (this.selectedFlightId && `mission_${this.selectedFlightId.replace(/[^a-zA-Z0-9_-]/g, '_')}`)
+        || 'mission_latest';
+
+      const engine = engineSelect ? engineSelect.value : 'auto';
+
+      const res = await fetch(`${apiBase}/api/ai3d/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          missionUuid,
+          engine,
+          elevationOffset: this.wireframeElevationOffset || 0,
+          photos: (this.flightPhotos && this.flightPhotos.length > 0) ? this.flightPhotos : []
+        })
+      });
+
+      if (!res.ok) throw new Error(`Bridge returned HTTP ${res.status}`);
+      const startData = await res.json();
+      if (!startData.success) throw new Error(startData.error || 'Failed to start AI 3D job');
+
+      // Poll status
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        try {
+          const sRes = await fetch(`${apiBase}/api/ai3d/status`);
+          if (sRes.ok) {
+            const sData = await sRes.json();
+            const job = sData.job;
+            if (job) {
+              const pct = job.progress || 10;
+              if (progressBar) progressBar.style.width = `${pct}%`;
+              if (progressPct) progressPct.textContent = `${pct}%`;
+              if (statusText && job.stage) statusText.textContent = job.stage;
+
+              if (job.status === 'completed') {
+                clearInterval(poll);
+                if (progressBar) progressBar.style.width = '100%';
+                if (progressPct) progressPct.textContent = '100%';
+                if (statusText) statusText.textContent = 'Mesh ready! Loading 3D...';
+
+                // Fetch OBJ mesh to render
+                const meshRes = await fetch(`${apiBase}/api/ai3d/mesh?format=obj&missionUuid=${encodeURIComponent(missionUuid)}`);
+                if (meshRes.ok) {
+                  const objText = await meshRes.text();
+                  this.loadAiMeshGeometry(objText);
+                  this.switchTab('3d');
+                  if (typeof showToast === 'function') {
+                    showToast('🤖 AI 3D Reconstructed Mesh loaded into viewport!', 'success');
+                  }
+                }
+
+                if (btn) {
+                  btn.disabled = false;
+                  btn.textContent = '⚡ Reconstruct AI 3D Mesh';
+                }
+              } else if (job.status === 'error') {
+                clearInterval(poll);
+                throw new Error(job.error || 'AI reconstruction failed');
+              }
+            }
+          }
+        } catch (err) {
+          clearInterval(poll);
+          if (statusText) statusText.textContent = `Error: ${err.message}`;
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '⚡ Reconstruct AI 3D Mesh';
+          }
+          if (typeof showToast === 'function') showToast(`AI 3D Assist: ${err.message}`, 'error');
+        }
+
+        if (attempts > 60) {
+          clearInterval(poll);
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '⚡ Reconstruct AI 3D Mesh';
+          }
+        }
+      }, 500);
+
+    } catch (err) {
+      if (statusText) statusText.textContent = `Error: ${err.message}`;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '⚡ Reconstruct AI 3D Mesh';
+      }
+      if (typeof showToast === 'function') showToast(`AI 3D Assist: ${err.message}`, 'error');
+    }
   }
 };
 
@@ -4966,3 +5226,16 @@ const KMZInspector = {
   }
 };
 
+
+if (typeof window !== 'undefined') {
+  window.FlightDiagnostics = FlightDiagnostics;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    FlightDiagnostics,
+    buildThreeDigitalTwinJson,
+    createCameraPyramidGeometry,
+    getActiveMissionWaypoints
+  };
+}
