@@ -1577,6 +1577,44 @@ body.modal-drag-active {
   user-select: none !important;
 }
 
+.modal-drag-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.45;
+  margin-right: 6px;
+  font-size: 0.95rem;
+  letter-spacing: -2px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.modal-header:hover .modal-drag-grip,
+.photo-inspector-header:hover .modal-drag-grip,
+[data-modal-drag-handle]:hover .modal-drag-grip {
+  opacity: 0.95;
+  color: var(--accent-cyan);
+}
+
+#fpv-editor-panel {
+  touch-action: none;
+}
+
+#fpv-editor-panel .modal-header,
+#fpv-editor-panel [data-modal-drag-handle] {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+#fpv-editor-panel.modal-dragging {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(6, 182, 212, 0.5) !important;
+}
+
 .modal-header button,
 .modal-header input,
 .modal-header select,

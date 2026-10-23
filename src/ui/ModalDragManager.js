@@ -1,13 +1,16 @@
 /**
  * Aalaapi Sky - Modal Drag Manager
- * Enables smooth pointer/touch-based dragging across all modal dialogs.
+ * Enables smooth pointer/touch-based dragging across all modal dialogs and floating panels.
  * 
  * Features:
+ * - Multi-tier drag handle detection: explicit headers, top containers, or card top zones.
  * - Seamless pointer capture (mouse, stylus, touch).
  * - Interactive child element filtering (buttons, inputs, tabs, links never trigger drag).
  * - Viewport boundary clamping to guarantee header and close buttons remain accessible.
  * - Session position persistence so modals do not snap back and cover active waypoints.
  * - Double-click header shortcut to quickly re-center modal.
+ * - Visual tactile grip indicators (⋮⋮) for dense headers and headerless cards.
+ * - Standalone floating panel support (e.g. 3D Waypoint Editor #fpv-editor-panel).
  * - Auto-realigns within bounds if window is resized.
  */
 
@@ -30,10 +33,8 @@ export function clampModalPosition(modal, handle, proposedX, proposedY) {
   }
 
   const modalRect = modal.getBoundingClientRect();
-  const handleRect = handle.getBoundingClientRect();
+  const handleRect = handle ? handle.getBoundingClientRect() : modalRect;
 
-  // Compute current untranslated baseline rect or current unshifted bounds
-  // In our setup, transform is translate3d(currentX, currentY, 0)
   const styleTransform = modal.style.transform || '';
   let curX = 0;
   let curY = 0;
@@ -43,22 +44,18 @@ export function clampModalPosition(modal, handle, proposedX, proposedY) {
     curY = parseFloat(match[2]) || 0;
   }
 
-  // Base bounding rect without current transform
   const baseLeft = modalRect.left - curX;
   const baseTop = modalRect.top - curY;
   const modalWidth = modalRect.width || 400;
   const modalHeight = modalRect.height || 300;
-  const handleHeight = handleRect.height || 48;
+  const handleHeight = handleRect.height || 44;
 
   const winW = window.innerWidth;
   const winH = window.innerHeight;
 
-  // Viewport bounds:
-  // Top: Keep header top inside screen (at least 0px, max winH - handleHeight)
   const minShiftY = -baseTop;
   const maxShiftY = winH - handleHeight - baseTop;
 
-  // Horizontal: Keep at least 60px of the modal visible on left and right
   const minShiftX = 60 - modalWidth - baseLeft;
   const maxShiftX = winW - 60 - baseLeft;
 
@@ -72,37 +69,42 @@ export function clampModalPosition(modal, handle, proposedX, proposedY) {
 }
 
 /**
- * Initializes dragging capability for an individual modal overlay.
+ * Initializes dragging capability for an individual modal overlay or floating panel.
  * 
  * @param {HTMLElement|string} modalOverlayOrId 
  * @returns {boolean} True if successfully initialized
  */
 export function initModalDraggable(modalOverlayOrId) {
-  const overlay = typeof modalOverlayOrId === 'string'
+  const container = typeof modalOverlayOrId === 'string'
     ? document.getElementById(modalOverlayOrId)
     : modalOverlayOrId;
 
-  if (!overlay || overlay._modalDraggableInitialized) {
+  if (!container || container._modalDraggableInitialized) {
     return false;
   }
 
-  const modal = overlay.querySelector('.modal');
+  // If container has a .modal child, use that; otherwise, container is the floating card itself
+  const modal = container.querySelector('.modal') || container;
   if (!modal) {
     return false;
   }
 
-  // Identify handle: .modal-header, .photo-inspector-header, [data-modal-drag-handle], or first header/div
-  const handle = modal.querySelector('.modal-header, .photo-inspector-header, [data-modal-drag-handle]') ||
-                 modal.querySelector('header') ||
-                 modal.firstElementChild;
+  // Multi-tier handle resolution:
+  // Tier 1: Explicit class or data attribute
+  // Tier 2: <header> tag
+  // Tier 3: First child element
+  // Tier 4: The modal card itself (using top-zone fallback)
+  const handle = modal.querySelector(
+    '.modal-header, .photo-inspector-header, .fpv-editor-header, .diag-modal-header, [data-modal-drag-handle]'
+  ) || modal.querySelector('header') || modal.firstElementChild || modal;
 
-  if (!handle) {
-    return false;
-  }
-
-  overlay._modalDraggableInitialized = true;
+  container._modalDraggableInitialized = true;
   modal.setAttribute('data-draggable-modal', 'true');
-  handle.setAttribute('data-modal-drag-handle', 'true');
+  if (handle !== modal) {
+    handle.setAttribute('data-modal-drag-handle', 'true');
+  } else {
+    modal.setAttribute('data-modal-drag-handle', 'true');
+  }
 
   let isDragging = false;
   let startPointerX = 0;
@@ -112,15 +114,14 @@ export function initModalDraggable(modalOverlayOrId) {
   let activePointerId = null;
 
   // Restore saved position if previously dragged in this session
-  const overlayKey = overlay.id || modal.id || overlay;
-  if (modalPositions.has(overlayKey)) {
-    const saved = modalPositions.get(overlayKey);
+  const containerKey = container.id || modal.id || container;
+  if (modalPositions.has(containerKey)) {
+    const saved = modalPositions.get(containerKey);
     currentTranslateX = saved.x;
     currentTranslateY = saved.y;
     modal.style.transform = `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0)`;
   }
 
-  // Check if interactive child element clicked
   function isInteractiveElement(target) {
     return !!target.closest(
       'button, input, textarea, select, a, [role="button"], .close-btn, .tab-btn, .modal-tab-btn, .stepper-step, [data-no-drag]'
@@ -128,15 +129,21 @@ export function initModalDraggable(modalOverlayOrId) {
   }
 
   function onPointerDown(e) {
-    // Only primary mouse button (0) or touch/pen
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-
-    // Ignore interactive controls inside header
     if (isInteractiveElement(e.target)) return;
 
-    // Ignore if modal is explicitly full-screened
     if (modal.classList.contains('fullscreen-3d') || modal.classList.contains('is-fullscreen')) {
       return;
+    }
+
+    // Top-zone check if the handle is the entire card (headerless fallback)
+    if (handle === modal) {
+      const rect = modal.getBoundingClientRect();
+      const relativeY = e.clientY - rect.top;
+      if (relativeY > 48) {
+        // Only top 48px of a headerless card triggers drag
+        return;
+      }
     }
 
     isDragging = true;
@@ -144,7 +151,6 @@ export function initModalDraggable(modalOverlayOrId) {
     startPointerX = e.clientX;
     startPointerY = e.clientY;
 
-    // Parse current transform
     const styleTransform = modal.style.transform || '';
     const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
     if (match) {
@@ -197,23 +203,21 @@ export function initModalDraggable(modalOverlayOrId) {
       } catch (_) {}
     }
 
-    // Save final clamped position
     const styleTransform = modal.style.transform || '';
     const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
     if (match) {
       currentTranslateX = parseFloat(match[1]) || 0;
       currentTranslateY = parseFloat(match[2]) || 0;
-      modalPositions.set(overlayKey, { x: currentTranslateX, y: currentTranslateY });
+      modalPositions.set(containerKey, { x: currentTranslateX, y: currentTranslateY });
     }
   }
 
-  // Double-click on header to instantly re-center
   function onDblClick(e) {
     if (isInteractiveElement(e.target)) return;
     modal.style.transform = '';
     currentTranslateX = 0;
     currentTranslateY = 0;
-    modalPositions.delete(overlayKey);
+    modalPositions.delete(containerKey);
   }
 
   handle.addEventListener('pointerdown', onPointerDown);
@@ -222,7 +226,7 @@ export function initModalDraggable(modalOverlayOrId) {
   handle.addEventListener('pointercancel', endDrag);
   handle.addEventListener('dblclick', onDblClick);
 
-  // When overlay opens/unhides, auto-clamp position in case window size changed
+  // Observer for overlay unhiding to keep clamped
   const ObserverClass = (typeof MutationObserver !== 'undefined' && MutationObserver) ||
                         (typeof window !== 'undefined' && window.MutationObserver) ||
                         null;
@@ -231,68 +235,72 @@ export function initModalDraggable(modalOverlayOrId) {
     const observer = new ObserverClass(mutations => {
       for (const m of mutations) {
         if (m.type === 'attributes' && m.attributeName === 'class') {
-          if (!overlay.classList.contains('hidden') && modalPositions.has(overlayKey)) {
-            const pos = modalPositions.get(overlayKey);
+          if (!container.classList.contains('hidden') && modalPositions.has(containerKey)) {
+            const pos = modalPositions.get(containerKey);
             const clamped = clampModalPosition(modal, handle, pos.x, pos.y);
             modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
-            modalPositions.set(overlayKey, clamped);
+            modalPositions.set(containerKey, clamped);
           }
         }
       }
     });
 
-    observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(container, { attributes: true, attributeFilter: ['class'] });
   }
 
   return true;
 }
 
 /**
- * Initializes all modal overlays in the document with draggable capability.
+ * Initializes all modal overlays and floating panels in the document.
  */
 export function initAllModalsDraggable() {
   if (typeof document === 'undefined') return;
 
-  const overlays = document.querySelectorAll('.modal-overlay');
-  overlays.forEach(overlay => {
-    initModalDraggable(overlay);
+  const dialogs = document.querySelectorAll(
+    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel'
+  );
+  dialogs.forEach(dialog => {
+    initModalDraggable(dialog);
   });
 }
 
 /**
- * Resets a modal's dragged position back to center.
+ * Resets a modal or floating panel's dragged position back to center.
  * @param {HTMLElement|string} modalOverlayOrId 
  */
 export function resetModalPosition(modalOverlayOrId) {
-  const overlay = typeof modalOverlayOrId === 'string'
+  const container = typeof modalOverlayOrId === 'string'
     ? document.getElementById(modalOverlayOrId)
     : modalOverlayOrId;
 
-  if (!overlay) return;
-  const modal = overlay.querySelector('.modal');
+  if (!container) return;
+  const modal = container.querySelector('.modal') || container;
   if (modal) {
     modal.style.transform = '';
   }
-  const overlayKey = overlay.id || modal?.id || overlay;
-  modalPositions.delete(overlayKey);
+  const containerKey = container.id || modal?.id || container;
+  modalPositions.delete(containerKey);
 }
 
-// Window resize listener: keep dragged modals within viewport bounds
+// Window resize listener: keep dragged modals and panels within viewport bounds
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', () => {
-    const overlays = document.querySelectorAll('.modal-overlay:not(.hidden)');
-    overlays.forEach(overlay => {
-      const modal = overlay.querySelector('.modal');
-      const handle = modal?.querySelector('[data-modal-drag-handle]');
-      if (modal && handle && modal.style.transform) {
+    const dialogs = document.querySelectorAll(
+      '.modal-overlay:not(.hidden), #fpv-editor-panel:not(.hidden)'
+    );
+    dialogs.forEach(dialog => {
+      const modal = dialog.querySelector('.modal') || dialog;
+      const handle = modal?.querySelector('[data-modal-drag-handle]') || modal;
+      if (modal && modal.style.transform) {
         const match = modal.style.transform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
         if (match) {
           const curX = parseFloat(match[1]) || 0;
           const curY = parseFloat(match[2]) || 0;
           const clamped = clampModalPosition(modal, handle, curX, curY);
           modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
-          const overlayKey = overlay.id || modal.id || overlay;
-          modalPositions.set(overlayKey, clamped);
+          const containerKey = dialog.id || modal.id || dialog;
+          modalPositions.set(containerKey, clamped);
         }
       }
     });

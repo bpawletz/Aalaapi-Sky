@@ -34286,3 +34286,53 @@ describe('Issue #144 & v1.182.1: Playwright 1.64.1 Dependency Upgrade & Version 
     assert.ok(semverGte(installedPkg.version, '1.64.1'), `installed playwright version (${installedPkg.version}) must be >= 1.64.1`);
   });
 });
+
+describe('v1.183.0: 3D FPV Waypoint Editor Dragging & Multi-Tier Fallback Suite', () => {
+  test('Version consistency: v1.183.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.183.0');
+  });
+
+  test('UI templates contain #fpv-editor-panel with draggable modal markers and grip affordance', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('id="fpv-editor-panel"'), '#fpv-editor-panel must exist');
+    assert.ok(template.includes('data-draggable-modal="true"'), 'data-draggable-modal must be marked');
+    assert.ok(template.includes('class="modal-drag-grip"'), '.modal-drag-grip affordances must exist');
+  });
+
+  test('initModalDraggable successfully handles completely headerless cards via top-zone fallback', () => {
+    const initFn = window.initModalDraggable || global.initModalDraggable;
+    assert.strictEqual(typeof initFn, 'function');
+
+    const card = document.createElement('div');
+    card.id = 'headerless-test-card';
+    card.className = 'glass-card';
+    card.innerHTML = '<p>Just flat content with no header container</p>';
+    document.body.appendChild(card);
+
+    try {
+      const initialized = initFn(card);
+      assert.strictEqual(initialized, true);
+      assert.strictEqual(card.getAttribute('data-draggable-modal'), 'true');
+      assert.ok(card.querySelector('[data-modal-drag-handle]') || card.getAttribute('data-modal-drag-handle') === 'true');
+    } finally {
+      card.remove();
+    }
+  });
+
+  test('initModalDraggable initializes standalone floating panels like #fpv-editor-panel', () => {
+    const initFn = window.initModalDraggable || global.initModalDraggable;
+    const panel = document.createElement('div');
+    panel.id = 'fpv-editor-panel-test';
+    panel.className = 'hidden';
+    panel.innerHTML = '<div class="fpv-editor-header modal-header" data-modal-drag-handle="true"><span>Edit WP</span></div>';
+    document.body.appendChild(panel);
+
+    try {
+      const initialized = initFn(panel);
+      assert.strictEqual(initialized, true);
+      assert.strictEqual(panel.getAttribute('data-draggable-modal'), 'true');
+    } finally {
+      panel.remove();
+    }
+  });
+});

@@ -1594,6 +1594,44 @@ body.modal-drag-active {
   user-select: none !important;
 }
 
+.modal-drag-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.45;
+  margin-right: 6px;
+  font-size: 0.95rem;
+  letter-spacing: -2px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.modal-header:hover .modal-drag-grip,
+.photo-inspector-header:hover .modal-drag-grip,
+[data-modal-drag-handle]:hover .modal-drag-grip {
+  opacity: 0.95;
+  color: var(--accent-cyan);
+}
+
+#fpv-editor-panel {
+  touch-action: none;
+}
+
+#fpv-editor-panel .modal-header,
+#fpv-editor-panel [data-modal-drag-handle] {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+#fpv-editor-panel.modal-dragging {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(6, 182, 212, 0.5) !important;
+}
+
 .modal-header button,
 .modal-header input,
 .modal-header select,
@@ -7185,7 +7223,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.182.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.183.0</span></h1>
         </div>
       </div>
 
@@ -11208,6 +11246,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       <header class="modal-header" style="border-bottom: 1px solid var(--border-color); padding: 14px 20px; display: flex; flex-direction: column; gap: 10px; background: rgba(255, 255, 255, 0.02);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="modal-drag-grip" title="Drag to move guide">⋮⋮</span>
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
               <path d="M6 12v5c3 3 9 3 12 0v-5"/>
@@ -13374,7 +13413,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   <div id="about-modal" class="modal-overlay hidden">
     <div class="modal glass">
       <header class="modal-header">
-        <h2>About Aalaapi Sky</h2>
+        <h2 style="display: flex; align-items: center; gap: 6px;"><span class="modal-drag-grip" title="Drag to move window">⋮⋮</span>About Aalaapi Sky</h2>
         <button id="close-about-btn" class="close-btn" type="button" aria-label="Close about">&times;</button>
       </header>
       <div class="modal-content">
@@ -13416,7 +13455,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.182.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.183.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -13485,7 +13524,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               </ul>
             </li>
             <li style="margin-bottom: 8px;">
-              <strong style="color: var(--text-main);">Changelog (v1.182.0):</strong>
+              <strong style="color: var(--text-main);">Changelog (v1.183.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li>Continuous 3D Canvas Tilt: Tilt Light Art from flat overhead (0°) to vertical billboard (90°) or intermediate oblique angles.</li>
                 <li>Interactive SVG Compass Rose: Visual compass rose with cardinal markers and rotating bearing needle to align artwork sightline.</li>
@@ -17015,7 +17054,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   <div id="preview-3d-modal" class="modal-overlay hidden">
     <div id="preview-3d-card" class="modal glass" style="max-width: 900px; width: 95%; height: 85dvh; display: flex; flex-direction: column; transition: all 0.25s ease;">
       <header class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <h2>3D Flight Path Preview</h2>
+        <h2 style="display: flex; align-items: center; gap: 6px;"><span class="modal-drag-grip" title="Drag to move window">⋮⋮</span>3D Flight Path Preview</h2>
         <div style="display: flex; align-items: center; gap: 8px;">
           <button id="expand-3d-btn" type="button" aria-label="Toggle Fullscreen 3D View" title="Expand / Resize 3D View" style="background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--accent-cyan); cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; transition: var(--transition-smooth);">
             <svg id="expand-3d-icon-expand" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
@@ -17107,9 +17146,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;">
             
           <!-- Floating FPV Waypoint Editor Side-panel (Upper-Right position to avoid obscuring FPV view) -->
-          <div id="fpv-editor-panel" class="hidden" style="position: absolute; top: 60px; right: 16px; width: min(310px, calc(100vw - 32px)); max-width: calc(100vw - 32px); box-sizing: border-box; max-height: calc(100% - 130px); overflow-y: auto; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(6, 182, 212, 0.3); padding: 12px 14px; border-radius: 12px; pointer-events: auto; backdrop-filter: blur(12px); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 25;">
-            <div style="font-weight: 600; color: #06b6d4; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+          <div id="fpv-editor-panel" class="hidden" data-draggable-modal="true" style="position: absolute; top: 60px; right: 16px; width: min(310px, calc(100vw - 32px)); max-width: calc(100vw - 32px); box-sizing: border-box; max-height: calc(100% - 130px); overflow-y: auto; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(6, 182, 212, 0.3); padding: 12px 14px; border-radius: 12px; pointer-events: auto; backdrop-filter: blur(12px); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 25;">
+            <div class="fpv-editor-header modal-header" data-modal-drag-handle="true" style="font-weight: 600; color: #06b6d4; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; cursor: grab; user-select: none;">
               <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="modal-drag-grip" title="Drag to move waypoint editor">⋮⋮</span>
                 <span>🛠️ Edit Waypoint <span id="fpv-editor-wp-index">0</span></span>
                 <button id="fpv-editor-toggle-btn" type="button" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem; padding: 0 4px;" title="Minimize/Expand Editor Panel">▼</button>
               </div>
@@ -23556,14 +23596,17 @@ let globalExclusionClearanceBuffer = 5; // meters above ceiling
 // -------------------- src/ui/ModalDragManager.js --------------------
 /**
  * Aalaapi Sky - Modal Drag Manager
- * Enables smooth pointer/touch-based dragging across all modal dialogs.
+ * Enables smooth pointer/touch-based dragging across all modal dialogs and floating panels.
  * 
  * Features:
+ * - Multi-tier drag handle detection: explicit headers, top containers, or card top zones.
  * - Seamless pointer capture (mouse, stylus, touch).
  * - Interactive child element filtering (buttons, inputs, tabs, links never trigger drag).
  * - Viewport boundary clamping to guarantee header and close buttons remain accessible.
  * - Session position persistence so modals do not snap back and cover active waypoints.
  * - Double-click header shortcut to quickly re-center modal.
+ * - Visual tactile grip indicators (⋮⋮) for dense headers and headerless cards.
+ * - Standalone floating panel support (e.g. 3D Waypoint Editor #fpv-editor-panel).
  * - Auto-realigns within bounds if window is resized.
  */
 
@@ -23586,10 +23629,8 @@ function clampModalPosition(modal, handle, proposedX, proposedY) {
   }
 
   const modalRect = modal.getBoundingClientRect();
-  const handleRect = handle.getBoundingClientRect();
+  const handleRect = handle ? handle.getBoundingClientRect() : modalRect;
 
-  // Compute current untranslated baseline rect or current unshifted bounds
-  // In our setup, transform is translate3d(currentX, currentY, 0)
   const styleTransform = modal.style.transform || '';
   let curX = 0;
   let curY = 0;
@@ -23599,22 +23640,18 @@ function clampModalPosition(modal, handle, proposedX, proposedY) {
     curY = parseFloat(match[2]) || 0;
   }
 
-  // Base bounding rect without current transform
   const baseLeft = modalRect.left - curX;
   const baseTop = modalRect.top - curY;
   const modalWidth = modalRect.width || 400;
   const modalHeight = modalRect.height || 300;
-  const handleHeight = handleRect.height || 48;
+  const handleHeight = handleRect.height || 44;
 
   const winW = window.innerWidth;
   const winH = window.innerHeight;
 
-  // Viewport bounds:
-  // Top: Keep header top inside screen (at least 0px, max winH - handleHeight)
   const minShiftY = -baseTop;
   const maxShiftY = winH - handleHeight - baseTop;
 
-  // Horizontal: Keep at least 60px of the modal visible on left and right
   const minShiftX = 60 - modalWidth - baseLeft;
   const maxShiftX = winW - 60 - baseLeft;
 
@@ -23628,37 +23665,42 @@ function clampModalPosition(modal, handle, proposedX, proposedY) {
 }
 
 /**
- * Initializes dragging capability for an individual modal overlay.
+ * Initializes dragging capability for an individual modal overlay or floating panel.
  * 
  * @param {HTMLElement|string} modalOverlayOrId 
  * @returns {boolean} True if successfully initialized
  */
 function initModalDraggable(modalOverlayOrId) {
-  const overlay = typeof modalOverlayOrId === 'string'
+  const container = typeof modalOverlayOrId === 'string'
     ? document.getElementById(modalOverlayOrId)
     : modalOverlayOrId;
 
-  if (!overlay || overlay._modalDraggableInitialized) {
+  if (!container || container._modalDraggableInitialized) {
     return false;
   }
 
-  const modal = overlay.querySelector('.modal');
+  // If container has a .modal child, use that; otherwise, container is the floating card itself
+  const modal = container.querySelector('.modal') || container;
   if (!modal) {
     return false;
   }
 
-  // Identify handle: .modal-header, .photo-inspector-header, [data-modal-drag-handle], or first header/div
-  const handle = modal.querySelector('.modal-header, .photo-inspector-header, [data-modal-drag-handle]') ||
-                 modal.querySelector('header') ||
-                 modal.firstElementChild;
+  // Multi-tier handle resolution:
+  // Tier 1: Explicit class or data attribute
+  // Tier 2: <header> tag
+  // Tier 3: First child element
+  // Tier 4: The modal card itself (using top-zone fallback)
+  const handle = modal.querySelector(
+    '.modal-header, .photo-inspector-header, .fpv-editor-header, .diag-modal-header, [data-modal-drag-handle]'
+  ) || modal.querySelector('header') || modal.firstElementChild || modal;
 
-  if (!handle) {
-    return false;
-  }
-
-  overlay._modalDraggableInitialized = true;
+  container._modalDraggableInitialized = true;
   modal.setAttribute('data-draggable-modal', 'true');
-  handle.setAttribute('data-modal-drag-handle', 'true');
+  if (handle !== modal) {
+    handle.setAttribute('data-modal-drag-handle', 'true');
+  } else {
+    modal.setAttribute('data-modal-drag-handle', 'true');
+  }
 
   let isDragging = false;
   let startPointerX = 0;
@@ -23668,15 +23710,14 @@ function initModalDraggable(modalOverlayOrId) {
   let activePointerId = null;
 
   // Restore saved position if previously dragged in this session
-  const overlayKey = overlay.id || modal.id || overlay;
-  if (modalPositions.has(overlayKey)) {
-    const saved = modalPositions.get(overlayKey);
+  const containerKey = container.id || modal.id || container;
+  if (modalPositions.has(containerKey)) {
+    const saved = modalPositions.get(containerKey);
     currentTranslateX = saved.x;
     currentTranslateY = saved.y;
     modal.style.transform = `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0)`;
   }
 
-  // Check if interactive child element clicked
   function isInteractiveElement(target) {
     return !!target.closest(
       'button, input, textarea, select, a, [role="button"], .close-btn, .tab-btn, .modal-tab-btn, .stepper-step, [data-no-drag]'
@@ -23684,15 +23725,21 @@ function initModalDraggable(modalOverlayOrId) {
   }
 
   function onPointerDown(e) {
-    // Only primary mouse button (0) or touch/pen
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-
-    // Ignore interactive controls inside header
     if (isInteractiveElement(e.target)) return;
 
-    // Ignore if modal is explicitly full-screened
     if (modal.classList.contains('fullscreen-3d') || modal.classList.contains('is-fullscreen')) {
       return;
+    }
+
+    // Top-zone check if the handle is the entire card (headerless fallback)
+    if (handle === modal) {
+      const rect = modal.getBoundingClientRect();
+      const relativeY = e.clientY - rect.top;
+      if (relativeY > 48) {
+        // Only top 48px of a headerless card triggers drag
+        return;
+      }
     }
 
     isDragging = true;
@@ -23700,7 +23747,6 @@ function initModalDraggable(modalOverlayOrId) {
     startPointerX = e.clientX;
     startPointerY = e.clientY;
 
-    // Parse current transform
     const styleTransform = modal.style.transform || '';
     const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
     if (match) {
@@ -23753,23 +23799,21 @@ function initModalDraggable(modalOverlayOrId) {
       } catch (_) {}
     }
 
-    // Save final clamped position
     const styleTransform = modal.style.transform || '';
     const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
     if (match) {
       currentTranslateX = parseFloat(match[1]) || 0;
       currentTranslateY = parseFloat(match[2]) || 0;
-      modalPositions.set(overlayKey, { x: currentTranslateX, y: currentTranslateY });
+      modalPositions.set(containerKey, { x: currentTranslateX, y: currentTranslateY });
     }
   }
 
-  // Double-click on header to instantly re-center
   function onDblClick(e) {
     if (isInteractiveElement(e.target)) return;
     modal.style.transform = '';
     currentTranslateX = 0;
     currentTranslateY = 0;
-    modalPositions.delete(overlayKey);
+    modalPositions.delete(containerKey);
   }
 
   handle.addEventListener('pointerdown', onPointerDown);
@@ -23778,7 +23822,7 @@ function initModalDraggable(modalOverlayOrId) {
   handle.addEventListener('pointercancel', endDrag);
   handle.addEventListener('dblclick', onDblClick);
 
-  // When overlay opens/unhides, auto-clamp position in case window size changed
+  // Observer for overlay unhiding to keep clamped
   const ObserverClass = (typeof MutationObserver !== 'undefined' && MutationObserver) ||
                         (typeof window !== 'undefined' && window.MutationObserver) ||
                         null;
@@ -23787,68 +23831,72 @@ function initModalDraggable(modalOverlayOrId) {
     const observer = new ObserverClass(mutations => {
       for (const m of mutations) {
         if (m.type === 'attributes' && m.attributeName === 'class') {
-          if (!overlay.classList.contains('hidden') && modalPositions.has(overlayKey)) {
-            const pos = modalPositions.get(overlayKey);
+          if (!container.classList.contains('hidden') && modalPositions.has(containerKey)) {
+            const pos = modalPositions.get(containerKey);
             const clamped = clampModalPosition(modal, handle, pos.x, pos.y);
             modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
-            modalPositions.set(overlayKey, clamped);
+            modalPositions.set(containerKey, clamped);
           }
         }
       }
     });
 
-    observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(container, { attributes: true, attributeFilter: ['class'] });
   }
 
   return true;
 }
 
 /**
- * Initializes all modal overlays in the document with draggable capability.
+ * Initializes all modal overlays and floating panels in the document.
  */
 function initAllModalsDraggable() {
   if (typeof document === 'undefined') return;
 
-  const overlays = document.querySelectorAll('.modal-overlay');
-  overlays.forEach(overlay => {
-    initModalDraggable(overlay);
+  const dialogs = document.querySelectorAll(
+    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel'
+  );
+  dialogs.forEach(dialog => {
+    initModalDraggable(dialog);
   });
 }
 
 /**
- * Resets a modal's dragged position back to center.
+ * Resets a modal or floating panel's dragged position back to center.
  * @param {HTMLElement|string} modalOverlayOrId 
  */
 function resetModalPosition(modalOverlayOrId) {
-  const overlay = typeof modalOverlayOrId === 'string'
+  const container = typeof modalOverlayOrId === 'string'
     ? document.getElementById(modalOverlayOrId)
     : modalOverlayOrId;
 
-  if (!overlay) return;
-  const modal = overlay.querySelector('.modal');
+  if (!container) return;
+  const modal = container.querySelector('.modal') || container;
   if (modal) {
     modal.style.transform = '';
   }
-  const overlayKey = overlay.id || modal?.id || overlay;
-  modalPositions.delete(overlayKey);
+  const containerKey = container.id || modal?.id || container;
+  modalPositions.delete(containerKey);
 }
 
-// Window resize listener: keep dragged modals within viewport bounds
+// Window resize listener: keep dragged modals and panels within viewport bounds
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', () => {
-    const overlays = document.querySelectorAll('.modal-overlay:not(.hidden)');
-    overlays.forEach(overlay => {
-      const modal = overlay.querySelector('.modal');
-      const handle = modal?.querySelector('[data-modal-drag-handle]');
-      if (modal && handle && modal.style.transform) {
+    const dialogs = document.querySelectorAll(
+      '.modal-overlay:not(.hidden), #fpv-editor-panel:not(.hidden)'
+    );
+    dialogs.forEach(dialog => {
+      const modal = dialog.querySelector('.modal') || dialog;
+      const handle = modal?.querySelector('[data-modal-drag-handle]') || modal;
+      if (modal && modal.style.transform) {
         const match = modal.style.transform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
         if (match) {
           const curX = parseFloat(match[1]) || 0;
           const curY = parseFloat(match[2]) || 0;
           const clamped = clampModalPosition(modal, handle, curX, curY);
           modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
-          const overlayKey = overlay.id || modal.id || overlay;
-          modalPositions.set(overlayKey, clamped);
+          const containerKey = dialog.id || modal.id || dialog;
+          modalPositions.set(containerKey, clamped);
         }
       }
     });
