@@ -1554,6 +1554,10 @@ html, body {
 }
 
 .photo-inspector-header,
+.fpv-editor-header,
+.video-cast-header,
+.elevation-profile-header,
+.replay-2d-header,
 [data-modal-drag-handle] {
   cursor: grab;
   user-select: none;
@@ -1600,19 +1604,29 @@ body.modal-drag-active {
   color: var(--accent-cyan);
 }
 
-#fpv-editor-panel {
+#fpv-editor-panel,
+#video-cast-panel,
+#elevation-profile-drawer,
+#replay-2d-bar {
   touch-action: none;
 }
 
 #fpv-editor-panel .modal-header,
-#fpv-editor-panel [data-modal-drag-handle] {
+#fpv-editor-panel [data-modal-drag-handle],
+.video-cast-header,
+.elevation-profile-header,
+.replay-2d-header {
   cursor: grab;
   user-select: none;
   touch-action: none;
 }
 
-#fpv-editor-panel.modal-dragging {
+#fpv-editor-panel.modal-dragging,
+#video-cast-panel.modal-dragging,
+#elevation-profile-drawer.modal-dragging,
+#replay-2d-bar.modal-dragging {
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(6, 182, 212, 0.5) !important;
+  transition: none !important;
 }
 
 .modal-header button,

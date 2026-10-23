@@ -38,7 +38,7 @@ export function clampModalPosition(modal, handle, proposedX, proposedY) {
   const styleTransform = modal.style.transform || '';
   let curX = 0;
   let curY = 0;
-  const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+  const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
   if (match) {
     curX = parseFloat(match[1]) || 0;
     curY = parseFloat(match[2]) || 0;
@@ -95,7 +95,7 @@ export function initModalDraggable(modalOverlayOrId) {
   // Tier 3: First child element
   // Tier 4: The modal card itself (using top-zone fallback)
   const handle = modal.querySelector(
-    '.modal-header, .photo-inspector-header, .fpv-editor-header, .diag-modal-header, [data-modal-drag-handle]'
+    '.modal-header, .photo-inspector-header, .fpv-editor-header, .video-cast-header, .elevation-profile-header, .replay-2d-header, .diag-modal-header, [data-modal-drag-handle]'
   ) || modal.querySelector('header') || modal.firstElementChild || modal;
 
   container._modalDraggableInitialized = true;
@@ -105,6 +105,13 @@ export function initModalDraggable(modalOverlayOrId) {
   } else {
     modal.setAttribute('data-modal-drag-handle', 'true');
   }
+
+  // Detect if element uses horizontal centering via translateX(-50%)
+  const hasBaseCenterX = modal.classList.contains('elevation-profile-drawer') ||
+                         modal.classList.contains('replay-2d-bar') ||
+                         modal.hasAttribute('data-center-x') ||
+                         modal.dataset.centerX === 'true' ||
+                         container.hasAttribute('data-center-x');
 
   let isDragging = false;
   let startPointerX = 0;
@@ -119,7 +126,9 @@ export function initModalDraggable(modalOverlayOrId) {
     const saved = modalPositions.get(containerKey);
     currentTranslateX = saved.x;
     currentTranslateY = saved.y;
-    modal.style.transform = `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0)`;
+    modal.style.transform = hasBaseCenterX
+      ? `translate3d(calc(-50% + ${currentTranslateX}px), ${currentTranslateY}px, 0)`
+      : `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0)`;
   }
 
   function isInteractiveElement(target) {
@@ -152,7 +161,7 @@ export function initModalDraggable(modalOverlayOrId) {
     startPointerY = e.clientY;
 
     const styleTransform = modal.style.transform || '';
-    const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+    const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
     if (match) {
       currentTranslateX = parseFloat(match[1]) || 0;
       currentTranslateY = parseFloat(match[2]) || 0;
@@ -183,7 +192,9 @@ export function initModalDraggable(modalOverlayOrId) {
     const proposedY = currentTranslateY + deltaY;
 
     const clamped = clampModalPosition(modal, handle, proposedX, proposedY);
-    modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+    modal.style.transform = hasBaseCenterX
+      ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
+      : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
   }
 
   function endDrag(e) {
@@ -204,7 +215,7 @@ export function initModalDraggable(modalOverlayOrId) {
     }
 
     const styleTransform = modal.style.transform || '';
-    const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+    const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
     if (match) {
       currentTranslateX = parseFloat(match[1]) || 0;
       currentTranslateY = parseFloat(match[2]) || 0;
@@ -238,7 +249,9 @@ export function initModalDraggable(modalOverlayOrId) {
           if (!container.classList.contains('hidden') && modalPositions.has(containerKey)) {
             const pos = modalPositions.get(containerKey);
             const clamped = clampModalPosition(modal, handle, pos.x, pos.y);
-            modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+            modal.style.transform = hasBaseCenterX
+              ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
+              : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
             modalPositions.set(containerKey, clamped);
           }
         }
@@ -258,7 +271,7 @@ export function initAllModalsDraggable() {
   if (typeof document === 'undefined') return;
 
   const dialogs = document.querySelectorAll(
-    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel'
+    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel, #video-cast-panel, #elevation-profile-drawer, #replay-2d-bar'
   );
   dialogs.forEach(dialog => {
     initModalDraggable(dialog);
@@ -287,18 +300,24 @@ export function resetModalPosition(modalOverlayOrId) {
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', () => {
     const dialogs = document.querySelectorAll(
-      '.modal-overlay:not(.hidden), #fpv-editor-panel:not(.hidden)'
+      '.modal-overlay:not(.hidden), [data-draggable-modal]:not(.hidden), #fpv-editor-panel:not(.hidden), #video-cast-panel:not(.hidden), #elevation-profile-drawer:not(.hidden), #replay-2d-bar:not(.hidden)'
     );
     dialogs.forEach(dialog => {
       const modal = dialog.querySelector('.modal') || dialog;
       const handle = modal?.querySelector('[data-modal-drag-handle]') || modal;
+      const isCenterX = modal.classList.contains('elevation-profile-drawer') ||
+                        modal.classList.contains('replay-2d-bar') ||
+                        modal.hasAttribute('data-center-x') ||
+                        dialog.hasAttribute('data-center-x');
       if (modal && modal.style.transform) {
-        const match = modal.style.transform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+        const match = modal.style.transform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
         if (match) {
           const curX = parseFloat(match[1]) || 0;
           const curY = parseFloat(match[2]) || 0;
           const clamped = clampModalPosition(modal, handle, curX, curY);
-          modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+          modal.style.transform = isCenterX
+            ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
+            : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
           const containerKey = dialog.id || modal.id || dialog;
           modalPositions.set(containerKey, clamped);
         }

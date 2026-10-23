@@ -2606,6 +2606,74 @@ const scenarios = [
           }
         }
       }
+
+      // 7. Open Live Video Cast Panel and demonstrate floating dragging
+      const videoCastBtn = await page.locator('#sidebar-video-cast-btn');
+      if (await videoCastBtn.isVisible()) {
+        await videoCastBtn.click();
+        await page.waitForTimeout(800);
+
+        const videoHeader = await page.locator('#video-cast-panel .video-cast-header');
+        if (await videoHeader.isVisible()) {
+          const vBox = await videoHeader.boundingBox();
+          if (vBox) {
+            const vStartX = vBox.x + vBox.width / 2;
+            const vStartY = vBox.y + vBox.height / 2;
+
+            await page.mouse.move(vStartX, vStartY);
+            await page.mouse.down();
+            await page.waitForTimeout(150);
+            await page.mouse.move(vStartX - 220, vStartY + 160, { steps: 20 });
+            await page.waitForTimeout(300);
+            await page.mouse.up();
+            await page.waitForTimeout(800);
+
+            // Double click to re-center/reset
+            await page.mouse.dblclick(vStartX - 220, vStartY + 160);
+            await page.waitForTimeout(800);
+
+            const vClose = await page.locator('#video-cast-close-btn');
+            if (await vClose.isVisible()) {
+              await vClose.click();
+              await page.waitForTimeout(500);
+            }
+          }
+        }
+      }
+
+      // 8. Open Elevation Profile Drawer and demonstrate bottom-anchored dragging
+      const elevBtn = await page.locator('#open-elevation-profile-btn');
+      if (await elevBtn.isVisible()) {
+        await elevBtn.click();
+        await page.waitForTimeout(800);
+
+        const elevHeader = await page.locator('#elevation-profile-drawer .elevation-profile-header');
+        if (await elevHeader.isVisible()) {
+          const eBox = await elevHeader.boundingBox();
+          if (eBox) {
+            const eStartX = eBox.x + eBox.width / 2;
+            const eStartY = eBox.y + eBox.height / 2;
+
+            await page.mouse.move(eStartX, eStartY);
+            await page.mouse.down();
+            await page.waitForTimeout(150);
+            await page.mouse.move(eStartX, eStartY - 150, { steps: 20 });
+            await page.waitForTimeout(300);
+            await page.mouse.up();
+            await page.waitForTimeout(800);
+
+            // Double click to reset
+            await page.mouse.dblclick(eStartX, eStartY - 150);
+            await page.waitForTimeout(800);
+
+            const eClose = await page.locator('#close-elevation-profile-btn');
+            if (await eClose.isVisible()) {
+              await eClose.click();
+              await page.waitForTimeout(500);
+            }
+          }
+        }
+      }
     }
   },
   {
