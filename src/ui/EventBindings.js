@@ -3237,6 +3237,11 @@ function initUIEventListeners() {
   if (typeof initMissionDbUI === 'function') {
     initMissionDbUI();
   }
+
+  // Setup Camera ND Filter Recommendation & Exposure Advisor (v1.176.0)
+  if (typeof NdFilterAdvisor !== 'undefined' && NdFilterAdvisor.init) {
+    NdFilterAdvisor.init();
+  }
 }
 
 /**

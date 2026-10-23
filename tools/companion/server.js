@@ -3096,6 +3096,10 @@ function printStartupBanner() {
   logDetail('Staging Path', STAGING_DIR);
   logDetail('Flight Logs', LATEST_DIR);
   logDetail('Tile Cache', `${colors.green}Active${colors.reset} (${tileCache.cacheDir}) [${(tileCache.maxSizeBytes / (1024 * 1024 * 1024)).toFixed(1)} GB LRU]`);
+  if (typeof videoService !== 'undefined' && videoService.getRtmpStatus) {
+    const rtmpStat = videoService.getRtmpStatus();
+    logDetail('RTMP Ingest', `${colors.green}Active (0.0.0.0:${rtmpStat.port || 1935})${colors.reset} - rtmp://127.0.0.1:${rtmpStat.port || 1935}/live/stream`);
+  }
 
   // Scan local Downloads folder for KMZ and flight logs
   const downloadsDir = path.join(os.homedir(), 'Downloads');
@@ -5859,6 +5863,7 @@ function startDashboard() {
     getRc2Status: () => cachedRc2Status || { connected: false },
     getAdsbStatus: () => (typeof adsbTracker !== 'undefined' && adsbTracker.getStatus) ? adsbTracker.getStatus() : { connected: false, tcpPort: 30003, activeAircraftCount: 0 },
     getRemoteIdStatus: () => ({ activeCount: (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones) ? airspaceTracker.getActiveDrones().length : 0 }),
+    getRtmpStatus: () => (typeof videoService !== 'undefined' && videoService.getRtmpStatus) ? videoService.getRtmpStatus() : null,
     getTileCacheStats: () => (typeof tileCache !== 'undefined' && tileCache.getStats) ? tileCache.getStats() : { totalFiles: 0, sizeMb: 0, maxSizeMb: 2048, hitRatePercent: 0, lruPruneCount: 0, bypassCount: 0 },
     getClientCounts: () => {
       const sseObj = typeof getSseClientsCount === 'function' ? getSseClientsCount() : {};

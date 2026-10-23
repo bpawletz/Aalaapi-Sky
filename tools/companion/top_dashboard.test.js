@@ -78,7 +78,7 @@ test('Top Dashboard - renderFrame() output & zero protection', (t) => {
     logBuffer: [],
     process: { cpuPercent: 0, rssMb: 50, heapUsedMb: 20, heapTotalMb: 40, loopLagMs: 0, childProcs: 1 },
     metrics: { totalRequests: 0, reqPerSec: 0, status2xx: 0, status3xx: 0, status4xx: 0, status5xx: 0, avgMs: 0, topEndpoints: [] },
-    devices: { rc2: { connected: false }, adsb: { connected: false }, remoteId: { activeCount: 0 } },
+    devices: { rc2: { connected: false }, adsb: { connected: false }, remoteId: { activeCount: 0 }, rtmp: { listening: true, port: 1935 } },
     tileCache: { totalFiles: 0, sizeMb: 0, maxMb: 0, hitRatePercent: 0, evictions: 0, bypassCount: 0 },
     clients: { sseTotal: 0, sseStatus: 0, sseUnified: 0, sseAirspace: 0, mcpCount: 0 }
   };
@@ -86,6 +86,7 @@ test('Top Dashboard - renderFrame() output & zero protection', (t) => {
   const output = renderFrame(emptyState, { cols: 80, rows: 24 });
   assert.ok(typeof output === 'string');
   assert.ok(output.includes('Aalaapi Sky Bridge v1.144.0'));
+  assert.ok(output.includes('RTMP:'));
   assert.ok(!output.includes('NaN'));
   assert.ok(!output.includes('undefined'));
   assert.ok(!output.includes('[object Object]'));
