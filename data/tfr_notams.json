@@ -128,7 +128,7 @@
     "description": "El Paso, TX, Friday, October 23, 2026 through Sunday, October 25, 2026 UTC",
     "mod_date": "10/22/2026 20:39:00",
     "mod_abs_time": "202610222039",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/1753"
   },
   {
@@ -251,17 +251,6 @@
     "mod_abs_time": "202610212036",
     "is_new": "N",
     "gid": "6/1371"
-  },
-  {
-    "notam_id": "6/1244",
-    "facility": "ZMA",
-    "state": "FL",
-    "type": "VIP",
-    "description": "ft myers, FL, Friday, October 23, 2026 Local",
-    "mod_date": "10/21/2026 13:07:00",
-    "mod_abs_time": "202610211307",
-    "is_new": "N",
-    "gid": "6/1244"
   },
   {
     "notam_id": "6/1141",

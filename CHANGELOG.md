@@ -1,3 +1,23 @@
+## [1.183.0] - 2026-10-23
+
+3D FPV Waypoint Editor dragging, multi-tier fallback drag zones for headerless cards, and tactile drag grip indicators (⋮⋮).
+
+### Added
+
+#### Pilot & Operational Features
+- **3D FPV Waypoint Editor Dragging (Closes #154)**:
+  - The floating 3D Waypoint Editor (`#fpv-editor-panel`) can now be smoothly dragged anywhere in the 3D viewport by its title bar.
+  - Keeps waypoints, drone models, and camera sight lines unobstructed while fine-tuning waypoint altitudes, headings, and gimbal angles.
+  - Retains its dragged position throughout the session with double-click reset to restore default top-right corner anchoring.
+- **Tactile Drag Grip Indicators (`⋮⋮`)**:
+  - Added dedicated visual drag grip affordances (`.modal-drag-grip`, `⋮⋮`) to dialog headers and dense panels (such as the Intro Guide Hub tabs).
+  - Provides pilots with a clear, clutter-free target to grab without triggering adjacent tabs or buttons.
+
+#### Under the Hood & Technical Details
+- **Multi-Tier Drag Handle & Top-Zone Fallback (`src/ui/ModalDragManager.js`)**:
+  - Implemented cascading handle resolution: Tier 1 explicit handles (`.modal-header`, `.fpv-editor-header`, `[data-modal-drag-handle]`), Tier 2 `<header>` / first child element, and Tier 3 top 48px card boundary fallback for headerless dialogs.
+  - Added standalone floating panel support so non-overlay floating cards (`#fpv-editor-panel`, `[data-draggable-modal]`) are automatically initialized alongside modal overlays.
+
 ## [1.182.1] - 2026-10-23
 
 ### 🐛 Fixed
