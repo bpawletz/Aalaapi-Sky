@@ -1112,35 +1112,70 @@ function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, sp
     }
   }
 
-  // Project (u, v, zOffset) into 3D local coordinates (x, y, alt)
-  // Horizontal mode:
-  //   u maps to East (x), v maps to North (y), zOffset adds to baseAltitude
-  // Vertical Billboard mode:
-  //   Canvas stands upright in the sky facing ground camera at cameraAzimuth.
-  //   u maps across the canvas perpendicular to cameraAzimuth,
-  //   v maps up/down along altitude axis (z),
-  //   altitude = baseAltitude + v + zOffset.
+  // Continuous 3D Oblique Canvas Tilt:
+  //   tilt = 0: Horizontal plane (overhead)
+  //   tilt = 90: Vertical Billboard standing upright facing cameraAzimuth
+  //   tilt in (0, 90): Oblique plane tilted back towards observer bearing
+  let tilt = 0;
+  if (layer && typeof layer.lightArtTilt === 'number' && !isNaN(layer.lightArtTilt)) {
+    tilt = Math.max(0, Math.min(90, layer.lightArtTilt));
+  } else if (orientation === 'vertical') {
+    tilt = 90;
+  } else {
+    tilt = 0;
+  }
+
+  // Minimum Safe Ground Clearance Deck (default 10m, pilot configurable)
+  const minClearance = (layer && typeof layer.lightArtMinClearance === 'number' && layer.lightArtMinClearance >= 0)
+    ? layer.lightArtMinClearance
+    : 10;
+  const enforceClearance = !!(layer && layer.lightArtEnforceClearance);
+
+  // Observer Bearing (Ground Camera Azimuth in degrees 0-359)
   const radAz = (cameraAzimuth * Math.PI) / 180.0;
-  const perpX = Math.cos(radAz); // Perpendicular cross-track unit vector
-  const perpY = -Math.sin(radAz);
+  const radTilt = (tilt * Math.PI) / 180.0;
+  const cosTilt = Math.cos(radTilt);
+  const sinTilt = Math.sin(radTilt);
+  const cosAz = Math.cos(radAz);
+  const sinAz = Math.sin(radAz);
+
+  // Determine vertical extent of artwork across stroke points to check ground clearance
+  let minRawV = 0;
+  rawPoints.forEach(pt => {
+    if (pt.v < minRawV) minRawV = pt.v;
+  });
+  const minStrokeV = (tilt > 0) ? minRawV : 0;
+  const rawMinArtAlt = baseAltitude + minStrokeV * sinTilt;
+  const hasClearanceWarning = (tilt > 0) && (rawMinArtAlt < minClearance);
+  const recommendedBaseAltitude = Math.max(minClearance, Math.ceil(minClearance - minStrokeV * sinTilt));
+
+  // Effective Base Altitude (auto-elevates if enforcement is active)
+  let effectiveBaseAltitude = baseAltitude;
+  if (enforceClearance && hasClearanceWarning) {
+    effectiveBaseAltitude = recommendedBaseAltitude;
+  }
 
   let totalDistance = 0;
   let prevPt = null;
 
   rawPoints.forEach((pt, idx) => {
     let x, y, alt;
-    if (orientation === 'vertical') {
-      // In vertical plane:
-      // u moves perpendicular to line of sight to ground camera
-      // v moves along altitude axis
-      x = pt.u * perpX;
-      y = pt.u * perpY;
-      alt = Math.max(10, baseAltitude + pt.v + pt.zOffset);
-    } else {
-      // In horizontal plane:
+    if (tilt === 0 && (orientation === 'horizontal' || !orientation) && cameraAzimuth === 0) {
+      // Direct legacy horizontal mode:
       x = pt.u;
       y = pt.v;
-      alt = Math.max(10, baseAltitude + pt.zOffset);
+      alt = Math.max(minClearance, effectiveBaseAltitude + pt.zOffset);
+    } else {
+      // 3D Oblique Canvas Tilt:
+      // u is transverse (cross-track) across observer sightline
+      // v is longitudinal along the canvas plane, tilted by angle theta relative to ground
+      const vGround = pt.v * cosTilt;
+      const vAlt = pt.v * sinTilt;
+
+      // Project onto ground coordinates (x, y) aligned with camera bearing:
+      x = pt.u * cosAz + vGround * sinAz;
+      y = -pt.u * sinAz + vGround * cosAz;
+      alt = Math.max(minClearance, effectiveBaseAltitude + vAlt + pt.zOffset);
     }
 
     if (prevPt) {
@@ -1197,7 +1232,15 @@ function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, sp
     flightDurationSec: Math.round(flightDurationSec * 10) / 10,
     recommendedShutterSec: recommendedShutterSec,
     preset,
-    orientation
+    orientation,
+    tilt,
+    cameraAzimuth,
+    minClearance,
+    minArtAlt: Math.round(rawMinArtAlt * 10) / 10,
+    hasClearanceWarning,
+    recommendedBaseAltitude,
+    enforceClearance,
+    effectiveBaseAltitude
   };
 }
 

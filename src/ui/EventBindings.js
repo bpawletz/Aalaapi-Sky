@@ -1230,7 +1230,7 @@ function initUIEventListeners() {
   };
   setupHyperlapseListeners();
 
-  // Light Art / Sky Painting Control Listeners (v1.151.0 - Issue #136)
+  // Light Art / Sky Painting Control Listeners (v1.151.0, v1.182.0 - Tilt, Compass & Ground Safety Deck)
   const setupLightArtListeners = () => {
     const laPreset = document.getElementById('light-art-preset');
     const laOrientation = document.getElementById('light-art-orientation');
@@ -1249,6 +1249,11 @@ function initUIEventListeners() {
     const laTargetDur = document.getElementById('light-art-target-duration');
     const laTargetDurVal = document.getElementById('light-art-target-duration-val');
     const laCalcRadiusVal = document.getElementById('light-art-calculated-radius-val');
+    const laTilt = document.getElementById('light-art-tilt');
+    const laTiltVal = document.getElementById('light-art-tilt-val');
+    const laMinClearance = document.getElementById('light-art-min-clearance');
+    const laMinClearanceVal = document.getElementById('light-art-min-clearance-val');
+    const laEnforceClearance = document.getElementById('light-art-enforce-clearance');
 
     const updateLightArt = () => {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -1289,6 +1294,23 @@ function initUIEventListeners() {
           laCameraAzVal.textContent = `${val}° (${dirs[dirIdx]})`;
         }
       }
+      if (laTilt) {
+        const val = Math.max(0, Math.min(90, parseFloat(laTilt.value) || 0));
+        activeLayer.lightArtTilt = val;
+        if (laTiltVal) {
+          laTiltVal.textContent = val === 0 ? '0° (Flat)' : (val === 90 ? '90° (Upright)' : `${val}° (Oblique)`);
+        }
+      }
+      if (laMinClearance) {
+        const val = Math.max(0, parseFloat(laMinClearance.value) || 10);
+        activeLayer.lightArtMinClearance = val;
+        if (laMinClearanceVal) {
+          laMinClearanceVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+        }
+      }
+      if (laEnforceClearance) {
+        activeLayer.lightArtEnforceClearance = !!laEnforceClearance.checked;
+      }
       if (laSizeMode) {
         activeLayer.lightArtSizeMode = laSizeMode.value || 'manual';
       }
@@ -1307,12 +1329,93 @@ function initUIEventListeners() {
       saveAllSettingsToLocalStorage();
     };
 
-    [laPreset, laOrientation, laRadius, laTurns, laPoints, laStarRatio, laClimb, laCameraAz, laSizeMode, laTargetDur].forEach(el => {
+    if (laOrientation) {
+      laOrientation.addEventListener('change', () => {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (laOrientation.value === 'horizontal') {
+          if (laTilt) laTilt.value = 0;
+          if (activeLayer) activeLayer.lightArtTilt = 0;
+        } else if (laOrientation.value === 'vertical') {
+          if (laTilt) laTilt.value = 90;
+          if (activeLayer) activeLayer.lightArtTilt = 90;
+        } else if (laOrientation.value === 'tilted') {
+          const currentTilt = laTilt ? parseFloat(laTilt.value) : 45;
+          const newTilt = (currentTilt === 0 || currentTilt === 90) ? 45 : currentTilt;
+          if (laTilt) laTilt.value = newTilt;
+          if (activeLayer) activeLayer.lightArtTilt = newTilt;
+        }
+        updateLightArt();
+      });
+    }
+
+    [laPreset, laRadius, laTurns, laPoints, laStarRatio, laClimb, laCameraAz, laTilt, laMinClearance, laEnforceClearance, laSizeMode, laTargetDur].forEach(el => {
       if (el) {
         el.addEventListener('input', updateLightArt);
         el.addEventListener('change', updateLightArt);
       }
     });
+
+    // Tilt preset quick buttons
+    const tiltPresetBtns = document.querySelectorAll('.light-art-tilt-preset-btn');
+    tiltPresetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tilt = parseFloat(btn.getAttribute('data-tilt')) || 0;
+        if (laTilt) laTilt.value = tilt;
+        if (laOrientation) {
+          if (tilt === 0) laOrientation.value = 'horizontal';
+          else if (tilt === 90) laOrientation.value = 'vertical';
+          else laOrientation.value = 'tilted';
+        }
+        updateLightArt();
+      });
+    });
+
+    // Camera bearing cardinal snap chips
+    const azChips = document.querySelectorAll('.light-art-az-chip');
+    azChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const az = parseFloat(chip.getAttribute('data-az')) || 0;
+        if (laCameraAz) laCameraAz.value = az;
+        updateLightArt();
+      });
+    });
+
+    // Interactive SVG Compass Rose Dial
+    const compassDial = document.getElementById('light-art-compass-dial');
+    if (compassDial) {
+      const handleCompassClick = (e) => {
+        const rect = compassDial.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = e.clientX - cx;
+        const dy = e.clientY - cy;
+        let deg = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+        deg = ((deg % 360) + 360) % 360;
+        const roundedDeg = Math.round(deg / 5) * 5;
+        if (laCameraAz) laCameraAz.value = roundedDeg;
+        updateLightArt();
+      };
+      compassDial.addEventListener('click', handleCompassClick);
+    }
+
+    // Elevate Base Altitude button for ground clearance safety
+    const elevateBtn = document.getElementById('light-art-elevate-btn');
+    if (elevateBtn) {
+      elevateBtn.addEventListener('click', () => {
+        const recAlt = parseFloat(elevateBtn.getAttribute('data-recommended-alt'));
+        if (recAlt && !isNaN(recAlt)) {
+          const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+          if (activeLayer) {
+            activeLayer.altitude = recAlt;
+            const altInput = document.getElementById('altitude');
+            const altVal = document.getElementById('alt-val');
+            if (altInput) altInput.value = recAlt;
+            if (altVal) altVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(recAlt) : `${recAlt}m`;
+            updateLightArt();
+          }
+        }
+      });
+    }
 
     const presetBtns = document.querySelectorAll('.light-art-preset-btn');
     presetBtns.forEach(btn => {
@@ -3272,6 +3375,11 @@ function initUIEventListeners() {
   // Setup Camera ND Filter Recommendation & Exposure Advisor (v1.176.0)
   if (typeof NdFilterAdvisor !== 'undefined' && NdFilterAdvisor.init) {
     NdFilterAdvisor.init();
+  }
+
+  // Setup Draggable Modals across all overlays (v1.180.0)
+  if (typeof initAllModalsDraggable === 'function') {
+    initAllModalsDraggable();
   }
 }
 

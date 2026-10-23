@@ -2814,18 +2814,40 @@ function restoreActiveWorkspacePlanning() {
 function updateLightArtBadge(gridData) {
   if (typeof document === 'undefined') return;
   const badge = document.getElementById('light-art-duration-badge');
-  if (!badge) return;
-  if (!gridData || !gridData.flightDurationSec) {
-    badge.textContent = '0s (Bulb)';
-    return;
+  if (badge) {
+    if (!gridData || !gridData.flightDurationSec) {
+      badge.textContent = '0s (Bulb)';
+    } else {
+      const dur = Math.round(gridData.flightDurationSec);
+      const shutter = gridData.recommendedShutterSec || Math.ceil(dur + 2);
+      badge.textContent = `${dur}s Stroke | ${shutter}s Shutter`;
+    }
   }
-  const dur = Math.round(gridData.flightDurationSec);
-  const shutter = gridData.recommendedShutterSec || Math.ceil(dur + 2);
-  badge.textContent = `${dur}s Stroke | ${shutter}s Shutter`;
+
   const laCalcRadiusVal = document.getElementById('light-art-calculated-radius-val');
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   if (laCalcRadiusVal && activeLayer && activeLayer.lightArtRadius) {
     laCalcRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(activeLayer.lightArtRadius) : `${activeLayer.lightArtRadius}m`;
+  }
+
+  // Dynamic Ground Clearance Warning & Elevate Helper
+  const warningEl = document.getElementById('light-art-clearance-warning');
+  const warningMsgEl = document.getElementById('light-art-clearance-warning-msg');
+  const elevateBtn = document.getElementById('light-art-elevate-btn');
+
+  if (warningEl) {
+    if (gridData && gridData.hasClearanceWarning) {
+      warningEl.style.display = 'block';
+      if (warningMsgEl) {
+        warningMsgEl.textContent = `⚠️ Low Clearance Alert: Lowest stroke reaches ${gridData.minArtAlt}m AGL (below ${gridData.minClearance}m floor). Recommended altitude: ${gridData.recommendedBaseAltitude}m.`;
+      }
+      if (elevateBtn) {
+        elevateBtn.setAttribute('data-recommended-alt', gridData.recommendedBaseAltitude);
+        elevateBtn.textContent = `Elevate Base Altitude to ${gridData.recommendedBaseAltitude}m`;
+      }
+    } else {
+      warningEl.style.display = 'none';
+    }
   }
 }
 
@@ -2833,12 +2855,15 @@ function updateLightArtUiFields(layer) {
   if (typeof document === 'undefined') return;
   const preset = layer ? (layer.lightArtPreset || 'spiral') : 'spiral';
   const orientation = layer ? (layer.lightArtOrientation || 'horizontal') : 'horizontal';
+  const tilt = (layer && typeof layer.lightArtTilt === 'number') ? layer.lightArtTilt : (orientation === 'vertical' ? 90 : 0);
+  const cameraAz = (layer && typeof layer.lightArtCameraAzimuth === 'number') ? layer.lightArtCameraAzimuth : 0;
+  const sizeMode = layer ? (layer.lightArtSizeMode || 'manual') : 'manual';
 
   const spiralOpts = document.getElementById('light-art-spiral-opts');
   const starOpts = document.getElementById('light-art-star-opts');
   const helixOpts = document.getElementById('light-art-helix-opts');
+  const tiltOpts = document.getElementById('light-art-tilt-opts');
   const azOpts = document.getElementById('light-art-azimuth-opts');
-  const sizeMode = layer ? (layer.lightArtSizeMode || 'manual') : 'manual';
   const durationOpts = document.getElementById('light-art-duration-opts');
   const radiusOpts = document.getElementById('light-art-radius-opts');
 
@@ -2849,17 +2874,56 @@ function updateLightArtUiFields(layer) {
     radiusOpts.style.display = (sizeMode === 'manual') ? 'block' : 'none';
   }
 
-  if (spiralOpts) {
-    spiralOpts.style.display = (preset === 'spiral') ? 'block' : 'none';
+  if (spiralOpts) spiralOpts.style.display = (preset === 'spiral') ? 'block' : 'none';
+  if (helixOpts) helixOpts.style.display = (preset === 'helix') ? 'block' : 'none';
+  if (starOpts) starOpts.style.display = (preset === 'star') ? 'block' : 'none';
+
+  // Tilt controls are shown when tilted or vertical
+  if (tiltOpts) {
+    tiltOpts.style.display = (orientation === 'tilted' || orientation === 'vertical' || tilt > 0) ? 'block' : 'none';
   }
-  if (helixOpts) {
-    helixOpts.style.display = (preset === 'helix') ? 'block' : 'none';
-  }
-  if (starOpts) {
-    starOpts.style.display = (preset === 'star') ? 'block' : 'none';
-  }
+
+  // Bearing & Compass Dial controls are shown whenever canvas is tilted/vertical or azimuth > 0
   if (azOpts) {
-    azOpts.style.display = (orientation === 'vertical') ? 'block' : 'none';
+    azOpts.style.display = (orientation !== 'horizontal' || tilt > 0 || cameraAz > 0) ? 'block' : 'none';
+  }
+
+  // Update Compass Needle on SVG (center at 50, 50, radius 34)
+  const needle = document.getElementById('light-art-compass-needle');
+  if (needle && typeof needle.setAttribute === 'function') {
+    const radAz = (cameraAz * Math.PI) / 180.0;
+    const nx = 50 + 34 * Math.sin(radAz);
+    const ny = 50 - 34 * Math.cos(radAz);
+    needle.setAttribute('x2', nx.toFixed(1));
+    needle.setAttribute('y2', ny.toFixed(1));
+  }
+
+  // Highlight matching cardinal chip
+  if (typeof document.querySelectorAll === 'function') {
+    const azChips = document.querySelectorAll('.light-art-az-chip');
+    if (azChips && azChips.forEach) {
+      azChips.forEach(chip => {
+        const chipAz = parseFloat(chip.getAttribute('data-az'));
+        if (Math.round(cameraAz) === chipAz) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+
+    // Highlight matching tilt preset button
+    const tiltBtns = document.querySelectorAll('.light-art-tilt-preset-btn');
+    if (tiltBtns && tiltBtns.forEach) {
+      tiltBtns.forEach(btn => {
+        const btnTilt = parseFloat(btn.getAttribute('data-tilt'));
+        if (Math.round(tilt) === btnTilt) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
   }
 }
 

@@ -1565,6 +1565,43 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.photo-inspector-header,
+[data-modal-drag-handle] {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.modal.modal-dragging {
+  user-select: none;
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(56, 189, 248, 0.4);
+  transition: none !important;
+  will-change: transform;
+}
+
+.modal.modal-dragging .modal-header,
+.modal.modal-dragging .photo-inspector-header,
+.modal.modal-dragging [data-modal-drag-handle] {
+  cursor: grabbing !important;
+}
+
+body.modal-drag-active {
+  user-select: none !important;
+}
+
+.modal-header button,
+.modal-header input,
+.modal-header select,
+.modal-header a,
+.photo-inspector-header button {
+  cursor: pointer;
+  touch-action: auto;
+  user-select: auto;
 }
 
 .modal-header h2 {
@@ -7148,7 +7185,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.180.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.182.0</span></h1>
         </div>
       </div>
 
@@ -8362,9 +8399,26 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               <div>
                 <label for="light-art-orientation" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Canvas Orientation</label>
                 <select id="light-art-orientation" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
-                  <option value="horizontal" selected>Horizontal (Flat / Overhead)</option>
-                  <option value="vertical">Vertical Billboard (Upright)</option>
+                  <option value="horizontal" selected>Horizontal (Flat / 0°)</option>
+                  <option value="tilted">Tilted Oblique Canvas</option>
+                  <option value="vertical">Vertical Billboard (Upright / 90°)</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Canvas Tilt Angle (Visible when orientation is 'tilted' or 'vertical') -->
+            <div id="light-art-tilt-opts" class="control-group" style="margin-bottom: 8px; display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-tilt" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Canvas Tilt Angle</label>
+                <span id="light-art-tilt-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">0° (Flat)</span>
+              </div>
+              <input type="range" id="light-art-tilt" class="form-range" min="0" max="90" step="1" value="0" style="accent-color: #ec4899;">
+              <div style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-xs btn-outline-secondary light-art-tilt-preset-btn" data-tilt="0" style="font-size: 0.65rem; padding: 1px 6px;">0° Flat</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary light-art-tilt-preset-btn" data-tilt="30" style="font-size: 0.65rem; padding: 1px 6px;">30°</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary light-art-tilt-preset-btn" data-tilt="45" style="font-size: 0.65rem; padding: 1px 6px;">45°</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary light-art-tilt-preset-btn" data-tilt="60" style="font-size: 0.65rem; padding: 1px 6px;">60°</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary light-art-tilt-preset-btn" data-tilt="90" style="font-size: 0.65rem; padding: 1px 6px;">90° Upright</button>
               </div>
             </div>
 
@@ -8436,13 +8490,62 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               </div>
             </div>
 
-            <!-- Camera Azimuth (for Vertical Billboard Mode) -->
+            <!-- Camera Azimuth & Interactive SVG Compass Rose (Visible when orientation !== 'horizontal' or tilt > 0) -->
             <div id="light-art-azimuth-opts" class="control-group" style="margin-bottom: 8px; display: none;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
                 <label for="light-art-camera-azimuth" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Ground Camera Bearing</label>
                 <span id="light-art-camera-azimuth-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">0° (North)</span>
               </div>
               <input type="range" id="light-art-camera-azimuth" class="form-range" min="0" max="359" step="1" value="0" style="accent-color: #ec4899;">
+              <!-- Interactive Visual Compass Dial & Cardinal Snaps -->
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 5px; padding: 4px 6px; background: rgba(15, 23, 42, 0.4); border-radius: 6px;">
+                <!-- SVG Compass Rose -->
+                <div style="width: 54px; height: 54px; flex-shrink: 0; position: relative;">
+                  <svg id="light-art-compass-dial" viewBox="0 0 100 100" width="54" height="54" style="overflow: visible; cursor: pointer;">
+                    <!-- Outer Ring -->
+                    <circle cx="50" cy="50" r="42" fill="rgba(30, 41, 59, 0.7)" stroke="rgba(236, 72, 153, 0.3)" stroke-width="2"/>
+                    <!-- Cardinal Markers -->
+                    <text x="50" y="18" font-size="11" font-weight="bold" fill="#ef4444" text-anchor="middle">N</text>
+                    <text x="84" y="54" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="middle">E</text>
+                    <text x="50" y="88" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="middle">S</text>
+                    <text x="16" y="54" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="middle">W</text>
+                    <!-- Bearing Pointer Needle (Pink) -->
+                    <line id="light-art-compass-needle" x1="50" y1="50" x2="50" y2="16" stroke="#ec4899" stroke-width="3" stroke-linecap="round"/>
+                    <!-- Center Pivot -->
+                    <circle cx="50" cy="50" r="4" fill="#f472b6"/>
+                  </svg>
+                </div>
+                <!-- Quick Cardinal Chips -->
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 3px;">
+                  <div style="display: flex; gap: 2px;">
+                    <button type="button" class="btn btn-secondary btn-sm light-art-az-chip" data-az="0" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">N (0°)</button>
+                    <button type="button" class="btn btn-secondary btn-sm light-art-az-chip" data-az="90" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">E (90°)</button>
+                    <button type="button" class="btn btn-secondary btn-sm light-art-az-chip" data-az="180" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">S (180°)</button>
+                    <button type="button" class="btn btn-secondary btn-sm light-art-az-chip" data-az="270" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">W (270°)</button>
+                  </div>
+                  <div style="font-size: 0.62rem; color: var(--text-muted); text-align: center;">Click compass to set bearing</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ground Clearance Safety Deck & Prevention -->
+            <div id="light-art-clearance-container" class="control-group" style="margin-bottom: 8px; background: rgba(15, 23, 42, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-min-clearance" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Min Ground Clearance Floor</label>
+                <span id="light-art-min-clearance-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">10m</span>
+              </div>
+              <input type="range" id="light-art-min-clearance" class="form-range" min="5" max="30" step="1" value="10" style="accent-color: #ec4899;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.68rem; color: var(--text-muted); cursor: pointer; margin: 0;">
+                  <input type="checkbox" id="light-art-enforce-clearance" style="accent-color: #ec4899;">
+                  <span>Enforce Floor (Auto-Shift Altitude)</span>
+                </label>
+              </div>
+              <!-- Dynamic Low Clearance Warning & Elevate Helper -->
+              <div id="light-art-clearance-warning" style="display: none; margin-top: 6px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 4px; padding: 6px 8px; font-size: 0.68rem; color: #fca5a5;">
+                <div id="light-art-clearance-warning-msg" style="margin-bottom: 4px; line-height: 1.3;">⚠️ Low Clearance Alert</div>
+                <button type="button" id="light-art-elevate-btn" class="btn btn-xs btn-danger" style="font-size: 0.65rem; padding: 2px 8px; font-weight: 600; width: 100%;">Elevate Base Altitude to Safe Floor</button>
+              </div>
             </div>
 
             <!-- Shutter Sync Notice -->
@@ -11197,6 +11300,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #ec4899; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎨 Continuous 3D Canvas Tilt, Compass Rose &amp; Safety Deck for Light Art (v1.182.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Take aerial sky painting to new dimensions! Pilots can now continuously tilt the Light Art canvas from flat horizontal (0°) to upright vertical (90°) or oblique angles (30°, 45°, 60°). Includes an interactive SVG Compass Rose dial to align the plane of the artwork directly with ground camera positions, plus an adjustable Ground Clearance Safety Deck (5m-30m) with automated low-clearance warnings and one-click base altitude elevation.
+            </p>
+          </div>
+          <div style="background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #ec4899; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎨 Light Art Target Duration &amp; Camera Shutter Auto-Sizing (v1.179.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -12639,7 +12750,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
     <div class="modal glass" style="max-width: 680px; width: 94vw; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid rgba(34, 197, 94, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
       
       <!-- Header -->
-      <div style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+      <div class="modal-header" style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 10px;">
           <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #4ade80;">📋</div>
           <div>
@@ -12749,7 +12860,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   <!-- Preflight History & Audit Log Viewer Modal -->
   <div id="preflight-history-modal" class="modal-overlay hidden" style="z-index: 10060;">
     <div class="modal glass" style="max-width: 720px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
-      <div style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+      <div class="modal-header" style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 1.1rem;">📜</span>
           <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-main);">Preflight Checklist Audit History</h3>
@@ -13193,6 +13304,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <button id="close-links-btn" class="close-btn" type="button" aria-label="Close links">&times;</button>
       </header>
       <div class="modal-content" style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 14px;">
+              <h4 style="margin: 0 0 6px 0; font-size: 0.88rem; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                <span>🪟</span> Universal Draggable Modal Dialogs (v1.181.0)
+              </h4>
+              <p style="margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--text-muted);">
+                Move any dialog anywhere on screen by dragging its top header bar. Keep waypoints, flight telemetry, and map imagery visible without closing your tools. Reopening dialogs retains your chosen position, and double-clicking the header instantly re-centers the window.
+              </p>
+            </div>
+
         <a id="opensky-link" href="https://map.opensky-network.org/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between;">
           <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
             <span style="display: flex; align-items: center; gap: 6px;">
@@ -13296,7 +13416,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.180.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.182.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -13358,7 +13478,24 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
-            <strong style="color: var(--text-main);">Changelog (v1.180.0):</strong>
+                        <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.182.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li>Continuous 3D Canvas Tilt: Tilt Light Art from flat overhead (0°) to vertical billboard (90°) or intermediate oblique angles.</li>
+                <li>Interactive SVG Compass Rose: Visual compass rose with cardinal markers and rotating bearing needle to align artwork sightline.</li>
+                <li>Ground Clearance Safety Deck: Configurable safety floor (5-30m) with low clearance alert and 1-click base altitude elevation.</li>
+              </ul>
+            </li>
+            <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.181.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li>Draggable Modal Windows: All operational dialogs can be moved across the screen by dragging the header bar.</li>
+                <li>Waypoint Clearance: Repositioned modals persist in place across open/close to keep active waypoints unobstructed.</li>
+                <li>Header Double-Click Reset: Instantly re-centers any modal to screen center.</li>
+              </ul>
+            </li>
+            <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.180.0):</strong>
             <ul style="padding-left: 18px; margin: 4px 0 12px; color: var(--text-muted); font-size: 0.82rem;">
               <li><strong>ADS-B Flight History Purge &amp; Radar Reset:</strong> Added 1-click map trail breadcrumb clearing and full airspace radar state reset directly from the ADS-B Control Drawer.</li>
             </ul>
@@ -23410,6 +23547,318 @@ let globalExclusionClearanceBuffer = 5; // meters above ceiling
 // Flight Pattern Layers & Multi-Layer Mission Manager (v1.62.0)
 // ==========================================================================
 
+// -------------------- src/ui/ModalDragManager.js --------------------
+/**
+ * Aalaapi Sky - Modal Drag Manager
+ * Enables smooth pointer/touch-based dragging across all modal dialogs.
+ * 
+ * Features:
+ * - Seamless pointer capture (mouse, stylus, touch).
+ * - Interactive child element filtering (buttons, inputs, tabs, links never trigger drag).
+ * - Viewport boundary clamping to guarantee header and close buttons remain accessible.
+ * - Session position persistence so modals do not snap back and cover active waypoints.
+ * - Double-click header shortcut to quickly re-center modal.
+ * - Auto-realigns within bounds if window is resized.
+ */
+
+// Cache of dragged offsets per modal element or ID: { [modalId]: { x, y } }
+const modalPositions = new Map();
+
+/**
+ * Clamps coordinates so that at least a comfortable margin of the modal remains
+ * inside the visible viewport and the top header is never lost off-screen.
+ * 
+ * @param {HTMLElement} modal 
+ * @param {HTMLElement} handle 
+ * @param {number} proposedX 
+ * @param {number} proposedY 
+ * @returns {{ x: number, y: number }}
+ */
+function clampModalPosition(modal, handle, proposedX, proposedY) {
+  if (typeof window === 'undefined') {
+    return { x: proposedX, y: proposedY };
+  }
+
+  const modalRect = modal.getBoundingClientRect();
+  const handleRect = handle.getBoundingClientRect();
+
+  // Compute current untranslated baseline rect or current unshifted bounds
+  // In our setup, transform is translate3d(currentX, currentY, 0)
+  const styleTransform = modal.style.transform || '';
+  let curX = 0;
+  let curY = 0;
+  const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+  if (match) {
+    curX = parseFloat(match[1]) || 0;
+    curY = parseFloat(match[2]) || 0;
+  }
+
+  // Base bounding rect without current transform
+  const baseLeft = modalRect.left - curX;
+  const baseTop = modalRect.top - curY;
+  const modalWidth = modalRect.width || 400;
+  const modalHeight = modalRect.height || 300;
+  const handleHeight = handleRect.height || 48;
+
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+
+  // Viewport bounds:
+  // Top: Keep header top inside screen (at least 0px, max winH - handleHeight)
+  const minShiftY = -baseTop;
+  const maxShiftY = winH - handleHeight - baseTop;
+
+  // Horizontal: Keep at least 60px of the modal visible on left and right
+  const minShiftX = 60 - modalWidth - baseLeft;
+  const maxShiftX = winW - 60 - baseLeft;
+
+  const clampedX = Math.min(Math.max(proposedX, minShiftX), maxShiftX);
+  const clampedY = Math.min(Math.max(proposedY, minShiftY), maxShiftY);
+
+  return {
+    x: Math.round(clampedX),
+    y: Math.round(clampedY)
+  };
+}
+
+/**
+ * Initializes dragging capability for an individual modal overlay.
+ * 
+ * @param {HTMLElement|string} modalOverlayOrId 
+ * @returns {boolean} True if successfully initialized
+ */
+function initModalDraggable(modalOverlayOrId) {
+  const overlay = typeof modalOverlayOrId === 'string'
+    ? document.getElementById(modalOverlayOrId)
+    : modalOverlayOrId;
+
+  if (!overlay || overlay._modalDraggableInitialized) {
+    return false;
+  }
+
+  const modal = overlay.querySelector('.modal');
+  if (!modal) {
+    return false;
+  }
+
+  // Identify handle: .modal-header, .photo-inspector-header, [data-modal-drag-handle], or first header/div
+  const handle = modal.querySelector('.modal-header, .photo-inspector-header, [data-modal-drag-handle]') ||
+                 modal.querySelector('header') ||
+                 modal.firstElementChild;
+
+  if (!handle) {
+    return false;
+  }
+
+  overlay._modalDraggableInitialized = true;
+  modal.setAttribute('data-draggable-modal', 'true');
+  handle.setAttribute('data-modal-drag-handle', 'true');
+
+  let isDragging = false;
+  let startPointerX = 0;
+  let startPointerY = 0;
+  let currentTranslateX = 0;
+  let currentTranslateY = 0;
+  let activePointerId = null;
+
+  // Restore saved position if previously dragged in this session
+  const overlayKey = overlay.id || modal.id || overlay;
+  if (modalPositions.has(overlayKey)) {
+    const saved = modalPositions.get(overlayKey);
+    currentTranslateX = saved.x;
+    currentTranslateY = saved.y;
+    modal.style.transform = `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0)`;
+  }
+
+  // Check if interactive child element clicked
+  function isInteractiveElement(target) {
+    return !!target.closest(
+      'button, input, textarea, select, a, [role="button"], .close-btn, .tab-btn, .modal-tab-btn, .stepper-step, [data-no-drag]'
+    );
+  }
+
+  function onPointerDown(e) {
+    // Only primary mouse button (0) or touch/pen
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+
+    // Ignore interactive controls inside header
+    if (isInteractiveElement(e.target)) return;
+
+    // Ignore if modal is explicitly full-screened
+    if (modal.classList.contains('fullscreen-3d') || modal.classList.contains('is-fullscreen')) {
+      return;
+    }
+
+    isDragging = true;
+    activePointerId = e.pointerId;
+    startPointerX = e.clientX;
+    startPointerY = e.clientY;
+
+    // Parse current transform
+    const styleTransform = modal.style.transform || '';
+    const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+    if (match) {
+      currentTranslateX = parseFloat(match[1]) || 0;
+      currentTranslateY = parseFloat(match[2]) || 0;
+    } else {
+      currentTranslateX = 0;
+      currentTranslateY = 0;
+    }
+
+    modal.classList.add('modal-dragging');
+    document.body.classList.add('modal-drag-active');
+
+    try {
+      handle.setPointerCapture(e.pointerId);
+    } catch (_) {}
+
+    e.preventDefault();
+  }
+
+  function onPointerMove(e) {
+    if (!isDragging || (activePointerId !== null && e.pointerId !== activePointerId)) {
+      return;
+    }
+
+    const deltaX = e.clientX - startPointerX;
+    const deltaY = e.clientY - startPointerY;
+
+    const proposedX = currentTranslateX + deltaX;
+    const proposedY = currentTranslateY + deltaY;
+
+    const clamped = clampModalPosition(modal, handle, proposedX, proposedY);
+    modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+  }
+
+  function endDrag(e) {
+    if (!isDragging) return;
+    if (activePointerId !== null && e.pointerId !== undefined && e.pointerId !== activePointerId) {
+      return;
+    }
+
+    isDragging = false;
+    activePointerId = null;
+    modal.classList.remove('modal-dragging');
+    document.body.classList.remove('modal-drag-active');
+
+    if (e.pointerId !== undefined) {
+      try {
+        handle.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+    }
+
+    // Save final clamped position
+    const styleTransform = modal.style.transform || '';
+    const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+    if (match) {
+      currentTranslateX = parseFloat(match[1]) || 0;
+      currentTranslateY = parseFloat(match[2]) || 0;
+      modalPositions.set(overlayKey, { x: currentTranslateX, y: currentTranslateY });
+    }
+  }
+
+  // Double-click on header to instantly re-center
+  function onDblClick(e) {
+    if (isInteractiveElement(e.target)) return;
+    modal.style.transform = '';
+    currentTranslateX = 0;
+    currentTranslateY = 0;
+    modalPositions.delete(overlayKey);
+  }
+
+  handle.addEventListener('pointerdown', onPointerDown);
+  handle.addEventListener('pointermove', onPointerMove);
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
+  handle.addEventListener('dblclick', onDblClick);
+
+  // When overlay opens/unhides, auto-clamp position in case window size changed
+  const ObserverClass = (typeof MutationObserver !== 'undefined' && MutationObserver) ||
+                        (typeof window !== 'undefined' && window.MutationObserver) ||
+                        null;
+
+  if (ObserverClass) {
+    const observer = new ObserverClass(mutations => {
+      for (const m of mutations) {
+        if (m.type === 'attributes' && m.attributeName === 'class') {
+          if (!overlay.classList.contains('hidden') && modalPositions.has(overlayKey)) {
+            const pos = modalPositions.get(overlayKey);
+            const clamped = clampModalPosition(modal, handle, pos.x, pos.y);
+            modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+            modalPositions.set(overlayKey, clamped);
+          }
+        }
+      }
+    });
+
+    observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  return true;
+}
+
+/**
+ * Initializes all modal overlays in the document with draggable capability.
+ */
+function initAllModalsDraggable() {
+  if (typeof document === 'undefined') return;
+
+  const overlays = document.querySelectorAll('.modal-overlay');
+  overlays.forEach(overlay => {
+    initModalDraggable(overlay);
+  });
+}
+
+/**
+ * Resets a modal's dragged position back to center.
+ * @param {HTMLElement|string} modalOverlayOrId 
+ */
+function resetModalPosition(modalOverlayOrId) {
+  const overlay = typeof modalOverlayOrId === 'string'
+    ? document.getElementById(modalOverlayOrId)
+    : modalOverlayOrId;
+
+  if (!overlay) return;
+  const modal = overlay.querySelector('.modal');
+  if (modal) {
+    modal.style.transform = '';
+  }
+  const overlayKey = overlay.id || modal?.id || overlay;
+  modalPositions.delete(overlayKey);
+}
+
+// Window resize listener: keep dragged modals within viewport bounds
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => {
+    const overlays = document.querySelectorAll('.modal-overlay:not(.hidden)');
+    overlays.forEach(overlay => {
+      const modal = overlay.querySelector('.modal');
+      const handle = modal?.querySelector('[data-modal-drag-handle]');
+      if (modal && handle && modal.style.transform) {
+        const match = modal.style.transform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+        if (match) {
+          const curX = parseFloat(match[1]) || 0;
+          const curY = parseFloat(match[2]) || 0;
+          const clamped = clampModalPosition(modal, handle, curX, curY);
+          modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+          const overlayKey = overlay.id || modal.id || overlay;
+          modalPositions.set(overlayKey, clamped);
+        }
+      }
+    });
+  });
+
+  window.initModalDraggable = initModalDraggable;
+  window.initAllModalsDraggable = initAllModalsDraggable;
+  window.resetModalPosition = resetModalPosition;
+  window.clampModalPosition = clampModalPosition;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initAllModalsDraggable());
+  } else {
+    initAllModalsDraggable();
+  }
+}
 // -------------------- src/layers/LayerManager.js --------------------
 const LAYER_COLORS = [
   { name: 'Cyan', hex: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)', border: 'rgba(6, 182, 212, 0.4)' },
@@ -23567,7 +24016,10 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     lightArtPreset: 'spiral', // 'spiral', 'helix', 'star', 'heart', 'circle'
     lightArtSizeMode: 'manual', // 'manual' (radius slider) or 'timeLimit' (auto-size to target duration)
     lightArtTargetDuration: 60, // target flight duration in seconds for auto-sizing
-    lightArtOrientation: 'horizontal', // 'horizontal' or 'vertical'
+    lightArtOrientation: 'horizontal', // 'horizontal', 'tilted', or 'vertical'
+    lightArtTilt: 0,
+    lightArtMinClearance: 10,
+    lightArtEnforceClearance: false,
     lightArtRadius: 25,
     lightArtTurns: 3,
     lightArtPointsCount: 5,
@@ -24318,6 +24770,12 @@ function saveActiveLayerFromUi(targetLayer) {
   if (laStarRatio) layer.lightArtStarRatio = parseFloat(laStarRatio.value) || 0.45;
   if (laClimb) layer.lightArtClimb = parseFloat(laClimb.value) || 15;
   if (laCameraAz) layer.lightArtCameraAzimuth = parseFloat(laCameraAz.value) || 0;
+  const laTilt = document.getElementById('light-art-tilt');
+  const laMinClearance = document.getElementById('light-art-min-clearance');
+  const laEnforceClearance = document.getElementById('light-art-enforce-clearance');
+  if (laTilt) layer.lightArtTilt = Math.max(0, Math.min(90, parseFloat(laTilt.value) || 0));
+  if (laMinClearance) layer.lightArtMinClearance = Math.max(0, parseFloat(laMinClearance.value) || 10);
+  if (laEnforceClearance) layer.lightArtEnforceClearance = !!laEnforceClearance.checked;
   const laSizeMode = document.getElementById('light-art-size-mode');
   const laTargetDur = document.getElementById('light-art-target-duration');
   if (laSizeMode && laSizeMode.value) layer.lightArtSizeMode = laSizeMode.value;
@@ -24652,7 +25110,27 @@ function syncUiWithActiveLayer() {
   if (laClimb) laClimb.value = layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15;
   if (laClimbVal) laClimbVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15) : `${layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15}m`;
   if (laCameraAz) laCameraAz.value = layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0;
-  if (laCameraAzVal) laCameraAzVal.textContent = `${layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0}°`;
+  if (laCameraAzVal) {
+    const azVal = layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0;
+    const dirs = ['North', 'NE', 'East', 'SE', 'South', 'SW', 'West', 'NW'];
+    const dirIdx = Math.round(azVal / 45) % 8;
+    laCameraAzVal.textContent = `${azVal}° (${dirs[dirIdx]})`;
+  }
+  const laTilt = document.getElementById('light-art-tilt');
+  const laTiltVal = document.getElementById('light-art-tilt-val');
+  const laMinClearance = document.getElementById('light-art-min-clearance');
+  const laMinClearanceVal = document.getElementById('light-art-min-clearance-val');
+  const laEnforceClearance = document.getElementById('light-art-enforce-clearance');
+
+  const tiltVal = layer.lightArtTilt !== undefined ? layer.lightArtTilt : (layer.lightArtOrientation === 'vertical' ? 90 : 0);
+  if (laTilt) laTilt.value = tiltVal;
+  if (laTiltVal) {
+    laTiltVal.textContent = tiltVal === 0 ? '0° (Flat)' : (tiltVal === 90 ? '90° (Upright)' : `${tiltVal}° (Oblique)`);
+  }
+  const minClearanceVal = layer.lightArtMinClearance !== undefined ? layer.lightArtMinClearance : 10;
+  if (laMinClearance) laMinClearance.value = minClearanceVal;
+  if (laMinClearanceVal) laMinClearanceVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(minClearanceVal) : `${minClearanceVal}m`;
+  if (laEnforceClearance) laEnforceClearance.checked = !!layer.lightArtEnforceClearance;
   const laSizeMode = document.getElementById('light-art-size-mode');
   const laTargetDur = document.getElementById('light-art-target-duration');
   const laTargetDurVal = document.getElementById('light-art-target-duration-val');
@@ -30150,7 +30628,7 @@ function initUIEventListeners() {
   };
   setupHyperlapseListeners();
 
-  // Light Art / Sky Painting Control Listeners (v1.151.0 - Issue #136)
+  // Light Art / Sky Painting Control Listeners (v1.151.0, v1.182.0 - Tilt, Compass & Ground Safety Deck)
   const setupLightArtListeners = () => {
     const laPreset = document.getElementById('light-art-preset');
     const laOrientation = document.getElementById('light-art-orientation');
@@ -30169,6 +30647,11 @@ function initUIEventListeners() {
     const laTargetDur = document.getElementById('light-art-target-duration');
     const laTargetDurVal = document.getElementById('light-art-target-duration-val');
     const laCalcRadiusVal = document.getElementById('light-art-calculated-radius-val');
+    const laTilt = document.getElementById('light-art-tilt');
+    const laTiltVal = document.getElementById('light-art-tilt-val');
+    const laMinClearance = document.getElementById('light-art-min-clearance');
+    const laMinClearanceVal = document.getElementById('light-art-min-clearance-val');
+    const laEnforceClearance = document.getElementById('light-art-enforce-clearance');
 
     const updateLightArt = () => {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -30209,6 +30692,23 @@ function initUIEventListeners() {
           laCameraAzVal.textContent = `${val}° (${dirs[dirIdx]})`;
         }
       }
+      if (laTilt) {
+        const val = Math.max(0, Math.min(90, parseFloat(laTilt.value) || 0));
+        activeLayer.lightArtTilt = val;
+        if (laTiltVal) {
+          laTiltVal.textContent = val === 0 ? '0° (Flat)' : (val === 90 ? '90° (Upright)' : `${val}° (Oblique)`);
+        }
+      }
+      if (laMinClearance) {
+        const val = Math.max(0, parseFloat(laMinClearance.value) || 10);
+        activeLayer.lightArtMinClearance = val;
+        if (laMinClearanceVal) {
+          laMinClearanceVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+        }
+      }
+      if (laEnforceClearance) {
+        activeLayer.lightArtEnforceClearance = !!laEnforceClearance.checked;
+      }
       if (laSizeMode) {
         activeLayer.lightArtSizeMode = laSizeMode.value || 'manual';
       }
@@ -30227,12 +30727,93 @@ function initUIEventListeners() {
       saveAllSettingsToLocalStorage();
     };
 
-    [laPreset, laOrientation, laRadius, laTurns, laPoints, laStarRatio, laClimb, laCameraAz, laSizeMode, laTargetDur].forEach(el => {
+    if (laOrientation) {
+      laOrientation.addEventListener('change', () => {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (laOrientation.value === 'horizontal') {
+          if (laTilt) laTilt.value = 0;
+          if (activeLayer) activeLayer.lightArtTilt = 0;
+        } else if (laOrientation.value === 'vertical') {
+          if (laTilt) laTilt.value = 90;
+          if (activeLayer) activeLayer.lightArtTilt = 90;
+        } else if (laOrientation.value === 'tilted') {
+          const currentTilt = laTilt ? parseFloat(laTilt.value) : 45;
+          const newTilt = (currentTilt === 0 || currentTilt === 90) ? 45 : currentTilt;
+          if (laTilt) laTilt.value = newTilt;
+          if (activeLayer) activeLayer.lightArtTilt = newTilt;
+        }
+        updateLightArt();
+      });
+    }
+
+    [laPreset, laRadius, laTurns, laPoints, laStarRatio, laClimb, laCameraAz, laTilt, laMinClearance, laEnforceClearance, laSizeMode, laTargetDur].forEach(el => {
       if (el) {
         el.addEventListener('input', updateLightArt);
         el.addEventListener('change', updateLightArt);
       }
     });
+
+    // Tilt preset quick buttons
+    const tiltPresetBtns = document.querySelectorAll('.light-art-tilt-preset-btn');
+    tiltPresetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tilt = parseFloat(btn.getAttribute('data-tilt')) || 0;
+        if (laTilt) laTilt.value = tilt;
+        if (laOrientation) {
+          if (tilt === 0) laOrientation.value = 'horizontal';
+          else if (tilt === 90) laOrientation.value = 'vertical';
+          else laOrientation.value = 'tilted';
+        }
+        updateLightArt();
+      });
+    });
+
+    // Camera bearing cardinal snap chips
+    const azChips = document.querySelectorAll('.light-art-az-chip');
+    azChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const az = parseFloat(chip.getAttribute('data-az')) || 0;
+        if (laCameraAz) laCameraAz.value = az;
+        updateLightArt();
+      });
+    });
+
+    // Interactive SVG Compass Rose Dial
+    const compassDial = document.getElementById('light-art-compass-dial');
+    if (compassDial) {
+      const handleCompassClick = (e) => {
+        const rect = compassDial.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = e.clientX - cx;
+        const dy = e.clientY - cy;
+        let deg = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+        deg = ((deg % 360) + 360) % 360;
+        const roundedDeg = Math.round(deg / 5) * 5;
+        if (laCameraAz) laCameraAz.value = roundedDeg;
+        updateLightArt();
+      };
+      compassDial.addEventListener('click', handleCompassClick);
+    }
+
+    // Elevate Base Altitude button for ground clearance safety
+    const elevateBtn = document.getElementById('light-art-elevate-btn');
+    if (elevateBtn) {
+      elevateBtn.addEventListener('click', () => {
+        const recAlt = parseFloat(elevateBtn.getAttribute('data-recommended-alt'));
+        if (recAlt && !isNaN(recAlt)) {
+          const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+          if (activeLayer) {
+            activeLayer.altitude = recAlt;
+            const altInput = document.getElementById('altitude');
+            const altVal = document.getElementById('alt-val');
+            if (altInput) altInput.value = recAlt;
+            if (altVal) altVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(recAlt) : `${recAlt}m`;
+            updateLightArt();
+          }
+        }
+      });
+    }
 
     const presetBtns = document.querySelectorAll('.light-art-preset-btn');
     presetBtns.forEach(btn => {
@@ -32192,6 +32773,11 @@ function initUIEventListeners() {
   // Setup Camera ND Filter Recommendation & Exposure Advisor (v1.176.0)
   if (typeof NdFilterAdvisor !== 'undefined' && NdFilterAdvisor.init) {
     NdFilterAdvisor.init();
+  }
+
+  // Setup Draggable Modals across all overlays (v1.180.0)
+  if (typeof initAllModalsDraggable === 'function') {
+    initAllModalsDraggable();
   }
 }
 
@@ -35016,18 +35602,40 @@ function restoreActiveWorkspacePlanning() {
 function updateLightArtBadge(gridData) {
   if (typeof document === 'undefined') return;
   const badge = document.getElementById('light-art-duration-badge');
-  if (!badge) return;
-  if (!gridData || !gridData.flightDurationSec) {
-    badge.textContent = '0s (Bulb)';
-    return;
+  if (badge) {
+    if (!gridData || !gridData.flightDurationSec) {
+      badge.textContent = '0s (Bulb)';
+    } else {
+      const dur = Math.round(gridData.flightDurationSec);
+      const shutter = gridData.recommendedShutterSec || Math.ceil(dur + 2);
+      badge.textContent = `${dur}s Stroke | ${shutter}s Shutter`;
+    }
   }
-  const dur = Math.round(gridData.flightDurationSec);
-  const shutter = gridData.recommendedShutterSec || Math.ceil(dur + 2);
-  badge.textContent = `${dur}s Stroke | ${shutter}s Shutter`;
+
   const laCalcRadiusVal = document.getElementById('light-art-calculated-radius-val');
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   if (laCalcRadiusVal && activeLayer && activeLayer.lightArtRadius) {
     laCalcRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(activeLayer.lightArtRadius) : `${activeLayer.lightArtRadius}m`;
+  }
+
+  // Dynamic Ground Clearance Warning & Elevate Helper
+  const warningEl = document.getElementById('light-art-clearance-warning');
+  const warningMsgEl = document.getElementById('light-art-clearance-warning-msg');
+  const elevateBtn = document.getElementById('light-art-elevate-btn');
+
+  if (warningEl) {
+    if (gridData && gridData.hasClearanceWarning) {
+      warningEl.style.display = 'block';
+      if (warningMsgEl) {
+        warningMsgEl.textContent = `⚠️ Low Clearance Alert: Lowest stroke reaches ${gridData.minArtAlt}m AGL (below ${gridData.minClearance}m floor). Recommended altitude: ${gridData.recommendedBaseAltitude}m.`;
+      }
+      if (elevateBtn) {
+        elevateBtn.setAttribute('data-recommended-alt', gridData.recommendedBaseAltitude);
+        elevateBtn.textContent = `Elevate Base Altitude to ${gridData.recommendedBaseAltitude}m`;
+      }
+    } else {
+      warningEl.style.display = 'none';
+    }
   }
 }
 
@@ -35035,12 +35643,15 @@ function updateLightArtUiFields(layer) {
   if (typeof document === 'undefined') return;
   const preset = layer ? (layer.lightArtPreset || 'spiral') : 'spiral';
   const orientation = layer ? (layer.lightArtOrientation || 'horizontal') : 'horizontal';
+  const tilt = (layer && typeof layer.lightArtTilt === 'number') ? layer.lightArtTilt : (orientation === 'vertical' ? 90 : 0);
+  const cameraAz = (layer && typeof layer.lightArtCameraAzimuth === 'number') ? layer.lightArtCameraAzimuth : 0;
+  const sizeMode = layer ? (layer.lightArtSizeMode || 'manual') : 'manual';
 
   const spiralOpts = document.getElementById('light-art-spiral-opts');
   const starOpts = document.getElementById('light-art-star-opts');
   const helixOpts = document.getElementById('light-art-helix-opts');
+  const tiltOpts = document.getElementById('light-art-tilt-opts');
   const azOpts = document.getElementById('light-art-azimuth-opts');
-  const sizeMode = layer ? (layer.lightArtSizeMode || 'manual') : 'manual';
   const durationOpts = document.getElementById('light-art-duration-opts');
   const radiusOpts = document.getElementById('light-art-radius-opts');
 
@@ -35051,17 +35662,56 @@ function updateLightArtUiFields(layer) {
     radiusOpts.style.display = (sizeMode === 'manual') ? 'block' : 'none';
   }
 
-  if (spiralOpts) {
-    spiralOpts.style.display = (preset === 'spiral') ? 'block' : 'none';
+  if (spiralOpts) spiralOpts.style.display = (preset === 'spiral') ? 'block' : 'none';
+  if (helixOpts) helixOpts.style.display = (preset === 'helix') ? 'block' : 'none';
+  if (starOpts) starOpts.style.display = (preset === 'star') ? 'block' : 'none';
+
+  // Tilt controls are shown when tilted or vertical
+  if (tiltOpts) {
+    tiltOpts.style.display = (orientation === 'tilted' || orientation === 'vertical' || tilt > 0) ? 'block' : 'none';
   }
-  if (helixOpts) {
-    helixOpts.style.display = (preset === 'helix') ? 'block' : 'none';
-  }
-  if (starOpts) {
-    starOpts.style.display = (preset === 'star') ? 'block' : 'none';
-  }
+
+  // Bearing & Compass Dial controls are shown whenever canvas is tilted/vertical or azimuth > 0
   if (azOpts) {
-    azOpts.style.display = (orientation === 'vertical') ? 'block' : 'none';
+    azOpts.style.display = (orientation !== 'horizontal' || tilt > 0 || cameraAz > 0) ? 'block' : 'none';
+  }
+
+  // Update Compass Needle on SVG (center at 50, 50, radius 34)
+  const needle = document.getElementById('light-art-compass-needle');
+  if (needle && typeof needle.setAttribute === 'function') {
+    const radAz = (cameraAz * Math.PI) / 180.0;
+    const nx = 50 + 34 * Math.sin(radAz);
+    const ny = 50 - 34 * Math.cos(radAz);
+    needle.setAttribute('x2', nx.toFixed(1));
+    needle.setAttribute('y2', ny.toFixed(1));
+  }
+
+  // Highlight matching cardinal chip
+  if (typeof document.querySelectorAll === 'function') {
+    const azChips = document.querySelectorAll('.light-art-az-chip');
+    if (azChips && azChips.forEach) {
+      azChips.forEach(chip => {
+        const chipAz = parseFloat(chip.getAttribute('data-az'));
+        if (Math.round(cameraAz) === chipAz) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+
+    // Highlight matching tilt preset button
+    const tiltBtns = document.querySelectorAll('.light-art-tilt-preset-btn');
+    if (tiltBtns && tiltBtns.forEach) {
+      tiltBtns.forEach(btn => {
+        const btnTilt = parseFloat(btn.getAttribute('data-tilt'));
+        if (Math.round(tilt) === btnTilt) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
   }
 }
 
@@ -37589,35 +38239,70 @@ function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, sp
     }
   }
 
-  // Project (u, v, zOffset) into 3D local coordinates (x, y, alt)
-  // Horizontal mode:
-  //   u maps to East (x), v maps to North (y), zOffset adds to baseAltitude
-  // Vertical Billboard mode:
-  //   Canvas stands upright in the sky facing ground camera at cameraAzimuth.
-  //   u maps across the canvas perpendicular to cameraAzimuth,
-  //   v maps up/down along altitude axis (z),
-  //   altitude = baseAltitude + v + zOffset.
+  // Continuous 3D Oblique Canvas Tilt:
+  //   tilt = 0: Horizontal plane (overhead)
+  //   tilt = 90: Vertical Billboard standing upright facing cameraAzimuth
+  //   tilt in (0, 90): Oblique plane tilted back towards observer bearing
+  let tilt = 0;
+  if (layer && typeof layer.lightArtTilt === 'number' && !isNaN(layer.lightArtTilt)) {
+    tilt = Math.max(0, Math.min(90, layer.lightArtTilt));
+  } else if (orientation === 'vertical') {
+    tilt = 90;
+  } else {
+    tilt = 0;
+  }
+
+  // Minimum Safe Ground Clearance Deck (default 10m, pilot configurable)
+  const minClearance = (layer && typeof layer.lightArtMinClearance === 'number' && layer.lightArtMinClearance >= 0)
+    ? layer.lightArtMinClearance
+    : 10;
+  const enforceClearance = !!(layer && layer.lightArtEnforceClearance);
+
+  // Observer Bearing (Ground Camera Azimuth in degrees 0-359)
   const radAz = (cameraAzimuth * Math.PI) / 180.0;
-  const perpX = Math.cos(radAz); // Perpendicular cross-track unit vector
-  const perpY = -Math.sin(radAz);
+  const radTilt = (tilt * Math.PI) / 180.0;
+  const cosTilt = Math.cos(radTilt);
+  const sinTilt = Math.sin(radTilt);
+  const cosAz = Math.cos(radAz);
+  const sinAz = Math.sin(radAz);
+
+  // Determine vertical extent of artwork across stroke points to check ground clearance
+  let minRawV = 0;
+  rawPoints.forEach(pt => {
+    if (pt.v < minRawV) minRawV = pt.v;
+  });
+  const minStrokeV = (tilt > 0) ? minRawV : 0;
+  const rawMinArtAlt = baseAltitude + minStrokeV * sinTilt;
+  const hasClearanceWarning = (tilt > 0) && (rawMinArtAlt < minClearance);
+  const recommendedBaseAltitude = Math.max(minClearance, Math.ceil(minClearance - minStrokeV * sinTilt));
+
+  // Effective Base Altitude (auto-elevates if enforcement is active)
+  let effectiveBaseAltitude = baseAltitude;
+  if (enforceClearance && hasClearanceWarning) {
+    effectiveBaseAltitude = recommendedBaseAltitude;
+  }
 
   let totalDistance = 0;
   let prevPt = null;
 
   rawPoints.forEach((pt, idx) => {
     let x, y, alt;
-    if (orientation === 'vertical') {
-      // In vertical plane:
-      // u moves perpendicular to line of sight to ground camera
-      // v moves along altitude axis
-      x = pt.u * perpX;
-      y = pt.u * perpY;
-      alt = Math.max(10, baseAltitude + pt.v + pt.zOffset);
-    } else {
-      // In horizontal plane:
+    if (tilt === 0 && (orientation === 'horizontal' || !orientation) && cameraAzimuth === 0) {
+      // Direct legacy horizontal mode:
       x = pt.u;
       y = pt.v;
-      alt = Math.max(10, baseAltitude + pt.zOffset);
+      alt = Math.max(minClearance, effectiveBaseAltitude + pt.zOffset);
+    } else {
+      // 3D Oblique Canvas Tilt:
+      // u is transverse (cross-track) across observer sightline
+      // v is longitudinal along the canvas plane, tilted by angle theta relative to ground
+      const vGround = pt.v * cosTilt;
+      const vAlt = pt.v * sinTilt;
+
+      // Project onto ground coordinates (x, y) aligned with camera bearing:
+      x = pt.u * cosAz + vGround * sinAz;
+      y = -pt.u * sinAz + vGround * cosAz;
+      alt = Math.max(minClearance, effectiveBaseAltitude + vAlt + pt.zOffset);
     }
 
     if (prevPt) {
@@ -37674,7 +38359,15 @@ function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, sp
     flightDurationSec: Math.round(flightDurationSec * 10) / 10,
     recommendedShutterSec: recommendedShutterSec,
     preset,
-    orientation
+    orientation,
+    tilt,
+    cameraAzimuth,
+    minClearance,
+    minArtAlt: Math.round(rawMinArtAlt * 10) / 10,
+    hasClearanceWarning,
+    recommendedBaseAltitude,
+    enforceClearance,
+    effectiveBaseAltitude
   };
 }
 

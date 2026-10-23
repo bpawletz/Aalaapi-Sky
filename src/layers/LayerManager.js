@@ -154,7 +154,10 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     lightArtPreset: 'spiral', // 'spiral', 'helix', 'star', 'heart', 'circle'
     lightArtSizeMode: 'manual', // 'manual' (radius slider) or 'timeLimit' (auto-size to target duration)
     lightArtTargetDuration: 60, // target flight duration in seconds for auto-sizing
-    lightArtOrientation: 'horizontal', // 'horizontal' or 'vertical'
+    lightArtOrientation: 'horizontal', // 'horizontal', 'tilted', or 'vertical'
+    lightArtTilt: 0,
+    lightArtMinClearance: 10,
+    lightArtEnforceClearance: false,
     lightArtRadius: 25,
     lightArtTurns: 3,
     lightArtPointsCount: 5,
@@ -905,6 +908,12 @@ function saveActiveLayerFromUi(targetLayer) {
   if (laStarRatio) layer.lightArtStarRatio = parseFloat(laStarRatio.value) || 0.45;
   if (laClimb) layer.lightArtClimb = parseFloat(laClimb.value) || 15;
   if (laCameraAz) layer.lightArtCameraAzimuth = parseFloat(laCameraAz.value) || 0;
+  const laTilt = document.getElementById('light-art-tilt');
+  const laMinClearance = document.getElementById('light-art-min-clearance');
+  const laEnforceClearance = document.getElementById('light-art-enforce-clearance');
+  if (laTilt) layer.lightArtTilt = Math.max(0, Math.min(90, parseFloat(laTilt.value) || 0));
+  if (laMinClearance) layer.lightArtMinClearance = Math.max(0, parseFloat(laMinClearance.value) || 10);
+  if (laEnforceClearance) layer.lightArtEnforceClearance = !!laEnforceClearance.checked;
   const laSizeMode = document.getElementById('light-art-size-mode');
   const laTargetDur = document.getElementById('light-art-target-duration');
   if (laSizeMode && laSizeMode.value) layer.lightArtSizeMode = laSizeMode.value;
@@ -1239,7 +1248,27 @@ function syncUiWithActiveLayer() {
   if (laClimb) laClimb.value = layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15;
   if (laClimbVal) laClimbVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15) : `${layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15}m`;
   if (laCameraAz) laCameraAz.value = layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0;
-  if (laCameraAzVal) laCameraAzVal.textContent = `${layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0}°`;
+  if (laCameraAzVal) {
+    const azVal = layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0;
+    const dirs = ['North', 'NE', 'East', 'SE', 'South', 'SW', 'West', 'NW'];
+    const dirIdx = Math.round(azVal / 45) % 8;
+    laCameraAzVal.textContent = `${azVal}° (${dirs[dirIdx]})`;
+  }
+  const laTilt = document.getElementById('light-art-tilt');
+  const laTiltVal = document.getElementById('light-art-tilt-val');
+  const laMinClearance = document.getElementById('light-art-min-clearance');
+  const laMinClearanceVal = document.getElementById('light-art-min-clearance-val');
+  const laEnforceClearance = document.getElementById('light-art-enforce-clearance');
+
+  const tiltVal = layer.lightArtTilt !== undefined ? layer.lightArtTilt : (layer.lightArtOrientation === 'vertical' ? 90 : 0);
+  if (laTilt) laTilt.value = tiltVal;
+  if (laTiltVal) {
+    laTiltVal.textContent = tiltVal === 0 ? '0° (Flat)' : (tiltVal === 90 ? '90° (Upright)' : `${tiltVal}° (Oblique)`);
+  }
+  const minClearanceVal = layer.lightArtMinClearance !== undefined ? layer.lightArtMinClearance : 10;
+  if (laMinClearance) laMinClearance.value = minClearanceVal;
+  if (laMinClearanceVal) laMinClearanceVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(minClearanceVal) : `${minClearanceVal}m`;
+  if (laEnforceClearance) laEnforceClearance.checked = !!layer.lightArtEnforceClearance;
   const laSizeMode = document.getElementById('light-art-size-mode');
   const laTargetDur = document.getElementById('light-art-target-duration');
   const laTargetDurVal = document.getElementById('light-art-target-duration-val');

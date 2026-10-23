@@ -9436,4 +9436,179 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(evalResult.textAfterRadar, 'Cleared!');
     });
   });
+
+    describe('Draggable Modal Windows E2E Suite (v1.181.0)', () => {
+    test('E2E: All modal overlays have draggable initialized with cursor grab on header', async () => {
+      const result = await page.evaluate(() => {
+        const overlays = Array.from(document.querySelectorAll('.modal-overlay'));
+        const handles = Array.from(document.querySelectorAll('[data-modal-drag-handle]'));
+        const modals = Array.from(document.querySelectorAll('[data-draggable-modal]'));
+        return {
+          overlayCount: overlays.length,
+          handleCount: handles.length,
+          modalCount: modals.length,
+          hasInitFn: typeof window.initAllModalsDraggable === 'function',
+          hasClampFn: typeof window.clampModalPosition === 'function'
+        };
+      });
+
+      assert.ok(result.overlayCount >= 18, `Expected at least 18 overlays, found ${result.overlayCount}`);
+      assert.strictEqual(result.handleCount, result.overlayCount, 'Every modal overlay must have a registered drag handle');
+      assert.strictEqual(result.modalCount, result.overlayCount, 'Every modal overlay must have a marked draggable modal card');
+      assert.strictEqual(result.hasInitFn, true, 'window.initAllModalsDraggable must be available');
+      assert.strictEqual(result.hasClampFn, true, 'window.clampModalPosition must be available');
+    });
+
+    test('E2E: Dragging About modal header updates transform and double-click re-centers', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const aboutBtn = document.getElementById('about-btn');
+        const modalOverlay = document.getElementById('about-modal');
+        const modal = modalOverlay.querySelector('.modal');
+        const header = modal.querySelector('.modal-header');
+
+        if (aboutBtn) aboutBtn.click();
+        await new Promise(r => setTimeout(r, 60));
+
+        const isVisibleBefore = !modalOverlay.classList.contains('hidden');
+        const initialTransform = modal.style.transform || '';
+
+        const downEv = new PointerEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 300,
+          clientY: 200,
+          button: 0,
+          pointerId: 1
+        });
+        header.dispatchEvent(downEv);
+
+        const moveEv = new PointerEvent('pointermove', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 400,
+          clientY: 280,
+          pointerId: 1
+        });
+        header.dispatchEvent(moveEv);
+
+        const draggedTransform = modal.style.transform;
+
+        const upEv = new PointerEvent('pointerup', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 400,
+          clientY: 280,
+          pointerId: 1
+        });
+        header.dispatchEvent(upEv);
+
+        const dblClickEv = new MouseEvent('dblclick', {
+          bubbles: true,
+          cancelable: true
+        });
+        header.dispatchEvent(dblClickEv);
+
+        const resetTransform = modal.style.transform;
+
+        const closeBtn = modalOverlay.querySelector('.close-btn');
+        if (closeBtn) closeBtn.click();
+        await new Promise(r => setTimeout(r, 60));
+
+        return {
+          isVisibleBefore,
+          initialTransform,
+          draggedTransform,
+          resetTransform,
+          isClosed: modalOverlay.classList.contains('hidden')
+        };
+      });
+
+      assert.strictEqual(evalResult.isVisibleBefore, true);
+      assert.ok(evalResult.draggedTransform.includes('translate3d'), `Expected transform translate3d, got ${evalResult.draggedTransform}`);
+      assert.strictEqual(evalResult.resetTransform, '', 'Double-click must reset transform to empty string (centered)');
+      assert.strictEqual(evalResult.isClosed, true);
+    });
+  });
+
+  describe('Issue & v1.182.0: Light Art Continuous 3D Canvas Tilt, Compass Rose & Ground Safety Deck E2E Suite', () => {
+    test('E2E: Canvas Tilt controls, SVG Compass Rose, and Ground Clearance Deck in Light Art layer', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const gridSelect = document.getElementById('grid-type');
+        if (gridSelect) {
+          gridSelect.value = 'light-art';
+          gridSelect.dispatchEvent(new Event('change'));
+        }
+
+        const orientationSelect = document.getElementById('light-art-orientation');
+        const tiltOpts = document.getElementById('light-art-tilt-opts');
+        const tiltSlider = document.getElementById('light-art-tilt');
+        const tiltVal = document.getElementById('light-art-tilt-val');
+        const tiltPresets = document.querySelectorAll('.light-art-tilt-preset-btn');
+
+        const azOpts = document.getElementById('light-art-azimuth-opts');
+        const compassDial = document.getElementById('light-art-compass-dial');
+        const compassNeedle = document.getElementById('light-art-compass-needle');
+        const azChips = document.querySelectorAll('.light-art-az-chip');
+
+        const clearanceCard = document.getElementById('light-art-clearance-container');
+        const clearanceSlider = document.getElementById('light-art-min-clearance');
+        const enforceClearance = document.getElementById('light-art-enforce-clearance');
+        const warningBadge = document.getElementById('light-art-clearance-warning');
+        const elevateBtn = document.getElementById('light-art-elevate-btn');
+
+        // Initially horizontal -> tilt opts and az opts hidden
+        const initTiltDisplay = tiltOpts ? window.getComputedStyle(tiltOpts).display : null;
+
+        // Switch to Tilted Oblique Canvas
+        if (orientationSelect) {
+          orientationSelect.value = 'tilted';
+          orientationSelect.dispatchEvent(new Event('change'));
+        }
+
+        const tiltDisplayAfterSwitch = tiltOpts ? window.getComputedStyle(tiltOpts).display : null;
+        const azDisplayAfterSwitch = azOpts ? window.getComputedStyle(azOpts).display : null;
+
+        // Click 45° tilt preset
+        const pill45 = Array.from(tiltPresets).find(b => b.getAttribute('data-tilt') === '45');
+        if (pill45) pill45.click();
+        const tiltValAfterPill = tiltVal ? tiltVal.textContent.trim() : null;
+
+        // Click East (90°) azimuth chip
+        const eastChip = Array.from(azChips).find(b => b.getAttribute('data-az') === '90');
+        if (eastChip) eastChip.click();
+
+        const cameraAzVal = document.getElementById('light-art-camera-azimuth-val');
+        const azTextAfterEast = cameraAzVal ? cameraAzVal.textContent.trim() : null;
+        const needleX2 = compassNeedle ? compassNeedle.getAttribute('x2') : null;
+
+        return {
+          hasOrientationSelect: Boolean(orientationSelect),
+          hasTiltOpts: Boolean(tiltOpts),
+          hasCompassDial: Boolean(compassDial),
+          hasClearanceCard: Boolean(clearanceCard),
+          presetCount: tiltPresets.length,
+          chipCount: azChips.length,
+          initTiltDisplay,
+          tiltDisplayAfterSwitch,
+          azDisplayAfterSwitch,
+          tiltValAfterPill,
+          azTextAfterEast,
+          needleX2
+        };
+      });
+
+      assert.strictEqual(evalResult.hasOrientationSelect, true);
+      assert.strictEqual(evalResult.hasTiltOpts, true);
+      assert.strictEqual(evalResult.hasCompassDial, true);
+      assert.strictEqual(evalResult.hasClearanceCard, true);
+      assert.ok(evalResult.presetCount >= 5, 'Must have at least 5 tilt preset buttons');
+      assert.strictEqual(evalResult.chipCount, 4, 'Must have 4 cardinal chips (N, E, S, W)');
+      assert.strictEqual(evalResult.initTiltDisplay, 'none');
+      assert.strictEqual(evalResult.tiltDisplayAfterSwitch, 'block');
+      assert.strictEqual(evalResult.azDisplayAfterSwitch, 'block');
+      assert.ok(evalResult.tiltValAfterPill.includes('45°'));
+      assert.ok(evalResult.azTextAfterEast.includes('90°'));
+      assert.strictEqual(evalResult.needleX2, '84.0');
+    });
+  });
 });
