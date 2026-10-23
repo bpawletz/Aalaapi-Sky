@@ -27,6 +27,7 @@ class VideoCastClient {
     this.lastFrameTime = 0;
     this.listenersAttached = false;
     this.statusPollTimer = null;
+    this.userSelectedManualSource = false;
   }
 
   /**
@@ -310,6 +311,58 @@ class VideoCastClient {
     const statusText = document.getElementById('video-cast-status-text');
     const sidebarPill = document.getElementById('sidebar-video-status-pill');
 
+    // Dynamic Ingest Source Selector Population
+    const srcSelect = document.getElementById('video-cast-source-select');
+    if (srcSelect) {
+      // Find the primary embedded RTMP option
+      let rtmpDefaultOpt = srcSelect.querySelector('option[data-rtmp-default="true"]');
+      if (!rtmpDefaultOpt) {
+        rtmpDefaultOpt = Array.from(srcSelect.options).find(o => (o.value && o.value.includes(':1935/live/stream')) || o.value === 'rtmp://127.0.0.1:1935/live/stream');
+        if (rtmpDefaultOpt) rtmpDefaultOpt.setAttribute('data-rtmp-default', 'true');
+      }
+
+      // Remove any previously appended dynamic secondary stream options
+      srcSelect.querySelectorAll('.dynamic-rtmp-stream-opt').forEach(el => el.remove());
+
+      if (data.activeStreams && data.activeStreams.length > 0) {
+        const port = data.port || 1935;
+        data.activeStreams.forEach((stream, idx) => {
+          const streamPath = stream.path || 'live/stream';
+          const localUrl = `rtmp://127.0.0.1:${port}/${streamPath}`;
+          const label = `🟢 ${idx === 0 ? 'RC 2 Live Stream' : `Drone Stream (${streamPath})`} (${stream.publisherIp} - ${streamPath})`;
+
+          if (idx === 0 && rtmpDefaultOpt) {
+            rtmpDefaultOpt.textContent = label;
+            rtmpDefaultOpt.value = localUrl;
+          } else {
+            const opt = document.createElement('option');
+            opt.className = 'dynamic-rtmp-stream-opt';
+            opt.value = localUrl;
+            opt.textContent = label;
+            if (rtmpDefaultOpt && rtmpDefaultOpt.nextSibling) {
+              srcSelect.insertBefore(opt, rtmpDefaultOpt.nextSibling);
+            } else {
+              srcSelect.appendChild(opt);
+            }
+          }
+        });
+
+        // If the client is currently on test pattern and user has not manually switched away,
+        // auto-select the active stream so video appears immediately
+        if ((srcSelect.value === 'test' || this.currentSource === 'test') && !this.userSelectedManualSource) {
+          const firstStreamUrl = `rtmp://127.0.0.1:${port}/${data.activeStreams[0].path || 'live/stream'}`;
+          srcSelect.value = firstStreamUrl;
+          this.setSource(firstStreamUrl);
+        }
+      } else {
+        this.userSelectedManualSource = false;
+        if (rtmpDefaultOpt) {
+          rtmpDefaultOpt.textContent = 'Embedded RTMP Ingest (DJI RC 2 / Live Push) - Waiting for feed';
+          rtmpDefaultOpt.value = `rtmp://127.0.0.1:${data.port || 1935}/live/stream`;
+        }
+      }
+    }
+
     if (data.activeStreams && data.activeStreams.length > 0) {
       const active = data.activeStreams[0];
       const activePath = active.path || 'live/stream';
@@ -533,7 +586,7 @@ class VideoCastClient {
     const customInput = document.getElementById('video-cast-custom-url-input');
 
     if (select) {
-      if (source === 'test' || source === '0' || source.startsWith('rtmp://') || source.startsWith('rtsp://')) {
+      if (source === 'test' || source === '0' || source === '1' || source.startsWith('rtmp://') || source.startsWith('rtsp://') || source.startsWith('http')) {
         // Match option or set to custom
         const hasOpt = Array.from(select.options).some(o => o.value === source);
         if (hasOpt) {
@@ -702,6 +755,7 @@ class VideoCastClient {
 
     if (srcSelect) {
       srcSelect.addEventListener('change', () => {
+        this.userSelectedManualSource = true;
         const val = srcSelect.value;
         if (val === 'custom') {
           if (customContainer) customContainer.style.display = 'flex';

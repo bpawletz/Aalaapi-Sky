@@ -7223,7 +7223,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.183.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.184.0</span></h1>
         </div>
       </div>
 
@@ -11337,6 +11337,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🟢 Dynamic Live Stream Dropdown &amp; Zero-Latency Ingest (v1.184.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Seamless FPV video streaming! When an RC 2 or drone connects via RTMP, the Live Video Cast source dropdown immediately populates the live stream with publisher IP and status indicator. The client automatically transitions from synthetic test patterns to the live drone feed and dynamically supports multi-drone concurrent streams with instant switching.
+            </p>
+          </div>
           <div style="background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #ec4899; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎨 Continuous 3D Canvas Tilt, Compass Rose &amp; Safety Deck for Light Art (v1.182.0)
@@ -13455,7 +13463,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.183.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.184.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -13517,6 +13525,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                        <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.184.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li>Dynamic Live Stream Source Dropdown: Live Video Cast source dropdown dynamically lists active RTMP streams with publisher IPs and green indicator, auto-switches from test pattern, and injects multi-drone stream options (Closes #155).</li>
+                <li>RTMP Subscriber Handshake Resolution: Fixed OpenCV and FFmpeg subscriber hang by responding to getStreamLength and _checkBW commands with AMF0 results.</li>
+              </ul>
+            </li>
                         <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.182.1):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
@@ -18695,7 +18710,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; align-items: center; gap: 6px; flex: 1;">
             <select id="video-cast-source-select" class="form-select" style="font-size: 0.72rem; padding: 4px 6px; flex: 1; border-radius: 6px; background: rgba(0,0,0,0.3); color: var(--text-main); border: 1px solid var(--border-color);">
               <option value="test">Synthetic FPV HUD (Test Pattern)</option>
-              <option value="rtmp://127.0.0.1:1935/live/stream">Embedded RTMP Ingest (DJI RC 2 / Live Push)</option>
+              <option value="rtmp://127.0.0.1:1935/live/stream" data-rtmp-default="true">Embedded RTMP Ingest (DJI RC 2 / Live Push)</option>
               <option value="0">USB/HDMI Capture Card (UVC 0)</option>
               <option value="1">Secondary Capture Card (UVC 1)</option>
               <option value="custom">Custom Stream URL...</option>
@@ -79105,6 +79120,7 @@ class VideoCastClient {
     this.lastFrameTime = 0;
     this.listenersAttached = false;
     this.statusPollTimer = null;
+    this.userSelectedManualSource = false;
   }
 
   /**
@@ -79388,6 +79404,58 @@ class VideoCastClient {
     const statusText = document.getElementById('video-cast-status-text');
     const sidebarPill = document.getElementById('sidebar-video-status-pill');
 
+    // Dynamic Ingest Source Selector Population
+    const srcSelect = document.getElementById('video-cast-source-select');
+    if (srcSelect) {
+      // Find the primary embedded RTMP option
+      let rtmpDefaultOpt = srcSelect.querySelector('option[data-rtmp-default="true"]');
+      if (!rtmpDefaultOpt) {
+        rtmpDefaultOpt = Array.from(srcSelect.options).find(o => (o.value && o.value.includes(':1935/live/stream')) || o.value === 'rtmp://127.0.0.1:1935/live/stream');
+        if (rtmpDefaultOpt) rtmpDefaultOpt.setAttribute('data-rtmp-default', 'true');
+      }
+
+      // Remove any previously appended dynamic secondary stream options
+      srcSelect.querySelectorAll('.dynamic-rtmp-stream-opt').forEach(el => el.remove());
+
+      if (data.activeStreams && data.activeStreams.length > 0) {
+        const port = data.port || 1935;
+        data.activeStreams.forEach((stream, idx) => {
+          const streamPath = stream.path || 'live/stream';
+          const localUrl = `rtmp://127.0.0.1:${port}/${streamPath}`;
+          const label = `🟢 ${idx === 0 ? 'RC 2 Live Stream' : `Drone Stream (${streamPath})`} (${stream.publisherIp} - ${streamPath})`;
+
+          if (idx === 0 && rtmpDefaultOpt) {
+            rtmpDefaultOpt.textContent = label;
+            rtmpDefaultOpt.value = localUrl;
+          } else {
+            const opt = document.createElement('option');
+            opt.className = 'dynamic-rtmp-stream-opt';
+            opt.value = localUrl;
+            opt.textContent = label;
+            if (rtmpDefaultOpt && rtmpDefaultOpt.nextSibling) {
+              srcSelect.insertBefore(opt, rtmpDefaultOpt.nextSibling);
+            } else {
+              srcSelect.appendChild(opt);
+            }
+          }
+        });
+
+        // If the client is currently on test pattern and user has not manually switched away,
+        // auto-select the active stream so video appears immediately
+        if ((srcSelect.value === 'test' || this.currentSource === 'test') && !this.userSelectedManualSource) {
+          const firstStreamUrl = `rtmp://127.0.0.1:${port}/${data.activeStreams[0].path || 'live/stream'}`;
+          srcSelect.value = firstStreamUrl;
+          this.setSource(firstStreamUrl);
+        }
+      } else {
+        this.userSelectedManualSource = false;
+        if (rtmpDefaultOpt) {
+          rtmpDefaultOpt.textContent = 'Embedded RTMP Ingest (DJI RC 2 / Live Push) - Waiting for feed';
+          rtmpDefaultOpt.value = `rtmp://127.0.0.1:${data.port || 1935}/live/stream`;
+        }
+      }
+    }
+
     if (data.activeStreams && data.activeStreams.length > 0) {
       const active = data.activeStreams[0];
       const activePath = active.path || 'live/stream';
@@ -79611,7 +79679,7 @@ class VideoCastClient {
     const customInput = document.getElementById('video-cast-custom-url-input');
 
     if (select) {
-      if (source === 'test' || source === '0' || source.startsWith('rtmp://') || source.startsWith('rtsp://')) {
+      if (source === 'test' || source === '0' || source === '1' || source.startsWith('rtmp://') || source.startsWith('rtsp://') || source.startsWith('http')) {
         // Match option or set to custom
         const hasOpt = Array.from(select.options).some(o => o.value === source);
         if (hasOpt) {
@@ -79780,6 +79848,7 @@ class VideoCastClient {
 
     if (srcSelect) {
       srcSelect.addEventListener('change', () => {
+        this.userSelectedManualSource = true;
         const val = srcSelect.value;
         if (val === 'custom') {
           if (customContainer) customContainer.style.display = 'flex';
