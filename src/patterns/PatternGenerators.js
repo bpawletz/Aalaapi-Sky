@@ -1201,6 +1201,73 @@ function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, sp
   };
 }
 
+/**
+ * Automatically calculates the physical canvas radius (in meters) required to achieve
+ * a target exposure or flight duration (in seconds) for a given Light Art pattern.
+ *
+ * @param {Object} layer - The light-art flight layer configuration
+ * @param {number} targetDurationSec - Target flight / shutter duration in seconds
+ * @param {number} strokeSpeed - Flight speed in m/s (optional, defaults to layer speed or 3.0 m/s)
+ * @returns {number} Calculated radius in meters (clamped between 5m and 200m)
+ */
+function calculateLightArtRadiusForDuration(layer, targetDurationSec, strokeSpeed) {
+  const speed = (layer && typeof layer.speed === 'number' && layer.speed > 0) ? layer.speed : (strokeSpeed || 3.0);
+  const targetTime = Math.max(5, parseFloat(targetDurationSec) || 60);
+  const targetDist = speed * targetTime;
+  const preset = (layer && layer.lightArtPreset) ? layer.lightArtPreset : 'spiral';
+  const turns = (layer && typeof layer.lightArtTurns === 'number' && layer.lightArtTurns > 0) ? layer.lightArtTurns : 3;
+  const climb = (layer && typeof layer.lightArtClimb === 'number') ? layer.lightArtClimb : 15;
+
+  let rEst = 25;
+  if (preset === 'helix') {
+    const minClimbDist = climb;
+    if (targetDist <= minClimbDist) {
+      rEst = 5;
+    } else {
+      const dh = Math.sqrt(Math.max(0, targetDist * targetDist - climb * climb));
+      rEst = dh / (2 * Math.PI * turns);
+    }
+  } else {
+    // Reference run at R = 25m
+    const refLayer = Object.assign({}, layer, { lightArtRadius: 25 });
+    const refRes = generateLightArtCoordinates(refLayer, 50, 0, speed);
+    const refDist = Math.max(0.1, refRes.totalDistance);
+    rEst = 25 * (targetDist / refDist);
+  }
+
+  // Refine with 1 second-pass evaluation to guarantee exact discretization match
+  rEst = Math.max(5, Math.min(200, rEst));
+  const evalLayer = Object.assign({}, layer, { lightArtRadius: rEst });
+  const evalRes = generateLightArtCoordinates(evalLayer, 50, 0, speed);
+  const evalDist = Math.max(0.1, evalRes.totalDistance);
+  if (evalDist > 0 && Math.abs(evalDist - targetDist) > 0.5) {
+    rEst = rEst * (targetDist / evalDist);
+  }
+
+  // Clamp within safe flight canvas bounds: 5m to 200m
+  rEst = Math.max(5, Math.min(200, Math.round(rEst * 10) / 10));
+  return rEst;
+}
+
+/**
+ * Calculates the required flight speed (in m/s) to complete a given Light Art pattern
+ * within a target flight / shutter duration at a fixed canvas radius.
+ *
+ * @param {Object} layer - The light-art flight layer configuration
+ * @param {number} targetDurationSec - Target flight / shutter duration in seconds
+ * @param {number} radius - Fixed canvas radius in meters (optional, defaults to layer radius)
+ * @returns {number} Calculated speed in m/s (clamped between 0.5 m/s and 12.0 m/s)
+ */
+function calculateLightArtSpeedForDuration(layer, targetDurationSec, radius) {
+  const targetTime = Math.max(5, parseFloat(targetDurationSec) || 60);
+  const rad = (radius !== undefined && !isNaN(radius) && radius > 0) ? radius : ((layer && layer.lightArtRadius) || 25);
+  const testLayer = Object.assign({}, layer, { lightArtRadius: rad });
+  const testRes = generateLightArtCoordinates(testLayer, 50, 0, 3.0);
+  const dist = Math.max(0.1, testRes.totalDistance);
+  const speed = dist / targetTime;
+  return Math.max(0.5, Math.min(12.0, Math.round(speed * 10) / 10));
+}
+
 // ============================================================================
 // Vertical Facade Grid Pattern Generator (v1.153.0 - Issue #132)
 // ============================================================================
@@ -1999,6 +2066,8 @@ function generateCorridorCoordinates(layer, centerline, sPhoto = 20, altitude = 
 
 if (typeof window !== 'undefined') {
   window.generateLightArtCoordinates = generateLightArtCoordinates;
+  window.calculateLightArtRadiusForDuration = calculateLightArtRadiusForDuration;
+  window.calculateLightArtSpeedForDuration = calculateLightArtSpeedForDuration;
   window.generateVerticalFacadeCoordinates = generateVerticalFacadeCoordinates;
   window.generateHelixCoordinates = generateHelixCoordinates;
   window.generateStarPassCoordinates = generateStarPassCoordinates;
@@ -2016,6 +2085,8 @@ if (typeof module !== 'undefined' && module.exports) {
     estimatePhotoSphereDuration,
     updatePhotoSphereBadge,
     generateLightArtCoordinates,
+    calculateLightArtRadiusForDuration,
+    calculateLightArtSpeedForDuration,
     generateVerticalFacadeCoordinates,
     generateHelixCoordinates,
     generateStarPassCoordinates,

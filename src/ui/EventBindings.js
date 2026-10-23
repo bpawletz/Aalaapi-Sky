@@ -1245,6 +1245,10 @@ function initUIEventListeners() {
     const laClimbVal = document.getElementById('light-art-climb-val');
     const laCameraAz = document.getElementById('light-art-camera-azimuth');
     const laCameraAzVal = document.getElementById('light-art-camera-azimuth-val');
+    const laSizeMode = document.getElementById('light-art-size-mode');
+    const laTargetDur = document.getElementById('light-art-target-duration');
+    const laTargetDurVal = document.getElementById('light-art-target-duration-val');
+    const laCalcRadiusVal = document.getElementById('light-art-calculated-radius-val');
 
     const updateLightArt = () => {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -1285,6 +1289,14 @@ function initUIEventListeners() {
           laCameraAzVal.textContent = `${val}° (${dirs[dirIdx]})`;
         }
       }
+      if (laSizeMode) {
+        activeLayer.lightArtSizeMode = laSizeMode.value || 'manual';
+      }
+      if (laTargetDur) {
+        const val = parseFloat(laTargetDur.value) || 60;
+        activeLayer.lightArtTargetDuration = val;
+        if (laTargetDurVal) laTargetDurVal.textContent = `${val}s`;
+      }
 
       if (typeof updateLightArtUiFields === 'function') {
         updateLightArtUiFields(activeLayer);
@@ -1295,11 +1307,30 @@ function initUIEventListeners() {
       saveAllSettingsToLocalStorage();
     };
 
-    [laPreset, laOrientation, laRadius, laTurns, laPoints, laStarRatio, laClimb, laCameraAz].forEach(el => {
+    [laPreset, laOrientation, laRadius, laTurns, laPoints, laStarRatio, laClimb, laCameraAz, laSizeMode, laTargetDur].forEach(el => {
       if (el) {
         el.addEventListener('input', updateLightArt);
         el.addEventListener('change', updateLightArt);
       }
+    });
+
+    const presetBtns = document.querySelectorAll('.light-art-preset-btn');
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sec = parseFloat(btn.getAttribute('data-sec')) || 60;
+        if (laTargetDur) laTargetDur.value = sec;
+        if (laTargetDurVal) laTargetDurVal.textContent = `${sec}s`;
+        if (laSizeMode) laSizeMode.value = 'timeLimit';
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeLayer) {
+          activeLayer.lightArtTargetDuration = sec;
+          activeLayer.lightArtSizeMode = 'timeLimit';
+          if (typeof updateLightArtUiFields === 'function') updateLightArtUiFields(activeLayer);
+          updateGrid();
+          updateMapLegend();
+          saveAllSettingsToLocalStorage();
+        }
+      });
     });
   };
   setupLightArtListeners();

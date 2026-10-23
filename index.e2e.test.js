@@ -996,6 +996,43 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     await page.unroute('**/api/status');
   });
 
+  test('E2E: Guide modal renders 5 RC 2 to Companion Bridge connection step cards', async () => {
+    const cardResult = await page.evaluate(() => {
+      if (typeof openRC2GuideModal === 'function') {
+        openRC2GuideModal('service');
+      }
+      const guideModal = document.getElementById('guide-modal');
+      const isVisible = guideModal && !guideModal.classList.contains('hidden');
+      const cardsGrid = document.querySelector('#rc2-guide-cards-section .rc2-connect-cards-grid');
+      const cards = cardsGrid ? cardsGrid.querySelectorAll('.rc2-step-card') : [];
+      const steps = Array.from(cards).map(c => c.getAttribute('data-step'));
+      const titles = Array.from(cards).map(c => {
+        const titleEl = c.querySelector('.rc2-step-title');
+        return titleEl ? titleEl.textContent.trim() : '';
+      });
+
+      // Close modal
+      const closeBtn = document.getElementById('close-guide-btn');
+      if (closeBtn) closeBtn.click();
+
+      return {
+        isVisible,
+        cardCount: cards.length,
+        steps,
+        titles
+      };
+    });
+
+    assert.ok(cardResult.isVisible, 'Guide modal should open');
+    assert.strictEqual(cardResult.cardCount, 5, 'Should have 5 connection step cards');
+    assert.deepStrictEqual(cardResult.steps, ['1', '2', '3', '4', '5'], 'Should have steps 1 to 5');
+    assert.ok(cardResult.titles[0].includes('Get & Launch Bridge'), 'Card 1 title should match');
+    assert.ok(cardResult.titles[1].includes('Power On DJI RC 2'), 'Card 2 title should match');
+    assert.ok(cardResult.titles[2].includes('Plug in USB-C Data Cable'), 'Card 3 title should match');
+    assert.ok(cardResult.titles[3].includes('Select "File Transfer (MTP)"'), 'Card 4 title should match');
+    assert.ok(cardResult.titles[4].includes('1-Click Mission Upload'), 'Card 5 title should match');
+  });
+
   test('E2E: Topbar action buttons (#intro-tour-btn, #config-btn, #about-btn, #useful-links-btn) do not overflow topbar container', async () => {
     const overflowResult = await page.evaluate(() => {
       const topbar = document.querySelector('.studio-topbar');
@@ -9299,7 +9336,62 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.ok(evalResult.btnLabels.pull.includes('Pull Logs'), 'WebUSB pull button must have Pull Logs label');
     });
   });
+
+  describe('Issue & v1.179.0: Light Art Target Duration & Camera Shutter Auto-Sizing E2E Suite', () => {
+    test('E2E: Selecting Light Art pattern renders Sizing Mode toggle, Target Duration card, and Preset Pills', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const gridSelect = document.getElementById('grid-type');
+        if (gridSelect) {
+          gridSelect.value = 'light-art';
+          gridSelect.dispatchEvent(new Event('change'));
+        }
+
+        const sizeModeSelect = document.getElementById('light-art-size-mode');
+        const durationCard = document.getElementById('light-art-duration-opts');
+        const radiusCard = document.getElementById('light-art-radius-opts');
+        const presetBtns = document.querySelectorAll('.light-art-preset-btn');
+        const calcRadiusVal = document.getElementById('light-art-calculated-radius-val');
+        const targetDurVal = document.getElementById('light-art-target-duration-val');
+
+        const initialMode = sizeModeSelect ? sizeModeSelect.value : null;
+
+        // Switch to timeLimit mode
+        if (sizeModeSelect) {
+          sizeModeSelect.value = 'timeLimit';
+          sizeModeSelect.dispatchEvent(new Event('change'));
+        }
+
+        const cardDisplayAfterSwitch = durationCard ? window.getComputedStyle(durationCard).display : null;
+
+        // Click 90s preset pill
+        const pill90 = Array.from(presetBtns).find(b => b.getAttribute('data-sec') === '90');
+        if (pill90) {
+          pill90.click();
+        }
+
+        const durValAfterPill = targetDurVal ? targetDurVal.textContent.trim() : null;
+        const calcRadText = calcRadiusVal ? calcRadiusVal.textContent.trim() : null;
+
+        return {
+          hasSizeMode: Boolean(sizeModeSelect),
+          hasDurationCard: Boolean(durationCard),
+          hasRadiusCard: Boolean(radiusCard),
+          presetBtnCount: presetBtns.length,
+          initialMode,
+          cardDisplayAfterSwitch,
+          durValAfterPill,
+          calcRadText
+        };
+      });
+
+      assert.strictEqual(evalResult.hasSizeMode, true, 'Sizing mode select must exist');
+      assert.strictEqual(evalResult.hasDurationCard, true, 'Duration opts card must exist');
+      assert.strictEqual(evalResult.hasRadiusCard, true, 'Radius opts card must exist');
+      assert.ok(evalResult.presetBtnCount >= 5, 'Must have at least 5 preset duration pill buttons');
+      assert.strictEqual(evalResult.initialMode, 'manual', 'Default size mode must be manual');
+      assert.strictEqual(evalResult.cardDisplayAfterSwitch, 'block', 'Duration card must be visible when sizeMode is timeLimit');
+      assert.strictEqual(evalResult.durValAfterPill, '90s', 'Target duration readout must update to 90s after clicking pill');
+      assert.ok(evalResult.calcRadText && evalResult.calcRadText.length > 0, 'Calculated radius readout must be populated');
+    });
+  });
 });
-
-
-

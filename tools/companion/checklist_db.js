@@ -63,6 +63,15 @@ const DEFAULT_CHECKLIST_TEMPLATE = [
   }
 ];
 
+function sleepSync(ms) {
+  try {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  } catch (_) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {}
+  }
+}
+
 class ChecklistDatabase {
   constructor(dbPath = DEFAULT_DB_PATH) {
     this.dbPath = dbPath;
@@ -74,7 +83,7 @@ class ChecklistDatabase {
   init() {
     if (!DatabaseSync) {
       console.warn('[CHECKLIST DB] node:sqlite is not available in this Node runtime. Fallback mode active.');
-      return;
+      return false;
     }
 
     try {
@@ -83,9 +92,43 @@ class ChecklistDatabase {
         fs.mkdirSync(dir, { recursive: true });
       }
 
-      this.db = new DatabaseSync(this.dbPath);
-      this.db.exec('PRAGMA journal_mode = WAL;');
-      this.db.exec('PRAGMA synchronous = NORMAL;');
+      if (this.db) {
+        try { this.db.close(); } catch (_) {}
+        this.db = null;
+      }
+
+      let lastErr = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          this.db = new DatabaseSync(this.dbPath);
+          break;
+        } catch (err) {
+          lastErr = err;
+          sleepSync(100 * (attempt + 1));
+        }
+      }
+
+      if (!this.db) {
+        throw lastErr || new Error('Failed to open database');
+      }
+
+      // Allow up to 5000ms for temporary locks to clear
+      try {
+        this.db.exec('PRAGMA busy_timeout = 5000;');
+      } catch (_) {}
+
+      // Attempt WAL journal mode; fallback to DELETE if WAL / shared memory is blocked (e.g., OneDrive sync locks)
+      try {
+        this.db.exec('PRAGMA journal_mode = WAL;');
+      } catch (walErr) {
+        try {
+          this.db.exec('PRAGMA journal_mode = DELETE;');
+        } catch (_) {}
+      }
+
+      try {
+        this.db.exec('PRAGMA synchronous = NORMAL;');
+      } catch (_) {}
 
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS checklist_templates (
@@ -116,10 +159,21 @@ class ChecklistDatabase {
       `);
 
       this.seedDefaultTemplate();
+      return true;
     } catch (err) {
       console.error('[CHECKLIST DB ERROR] Failed to initialize SQLite database:', err.message);
       this.db = null;
+      return false;
     }
+  }
+
+  ensureDb() {
+    if (!this.db && DatabaseSync) {
+      try {
+        this.init();
+      } catch (_) {}
+    }
+    return Boolean(this.db);
   }
 
   seedDefaultTemplate() {
@@ -153,6 +207,7 @@ class ChecklistDatabase {
   }
 
   getTemplate() {
+    this.ensureDb();
     if (!this.db) {
       return DEFAULT_CHECKLIST_TEMPLATE;
     }
@@ -188,6 +243,7 @@ class ChecklistDatabase {
   }
 
   saveLog(payload) {
+    this.ensureDb();
     if (!payload || typeof payload !== 'object') {
       throw new Error('Invalid payload object');
     }
@@ -283,6 +339,7 @@ class ChecklistDatabase {
   }
 
   getHistory(limit = 50, offset = 0) {
+    this.ensureDb();
     if (!this.db) {
       return this.memoryLogs.slice(offset, offset + limit);
     }
@@ -313,6 +370,7 @@ class ChecklistDatabase {
   }
 
   hasLaancAuth(code) {
+    this.ensureDb();
     if (!code || typeof code !== 'string') return false;
     const cleanCode = code.trim().toUpperCase();
     if (!cleanCode) return false;

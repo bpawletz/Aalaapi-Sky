@@ -3858,6 +3858,27 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     assert.ok(html.includes('id="guide-pane-android"'), 'Should have guide-pane-android');
     assert.ok(html.includes('Samsung "My Files"'), 'Should document Samsung My Files workflow');
   });
+
+  test('index_template.html contains RC 2 to Companion Bridge connection step cards with 5 distinct steps', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const html = fs.readFileSync(path.resolve(__dirname, './index_template.html'), 'utf8');
+
+    assert.ok(html.includes('id="rc2-guide-cards-section"'), 'Should have rc2-guide-cards-section');
+    assert.ok(html.includes('class="rc2-connect-cards-grid"'), 'Should have rc2-connect-cards-grid');
+    assert.ok(html.includes('data-step="1"'), 'Should have Step 1 card');
+    assert.ok(html.includes('data-step="2"'), 'Should have Step 2 card');
+    assert.ok(html.includes('data-step="3"'), 'Should have Step 3 card');
+    assert.ok(html.includes('data-step="4"'), 'Should have Step 4 card');
+    assert.ok(html.includes('data-step="5"'), 'Should have Step 5 card');
+    assert.ok(html.includes('Get &amp; Launch Bridge'), 'Should have Card 1 title');
+    assert.ok(html.includes('Power On DJI RC 2'), 'Should have Card 2 title');
+    assert.ok(html.includes('Plug in USB-C Data Cable'), 'Should have Card 3 title');
+    assert.ok(html.includes('Select "File Transfer (MTP)"'), 'Should have Card 4 title');
+    assert.ok(html.includes('1-Click Mission Upload'), 'Should have Card 5 title');
+    assert.ok(html.includes('start-bridge.bat'), 'Should reference start-bridge.bat');
+    assert.ok(html.includes('dji.go.v5/waypoint'), 'Should reference waypoint directory');
+  });
 });
 
 describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
@@ -33637,5 +33658,176 @@ describe('v1.177.1 Dedicated ADS-B Working Connection File Persistence Suite', (
         fs.unlinkSync(testFile);
       }
     }
+  });
+});
+
+describe('v1.178.1 Companion Bridge SQLite Database Resilience (disk I/O error fix)', () => {
+  test('version strings are consistent across all required locations for v1.178.1', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.ok(semverGte(pkg.version, '1.178.1'), 'package.json must be >= 1.178.1');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.178.1]'), 'CHANGELOG.md must contain 1.178.1 header');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('v1.179.0') || templateHtml.includes('v1.178.1'), 'index_template.html must contain v1.178.1 or newer header badge');
+    assert.ok(templateHtml.includes('Version 1.179.0') || templateHtml.includes('Version 1.178.1'), 'index_template.html must contain Version 1.178.1 or newer');
+    assert.ok(templateHtml.includes('Changelog (v1.178.1):'), 'index_template.html must contain Changelog (v1.178.1)');
+
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('v1.179.0') || indexHtml.includes('v1.178.1'), 'index.html must contain v1.178.1 or newer header badge');
+    assert.ok(indexHtml.includes('Version 1.179.0') || indexHtml.includes('Version 1.178.1'), 'index.html must contain Version 1.178.1 or newer');
+    assert.ok(indexHtml.includes('Changelog (v1.178.1):'), 'index.html must contain Changelog (v1.178.1)');
+  });
+
+  test('ChecklistDatabase and DiagnosticsDatabase initialize with PRAGMA busy_timeout = 5000 and ensureDb()', () => {
+    const { ChecklistDatabase } = require('./tools/companion/checklist_db.js');
+    const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
+
+    const testChecklistDb = path.resolve(__dirname, 'scratch/test_resilience_checklist.db');
+    const testDiagDb = path.resolve(__dirname, 'scratch/test_resilience_diag.db');
+
+    try {
+      const chk = new ChecklistDatabase(testChecklistDb);
+      assert.ok(chk.ensureDb(), 'ensureDb must return true');
+      if (chk.db) {
+        const timeoutRow = chk.db.prepare('PRAGMA busy_timeout;').get();
+        assert.strictEqual(timeoutRow.timeout, 5000, 'ChecklistDatabase must configure busy_timeout = 5000');
+      }
+
+      const diag = new DiagnosticsDatabase(testDiagDb);
+      assert.ok(diag.ensureDb(), 'ensureDb must return true on diag db');
+      if (diag.db) {
+        const timeoutRow = diag.db.prepare('PRAGMA busy_timeout;').get();
+        assert.strictEqual(timeoutRow.timeout, 5000, 'DiagnosticsDatabase must configure busy_timeout = 5000');
+      }
+    } finally {
+      try { if (fs.existsSync(testChecklistDb)) fs.unlinkSync(testChecklistDb); } catch (_) {}
+      try { if (fs.existsSync(testDiagDb)) fs.unlinkSync(testDiagDb); } catch (_) {}
+    }
+  });
+});
+
+describe('Issue & v1.179.0: Light Art Target Duration & Camera Shutter Auto-Sizing Suite', () => {
+  test('Version consistency: v1.179.0 across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.179.0', 'package.json version must be 1.179.0');
+
+    const changelog = fs.readFileSync(path.resolve(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.179.0] - 2026-10-23'), 'CHANGELOG.md must contain 1.179.0 header');
+
+    const indexTemplate = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(indexTemplate.includes('v1.179.0</span></h1>'), 'index_template.html must contain header badge v1.179.0');
+    assert.ok(indexTemplate.includes('Version 1.179.0</span>'), 'index_template.html must contain Version 1.179.0');
+    assert.ok(indexTemplate.includes('Changelog (v1.179.0):'), 'index_template.html must contain Changelog (v1.179.0)');
+
+    const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('v1.179.0</span></h1>'), 'index.html must contain header badge v1.179.0');
+    assert.ok(indexHtml.includes('Version 1.179.0</span>'), 'index.html must contain Version 1.179.0');
+    assert.ok(indexHtml.includes('Changelog (v1.179.0):'), 'index.html must contain Changelog (v1.179.0)');
+  });
+
+  test('calculateLightArtRadiusForDuration accurately sizes canvas radius across all 5 presets', () => {
+    const presets = ['spiral', 'helix', 'star', 'heart', 'circle'];
+    const testDurations = [30, 60, 90, 120];
+    const testSpeed = 3.5;
+
+    presets.forEach(preset => {
+      testDurations.forEach(targetSec => {
+        const layer = {
+          lightArtPreset: preset,
+          speed: testSpeed,
+          lightArtTurns: 3,
+          lightArtClimb: 15,
+          lightArtOrientation: 'horizontal'
+        };
+
+        const calculatedR = calculateLightArtRadiusForDuration(layer, targetSec, testSpeed);
+        assert.ok(typeof calculatedR === 'number' && calculatedR >= 5 && calculatedR <= 200, `Radius for ${preset} at ${targetSec}s must be within [5, 200]m (got ${calculatedR})`);
+
+        const evalLayer = Object.assign({}, layer, { lightArtRadius: calculatedR });
+        const res = generateLightArtCoordinates(evalLayer, 50, 0, testSpeed);
+        const actualDur = res.flightDurationSec;
+        const diff = Math.abs(actualDur - targetSec);
+
+        assert.ok(
+          diff <= 0.6,
+          `Preset ${preset} at ${targetSec}s target duration must produce flight duration within 0.6s (got ${actualDur}s, diff ${diff.toFixed(2)}s)`
+        );
+      });
+    });
+  });
+
+  test('calculateLightArtRadiusForDuration scales proportionally when aircraft stroke speed varies', () => {
+    const layer = {
+      lightArtPreset: 'spiral',
+      lightArtTurns: 3,
+      lightArtOrientation: 'horizontal'
+    };
+    const targetDur = 60; // 60 seconds
+
+    const rSlow = calculateLightArtRadiusForDuration(layer, targetDur, 2.0); // 2 m/s
+    const rFast = calculateLightArtRadiusForDuration(layer, targetDur, 4.0); // 4 m/s
+
+    // At double the speed, the path must be twice as long, so radius is approximately double
+    const ratio = rFast / rSlow;
+    assert.ok(ratio >= 1.8 && ratio <= 2.2, `Doubling speed should approximately double radius (got ratio ${ratio.toFixed(2)})`);
+  });
+
+  test('calculateLightArtRadiusForDuration strictly respects safe minimum and maximum bounds', () => {
+    const layer = { lightArtPreset: 'circle' };
+
+    // Extremely short duration (e.g. 1s) must not drop below 5m minimum
+    const rMin = calculateLightArtRadiusForDuration(layer, 1, 1.0);
+    assert.ok(rMin >= 5, `Radius must respect minimum bound >= 5m (got ${rMin})`);
+
+    // Extremely long duration (e.g. 2000s) must not exceed 200m maximum
+    const rMax = calculateLightArtRadiusForDuration(layer, 2000, 10.0);
+    assert.strictEqual(rMax, 200, `Radius must respect maximum bound <= 200m (got ${rMax})`);
+  });
+
+  test('calculateLightArtSpeedForDuration accurately solves required speed for fixed radius', () => {
+    const layer = { lightArtPreset: 'spiral', lightArtRadius: 30, lightArtTurns: 3 };
+    const targetSec = 60;
+    const speed = calculateLightArtSpeedForDuration(layer, targetSec, 30);
+
+    const testLayer = Object.assign({}, layer, { speed });
+    const res = generateLightArtCoordinates(testLayer, 50, 0, speed);
+    const diff = Math.abs(res.flightDurationSec - targetSec);
+
+    assert.ok(diff <= 0.8, `Calculated speed ${speed}m/s must achieve ${targetSec}s within 0.8s (got ${res.flightDurationSec}s)`);
+  });
+
+  test('createDefaultLayer initializes with lightArtSizeMode manual and lightArtTargetDuration 60s', () => {
+    const layer = createDefaultLayer('la-test-default', 'Light Art', 0, 'light-art', 41.3215, -88.9950);
+    assert.strictEqual(layer.lightArtSizeMode, 'manual', 'lightArtSizeMode must default to manual');
+    assert.strictEqual(layer.lightArtTargetDuration, 60, 'lightArtTargetDuration must default to 60');
+  });
+
+  test('generateLayerWaypoints auto-sizes layer.lightArtRadius when lightArtSizeMode is timeLimit', () => {
+    const layer = createDefaultLayer('la-test-autoresize', 'Light Art', 0, 'light-art', 41.3215, -88.9950);
+    layer.lightArtPreset = 'heart';
+    layer.lightArtSizeMode = 'timeLimit';
+    layer.lightArtTargetDuration = 90; // 90 seconds exposure
+    layer.speed = 3.5;
+
+    const res = generateLayerWaypoints(layer, 41.3215, -88.9950);
+    assert.ok(Array.isArray(res.waypoints) && res.waypoints.length > 5, 'Must generate waypoints');
+
+    // Radius must have been auto-sized to approximately ~49.4m (instead of initial 25m)
+    assert.ok(layer.lightArtRadius > 45 && layer.lightArtRadius < 55, `layer.lightArtRadius must be auto-sized for 90s (got ${layer.lightArtRadius}m)`);
+
+    // Verify distance / speed produces ~90s flight duration
+    let totalDist = 0;
+    for (let i = 1; i < res.waypoints.length; i++) {
+      totalDist += haversineDistance(res.waypoints[i - 1].lat, res.waypoints[i - 1].lon, res.waypoints[i].lat, res.waypoints[i].lon);
+    }
+    const strokeDur = totalDist / layer.speed;
+    const diff = Math.abs(strokeDur - 90);
+    assert.ok(diff <= 1.5, `Stroke duration must be within 1.5s of target 90s (got ${strokeDur.toFixed(2)}s)`);
+
+    // Also verify generateLightArtCoordinates with updated layer matches target
+    const coords = generateLightArtCoordinates(layer, 50, 0, layer.speed);
+    assert.ok(Math.abs(coords.flightDurationSec - 90) <= 0.5, `generateLightArtCoordinates flightDurationSec must match 90s within 0.5s (got ${coords.flightDurationSec}s)`);
   });
 });
