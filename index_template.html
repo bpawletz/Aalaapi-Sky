@@ -81,7 +81,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.180.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.182.0</span></h1>
         </div>
       </div>
 
@@ -1295,9 +1295,26 @@
               <div>
                 <label for="light-art-orientation" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Canvas Orientation</label>
                 <select id="light-art-orientation" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
-                  <option value="horizontal" selected>Horizontal (Flat / Overhead)</option>
-                  <option value="vertical">Vertical Billboard (Upright)</option>
+                  <option value="horizontal" selected>Horizontal (Flat / 0°)</option>
+                  <option value="tilted">Tilted Oblique Canvas</option>
+                  <option value="vertical">Vertical Billboard (Upright / 90°)</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Canvas Tilt Angle (Visible when orientation is 'tilted' or 'vertical') -->
+            <div id="light-art-tilt-opts" class="control-group" style="margin-bottom: 8px; display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-tilt" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Canvas Tilt Angle</label>
+                <span id="light-art-tilt-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">0° (Flat)</span>
+              </div>
+              <input type="range" id="light-art-tilt" class="form-range" min="0" max="90" step="1" value="0" style="accent-color: #ec4899;">
+              <div style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-xs btn-outline-secondary light-art-tilt-preset-btn" data-tilt="0" style="font-size: 0.65rem; padding: 1px 6px;">0° Flat</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary light-art-tilt-preset-btn" data-tilt="30" style="font-size: 0.65rem; padding: 1px 6px;">30°</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary light-art-tilt-preset-btn" data-tilt="45" style="font-size: 0.65rem; padding: 1px 6px;">45°</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary light-art-tilt-preset-btn" data-tilt="60" style="font-size: 0.65rem; padding: 1px 6px;">60°</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary light-art-tilt-preset-btn" data-tilt="90" style="font-size: 0.65rem; padding: 1px 6px;">90° Upright</button>
               </div>
             </div>
 
@@ -1369,13 +1386,62 @@
               </div>
             </div>
 
-            <!-- Camera Azimuth (for Vertical Billboard Mode) -->
+            <!-- Camera Azimuth & Interactive SVG Compass Rose (Visible when orientation !== 'horizontal' or tilt > 0) -->
             <div id="light-art-azimuth-opts" class="control-group" style="margin-bottom: 8px; display: none;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
                 <label for="light-art-camera-azimuth" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Ground Camera Bearing</label>
                 <span id="light-art-camera-azimuth-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">0° (North)</span>
               </div>
               <input type="range" id="light-art-camera-azimuth" class="form-range" min="0" max="359" step="1" value="0" style="accent-color: #ec4899;">
+              <!-- Interactive Visual Compass Dial & Cardinal Snaps -->
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 5px; padding: 4px 6px; background: rgba(15, 23, 42, 0.4); border-radius: 6px;">
+                <!-- SVG Compass Rose -->
+                <div style="width: 54px; height: 54px; flex-shrink: 0; position: relative;">
+                  <svg id="light-art-compass-dial" viewBox="0 0 100 100" width="54" height="54" style="overflow: visible; cursor: pointer;">
+                    <!-- Outer Ring -->
+                    <circle cx="50" cy="50" r="42" fill="rgba(30, 41, 59, 0.7)" stroke="rgba(236, 72, 153, 0.3)" stroke-width="2"/>
+                    <!-- Cardinal Markers -->
+                    <text x="50" y="18" font-size="11" font-weight="bold" fill="#ef4444" text-anchor="middle">N</text>
+                    <text x="84" y="54" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="middle">E</text>
+                    <text x="50" y="88" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="middle">S</text>
+                    <text x="16" y="54" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="middle">W</text>
+                    <!-- Bearing Pointer Needle (Pink) -->
+                    <line id="light-art-compass-needle" x1="50" y1="50" x2="50" y2="16" stroke="#ec4899" stroke-width="3" stroke-linecap="round"/>
+                    <!-- Center Pivot -->
+                    <circle cx="50" cy="50" r="4" fill="#f472b6"/>
+                  </svg>
+                </div>
+                <!-- Quick Cardinal Chips -->
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 3px;">
+                  <div style="display: flex; gap: 2px;">
+                    <button type="button" class="btn btn-secondary btn-sm light-art-az-chip" data-az="0" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">N (0°)</button>
+                    <button type="button" class="btn btn-secondary btn-sm light-art-az-chip" data-az="90" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">E (90°)</button>
+                    <button type="button" class="btn btn-secondary btn-sm light-art-az-chip" data-az="180" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">S (180°)</button>
+                    <button type="button" class="btn btn-secondary btn-sm light-art-az-chip" data-az="270" style="flex: 1; padding: 2px 0; font-size: 0.60rem;">W (270°)</button>
+                  </div>
+                  <div style="font-size: 0.62rem; color: var(--text-muted); text-align: center;">Click compass to set bearing</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ground Clearance Safety Deck & Prevention -->
+            <div id="light-art-clearance-container" class="control-group" style="margin-bottom: 8px; background: rgba(15, 23, 42, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-min-clearance" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Min Ground Clearance Floor</label>
+                <span id="light-art-min-clearance-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">10m</span>
+              </div>
+              <input type="range" id="light-art-min-clearance" class="form-range" min="5" max="30" step="1" value="10" style="accent-color: #ec4899;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.68rem; color: var(--text-muted); cursor: pointer; margin: 0;">
+                  <input type="checkbox" id="light-art-enforce-clearance" style="accent-color: #ec4899;">
+                  <span>Enforce Floor (Auto-Shift Altitude)</span>
+                </label>
+              </div>
+              <!-- Dynamic Low Clearance Warning & Elevate Helper -->
+              <div id="light-art-clearance-warning" style="display: none; margin-top: 6px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 4px; padding: 6px 8px; font-size: 0.68rem; color: #fca5a5;">
+                <div id="light-art-clearance-warning-msg" style="margin-bottom: 4px; line-height: 1.3;">⚠️ Low Clearance Alert</div>
+                <button type="button" id="light-art-elevate-btn" class="btn btn-xs btn-danger" style="font-size: 0.65rem; padding: 2px 8px; font-weight: 600; width: 100%;">Elevate Base Altitude to Safe Floor</button>
+              </div>
             </div>
 
             <!-- Shutter Sync Notice -->
@@ -4130,6 +4196,14 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #ec4899; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎨 Continuous 3D Canvas Tilt, Compass Rose &amp; Safety Deck for Light Art (v1.182.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Take aerial sky painting to new dimensions! Pilots can now continuously tilt the Light Art canvas from flat horizontal (0°) to upright vertical (90°) or oblique angles (30°, 45°, 60°). Includes an interactive SVG Compass Rose dial to align the plane of the artwork directly with ground camera positions, plus an adjustable Ground Clearance Safety Deck (5m-30m) with automated low-clearance warnings and one-click base altitude elevation.
+            </p>
+          </div>
+          <div style="background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #ec4899; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎨 Light Art Target Duration &amp; Camera Shutter Auto-Sizing (v1.179.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -5572,7 +5646,7 @@
     <div class="modal glass" style="max-width: 680px; width: 94vw; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid rgba(34, 197, 94, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
       
       <!-- Header -->
-      <div style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+      <div class="modal-header" style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 10px;">
           <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #4ade80;">📋</div>
           <div>
@@ -5682,7 +5756,7 @@
   <!-- Preflight History & Audit Log Viewer Modal -->
   <div id="preflight-history-modal" class="modal-overlay hidden" style="z-index: 10060;">
     <div class="modal glass" style="max-width: 720px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
-      <div style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+      <div class="modal-header" style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 1.1rem;">📜</span>
           <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-main);">Preflight Checklist Audit History</h3>
@@ -6126,6 +6200,15 @@
         <button id="close-links-btn" class="close-btn" type="button" aria-label="Close links">&times;</button>
       </header>
       <div class="modal-content" style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 14px;">
+              <h4 style="margin: 0 0 6px 0; font-size: 0.88rem; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                <span>🪟</span> Universal Draggable Modal Dialogs (v1.181.0)
+              </h4>
+              <p style="margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--text-muted);">
+                Move any dialog anywhere on screen by dragging its top header bar. Keep waypoints, flight telemetry, and map imagery visible without closing your tools. Reopening dialogs retains your chosen position, and double-clicking the header instantly re-centers the window.
+              </p>
+            </div>
+
         <a id="opensky-link" href="https://map.opensky-network.org/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between;">
           <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
             <span style="display: flex; align-items: center; gap: 6px;">
@@ -6229,7 +6312,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.180.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.182.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6291,7 +6374,24 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
-            <strong style="color: var(--text-main);">Changelog (v1.180.0):</strong>
+                        <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.182.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li>Continuous 3D Canvas Tilt: Tilt Light Art from flat overhead (0°) to vertical billboard (90°) or intermediate oblique angles.</li>
+                <li>Interactive SVG Compass Rose: Visual compass rose with cardinal markers and rotating bearing needle to align artwork sightline.</li>
+                <li>Ground Clearance Safety Deck: Configurable safety floor (5-30m) with low clearance alert and 1-click base altitude elevation.</li>
+              </ul>
+            </li>
+            <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.181.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li>Draggable Modal Windows: All operational dialogs can be moved across the screen by dragging the header bar.</li>
+                <li>Waypoint Clearance: Repositioned modals persist in place across open/close to keep active waypoints unobstructed.</li>
+                <li>Header Double-Click Reset: Instantly re-centers any modal to screen center.</li>
+              </ul>
+            </li>
+            <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.180.0):</strong>
             <ul style="padding-left: 18px; margin: 4px 0 12px; color: var(--text-muted); font-size: 0.82rem;">
               <li><strong>ADS-B Flight History Purge &amp; Radar Reset:</strong> Added 1-click map trail breadcrumb clearing and full airspace radar state reset directly from the ADS-B Control Drawer.</li>
             </ul>
