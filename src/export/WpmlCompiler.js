@@ -404,21 +404,17 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
 
-        if (action.aebEnabled) {
-          waypointActions.push(`          <wpml:action>
+        if (action.aebEnabled || action.aebMultiplier > 1) {
+          const extraPhotos = (action.aebMultiplier ? action.aebMultiplier : (action.aebEnabled ? 3 : 1)) - 1;
+          for (let ep = 0; ep < extraPhotos; ep++) {
+            waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
-          waypointActions.push(`          <wpml:action>
-            <wpml:actionId>${actionId++}</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>`);
+          }
         }
       });
     } else {
@@ -1679,15 +1675,19 @@ function formatISO8601ForFilename(date = new Date()) {
   }
 }
 
-// Google Photo Sphere (GPano) XMP Metadata Generator (v1.154.0 - Issue #134)
+// Google Photo Sphere (GPano) XMP Metadata Generator (v1.157.0 - Issue #134 Expansion)
 function generateGPanoXmpMetadata(options = {}) {
   const poseHeading = options.poseHeading !== undefined ? options.poseHeading : 0.0;
   const posePitch = options.posePitch !== undefined ? options.posePitch : 0.0;
   const poseRoll = options.poseRoll !== undefined ? options.poseRoll : 0.0;
   const fullPanoWidthPixels = options.width || 8192;
   const fullPanoHeightPixels = options.height || 4096;
+  const hasZenith = options.hasZenith !== undefined ? Boolean(options.hasZenith) : false;
+  const croppedTop = options.croppedAreaTopPixels !== undefined
+    ? options.croppedAreaTopPixels
+    : (!hasZenith ? Math.round(fullPanoHeightPixels * (20.0 / 180.0)) : 0);
   const croppedWidthPixels = options.croppedWidth || fullPanoWidthPixels;
-  const croppedHeightPixels = options.croppedHeight || fullPanoHeightPixels;
+  const croppedHeightPixels = options.croppedHeight || (fullPanoHeightPixels - croppedTop);
 
   return `<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
@@ -1708,13 +1708,44 @@ function generateGPanoXmpMetadata(options = {}) {
       <GPano:CroppedAreaImageWidthPixels>${croppedWidthPixels}</GPano:CroppedAreaImageWidthPixels>
       <GPano:CroppedAreaImageHeightPixels>${croppedHeightPixels}</GPano:CroppedAreaImageHeightPixels>
       <GPano:CroppedAreaLeftPixels>0</GPano:CroppedAreaLeftPixels>
-      <GPano:CroppedAreaTopPixels>0</GPano:CroppedAreaTopPixels>
+      <GPano:CroppedAreaTopPixels>${croppedTop}</GPano:CroppedAreaTopPixels>
     </rdf:Description>
   </rdf:RDF>
 </x:xmpmeta>
 <?xpacket end="w"?>`;
 }
 
+function downloadGPanoXmpFile(options = {}) {
+  const xmp = generateGPanoXmpMetadata(options);
+  if (typeof document === 'undefined') return xmp;
+  try {
+    const blob = new Blob([xmp], { type: 'application/rdf+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = options.filename || 'photosphere_metadata.xmp';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) {
+    console.error('Failed to trigger GPano XMP download:', err);
+  }
+  return xmp;
+}
+
 if (typeof window !== 'undefined') {
   window.generateGPanoXmpMetadata = generateGPanoXmpMetadata;
+  window.downloadGPanoXmpFile = downloadGPanoXmpFile;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    buildWaylinesWpml,
+    buildTemplateKml,
+    generateGPanoXmpMetadata,
+    downloadGPanoXmpFile,
+    validateAndFixWpml,
+    validateWpmlMission
+  };
 }

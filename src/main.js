@@ -36,3 +36,4 @@ import './geo/Photogrammetry.js';
 import './vision/TagDetector.js';
 import './ui/Modals/PhotoInspector.js';
 import './bridge/Rc2LogExplorer.js';
+import './bridge/VideoCastClient.js';

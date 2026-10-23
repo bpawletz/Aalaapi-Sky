@@ -1,3 +1,155 @@
+## [1.175.0] - 2026-10-23
+
+Expands the 360° Spherical Panorama Stationary Capture Engine with dedicated Upward Zenith Sky (+20°) capture, multi-tier AEB exposure bracketing (Single, 3-Shot, 5-Shot HDR), an automated FOV & overlap advisor, live capture duration and battery estimators, an interactive 3D spherical ray cage in the 3D HUD, and 1-click GPano XMP sidecar export.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Dedicated Upward Zenith Sky Row (+20°)**:
+  - Added a dedicated Row 0 Zenith Sky checkbox in Section 2 `#photo-sphere-container`, enabling pilots to capture upward sky/cloud textures on drones supporting upward gimbal pitch (DJI Mini 4 Pro, Air 3).
+  - Integrates a dedicated **Zenith Sphere (49)** quick preset combining Zenith (+20°), Horizon (-15°), Mid-Oblique (-45°), Steep-Oblique (-75°), and Nadir (-90°).
+- **Multi-Tier AEB Exposure Bracketing (1x / 3-Shot / 5-Shot HDR)**:
+  - Replaced the binary checkbox with a full bracketing selector supporting Single Shot (1x), 3-Shot AEB (-2, 0, +2 EV), and 5-Shot AEB (-4, -2, 0, +2, +4 EV) for extreme dynamic range scenes (sun, sunset, high-contrast skies).
+  - The shot badge now dynamically displays both capture positions and total raw exposure count (e.g., `49 Positions (245 Photos - 5x AEB)`).
+- **16-Shot / Ring Ultra-Dense Density (22.5° Steps)**:
+  - Added a 16-shot preset to the Ring Density selector for high-focal-length lenses and ultra-high-resolution photogrammetric spheres.
+- **Real-Time Camera FOV & Overlap Advisor**:
+  - Live advisor computes horizontal overlap based on active optics and ring step (e.g. 63% horizontal overlap for 12 shots, 73% for 16 shots) and vertical overlap (43%) with instant quality grading (`Optimal`, `Adequate`, `Marginal`).
+- **Mission Runtime & Battery Consumption Estimator**:
+  - Automatically calculates total stationary capture time incorporating yaw rotation speed, settling delay, and shutter cycles per exposure, outputting live duration and hover battery consumption (e.g., `⏱️ 2m 15s | ~8% Battery`).
+- **Interactive 3D Spherical Ray Cage & Frustum Cones**:
+  - 3D Flight Simulation now renders an interactive 3D wireframe geodesic dome and color-coded directional camera ray vectors around stationary photo sphere waypoints: Sky Blue for Zenith (+20°), Cyan for Row 1 (-15°), Amber for Row 2 (-45°), Purple for Row 3 (-75°), and Emerald for Nadir (-90°).
+- **1-Click GPano XMP Sidecar Metadata Download**:
+  - Added `Download GPano XMP Sidecar` button directly inside Section 2, exporting equirectangular RDF XMP metadata with accurate heading, pitch bounds, and zenith crop specifications for instant PTGui and Lightroom auto-stitching.
+
+#### Under the Hood & Technical Details
+- **`src/patterns/PatternGenerators.js`**:
+  - Implemented `calculatePhotoSphereOverlap()` and `estimatePhotoSphereDuration()`.
+  - Updated `generatePhotoSphereCoordinates()` supporting `rings.zenith`, `aebMode` (`'none'`, `'3'`, `'5'`), 16-shot densities, and `isZenith` metadata.
+  - Attached helpers to `window` and `module.exports`.
+- **`src/export/WpmlCompiler.js`**:
+  - Updated `photoSphereActions` compilation to serialize positive pitch angles and loop extra `takePhoto` actions according to `aebMultiplier`.
+  - Updated `generateGPanoXmpMetadata()` to handle `hasZenith` cropping offsets and implemented `downloadGPanoXmpFile()`.
+- **`src/3d/FlightSimulation.js`**:
+  - Added Sky Blue ribbon styling (`0x38bdf8`) and rendered 3D wireframe sphere dome (`SphereGeometry`) with multi-color `LineSegments` camera ray vectors for stationary photo spheres.
+- **`src/layers/LayerManager.js` & `src/ui/EventBindings.js`**:
+  - Synchronized `photoSphereRings.zenith`, `photoSphereAebMode`, and presets across layer state and UI controls.
+
+
+## [1.174.0] - 2026-10-23
+
+Equips the Aalaapi Companion Bridge with an embedded zero-dependency RTMP ingest server and automated Windows Firewall configuration, enabling plug-and-play live video streaming directly from DJI RC 2 and DJI Fly controllers into the web interface and 3D FPV HUD.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Embedded RTMP Ingest Server (Closes #97)**:
+  - Companion bridge now hosts its own built-in RTMP 1.0 listener on standard port 1935 (`0.0.0.0:1935`), eliminating the need to install or run external relay servers (MediaMTX, OBS, NGINX).
+  - Directly compatible with DJI RC 2 / DJI Fly RTMP broadcast output (`rtmp://<PC_IP>:1935/live/stream` or root `rtmp://<PC_IP>:1935`).
+  - Automatically captures incoming drone video feeds and switches the live cast panel and 3D FPV HUD viewfinder to the active aircraft stream.
+- **In-App RTMP Ingest Bar & 1-Click Clipboard Copy**:
+  - Live Video Cast panel (`#video-cast-panel`) now displays the exact local network RTMP streaming address (`rtmp://<LAN_IP>:1935/live/stream`) with a dedicated 📋 Copy button.
+  - Step-by-step guidance for DJI Fly RTMP configuration (`Settings -> Transmission -> Live Streaming Platforms -> RTMP`).
+- **Automated Windows Firewall Configuration**:
+  - Added one-click elevated setup scripts (`setup-rtmp-firewall.bat` and `setup-rtmp-firewall.ps1`) to automatically configure Windows Firewall inbound rules for TCP port 1935.
+  - Real-time firewall readiness badge in the video cast panel (`🟢 Port 1935 Open` / `⚠️ Port 1935 Rule Needed`).
+  - Automatic startup verification in `start-bridge.ps1`.
+
+#### Under the Hood & Technical Details
+- **Zero-Dependency RTMP 1.0 Server Engine (`tools/companion/rtmp_server.js`)**:
+  - Implemented complete RTMP 1.0 handshake state machine (C0/C1 -> S0/S1/S2 -> C2) and chunk stream framing using pure Node.js (`node:net` and `node:crypto`).
+  - Full AMF0 command serializer and deserializer supporting `connect`, `createStream`, `releaseStream`, `FCPublish`, `publish`, and `play`.
+  - Caches H.264 AVC sequence headers (SPS/PPS) and `onMetaData` records for instantaneous subscriber decoding.
+  - Fault-tolerant path normalization: accepts both canonical paths and short/root URLs, automatically resolving to `live/stream`.
+- **Bridge Video Service Ingest Hook (`tools/companion/video_service.js`)**:
+  - Integrated `RTMPServer` lifecycle with automatic port binding, publisher connection detection, and seamless Python OpenCV worker relay.
+  - Added REST diagnostic endpoints `GET /api/video/rtmp/status` and `GET /api/video/firewall`.
+
+## [1.173.1] - 2026-10-23
+
+Resolves an invalid Tile Map Service (TMS) layer request error on the toggleable Satellite Cloud Cover (IR) map overlay and ensures real-time weather tiles bypass companion proxy cache.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Satellite Cloud Cover Map Overlay (IR) (Closes #145)**:
+  - Fixed map tile request failure where tiles rendered an "Invalid TMS Request :( Need help? akrherz@iastate.edu" error graphic across the map viewport.
+  - Corrected tile endpoint from legacy/invalid `goes_east_ir` to active NOAA GOES Channel 13 Clean Longwave IR Window (`goes_east_conus_ch13`), restoring real-time infrared cloud cover imagery across CONUS.
+
+#### Under the Hood & Technical Details
+- **Map Engine Overlay Endpoint (`src/map/MapEngine.js`)**:
+  - Updated Leaflet `cloudCoverLayer` template URL to `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes_east_conus_ch13/{z}/{x}/{y}.png`.
+- **Companion Tile Cache Live Stream Bypass (`tools/companion/tile_cache.js`)**:
+  - Expanded `isLiveBypassUrl()` matching for `mesonet.agron.iastate.edu` to ensure real-time GOES satellite imagery bypasses multi-day caching during live flights.
+
+## [1.173.0] - 2026-10-23
+
+Introduces a low-latency live video streaming and local recording service hosted directly within the Aalaapi Sky bridge application, enabling pilots to monitor real-time drone video feeds over WebSockets and capture lossless MP4 recordings to disk.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Low-Latency Video Casting (Closes #97)**:
+  - Added a dedicated floating and dockable **Live Video Cast Panel** (`#video-cast-panel`) featuring real-time stream playback on a 16:9 canvas (`#video-cast-canvas`).
+  - Supports multiple stream ingest sources: DJI Fly live RTMP stream, local HDMI/UVC USB capture cards, secondary capture feeds, or high-tech synthetic HUD test patterns.
+  - Live FPS counter, stream connection indicator badges, and one-click fullscreen viewfinder mode.
+- **Local Lossless MP4 Video Recording**:
+  - Prominent **REC** button indicator overlay on the video cast panel and 3D FPV HUD with live duration counter and pulsing red recording state.
+  - Captures and writes uncompressed raw frames directly into `.mp4` video containers in `scratch/recordings/` on the host PC.
+  - Integrated **Clips Browser Modal** (`#video-recordings-modal`) to inspect, playback, and download saved MP4 recordings.
+- **3D FPV HUD Live Viewfinder Overlay**:
+  - Integrated a live video canvas (`#fpv-video-canvas`) positioned directly behind the cockpit reticle and flight telemetry HUD in the 3D walkthrough view.
+  - Dedicated HUD REC button and video background toggle for simultaneous mission walkthrough and live feed preview.
+- **Aalaapi Bridge Section Video Launcher**:
+  - Added "Live Video Cast & REC" launcher button in Section 4 with dynamic LIVE / CONNECTING / OFFLINE connection pills.
+
+#### Under the Hood & Technical Details
+- **Zero-Dependency RFC 6455 Binary WebSocket Broadcaster (`tools/companion/video_service.js`)**:
+  - Built-in Node.js WebSocket server supporting HTTP upgrade (`/api/video/stream`), SHA-1 handshake generation, unmasked binary JPEG payload framing (Opcode `0x02`), and ping/pong keepalives without external npm packages.
+- **OpenCV Media Ingest & Recording Worker (`tools/companion/video_worker.py`)**:
+  - Dedicated Python worker using `cv2.VideoCapture` and `cv2.VideoWriter` (mp4v/H.264) with non-blocking stdin command IPC and length-prefixed stdout frame streaming.
+  - Built-in 2-second auto-recovery loop to safely reconnect to dropped wireless feeds.
+  - High-tech synthetic FPV HUD frame generator as a resilient offline fallback.
+- **Client-Side Video Stream Engine (`src/bridge/VideoCastClient.js`)**:
+  - Modern ES module utilizing `createImageBitmap` for GPU-accelerated zero-copy frame painting, rolling FPS calculation, and REST recording state synchronization.
+
+## [1.172.0] - 2026-10-18
+
+Introduces comprehensive Flight Plan Decision Trees and an interactive 21-pattern Settings Applicability Matrix directly inside the Guide Hub, paired with real-time active layer telemetry, one-click deep-link navigation, and standalone offline documentation.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Node-RED Integration & Automated 3D Reconstruction Workflows**:
+  - Released first-class 
+ode-red-contrib-aalaapi node suite enabling automated ingestion, ASTM F3411 Remote ID radar tracking, and downstream Gaussian Splatting (splatfacto / COLMAP) pipelines.
+  - Published comprehensive architectural and mathematical guide in docs/NODE_RED_INTEGRATION_GUIDE.md detailing ENU projection, Nerfstudio OpenGL camera conventions, and COLMAP prior generation.
+- **In-App Decision Trees & Settings Matrix Tab**:
+  - Added a dedicated 4th tab (`#intro-tab-matrix` / `#intro-pane-matrix`) to the Pilot Guide Hub (`#quickstart-modal`).
+  - Features visual decision trees for selecting flight patterns, choosing capture modes (Continuous vs. Stop & Shoot), selecting gimbal pitch angles (-90° Nadir to 0° Facade), and configuring heading & turn modes.
+- **Active Layer Telemetry & Inspector**:
+  - Displays real-time parameters for the currently active layer (Altitude, Gimbal Pitch, Capture Mode, Heading Mode, Turn Mode, Overlap, Speed, and Failsafe Action) directly at the top of the modal.
+  - Automatically highlights the matching pattern row in the applicability table with a glowing active pattern indicator.
+- **One-Click "Jump to Setting" Deep-Links**:
+  - Added interactive `[Jump to Setting ↗]` buttons to all decision cards, active telemetry pills, and table rows.
+  - Automatically closes the modal, expands the corresponding sidebar section (Layer Properties or Mission Failsafes), scrolls smoothly to the target input, and plays a glowing cyan focus pulse animation (`.setting-focus-pulse`).
+- **Filterable 21-Pattern Settings Applicability Table**:
+  - Comprehensive matrix covering every flight pattern (Single Grid, Double Grid, Target Splat, Orbit, Multi-Orbit, Tower Audit, Vertical Facade, Helix, Star Pass, Photo Sphere, Hyperlapse, Light Art, Hybrid Combos, Road Following, Corridor, Freeform, Exclusion Zones, Boundary Polygon, and Fiducial GCPs).
+  - Quick-filter chips to isolate patterns by category: 2D Mapping, 3D Splat & Object, Structure & Facade, Linear Corridor, Panoramic & Creative, and Spatial & Safety.
+
+#### Under the Hood & Technical Details
+- **Node-RED Contrib Aalaapi Mathematical Pose Engine (	ools/node-red-contrib-aalaapi/lib/camera-pose.js, 
+erfstudio-splat.js, colmap-prior.js)**:
+  - Implemented unified spatial pose engine converting drone GPS (latitude, longitude, ellipsoidal altitude) and stabilized 3-axis gimbal attitudes (yaw, pitch, roll) to Local Tangent Plane (ENU), Nerfstudio OpenGL camera-to-world ($), and COLMAP OpenCV world-to-camera ($,  = -R \cdot C$) matrices.
+  - Implemented singularity-free unit quaternion extraction via Shepperd's algorithm for writing COLMAP prior poses into images.txt.
+- **Offline Documentation Reference (`docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md`)**:
+  - Created standalone architectural manual with complete Mermaid decision flowcharts, math formulas, GSD decision logic, and operational parameter tables.
+- **Agent Instructions Policy (`AGENTS.md`)**:
+  - Added Section 11 establishing mandatory synchronization rules between the in-app modal and markdown guide whenever flight patterns or parameters are updated.
+- **Reactive UI & Event Architecture (`src/ui/ResetManager.js`, `src/ui/EventBindings.js`, `index.css`)**:
+  - Implemented `updateMatrixActiveLayerTelemetry()` dynamically resolving active layer parameters and table row highlights upon switching to the matrix tab.
+  - Wired deep-link click delegators with smooth viewport scrolling and `@keyframes settingFocusPulse`.
+
 ## [1.171.0] - 2026-10-18
 
 Introduces an interactive visual Gimbal Pitch Elevation Dial with dual Start/End tilt needles, dynamic elevation sweep arc, and direct click-to-tilt interaction mirroring the Yaw Compass Rose.
