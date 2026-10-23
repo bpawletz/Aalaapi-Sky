@@ -1,3 +1,45 @@
+## [1.180.0] - 2026-10-23
+
+Added 1-click ADS-B flight history trail purging and radar state reset for clean airspace decluttering.
+
+### Added
+
+#### Pilot & Operational Features
+- **ADS-B Flight History Trails "Clear" Action**:
+  - Added an inline `Clear` button (`#adsb-clear-trails-btn`) beside the Flight History Trails duration selector in the ADS-B Control Drawer.
+  - Flushes all breadcrumb polylines and position histories from the map immediately while keeping active aircraft markers intact.
+  - Displays transient tactile feedback (`Cleared!`) upon activation.
+- **Tracked Aircraft Radar Reset ("Clear All")**:
+  - Added a dedicated `Clear All` button (`#adsb-clear-radar-btn`) in the Tracked Aircraft card header.
+  - Completely purges active aircraft markers, breached contact lists, and map breadcrumbs, and sends `POST /api/airspace/clear` to the companion server for a synchronized clean radar slate.
+
+#### Under the Hood & Technical Details
+- **AdsbAirspaceManager (`src/bridge/ApiClient.js`)**:
+  - Implemented `clearTrails()` to remove polylines from Leaflet's `layerGroup` and purge `this.mapTrails` and `this.acHistory`.
+  - Updated `clearAll(notifyServer = true)` to optionally trigger `POST /api/airspace/clear` on the companion server.
+  - Auto-flushes `clearTrails()` when trail duration is set to `off` to prevent stale coordinate re-rendering.
+
+## [1.179.3] - 2026-10-23
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **RTMP Stream Key Collision Protection (Issue #97)**:
+  - If a second pilot or drone attempts to broadcast to an already active stream path (e.g. `rtmp://<IP>:1935/live/stream`), the embedded RTMP server cleanly rejects the newcomer with standard RTMP `NetStream.Publish.BadName` error status and descriptive advice to select a distinct stream key (e.g. `/live/drone2`).
+  - Protects active live streams from packet interleaving, decoder crashes, and video corruption.
+  - Companion bridge terminal dashboard logs conflict warnings with client IPs (`⚠️ Stream conflict: <IP> rejected`).
+- **Real-Time SSE Companion Telemetry**:
+  - Wired live RTMP ingest metadata into the persistent Companion Status SSE stream (`/api/status/stream`), notifying connected browsers in sub-millisecond real time when streams connect, disconnect, or encounter collisions without relying solely on polling.
+
+#### Under the Hood & Technical Details
+- **RTMPServer & Session (`tools/companion/rtmp_server.js`)**:
+  - Implemented `getPublisher(streamPath)` checking active socket state.
+  - When `publish` command is received, asserts that no active publisher is currently streaming to that path before registering. Emits `publisher_collision` event and returns `onStatus` error message with socket cleanup.
+- **Companion Server & Client (`tools/companion/server.js`, `src/bridge/ApiClient.js`)**:
+  - `broadcastCompanionStatus()` now includes `rtmp` status payload.
+  - `server.js` listens to `publisher_connect`, `publisher_disconnect`, and `publisher_collision`, triggering instant status broadcasts across SSE client pools.
+  - `applyCompanionStatusUI()` dispatches `data.rtmp` directly to `window.videoCastClient.updateRtmpUI()`.
+
 ## [1.179.2] - 2026-10-23
 
 ### 🐛 Fixed

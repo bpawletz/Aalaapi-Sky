@@ -496,7 +496,10 @@ function broadcastCompanionStatus(status) {
     : 0;
   const st = status || (typeof cachedRc2Status !== 'undefined' ? cachedRc2Status : { connected: false });
   const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
-  const payloadStr = JSON.stringify({ ...st, droneCount, mcp: mcpMetrics, version: VERSION });
+  const rtmpStatus = (typeof videoService !== 'undefined' && videoService.getRtmpStatus)
+    ? videoService.getRtmpStatus()
+    : null;
+  const payloadStr = JSON.stringify({ ...st, droneCount, mcp: mcpMetrics, rtmp: rtmpStatus, version: VERSION });
   for (const client of sseStatusClients) {
     try {
       client.res.write(`data: ${payloadStr}\n\n`);
@@ -5991,6 +5994,31 @@ server.on('upgrade', (req, socket, head) => {
 
     videoService.start();
     videoService.startRtmp().catch(err => console.warn('Could not bind RTMP port 1935:', err.message));
+
+    if (videoService.rtmpServer) {
+      videoService.rtmpServer.on('publisher_connect', (info) => {
+        if (typeof dashboard !== 'undefined' && dashboard.pushLog) {
+          dashboard.pushLog(`[RTMP] Stream connected: ${info.remoteAddress} -> ${info.streamPath}`);
+        }
+        broadcastCompanionStatus();
+      });
+
+      videoService.rtmpServer.on('publisher_disconnect', (info) => {
+        if (typeof dashboard !== 'undefined' && dashboard.pushLog) {
+          dashboard.pushLog(`[RTMP] Stream disconnected: ${info.streamPath}`);
+        }
+        broadcastCompanionStatus();
+      });
+
+      videoService.rtmpServer.on('publisher_collision', (info) => {
+        const warnMsg = `Stream conflict: ${info.rejectedPublisherIp} rejected (${info.message})`;
+        if (typeof dashboard !== 'undefined' && dashboard.pushLog) {
+          dashboard.pushLog(`[RTMP] ${warnMsg}`);
+        }
+        logWarn('RTMP', warnMsg);
+        broadcastCompanionStatus();
+      });
+    }
     // Start Server on all network interfaces (0.0.0.0) so LAN tablets/phones can connect
     server.listen(PORT, '0.0.0.0', () => {
       const isPlain = process.argv.includes('--plain') ||
