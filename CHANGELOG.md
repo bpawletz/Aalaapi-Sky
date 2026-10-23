@@ -75,7 +75,7 @@ Added 1-click ADS-B flight history trail purging and radar state reset for clean
 ### 🐛 Fixed
 
 #### Pilot & Operational Features
-- **RTMP Stream Key Collision Protection (Issue #97)**:
+- **RTMP Stream Key Collision Protection (Issue #97, Closes #152)**:
   - If a second pilot or drone attempts to broadcast to an already active stream path (e.g. `rtmp://<IP>:1935/live/stream`), the embedded RTMP server cleanly rejects the newcomer with standard RTMP `NetStream.Publish.BadName` error status and descriptive advice to select a distinct stream key (e.g. `/live/drone2`).
   - Protects active live streams from packet interleaving, decoder crashes, and video corruption.
   - Companion bridge terminal dashboard logs conflict warnings with client IPs (`⚠️ Stream conflict: <IP> rejected`).
@@ -577,7 +577,7 @@ Adds visual processing feedback during photo inspection archive downloads and dy
 ### 🚀 Changed | Fixed
 
 #### Pilot & Operational Features
-- **Photo Ingestion Modal Completion & Close States**:
+- **Photo Ingestion Modal Completion & Close States (Closes #153)**:
   - Dynamically updates the footer action buttons when photo ingestion finishes: the secondary button transitions from `Cancel` to `Close`, and the primary action button transitions to `✓ Done`.
   - Clicking `✓ Done` or `Close` safely dismisses the completed ingestion dialog without confusion.
   - Reopening the ingestion modal cleanly resets all buttons back to `Cancel`, `📥 Ingest & Correlate Photos`, and clean progress states.
