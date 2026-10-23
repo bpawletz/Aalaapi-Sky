@@ -169,3 +169,20 @@ Whenever adding, modifying, renaming, or deprecating a flight pattern, layer set
 3. **Mandatory Test Verification**:
    - The test suite (`index.test.js`) verifies that all patterns registered in `#grid-type` have matching rows in both the in-app settings matrix and `docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md`. Agents MUST ensure this test passes before completing any pattern-related task.
 
+## 12. External Resources Attribution, Third-Party Licensing & Trademark Policy
+Whenever introducing, updating, or referencing any third-party library, CDN script, font asset, map tile service, external REST/WMS API, or proprietary hardware/vendor brand mark in Aalaapi Sky:
+1. **Upfront Licensing & Compatibility Audit**:
+   - Verify that any external library, asset, or data feed has a compatible permissive open-source or open-data license (e.g., MIT, BSD, Apache 2.0, SIL OFL, ODbL, CC-BY, or public domain). Never introduce restrictive copyleft licenses (e.g., GPL-3.0) or paywalled APIs without explicit authorization.
+2. **Synchronize Repository Credits Documentation (`CREDITS.md`)**:
+   - Immediately document the resource in `CREDITS.md` under the appropriate category (`Open Source Software Libraries`, `Geospatial, Aeronautical & Meteorological Data Providers`, or `Cultural Heritage`).
+   - Include project name, homepage/repo link, authors/copyright holders, license type, and the upstream copyright notice.
+3. **Synchronize In-App About Modal (`#about-modal`)**:
+   - If the component is loaded in the client-side browser bundle or affects map rendering, update the **Third-Party Credits & Open-Source Licenses** card deck (`#about-credits-section`) inside `index_template.html` (and recompile `index.html`).
+4. **Mandatory Trademark Legal Disclaimers ("The Legalize")**:
+   - Whenever referring to manufacturer or third-party brands (e.g., DJI, Google, Esri, OpenStreetMap, Apple, Node-RED, WebGL, Autel, Skydio):
+     - Ensure the brand mark is attributed to its respective legal entity (e.g., *SZ DJI Technology Co., Ltd.*, *Google LLC*, *Environmental Systems Research Institute, Inc.*).
+     - Explicitly state Aalaapi Sky's independent status and include the non-affiliation / non-endorsement disclaimer in `CREDITS.md`, `README.md`, and `#about-trademarks-section`.
+5. **Tile Layer & API Attribution**:
+   - Ensure Leaflet tile layers (`L.tileLayer`, `L.tileLayer.wms`, `L.esri.featureLayer`) in `src/map/MapEngine.js` configure an accurate, compliant `attribution` property citing the upstream provider.
+6. **Mandatory Test Verification**:
+   - Maintain and run the attribution & trademark test suite in `index.test.js` asserting that `CREDITS.md`, `#about-modal`, and trademark legal notices remain intact.

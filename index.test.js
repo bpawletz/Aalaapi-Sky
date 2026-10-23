@@ -14126,7 +14126,7 @@ describe('v1.94.0 Tier 1 Global Camera Aspect Ratio & Multi-Pattern Integration'
     assert.ok(html.includes('id="camera-aspect-ratio"'), 'camera-aspect-ratio select must be present');
     assert.ok(html.includes('id="camera-aspect-ratio-badge"'), 'camera-aspect-ratio-badge must be present');
     assert.ok(html.includes('id="camera-aspect-ratio-warning-box"'), 'camera-aspect-ratio-warning-box must be present');
-    assert.ok(html.includes('Pre-Flight Drone Setting'), 'Pre-flight drone setting text must be present');
+    assert.ok(/Pre-?Flight Drone Setting/i.test(html), 'Preflight drone setting text must be present');
 
     // Check that camera-aspect-ratio is inside #drone-hardware-subcard
     const hardwareSubcardIdx = html.indexOf('id="drone-hardware-subcard"');
@@ -34667,21 +34667,7 @@ describe('Terrain Following (DEM-Aware Grid) & Constant AGL/GSD Suite (v1.186.0 
 
 describe('Bridge-Hosted AI 3D Reconstruction Architecture Suite (Issue #96 / v1.186.0)', () => {
   test('Version consistency: v1.186.0 across package.json, changelog, index_template.html, and index.html', () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.186.0');
-
-    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.186.0]'));
-
-    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(tpl.includes('v1.186.0</span>'));
-    assert.ok(tpl.includes('Version 1.186.0</span>'));
-    assert.ok(tpl.includes('Changelog (v1.186.0):'));
-
-    const compiled = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(compiled.includes('v1.186.0</span>'));
-    assert.ok(compiled.includes('Version 1.186.0</span>'));
-    assert.ok(compiled.includes('Changelog (v1.186.0):'));
+    assertVersionConsistency('1.186.0');
   });
 
   test('DOM Architecture: AI 3D reconstruction controls exist in template and bundle', () => {
@@ -34700,6 +34686,121 @@ describe('Bridge-Hosted AI 3D Reconstruction Architecture Suite (Issue #96 / v1.
     assert.strictEqual(typeof dtModule.FlightDiagnostics.updateAiMeshOpacity, 'function');
     assert.strictEqual(typeof dtModule.FlightDiagnostics.loadAiMeshGeometry, 'function');
     assert.strictEqual(typeof dtModule.FlightDiagnostics.triggerAiMeshReconstruction, 'function');
+  });
+});
+
+
+describe('User-Facing Text & Terminology Standardization Suite (Issue #157 / v1.187.0)', () => {
+  test('Version consistency: v1.187.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.187.0');
+  });
+
+  test('DOM Architecture: Zero duplicate element IDs in index_template.html', () => {
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const idMatches = tpl.match(/id=["']([^"']+)["']/g) || [];
+    const ids = idMatches.map(m => m.replace(/^id=["']|["']$/g, ''));
+    const counts = {};
+    const duplicates = [];
+    ids.forEach(id => {
+      counts[id] = (counts[id] || 0) + 1;
+      if (counts[id] === 2) duplicates.push(id);
+    });
+    assert.deepStrictEqual(duplicates, [], `index_template.html must have 0 duplicate IDs; found: ${duplicates.join(', ')}`);
+  });
+
+  test('DOM Architecture: Correctly namespaced RC 2 connection cards section IDs', () => {
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tpl.includes('id="intro-rc2-guide-cards-section"'), 'Quickstart modal must use namespaced intro-rc2-guide-cards-section');
+    assert.ok(tpl.includes('id="rc2-guide-cards-section"'), 'Guide modal must use rc2-guide-cards-section');
+  });
+
+  test('Terminology: Zero un-spaced "RC2" in user-visible text', () => {
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const userTextParts = tpl.match(/>([^<]+)</g) || [];
+    const offending = [];
+    userTextParts.forEach(part => {
+      const clean = part.slice(1, -1).trim();
+      if (/\bRC2\b/.test(clean)) {
+        offending.push(clean);
+      }
+    });
+    assert.deepStrictEqual(offending, [], `All user text must use spaced 'DJI RC 2' or 'RC 2'; found: ${offending.join(' | ')}`);
+  });
+
+  test('Terminology: Zero hyphenated "Pre-flight" in user-visible text', () => {
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const userTextParts = tpl.match(/>([^<]+)</g) || [];
+    const offending = [];
+    userTextParts.forEach(part => {
+      const clean = part.slice(1, -1).trim();
+      if (/\bPre-flight\b/i.test(clean)) {
+        offending.push(clean);
+      }
+    });
+    assert.deepStrictEqual(offending, [], `All user text must use unhyphenated 'Preflight'; found: ${offending.join(' | ')}`);
+  });
+
+  test('Button Capitalization: Primary action buttons follow Title Case', () => {
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tpl.includes('Export QGC Plan (.plan)'), 'QGC export button must be Title Case');
+    assert.ok(tpl.includes('Export Autel KML (.kml)'), 'Autel export button must be Title Case');
+    assert.ok(tpl.includes('Download Archive ZIP (.zip)'), 'Archive download button must be Title Case');
+  });
+});
+
+
+describe('v1.188.0: Draggable Modeless Floating HUD Panels (Issue #158)', () => {
+  test('Version consistency: v1.188.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.188.0');
+  });
+
+  test('initModalDraggable initializes modeless floating panels with data-draggable-modal', () => {
+    const initFn = window.initModalDraggable || global.initModalDraggable;
+    const videoPanel = document.createElement('div');
+    videoPanel.id = 'video-cast-panel-test';
+    videoPanel.className = 'video-cast-panel hidden';
+    videoPanel.setAttribute('data-draggable-modal', 'true');
+    videoPanel.innerHTML = '<div class="video-cast-header modal-header" data-modal-drag-handle="true"><span class="modal-drag-grip">⋮⋮</span><span>Live Video Cast</span></div>';
+    document.body.appendChild(videoPanel);
+
+    try {
+      const initialized = initFn(videoPanel);
+      assert.strictEqual(initialized, true);
+      assert.strictEqual(videoPanel.getAttribute('data-draggable-modal'), 'true');
+    } finally {
+      videoPanel.remove();
+    }
+  });
+
+  test('initModalDraggable preserves horizontal centering using calc(-50% + Xpx) for data-center-x elements', () => {
+    const initFn = window.initModalDraggable || global.initModalDraggable;
+    const elevPanel = document.createElement('div');
+    elevPanel.id = 'elevation-profile-drawer-test';
+    elevPanel.className = 'elevation-profile-drawer hidden';
+    elevPanel.setAttribute('data-draggable-modal', 'true');
+    elevPanel.setAttribute('data-center-x', 'true');
+    elevPanel.innerHTML = '<div class="elevation-profile-header modal-header" data-modal-drag-handle="true"><span class="modal-drag-grip">⋮⋮</span><span>Elevation Profile</span></div>';
+    document.body.appendChild(elevPanel);
+
+    try {
+      const initialized = initFn(elevPanel);
+      assert.strictEqual(initialized, true);
+      const handle = elevPanel.querySelector('.elevation-profile-header');
+      assert.ok(handle, 'Handle must exist');
+
+      // Dispatch pointerdown, pointermove, pointerup
+      handle.dispatchEvent(new window.PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100, pointerId: 1 }));
+      handle.dispatchEvent(new window.PointerEvent('pointermove', { bubbles: true, clientX: 140, clientY: 130, pointerId: 1 }));
+      handle.dispatchEvent(new window.PointerEvent('pointerup', { bubbles: true, clientX: 140, clientY: 130, pointerId: 1 }));
+
+      assert.ok(elevPanel.style.transform.includes('calc(-50% + '), 'Transform must use calc(-50% + Xpx), got ' + elevPanel.style.transform);
+
+      // Double-click resets transform
+      handle.dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }));
+      assert.strictEqual(elevPanel.style.transform, '', 'Double click must reset transform');
+    } finally {
+      elevPanel.remove();
+    }
   });
 });
 

@@ -1,5 +1,16 @@
 [
   {
+    "notam_id": "6/2014",
+    "facility": "ZLC",
+    "state": "ID",
+    "type": "HAZARDS",
+    "description": "40 NM N OF BOISE, ID, Monday, October 26, 2026 through Thursday, October 29, 2026 UTC",
+    "mod_date": "10/23/2026 21:49:00",
+    "mod_abs_time": "202610232149",
+    "is_new": "Y",
+    "gid": "6/2014"
+  },
+  {
     "notam_id": "6/1974",
     "facility": "ZDV",
     "state": "CO",
@@ -106,19 +117,8 @@
     "description": "Perry, GA, Saturday, October 24, 2026 through Saturday, October 24, 2026 Local",
     "mod_date": "10/22/2026 22:49:00",
     "mod_abs_time": "202610222249",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/1800"
-  },
-  {
-    "notam_id": "6/1768",
-    "facility": "ZMA",
-    "state": "FL",
-    "type": "SECURITY",
-    "description": "Fort Myers, FL, Friday, October 23, 2026 Local",
-    "mod_date": "10/22/2026 21:22:00",
-    "mod_abs_time": "202610222122",
-    "is_new": "Y",
-    "gid": "6/1768"
   },
   {
     "notam_id": "6/1753",

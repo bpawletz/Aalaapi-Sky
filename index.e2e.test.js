@@ -9691,4 +9691,94 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(evalResult.resetTransform, '', 'Double-click must reset #fpv-editor-panel transform to empty string');
     });
   });
+
+  describe('Draggable Modeless Floating HUD Panels E2E Suite (v1.188.0, Issue #158)', () => {
+    test('E2E: #video-cast-panel and #elevation-profile-drawer are registered as draggable panels with handles & grips', async () => {
+      const result = await page.evaluate(() => {
+        const videoPanel = document.getElementById('video-cast-panel');
+        const videoHandle = videoPanel ? videoPanel.querySelector('[data-modal-drag-handle]') : null;
+        const videoGrip = videoPanel ? videoPanel.querySelector('.modal-drag-grip') : null;
+
+        const elevDrawer = document.getElementById('elevation-profile-drawer');
+        const elevHandle = elevDrawer ? elevDrawer.querySelector('[data-modal-drag-handle]') : null;
+        const elevGrip = elevDrawer ? elevDrawer.querySelector('.modal-drag-grip') : null;
+
+        return {
+          videoDraggable: videoPanel ? videoPanel.getAttribute('data-draggable-modal') === 'true' : false,
+          videoHasHandle: !!videoHandle,
+          videoHasGrip: !!videoGrip,
+          elevDraggable: elevDrawer ? elevDrawer.getAttribute('data-draggable-modal') === 'true' : false,
+          elevHasHandle: !!elevHandle,
+          elevHasGrip: !!elevGrip
+        };
+      });
+
+      assert.strictEqual(result.videoDraggable, true, '#video-cast-panel must have data-draggable-modal="true"');
+      assert.strictEqual(result.videoHasHandle, true, '#video-cast-panel must have drag handle');
+      assert.strictEqual(result.videoHasGrip, true, '#video-cast-panel must have modal-drag-grip');
+
+      assert.strictEqual(result.elevDraggable, true, '#elevation-profile-drawer must have data-draggable-modal="true"');
+      assert.strictEqual(result.elevHasHandle, true, '#elevation-profile-drawer must have drag handle');
+      assert.strictEqual(result.elevHasGrip, true, '#elevation-profile-drawer must have modal-drag-grip');
+    });
+
+    test('E2E: Dragging #elevation-profile-drawer uses calc(-50% + Xpx) and resets on double-click', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const drawer = document.getElementById('elevation-profile-drawer');
+        drawer.classList.remove('hidden');
+        await new Promise(r => setTimeout(r, 50));
+
+        const handle = drawer.querySelector('.elevation-profile-header');
+        const initialTransform = drawer.style.transform;
+
+        const downEv = new PointerEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 200,
+          clientY: 200,
+          pointerId: 1
+        });
+        handle.dispatchEvent(downEv);
+
+        const moveEv = new PointerEvent('pointermove', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 260,
+          clientY: 240,
+          pointerId: 1
+        });
+        handle.dispatchEvent(moveEv);
+
+        const draggedTransform = drawer.style.transform;
+
+        const upEv = new PointerEvent('pointerup', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 260,
+          clientY: 240,
+          pointerId: 1
+        });
+        handle.dispatchEvent(upEv);
+
+        const dblClickEv = new MouseEvent('dblclick', {
+          bubbles: true,
+          cancelable: true
+        });
+        handle.dispatchEvent(dblClickEv);
+
+        const resetTransform = drawer.style.transform;
+        drawer.classList.add('hidden');
+
+        return {
+          initialTransform,
+          draggedTransform,
+          resetTransform
+        };
+      });
+
+      assert.ok(evalResult.draggedTransform.includes('calc(-50% + '), 'Expected calc(-50% + Xpx) on #elevation-profile-drawer, got ' + evalResult.draggedTransform);
+      assert.strictEqual(evalResult.resetTransform, '', 'Double-click must reset #elevation-profile-drawer transform to empty string');
+    });
+  });
+
 });

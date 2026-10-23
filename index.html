@@ -1571,6 +1571,10 @@ html, body {
 }
 
 .photo-inspector-header,
+.fpv-editor-header,
+.video-cast-header,
+.elevation-profile-header,
+.replay-2d-header,
 [data-modal-drag-handle] {
   cursor: grab;
   user-select: none;
@@ -1617,19 +1621,29 @@ body.modal-drag-active {
   color: var(--accent-cyan);
 }
 
-#fpv-editor-panel {
+#fpv-editor-panel,
+#video-cast-panel,
+#elevation-profile-drawer,
+#replay-2d-bar {
   touch-action: none;
 }
 
 #fpv-editor-panel .modal-header,
-#fpv-editor-panel [data-modal-drag-handle] {
+#fpv-editor-panel [data-modal-drag-handle],
+.video-cast-header,
+.elevation-profile-header,
+.replay-2d-header {
   cursor: grab;
   user-select: none;
   touch-action: none;
 }
 
-#fpv-editor-panel.modal-dragging {
+#fpv-editor-panel.modal-dragging,
+#video-cast-panel.modal-dragging,
+#elevation-profile-drawer.modal-dragging,
+#replay-2d-bar.modal-dragging {
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(6, 182, 212, 0.5) !important;
+  transition: none !important;
 }
 
 .modal-header button,
@@ -7254,7 +7268,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.186.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.188.0</span></h1>
         </div>
       </div>
 
@@ -10014,7 +10028,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <option value="16:9">16:9 (Widescreen Crop - 69.7° × 44.2°)</option>
               </select>
               <div id="camera-aspect-ratio-warning-box" style="margin-top: 5px; padding: 6px 8px; border-radius: 6px; font-size: 0.72rem; line-height: 1.35; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); color: #cbd5e1;">
-                <span style="color: #fbbf24; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">⚠️ Pre-Flight Drone Setting:</span>
+                <span style="color: #fbbf24; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">⚠️ Preflight Drone Setting:</span>
                 Must match camera setting in <em>DJI Fly &gt; Camera Settings</em> on your RC controller before takeoff (applicable to both Photo and Video modes). <strong>Affects mission waypoint spacing &amp; photo overlap across all flight patterns.</strong>
               </div>
             </div>
@@ -10025,7 +10039,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <input type="text" id="rc2-uuid" class="form-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" maxlength="36" style="font-family:monospace;font-size:0.75rem;flex:1;letter-spacing:0.03em;" />
                 <button id="rc2-uuid-clear" type="button" title="Clear UUID" style="background:rgba(255,255,255,0.07);border:1px solid var(--border-color);color:var(--text-muted);border-radius:6px;padding:5px 8px;cursor:pointer;font-size:0.8rem;flex-shrink:0;">✕</button>
               </div>
-              <p class="help-text">RC2 path: Android/data/dji.go.v5/files/waypoint/<strong id="rc2-uuid-preview" style="color:var(--text-main);">[UUID]</strong></p>
+              <p class="help-text">DJI RC 2 path: Android/data/dji.go.v5/files/waypoint/<strong id="rc2-uuid-preview" style="color:var(--text-main);">[UUID]</strong></p>
             </div>
           </div> <!-- /drone-hardware-subcard -->
 
@@ -10180,7 +10194,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <button id="clear-imported-btn" class="btn-secondary hidden" type="button" style="color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3); padding: 8px;">✕</button>
           </div>
 
-          <button id="show-guide-btn" class="btn-secondary" type="button" style="margin-top: 4px; width: 100%; font-size: 0.72rem; padding: 6px;">Show RC2 Copy Instructions</button>
+          <button id="show-guide-btn" class="btn-secondary" type="button" style="margin-top: 4px; width: 100%; font-size: 0.72rem; padding: 6px;">Show DJI RC 2 File Transfer Instructions</button>
           
           <!-- Hidden backward-compatibility elements for tests/programmatic access -->
           <div id="kmz-preflight-status-badge" class="hidden" style="display: none !important;" aria-hidden="true">
@@ -10199,10 +10213,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             </div>
             <div style="display: flex; gap: 6px;">
               <button id="export-qgc-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 4px; font-size: 0.72rem; font-weight: 600; border-radius: 6px; background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.3); color: #38bdf8;" title="Export QGroundControl (.plan) for PX4 / ArduPilot / MAVLink">
-                Export QGC (.plan)
+                Export QGC Plan (.plan)
               </button>
               <button id="export-autel-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 4px; font-size: 0.72rem; font-weight: 600; border-radius: 6px; background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); color: #fb923c;" title="Export Autel Explorer (.kml) for EVO II / Lite">
-                Export Autel (.kml)
+                Export Autel KML (.kml)
               </button>
             </div>
           </div>
@@ -10280,10 +10294,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
     <main class="main-map-container">
       <div id="map"></div>
 
-      <!-- 2D Elevation Profile Drawer (Issue #129) -->
-      <div id="elevation-profile-drawer" class="elevation-profile-drawer hidden" role="region" aria-label="Flight Elevation Profile">
-        <div class="elevation-profile-header">
+      <!-- 2D Elevation Profile Drawer (Issue #129, #158) -->
+      <div id="elevation-profile-drawer" class="elevation-profile-drawer hidden" data-draggable-modal="true" data-center-x="true" role="region" aria-label="Flight Elevation Profile">
+        <div class="elevation-profile-header modal-header" data-modal-drag-handle="true">
           <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="modal-drag-grip" title="Drag to reposition elevation profile" aria-hidden="true">&#x22EE;&#x22EE;</span>
             <span style="font-weight: 700; color: var(--accent-cyan); display: inline-flex; align-items: center; gap: 4px;">
               🏔️ Flight Elevation Cross-Section Profile
             </span>
@@ -10309,11 +10324,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
       </div>
 
-      <!-- Floating 2D Flight Replay HUD & Scrubber Bar (Issue #123) -->
-      <div id="replay-2d-bar" class="replay-2d-bar hidden" role="region" aria-label="2D Flight Replay Controls">
+      <!-- Floating 2D Flight Replay HUD & Scrubber Bar (Issue #123, #158) -->
+      <div id="replay-2d-bar" class="replay-2d-bar hidden" data-draggable-modal="true" data-center-x="true" role="region" aria-label="2D Flight Replay Controls">
         <!-- Row 1: Header, Flight Name, Layer Cache Snapshot Badge, and Exit -->
-        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem;">
+        <div class="replay-2d-header modal-header" data-modal-drag-handle="true" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem;">
           <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+            <span class="modal-drag-grip" title="Drag to reposition 2D replay bar" aria-hidden="true">&#x22EE;&#x22EE;</span>
             <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--accent-cyan);">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               2D Replay
@@ -10599,7 +10615,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <div id="mcp-tools-pill-container" class="mcp-tools-pill-container" style="display: flex; flex-wrap: wrap; gap: 3px; max-height: 48px; overflow-y: auto;">
                   <span class="mcp-tool-pill" title="get_airspace_telemetry: ADS-B, NEXRAD &amp; Hardware Telemetry">telemetry</span>
                   <span class="mcp-tool-pill" title="generate_flight_plan: Calculate WPML V2 Waypoint Payloads">flight_plan</span>
-                  <span class="mcp-tool-pill" title="trigger_bridge_action: RC2 sync, cache validate, device scan">bridge_action</span>
+                  <span class="mcp-tool-pill" title="trigger_bridge_action: RC 2 sync, cache validate, device scan">bridge_action</span>
                   <span class="mcp-tool-pill" title="get_latest_bad_mission: SQLite failure triage">bad_mission</span>
                   <span class="mcp-tool-pill" title="convert_mission_format: QGC .plan &amp; Autel .kml">conversion</span>
                 </div>
@@ -11045,10 +11061,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               </div>
             </div>
 
-            <!-- Pre-Flight Audio & Traffic Simulation -->
+            <!-- Preflight Audio & Traffic Simulation -->
             <details class="adsb-sim-details">
               <summary class="adsb-sim-summary">
-                <span>🧪 Pre-Flight Audio &amp; Traffic Simulation</span>
+                <span>🧪 Preflight Audio &amp; Traffic Simulation</span>
                 <span style="font-size: 0.65rem; color: #38bdf8;">▾</span>
               </summary>
               <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
@@ -11474,7 +11490,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               </div>
               <strong style="font-size: 0.88rem; color: var(--text-main);">Auto-Plan, Replay &amp; Export</strong>
               <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
-                Use <strong>Auto-Plan</strong> to bound structures, preview flight trajectories in the <strong>3D Viewer</strong>, run pre-flight diagnostics, and download DJI-compliant KMZ or sync directly over USB to your connected DJI RC 2 controller.
+                Use <strong>Auto-Plan</strong> to bound structures, preview flight trajectories in the <strong>3D Viewer</strong>, run preflight diagnostics, and download DJI-compliant KMZ or sync directly over USB to your connected DJI RC 2 controller.
               </p>
             </div>
           </div>
@@ -11482,6 +11498,22 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🪟 Draggable Modeless Floating HUD Panels (v1.188.0) (Closes #158)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Universal dragging capability expanded to modeless floating HUD panels! Move the <strong>Live Video Cast Panel</strong> (<code>#video-cast-panel</code>), <strong>Flight Elevation Profile Drawer</strong> (<code>#elevation-profile-drawer</code>), and <strong>2D Flight Replay Bar</strong> (<code>#replay-2d-bar</code>) anywhere on the map to keep waypoints and telemetry clear. Includes tactile grab grips (<code>&#x22EE;&#x22EE;</code>), native CSS <code>translateX(-50%)</code> transform support, viewport edge clamping, and double-click re-centering shortcuts.
+            </p>
+          </div>
+          <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #4ade80; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📝 User-Facing Text &amp; Terminology Standardization (v1.187.0) (Closes #157)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Comprehensive review and polish of all user-visible text. Standardized DJI RC 2 controller branding, unified FAA-compliant "Preflight" terminology across checklist gates and KMZ audit tools, enforced Title Case across action buttons, and resolved DOM ID duplication across guided onboarding hubs.
+            </p>
+          </div>
           <div style="background: rgba(192, 132, 252, 0.08); border: 1px solid rgba(192, 132, 252, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #c084fc; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🤖 AI 3D Reconstruction Architecture (v1.186.0) (Closes #96)
@@ -12143,7 +12175,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               📷 Tier 1 Global Camera Aspect Ratio &amp; Multi-Pattern Overlap Integration (v1.94.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
-              Establishes Camera Sensor Aspect Ratio (4:3 Native Full Sensor vs 16:9 Widescreen Crop) as an aircraft-level hardware setting in Section 3 Drone Hardware Profile. Automatically adapts along-track footprint and photo trigger spacing across <strong>all flight patterns</strong> (Nadir Grid, 3D Double Grid, Orbit, Tower, and Target Splat) to prevent photogrammetry overlap deficiency regardless of whether capturing still photos or recording video. Features Section 2 quick-jump navigation, pre-flight RC controller guidance, and an enhanced pre-export KMZ checklist.
+              Establishes Camera Sensor Aspect Ratio (4:3 Native Full Sensor vs 16:9 Widescreen Crop) as an aircraft-level hardware setting in Section 3 Drone Hardware Profile. Automatically adapts along-track footprint and photo trigger spacing across <strong>all flight patterns</strong> (Nadir Grid, 3D Double Grid, Orbit, Tower, and Target Splat) to prevent photogrammetry overlap deficiency regardless of whether capturing still photos or recording video. Features Section 2 quick-jump navigation, preflight RC controller guidance, and an enhanced pre-export KMZ checklist.
             </p>
           </div>
 
@@ -12350,7 +12382,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 Follow these 5 simple steps to link your DJI RC 2 controller to Aalaapi Bridge for 1-click KMZ waypoint pushing and flight telemetry log extraction:
               </p>
         <!-- Quick 5-Step Visual Connection Cards -->
-        <div class="rc2-connect-cards-section" id="rc2-guide-cards-section">
+        <div class="rc2-connect-cards-section" id="intro-rc2-guide-cards-section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
               <span>🎮 Quick Connection Cards: DJI RC 2 &harr; Aalaapi Bridge</span>
@@ -13132,7 +13164,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
     </div>
   </div>
 
-  <!-- RC2 File Copy & Aalaapi Bridge Sync Instructions Modal -->
+  <!-- DJI RC 2 File Copy & Aalaapi Bridge Sync Instructions Modal -->
   <div id="guide-modal" class="modal-overlay hidden">
     <div class="modal glass">
       <header class="modal-header">
@@ -13470,15 +13502,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
           <ol class="guide-steps">
             <li>
-              <strong>Create placeholder mission(s):</strong> On your DJI RC2 controller, open the DJI Fly App, select <strong>Waypoint Flight</strong>, and create a short dummy mission (e.g., place 2 arbitrary waypoints) for <em>each part</em> of your flight. Name them memorably (e.g., <code>Placeholder Part 1</code>, <code>Placeholder Part 2</code>) and <strong>Save</strong> them.
+              <strong>Create placeholder mission(s):</strong> On your DJI RC 2 controller, open the DJI Fly App, select <strong>Waypoint Flight</strong>, and create a short dummy mission (e.g., place 2 arbitrary waypoints) for <em>each part</em> of your flight. Name them memorably (e.g., <code>Placeholder Part 1</code>, <code>Placeholder Part 2</code>) and <strong>Save</strong> them.
             </li>
             <li>
-              <strong>Connect your RC2 to your PC or Android Phone:</strong> Use a data-capable USB-C cable to connect your RC2 controller to your computer or an Android phone (like a Samsung Galaxy with MTP support).
+              <strong>Connect your DJI RC 2 to your PC or Android Phone:</strong> Use a data-capable USB-C cable to connect your DJI RC 2 controller to your computer or an Android phone (like a Samsung Galaxy with MTP support).
             </li>
             <li>
               <strong>Locate the Waypoints Directory:</strong> In your computer's file explorer or your phone's file manager app, navigate to the controller's internal storage:
               <pre>DJI RC 2/Internal Shared Storage/Android/data/dji.go.v5/files/waypoint/</pre>
-              <em>Note: On Android phones, you can use a file manager app (like Samsung "My Files" or "Files by Google") to browse the RC2 storage. On macOS, you will need to use <strong>OpenMTP</strong> or a similar utility.</em>
+              <em>Note: On Android phones, you can use a file manager app (like Samsung "My Files" or "Files by Google") to browse the DJI RC 2 storage. On macOS, you will need to use <strong>OpenMTP</strong> or a similar utility.</em>
             </li>
             <li>
               <strong>Identify your dummy missions:</strong> Inside that directory, you will see folders with random names. Look for the most recently updated folders containing a <code>.kmz</code> file.
@@ -13496,7 +13528,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           </ol>
 
           <div class="modal-alert warning" style="margin-top: 14px;">
-            <strong>Safety Warning:</strong> Always verify your path on the RC2 screen prior to takeoff. Make sure the relative waypoint heights do not intersect with any trees, buildings, or powerlines in your actual flight environment. Maintain visual line of sight during automated flights!
+            <strong>Safety Warning:</strong> Always verify your path on the DJI RC 2 screen prior to takeoff. Make sure the relative waypoint heights do not intersect with any trees, buildings, or powerlines in your actual flight environment. Maintain visual line of sight during automated flights!
           </div>
         </div>
       </div>
@@ -13625,7 +13657,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.186.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.188.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -13661,7 +13693,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.76rem; line-height: 1.35;">
             <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
               <span style="font-size: 1.25rem; line-height: 1;">🛡️</span>
-              <span style="color: #fca5a5; font-weight: 700; font-size: 0.72rem;">Pre-Flight Mission Authorization</span>
+              <span style="color: #fca5a5; font-weight: 700; font-size: 0.72rem;">Preflight Mission Authorization</span>
               <span style="color: var(--text-muted);">Ensure valid airspace authorizations (LAANC) and maintain Visual Line of Sight (VLOS) during flight execution.</span>
             </div>
 
@@ -13746,7 +13778,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                     <li style="margin-bottom: 8px;">
-              <strong style="color: var(--text-main);">Changelog (v1.186.0):</strong>
+              <strong style="color: var(--text-main);">Changelog (v1.188.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Draggable Floating HUD Panels (Closes #158):</strong> Enabled smooth pointer/touch-based dragging across modeless floating HUD panels including Live Video Cast (<code>#video-cast-panel</code>), Flight Elevation Profile (<code>#elevation-profile-drawer</code>), and 2D Replay Bar (<code>#replay-2d-bar</code>).</li>
+                <li><strong>Base Transform Support &amp; Edge Clamping:</strong> ModalDragManager natively supports horizontally centered panels utilizing CSS <code>translateX(-50%)</code> with dynamic clamping and double-click re-centering shortcuts.</li>
+                <li><strong>Tactile Grip Affordances:</strong> Added high-visibility grab grips (<code>&#x22EE;&#x22EE;</code>) with <code>grab</code> and <code>grabbing</code> cursor feedback.</li>
+              </ul>
+            </li>
+                                    <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.187.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li>Terrain Following (DEM-Aware Grid for Constant AGL &amp; GSD): Added dynamic client-side digital elevation model sampling and slope gradient smoothing engine. Supports Open-Meteo Global Copernicus 30m DEM, local Companion Bridge caching proxy, and client-side GeoTIFF DEM file parsing (Closes #129).</li>
                 <li>2D Cross-Section Elevation Profile Drawer: Added interactive collapsible elevation profile beneath flight path charting terrain relief, dynamic flight altitude, and ground clearance tethers.</li>
@@ -13755,14 +13795,23 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               </ul>
             </li>
             <li style="margin-bottom: 8px;">
-              <strong style="color: var(--text-main);">Changelog (v1.185.0):</strong>
+              <strong style="color: var(--text-main);">Changelog (v1.187.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+            <li><strong>User-Facing Text & Terminology Standardization (Closes #157):</strong>
+              <ul>
+                <li><strong>Controller Branding:</strong> Standardized all hardware references to "DJI RC 2" (or "RC 2") with consistent spacing across instructions, UI badges, buttons, and guides.</li>
+                <li><strong>Aviation Terminology:</strong> Harmonized all preflight checklist gates, audit tools, and setting guidance to unhyphenated "Preflight" per FAA/ICAO civil aviation standards.</li>
+                <li><strong>Title Case Action Buttons:</strong> Standardized action and export button labeling to clean Title Case.</li>
+                <li><strong>DOM Validation:</strong> Resolved duplicate element ID on Quickstart RC 2 connection cards section (<code>#intro-rc2-guide-cards-section</code>).</li>
+              </ul>
+            </li>
+
                 <li>Third-Party Credits &amp; Attribution: Added comprehensive attribution cards in the About modal and created repository CREDITS.md acknowledging Leaflet, Three.js, Esri Leaflet, JSZip, Google Fonts, and open geospatial/weather feeds (Closes #156).</li>
                 <li>Trademark Legal Disclaimers: Formulated formal trademark disclaimers and non-affiliation legal notices covering DJI, Google, Esri, OpenStreetMap, Apple, and OpenJS Foundation.</li>
               </ul>
             </li>
 <li style="margin-bottom: 8px;">
-              <strong style="color: var(--text-main);">Changelog (v1.184.0):</strong>
+              <strong style="color: var(--text-main);">Changelog (v1.187.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li>Dynamic Live Stream Source Dropdown: Live Video Cast source dropdown dynamically lists active RTMP streams with publisher IPs and green indicator, auto-switches from test pattern, and injects multi-drone stream options (Closes #155).</li>
                 <li>RTMP Subscriber Handshake Resolution: Fixed OpenCV and FFmpeg subscriber hang by responding to getStreamLength and _checkBW commands with AMF0 results.</li>
@@ -13910,7 +13959,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong style="color: var(--text-main);">Changelog (v1.168.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Segmented ADS-B Operations &amp; Settings Architecture:</strong> Replaced the single-scrolling ADS-B side drawer with a clean, responsive segmented tab interface separating real-time flight operations and safety deconfliction (<strong>📡 Airspace &amp; Traffic</strong>) from local receiver connections, cloud feeds, and hardware diagnostics (<strong>⚙️ Feed &amp; Hardware</strong>).</li>
-              <li><strong>Front-and-Center Live Radar &amp; Pre-Flight Simulation:</strong> Elevated the live tracked aircraft radar list to the top of the Operations tab for immediate situational awareness, and tucked audio synth tests and approaching aircraft simulations into a collapsible pre-flight verification card.</li>
+              <li><strong>Front-and-Center Live Radar &amp; Preflight Simulation:</strong> Elevated the live tracked aircraft radar list to the top of the Operations tab for immediate situational awareness, and tucked audio synth tests and approaching aircraft simulations into a collapsible preflight verification card.</li>
               <li><strong>Dynamic Traffic Pill &amp; Status Dot:</strong> Added a real-time badge pill displaying detected traffic count on the Operations tab and a glowing connection health dot on the Settings tab.</li>
             </ul>
           </div>
@@ -14142,7 +14191,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong style="color: var(--text-main);">Changelog (v1.150.3):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Flight Diagnostics AI Export Context &amp; Button Clarity:</strong> Updated the Flight Diagnostics AI export button to <code>📋 Export to AI (Settings &amp; Diag)</code> with an accurate descriptive tooltip. Differentiated general mission app settings and layer dynamics exports from error triage reports so AI assistants receive appropriate contextual prompts rather than assuming execution failures on clean missions.</li>
-              <li><strong>Contextual AI Prompt Framing &amp; Fallbacks:</strong> Conditioned the exported AI prompt heading and instructions to display <code>### 🤖 ANTIGRAVITY &amp; AI MISSION CONTEXT: App Settings &amp; Flight Configuration</code> with supportive mission guidance when no pre-flight errors exist, reserving bug triage formatting exclusively for detected rule failures and execution aborts.</li>
+              <li><strong>Contextual AI Prompt Framing &amp; Fallbacks:</strong> Conditioned the exported AI prompt heading and instructions to display <code>### 🤖 ANTIGRAVITY &amp; AI MISSION CONTEXT: App Settings &amp; Flight Configuration</code> with supportive mission guidance when no preflight errors exist, reserving bug triage formatting exclusively for detected rule failures and execution aborts.</li>
             </ul>
           </div>
           <div>
@@ -14314,7 +14363,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.139.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>🤖 Native Model Context Protocol (MCP) Server &amp; Gemini AI Integration (Closes #94):</strong> Exposed Aalaapi Sky's flight planning and local telemetry pipelines to LLM orchestration layers via native Model Context Protocol (MCP 2024-11-05) support across both <code>stdio</code> (<code>tools/companion/mcp_server.js</code> for <code>gemini mcp add</code>, Claude Desktop, Cursor) and Server-Sent Events (SSE) endpoints (<code>/api/mcp/sse</code> &amp; <code>/api/mcp/message</code>). Registered tools include <code>get_airspace_telemetry</code>, <code>generate_flight_plan</code> (DJI WPML V2 payloads), <code>trigger_bridge_action</code> (RC2 sync, cache validate, intruder simulation), and multi-vendor conversions. Features an interactive <strong>MCP Node Monitor Grid</strong> in the bridge drawer with a 1-click Gemini CLI command copy button.</li>
+              <li><strong>🤖 Native Model Context Protocol (MCP) Server &amp; Gemini AI Integration (Closes #94):</strong> Exposed Aalaapi Sky's flight planning and local telemetry pipelines to LLM orchestration layers via native Model Context Protocol (MCP 2024-11-05) support across both <code>stdio</code> (<code>tools/companion/mcp_server.js</code> for <code>gemini mcp add</code>, Claude Desktop, Cursor) and Server-Sent Events (SSE) endpoints (<code>/api/mcp/sse</code> &amp; <code>/api/mcp/message</code>). Registered tools include <code>get_airspace_telemetry</code>, <code>generate_flight_plan</code> (DJI WPML V2 payloads), <code>trigger_bridge_action</code> (RC 2 sync, cache validate, intruder simulation), and multi-vendor conversions. Features an interactive <strong>MCP Node Monitor Grid</strong> in the bridge drawer with a 1-click Gemini CLI command copy button.</li>
             </ul>
           </div>
           <div>
@@ -15051,7 +15100,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong style="color: var(--text-main);">Changelog (v1.97.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Direct Photo Ingest from Diagnostics (<code>#diag-pull-photos-btn</code>):</strong> Added a dedicated <code>📸 Import Photos...</code> action button to the Flight Diagnostics header controls (<code>#diag-header-flight-controls</code>), enabling pilots to ingest and correlate photos from connected DJI Mini 4 Pro, MicroSD cards, or RC 2 albums directly from within the diagnostics window.</li>
-              <li><strong>Dedicated Inspection Photos Tab (<code>#diag-nav-photos-btn</code> &amp; <code>#diag-pane-photos</code>):</strong> Added a 3rd navigation tab to Flight Diagnostics alongside 3D Telemetry Replay and Pre-Flight KMZ Audit. Features a rich photo gallery grid with live search, compliance filtering (All, Compliant, Warnings, Defects), waypoint indices, optical GSD tags, and 1-click launch into the interactive Photo Inspector.</li>
+              <li><strong>Dedicated Inspection Photos Tab (<code>#diag-nav-photos-btn</code> &amp; <code>#diag-pane-photos</code>):</strong> Added a 3rd navigation tab to Flight Diagnostics alongside 3D Telemetry Replay and Preflight KMZ Audit. Features a rich photo gallery grid with live search, compliance filtering (All, Compliant, Warnings, Defects), waypoint indices, optical GSD tags, and 1-click launch into the interactive Photo Inspector.</li>
               <li><strong>3D Replay Sidebar Photo Strip (<code>#diag-photos-card</code>):</strong> Added a synchronized captured photo thumbnail ribbon in the 3D Replay sidebar (<code>diag-sidebar</code>). Highlights the active photo corresponding to the current point during 3D trajectory scrubbing and playback, allowing pilots to jump playback to any photo capture location with a single click.</li>
               <li><strong>Interactive 3D Trajectory Photo Markers:</strong> Enhanced photo trigger spheres along the 3D flight trajectory with hover metadata tooltips and click-to-inspect shortcuts opening the high-resolution photo inspector.</li>
             </ul>
@@ -15134,7 +15183,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.94.8):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>RC2 Flight Log Mission Date-Matching:</strong> Companion <code>/api/flight-telemetry</code> now matches RC2 flight logs by date to SQLite mission records, returning the true recorded telemetry points and planned waypoints rather than synthesizing tracks from active workspace patterns.</li>
+              <li><strong>RC 2 Flight Log Mission Date-Matching:</strong> Companion <code>/api/flight-telemetry</code> now matches RC 2 flight logs by date to SQLite mission records, returning the true recorded telemetry points and planned waypoints rather than synthesizing tracks from active workspace patterns.</li>
               <li><strong>Eliminated Active Workspace Fallback:</strong> Removed fallbacks in <code>loadSelectedFlight</code> that replaced failed or empty flight loads with active workspace waypoints, preventing wrong flights from rendering in the 3D viewer.</li>
               <li><strong>Diagnostics Validation &amp; 3D Camera Framing:</strong> Added strict validation for telemetry points, null-safe timeline slider handling, and automatic camera centering/framing on the 3D flight trajectory.</li>
             </ul>
@@ -15148,7 +15197,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.94.6):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>RC2 Flight Log Planned Path Fixed:</strong> For RC2 recorded logs, <code>buildTrajectoryMeshes</code> now derives the planned path from photo-trigger events (<code>isPhoto === true</code>) in the telemetry. These fire at planned waypoint positions, giving an accurate approximation of the original mission. The wrong active workspace fallback is eliminated entirely.</li>
+              <li><strong>RC 2 Flight Log Planned Path Fixed:</strong> For RC 2 recorded logs, <code>buildTrajectoryMeshes</code> now derives the planned path from photo-trigger events (<code>isPhoto === true</code>) in the telemetry. These fire at planned waypoint positions, giving an accurate approximation of the original mission. The wrong active workspace fallback is eliminated entirely.</li>
               <li><strong>No Photo Triggers → No Wrong Path:</strong> When no photo triggers exist, the planned dashed line is simply omitted instead of showing the unrelated active workspace route.</li>
             </ul>
           </div>
@@ -15156,7 +15205,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong style="color: var(--text-main);">Changelog (v1.94.5):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Flight Diagnostics 3D Map — Wrong Location & Flight Plan Fixed:</strong> The 3D diagnostics view now correctly displays the actual flight location and planned route from the loaded log. Previously, <code>buildTrajectoryMeshes</code> always drew the current active workspace plan, and <code>getSceneOrigin</code> fell back to the active workspace center marker when a flight's <code>homePoint</code> was absent.</li>
-              <li><strong>Planned Waypoints Per Loaded Flight:</strong> <code>loadSelectedFlight</code> now stores <code>this.plannedWaypoints</code> from each loaded flight type (active mission, saved SQLite diagnostics, RC2 recorded logs), used by <code>buildTrajectoryMeshes</code> to draw the correct dashed planned path.</li>
+              <li><strong>Planned Waypoints Per Loaded Flight:</strong> <code>loadSelectedFlight</code> now stores <code>this.plannedWaypoints</code> from each loaded flight type (active mission, saved SQLite diagnostics, RC 2 recorded logs), used by <code>buildTrajectoryMeshes</code> to draw the correct dashed planned path.</li>
               <li><strong>Regression Tests:</strong> Three unit tests added asserting correct behavior of <code>buildTrajectoryMeshes</code> and <code>getSceneOrigin</code> with and without loaded <code>plannedWaypoints</code>.</li>
             </ul>
           </div>
@@ -15191,14 +15240,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Decoupled Sensor Aspect Ratio Terminology:</strong> Replaced misleading "Photo" and "Video" labels with technically accurate optical sensor terms: <code>4:3 Native (Full Sensor)</code> and <code>16:9 Widescreen (Vertical Crop)</code>.</li>
               <li><strong>Pilot Clarity Across Capture Modes:</strong> Clarified that DJI drones can shoot both 16:9 photos (cropped still photos) and 4:3 videos (full height), and that sensor aspect ratio operates independently from Aalaapi Sky's Capture Mode (Stop &amp; Shoot, Continuous, or Video).</li>
-              <li><strong>Synchronized UI &amp; Pre-Flight Guidance:</strong> Updated Section 3 Hardware Profile options and badges, Section 2 Optics read-only badge, and KMZ export prompt to instruct pilots to confirm camera aspect ratio in DJI Fly before takeoff regardless of media type.</li>
+              <li><strong>Synchronized UI &amp; Preflight Guidance:</strong> Updated Section 3 Hardware Profile options and badges, Section 2 Optics read-only badge, and KMZ export prompt to instruct pilots to confirm camera aspect ratio in DJI Fly before takeoff regardless of media type.</li>
             </ul>
           </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.94.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Tier 1 Global Camera Aspect Ratio:</strong> Relocated Camera Sensor Aspect Ratio selector to Section 3 Drone Hardware Profile, matching physical drone reality where camera format cannot be changed mid-mission.</li>
-              <li><strong>Pre-Flight Drone Setting Guidance:</strong> Added explicit pilot callout in Section 3 and Section 2 read-only badge with quick-jump navigation, instructing pilots to configure camera format in DJI Fly on their RC controller before takeoff.</li>
+              <li><strong>Preflight Drone Setting Guidance:</strong> Added explicit pilot callout in Section 3 and Section 2 read-only badge with quick-jump navigation, instructing pilots to configure camera format in DJI Fly on their RC controller before takeoff.</li>
               <li><strong>Universal Multi-Pattern Application:</strong> Dynamically calculates vertical along-track footprint and photo trigger spacing across 2D Nadir Grid, 3D Double Grid, Orbit, Tower, and Target Splat to preserve requested front overlap in 16:9 video mode.</li>
               <li><strong>Enhanced Pre-Export KMZ Safety Checklist:</strong> Updated the export confirmation prompt to highlight active aspect ratio for both 4:3 and 16:9, explain its impact on waypoint spacing, and detail best on-drone settings (Manual Focus at infinity, Shutter Priority, max altitude ceiling).</li>
             </ul>
@@ -15481,7 +15530,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong style="color: var(--text-main);">Changelog (v1.77.7):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Target Splat First Waypoint Stuck Bug Fixed:</strong> Resolved an issue where Target Splat missions on DJI Mini 4 Pro became stuck indefinitely at Waypoint 0 during flight execution. Generated waypoints now strictly enforce <code>smoothTransition</code> mode with <code>headingAngleEnable: 1</code> and clamped 0.1° non-zero angles, preventing DJI Fly trajectory solver tangent errors at stopped points.</li>
-              <li><strong>Target Splat Pre-Flight Audit &amp; Auto-Repair:</strong> Extended Rule 1 in <code>validateWpmlMission</code> to flag any Target Splat mission using <code>followWayline</code>, and updated <code>validateAndFixWpml</code> to automatically sanitize and repair legacy Target Splat missions to <code>smoothTransition</code> with locked headings.</li>
+              <li><strong>Target Splat Preflight Audit &amp; Auto-Repair:</strong> Extended Rule 1 in <code>validateWpmlMission</code> to flag any Target Splat mission using <code>followWayline</code>, and updated <code>validateAndFixWpml</code> to automatically sanitize and repair legacy Target Splat missions to <code>smoothTransition</code> with locked headings.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -15757,7 +15806,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong style="color: var(--text-main);">Changelog (v1.61.6):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>DJI RC 2 USB MTP Flight Log Extraction:</strong> Fixed Shell COM path formatting and added a synchronization completion wait loop to ensure telemetry files (<code>FlightRecord_*.txt</code>) and waypoint missions are completely transferred over USB and verified on disk.</li>
-              <li><strong>Pre-Flight Linter Rule 6 Capacity Alignment:</strong> Raised the action group limit from 65 to 500 (matching DJI Fly capacity), allowing 108+ waypoint missions to pass validation cleanly with <code>is_valid: 1</code> in SQLite history.</li>
+              <li><strong>Preflight Linter Rule 6 Capacity Alignment:</strong> Raised the action group limit from 65 to 500 (matching DJI Fly capacity), allowing 108+ waypoint missions to pass validation cleanly with <code>is_valid: 1</code> in SQLite history.</li>
               <li><strong>Direct Sync SQLite Archiving &amp; Dropdown Counts:</strong> Added automatic SQLite database archiving to <code>/api/sync</code> and added waypoint count indicators to all mission dropdown entries.</li>
             </ul>
           </div>
@@ -15765,21 +15814,21 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong style="color: var(--text-main);">Changelog (v1.61.5):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>followWayline Heading Angle Alignment:</strong> Strictly enforced <code>waypointHeadingAngle: 0</code> across all waypoints for <code>followWayline</code> missions, matching DJI RC 2 native schema and eliminating "Failed to go" flight execution errors caused by out-of-range custom bearing angles.</li>
-              <li><strong>Pre-Flight Linter Rule 2 Alignment:</strong> Restricted Rule 2 0.0° heading clamping to custom heading modes (<code>smoothTransition</code>, <code>custom</code>, <code>fixed</code>), eliminating false alarms on compliant native <code>followWayline</code> missions.</li>
+              <li><strong>Preflight Linter Rule 2 Alignment:</strong> Restricted Rule 2 0.0° heading clamping to custom heading modes (<code>smoothTransition</code>, <code>custom</code>, <code>fixed</code>), eliminating false alarms on compliant native <code>followWayline</code> missions.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.61.4):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>followWayline Endpoint Angle Enable Fix:</strong> Ensured Waypoint 0 and Waypoint N-1 strictly preserve <code>waypointHeadingAngleEnable: 1</code> during KMZ export sanitization, allowing DJI Fly to initialize initial entry heading tangents and resolve "forward facing do not go" flight start aborts.</li>
-              <li><strong>Pre-Flight Linter Rule 1 Extension:</strong> Extended Rule 1 audit to flag any <code>followWayline</code> mission with disabled endpoint heading angles.</li>
+              <li><strong>Preflight Linter Rule 1 Extension:</strong> Extended Rule 1 audit to flag any <code>followWayline</code> mission with disabled endpoint heading angles.</li>
               <li><strong>Double Grid Forward-Facing Headings:</strong> Removed legacy center-pointing POI heading calculation in double grid generation to ensure forward-facing flight path alignment.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.61.3):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>Double Grid Oblique Pitch followWayline Compliance:</strong> Enforced strict <code>followWayline</code> heading mode for Double Grid missions with oblique pitch (e.g. -60°), eliminating spline discontinuities on turnaround turns and preventing DJI Fly "Waypoint Flight Suspended" errors. Added validation rule and automatic repair in KMZ pre-flight checks.</li>
+              <li><strong>Double Grid Oblique Pitch followWayline Compliance:</strong> Enforced strict <code>followWayline</code> heading mode for Double Grid missions with oblique pitch (e.g. -60°), eliminating spline discontinuities on turnaround turns and preventing DJI Fly "Waypoint Flight Suspended" errors. Added validation rule and automatic repair in KMZ preflight checks.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -15811,13 +15860,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.60.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>Section 4 Sidebar Simplification:</strong> Completely removed the green pre-flight compliance banner (<code>DJI Fly Pre-Flight: 10/10 Rules Verified</code>) from the visible sidebar. The toolbar now exclusively displays the 3 primary control buttons (<code>3D View</code>, <code>Flight Diag</code>, <code>Export KMZ</code>), with pre-flight checklist audits housed inside the Flight Diagnostics center.</li>
+              <li><strong>Section 4 Sidebar Simplification:</strong> Completely removed the green preflight compliance banner (<code>DJI Fly Preflight: 10/10 Rules Verified</code>) from the visible sidebar. The toolbar now exclusively displays the 3 primary control buttons (<code>3D View</code>, <code>Flight Diag</code>, <code>Export KMZ</code>), with preflight checklist audits housed inside the Flight Diagnostics center.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.60.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>Consolidated Flight Diagnostics &amp; Pre-Flight Audit Center:</strong> Merged the standalone Pre-Flight KMZ Audit modal and 3D Telemetry Replay dashboard into a single, unified diagnostics window with dedicated tab navigation (<code>📊 3D Telemetry Replay</code> &amp; <code>🛡️ Pre-Flight KMZ Audit</code>). Streamlined Section 4 toolbar into an airy 3-button row.</li>
+              <li><strong>Consolidated Flight Diagnostics &amp; Preflight Audit Center:</strong> Merged the standalone Preflight KMZ Audit modal and 3D Telemetry Replay dashboard into a single, unified diagnostics window with dedicated tab navigation (<code>📊 3D Telemetry Replay</code> &amp; <code>🛡️ Preflight KMZ Audit</code>). Streamlined Section 4 toolbar into an airy 3-button row.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -15841,7 +15890,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.58.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>Single Grid Oblique Pitch Heading Enforcement:</strong> Enforced strict <code>followWayline</code> heading mode for Single Grid missions regardless of gimbal pitch angle, preventing yaw rate discontinuities and DJI Fly Go execution aborts. Added validation rule and automatic repair in KMZ pre-flight checks.</li>
+              <li><strong>Single Grid Oblique Pitch Heading Enforcement:</strong> Enforced strict <code>followWayline</code> heading mode for Single Grid missions regardless of gimbal pitch angle, preventing yaw rate discontinuities and DJI Fly Go execution aborts. Added validation rule and automatic repair in KMZ preflight checks.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -15865,7 +15914,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.55.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>Pre-Flight KMZ Audit &amp; DJI Fly Go Validator:</strong> Resolved KMZ flight path failures when pressing "Go" on DJI RC 2. Fixed contradictory <code>waypointHeadingAngleEnable: 1</code> on <code>followWayline</code>, enforced mandatory stop-turns on first and last waypoints, aligned coordinates to strict 2D <code>lon,lat</code> under <code>relativeToStartPoint</code>, corrected POI coordinate order to <code>lat,lon,alt</code>, and defaulted drone model to Mini 4 Pro (68). Added automated 10-rule pre-flight linter (<code>validateWpmlMission</code>), live status badge, and comprehensive KMZ Inspector modal.</li>
+              <li><strong>Preflight KMZ Audit &amp; DJI Fly Go Validator:</strong> Resolved KMZ flight path failures when pressing "Go" on DJI RC 2. Fixed contradictory <code>waypointHeadingAngleEnable: 1</code> on <code>followWayline</code>, enforced mandatory stop-turns on first and last waypoints, aligned coordinates to strict 2D <code>lon,lat</code> under <code>relativeToStartPoint</code>, corrected POI coordinate order to <code>lat,lon,alt</code>, and defaulted drone model to Mini 4 Pro (68). Added automated 10-rule preflight linter (<code>validateWpmlMission</code>), live status badge, and comprehensive KMZ Inspector modal.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -15967,14 +16016,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong style="color: var(--text-main);">Changelog (v1.47.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Sequential WPML Actions:</strong> Set <code>&lt;wpml:actionGroupMode&gt;sequence&lt;/wpml:actionGroupMode&gt;</code> in consolidated action groups so gimbal rotation, hover settling, and camera photo trigger execute in order without flight controller actuator conflict.</li>
-              <li><strong>Consumer Drone WPML Fix:</strong> Stripped invalid <code>useGlobalPayloadLensIndex</code> from photo actions on Mini 4 Pro and Air 3, resolving DJI Fly "Error performing flight" pre-flight validation aborts.</li>
+              <li><strong>Consumer Drone WPML Fix:</strong> Stripped invalid <code>useGlobalPayloadLensIndex</code> from photo actions on Mini 4 Pro and Air 3, resolving DJI Fly "Error performing flight" preflight validation aborts.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.47.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Initial Acceptance Modal Modernization:</strong> Redesigned the startup safety disclaimer modal to use the modern, color-coded 2-column icon card grid matching the About modal, harmonizing terms across the entire app.</li>
-              <li><strong>Advisory Notice Cleanup:</strong> Removed the outdated active development export error warning and updated terms to emphasize Pilot-in-Command pre-flight verification.</li>
+              <li><strong>Advisory Notice Cleanup:</strong> Removed the outdated active development export error warning and updated terms to emphasize Pilot-in-Command preflight verification.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -16009,7 +16058,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.44.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>Single ActionGroup Fix ("Error Performing Flight"):</strong> Consolidated all waypoint actions into a single parallel action group per waypoint to comply with DJI Fly pre-flight flight-controller validation rules and added <code>wpml:useGlobalPayloadLensIndex</code>.</li>
+              <li><strong>Single ActionGroup Fix ("Error Performing Flight"):</strong> Consolidated all waypoint actions into a single parallel action group per waypoint to comply with DJI Fly preflight flight-controller validation rules and added <code>wpml:useGlobalPayloadLensIndex</code>.</li>
               <li><strong>Direct RC 2 Mission Puller:</strong> Added 1-click KMZ pulling from connected DJI RC 2 over USB-C MTP via <code>/api/pull-mission</code> with instant map import and UUID detection.</li>
             </ul>
           </div>
@@ -16131,7 +16180,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.29.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>Save to RC2:</strong> New "Save to RC2" button uses the browser's native Save dialog (File System Access API) to write the KMZ with the correct UUID filename directly to the RC2 MTP storage. Eliminates the rename step and Chrome remembers the RC2 folder location across sessions. UUID auto-detected from imported KMZ filename; also configurable in the new "DJI Fly Waypoint UUID" field. If MTP write is blocked by Windows, falls back to a correctly-named download.</li>
+              <li><strong>Save to RC 2:</strong> New "Save to RC 2" button uses the browser's native Save dialog (File System Access API) to write the KMZ with the correct UUID filename directly to the RC 2 MTP storage. Eliminates the rename step and Chrome remembers the RC 2 folder location across sessions. UUID auto-detected from imported KMZ filename; also configurable in the new "DJI Fly Waypoint UUID" field. If MTP write is blocked by Windows, falls back to a correctly-named download.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -16144,7 +16193,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong style="color: var(--text-main);">Changelog (v1.28.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Double Grid &quot;Go&quot; Button Error — Duplicate WPML actionGroupId:</strong> <code>wpml:actionGroupId</code> was reset to <code>1</code> for every waypoint, producing duplicate IDs across the mission file. DJI Fly rejects missions with duplicate action group IDs at upload scale, causing the "error when pressing Go" on double grid missions. Fixed by using a single global counter across all waypoints.</li>
-              <li><strong>Stop-and-Shoot 0s Hover — No Photo / RC2 Gimbal Error:</strong> The 2-second stabilization hover was only injected when a gimbal or heading reposition was detected. On straight grid lines at constant pitch the drone fired the camera before the gimbal settled. Fixed by enforcing a 2-second minimum hover at every stop-and-shoot waypoint regardless of repositioning.</li>
+              <li><strong>Stop-and-Shoot 0s Hover — No Photo / RC 2 Gimbal Error:</strong> The 2-second stabilization hover was only injected when a gimbal or heading reposition was detected. On straight grid lines at constant pitch the drone fired the camera before the gimbal settled. Fixed by enforcing a 2-second minimum hover at every stop-and-shoot waypoint regardless of repositioning.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -16182,7 +16231,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.27.6):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>Unit Test Mocks:</strong> Corrected weather panel and RC2 compliance tests in <code>index.test.js</code> to ensure overridden DOM helper mocks (specifically <code>document.getElementById</code> and <code>document.createElement</code>) are properly restored in <code>finally</code> blocks, preventing asynchronous background activity from triggering uncaught exceptions after tests complete.</li>
+              <li><strong>Unit Test Mocks:</strong> Corrected weather panel and RC 2 compliance tests in <code>index.test.js</code> to ensure overridden DOM helper mocks (specifically <code>document.getElementById</code> and <code>document.createElement</code>) are properly restored in <code>finally</code> blocks, preventing asynchronous background activity from triggering uncaught exceptions after tests complete.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -16339,7 +16388,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.25.7):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>DJI RC2 Gimbal Rotate End Index Fix:</strong> Set <code>actionGroupEndIndex</code> to <code>idx + 1</code> for <code>gimbalEvenlyRotate</code> actions, resolving flight controller trajectory validation errors on GO.</li>
+              <li><strong>DJI RC 2 Gimbal Rotate End Index Fix:</strong> Set <code>actionGroupEndIndex</code> to <code>idx + 1</code> for <code>gimbalEvenlyRotate</code> actions, resolving flight controller trajectory validation errors on GO.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -16351,7 +16400,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.25.5):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>DJI RC2 Mission Execution & Payload Action Fix:</strong> Updated WPML XML namespace to <code>http://www.uav.com/wpmz/1.0.2</code>, updated gimbal actuator function to <code>gimbalEvenlyRotate</code>, and resolved <code>waypointHeadingAngleEnable</code> parameter conflicts, eliminating RC2 flight controller execution errors when pressing GO.</li>
+              <li><strong>DJI RC 2 Mission Execution & Payload Action Fix:</strong> Updated WPML XML namespace to <code>http://www.uav.com/wpmz/1.0.2</code>, updated gimbal actuator function to <code>gimbalEvenlyRotate</code>, and resolved <code>waypointHeadingAngleEnable</code> parameter conflicts, eliminating RC 2 flight controller execution errors when pressing GO.</li>
               <li><strong>Settings Modal & Unit System Selection Fix:</strong> Defined missing <code>syncDisplayValues()</code> utility function to resolve ReferenceError exceptions when opening Settings or toggling between Metric (m, m/s) and Imperial (ft, mph). Restored unit preferences from <code>localStorage</code> on startup.</li>
             </ul>
           </div>
@@ -16591,8 +16640,8 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                <li><strong>POI Heading Mode Override Bug:</strong> Fixed a bug where procedurally generated waypoint heading angles (from grid path generation) were overriding the global "Face POI" (`towardPOI`) heading mode during XML export.</li>
                <li><strong>POI Export Bug Fix:</strong> Fixed a critical bug where waypoints manually set to point to subsequent POIs (POI 2, etc.) were reset back to POI 1 during KMZ export because the custom `poiIndex` and `headingMode` parameters were stripped from the waypoint objects when compiling the export payload.</li>
                <li><strong>Multi-POI DJI Parser Bug:</strong> Attempted fix by hardcoding index to 0. (Reverted in v1.17.2 to fix POI disappearance).</li>
-               <li><strong>RC2 Gap Features:</strong> Added WPML generation support for missing RC2 parameters: Finish Actions (Back to Start), Signal Lost Actions (Hover, Land, RTH, Continue), and Camera Zoom (up to 4.0x with tenths precision).</li>
-               <li><strong>Mini 4 Pro KMZ Format Error:</strong> Fixed a critical bug causing the DJI RC2 controller to reject generated waypoint KMZs for the Mini 4 Pro. Aalaapi now correctly uses `68` (the Mavic 3 Enterprise enum) for the Mini 4 Pro's WPML `droneEnumValue` output.</li>
+               <li><strong>RC 2 Gap Features:</strong> Added WPML generation support for missing RC 2 parameters: Finish Actions (Back to Start), Signal Lost Actions (Hover, Land, RTH, Continue), and Camera Zoom (up to 4.0x with tenths precision).</li>
+               <li><strong>Mini 4 Pro KMZ Format Error:</strong> Fixed a critical bug causing the DJI RC 2 controller to reject generated waypoint KMZs for the Mini 4 Pro. Aalaapi now correctly uses `68` (the Mavic 3 Enterprise enum) for the Mini 4 Pro's WPML `droneEnumValue` output.</li>
                <li><strong>Export Warning Prompts Refinement:</strong> Removed "buggy" label and explicitly specified that waypoint files do not work properly on export.</li>
              </ul>
            </div>
@@ -16605,7 +16654,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
            <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
              <strong style="color: var(--text-main);">Changelog (v1.16.2):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-               <li><strong>POI Coordinate Export Order:</strong> Fixed <code>&lt;wpml:waypointPoiPoint&gt;</code> coordinate order to be Latitude, Longitude, Altitude, ensuring compatibility with DJI RC2 controllers and Pilot 2.</li>
+               <li><strong>POI Coordinate Export Order:</strong> Fixed <code>&lt;wpml:waypointPoiPoint&gt;</code> coordinate order to be Latitude, Longitude, Altitude, ensuring compatibility with DJI RC 2 controllers and Pilot 2.</li>
              </ul>
            </div>
            <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -16695,7 +16744,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
            <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.13.3):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-               <li><strong>RC2 & DJI Fly Compatibility:</strong> Added target drone selector to dynamically output correct drone model metadata and namespaces, preventing import failures on controllers.</li>
+               <li><strong>RC 2 & DJI Fly Compatibility:</strong> Added target drone selector to dynamically output correct drone model metadata and namespaces, preventing import failures on controllers.</li>
              </ul>
            </div>
            <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -16788,15 +16837,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.10.3):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li>**DJI RC2/WPML Compatibility:** Fixed waypoint flight load/execution error on DJI RC2 controllers when hitting "Go" by removing the unsupported `wpml:payloadInfo` block from generated flight plans.</li>
+              <li>**DJI RC 2/WPML Compatibility:** Fixed waypoint flight load/execution error on DJI RC 2 controllers when hitting "Go" by removing the unsupported `wpml:payloadInfo` block from generated flight plans.</li>
               <li>**Security:** Resolved multiple XSS vulnerabilities in weather data UI panel rendering, waypoint warning displays, and map legend rendering.</li>
-              <li>**Documentation:** Updated the RC2 Waypoint File Injection Guide modal to support multipart ZIP split-mission exports.</li>
+              <li>**Documentation:** Updated the DJI RC 2 Waypoint File Injection Guide modal to support multipart ZIP split-mission exports.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.10.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li>**DJI RC2/WPML Compatibility:** Reset action group IDs locally within each waypoint folder and added required `useGlobalPayloadLensIndex` to actions, fixing the DJI waypoint flight execution/import error.</li>
+              <li>**DJI RC 2/WPML Compatibility:** Reset action group IDs locally within each waypoint folder and added required `useGlobalPayloadLensIndex` to actions, fixing the DJI waypoint flight execution/import error.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -17711,7 +17760,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
     </div>
   </div>
 
-  <!-- Flight Diagnostics & Telemetry Center Modal (Unified 3D Replay & Pre-Flight KMZ Audit) -->
+  <!-- Flight Diagnostics & Telemetry Center Modal (Unified 3D Replay & Preflight KMZ Audit) -->
   <div id="flight-diagnostics-modal" class="modal-overlay hidden" style="z-index: 9999;">
     <div id="flight-diagnostics-card" class="modal glass diag-modal-card">
       
@@ -17744,7 +17793,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <span>📸</span> Inspection Photos <span id="diag-nav-photos-count" class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-size: 0.65rem; padding: 1px 6px; border-radius: 4px; margin-left: 4px;">0</span>
           </button>
           <button id="diag-nav-audit-btn" type="button" class="btn-tab">
-            <span>🛡️</span> Pre-Flight KMZ Audit
+            <span>🛡️</span> Preflight KMZ Audit
           </button>
         </div>
 
@@ -18143,7 +18192,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </aside>
       </div>
 
-      <!-- TAB PANE 2: Pre-Flight KMZ Audit (Consolidated) -->
+      <!-- TAB PANE 2: Preflight KMZ Audit (Consolidated) -->
       <div id="kmz-inspector-modal" class="hidden" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #0b101b; position: relative;">
         <!-- Quick Metrics Bar -->
         <div style="padding: 10px 20px; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid var(--border-color); display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; font-size: 0.75rem;">
@@ -18156,7 +18205,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong id="inspector-wp-count" style="color: var(--text-main);">0 waypoints</strong>
           </div>
           <div>
-            <span style="color: var(--text-muted); display: block; font-size: 0.68rem;">Pre-Flight Health:</span>
+            <span style="color: var(--text-muted); display: block; font-size: 0.68rem;">Preflight Health:</span>
             <strong id="inspector-rules-score" style="color: #34d399;">10/10 Passed</strong>
           </div>
           <div>
@@ -18651,7 +18700,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
       </div>
       <footer class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px;">
-        <button id="media-download-archive-btn" type="button" class="btn-secondary" style="display: none; padding: 6px 12px; font-size: 0.78rem;">📦 Download Archive (.zip)</button>
+        <button id="media-download-archive-btn" type="button" class="btn-secondary" style="display: none; padding: 6px 12px; font-size: 0.78rem;">📦 Download Archive ZIP (.zip)</button>
         <div style="margin-left: auto; display: flex; gap: 8px;">
           <button id="close-media-ingest-footer-btn" type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.78rem;">Cancel</button>
           <button id="start-media-pull-btn" type="button" class="btn-primary" style="padding: 6px 16px; font-size: 0.78rem; font-weight: 600;">📥 Ingest &amp; Correlate Photos</button>
@@ -18950,10 +18999,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   <!-- Universal Floating Breadcrumb Tooltip (v1.86.5) -->
   <div id="wp-leg-floating-tooltip" class="wp-leg-breadcrumb-tooltip" style="display: none; position: fixed; z-index: 10000000; pointer-events: none;"></div>
 
-  <!-- Floating Live Video Cast & Lossless Recording Panel (Issue #97) -->
-  <div id="video-cast-panel" class="video-cast-panel hidden" style="position: absolute; top: 60px; right: 16px; width: 440px; max-width: calc(100vw - 32px); z-index: 1040;">
-    <div class="video-cast-header">
+  <!-- Floating Live Video Cast & Lossless Recording Panel (Issue #97, #158) -->
+  <div id="video-cast-panel" class="video-cast-panel hidden" data-draggable-modal="true" style="position: absolute; top: 60px; right: 16px; width: 440px; max-width: calc(100vw - 32px); z-index: 1040;">
+    <div class="video-cast-header modal-header" data-modal-drag-handle="true">
       <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="modal-drag-grip" title="Drag to reposition video panel" aria-hidden="true">&#x22EE;&#x22EE;</span>
         <span id="video-cast-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
         <span style="font-weight: 700; font-size: 0.82rem; color: var(--text-main);">📹 Live Video Cast</span>
         <span id="video-cast-status-text" style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">OFFLINE</span>
@@ -23922,7 +23972,7 @@ function clampModalPosition(modal, handle, proposedX, proposedY) {
   const styleTransform = modal.style.transform || '';
   let curX = 0;
   let curY = 0;
-  const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+  const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
   if (match) {
     curX = parseFloat(match[1]) || 0;
     curY = parseFloat(match[2]) || 0;
@@ -23979,7 +24029,7 @@ function initModalDraggable(modalOverlayOrId) {
   // Tier 3: First child element
   // Tier 4: The modal card itself (using top-zone fallback)
   const handle = modal.querySelector(
-    '.modal-header, .photo-inspector-header, .fpv-editor-header, .diag-modal-header, [data-modal-drag-handle]'
+    '.modal-header, .photo-inspector-header, .fpv-editor-header, .video-cast-header, .elevation-profile-header, .replay-2d-header, .diag-modal-header, [data-modal-drag-handle]'
   ) || modal.querySelector('header') || modal.firstElementChild || modal;
 
   container._modalDraggableInitialized = true;
@@ -23989,6 +24039,13 @@ function initModalDraggable(modalOverlayOrId) {
   } else {
     modal.setAttribute('data-modal-drag-handle', 'true');
   }
+
+  // Detect if element uses horizontal centering via translateX(-50%)
+  const hasBaseCenterX = modal.classList.contains('elevation-profile-drawer') ||
+                         modal.classList.contains('replay-2d-bar') ||
+                         modal.hasAttribute('data-center-x') ||
+                         modal.dataset.centerX === 'true' ||
+                         container.hasAttribute('data-center-x');
 
   let isDragging = false;
   let startPointerX = 0;
@@ -24003,7 +24060,9 @@ function initModalDraggable(modalOverlayOrId) {
     const saved = modalPositions.get(containerKey);
     currentTranslateX = saved.x;
     currentTranslateY = saved.y;
-    modal.style.transform = `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0)`;
+    modal.style.transform = hasBaseCenterX
+      ? `translate3d(calc(-50% + ${currentTranslateX}px), ${currentTranslateY}px, 0)`
+      : `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0)`;
   }
 
   function isInteractiveElement(target) {
@@ -24036,7 +24095,7 @@ function initModalDraggable(modalOverlayOrId) {
     startPointerY = e.clientY;
 
     const styleTransform = modal.style.transform || '';
-    const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+    const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
     if (match) {
       currentTranslateX = parseFloat(match[1]) || 0;
       currentTranslateY = parseFloat(match[2]) || 0;
@@ -24067,7 +24126,9 @@ function initModalDraggable(modalOverlayOrId) {
     const proposedY = currentTranslateY + deltaY;
 
     const clamped = clampModalPosition(modal, handle, proposedX, proposedY);
-    modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+    modal.style.transform = hasBaseCenterX
+      ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
+      : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
   }
 
   function endDrag(e) {
@@ -24088,7 +24149,7 @@ function initModalDraggable(modalOverlayOrId) {
     }
 
     const styleTransform = modal.style.transform || '';
-    const match = styleTransform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+    const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
     if (match) {
       currentTranslateX = parseFloat(match[1]) || 0;
       currentTranslateY = parseFloat(match[2]) || 0;
@@ -24122,7 +24183,9 @@ function initModalDraggable(modalOverlayOrId) {
           if (!container.classList.contains('hidden') && modalPositions.has(containerKey)) {
             const pos = modalPositions.get(containerKey);
             const clamped = clampModalPosition(modal, handle, pos.x, pos.y);
-            modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+            modal.style.transform = hasBaseCenterX
+              ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
+              : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
             modalPositions.set(containerKey, clamped);
           }
         }
@@ -24142,7 +24205,7 @@ function initAllModalsDraggable() {
   if (typeof document === 'undefined') return;
 
   const dialogs = document.querySelectorAll(
-    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel'
+    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel, #video-cast-panel, #elevation-profile-drawer, #replay-2d-bar'
   );
   dialogs.forEach(dialog => {
     initModalDraggable(dialog);
@@ -24171,18 +24234,24 @@ function resetModalPosition(modalOverlayOrId) {
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', () => {
     const dialogs = document.querySelectorAll(
-      '.modal-overlay:not(.hidden), #fpv-editor-panel:not(.hidden)'
+      '.modal-overlay:not(.hidden), [data-draggable-modal]:not(.hidden), #fpv-editor-panel:not(.hidden), #video-cast-panel:not(.hidden), #elevation-profile-drawer:not(.hidden), #replay-2d-bar:not(.hidden)'
     );
     dialogs.forEach(dialog => {
       const modal = dialog.querySelector('.modal') || dialog;
       const handle = modal?.querySelector('[data-modal-drag-handle]') || modal;
+      const isCenterX = modal.classList.contains('elevation-profile-drawer') ||
+                        modal.classList.contains('replay-2d-bar') ||
+                        modal.hasAttribute('data-center-x') ||
+                        dialog.hasAttribute('data-center-x');
       if (modal && modal.style.transform) {
-        const match = modal.style.transform.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+        const match = modal.style.transform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
         if (match) {
           const curX = parseFloat(match[1]) || 0;
           const curY = parseFloat(match[2]) || 0;
           const clamped = clampModalPosition(modal, handle, curX, curY);
-          modal.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+          modal.style.transform = isCenterX
+            ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
+            : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
           const containerKey = dialog.id || modal.id || dialog;
           modalPositions.set(containerKey, clamped);
         }

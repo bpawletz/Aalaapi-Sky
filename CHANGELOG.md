@@ -1,3 +1,52 @@
+## [1.188.0] - 2026-10-23
+
+Universal modeless floating HUD window dragging, tactile grips, and base CSS transform support for Live Video Cast, Elevation Profile, and 2D Replay.
+
+### Added
+
+#### Pilot & Operational Features
+- **Draggable Modeless Floating HUD Panels (Closes #158)**:
+  - Enabled smooth pointer/touch-based dragging across modeless floating HUD windows without blocking full-screen backdrops (`.modal-overlay`).
+  - **Live Video Cast Panel (`#video-cast-panel`)**: Pilots can freely drag the live drone video feed anywhere across the map to keep waypoints and telemetry clear while maintaining uninterrupted map interactivity.
+  - **Flight Elevation Cross-Section Profile (`#elevation-profile-drawer`)**: Allows dragging the terrain relief and MSL/AGL altitude cross-section chart up or down across the canvas.
+  - **2D Flight Replay Bar (`#replay-2d-bar`)**: Allows moving the telemetry timeline scrubber and flight playback controls freely over the map.
+  - **Tactile Grab Grip Affordances (`⋮⋮`)**: Added high-visibility grab grips (`.modal-drag-grip`) and `grab` / `grabbing` cursor feedback on all panel headers.
+  - **Session Position Persistence & Double-Click Re-Center**: Remembers dragged panel positions during the active flight session, and provides instant `dblclick` header shortcuts to restore default alignments.
+
+#### Under the Hood & Technical Details
+- **Base CSS Transform & Horizontal Centering Support (`ModalDragManager.js`)**:
+  - Enhanced `ModalDragManager` to natively handle bottom/center-anchored floating elements that utilize base CSS transforms (`transform: translateX(-50%)`).
+  - Formulated regex matching `(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?` to eliminate visual displacement jumps on drag initiation.
+  - Wired dynamic viewport boundary clamping (`clampModalPosition()`) and responsive window resize realignment.
+
+## [1.187.0] - 2026-10-23
+
+Comprehensive review, editorial polish, and terminology standardization across user-facing text, dialogs, buttons, and guides.
+
+### Changed
+
+#### Pilot & Operational Features
+- **DJI RC 2 Hardware Branding Standardization (Closes #157)**:
+  - Standardized all user-facing hardware references to "DJI RC 2" (or "RC 2") with uniform spacing across file transfer hints, instruction modals, guide cards, and historical changelog entries.
+  - Updated Section 4 helper hint to display `DJI RC 2 path: Android/data/dji.go.v5/files/waypoint/`.
+  - Updated connection button to `Show DJI RC 2 File Transfer Instructions`.
+- **Aviation Terminology & Preflight Harmonization**:
+  - Unified all checklist gates, KMZ audit tabs, linter rules, and setting guidance to unhyphenated "Preflight" in alignment with FAA/ICAO civil aviation standards.
+  - Standardized Section 3 drone setting banner to `⚠️ Preflight Drone Setting:`.
+  - Standardized live radar simulation card to `🧪 Preflight Audio & Traffic Simulation`.
+  - Standardized Flight Diagnostics audit tab to `🛡️ Preflight KMZ Audit`.
+- **Action Button Title Case Alignment**:
+  - Enforced clean Title Case capitalization across secondary and export action buttons (`Export QGC Plan (.plan)`, `Export Autel KML (.kml)`, `Download Archive ZIP (.zip)`).
+- **In-App Onboarding & Feature Highlights Maintenance**:
+  - Added dedicated v1.187.0 feature card in the Intro Guide Hub (`#quickstart-modal`) highlighting text review and terminology polish.
+
+#### Under the Hood & Technical Details
+- **DOM Architecture & Validation Fixes (`index_template.html`)**:
+  - Resolved duplicate DOM ID `rc2-guide-cards-section` by namespacing the Quickstart modal visual connection card container to `id="intro-rc2-guide-cards-section"` while preserving `#rc2-guide-cards-section` inside `#guide-modal`.
+- **Automated Regression Test Suite (`index.test.js`)**:
+  - Added dedicated unit tests asserting zero duplicate DOM IDs in `index_template.html`.
+  - Added assertions verifying zero un-spaced "RC2" instances and zero hyphenated "Pre-flight" instances in user-visible text.
+
 ## [1.186.0] - 2026-10-23
 
 Dynamic Digital Elevation Model (DEM) sampling, climb/descent slope gradient smoothing, and constant AGL terrain-following flight grids.
