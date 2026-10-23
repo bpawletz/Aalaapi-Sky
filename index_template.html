@@ -81,7 +81,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.182.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.183.0</span></h1>
         </div>
       </div>
 
@@ -4104,6 +4104,7 @@
       <header class="modal-header" style="border-bottom: 1px solid var(--border-color); padding: 14px 20px; display: flex; flex-direction: column; gap: 10px; background: rgba(255, 255, 255, 0.02);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="modal-drag-grip" title="Drag to move guide">⋮⋮</span>
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
               <path d="M6 12v5c3 3 9 3 12 0v-5"/>
@@ -6270,7 +6271,7 @@
   <div id="about-modal" class="modal-overlay hidden">
     <div class="modal glass">
       <header class="modal-header">
-        <h2>About Aalaapi Sky</h2>
+        <h2 style="display: flex; align-items: center; gap: 6px;"><span class="modal-drag-grip" title="Drag to move window">⋮⋮</span>About Aalaapi Sky</h2>
         <button id="close-about-btn" class="close-btn" type="button" aria-label="Close about">&times;</button>
       </header>
       <div class="modal-content">
@@ -6312,7 +6313,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.182.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.183.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6381,7 +6382,7 @@
               </ul>
             </li>
             <li style="margin-bottom: 8px;">
-              <strong style="color: var(--text-main);">Changelog (v1.182.0):</strong>
+              <strong style="color: var(--text-main);">Changelog (v1.183.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li>Continuous 3D Canvas Tilt: Tilt Light Art from flat overhead (0°) to vertical billboard (90°) or intermediate oblique angles.</li>
                 <li>Interactive SVG Compass Rose: Visual compass rose with cardinal markers and rotating bearing needle to align artwork sightline.</li>
@@ -9911,7 +9912,7 @@
   <div id="preview-3d-modal" class="modal-overlay hidden">
     <div id="preview-3d-card" class="modal glass" style="max-width: 900px; width: 95%; height: 85dvh; display: flex; flex-direction: column; transition: all 0.25s ease;">
       <header class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <h2>3D Flight Path Preview</h2>
+        <h2 style="display: flex; align-items: center; gap: 6px;"><span class="modal-drag-grip" title="Drag to move window">⋮⋮</span>3D Flight Path Preview</h2>
         <div style="display: flex; align-items: center; gap: 8px;">
           <button id="expand-3d-btn" type="button" aria-label="Toggle Fullscreen 3D View" title="Expand / Resize 3D View" style="background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--accent-cyan); cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; transition: var(--transition-smooth);">
             <svg id="expand-3d-icon-expand" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
@@ -10003,9 +10004,10 @@
           <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;">
             
           <!-- Floating FPV Waypoint Editor Side-panel (Upper-Right position to avoid obscuring FPV view) -->
-          <div id="fpv-editor-panel" class="hidden" style="position: absolute; top: 60px; right: 16px; width: min(310px, calc(100vw - 32px)); max-width: calc(100vw - 32px); box-sizing: border-box; max-height: calc(100% - 130px); overflow-y: auto; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(6, 182, 212, 0.3); padding: 12px 14px; border-radius: 12px; pointer-events: auto; backdrop-filter: blur(12px); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 25;">
-            <div style="font-weight: 600; color: #06b6d4; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+          <div id="fpv-editor-panel" class="hidden" data-draggable-modal="true" style="position: absolute; top: 60px; right: 16px; width: min(310px, calc(100vw - 32px)); max-width: calc(100vw - 32px); box-sizing: border-box; max-height: calc(100% - 130px); overflow-y: auto; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(6, 182, 212, 0.3); padding: 12px 14px; border-radius: 12px; pointer-events: auto; backdrop-filter: blur(12px); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 25;">
+            <div class="fpv-editor-header modal-header" data-modal-drag-handle="true" style="font-weight: 600; color: #06b6d4; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; cursor: grab; user-select: none;">
               <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="modal-drag-grip" title="Drag to move waypoint editor">⋮⋮</span>
                 <span>🛠️ Edit Waypoint <span id="fpv-editor-wp-index">0</span></span>
                 <button id="fpv-editor-toggle-btn" type="button" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem; padding: 0 4px;" title="Minimize/Expand Editor Panel">▼</button>
               </div>

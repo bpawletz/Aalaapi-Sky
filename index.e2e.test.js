@@ -9453,8 +9453,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       });
 
       assert.ok(result.overlayCount >= 18, `Expected at least 18 overlays, found ${result.overlayCount}`);
-      assert.strictEqual(result.handleCount, result.overlayCount, 'Every modal overlay must have a registered drag handle');
-      assert.strictEqual(result.modalCount, result.overlayCount, 'Every modal overlay must have a marked draggable modal card');
+      assert.ok(result.handleCount >= result.overlayCount, 'All modal overlays and floating panels must have registered drag handles');
+      assert.ok(result.modalCount >= result.overlayCount, 'All modal overlays and floating panels must have marked draggable modal cards');
       assert.strictEqual(result.hasInitFn, true, 'window.initAllModalsDraggable must be available');
       assert.strictEqual(result.hasClampFn, true, 'window.clampModalPosition must be available');
     });
@@ -9609,6 +9609,86 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.ok(evalResult.tiltValAfterPill.includes('45°'));
       assert.ok(evalResult.azTextAfterEast.includes('90°'));
       assert.strictEqual(evalResult.needleX2, '84.0');
+    });
+  });
+
+  describe('3D Waypoint Editor Dragging & Headerless Fallback E2E Suite (v1.183.0)', () => {
+    test('E2E: #fpv-editor-panel is registered as a draggable panel with drag handle', async () => {
+      const result = await page.evaluate(() => {
+        const panel = document.getElementById('fpv-editor-panel');
+        const handle = panel ? panel.querySelector('[data-modal-drag-handle]') : null;
+        const grip = panel ? panel.querySelector('.modal-drag-grip') : null;
+        return {
+          panelExists: !!panel,
+          hasDraggableAttr: panel ? panel.getAttribute('data-draggable-modal') === 'true' : false,
+          hasHandle: !!handle,
+          hasGrip: !!grip
+        };
+      });
+
+      assert.strictEqual(result.panelExists, true, '#fpv-editor-panel must exist in DOM');
+      assert.strictEqual(result.hasDraggableAttr, true, '#fpv-editor-panel must have data-draggable-modal="true"');
+      assert.strictEqual(result.hasHandle, true, '#fpv-editor-panel must have a registered drag handle');
+      assert.strictEqual(result.hasGrip, true, '#fpv-editor-panel must feature a .modal-drag-grip indicator');
+    });
+
+    test('E2E: Dragging #fpv-editor-panel updates transform and persists', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const panel = document.getElementById('fpv-editor-panel');
+        panel.classList.remove('hidden');
+        await new Promise(r => setTimeout(r, 50));
+
+        const handle = panel.querySelector('[data-modal-drag-handle]');
+        const initialTransform = panel.style.transform || '';
+
+        const downEv = new PointerEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 400,
+          clientY: 100,
+          button: 0,
+          pointerId: 1
+        });
+        handle.dispatchEvent(downEv);
+
+        const moveEv = new PointerEvent('pointermove', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 320,
+          clientY: 180,
+          pointerId: 1
+        });
+        handle.dispatchEvent(moveEv);
+
+        const draggedTransform = panel.style.transform;
+
+        const upEv = new PointerEvent('pointerup', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 320,
+          clientY: 180,
+          pointerId: 1
+        });
+        handle.dispatchEvent(upEv);
+
+        const dblClickEv = new MouseEvent('dblclick', {
+          bubbles: true,
+          cancelable: true
+        });
+        handle.dispatchEvent(dblClickEv);
+
+        const resetTransform = panel.style.transform;
+        panel.classList.add('hidden');
+
+        return {
+          initialTransform,
+          draggedTransform,
+          resetTransform
+        };
+      });
+
+      assert.ok(evalResult.draggedTransform.includes('translate3d'), `Expected translate3d on #fpv-editor-panel, got ${evalResult.draggedTransform}`);
+      assert.strictEqual(evalResult.resetTransform, '', 'Double-click must reset #fpv-editor-panel transform to empty string');
     });
   });
 });
