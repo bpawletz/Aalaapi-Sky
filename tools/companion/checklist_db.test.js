@@ -132,5 +132,22 @@ describe('ChecklistDatabase Tests', () => {
     assert.ok(bypassedEntry);
     assert.strictEqual(bypassedEntry.airspace_auth_code, 'BYPASS');
   });
+
+  test('configures busy_timeout and handles reconnection via ensureDb()', () => {
+    assert.ok(db.db, 'Database handle must be active');
+    
+    // Check that busy_timeout is set
+    const timeoutRow = db.db.prepare('PRAGMA busy_timeout;').get();
+    assert.strictEqual(timeoutRow.timeout, 5000);
+
+    // Simulate connection drop / temporary uninitialized state
+    db.db.close();
+    db.db = null;
+
+    // Calling ensureDb or public method should reconnect automatically
+    const template = db.getTemplate();
+    assert.ok(Array.isArray(template));
+    assert.ok(db.db !== null, 'Database handle should be restored after ensureDb()');
+  });
 });
 

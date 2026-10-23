@@ -1,5 +1,49 @@
 [
   {
+    "notam_id": "6/1974",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "E FARMINGTON, CO, Friday, October 23, 2026 through Saturday, October 31, 2026 UTC",
+    "mod_date": "10/23/2026 18:30:00",
+    "mod_abs_time": "202610231830",
+    "is_new": "Y",
+    "gid": "6/1974"
+  },
+  {
+    "notam_id": "6/1976",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "NE FARMINGTON, CO, Friday, October 23, 2026 through Saturday, October 31, 2026 UTC",
+    "mod_date": "10/23/2026 18:30:00",
+    "mod_abs_time": "202610231830",
+    "is_new": "Y",
+    "gid": "6/1976"
+  },
+  {
+    "notam_id": "6/1973",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "N FARMINGTON, CO, Friday, October 23, 2026 through Saturday, October 31, 2026 UTC",
+    "mod_date": "10/23/2026 18:29:00",
+    "mod_abs_time": "202610231829",
+    "is_new": "Y",
+    "gid": "6/1973"
+  },
+  {
+    "notam_id": "6/1963",
+    "facility": "ZAN",
+    "state": "AK",
+    "type": "HAZARDS",
+    "description": "ATIGUN PASS, AK, Friday, October 23, 2026 through Saturday, October 24, 2026 UTC",
+    "mod_date": "10/23/2026 17:08:00",
+    "mod_abs_time": "202610231708",
+    "is_new": "Y",
+    "gid": "6/1963"
+  },
+  {
     "notam_id": "6/1949",
     "facility": "ZJX",
     "state": "FL",
@@ -66,17 +110,6 @@
     "gid": "6/1800"
   },
   {
-    "notam_id": "6/1767",
-    "facility": "ZJX",
-    "state": "SC",
-    "type": "HAZARDS",
-    "description": "12NM E MONCKS CORNER, SC, Friday, October 23, 2026 through Saturday, October 24, 2026 UTC",
-    "mod_date": "10/22/2026 21:22:00",
-    "mod_abs_time": "202610222122",
-    "is_new": "Y",
-    "gid": "6/1767"
-  },
-  {
     "notam_id": "6/1768",
     "facility": "ZMA",
     "state": "FL",
@@ -117,7 +150,7 @@
     "description": "Houston, TX, Thursday, October 29, 2026 UTC",
     "mod_date": "10/22/2026 18:17:00",
     "mod_abs_time": "202610221817",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/1700"
   },
   {
@@ -128,7 +161,7 @@
     "description": "HALLSVILLE, MO, Monday, October 26, 2026 UTC",
     "mod_date": "10/22/2026 16:55:00",
     "mod_abs_time": "202610221655",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/1691"
   },
   {

@@ -1,3 +1,60 @@
+## [1.179.0] - 2026-10-23
+
+Introduces Target Flight Duration & Exposure Time Limit Auto-Sizing for Light Art (Sky Painting) missions, allowing aerial photographers to match camera shutter windows with 1-click auto-scaling of artwork physical dimensions.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Light Art Target Time Limit & Camera Shutter Auto-Sizing**:
+  - Added **Artwork Sizing Mode** selector with `Manual Radius / Scale` and `Target Time Limit (Auto-Sizes Art to Shutter)` modes in Section 2 Layer Properties.
+  - Allows pilots to dial in a target flight duration (10s to 300s) to match their ground camera's Bulb or manual exposure window.
+  - Features 1-click duration preset pills (`30s`, `60s`, `90s`, `120s`, `180s`) that instantly scale the physical artwork radius and recalculate smooth spline waypoints.
+  - Displays a live **Auto-Calculated Radius** indicator showing exact physical dimensions in meters or feet based on active unit preferences.
+  - Dynamically resizes the flight path when aircraft stroke speed is adjusted, ensuring the drone completes the light drawing in the exact shutter window.
+
+#### Under the Hood & Technical Details
+- **Geometric Scale & Duration Solvers (`src/patterns/PatternGenerators.js`)**:
+  - Implemented `calculateLightArtRadiusForDuration(layer, targetDurationSec, strokeSpeed)` solving for canvas radius $R$ via unit arc-length discretization and 3D climb compensation.
+  - Implemented reciprocal solver `calculateLightArtSpeedForDuration(layer, targetDurationSec, radius)` for fixed-radius airspace constraints.
+  - Clamped auto-calculated radius within safe VLOS bounds ($5\text{m} \le R \le 200\text{m}$).
+- **Layer Synchronization & Reactive UI (`src/layers/LayerManager.js`, `src/ui/SidebarManager.js`, `src/ui/EventBindings.js`)**:
+  - Added `lightArtSizeMode` and `lightArtTargetDuration` properties to layer state with local storage persistence.
+  - Updated `generateLayerWaypoints` to resolve canvas radius dynamically before waypoint compilation.
+  - Wired live event listeners and preset pill buttons for bidirectional UI updates.
+
+## [1.178.1] - 2026-10-23
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Companion Bridge Preflight Checklist Database**: Resolved an SQLite `disk I/O error` during companion bridge startup caused by database lock contention and cloud-synced directory file locking (e.g. OneDrive) by enabling busy retry timeouts and automatic journal fallback.
+
+#### Under the Hood & Technical Details
+- **ChecklistDatabase & DiagnosticsDatabase (`tools/companion/checklist_db.js`, `tools/companion/diagnostics_db.js`)**: Configured `PRAGMA busy_timeout = 5000;` and added a 3-attempt exponential backoff retry loop during `DatabaseSync` instantiation. Added resilient WAL mode fallback to standard `DELETE` journal mode when shared memory mapping (`-shm`) is blocked by Windows file locks or cloud sync engines. Added lazy reconnection (`ensureDb()`) before public queries and mutations.
+- **Companion Server (`tools/companion/server.js`)**: Ensured `checklistDb` and `diagDb` re-initialize immediately after `killExistingCompanion(PORT)` shuts down any previously running bridge instance that was holding database file handles during module load.
+
+## [1.178.0] - 2026-10-23
+
+Introduces interactive visual step cards and concise instructional text across the pilot guide modals and documentation explaining how to acquire, launch, and connect the DJI RC 2 controller to the local Aalaapi Companion Bridge for 1-click mission synchronization and flight log replay!
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Visual RC 2 to Companion Bridge Connection Cards (`.rc2-connect-cards-grid`)**:
+  - Replaces dense setup instructions with a responsive, scannable 5-step visual card deck in the **DJI RC 2 Sync & Transfer Guide (`#guide-modal`)** and the **Pilot Guide Hub (`#quickstart-modal`)**.
+  - **Card 1 (Acquire & Run)**: Clear instructions on where to find the bridge code (bundled in workspace as `start-bridge.bat` / `tools/companion/server.js`, or downloaded from GitHub for web pilots) with 1-click copy buttons for `npm run bridge` and `git clone`.
+  - **Card 2 (Hardware State)**: Guides powering on the DJI RC 2 controller completely before connecting.
+  - **Card 3 (Physical Link)**: Details using certified USB-C data cables and warning against charge-only cords.
+  - **Card 4 (Storage Mode)**: Step-by-step instructions for selecting "File Transfer (MTP)" on the controller touchscreen or Android notification shade.
+  - **Card 5 (Ready to Fly)**: Explains the live `🟢 Connected` sidebar indicator and 1-click "⚡ Send to RC 2" mission upload.
+- **Offline Hardware Integration Guide (`docs/RC2_COMPANION_BRIDGE_GUIDE.md`)**:
+  - Dedicated offline documentation providing pilots and fleet operators with clear setup cards, terminal snippets, network troubleshooting, and field transfer workflows.
+
+#### Under the Hood & Technical Details
+- **`index_template.html` & `index.html`**: Added `.rc2-connect-cards-grid` container with 5 `.rc2-step-card` components into `#guide-modal` and `#intro-pane-tips`.
+- **`index.css`**: Added responsive grid styles, glowing glassmorphism accents, step badges, and mobile/tablet breakpoints for `.rc2-connect-cards-grid` and `.rc2-step-card`.
+- **`index.test.js` & `index.e2e.test.js`**: Added comprehensive unit tests and Playwright E2E UI verification asserting the existence, structure, and interactive rendering of all 5 connection cards.
+
 ## [1.177.1] - 2026-10-23
 
 ### Fixed
