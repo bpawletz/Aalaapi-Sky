@@ -24715,6 +24715,72 @@ describe('Issue #77: Multi-POI Association & Three-Tier Cascading Hierarchy', ()
   });
 });
 
+describe('Issue #115: Adaptive Hardware Sync (WebUSB & Desktop Bridge) Suite', () => {
+  test('Version Consistency across required locations for v1.177.0', () => {
+    assertVersionConsistency('1.177.0');
+  });
+
+  const { WebUsbMtpEngine, WebUsbMtp, PTP_OP_OPEN_SESSION, PTP_OP_SEND_OBJECT, PTP_OP_GET_OBJECT } = require('./src/bridge/WebUsbMtp.js');
+  const { DjiLogDecryptorEngine, DjiLogDecryptor } = require('./src/bridge/DjiLogDecryptor.js');
+
+  test('WebUsbMtpEngine instantiates and builds valid PTP/MTP binary containers', () => {
+    const engine = new WebUsbMtpEngine();
+    assert.strictEqual(typeof engine.isSupported, 'function');
+    assert.strictEqual(typeof engine.connect, 'function');
+    assert.strictEqual(typeof engine.pushKmz, 'function');
+
+    const containerBuffer = engine.buildContainer(1, PTP_OP_OPEN_SESSION, 42, new Uint8Array([1, 2, 3]), [100]);
+    assert.ok(containerBuffer instanceof ArrayBuffer);
+    const parsed = engine.parseContainer(containerBuffer);
+    assert.strictEqual(parsed.type, 1);
+    assert.strictEqual(parsed.code, PTP_OP_OPEN_SESSION);
+    assert.strictEqual(parsed.transactionId, 42);
+    assert.strictEqual(parsed.params[0], 100);
+  });
+
+  test('WebUsbMtpEngine encodePtpString creates null-terminated UTF-16LE Pascal string', () => {
+    const engine = new WebUsbMtpEngine();
+    const encoded = engine.encodePtpString('test.kmz');
+    assert.strictEqual(encoded[0], 9); // 8 chars + null terminator
+    assert.strictEqual(encoded[1], 116); // 't'
+    assert.strictEqual(encoded[2], 0);
+  });
+
+  test('DjiLogDecryptorEngine parses log headers and manages API keys', () => {
+    const decryptor = new DjiLogDecryptorEngine();
+    decryptor.setApiKey('test_key_1234567890abcdef123456');
+    assert.strictEqual(decryptor.getApiKey(), 'test_key_1234567890abcdef123456');
+
+    // Create dummy 128-byte log buffer
+    const buf = new ArrayBuffer(128);
+    const view = new DataView(buf);
+    view.setUint8(0, 68); // 'D'
+    view.setUint8(1, 74); // 'J'
+    view.setUint8(2, 73); // 'I'
+    view.setUint8(3, 33); // '!'
+    view.setUint8(4, 1);  // version 1
+    view.setUint32(8, 128, true);
+
+    const header = decryptor.parseLogHeader(buf);
+    assert.strictEqual(header.magic, 'DJI!');
+    assert.strictEqual(header.version, 1);
+    assert.strictEqual(header.headerLength, 128);
+  });
+
+  test('DOM Architecture: WebUSB actions and buttons exist in index_template.html and index.html', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    assert.ok(template.includes('id="webusb-direct-actions"'), 'index_template.html must contain webusb-direct-actions');
+    assert.ok(template.includes('id="webusb-sync-btn"'), 'index_template.html must contain webusb-sync-btn');
+    assert.ok(template.includes('id="webusb-pull-log-btn"'), 'index_template.html must contain webusb-pull-log-btn');
+
+    assert.ok(indexHtml.includes('id="webusb-direct-actions"'), 'index.html must contain webusb-direct-actions');
+    assert.ok(indexHtml.includes('id="webusb-sync-btn"'), 'index.html must contain webusb-sync-btn');
+    assert.ok(indexHtml.includes('id="webusb-pull-log-btn"'), 'index.html must contain webusb-pull-log-btn');
+  });
+});
+
 after(() => {
     pois = origPois;
     flightLayers = origFlightLayers;
@@ -33407,6 +33473,101 @@ describe('v1.175.0 360° Spherical Panorama Stationary Capture Engine Expansion 
     assert.ok(template.includes('id="photo-sphere-duration-badge"'), 'Template must contain photo-sphere-duration-badge');
     assert.ok(template.includes('id="photo-sphere-download-xmp-btn"'), 'Template must contain photo-sphere-download-xmp-btn');
     assert.ok(template.includes('value="16"'), 'Template must contain 16-shot ring density');
+  });
+});
+
+describe('v1.176.0 Camera ND Filter Recommendation & Exposure Advisor Suite', () => {
+  test('Version Consistency across required locations for v1.176.0', () => {
+    assertVersionConsistency('1.176.0');
+  });
+
+  test('calculateSceneLux calculates daylight, overcast, civil twilight, and night correctly', () => {
+    const ndAdvisor = require('./src/geo/NdFilterAdvisor.js');
+    assert.ok(typeof ndAdvisor.calculateSceneLux === 'function');
+
+    // 1. High Sun (45°) and Clear Sky
+    const brightSun = ndAdvisor.calculateSceneLux(45, 'CLR');
+    assert.ok(brightSun.lux > 50000, `Expected lux > 50000, got ${brightSun.lux}`);
+    assert.ok(brightSun.ev100 >= 14 && brightSun.ev100 <= 16, `Expected EV 14-16, got ${brightSun.ev100}`);
+
+    // 2. Overcast (8 octas)
+    const overcast = ndAdvisor.calculateSceneLux(45, 'OVC');
+    assert.ok(overcast.lux < brightSun.lux);
+    assert.ok(overcast.ev100 < brightSun.ev100);
+    assert.ok(overcast.desc.includes('Overcast'));
+
+    // 3. Civil Twilight (-2°)
+    const twilight = ndAdvisor.calculateSceneLux(-2, 'CLR');
+    assert.ok(twilight.lux < 400 && twilight.lux > 0);
+    assert.ok(twilight.desc.includes('Twilight'));
+
+    // 4. Night (-10°)
+    const night = ndAdvisor.calculateSceneLux(-10, 'CLR');
+    assert.ok(night.ev100 < 0);
+    assert.strictEqual(night.desc, 'Night Flight');
+  });
+
+  test('calculateNdRecommendation recommends appropriate ND filter for fixed aperture drone in daylight', () => {
+    const ndAdvisor = require('./src/geo/NdFilterAdvisor.js');
+    assert.ok(typeof ndAdvisor.calculateNdRecommendation === 'function');
+
+    // Mini 4 Pro fixed f/1.7 in bright sunlight (EV15) for 30fps video (target 1/60s 180° rule)
+    const recCinema = ndAdvisor.calculateNdRecommendation({
+      mode: 'cinematic',
+      cameraModel: 'dji_mini_4_pro_std',
+      aperture: 1.7,
+      iso: 100,
+      fps: 30,
+      manualEvOverride: 15.0
+    });
+
+    assert.strictEqual(recCinema.cameraProfile.isFixedAperture, true);
+    assert.strictEqual(recCinema.aperture, 1.7);
+    assert.strictEqual(recCinema.shutterLabel, '1/60s (30fps 180° Rule)');
+    assert.ok(recCinema.requiredStops >= 6.0, `Required stops should be >= 6.0, got ${recCinema.requiredStops}`);
+    assert.ok(['nd64', 'nd128', 'nd256'].includes(recCinema.recommendedFilter.id), `Expected ND64/ND128/ND256, got ${recCinema.recommendedFilter.id}`);
+
+    // Photogrammetry mode: always recommends 'none' (UV/Clear) and warns against motion blur
+    const recPhoto = ndAdvisor.calculateNdRecommendation({
+      mode: 'photogrammetry',
+      cameraModel: 'dji_mini_4_pro_std',
+      manualEvOverride: 15.0
+    });
+
+    assert.strictEqual(recPhoto.recommendedFilter.id, 'none');
+    assert.ok(recPhoto.warningNote.includes('NO ND filter is recommended'));
+    assert.ok(recPhoto.warningNote.includes('motion blur'));
+
+    // Long Exposure mode: 2.0s exposure in daylight requires deep ND
+    const recLongExp = ndAdvisor.calculateNdRecommendation({
+      mode: 'long_exposure',
+      cameraModel: 'dji_mini_4_pro_std',
+      longExposureSec: 2.0,
+      manualEvOverride: 14.0
+    });
+    assert.ok(['nd256', 'nd1000'].includes(recLongExp.recommendedFilter.id));
+  });
+
+  test('DRONE_CAMERA_OPTICS correctly classifies fixed-aperture vs adjustable aperture', () => {
+    const ndAdvisor = require('./src/geo/NdFilterAdvisor.js');
+    const optics = ndAdvisor.DRONE_CAMERA_OPTICS;
+
+    assert.strictEqual(optics['dji_mini_4_pro_std'].isFixedAperture, true);
+    assert.strictEqual(optics['dji_mini_4_pro_std'].defaultAperture, 1.7);
+    assert.strictEqual(optics['dji_air_3_wide'].isFixedAperture, true);
+    assert.strictEqual(optics['dji_air_3_tele'].defaultAperture, 2.8);
+    assert.strictEqual(optics['dji_mavic_3_pro'].isFixedAperture, false);
+    assert.strictEqual(optics['dji_inspire_3'].isFixedAperture, false);
+  });
+
+  test('UI templates contain topbar pill badge, popover card, advisor row, and modal dialog', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('id="header-nd-filter-badge"'), 'Template must contain header-nd-filter-badge');
+    assert.ok(template.includes('id="pop-nd-filter-card"'), 'Template must contain pop-nd-filter-card');
+    assert.ok(template.includes('id="sun-advisor-nd-filter"'), 'Template must contain sun-advisor-nd-filter');
+    assert.ok(template.includes('id="nd-filter-modal"'), 'Template must contain nd-filter-modal');
+    assert.ok(template.includes('id="nd-filter-chips-container"'), 'Template must contain nd-filter-chips-container');
+    assert.ok(template.includes('data-nd-mode="cinematic"'), 'Template must contain cinematic mode tab');
   });
 });
 

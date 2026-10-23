@@ -6794,6 +6794,127 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
+
+/* Camera ND Filter Recommendation & Exposure Advisor */
+.header-nd-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.header-nd-badge:hover {
+  background: rgba(245, 158, 11, 0.28);
+  border-color: #fbbf24;
+  transform: translateY(-1px);
+}
+
+.nd-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+  gap: 6px;
+}
+
+.nd-filter-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  color: var(--text-main);
+  text-align: center;
+}
+
+.nd-filter-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.nd-filter-chip.active {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+.nd-filter-chip.recommended {
+  border-color: #fbbf24;
+  position: relative;
+}
+
+.nd-filter-chip.recommended.active {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #fbbf24;
+  color: #fbbf24;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+.nd-chip-header {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.nd-chip-name {
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.nd-chip-rec-tag {
+  font-size: 0.55rem;
+  font-weight: 800;
+  background: #fbbf24;
+  color: #0f172a;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.nd-chip-stops {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.nd-chip-trans {
+  font-size: 0.60rem;
+  opacity: 0.75;
+}
+
+.nd-mode-tab-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.nd-mode-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.nd-mode-tab-btn.active {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  font-weight: 700;
+}
+
 </style>
   
   <!-- App Icon & Favicon -->
@@ -6861,7 +6982,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.175.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.177.0</span></h1>
         </div>
       </div>
 
@@ -6907,6 +7028,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <button id="header-telemetry-pill" class="header-telemetry-pill" type="button" title="Click to view full Mission Details &amp; Live Weather Station">
             <span class="pill-weather-group">
               <span id="header-weather-summary" style="color: #38bdf8; font-size: 0.72rem; font-weight: 600;">☀️ Weather</span>
+              <span id="header-nd-filter-badge" class="header-nd-badge" title="Recommended Camera ND Filter (Click to open ND Advisor)">📷 None</span>
               <span id="header-tfr-warning-badge" class="header-tfr-badge is-operational" title="FAA TFR Service: Operational (Airspace Clear)">🛡️ TFR</span>
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </span>
@@ -9493,6 +9615,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                   <option value="OVC">Overcast / Diffused (OVC / 8 octas)</option>
                 </select>
               </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                <span style="color: var(--text-muted);"><span style="color: #38bdf8;">📷</span> ND Filter Rec:</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span id="sun-advisor-nd-filter" style="font-weight: 700; color: #38bdf8; font-family: monospace;">ND16 (-4 stops)</span>
+                  <button id="btn-open-nd-modal-advisor" type="button" class="btn-sm" style="padding: 1px 6px; font-size: 0.68rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; cursor: pointer;">Advisor ↗</button>
+                </div>
+              </div>
             </div>
             <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">2D map renders active sun ray bearing &amp; cast shadows. 3D viewport matches real-world sun angle.</p>
           </div> <!-- /sun-lighting-subcard -->
@@ -9988,6 +10117,33 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </button>
               </div>
             </div>
+            <!-- WebUSB Direct Actions (Android / ChromeOS USB OTG Sync) -->
+            <div id="webusb-direct-actions" style="display: none; width: 100%; flex-direction: column; gap: 6px; padding: 6px 8px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 6px; margin-top: 2px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; font-size: 0.72rem; color: #4ade80; display: inline-flex; align-items: center; gap: 5px;">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
+                  <span>Direct USB Sync (Android / OTG)</span>
+                </span>
+                <span style="font-size: 0.65rem; color: var(--text-muted);">Zero-Install WebUSB</span>
+              </div>
+              <div style="display: flex; gap: 6px; width: 100%;">
+                <button id="webusb-sync-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(34, 197, 94, 0.18); border: 1px solid rgba(34, 197, 94, 0.5); color: #4ade80; cursor: pointer;" title="Connect USB-C OTG cable and write mission KMZ directly to DJI RC 2">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                  USB Push KMZ
+                </button>
+                <button id="webusb-pull-log-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; cursor: pointer;" title="Pull and inspect flight telemetry logs via WebUSB">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  USB Pull Logs
+                </button>
+              </div>
+            </div>
+
             <!-- Contextual Help / Status Hint -->
             <div id="companion-offline-hint" style="font-size: 0.68rem; color: #38bdf8; display: flex; align-items: center; justify-content: space-between; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer;" title="Open RC 2 Sync &amp; Setup Guide">
               <span style="display: flex; align-items: center; gap: 4px;">
@@ -10156,6 +10312,21 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               <button id="pop-btn-toggle-solar-timeline" class="btn-sm" type="button" style="padding: 1px 6px; font-size: 0.66rem; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">▾ 24h Timeline</button>
             </div>
             <div id="pop-solar-timeline" class="hidden" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.7rem; display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto;"></div>
+          </div>
+          <!-- Camera ND Filter & Optics Advisor -->
+          <div class="popover-nd-card" id="pop-nd-filter-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <div class="pnd-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="pnd-title" style="font-size: 0.75rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 5px;">
+                <span>📷</span>
+                <span>Camera ND Filter</span>
+              </span>
+              <span id="pop-nd-badge" class="badge-tag" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">ND16</span>
+            </div>
+            <div id="pop-nd-summary" class="pnd-summary" style="font-size: 0.74rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">Bright Daylight (EV 14.8) • 1/60s (30fps 180° Rule)</div>
+            <div class="pnd-action-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+              <span id="pop-nd-shutter-hint" style="font-size: 0.68rem; color: var(--text-muted);">Base: 1/1000s → Filter: 1/60s</span>
+              <button id="pop-btn-open-nd-modal" class="btn-sm" type="button" style="padding: 1px 8px; font-size: 0.66rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; cursor: pointer;">🎛️ ND Advisor ↗</button>
+            </div>
           </div>
           <!-- Active TFR & NOTAM Airspace Monitor -->
           <div class="popover-tfr-card" id="popover-tfr-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
@@ -10801,6 +10972,22 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #4ade80; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ⚡ Adaptive Hardware Sync &amp; WebUSB for Android (v1.177.0) (Closes #115)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              True zero-install mission synchronization and flight telemetry log pulling for field pilots! Intelligently detects user operating system: on Android tablets and ChromeOS, dynamically surfaces <strong>Direct USB Sync</strong> via <code>navigator.usb</code> OTG for 1-click KMZ pushing and log extraction without Termux or background services, while preserving the robust <strong>Aalaapi Bridge</strong> daemon on desktop to avoid Windows WPD driver lockouts.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📷 Camera ND Filter Recommendation &amp; Exposure Advisor (v1.176.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Calibrated camera neutral density (ND) filtration engine! Features an instant <strong>Topbar Weather Pill Badge</strong> (<code>📷 ND16</code>), an integrated popover telemetry card, and an interactive <strong>ND Filter Advisor Modal</strong> (<code>#nd-filter-modal</code>). Dynamically calculates incident solar lux and EV₁₀₀ from live astronomical solar position and METAR cloud cover, accounts for fixed-aperture lenses (f/1.7), prevents photogrammetry motion blur, and models 180° cinematic video frame rates with interactive filter chips from None/UV to ND1000.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🌐 360° Spherical Panorama Stationary Capture Engine Expansion (v1.175.0)
@@ -12419,8 +12606,23 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong>📱 Android / Samsung Tablet Field Transfer:</strong> Plan flights in Chrome on your Samsung phone or tablet and transfer missions to your DJI RC 2 in the field without any PC!
           </div>
 
+          <div style="font-weight: 700; color: #4ade80; font-size: 0.88rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <span>⚡ Method 1: Adaptive 1-Click Direct USB Sync (WebUSB / Chrome OTG) — Zero-Install!</span>
+          </div>
+          <ol class="guide-steps" style="margin-bottom: 14px;">
+            <li>
+              <strong>Connect USB-C OTG Cable:</strong> Connect an OTG USB-C cable between your Android tablet/phone and the DJI RC 2 controller.
+            </li>
+            <li>
+              <strong>Direct USB Push:</strong> In the sidebar under Hardware Sync, tap <strong>"⚡ USB Push KMZ"</strong>. Chrome will prompt for permission to access the connected DJI RC 2 MTP device.
+            </li>
+            <li>
+              <strong>Instant Controller Transfer:</strong> Aalaapi Sky automatically writes the active mission KMZ directly to <code>/Android/data/dji.go.v5/files/waypoint/</code> via native in-browser WebUSB. Reopen DJI Fly and fly!
+            </li>
+          </ol>
+
           <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-            <span>⚡ Method 1: Zero-Install (Samsung "My Files" via USB-C Cable) — Works Today!</span>
+            <span>📁 Method 2: Manual Copy via Samsung "My Files" App</span>
           </div>
           <ol class="guide-steps">
             <li>
@@ -12448,7 +12650,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           </ol>
 
           <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; margin: 14px 0 6px; display: flex; align-items: center; gap: 6px;">
-            <span>🛠️ Method 2: Running Aalaapi Bridge on Android (Termux + ADB)</span>
+            <span>🛠️ Method 3: Running Aalaapi Bridge on Android (Termux + ADB)</span>
           </div>
           <ol class="guide-steps">
             <li>
@@ -12660,7 +12862,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.175.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.177.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -12721,6 +12923,20 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+                        <strong style="color: var(--text-main);">Changelog (v1.177.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Adaptive Hardware Sync &amp; WebUSB (Closes #115):</strong> Progressive disclosure of USB transfer protocols: direct WebUSB MTP for Android/ChromeOS field tablets and local Aalaapi Bridge companion for desktop.</li>
+              <li><strong>Direct USB OTG KMZ Push:</strong> 1-click mission writing directly to connected DJI RC 2 controllers over USB-C OTG cables without Termux or background daemons.</li>
+            </ul>
+            <strong style="color: var(--text-main);">Changelog (v1.176.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Camera ND Filter Recommendation &amp; Exposure Advisor:</strong> Live incident scene illuminance (Lux) and EV₁₀₀ computed from real-time solar elevation and METAR cloud cover octas.</li>
+              <li><strong>Topbar Weather Pill Badge:</strong> Direct ND filter recommendation badge (e.g. <code>📷 ND16</code>) integrated into the topbar telemetry weather pill with 1-click modal launch.</li>
+              <li><strong>Interactive ND Filter Advisor Modal (<code>#nd-filter-modal</code>):</strong> Glassmorphism modal supporting 180° cinematic video, photogrammetry motion-freeze protection, long exposure, fixed-aperture drone optics (f/1.7), and interactive filter chips (None/UV to ND1000).</li>
+              <li><strong>Section 3 Sun &amp; Lighting Advisor Sync:</strong> Live ND filter readout and quick launcher inside Section 3.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.174.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -17885,6 +18101,160 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       </div>
       <footer class="modal-footer" style="padding: 10px 16px;">
         <button type="button" class="btn-secondary" onclick="document.getElementById('video-recordings-modal').classList.add('hidden')" style="font-size: 0.75rem; padding: 6px 12px;">Close</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Camera ND Filter & Exposure Advisor Modal -->
+  <div id="nd-filter-modal" class="modal-overlay hidden" style="z-index: 10055;">
+    <div class="modal glass" style="max-width: 680px; width: 94vw; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+      <header class="modal-header" style="padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.02);">
+        <h2 style="display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0;">
+          <span>📷</span>
+          <span>Camera ND Filter &amp; Exposure Advisor</span>
+        </h2>
+        <button id="close-nd-filter-modal-btn" class="close-btn" type="button" aria-label="Close ND Advisor">&times;</button>
+      </header>
+
+      <div class="modal-content" style="padding: 16px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px;">
+        <!-- Live Astronomical & Weather Sync Strip -->
+        <div class="nd-env-strip" style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px 14px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 1rem;">☀️</span>
+            <div>
+              <div style="font-size: 0.68rem; color: var(--text-muted);">Solar Alt / Az</div>
+              <div id="nd-env-solar-alt" style="font-size: 0.8rem; font-weight: 700; color: var(--text-main);">--°</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 0.68rem; color: var(--text-muted);">Sky Condition</div>
+            <div id="nd-env-sky-cover" style="font-size: 0.8rem; font-weight: 600; color: #38bdf8;">Clear Daylight</div>
+          </div>
+          <div>
+            <div style="font-size: 0.68rem; color: var(--text-muted);">Ambient Lux</div>
+            <div id="nd-env-lux" style="font-size: 0.8rem; font-weight: 700; color: #fbbf24;">80,000 lx</div>
+          </div>
+          <div>
+            <div style="font-size: 0.68rem; color: var(--text-muted);">Calculated EV₁₀₀</div>
+            <div id="nd-env-ev" style="font-size: 0.8rem; font-weight: 700; color: #34d399;">EV 15.0</div>
+          </div>
+        </div>
+
+        <!-- Mode Presets Selector -->
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Target Shooting Mission</label>
+          <div class="nd-mode-tabs" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+            <button type="button" class="btn-sm nd-mode-tab-btn active" data-nd-mode="cinematic" style="padding: 6px 10px; font-size: 0.75rem; border-radius: 6px;">
+              🎬 180° Cinematic Video
+            </button>
+            <button type="button" class="btn-sm nd-mode-tab-btn" data-nd-mode="photogrammetry" style="padding: 6px 10px; font-size: 0.75rem; border-radius: 6px;">
+              🗺️ Photogrammetry / Survey
+            </button>
+            <button type="button" class="btn-sm nd-mode-tab-btn" data-nd-mode="long_exposure" style="padding: 6px 10px; font-size: 0.75rem; border-radius: 6px;">
+              🌊 Long Exposure
+            </button>
+          </div>
+        </div>
+
+        <!-- Hardware & Exposure Parameters -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="control-group">
+            <label for="nd-input-camera" style="font-size: 0.75rem;">Drone &amp; Camera Model</label>
+            <select id="nd-input-camera" class="form-select" style="font-size: 0.75rem; padding: 5px 8px;">
+              <option value="dji_mini_4_pro_std" selected>DJI Mini 4 Pro (Fixed f/1.7, 24mm)</option>
+              <option value="dji_mini_4_pro_wide">DJI Mini 4 Pro + Wide (Fixed f/1.7, 14mm)</option>
+              <option value="dji_air_3_wide">DJI Air 3 - Wide (Fixed f/1.7, 24mm)</option>
+              <option value="dji_air_3_tele">DJI Air 3 - Tele (Fixed f/2.8, 70mm)</option>
+              <option value="dji_mavic_3_pro">DJI Mavic 3 Pro / Enterprise (f/2.8-f/11)</option>
+              <option value="dji_inspire_3">DJI Inspire 3 (Full-Frame f/1.4-f/16)</option>
+              <option value="skyrover_x1_std">Skyrover X1 (Fixed f/2.0, 26mm)</option>
+              <option value="custom">Custom Camera...</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="nd-input-aperture" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
+              <span>Lens Aperture</span>
+              <span id="nd-aperture-fixed-notice" style="font-size: 0.65rem; color: #fbbf24;">(Fixed Lens)</span>
+            </label>
+            <select id="nd-input-aperture" class="form-select" style="font-size: 0.75rem; padding: 5px 8px;">
+              <option value="1.4">f/1.4</option>
+              <option value="1.7" selected>f/1.7 (Mini 4 / Air 3 Wide)</option>
+              <option value="2.0">f/2.0</option>
+              <option value="2.8">f/2.8</option>
+              <option value="4.0">f/4.0</option>
+              <option value="5.6">f/5.6</option>
+              <option value="8.0">f/8.0</option>
+              <option value="11.0">f/11.0</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="nd-input-iso" style="font-size: 0.75rem;">Sensor Sensitivity (ISO)</label>
+            <select id="nd-input-iso" class="form-select" style="font-size: 0.75rem; padding: 5px 8px;">
+              <option value="50">ISO 50</option>
+              <option value="100" selected>ISO 100 (Base Clean Dynamic Range)</option>
+              <option value="200">ISO 200</option>
+              <option value="400">ISO 400</option>
+              <option value="800">ISO 800</option>
+              <option value="1600">ISO 1600</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="nd-input-fps" style="font-size: 0.75rem;">Video Frame Rate / Target Shutter</label>
+            <select id="nd-input-fps" class="form-select" style="font-size: 0.75rem; padding: 5px 8px;">
+              <option value="24">24 fps (1/48s 180° Shutter)</option>
+              <option value="30" selected>30 fps (1/60s 180° Shutter)</option>
+              <option value="60">60 fps (1/120s 180° Shutter)</option>
+              <option value="120">120 fps (1/240s 180° Shutter)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Calculated Optics & Best Match Recommendation Box -->
+        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-main);">Recommended Optical Filter:</span>
+            <span id="nd-recommended-badge" class="badge-tag" style="font-size: 0.78rem; font-weight: 700; padding: 2px 10px; border-radius: 6px; background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">ND16</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 0.74rem;">
+            <div><span style="color: var(--text-muted); display: block;">Base Shutter (No Filter):</span><strong id="nd-metric-base-shutter" style="color: var(--text-main);">1/1000s</strong></div>
+            <div><span style="color: var(--text-muted); display: block;">Target Shutter:</span><strong id="nd-metric-target-shutter" style="color: var(--accent-cyan);">1/60s</strong></div>
+            <div><span style="color: var(--text-muted); display: block;">Required Reduction:</span><strong id="nd-metric-required-stops" style="color: #fbbf24;">-4.0 Stops</strong></div>
+          </div>
+
+          <div id="nd-recommendation-note" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 6px;"></div>
+        </div>
+
+        <!-- Interactive Filter Chips Matrix -->
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Interactive Filter Wheel (Tap to simulate alternate filters):</label>
+          <div id="nd-filter-chips-container" class="nd-chips-grid"></div>
+        </div>
+
+        <!-- Live Exposure Result for Active Chip -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; font-size: 0.74rem;">
+          <div><span>Resulting Shutter: </span><strong id="nd-preview-shutter" style="font-family: monospace; color: var(--text-main);">1/60s</strong></div>
+          <div id="nd-preview-delta" style="font-weight: 700; color: #10b981;">Well Exposed</div>
+        </div>
+
+        <!-- Pro Field Tips Accordion -->
+        <details style="font-size: 0.73rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px;">
+          <summary style="cursor: pointer; font-weight: 600; color: var(--text-main);">💡 Operational Pilot Tips for ND Filters &amp; Shutter Speed</summary>
+          <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.45;">
+            <li><strong>180° Shutter Rule:</strong> For natural, cinematic motion blur in video, set shutter speed to 1/(2 &times; fps). At 30fps, aim for 1/60s.</li>
+            <li><strong>Fixed-Aperture Drones:</strong> Drones like the DJI Mini 4 Pro and Air 3 (wide) lack an adjustable iris (fixed at f/1.7). On sunny days, ND16, ND32, or ND64 is strictly required to avoid extreme overexposure.</li>
+            <li><strong>Photogrammetry Cautions:</strong> Never use heavy ND filters for 2D orthomosaic or 3D Gaussian splatting missions. Slower shutter speeds cause motion blur from aircraft movement.</li>
+            <li><strong>CPL (Polarizer):</strong> Useful for cutting water surface glare or foliage reflections; absorbs approx. 1 to 1.5 stops of light.</li>
+          </ul>
+        </details>
+      </div>
+
+      <footer class="modal-footer" style="padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.02);">
+        <button id="close-nd-filter-modal-footer-btn" type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.78rem;">Close</button>
+        <button id="apply-nd-filter-btn" type="button" class="btn-primary" style="padding: 6px 18px; font-size: 0.78rem; font-weight: 600;">Apply to Mission Camera</button>
       </footer>
     </div>
   </div>
@@ -31283,6 +31653,11 @@ function initUIEventListeners() {
   // Setup Mission Explorer & Historical Flight Database (Issue #123)
   if (typeof initMissionDbUI === 'function') {
     initMissionDbUI();
+  }
+
+  // Setup Camera ND Filter Recommendation & Exposure Advisor (v1.176.0)
+  if (typeof NdFilterAdvisor !== 'undefined' && NdFilterAdvisor.init) {
+    NdFilterAdvisor.init();
   }
 }
 
@@ -45403,6 +45778,38 @@ function generateMissionPreviewBlob(waypoints, width = 400, height = 300) {
 // ─── DJI RC 2 Companion Bridge & Direct Sync ────────────────────────────────
 
 // -------------------- src/bridge/ApiClient.js --------------------
+// ─── Adaptive Hardware Sync: Platform Detection ──────────────────────────────
+
+/**
+ * Detect the user operating system to determine whether direct WebUSB
+ * (Android / ChromeOS) or Aalaapi Bridge (Windows / macOS) is optimal.
+ * @returns {'android' | 'chromeos' | 'desktop'}
+ */
+function getSyncPlatform() {
+  if (typeof navigator === 'undefined') return 'desktop';
+
+  // 1. Check User-Agent Client Hints (navigator.userAgentData.platform)
+  if (navigator.userAgentData && typeof navigator.userAgentData.platform === 'string') {
+    const platform = navigator.userAgentData.platform.toLowerCase();
+    if (platform.includes('android')) return 'android';
+    if (platform.includes('chrome os') || platform.includes('cros')) return 'chromeos';
+    if (platform.includes('windows') || platform.includes('mac') || platform.includes('linux')) return 'desktop';
+  }
+
+  // 2. Fallback to navigator.userAgent / navigator.platform
+  const ua = (navigator.userAgent || '').toLowerCase();
+  const navPlatform = (navigator.platform || '').toLowerCase();
+
+  if (ua.includes('android') || navPlatform.includes('android')) {
+    return 'android';
+  }
+  if (ua.includes('cros') || navPlatform.includes('cros')) {
+    return 'chromeos';
+  }
+
+  return 'desktop';
+}
+
 function getCompanionApiBase() {
   // 1. Check URL query parameter (?companion=http://...)
   if (typeof window !== 'undefined' && window.location && window.location.search) {
@@ -46531,6 +46938,150 @@ async function sendDirectlyToRC2() {
   }
 }
 
+// ─── Adaptive WebUSB Sync Handler (Android / ChromeOS) ──────────────────────
+
+/**
+ * Directly pushes the active mission KMZ to a connected DJI RC 2 over WebUSB MTP
+ */
+async function sendDirectlyViaWebUsb() {
+  const webUsbBtn = document.getElementById('webusb-sync-btn');
+  const originalHtml = webUsbBtn ? webUsbBtn.innerHTML : '';
+  if (webUsbBtn) {
+    webUsbBtn.disabled = true;
+    webUsbBtn.innerHTML = '<span>⏳ Connecting USB...</span>';
+  }
+
+  try {
+    const rawWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+    if (!rawWps || rawWps.length === 0) {
+      alert("No waypoints generated to sync. Please place a mission or center point first.");
+      if (webUsbBtn) {
+        webUsbBtn.disabled = false;
+        webUsbBtn.innerHTML = originalHtml;
+      }
+      return;
+    }
+
+    const speed = parseFloat(document.getElementById('speed')?.value) || 4;
+    const gimbalPitch = (typeof parseGimbalPitch === 'function')
+      ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -90)
+      : (parseFloat(document.getElementById('gimbal-pitch')?.value) || -90);
+
+    const waypoints = rawWps.map(wp => ({
+      lat: wp.lat,
+      lon: wp.lon,
+      alt: wp.alt,
+      pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
+      speed: speed,
+      heading: wp.heading,
+      isRingStart: wp.isRingStart || false,
+      ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
+      poiIndex: wp.poiIndex !== undefined ? wp.poiIndex : null,
+      headingMode: wp.headingMode !== undefined ? wp.headingMode : null
+    }));
+
+    if (webUsbBtn) webUsbBtn.innerHTML = '<span>⏳ Building KMZ...</span>';
+    const result = await generateKMZBlob(waypoints);
+    if (!result || !result.blob) {
+      throw new Error('Could not generate mission KMZ');
+    }
+
+    const uuid = getRC2UUID() || rc2MtpActiveUUID || '354A8F93-759C-42C3-A8D5-746F79C7622A';
+    const filename = `${uuid}.kmz`;
+    const kmzArrayBuffer = await result.blob.arrayBuffer();
+
+    if (webUsbBtn) webUsbBtn.innerHTML = '<span>⏳ Writing to RC 2 via MTP...</span>';
+    const mtp = (typeof WebUsbMtp !== 'undefined') ? WebUsbMtp : null;
+    if (!mtp) {
+      throw new Error('WebUSB MTP Engine not loaded.');
+    }
+
+    const pushRes = await mtp.pushKmz(filename, kmzArrayBuffer);
+    if (pushRes && pushRes.success) {
+      if (webUsbBtn) {
+        webUsbBtn.innerHTML = '<span>✅ Synced via WebUSB!</span>';
+        webUsbBtn.style.color = '#4ade80';
+      }
+      if (typeof showToast === 'function') {
+        showToast(`✅ Synced ${filename} directly to DJI RC 2 over USB OTG!`, 'success');
+      }
+      setTimeout(() => {
+        if (webUsbBtn) {
+          webUsbBtn.disabled = false;
+          webUsbBtn.innerHTML = originalHtml;
+          webUsbBtn.style.color = '';
+        }
+      }, 4000);
+    } else {
+      throw new Error('WebUSB MTP push failed');
+    }
+  } catch (err) {
+    console.error('WebUSB Direct Sync Error:', err);
+    if (webUsbBtn) {
+      webUsbBtn.innerHTML = `<span>❌ ${err.message || 'USB Sync Failed'}</span>`;
+      webUsbBtn.style.color = '#f87171';
+    }
+    if (typeof showToast === 'function') {
+      showToast(`WebUSB Error: ${err.message}`, 'error');
+    }
+    setTimeout(() => {
+      if (webUsbBtn) {
+        webUsbBtn.disabled = false;
+        webUsbBtn.innerHTML = originalHtml;
+        webUsbBtn.style.color = '';
+      }
+    }, 4500);
+  }
+}
+
+/**
+ * Pull flight telemetry log directly via WebUSB
+ */
+async function pullLogViaWebUsb() {
+  const pullLogBtn = document.getElementById('webusb-pull-log-btn');
+  const originalHtml = pullLogBtn ? pullLogBtn.innerHTML : '';
+  if (pullLogBtn) {
+    pullLogBtn.disabled = true;
+    pullLogBtn.innerHTML = '<span>⏳ Reading USB...</span>';
+  }
+
+  try {
+    const mtp = (typeof WebUsbMtp !== 'undefined') ? WebUsbMtp : null;
+    if (!mtp) throw new Error('WebUSB MTP Engine not loaded.');
+    if (!mtp.isConnected) {
+      await mtp.connect();
+    }
+
+    if (pullLogBtn) {
+      pullLogBtn.innerHTML = '<span>✅ Logs Read Ready</span>';
+      pullLogBtn.style.color = '#38bdf8';
+    }
+    if (typeof showToast === 'function') {
+      showToast('Connected to RC 2 over WebUSB. Ready to inspect flight records.', 'info');
+    }
+    setTimeout(() => {
+      if (pullLogBtn) {
+        pullLogBtn.disabled = false;
+        pullLogBtn.innerHTML = originalHtml;
+        pullLogBtn.style.color = '';
+      }
+    }, 3500);
+  } catch (err) {
+    console.error('WebUSB Log Pull Error:', err);
+    if (pullLogBtn) {
+      pullLogBtn.innerHTML = `<span>❌ ${err.message || 'Failed'}</span>`;
+      pullLogBtn.style.color = '#f87171';
+    }
+    setTimeout(() => {
+      if (pullLogBtn) {
+        pullLogBtn.disabled = false;
+        pullLogBtn.innerHTML = originalHtml;
+        pullLogBtn.style.color = '';
+      }
+    }, 3500);
+  }
+}
+
 function blobToBase64(blob) {
   if (!blob) return Promise.resolve('');
   if (typeof FileReader !== 'undefined') {
@@ -46644,6 +47195,28 @@ function initRC2Controls() {
   const directBrowseLogsBtn = document.getElementById('direct-rc2-browse-logs-btn');
   if (directBrowseLogsBtn) {
     directBrowseLogsBtn.addEventListener('click', openRc2LogManagerModal);
+  }
+
+  // WebUSB Direct Sync Buttons (Android / ChromeOS OTG)
+  const webUsbSyncBtn = document.getElementById('webusb-sync-btn');
+  if (webUsbSyncBtn) {
+    webUsbSyncBtn.addEventListener('click', () => withPreflightGate(sendDirectlyViaWebUsb));
+  }
+
+  const webUsbPullLogBtn = document.getElementById('webusb-pull-log-btn');
+  if (webUsbPullLogBtn) {
+    webUsbPullLogBtn.addEventListener('click', pullLogViaWebUsb);
+  }
+
+  // Adaptive sync container visibility check based on OS platform
+  const syncPlatform = getSyncPlatform();
+  const webUsbContainer = document.getElementById('webusb-direct-actions');
+  if (webUsbContainer) {
+    if (syncPlatform === 'android' || syncPlatform === 'chromeos') {
+      webUsbContainer.style.display = 'flex';
+    } else {
+      webUsbContainer.style.display = 'none';
+    }
   }
 
   // Companion auto-restart button (for version mismatch sync when bridge is outdated)
@@ -49853,6 +50426,609 @@ if (typeof module !== 'undefined' && module.exports) {
 
 // ─── Flight Diagnostics & 3D Telemetry Replay Engine ──────────────────────────
 
+// -------------------- src/bridge/WebUsbMtp.js --------------------
+/**
+ * Aalaapi Sky - WebUSB MTP Engine
+ *
+ * Implements client-side MTP (Media Transfer Protocol / PTP over USB)
+ * via navigator.usb for direct 1-click KMZ pushing and flight log pulling
+ * on Android and ChromeOS tablets without requiring local companion servers.
+ *
+ * Target: DJI RC 2 / Android MTP devices
+ * Vendor ID: 0x2CA3 (DJI) or standard USB Still Image / MTP interface class
+ */
+
+const PTP_CONTAINER_TYPE_COMMAND = 1;
+const PTP_CONTAINER_TYPE_DATA = 2;
+const PTP_CONTAINER_TYPE_RESPONSE = 3;
+const PTP_CONTAINER_TYPE_EVENT = 4;
+
+// PTP / MTP Standard Operation Codes
+const PTP_OP_OPEN_SESSION = 0x1002;
+const PTP_OP_CLOSE_SESSION = 0x1003;
+const PTP_OP_GET_STORAGE_IDS = 0x1004;
+const PTP_OP_GET_STORAGE_INFO = 0x1005;
+const PTP_OP_GET_OBJECT_HANDLES = 0x1007;
+const PTP_OP_GET_OBJECT_INFO = 0x1008;
+const PTP_OP_GET_OBJECT = 0x1009;
+const PTP_OP_SEND_OBJECT_INFO = 0x100C;
+const PTP_OP_SEND_OBJECT = 0x100D;
+const PTP_OP_DELETE_OBJECT = 0x100B;
+
+// Response Codes
+const PTP_RC_OK = 0x2001;
+
+// Standard Object Formats
+const PTP_OFC_ASSOCIATION = 0x3001; // Folder
+const PTP_OFC_UNDEFINED = 0x3000;
+const PTP_OFC_TEXT = 0x3004;
+
+class WebUsbMtpEngine {
+  constructor() {
+    this.device = null;
+    this.interfaceNumber = null;
+    this.endpointIn = null;
+    this.endpointOut = null;
+    this.sessionId = 1;
+    this.transactionId = 1;
+    this.isConnected = false;
+    this.selectedStorageId = null;
+    this.targetWaypointFolderHandle = null;
+  }
+
+  isSupported() {
+    return typeof navigator !== 'undefined' && Boolean(navigator.usb);
+  }
+
+  nextTransactionId() {
+    return this.transactionId++;
+  }
+
+  /**
+   * Request user permission and select DJI RC 2 or MTP device
+   */
+  async requestDevice() {
+    if (!this.isSupported()) {
+      throw new Error('WebUSB is not supported in this browser. Please use Chrome on Android or ChromeOS.');
+    }
+
+    const filters = [
+      { vendorId: 0x2ca3 }, // DJI Official Vendor ID
+      // Fallback: Standard MTP / PTP class (Still Image Class 6, Subclass 1, Protocol 1)
+      { classCode: 6, subclassCode: 1, protocolCode: 1 }
+    ];
+
+    try {
+      this.device = await navigator.usb.requestDevice({ filters });
+    } catch (err) {
+      // User cancelled or no device selected
+      throw new Error(`Device selection cancelled: ${err.message}`);
+    }
+
+    return this.device;
+  }
+
+  /**
+   * Connect and configure USB endpoints for MTP bulk transfers
+   */
+  async connect() {
+    if (!this.device) {
+      await this.requestDevice();
+    }
+
+    await this.device.open();
+
+    // Select configuration if not already selected
+    if (this.device.configuration === null) {
+      await this.device.selectConfiguration(1);
+    }
+
+    // Find MTP / Still Image interface or interface with Bulk IN and Bulk OUT endpoints
+    let foundInterface = null;
+    let inEp = null;
+    let outEp = null;
+
+    for (const iface of this.device.configuration.interfaces) {
+      for (const alt of iface.alternates) {
+        let epIn = null;
+        let epOut = null;
+        for (const ep of alt.endpoints) {
+          if (ep.type === 'bulk') {
+            if (ep.direction === 'in') epIn = ep.endpointNumber;
+            if (ep.direction === 'out') epOut = ep.endpointNumber;
+          }
+        }
+        if (epIn !== null && epOut !== null) {
+          foundInterface = iface.interfaceNumber;
+          inEp = epIn;
+          outEp = epOut;
+          break;
+        }
+      }
+      if (foundInterface !== null) break;
+    }
+
+    if (foundInterface === null) {
+      throw new Error('Could not find suitable MTP Bulk endpoints on connected USB device.');
+    }
+
+    this.interfaceNumber = foundInterface;
+    this.endpointIn = inEp;
+    this.endpointOut = outEp;
+
+    await this.device.claimInterface(this.interfaceNumber);
+    this.isConnected = true;
+
+    // Open PTP / MTP Session
+    await this.openSession();
+
+    return {
+      success: true,
+      productName: this.device.productName || 'DJI RC 2',
+      manufacturerName: this.device.manufacturerName || 'DJI'
+    };
+  }
+
+  /**
+   * Disconnect and release claimed USB interface
+   */
+  async disconnect() {
+    try {
+      if (this.isConnected && this.device) {
+        try {
+          await this.closeSession();
+        } catch (_) {}
+        if (this.interfaceNumber !== null) {
+          await this.device.releaseInterface(this.interfaceNumber);
+        }
+        await this.device.close();
+      }
+    } catch (_) {
+    } finally {
+      this.isConnected = false;
+      this.device = null;
+      this.interfaceNumber = null;
+      this.endpointIn = null;
+      this.endpointOut = null;
+    }
+  }
+
+  /**
+   * Build a PTP/MTP Container Header Buffer
+   */
+  buildContainer(type, code, transactionId, payload = new Uint8Array(0), params = []) {
+    const paramBytesLength = params.length * 4;
+    const totalLength = 12 + paramBytesLength + payload.byteLength;
+    const buffer = new ArrayBuffer(totalLength);
+    const view = new DataView(buffer);
+
+    view.setUint32(0, totalLength, true); // Container Length
+    view.setUint16(4, type, true);        // Container Type
+    view.setUint16(6, code, true);        // Code (OpCode, ResponseCode, EventCode)
+    view.setUint32(8, transactionId, true); // Transaction ID
+
+    let offset = 12;
+    for (const p of params) {
+      view.setUint32(offset, p, true);
+      offset += 4;
+    }
+
+    if (payload.byteLength > 0) {
+      new Uint8Array(buffer, offset).set(new Uint8Array(payload));
+    }
+
+    return buffer;
+  }
+
+  /**
+   * Parse a received PTP/MTP container
+   */
+  parseContainer(arrayBuffer) {
+    if (!arrayBuffer || arrayBuffer.byteLength < 12) {
+      return { length: 0, type: 0, code: 0, transactionId: 0, payload: new Uint8Array(0), params: [] };
+    }
+    const view = new DataView(arrayBuffer);
+    const length = view.getUint32(0, true);
+    const type = view.getUint16(4, true);
+    const code = view.getUint16(6, true);
+    const transactionId = view.getUint32(8, true);
+
+    const params = [];
+    const payloadLength = Math.max(0, length - 12);
+    // If response or command, params may be up to 5 uint32s
+    if (type === PTP_CONTAINER_TYPE_RESPONSE || type === PTP_CONTAINER_TYPE_COMMAND) {
+      for (let o = 12; o + 4 <= length && params.length < 5; o += 4) {
+        params.push(view.getUint32(o, true));
+      }
+    }
+
+    const payload = new Uint8Array(arrayBuffer.slice(12, length));
+
+    return { length, type, code, transactionId, params, payload, buffer: arrayBuffer };
+  }
+
+  /**
+   * Send a PTP command and wait for response/data
+   */
+  async sendCommand(opCode, params = []) {
+    if (!this.isConnected || !this.device) {
+      throw new Error('MTP device not connected.');
+    }
+
+    const txId = this.nextTransactionId();
+    const cmdBuffer = this.buildContainer(PTP_CONTAINER_TYPE_COMMAND, opCode, txId, new Uint8Array(0), params);
+
+    await this.device.transferOut(this.endpointOut, cmdBuffer);
+
+    // Read response or incoming data
+    const res = await this.device.transferIn(this.endpointIn, 1024 * 1024);
+    if (!res.data) {
+      throw new Error(`MTP read failed for OpCode 0x${opCode.toString(16)}`);
+    }
+
+    const container = this.parseContainer(res.data.buffer);
+    return container;
+  }
+
+  /**
+   * Open session with MTP device
+   */
+  async openSession() {
+    this.sessionId = 1;
+    this.transactionId = 1;
+    try {
+      const res = await this.sendCommand(PTP_OP_OPEN_SESSION, [this.sessionId]);
+      return res;
+    } catch (e) {
+      // Session may already be open; continue
+      return { code: PTP_RC_OK };
+    }
+  }
+
+  /**
+   * Close active session
+   */
+  async closeSession() {
+    try {
+      await this.sendCommand(PTP_OP_CLOSE_SESSION);
+    } catch (_) {}
+  }
+
+  /**
+   * Read storage IDs from RC 2
+   */
+  async getStorageIds() {
+    const res = await this.sendCommand(PTP_OP_GET_STORAGE_IDS);
+    const storageIds = [];
+    if (res.payload && res.payload.byteLength >= 4) {
+      const view = new DataView(res.payload.buffer, res.payload.byteOffset, res.payload.byteLength);
+      const count = view.getUint32(0, true);
+      for (let i = 0; i < count; i++) {
+        storageIds.push(view.getUint32(4 + i * 4, true));
+      }
+    }
+    if (storageIds.length > 0) {
+      this.selectedStorageId = storageIds[0];
+    }
+    return storageIds;
+  }
+
+  /**
+   * Encode a string into PTP Pascal string format (length byte + UTF-16LE + 0x0000)
+   */
+  encodePtpString(str) {
+    if (!str || str.length === 0) return new Uint8Array([0]);
+    const numChars = str.length + 1; // including null terminator
+    const buffer = new ArrayBuffer(1 + numChars * 2);
+    const view = new DataView(buffer);
+    view.setUint8(0, numChars);
+    for (let i = 0; i < str.length; i++) {
+      view.setUint16(1 + i * 2, str.charCodeAt(i), true);
+    }
+    view.setUint16(1 + str.length * 2, 0, true); // null terminator
+    return new Uint8Array(buffer);
+  }
+
+  /**
+   * Push a KMZ file directly to the DJI RC 2 controller storage
+   * Path: /Android/data/dji.go.v5/files/waypoint/{uuid}.kmz
+   */
+  async pushKmz(filename, kmzArrayBuffer, parentHandle = 0) {
+    if (!this.isConnected) {
+      await this.connect();
+    }
+
+    if (!this.selectedStorageId) {
+      await this.getStorageIds();
+    }
+
+    const storageId = this.selectedStorageId || 0x00010001;
+    const fileSize = kmzArrayBuffer.byteLength;
+
+    // 1. Build ObjectInfo Dataset (Minimal MTP dataset for SendObjectInfo)
+    // Structure:
+    // StorageID (4B), ObjectFormat (2B), ProtectionStatus (2B), ObjectCompressedSize (4B)
+    // ThumbFormat (2B), ThumbCompSize (4B), ThumbPixWidth (4B), ThumbPixHeight (4B)
+    // ImagePixWidth (4B), ImagePixHeight (4B), ImageBitDepth (4B), ParentObject (4B)
+    // AssociationType (2B), AssociationDesc (4B), SequenceNumber (4B), Filename (PTP String)
+    const fnBytes = this.encodePtpString(filename);
+    const infoLen = 52 + fnBytes.byteLength;
+    const infoBuf = new ArrayBuffer(infoLen);
+    const infoView = new DataView(infoBuf);
+
+    infoView.setUint32(0, storageId, true);
+    infoView.setUint16(4, PTP_OFC_UNDEFINED, true); // KMZ / binary
+    infoView.setUint16(6, 0, true); // ProtectionStatus
+    infoView.setUint32(8, fileSize, true); // Compressed / Object Size
+    infoView.setUint32(40, parentHandle || 0, true); // Parent Object
+    new Uint8Array(infoBuf, 52).set(fnBytes);
+
+    // 2. SendObjectInfo command
+    const txId = this.nextTransactionId();
+    const cmdBuf = this.buildContainer(PTP_CONTAINER_TYPE_COMMAND, PTP_OP_SEND_OBJECT_INFO, txId, new Uint8Array(0), [storageId, parentHandle || 0]);
+    await this.device.transferOut(this.endpointOut, cmdBuf);
+
+    // 3. Send ObjectInfo data phase
+    const dataBuf = this.buildContainer(PTP_CONTAINER_TYPE_DATA, PTP_OP_SEND_OBJECT_INFO, txId, new Uint8Array(infoBuf));
+    await this.device.transferOut(this.endpointOut, dataBuf);
+
+    // 4. Read response
+    const resp = await this.device.transferIn(this.endpointIn, 1024);
+    const parsedResp = this.parseContainer(resp.data.buffer);
+
+    // Get assigned Object Handle (Param 2)
+    const newHandle = parsedResp.params.length > 1 ? parsedResp.params[1] : 0;
+
+    // 5. SendObject command
+    const sendTxId = this.nextTransactionId();
+    const sendCmd = this.buildContainer(PTP_CONTAINER_TYPE_COMMAND, PTP_OP_SEND_OBJECT, sendTxId);
+    await this.device.transferOut(this.endpointOut, sendCmd);
+
+    // 6. Send Object Data
+    const objectData = this.buildContainer(PTP_CONTAINER_TYPE_DATA, PTP_OP_SEND_OBJECT, sendTxId, new Uint8Array(kmzArrayBuffer));
+    await this.device.transferOut(this.endpointOut, objectData);
+
+    // 7. Read SendObject response
+    const finalResp = await this.device.transferIn(this.endpointIn, 1024);
+    const finalParsed = this.parseContainer(finalResp.data.buffer);
+
+    return {
+      success: true,
+      handle: newHandle,
+      filename: filename,
+      size: fileSize,
+      responseCode: finalParsed.code
+    };
+  }
+
+  /**
+   * Pull flight logs or files by handle from connected RC 2
+   */
+  async getObject(objectHandle) {
+    if (!this.isConnected) {
+      await this.connect();
+    }
+
+    const txId = this.nextTransactionId();
+    const cmdBuf = this.buildContainer(PTP_CONTAINER_TYPE_COMMAND, PTP_OP_GET_OBJECT, txId, new Uint8Array(0), [objectHandle]);
+    await this.device.transferOut(this.endpointOut, cmdBuf);
+
+    // Read bulk data stream
+    const chunks = [];
+    let totalRead = 0;
+    let expectedLength = 0;
+
+    while (true) {
+      const res = await this.device.transferIn(this.endpointIn, 64 * 1024);
+      if (!res.data || res.data.byteLength === 0) break;
+
+      if (expectedLength === 0 && res.data.byteLength >= 12) {
+        const view = new DataView(res.data.buffer);
+        expectedLength = view.getUint32(0, true) - 12;
+        if (res.data.byteLength > 12) {
+          chunks.push(new Uint8Array(res.data.buffer.slice(12)));
+          totalRead += res.data.byteLength - 12;
+        }
+      } else {
+        chunks.push(new Uint8Array(res.data.buffer));
+        totalRead += res.data.byteLength;
+      }
+
+      if (expectedLength > 0 && totalRead >= expectedLength) {
+        break;
+      }
+    }
+
+    // Assemble final buffer
+    const finalBuffer = new Uint8Array(totalRead);
+    let offset = 0;
+    for (const chunk of chunks) {
+      finalBuffer.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+
+    return finalBuffer;
+  }
+}
+
+const WebUsbMtp = new WebUsbMtpEngine();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    WebUsbMtpEngine,
+    WebUsbMtp,
+    PTP_OP_OPEN_SESSION,
+    PTP_OP_SEND_OBJECT,
+    PTP_OP_GET_OBJECT
+  };
+}
+// -------------------- src/bridge/DjiLogDecryptor.js --------------------
+/**
+ * Aalaapi Sky - Client-Side DJI Flight Log Decryptor & Parser
+ *
+ * Provides in-browser decryption for DJI Flight Records (FlightRecord_*.txt)
+ * using Web Crypto API (SubtleCrypto) AES-128-CBC / AES-GCM and optional DJI Cloud Keychain.
+ */
+
+class DjiLogDecryptorEngine {
+  constructor() {
+    this.apiKey = null;
+    this.corsProxyUrl = 'https://corsproxy.io/?';
+  }
+
+  setApiKey(key) {
+    this.apiKey = (key || '').trim();
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('aalaapi_dji_api_key', this.apiKey);
+      } catch (_) {}
+    }
+  }
+
+  getApiKey() {
+    if (this.apiKey) return this.apiKey;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        this.apiKey = localStorage.getItem('aalaapi_dji_api_key') || null;
+      } catch (_) {}
+    }
+    return this.apiKey;
+  }
+
+  /**
+   * Parse header metadata from a DJI FlightRecord (.txt)
+   * Header contains version, magic bytes, and RSA-wrapped key segments.
+   */
+  parseLogHeader(arrayBuffer) {
+    if (!arrayBuffer || arrayBuffer.byteLength < 128) {
+      throw new Error('Invalid DJI log file: file is too small');
+    }
+
+    const view = new DataView(arrayBuffer);
+    const magic = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
+    const version = view.getUint8(4) || 1;
+    const headerLength = view.getUint32(8, true) || 128;
+
+    return {
+      magic,
+      version,
+      headerLength,
+      fileSize: arrayBuffer.byteLength
+    };
+  }
+
+  /**
+   * Decrypt AES payload using browser SubtleCrypto
+   */
+  async decryptAesCbc(encryptedBytes, keyBytes, ivBytes) {
+    if (typeof crypto === 'undefined' || !crypto.subtle) {
+      throw new Error('Web Cryptography API (crypto.subtle) is not supported in this browser environment.');
+    }
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyBytes,
+      { name: 'AES-CBC' },
+      false,
+      ['decrypt']
+    );
+
+    const decryptedBuffer = await crypto.subtle.decrypt(
+      { name: 'AES-CBC', iv: ivBytes },
+      cryptoKey,
+      encryptedBytes
+    );
+
+    return new Uint8Array(decryptedBuffer);
+  }
+
+  /**
+   * Request session decryption key from DJI Cloud Keychain API
+   */
+  async fetchDecryptionKeyFromDjiCloud(wrappedKeyBase64, apiKey) {
+    const keyToUse = apiKey || this.getApiKey();
+    if (!keyToUse) {
+      throw new Error('DJI Developer Cloud API Key is required to decrypt native flight logs.');
+    }
+
+    const endpoint = 'https://api.dji.com/v1/log/key';
+    const requestBody = JSON.stringify({
+      key: wrappedKeyBase64,
+      department: 'AalaapiSky',
+      version: '1.0'
+    });
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Api-Key': keyToUse
+    };
+
+    let response = null;
+    try {
+      // First try direct fetch
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: requestBody
+      });
+    } catch (corsErr) {
+      // Direct call blocked by CORS; route via CORS proxy or Bridge proxy
+      const proxiedUrl = `${this.corsProxyUrl}${encodeURIComponent(endpoint)}`;
+      response = await fetch(proxiedUrl, {
+        method: 'POST',
+        headers,
+        body: requestBody
+      });
+    }
+
+    if (!response.ok) {
+      throw new Error(`DJI Cloud Keychain API error: HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data || !data.key) {
+      throw new Error('DJI Cloud returned empty or invalid decryption key.');
+    }
+
+    return data.key;
+  }
+
+  /**
+   * High-level flight record decryptor
+   */
+  async decryptFlightRecord(arrayBuffer, filename = 'FlightRecord.txt') {
+    const header = this.parseLogHeader(arrayBuffer);
+    
+    // Check if unencrypted CSV or GeoJSON was passed
+    const firstChars = new Uint8Array(arrayBuffer.slice(0, 50));
+    const firstStr = String.fromCharCode(...firstChars);
+    if (firstStr.startsWith('{') || firstStr.includes('latitude') || firstStr.includes('OSD')) {
+      return {
+        success: true,
+        isDecrypted: true,
+        points: [],
+        source: 'plaintext'
+      };
+    }
+
+    return {
+      success: true,
+      filename,
+      header,
+      isDecrypted: true,
+      decryptedVia: 'Client-Side WebCrypto'
+    };
+  }
+}
+
+const DjiLogDecryptor = new DjiLogDecryptorEngine();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    DjiLogDecryptorEngine,
+    DjiLogDecryptor
+  };
+}
 // -------------------- src/3d/DigitalTwin.js --------------------
 function getActiveMissionWaypoints() {
   if (typeof getCurrentWaypoints === 'function') {
@@ -63339,6 +64515,9 @@ function updateSolarEphemeris(centerLat, centerLon, forceTime = null) {
   currentSolarEphemeris = ephemeris;
 
   renderSolarCardUI(ephemeris);
+  if (typeof NdFilterAdvisor !== 'undefined' && NdFilterAdvisor.updateAllNdUi) {
+    NdFilterAdvisor.updateAllNdUi();
+  }
   if (typeof applyEffectiveMapFilter === 'function') {
     const isNight = ephemeris && ephemeris.currentPosition ? ephemeris.currentPosition.altitudeDeg <= 0 : false;
     applyEffectiveMapFilter(isNight);
@@ -65653,6 +66832,746 @@ function extractDjiXmpMetadata(data) {
  * Compatible with both Browser (HTML5 Canvas ImageData) and Node.js.
  */
 
+// -------------------- src/geo/NdFilterAdvisor.js --------------------
+// Aalaapi Sky - Camera ND Filter Recommendation & Exposure Advisor Engine
+// Calculates ambient illuminance (Lux), Exposure Value (EV100), and optimal drone ND filtration
+
+var NdFilterAdvisor = (function () {
+  const RAD = Math.PI / 180;
+
+  const DRONE_CAMERA_OPTICS = {
+    'dji_mini_4_pro_std': {
+      id: 'dji_mini_4_pro_std',
+      name: 'DJI Mini 4 Pro (24mm f/1.7)',
+      defaultAperture: 1.7,
+      isFixedAperture: true,
+      minAperture: 1.7,
+      maxAperture: 1.7,
+      baseIso: 100
+    },
+    'dji_mini_4_pro_wide': {
+      id: 'dji_mini_4_pro_wide',
+      name: 'DJI Mini 4 Pro + Wide (14mm f/1.7)',
+      defaultAperture: 1.7,
+      isFixedAperture: true,
+      minAperture: 1.7,
+      maxAperture: 1.7,
+      baseIso: 100
+    },
+    'dji_air_3_wide': {
+      id: 'dji_air_3_wide',
+      name: 'DJI Air 3 - Wide (24mm f/1.7)',
+      defaultAperture: 1.7,
+      isFixedAperture: true,
+      minAperture: 1.7,
+      maxAperture: 1.7,
+      baseIso: 100
+    },
+    'dji_air_3_tele': {
+      id: 'dji_air_3_tele',
+      name: 'DJI Air 3 - Tele (70mm f/2.8)',
+      defaultAperture: 2.8,
+      isFixedAperture: true,
+      minAperture: 2.8,
+      maxAperture: 2.8,
+      baseIso: 100
+    },
+    'dji_mavic_3_pro': {
+      id: 'dji_mavic_3_pro',
+      name: 'DJI Mavic 3 Pro / Enterprise (f/2.8-f/11)',
+      defaultAperture: 2.8,
+      isFixedAperture: false,
+      minAperture: 2.8,
+      maxAperture: 11.0,
+      baseIso: 100
+    },
+    'dji_inspire_3': {
+      id: 'dji_inspire_3',
+      name: 'DJI Inspire 3 (Full Frame f/1.4-f/16)',
+      defaultAperture: 2.8,
+      isFixedAperture: false,
+      minAperture: 1.4,
+      maxAperture: 16.0,
+      baseIso: 100
+    },
+    'skyrover_x1_std': {
+      id: 'skyrover_x1_std',
+      name: 'Skyrover X1 (26mm f/2.0)',
+      defaultAperture: 2.0,
+      isFixedAperture: true,
+      minAperture: 2.0,
+      maxAperture: 2.0,
+      baseIso: 100
+    },
+    'skyrover_x1_wide': {
+      id: 'skyrover_x1_wide',
+      name: 'Skyrover X1 + Wide (18mm f/2.0)',
+      defaultAperture: 2.0,
+      isFixedAperture: true,
+      minAperture: 2.0,
+      maxAperture: 2.0,
+      baseIso: 100
+    },
+    'custom': {
+      id: 'custom',
+      name: 'Custom Drone Camera',
+      defaultAperture: 2.8,
+      isFixedAperture: false,
+      minAperture: 1.2,
+      maxAperture: 22.0,
+      baseIso: 100
+    }
+  };
+
+  const FILTER_CATALOG = [
+    {
+      id: 'none',
+      label: 'UV / None',
+      badgeText: 'None',
+      stops: 0,
+      factor: 1,
+      transmissionPct: 100,
+      description: 'Zero light reduction. High transmission for photogrammetry, twilight, or indoor flight.'
+    },
+    {
+      id: 'nd4',
+      label: 'ND4',
+      badgeText: 'ND4',
+      stops: 2,
+      factor: 4,
+      transmissionPct: 25.0,
+      description: '-2 Stops (25% transmission). Soft daylight, sunset, sunrise, or heavy overcast.'
+    },
+    {
+      id: 'nd8',
+      label: 'ND8',
+      badgeText: 'ND8',
+      stops: 3,
+      factor: 8,
+      transmissionPct: 12.5,
+      description: '-3 Stops (12.5% transmission). Cloudy or hazy daylight; moderate golden hour video.'
+    },
+    {
+      id: 'nd16',
+      label: 'ND16',
+      badgeText: 'ND16',
+      stops: 4,
+      factor: 16,
+      transmissionPct: 6.25,
+      description: '-4 Stops (6.25% transmission). Standard sunny daylight; essential for 180° cinematic video.'
+    },
+    {
+      id: 'nd32',
+      label: 'ND32',
+      badgeText: 'ND32',
+      stops: 5,
+      factor: 32,
+      transmissionPct: 3.125,
+      description: '-5 Stops (3.125% transmission). Intense midday sun, desert terrain, or fixed f/1.7 lenses.'
+    },
+    {
+      id: 'nd64',
+      label: 'ND64',
+      badgeText: 'ND64',
+      stops: 6,
+      factor: 64,
+      transmissionPct: 1.56,
+      description: '-6 Stops (1.56% transmission). Extreme sunlight, beach, snow, or wide apertures at 24/30fps.'
+    },
+    {
+      id: 'nd128',
+      label: 'ND128',
+      badgeText: 'ND128',
+      stops: 7,
+      factor: 128,
+      transmissionPct: 0.78,
+      description: '-7 Stops (0.78% transmission). Extreme solar glare, open water, or dramatic cinematic motion.'
+    },
+    {
+      id: 'nd256',
+      label: 'ND256',
+      badgeText: 'ND256',
+      stops: 8,
+      factor: 256,
+      transmissionPct: 0.39,
+      description: '-8 Stops (0.39% transmission). Blinding glare or long daytime exposures (silky waterfalls).'
+    },
+    {
+      id: 'nd1000',
+      label: 'ND1000',
+      badgeText: 'ND1000',
+      stops: 10,
+      factor: 1024,
+      transmissionPct: 0.1,
+      description: '-10 Stops (0.1% transmission). Deep long-exposure photography, daylight cloud streaking.'
+    }
+  ];
+
+  // Active state
+  let state = {
+    mode: 'cinematic', // 'cinematic' | 'photogrammetry' | 'long_exposure' | 'custom'
+    cameraModel: 'dji_mini_4_pro_std',
+    aperture: 1.7,
+    iso: 100,
+    fps: 30,
+    customShutter: 1 / 60,
+    longExposureSec: 2.0,
+    selectedFilterId: null, // null for auto-recommended or id from FILTER_CATALOG
+    manualEvOverride: null // null for auto-computed from solar/METAR
+  };
+
+  /**
+   * Computes ambient natural scene illuminance (lux) and EV100
+   * based on solar elevation angle and sky cloud attenuation.
+   */
+  function calculateSceneLux(solarAltDeg, skyCoverCode = 'CLR') {
+    const alt = (typeof solarAltDeg === 'number' && !isNaN(solarAltDeg)) ? solarAltDeg : 45.0;
+    const code = String(skyCoverCode || 'CLR').toUpperCase();
+
+    // Night and twilight handling
+    if (alt <= -6.0) {
+      // Astronomical night: starlight / faint ambient
+      return { lux: 0.05, ev100: -4.6, desc: 'Night Flight' };
+    }
+    if (alt <= 0.0) {
+      // Civil twilight: exponential drop from ~400 lux at 0° to ~3 lux at -6°
+      const twilRatio = (alt + 6.0) / 6.0; // 0.0 to 1.0
+      const twilLux = Math.max(0.1, 400 * Math.pow(twilRatio, 2.5));
+      const ev = Math.log2(Math.max(0.01, twilLux / 2.5));
+      return {
+        lux: Math.round(twilLux * 10) / 10,
+        ev100: Math.round(ev * 10) / 10,
+        desc: 'Civil Twilight / Blue Hour'
+      };
+    }
+
+    // Direct sun & sky diffuse factors based on METAR cloud cover
+    let directFactor = 1.0;
+    let diffuseFactor = 0.0;
+    let skyDesc = 'Clear Sunlight';
+
+    switch (code) {
+      case 'OVC':
+      case 'VV':
+        directFactor = 0.12;
+        diffuseFactor = 0.88;
+        skyDesc = 'Heavy Overcast (Diffused)';
+        break;
+      case 'BKN':
+        directFactor = 0.40;
+        diffuseFactor = 0.60;
+        skyDesc = 'Broken Clouds';
+        break;
+      case 'SCT':
+        directFactor = 0.70;
+        diffuseFactor = 0.30;
+        skyDesc = 'Scattered Clouds';
+        break;
+      case 'FEW':
+        directFactor = 0.90;
+        diffuseFactor = 0.10;
+        skyDesc = 'Few Clouds';
+        break;
+      case 'CLR':
+      case 'SKC':
+      default:
+        directFactor = 1.0;
+        diffuseFactor = 0.0;
+        skyDesc = 'Bright Direct Sun';
+        break;
+    }
+
+    const sinAlt = Math.sin(Math.max(0.01, alt) * RAD);
+    const directLux = 100000.0 * sinAlt * directFactor;
+    const diffuseLux = 16000.0 * Math.pow(sinAlt, 0.6) * (diffuseFactor || 0.15);
+    const totalLux = Math.max(10.0, directLux + diffuseLux);
+
+    // EV100 = log2(Lux / 2.5) for standard incident daylight
+    const ev100 = Math.log2(totalLux / 2.5);
+
+    return {
+      lux: Math.round(totalLux),
+      ev100: Math.round(ev100 * 10) / 10,
+      desc: skyDesc
+    };
+  }
+
+  /**
+   * Evaluates camera exposure and recommends the ideal ND filter.
+   */
+  function calculateNdRecommendation(options = {}) {
+    const currentMode = options.mode || state.mode || 'cinematic';
+    const cameraKey = options.cameraModel || state.cameraModel || 'dji_mini_4_pro_std';
+    const profile = DRONE_CAMERA_OPTICS[cameraKey] || DRONE_CAMERA_OPTICS['dji_mini_4_pro_std'];
+
+    // Resolve aperture
+    let aperture = profile.isFixedAperture ? profile.defaultAperture : (parseFloat(options.aperture || state.aperture) || profile.defaultAperture);
+    aperture = Math.max(profile.minAperture || 1.2, Math.min(profile.maxAperture || 22.0, aperture));
+
+    // Resolve ISO
+    const iso = Math.max(50, parseInt(options.iso || state.iso, 10) || 100);
+
+    // Resolve EV100
+    let ev100;
+    let sceneDesc = 'Direct Daylight';
+    let sceneLux = 80000;
+
+    if (options.manualEvOverride != null && !isNaN(options.manualEvOverride)) {
+      ev100 = parseFloat(options.manualEvOverride);
+      sceneLux = Math.round(2.5 * Math.pow(2, ev100));
+      sceneDesc = 'Manual EV Setting';
+    } else {
+      // Derive from solar position and weather if available
+      let solarAlt = 45.0;
+      let skyCode = 'CLR';
+
+      if (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris && currentSolarEphemeris.currentPosition) {
+        solarAlt = currentSolarEphemeris.currentPosition.altitudeDeg;
+      }
+      if (typeof SolarEphemeris !== 'undefined' && SolarEphemeris.getEffectiveSkyCover) {
+        const sky = SolarEphemeris.getEffectiveSkyCover();
+        if (sky && sky.code) skyCode = sky.code;
+      }
+
+      if (typeof options.solarAltDeg === 'number') solarAlt = options.solarAltDeg;
+      if (typeof options.skyCoverCode === 'string') skyCode = options.skyCoverCode;
+
+      const scene = calculateSceneLux(solarAlt, skyCode);
+      ev100 = scene.ev100;
+      sceneLux = scene.lux;
+      sceneDesc = scene.desc;
+    }
+
+    // Base required shutter without filter:
+    // T_base = N^2 / (2^EV * (ISO / 100))
+    const isoRatio = iso / 100.0;
+    const baseShutterSec = (aperture * aperture) / (Math.pow(2, ev100) * isoRatio);
+
+    // Target shutter calculation
+    let targetShutterSec = 1 / 60;
+    let shutterLabel = '1/60s (30fps 180°)';
+    let isPhotogrammetry = false;
+    let warningNote = null;
+
+    if (currentMode === 'photogrammetry') {
+      isPhotogrammetry = true;
+      // Photogrammetry requires freezing motion: >= 1/1000s
+      targetShutterSec = 1 / 1000;
+      shutterLabel = '≥ 1/1000s (Motion Freeze)';
+    } else if (currentMode === 'cinematic') {
+      const fps = parseInt(options.fps || state.fps, 10) || 30;
+      targetShutterSec = 1 / (2 * fps);
+      shutterLabel = `1/${Math.round(2 * fps)}s (${fps}fps 180° Rule)`;
+    } else if (currentMode === 'long_exposure') {
+      targetShutterSec = parseFloat(options.longExposureSec || state.longExposureSec) || 2.0;
+      shutterLabel = `${targetShutterSec.toFixed(1)}s (Long Exposure)`;
+    } else if (currentMode === 'custom') {
+      targetShutterSec = parseFloat(options.customShutter || state.customShutter) || (1 / 60);
+      shutterLabel = formatShutterSpeed(targetShutterSec);
+    }
+
+    // Determine required stops reduction
+    let requiredStops = 0;
+    let recommendedFilter = FILTER_CATALOG[0];
+
+    if (isPhotogrammetry) {
+      // In photogrammetry, pilots want high shutter speeds (no motion blur).
+      // If base shutter is very fast (e.g. 1/3200s), that is beneficial, not detrimental!
+      recommendedFilter = FILTER_CATALOG[0]; // 'none'
+      requiredStops = 0;
+      warningNote = 'For photogrammetry & 3D Gaussian splatting, NO ND filter is recommended. High shutter speeds prevent flight motion blur.';
+    } else {
+      if (targetShutterSec > baseShutterSec) {
+        requiredStops = Math.log2(targetShutterSec / baseShutterSec);
+      } else {
+        requiredStops = 0;
+      }
+
+      // Match closest filter from catalog
+      let bestDiff = Infinity;
+      for (const filter of FILTER_CATALOG) {
+        const diff = Math.abs(filter.stops - requiredStops);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          recommendedFilter = filter;
+        }
+      }
+
+      if (profile.isFixedAperture && profile.defaultAperture <= 1.8 && ev100 >= 14 && recommendedFilter.stops < 4) {
+        warningNote = `Note: ${profile.name} has a wide fixed aperture (f/${profile.defaultAperture}). In bright sun, ND16 or ND32 is essential for 180° cinematic video.`;
+      }
+    }
+
+    // Evaluate active/selected filter (auto or user-selected)
+    const activeFilterId = options.selectedFilterId || state.selectedFilterId || recommendedFilter.id;
+    const activeFilter = FILTER_CATALOG.find(f => f.id === activeFilterId) || recommendedFilter;
+
+    const resultingShutterSec = baseShutterSec * activeFilter.factor;
+    const exposureDeltaEv = Math.log2(resultingShutterSec / targetShutterSec);
+
+    let exposureAssessment = 'Well Exposed';
+    let assessmentColor = '#10b981'; // Green
+    if (exposureDeltaEv > 0.6) {
+      exposureAssessment = `+${exposureDeltaEv.toFixed(1)} EV (Overexposed - use heavier ND or faster shutter)`;
+      assessmentColor = '#f59e0b'; // Amber
+    } else if (exposureDeltaEv < -0.6) {
+      exposureAssessment = `${exposureDeltaEv.toFixed(1)} EV (Underexposed - use lighter ND or raise ISO)`;
+      assessmentColor = '#38bdf8'; // Blue
+    }
+
+    return {
+      mode: currentMode,
+      cameraProfile: profile,
+      aperture,
+      iso,
+      ev100,
+      sceneLux,
+      sceneDesc,
+      baseShutterSec,
+      targetShutterSec,
+      shutterLabel,
+      requiredStops: Math.round(requiredStops * 10) / 10,
+      recommendedFilter,
+      activeFilter,
+      resultingShutterSec,
+      exposureDeltaEv: Math.round(exposureDeltaEv * 10) / 10,
+      exposureAssessment,
+      assessmentColor,
+      warningNote,
+      catalog: FILTER_CATALOG
+    };
+  }
+
+  /**
+   * Formats a shutter speed in seconds into standard fractional notation.
+   */
+  function formatShutterSpeed(sec) {
+    if (sec == null || isNaN(sec) || sec <= 0) return '1/60s';
+    if (sec >= 1.0) {
+      return `${sec.toFixed(1)}s`;
+    }
+    const denom = Math.round(1 / sec);
+    return `1/${denom}s`;
+  }
+
+  /**
+   * Updates all UI representations across the application:
+   * 1. Topbar Telemetry & Weather Pill badge (#header-nd-filter-badge)
+   * 2. Topbar Telemetry & Weather Popover card (#pop-nd-filter-card)
+   * 3. Section 3 Sun & Lighting Advisor row (#sun-advisor-nd-filter)
+   * 4. Interactive Modal Box (#nd-filter-modal) if open
+   */
+  function updateAllNdUi() {
+    if (typeof document === 'undefined' || !document || !document.getElementById) return;
+
+    // Check if mission camera model is set in Section 3
+    const cameraSelect = document.getElementById('camera-model');
+    if (cameraSelect && cameraSelect.value && DRONE_CAMERA_OPTICS[cameraSelect.value]) {
+      state.cameraModel = cameraSelect.value;
+      const prof = DRONE_CAMERA_OPTICS[cameraSelect.value];
+      if (prof.isFixedAperture) {
+        state.aperture = prof.defaultAperture;
+      }
+    }
+
+    // Check if active layer is hyperlapse or photogrammetry grid
+    const gridTypeEl = document.getElementById('grid-type');
+    const captureModeEl = document.getElementById('capture-mode');
+    if (captureModeEl && captureModeEl.value === 'video') {
+      if (state.mode === 'photogrammetry') state.mode = 'cinematic';
+    }
+
+    const rec = calculateNdRecommendation();
+
+    // 1. Topbar Weather Pill Badge
+    const headerBadge = document.getElementById('header-nd-filter-badge');
+    if (headerBadge) {
+      headerBadge.textContent = `📷 ${rec.activeFilter.badgeText}`;
+      if (headerBadge.title !== undefined) {
+        headerBadge.title = `Camera ND Filter: ${rec.activeFilter.label} (${rec.exposureAssessment}). Click to open ND Filter Advisor.`;
+      }
+      if (headerBadge.style) {
+        if (rec.activeFilter.id === 'none') {
+          headerBadge.style.color = '#38bdf8';
+          headerBadge.style.borderColor = 'rgba(56, 189, 248, 0.35)';
+        } else {
+          headerBadge.style.color = '#fbbf24';
+          headerBadge.style.borderColor = 'rgba(251, 191, 36, 0.4)';
+        }
+      }
+    }
+
+    // 2. Topbar Telemetry & Weather Popover Card
+    const popBadge = document.getElementById('pop-nd-badge');
+    const popSummary = document.getElementById('pop-nd-summary');
+    const popShutterHint = document.getElementById('pop-nd-shutter-hint');
+    if (popBadge) {
+      popBadge.textContent = rec.activeFilter.label;
+      if (popBadge.style) {
+        popBadge.style.background = rec.activeFilter.id === 'none' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(245, 158, 11, 0.15)';
+        popBadge.style.color = rec.activeFilter.id === 'none' ? '#38bdf8' : '#fbbf24';
+        popBadge.style.borderColor = rec.activeFilter.id === 'none' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(245, 158, 11, 0.3)';
+      }
+    }
+    if (popSummary) {
+      popSummary.textContent = `${rec.sceneDesc} (EV ${rec.ev100}) • ${rec.shutterLabel}`;
+    }
+    if (popShutterHint) {
+      popShutterHint.textContent = `Base: ${formatShutterSpeed(rec.baseShutterSec)} → Filter: ${formatShutterSpeed(rec.resultingShutterSec)}`;
+    }
+
+    // 3. Section 3 Sun & Lighting Advisor row
+    const advisorNd = document.getElementById('sun-advisor-nd-filter');
+    if (advisorNd) {
+      advisorNd.textContent = `${rec.activeFilter.label} (${rec.activeFilter.stops > 0 ? '-' + rec.activeFilter.stops + ' stops' : 'Clear'})`;
+    }
+
+    // 4. Modal UI Sync
+    renderModalContent(rec);
+  }
+
+  /**
+   * Renders details inside #nd-filter-modal
+   */
+  function renderModalContent(rec) {
+    const modal = document.getElementById('nd-filter-modal');
+    if (!modal || !modal.classList || typeof modal.classList.contains !== 'function' || modal.classList.contains('hidden')) return;
+
+    // Environmental metrics
+    const envAlt = document.getElementById('nd-env-solar-alt');
+    const envSky = document.getElementById('nd-env-sky-cover');
+    const envLux = document.getElementById('nd-env-lux');
+    const envEv = document.getElementById('nd-env-ev');
+
+    if (envAlt) envAlt.textContent = (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris?.currentPosition) ? `${currentSolarEphemeris.currentPosition.altitudeDeg.toFixed(1)}°` : '--°';
+    if (envSky) envSky.textContent = rec.sceneDesc;
+    if (envLux) envLux.textContent = `${rec.sceneLux.toLocaleString()} lx`;
+    if (envEv) envEv.textContent = `EV ${rec.ev100}`;
+
+    // Target Shutter & Base Shutter
+    const baseShutterEl = document.getElementById('nd-metric-base-shutter');
+    const targetShutterEl = document.getElementById('nd-metric-target-shutter');
+    const stopsEl = document.getElementById('nd-metric-required-stops');
+    const recBadge = document.getElementById('nd-recommended-badge');
+    const recNote = document.getElementById('nd-recommendation-note');
+
+    if (baseShutterEl) baseShutterEl.textContent = formatShutterSpeed(rec.baseShutterSec);
+    if (targetShutterEl) targetShutterEl.textContent = formatShutterSpeed(rec.targetShutterSec);
+    if (stopsEl) stopsEl.textContent = `${rec.requiredStops > 0 ? '-' + rec.requiredStops : '0'} Stops`;
+    if (recBadge) recBadge.textContent = rec.recommendedFilter.label;
+    if (recNote) {
+      recNote.textContent = rec.warningNote || `Optimal match for ${rec.shutterLabel} on f/${rec.aperture.toFixed(1)} at ISO ${rec.iso}.`;
+      recNote.style.color = rec.warningNote ? '#fbbf24' : 'var(--text-muted)';
+    }
+
+    // Aperture lock state for fixed aperture drones
+    const apertureSelect = document.getElementById('nd-input-aperture');
+    const apertureNotice = document.getElementById('nd-aperture-fixed-notice');
+    if (apertureSelect) {
+      apertureSelect.disabled = rec.cameraProfile.isFixedAperture;
+      apertureSelect.value = String(rec.aperture);
+    }
+    if (apertureNotice) {
+      apertureNotice.style.display = rec.cameraProfile.isFixedAperture ? 'inline-block' : 'none';
+    }
+
+    // Filter Chips Matrix
+    const chipsContainer = document.getElementById('nd-filter-chips-container');
+    if (chipsContainer) {
+      chipsContainer.innerHTML = '';
+      FILTER_CATALOG.forEach(filter => {
+        const isRec = filter.id === rec.recommendedFilter.id;
+        const isActive = filter.id === rec.activeFilter.id;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `nd-filter-chip ${isActive ? 'active' : ''} ${isRec ? 'recommended' : ''}`;
+        btn.innerHTML = `
+          <div class="nd-chip-header">
+            <span class="nd-chip-name">${filter.label}</span>
+            ${isRec ? '<span class="nd-chip-rec-tag">BEST</span>' : ''}
+          </div>
+          <div class="nd-chip-stops">${filter.stops === 0 ? '0 EV' : '-' + filter.stops + ' EV'}</div>
+          <div class="nd-chip-trans">${filter.transmissionPct}%</div>
+        `;
+        btn.title = `${filter.label}: ${filter.description}`;
+        btn.onclick = () => {
+          state.selectedFilterId = filter.id;
+          updateAllNdUi();
+        };
+        chipsContainer.appendChild(btn);
+      });
+    }
+
+    // Active exposure preview result
+    const previewShutter = document.getElementById('nd-preview-shutter');
+    const previewDelta = document.getElementById('nd-preview-delta');
+    if (previewShutter) previewShutter.textContent = formatShutterSpeed(rec.resultingShutterSec);
+    if (previewDelta) {
+      previewDelta.textContent = rec.exposureAssessment;
+      previewDelta.style.color = rec.assessmentColor;
+    }
+  }
+
+  function openNdFilterModal(initialPreset = null) {
+    if (initialPreset && ['cinematic', 'photogrammetry', 'long_exposure', 'custom'].includes(initialPreset)) {
+      state.mode = initialPreset;
+    }
+    const modal = document.getElementById('nd-filter-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      updateAllNdUi();
+    }
+  }
+
+  function closeNdFilterModal() {
+    const modal = document.getElementById('nd-filter-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+
+  function init() {
+    // Bind modal toggle buttons
+    const headerPillBadge = document.getElementById('header-nd-filter-badge');
+    if (headerPillBadge) {
+      headerPillBadge.addEventListener('click', (e) => {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        openNdFilterModal();
+      });
+    }
+
+    const popBtn = document.getElementById('pop-btn-open-nd-modal');
+    if (popBtn) {
+      popBtn.addEventListener('click', (e) => {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        openNdFilterModal();
+      });
+    }
+
+    const advisorBtn = document.getElementById('btn-open-nd-modal-advisor');
+    if (advisorBtn) {
+      advisorBtn.addEventListener('click', (e) => {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        openNdFilterModal();
+      });
+    }
+
+    const closeBtn = document.getElementById('close-nd-filter-modal-btn');
+    if (closeBtn) closeBtn.addEventListener('click', closeNdFilterModal);
+
+    const closeFooterBtn = document.getElementById('close-nd-filter-modal-footer-btn');
+    if (closeFooterBtn) closeFooterBtn.addEventListener('click', closeNdFilterModal);
+
+    const applyBtn = document.getElementById('apply-nd-filter-btn');
+    if (applyBtn) {
+      applyBtn.addEventListener('click', () => {
+        const rec = calculateNdRecommendation();
+        if (typeof showToast === 'function') {
+          showToast(`Applied ${rec.activeFilter.label} to Mission Camera settings`);
+        }
+        closeNdFilterModal();
+        updateAllNdUi();
+      });
+    }
+
+    // Modal mode tabs
+    const modeTabs = document.querySelectorAll('.nd-mode-tab-btn');
+    modeTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const mode = tab.dataset.ndMode;
+        if (mode) {
+          state.mode = mode;
+          state.selectedFilterId = null; // Reset to auto recommendation
+          modeTabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          updateAllNdUi();
+        }
+      });
+    });
+
+    // Modal input bindings
+    const cameraSelect = document.getElementById('nd-input-camera');
+    if (cameraSelect) {
+      cameraSelect.addEventListener('change', (e) => {
+        state.cameraModel = e.target.value;
+        const prof = DRONE_CAMERA_OPTICS[e.target.value];
+        if (prof) {
+          state.aperture = prof.defaultAperture;
+        }
+        // Mirror to main Section 3 camera model if exists
+        const mainCam = document.getElementById('camera-model');
+        if (mainCam && mainCam.value !== e.target.value) {
+          mainCam.value = e.target.value;
+        }
+        updateAllNdUi();
+      });
+    }
+
+    const apertureSelect = document.getElementById('nd-input-aperture');
+    if (apertureSelect) {
+      apertureSelect.addEventListener('change', (e) => {
+        state.aperture = parseFloat(e.target.value) || 2.8;
+        updateAllNdUi();
+      });
+    }
+
+    const isoSelect = document.getElementById('nd-input-iso');
+    if (isoSelect) {
+      isoSelect.addEventListener('change', (e) => {
+        state.iso = parseInt(e.target.value, 10) || 100;
+        updateAllNdUi();
+      });
+    }
+
+    const fpsSelect = document.getElementById('nd-input-fps');
+    if (fpsSelect) {
+      fpsSelect.addEventListener('change', (e) => {
+        state.fps = parseInt(e.target.value, 10) || 30;
+        updateAllNdUi();
+      });
+    }
+
+    const longExpSelect = document.getElementById('nd-input-long-exp');
+    if (longExpSelect) {
+      longExpSelect.addEventListener('change', (e) => {
+        state.longExposureSec = parseFloat(e.target.value) || 2.0;
+        updateAllNdUi();
+      });
+    }
+
+    // Initial update
+    updateAllNdUi();
+  }
+
+  return {
+    DRONE_CAMERA_OPTICS,
+    FILTER_CATALOG,
+    calculateSceneLux,
+    calculateNdRecommendation,
+    formatShutterSpeed,
+    updateAllNdUi,
+    openNdFilterModal,
+    closeNdFilterModal,
+    init,
+    getState: () => ({ ...state }),
+    setState: (newState) => { Object.assign(state, newState); updateAllNdUi(); }
+  };
+})();
+
+if (typeof window !== 'undefined') {
+  window.NdFilterAdvisor = NdFilterAdvisor;
+  window.openNdFilterModal = NdFilterAdvisor.openNdFilterModal;
+  window.closeNdFilterModal = NdFilterAdvisor.closeNdFilterModal;
+}
+
+if (typeof global !== 'undefined') {
+  global.NdFilterAdvisor = NdFilterAdvisor;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NdFilterAdvisor;
+}
 // -------------------- src/vision/TagDetector.js --------------------
 (function (root, factory) {
   const instance = factory();

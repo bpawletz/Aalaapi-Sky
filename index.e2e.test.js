@@ -9237,6 +9237,67 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(evalResult.finalSettingsHidden, true, 'Settings pane must be hidden after switching back');
       assert.strictEqual(evalResult.managerActiveTab, 'operations', 'AdsbAirspaceManager.activeTab must be operations');
     });
+
+    test('E2E: Camera ND Filter Recommendation Pill, Popover, and Modal Advisor (v1.176.0)', async () => {
+      // 1. Verify Topbar ND filter badge exists in pill
+      const headerBadge = await page.locator('#header-nd-filter-badge');
+      assert.ok(await headerBadge.isVisible(), 'Header ND filter badge must be visible');
+      const badgeText = await headerBadge.textContent();
+      assert.ok(badgeText.includes('📷'), `Expected camera icon in badge, got: ${badgeText}`);
+
+      // 2. Click Topbar ND filter badge to open #nd-filter-modal
+      await headerBadge.click();
+      const modal = await page.locator('#nd-filter-modal');
+      assert.ok(await modal.isVisible(), 'ND Filter Advisor modal must be visible');
+
+      // Verify modal elements
+      const recBadge = await page.locator('#nd-recommended-badge');
+      assert.ok(await recBadge.isVisible(), 'Recommended badge must be visible');
+      const chipsContainer = await page.locator('#nd-filter-chips-container');
+      assert.ok(await chipsContainer.isVisible(), 'Filter chips container must be visible');
+
+      // 3. Switch to Photogrammetry preset
+      const photoBtn = await page.locator('button.nd-mode-tab-btn[data-nd-mode="photogrammetry"]');
+      await photoBtn.click();
+      const recPhotoText = await recBadge.textContent();
+      assert.ok(recPhotoText.includes('None') || recPhotoText.includes('UV'), `Photogrammetry should recommend None/UV, got ${recPhotoText}`);
+
+      // 4. Switch to Cinematic preset
+      const cinemaBtn = await page.locator('button.nd-mode-tab-btn[data-nd-mode="cinematic"]');
+      await cinemaBtn.click();
+
+      // 5. Close modal via close button
+      const closeBtn = await page.locator('#close-nd-filter-modal-btn');
+      await closeBtn.click();
+      assert.ok(!(await modal.isVisible()), 'Modal must be hidden after clicking close');
+    });
+  });
+
+  describe('Adaptive Hardware Sync (WebUSB / Bridge) E2E Tests (Issue #115)', () => {
+    test('E2E: WebUSB Direct Sync UI elements and platform detection utility', async () => {
+      const evalResult = await page.evaluate(() => {
+        const webUsbContainer = document.getElementById('webusb-direct-actions');
+        const webUsbSyncBtn = document.getElementById('webusb-sync-btn');
+        const webUsbPullLogBtn = document.getElementById('webusb-pull-log-btn');
+
+        const elementsExist = Boolean(webUsbContainer && webUsbSyncBtn && webUsbPullLogBtn);
+        const platformDetected = (typeof getSyncPlatform === 'function') ? getSyncPlatform() : null;
+
+        return {
+          elementsExist,
+          platformDetected,
+          btnLabels: {
+            sync: webUsbSyncBtn ? webUsbSyncBtn.textContent.trim() : null,
+            pull: webUsbPullLogBtn ? webUsbPullLogBtn.textContent.trim() : null
+          }
+        };
+      });
+
+      assert.strictEqual(evalResult.elementsExist, true, 'WebUSB direct action elements must exist in DOM');
+      assert.ok(evalResult.platformDetected !== null, 'getSyncPlatform() must return detected platform');
+      assert.ok(evalResult.btnLabels.sync.includes('Push KMZ'), 'WebUSB push button must have Push KMZ label');
+      assert.ok(evalResult.btnLabels.pull.includes('Pull Logs'), 'WebUSB pull button must have Pull Logs label');
+    });
   });
 });
 

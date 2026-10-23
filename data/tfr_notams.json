@@ -1,5 +1,27 @@
 [
   {
+    "notam_id": "6/1949",
+    "facility": "ZJX",
+    "state": "FL",
+    "type": "SECURITY",
+    "description": "MAYPORT, FL, Sunday, October 25, 2026 through Saturday, October 31, 2026 Local",
+    "mod_date": "10/23/2026 15:18:00",
+    "mod_abs_time": "202610231518",
+    "is_new": "Y",
+    "gid": "6/1949"
+  },
+  {
+    "notam_id": "6/1947",
+    "facility": "ZHU",
+    "state": "TX",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Houston, TX, Friday, October 30, 2026 through Sunday, November 1, 2026 UTC",
+    "mod_date": "10/23/2026 14:45:00",
+    "mod_abs_time": "202610231445",
+    "is_new": "Y",
+    "gid": "6/1947"
+  },
+  {
     "notam_id": "6/1932",
     "facility": "ZJX",
     "state": "FL",
@@ -64,17 +86,6 @@
     "mod_abs_time": "202610222122",
     "is_new": "Y",
     "gid": "6/1768"
-  },
-  {
-    "notam_id": "6/1766",
-    "facility": "ZJX",
-    "state": "SC",
-    "type": "HAZARDS",
-    "description": "4NM E BONNEAU, SC, Friday, October 23, 2026 through Saturday, October 24, 2026 UTC",
-    "mod_date": "10/22/2026 21:21:00",
-    "mod_abs_time": "202610222121",
-    "is_new": "Y",
-    "gid": "6/1766"
   },
   {
     "notam_id": "6/1753",

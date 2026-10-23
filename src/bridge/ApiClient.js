@@ -1,3 +1,35 @@
+// ─── Adaptive Hardware Sync: Platform Detection ──────────────────────────────
+
+/**
+ * Detect the user operating system to determine whether direct WebUSB
+ * (Android / ChromeOS) or Aalaapi Bridge (Windows / macOS) is optimal.
+ * @returns {'android' | 'chromeos' | 'desktop'}
+ */
+function getSyncPlatform() {
+  if (typeof navigator === 'undefined') return 'desktop';
+
+  // 1. Check User-Agent Client Hints (navigator.userAgentData.platform)
+  if (navigator.userAgentData && typeof navigator.userAgentData.platform === 'string') {
+    const platform = navigator.userAgentData.platform.toLowerCase();
+    if (platform.includes('android')) return 'android';
+    if (platform.includes('chrome os') || platform.includes('cros')) return 'chromeos';
+    if (platform.includes('windows') || platform.includes('mac') || platform.includes('linux')) return 'desktop';
+  }
+
+  // 2. Fallback to navigator.userAgent / navigator.platform
+  const ua = (navigator.userAgent || '').toLowerCase();
+  const navPlatform = (navigator.platform || '').toLowerCase();
+
+  if (ua.includes('android') || navPlatform.includes('android')) {
+    return 'android';
+  }
+  if (ua.includes('cros') || navPlatform.includes('cros')) {
+    return 'chromeos';
+  }
+
+  return 'desktop';
+}
+
 function getCompanionApiBase() {
   // 1. Check URL query parameter (?companion=http://...)
   if (typeof window !== 'undefined' && window.location && window.location.search) {
@@ -1126,6 +1158,150 @@ async function sendDirectlyToRC2() {
   }
 }
 
+// ─── Adaptive WebUSB Sync Handler (Android / ChromeOS) ──────────────────────
+
+/**
+ * Directly pushes the active mission KMZ to a connected DJI RC 2 over WebUSB MTP
+ */
+async function sendDirectlyViaWebUsb() {
+  const webUsbBtn = document.getElementById('webusb-sync-btn');
+  const originalHtml = webUsbBtn ? webUsbBtn.innerHTML : '';
+  if (webUsbBtn) {
+    webUsbBtn.disabled = true;
+    webUsbBtn.innerHTML = '<span>⏳ Connecting USB...</span>';
+  }
+
+  try {
+    const rawWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+    if (!rawWps || rawWps.length === 0) {
+      alert("No waypoints generated to sync. Please place a mission or center point first.");
+      if (webUsbBtn) {
+        webUsbBtn.disabled = false;
+        webUsbBtn.innerHTML = originalHtml;
+      }
+      return;
+    }
+
+    const speed = parseFloat(document.getElementById('speed')?.value) || 4;
+    const gimbalPitch = (typeof parseGimbalPitch === 'function')
+      ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -90)
+      : (parseFloat(document.getElementById('gimbal-pitch')?.value) || -90);
+
+    const waypoints = rawWps.map(wp => ({
+      lat: wp.lat,
+      lon: wp.lon,
+      alt: wp.alt,
+      pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
+      speed: speed,
+      heading: wp.heading,
+      isRingStart: wp.isRingStart || false,
+      ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
+      poiIndex: wp.poiIndex !== undefined ? wp.poiIndex : null,
+      headingMode: wp.headingMode !== undefined ? wp.headingMode : null
+    }));
+
+    if (webUsbBtn) webUsbBtn.innerHTML = '<span>⏳ Building KMZ...</span>';
+    const result = await generateKMZBlob(waypoints);
+    if (!result || !result.blob) {
+      throw new Error('Could not generate mission KMZ');
+    }
+
+    const uuid = getRC2UUID() || rc2MtpActiveUUID || '354A8F93-759C-42C3-A8D5-746F79C7622A';
+    const filename = `${uuid}.kmz`;
+    const kmzArrayBuffer = await result.blob.arrayBuffer();
+
+    if (webUsbBtn) webUsbBtn.innerHTML = '<span>⏳ Writing to RC 2 via MTP...</span>';
+    const mtp = (typeof WebUsbMtp !== 'undefined') ? WebUsbMtp : null;
+    if (!mtp) {
+      throw new Error('WebUSB MTP Engine not loaded.');
+    }
+
+    const pushRes = await mtp.pushKmz(filename, kmzArrayBuffer);
+    if (pushRes && pushRes.success) {
+      if (webUsbBtn) {
+        webUsbBtn.innerHTML = '<span>✅ Synced via WebUSB!</span>';
+        webUsbBtn.style.color = '#4ade80';
+      }
+      if (typeof showToast === 'function') {
+        showToast(`✅ Synced ${filename} directly to DJI RC 2 over USB OTG!`, 'success');
+      }
+      setTimeout(() => {
+        if (webUsbBtn) {
+          webUsbBtn.disabled = false;
+          webUsbBtn.innerHTML = originalHtml;
+          webUsbBtn.style.color = '';
+        }
+      }, 4000);
+    } else {
+      throw new Error('WebUSB MTP push failed');
+    }
+  } catch (err) {
+    console.error('WebUSB Direct Sync Error:', err);
+    if (webUsbBtn) {
+      webUsbBtn.innerHTML = `<span>❌ ${err.message || 'USB Sync Failed'}</span>`;
+      webUsbBtn.style.color = '#f87171';
+    }
+    if (typeof showToast === 'function') {
+      showToast(`WebUSB Error: ${err.message}`, 'error');
+    }
+    setTimeout(() => {
+      if (webUsbBtn) {
+        webUsbBtn.disabled = false;
+        webUsbBtn.innerHTML = originalHtml;
+        webUsbBtn.style.color = '';
+      }
+    }, 4500);
+  }
+}
+
+/**
+ * Pull flight telemetry log directly via WebUSB
+ */
+async function pullLogViaWebUsb() {
+  const pullLogBtn = document.getElementById('webusb-pull-log-btn');
+  const originalHtml = pullLogBtn ? pullLogBtn.innerHTML : '';
+  if (pullLogBtn) {
+    pullLogBtn.disabled = true;
+    pullLogBtn.innerHTML = '<span>⏳ Reading USB...</span>';
+  }
+
+  try {
+    const mtp = (typeof WebUsbMtp !== 'undefined') ? WebUsbMtp : null;
+    if (!mtp) throw new Error('WebUSB MTP Engine not loaded.');
+    if (!mtp.isConnected) {
+      await mtp.connect();
+    }
+
+    if (pullLogBtn) {
+      pullLogBtn.innerHTML = '<span>✅ Logs Read Ready</span>';
+      pullLogBtn.style.color = '#38bdf8';
+    }
+    if (typeof showToast === 'function') {
+      showToast('Connected to RC 2 over WebUSB. Ready to inspect flight records.', 'info');
+    }
+    setTimeout(() => {
+      if (pullLogBtn) {
+        pullLogBtn.disabled = false;
+        pullLogBtn.innerHTML = originalHtml;
+        pullLogBtn.style.color = '';
+      }
+    }, 3500);
+  } catch (err) {
+    console.error('WebUSB Log Pull Error:', err);
+    if (pullLogBtn) {
+      pullLogBtn.innerHTML = `<span>❌ ${err.message || 'Failed'}</span>`;
+      pullLogBtn.style.color = '#f87171';
+    }
+    setTimeout(() => {
+      if (pullLogBtn) {
+        pullLogBtn.disabled = false;
+        pullLogBtn.innerHTML = originalHtml;
+        pullLogBtn.style.color = '';
+      }
+    }, 3500);
+  }
+}
+
 function blobToBase64(blob) {
   if (!blob) return Promise.resolve('');
   if (typeof FileReader !== 'undefined') {
@@ -1239,6 +1415,28 @@ function initRC2Controls() {
   const directBrowseLogsBtn = document.getElementById('direct-rc2-browse-logs-btn');
   if (directBrowseLogsBtn) {
     directBrowseLogsBtn.addEventListener('click', openRc2LogManagerModal);
+  }
+
+  // WebUSB Direct Sync Buttons (Android / ChromeOS OTG)
+  const webUsbSyncBtn = document.getElementById('webusb-sync-btn');
+  if (webUsbSyncBtn) {
+    webUsbSyncBtn.addEventListener('click', () => withPreflightGate(sendDirectlyViaWebUsb));
+  }
+
+  const webUsbPullLogBtn = document.getElementById('webusb-pull-log-btn');
+  if (webUsbPullLogBtn) {
+    webUsbPullLogBtn.addEventListener('click', pullLogViaWebUsb);
+  }
+
+  // Adaptive sync container visibility check based on OS platform
+  const syncPlatform = getSyncPlatform();
+  const webUsbContainer = document.getElementById('webusb-direct-actions');
+  if (webUsbContainer) {
+    if (syncPlatform === 'android' || syncPlatform === 'chromeos') {
+      webUsbContainer.style.display = 'flex';
+    } else {
+      webUsbContainer.style.display = 'none';
+    }
   }
 
   // Companion auto-restart button (for version mismatch sync when bridge is outdated)

@@ -388,17 +388,26 @@ function renderFrame(state, options = {}) {
   // Line 8: Divider
   lines.push(ANSI.gray + '─'.repeat(cols) + ANSI.reset);
 
-  // Line 9: Devices (RC 2, ADS-B, Remote ID)
-  const dev = state.devices || { rc2: {}, adsb: {}, remoteId: {} };
+  // Line 9: Devices (RC 2, RTMP Ingest, ADS-B, Remote ID)
+  const dev = state.devices || { rc2: {}, adsb: {}, remoteId: {}, rtmp: {} };
   const rc2StatusStr = dev.rc2.connected
     ? `${ANSI.green}connected (${dev.rc2.missionsCount || 0} missions)${ANSI.reset}`
     : `${ANSI.yellow}disconnected${ANSI.reset}`;
+  const rtmpDev = dev.rtmp || {};
+  let rtmpStatusStr;
+  if (rtmpDev.activeStreams && rtmpDev.activeStreams.length > 0) {
+    rtmpStatusStr = `${ANSI.green}streaming (${rtmpDev.activeStreams[0].publisherIp})${ANSI.reset}`;
+  } else if (rtmpDev.listening) {
+    rtmpStatusStr = `${ANSI.cyan}ready :${rtmpDev.port || 1935}${ANSI.reset}`;
+  } else {
+    rtmpStatusStr = `${ANSI.gray}ready :1935${ANSI.reset}`;
+  }
   const adsbStatusStr = dev.adsb.connected
     ? `${ANSI.green}connected (${dev.adsb.aircraftCount || 0} aircraft)${ANSI.reset}`
     : `${ANSI.yellow}waiting :${dev.adsb.tcpPort || 30003}${ANSI.reset}`;
   const ridStatusStr = `${dev.remoteId.activeCount || 0} drones`;
 
-  const devLine = `${ANSI.bold}DEVICES${ANSI.reset}   RC 2: ${rc2StatusStr}   ADS-B: ${adsbStatusStr}   Remote ID: ${ridStatusStr}`;
+  const devLine = `${ANSI.bold}DEVICES${ANSI.reset}   RC 2: ${rc2StatusStr}   RTMP: ${rtmpStatusStr}   ADS-B: ${adsbStatusStr}   Remote ID: ${ridStatusStr}`;
   lines.push(padRight(` ${devLine}`, cols));
 
   // Line 10: Tile Cache Stats
@@ -464,6 +473,7 @@ class Dashboard {
     this.getRc2Status = options.getRc2Status || (() => ({ connected: false }));
     this.getAdsbStatus = options.getAdsbStatus || (() => ({ connected: false, tcpPort: 30003, activeAircraftCount: 0 }));
     this.getRemoteIdStatus = options.getRemoteIdStatus || (() => ({ activeCount: 0 }));
+    this.getRtmpStatus = options.getRtmpStatus || (() => null);
     this.getTileCacheStats = options.getTileCacheStats || (() => ({ totalFiles: 0, sizeMb: 0, maxSizeMb: 2048, hitRatePercent: 0, lruPruneCount: 0, bypassCount: 0 }));
     this.getClientCounts = options.getClientCounts || (() => ({ sseTotal: 0, sseStatus: 0, sseUnified: 0, sseAirspace: 0, mcpCount: 0 }));
   }
@@ -529,7 +539,8 @@ class Dashboard {
         },
         remoteId: {
           activeCount: ridStats.activeCount || 0
-        }
+        },
+        rtmp: this.getRtmpStatus() || { listening: false }
       },
       tileCache: {
         totalFiles: tcStats.totalFiles || 0,

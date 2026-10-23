@@ -2409,6 +2409,123 @@ const scenarios = [
       });
       await page.waitForTimeout(1000);
     }
+  },
+  {
+    id: 'feature_adaptive_hardware_sync',
+    name: 'Adaptive Hardware Sync (WebUSB & Bridge)',
+    description: 'Dynamic platform detection, direct WebUSB MTP sync buttons for Android OTG, and desktop companion bridge.',
+    issueRef: 'Issue #115',
+    run: async (page) => {
+      // 1. Center map on default rural coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Open Bridge Status Popover from topbar
+      const bridgePill = await page.locator('#header-bridge-pill');
+      if (await bridgePill.isVisible()) {
+        await bridgePill.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 3. Highlight WebUSB direct actions container
+      await page.evaluate(() => {
+        const webusbCont = document.getElementById('webusb-direct-actions');
+        if (webusbCont) {
+          webusbCont.style.display = 'flex';
+          webusbCont.style.outline = '2px solid #22c55e';
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 4. Highlight WebUSB Push KMZ button
+      await page.evaluate(() => {
+        const syncBtn = document.getElementById('webusb-sync-btn');
+        if (syncBtn) syncBtn.style.outline = '2px solid #4ade80';
+      });
+      await page.waitForTimeout(1000);
+
+      // 5. Open Guide modal to Android tab
+      const hint = await page.locator('#companion-offline-hint');
+      if (await hint.isVisible()) {
+        await hint.click();
+        await page.waitForTimeout(1200);
+
+        const androidTab = await page.locator('button.guide-tab-btn[data-tab="android"]');
+        if (await androidTab.isVisible()) {
+          await androidTab.click();
+          await page.waitForTimeout(1800);
+        }
+
+        const closeBtn = await page.locator('#close-guide-btn');
+        if (await closeBtn.isVisible()) {
+          await closeBtn.click();
+          await page.waitForTimeout(800);
+        }
+      }
+    }
+  },
+  {
+    id: 'feature_nd_filter_advisor',
+    name: 'Camera ND Filter Recommendation & Exposure Advisor',
+    description: 'Topbar weather pill badge, popover telemetry card, and interactive glassmorphic ND Filter Advisor modal.',
+    issueRef: 'v1.176.0',
+    run: async (page) => {
+      // 1. Center map squarely on default rural coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Highlight and click the Topbar ND Filter badge
+      const ndBadge = await page.locator('#header-nd-filter-badge');
+      if (await ndBadge.isVisible()) {
+        await page.evaluate(() => {
+          const el = document.getElementById('header-nd-filter-badge');
+          if (el) el.style.outline = '2px solid #38bdf8';
+        });
+        await page.waitForTimeout(800);
+        await ndBadge.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 3. Interact with ND Advisor Modal: switch from Cinematic to Photogrammetry
+      const photoBtn = await page.locator('button.nd-mode-tab-btn[data-nd-mode="photogrammetry"]');
+      if (await photoBtn.isVisible()) {
+        await photoBtn.click();
+        await page.waitForTimeout(800);
+      }
+
+      // 4. Switch to Long Exposure
+      const longExpBtn = await page.locator('button.nd-mode-tab-btn[data-nd-mode="long_exposure"]');
+      if (await longExpBtn.isVisible()) {
+        await longExpBtn.click();
+        await page.waitForTimeout(800);
+      }
+
+      // 5. Switch back to Cinematic Video
+      const cinemaBtn = await page.locator('button.nd-mode-tab-btn[data-nd-mode="cinematic"]');
+      if (await cinemaBtn.isVisible()) {
+        await cinemaBtn.click();
+        await page.waitForTimeout(800);
+      }
+
+      // 6. Close modal
+      const closeBtn = await page.locator('#close-nd-filter-modal-btn');
+      if (await closeBtn.isVisible()) {
+        await closeBtn.click();
+        await page.waitForTimeout(800);
+      }
+
+      // 7. Open Weather Popover to demonstrate popover ND Filter card
+      const weatherPill = await page.locator('#header-telemetry-pill');
+      if (await weatherPill.isVisible()) {
+        await weatherPill.click();
+        await page.waitForTimeout(1200);
+        const closePopBtn = await page.locator('#telemetry-popover-close-btn');
+        if (await closePopBtn.isVisible()) {
+          await closePopBtn.click();
+          await page.waitForTimeout(500);
+        }
+      }
+    }
   }
 ];
 
