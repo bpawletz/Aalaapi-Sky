@@ -1,3 +1,22 @@
+## [1.184.0] - 2026-10-23
+
+Dynamic live RTMP stream source dropdown population and subscriber handshake unblocking for low-latency live camera casting.
+
+### Added
+
+#### Pilot & Operational Features
+- **Dynamic RTMP Stream Source Dropdown (Closes #155)**:
+  - The Live Video Cast source dropdown (`#video-cast-source-select`) now dynamically populates active RTMP incoming streams with live indicators and publisher IPs (e.g., `🟢 RC 2 Live Stream (192.168.1.80 - live/stream)`).
+  - Automatically switches from the synthetic test pattern to incoming drone video when an RTMP publisher connects.
+  - Dynamically injects selectable entries for multi-drone concurrent streams (`live/drone1`, `live/drone2`) so operators can easily switch between aircraft feeds.
+  - Gracefully reverts to waiting status when streams disconnect without disrupting UI state.
+
+#### Under the Hood & Technical Details
+- **RTMP Server Handshake Resolution (`tools/companion/rtmp_server.js`)**:
+  - Handled `getStreamLength`, `_checkBW`, and `checkBandwidth` AMF0 commands with `_result(transId, null, 0)`, unblocking FFmpeg and OpenCV subscribers from hanging during connection negotiation.
+- **Low-Latency OpenCV Video Capture (`tools/companion/video_worker.py`)**:
+  - Configured `OPENCV_FFMPEG_CAPTURE_OPTIONS` (`rtmp_buffer=0|rtmp_live=live|timeout=5000000`) and explicit `CAP_FFMPEG` backend to eliminate capture lag and prevent worker stalls.
+
 ## [1.183.0] - 2026-10-23
 
 3D FPV Waypoint Editor dragging, multi-tier fallback drag zones for headerless cards, and tactile drag grip indicators (⋮⋮).

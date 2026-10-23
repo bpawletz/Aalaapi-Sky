@@ -267,3 +267,70 @@ test('RTMPServer: stream collision rejects second publisher on active stream key
   client2.destroy();
   await server.stop();
 });
+
+
+test('RTMPServer: subscriber handshake unblocking for getStreamLength and _checkBW', async () => {
+  const testPort = 19350 + Math.floor(Math.random() * 500);
+  const server = new RTMPServer({ port: testPort, host: '127.0.0.1' });
+  await server.start();
+
+  const client = net.createConnection({ port: testPort, host: '127.0.0.1' });
+  await new Promise((r) => client.on('connect', r));
+
+  const c0c1 = Buffer.allocUnsafe(1537);
+  c0c1.writeUInt8(3, 0);
+  crypto.randomFillSync(c0c1, 1, 1536);
+  client.write(c0c1);
+
+  await new Promise((r) => {
+    let rec = Buffer.alloc(0);
+    function onD(ch) {
+      rec = Buffer.concat([rec, ch]);
+      if (rec.length >= 3073) {
+        client.off('data', onD);
+        r();
+      }
+    }
+    client.on('data', onD);
+  });
+
+  client.write(Buffer.alloc(1536));
+  await new Promise((r) => setTimeout(r, 60));
+
+  let responses = Buffer.alloc(0);
+  client.on('data', (d) => {
+    responses = Buffer.concat([responses, d]);
+  });
+
+  function sendCmd(csid, transId, cmdName, args) {
+    const payload = AMF0.encode([cmdName, transId, ...args]);
+    const hdr = Buffer.allocUnsafe(12);
+    hdr.writeUInt8(csid & 0x3F, 0);
+    hdr.writeUInt8(0, 1); hdr.writeUInt8(0, 2); hdr.writeUInt8(0, 3);
+    hdr.writeUInt8((payload.length >> 16) & 0xFF, 4);
+    hdr.writeUInt8((payload.length >> 8) & 0xFF, 5);
+    hdr.writeUInt8(payload.length & 0xFF, 6);
+    hdr.writeUInt8(20, 7);
+    hdr.writeUInt32LE(0, 8);
+    client.write(Buffer.concat([hdr, payload]));
+  }
+
+  // 1. Send getStreamLength (transId 42)
+  responses = Buffer.alloc(0);
+  sendCmd(3, 42, 'getStreamLength', [null, 'live/stream']);
+  await new Promise((r) => setTimeout(r, 80));
+
+  let str = responses.toString('latin1');
+  assert.ok(str.includes('_result'), 'Server must respond to getStreamLength with _result');
+
+  // 2. Send _checkBW (transId 43)
+  responses = Buffer.alloc(0);
+  sendCmd(3, 43, '_checkBW', [null]);
+  await new Promise((r) => setTimeout(r, 80));
+
+  str = responses.toString('latin1');
+  assert.ok(str.includes('_result'), 'Server must respond to _checkBW with _result');
+
+  client.destroy();
+  await server.stop();
+});

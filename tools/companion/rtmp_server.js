@@ -473,6 +473,10 @@ class RTMPSession extends EventEmitter {
       this.sendResult(transId, null, null);
     } else if (cmd === 'createStream') {
       this.sendResult(transId, null, this.streamId);
+    } else if (cmd === 'getStreamLength') {
+      this.sendResult(transId, null, 0);
+    } else if (cmd === '_checkBW' || cmd === 'checkBandwidth') {
+      this.sendResult(transId, null, 0);
     } else if (cmd === 'publish') {
       let rawKey = typeof decoded[3] === 'string' ? decoded[3] : 'stream';
       // Normalize stream key: strip query params or leading slashes
