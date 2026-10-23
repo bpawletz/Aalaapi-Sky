@@ -34336,3 +34336,84 @@ describe('v1.183.0: 3D FPV Waypoint Editor Dragging & Multi-Tier Fallback Suite'
     }
   });
 });
+
+
+describe('v1.184.0: Dynamic Live Stream Dropdown & OpenCV RTMP Subscriber Handshake Suite', () => {
+  test('Version consistency: v1.184.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.184.0');
+  });
+
+  test('VideoCastClient.updateRtmpUI dynamically populates active streams into #video-cast-source-select', () => {
+    const dom = new JSDOM(`
+      <!DOCTYPE html><html><body>
+      <select id="video-cast-source-select">
+        <option value="test">Synthetic FPV HUD (Test Pattern)</option>
+        <option value="rtmp://127.0.0.1:1935/live/stream" data-rtmp-default="true">Embedded RTMP Ingest (DJI RC 2 / Live Push)</option>
+        <option value="0">USB/HDMI Capture Card (UVC 0)</option>
+        <option value="custom">Custom Stream URL...</option>
+      </select>
+      </body></html>
+    `);
+    const origDoc = global.document;
+    global.document = dom.window.document;
+
+    const vc = window.videoCastClient || global.videoCastClient;
+    assert.ok(vc, 'videoCastClient instance must exist');
+
+    const select = dom.window.document.getElementById('video-cast-source-select');
+    const origSetSource = vc.setSource;
+    let switchedSource = null;
+    vc.setSource = (s) => { switchedSource = s; };
+
+    try {
+      // 1. Initially on test pattern
+      select.value = 'test';
+      vc.currentSource = 'test';
+      vc.userSelectedManualSource = false;
+
+      // 2. Active stream connects
+      vc.updateRtmpUI({
+        port: 1935,
+        listening: true,
+        activeStreams: [
+          { path: 'live/stream', publisherIp: '192.168.1.80', durationSec: 15, subscriberCount: 0, bytesRelayed: 2048 }
+        ]
+      });
+
+      const defaultOpt = select.querySelector('option[data-rtmp-default="true"]');
+      assert.ok(defaultOpt.textContent.includes('RC 2 Live Stream'), 'Option label must update with stream name');
+      assert.ok(defaultOpt.textContent.includes('192.168.1.80'), 'Option label must include publisher IP');
+      assert.strictEqual(select.value, 'rtmp://127.0.0.1:1935/live/stream', 'Select must auto-switch to active stream');
+      assert.strictEqual(switchedSource, 'rtmp://127.0.0.1:1935/live/stream', 'setSource must be invoked for active stream');
+
+      // 3. Multi-drone concurrent stream arrives
+      vc.updateRtmpUI({
+        port: 1935,
+        listening: true,
+        activeStreams: [
+          { path: 'live/stream', publisherIp: '192.168.1.80', durationSec: 25, subscriberCount: 1, bytesRelayed: 4096 },
+          { path: 'live/drone2', publisherIp: '192.168.1.85', durationSec: 5, subscriberCount: 0, bytesRelayed: 1024 }
+        ]
+      });
+
+      const dynamicOpts = select.querySelectorAll('.dynamic-rtmp-stream-opt');
+      assert.strictEqual(dynamicOpts.length, 1, 'Secondary drone stream must be injected');
+      assert.ok(dynamicOpts[0].textContent.includes('live/drone2'));
+      assert.strictEqual(dynamicOpts[0].value, 'rtmp://127.0.0.1:1935/live/drone2');
+
+      // 4. Stream disconnects -> reverts to waiting state and cleans up dynamic options
+      vc.updateRtmpUI({
+        port: 1935,
+        listening: true,
+        activeStreams: []
+      });
+
+      assert.ok(defaultOpt.textContent.includes('Waiting for feed'), 'Option must revert to waiting status');
+      assert.strictEqual(select.querySelectorAll('.dynamic-rtmp-stream-opt').length, 0, 'Dynamic stream options must be purged');
+      assert.strictEqual(vc.userSelectedManualSource, false, 'Manual override flag must reset when all streams drop');
+    } finally {
+      vc.setSource = origSetSource;
+      global.document = origDoc;
+    }
+  });
+});

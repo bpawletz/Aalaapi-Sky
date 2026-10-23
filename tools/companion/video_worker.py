@@ -85,7 +85,12 @@ class VideoWorker:
             dev_idx = int(self.source)
             cap = cv2.VideoCapture(dev_idx, cv2.CAP_DSHOW if os.name == 'nt' else cv2.CAP_ANY)
         except ValueError:
-            cap = cv2.VideoCapture(self.source)
+            src_str = str(self.source)
+            if src_str.startswith(('rtmp://', 'rtsp://', 'http://', 'https://')):
+                os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtmp_buffer=0|rtmp_live=live|timeout=5000000"
+                cap = cv2.VideoCapture(self.source, cv2.CAP_FFMPEG)
+            else:
+                cap = cv2.VideoCapture(self.source)
 
         if cap and cap.isOpened():
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
