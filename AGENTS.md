@@ -154,3 +154,14 @@ Whenever an AI agent works on an issue, bug report, or feature request that corr
    - The agent MUST update the issue state to `closed` (e.g. using the GitHub MCP `update_issue` tool with `state: "closed"`).
 3. **Changelog & Documentation Cross-Referencing:**
    - The issue reference MUST be documented in `CHANGELOG.md` under the new version header (e.g. `- **Scope:** description (Closes #123)`).
+
+## 11. Flight Plan Settings & Documentation Synchronization Policy
+Whenever adding, modifying, renaming, or deprecating a flight pattern, layer setting, waypoint override, or flight parameter in Aalaapi Sky:
+1. **Synchronize In-App Help Hub (`#quickstart-modal`)**:
+   - Update the **Settings Matrix & Decision Trees** tab (`#intro-pane-matrix` inside `index_template.html`) so the interactive decision trees, category filters, and settings applicability table reflect the change.
+   - Ensure any new parameter has its corresponding `Jump to Setting` data attribute (`data-jump-to="input-id"`) configured to navigate cleanly to the input control in the sidebar.
+2. **Synchronize Offline Documentation (`docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md`)**:
+   - Update the corresponding decision tree diagram (Mermaid flowchart and prose), the settings applicability matrix table, and the recommended parameter value ranges.
+3. **Mandatory Test Verification**:
+   - The test suite (`index.test.js`) verifies that all patterns registered in `#grid-type` have matching rows in both the in-app settings matrix and `docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md`. Agents MUST ensure this test passes before completing any pattern-related task.
+

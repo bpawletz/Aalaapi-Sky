@@ -8552,12 +8552,14 @@ describe('v1.66.0 Intro Guide Hub & Interactive Spotlight Tour Tests', () => {
     const tabBtns = {
       'intro-tab-workflow': { classList: { add: () => {}, remove: () => {} }, style: {} },
       'intro-tab-features': { classList: { add: () => {}, remove: () => {} }, style: {} },
-      'intro-tab-tips': { classList: { add: () => {}, remove: () => {} }, style: {} }
+      'intro-tab-tips': { classList: { add: () => {}, remove: () => {} }, style: {} },
+      'intro-tab-matrix': { classList: { add: () => {}, remove: () => {} }, style: {} }
     };
     const tabPanes = {
       'intro-pane-workflow': { classList: { add: () => {}, remove: () => {} } },
       'intro-pane-features': { classList: { add: () => {}, remove: () => {} } },
-      'intro-pane-tips': { classList: { add: () => {}, remove: () => {} } }
+      'intro-pane-tips': { classList: { add: () => {}, remove: () => {} } },
+      'intro-pane-matrix': { classList: { add: () => {}, remove: () => {} } }
     };
 
     let removedPanes = [];
@@ -8574,6 +8576,12 @@ describe('v1.66.0 Intro Guide Hub & Interactive Spotlight Tour Tests', () => {
 
     assert.ok(removedPanes.some(p => p.id === 'intro-pane-features' && p.c === 'hidden'), 'Selected pane must remove hidden class');
     assert.ok(addedPanes.some(p => p.id === 'intro-pane-workflow' && p.c === 'hidden'), 'Other panes must receive hidden class');
+    assert.ok(addedPanes.some(p => p.id === 'intro-pane-matrix' && p.c === 'hidden'), 'Matrix pane must receive hidden class when features is selected');
+
+    removedPanes = [];
+    addedPanes = [];
+    switchIntroTab('matrix');
+    assert.ok(removedPanes.some(p => p.id === 'intro-pane-matrix' && p.c === 'hidden'), 'Matrix pane must remove hidden class when matrix is selected');
 
     global._stubElements = null;
   });
@@ -30861,7 +30869,7 @@ describe('Issue #140 & v1.159.0: Custom Node-RED Integration Framework for Aalaa
     assert.strictEqual(mat.length, 4);
     assert.strictEqual(mat[0].length, 4);
     assert.strictEqual(mat[3][3], 1.0);
-    assert.strictEqual(mat[1][3], 25, 'Up altitude must populate Y translation component');
+    assert.strictEqual(mat[2][3], 25, 'Up altitude (+Z in ENU world frame) must populate mat[2][3]');
   });
 
   test('Companion server exposes broadcastIngestComplete hook for SSE streams', () => {
@@ -31984,7 +31992,7 @@ describe('v1.166.0 Weather-Coordinated Shadow Casting & Satellite Cloud Cover Ov
 
   test('shouldProxyTileUrl recognizes NOAA GOES / IEM mesonet satellite cloud tile domains', () => {
     assert.ok(typeof shouldProxyTileUrl === 'function', 'shouldProxyTileUrl must be a function');
-    const cloudTileUrl = 'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes_east_ir/5/8/12.png';
+    const cloudTileUrl = 'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes_east_conus_ch13/5/8/12.png';
     assert.strictEqual(shouldProxyTileUrl(cloudTileUrl), true, 'mesonet satellite cloud tiles must be eligible for bridge proxy caching');
   });
 });
@@ -32894,6 +32902,511 @@ describe('Issue & v1.171.0: Hyperlapse Visual Compass Rose, Gimbal Pitch Elevati
       document.getElementById = origGetElementById;
       global.getActiveLayer = origGetActiveLayer;
     }
+  });
+});
+
+describe('Decision Trees & Settings Matrix Guide (v1.172.0)', () => {
+  test('Version 1.172.0 consistency across all required locations', () => {
+    assertVersionConsistency('1.172.0');
+  });
+
+  test('Automated Drift Prevention: all grid-type patterns are synchronized in modal matrix and markdown doc', () => {
+    const templateContent = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const docContent = fs.readFileSync(path.join(__dirname, 'docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md'), 'utf8');
+
+    // Extract all option values from <select id="grid-type">
+    const gridTypeMatch = templateContent.match(/<select id="grid-type"[\s\S]*?<\/select>/);
+    assert.ok(gridTypeMatch, '<select id="grid-type"> must be present in index_template.html');
+
+    const optionRegex = /<option\s+value="([^"]+)"/g;
+    const patternKeys = [];
+    let match;
+    while ((match = optionRegex.exec(gridTypeMatch[0])) !== null) {
+      patternKeys.push(match[1]);
+    }
+
+    assert.ok(patternKeys.length >= 21, `Expected at least 21 patterns in grid-type, found ${patternKeys.length}`);
+
+    // Verify each pattern is present in #intro-pane-matrix and in docs
+    patternKeys.forEach(pattern => {
+      // Check in index_template.html modal table
+      const hasModalRow = templateContent.includes(`data-pattern="${pattern}"`);
+      assert.ok(hasModalRow, `Pattern "${pattern}" must have a corresponding <tr data-pattern="${pattern}"> in index_template.html matrix table`);
+
+      // Check in documentation guide
+      const hasDocMention = docContent.includes(`(${pattern})`) || docContent.includes(`\`${pattern}\``);
+      assert.ok(hasDocMention, `Pattern "${pattern}" must be documented in docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md`);
+    });
+  });
+
+  test('Jump to Setting target IDs in modal correspond to valid elements in index_template.html', () => {
+    const templateContent = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const jumpRegex = /data-jump-to="([^"]+)"/g;
+    const jumpTargets = new Set();
+    let match;
+    while ((match = jumpRegex.exec(templateContent)) !== null) {
+      jumpTargets.add(match[1]);
+    }
+
+    assert.ok(jumpTargets.size > 0, 'Modal must contain data-jump-to targets');
+
+    jumpTargets.forEach(targetId => {
+      const hasElement = templateContent.includes(`id="${targetId}"`) || templateContent.includes(`class="${targetId}"`);
+      assert.ok(hasElement, `Jump target "${targetId}" must correspond to an id in index_template.html`);
+    });
+  });
+
+  test('updateMatrixActiveLayerTelemetry populates live values and highlights active pattern row', () => {
+    const altEl = { textContent: '' };
+    const pitchEl = { textContent: '' };
+    const capEl = { textContent: '' };
+    const headEl = { textContent: '' };
+    const turnEl = { textContent: '' };
+    const ovEl = { textContent: '' };
+    const spdEl = { textContent: '' };
+    const finEl = { textContent: '' };
+    const nameEl = { textContent: '' };
+    const badgeEl = { textContent: '' };
+
+    const rows = [
+      {
+        attrs: { 'data-pattern': 'single' },
+        classList: {
+          classes: new Set(),
+          add(c) { this.classes.add(c); },
+          remove(c) { this.classes.delete(c); },
+          contains(c) { return this.classes.has(c); }
+        },
+        getAttribute(k) { return this.attrs[k]; }
+      },
+      {
+        attrs: { 'data-pattern': 'double' },
+        classList: {
+          classes: new Set(),
+          add(c) { this.classes.add(c); },
+          remove(c) { this.classes.delete(c); },
+          contains(c) { return this.classes.has(c); }
+        },
+        getAttribute(k) { return this.attrs[k]; }
+      }
+    ];
+
+    const origGetElementById = document.getElementById;
+    const origQuerySelectorAll = document.querySelectorAll;
+    const origGetActiveLayer = global.getActiveLayer;
+
+    document.getElementById = (id) => {
+      if (id === 'matrix-active-layer-name') return nameEl;
+      if (id === 'matrix-active-pattern-badge') return badgeEl;
+      if (id === 'matrix-active-alt-val') return altEl;
+      if (id === 'matrix-active-pitch-val') return pitchEl;
+      if (id === 'matrix-active-capture-val') return capEl;
+      if (id === 'matrix-active-heading-val') return headEl;
+      if (id === 'matrix-active-turn-val') return turnEl;
+      if (id === 'matrix-active-overlap-val') return ovEl;
+      if (id === 'matrix-active-speed-val') return spdEl;
+      if (id === 'matrix-active-finish-val') return finEl;
+      if (id === 'grid-type') {
+        return {
+          value: 'double',
+          options: [
+            { value: 'single', textContent: '2D Map (Nadir Grid)' },
+            { value: 'double', textContent: '3D Splat (Double Grid)' }
+          ]
+        };
+      }
+      return null;
+    };
+
+    document.querySelectorAll = (sel) => {
+      if (sel === '#matrix-table-body tr') return rows;
+      return [];
+    };
+
+    global.getActiveLayer = () => ({
+      name: 'Custom Inspection Layer',
+      pattern: 'double',
+      altitude: 65,
+      gimbalPitch: -60,
+      captureMode: 'continuous',
+      headingMode: 'followWayline',
+      pathMode: 'curved',
+      frontOverlap: 80,
+      sideOverlap: 75,
+      speed: 6.0
+    });
+
+    try {
+      updateMatrixActiveLayerTelemetry();
+
+      assert.strictEqual(nameEl.textContent, 'Custom Inspection Layer');
+      assert.strictEqual(badgeEl.textContent, '3D Splat (Double Grid)');
+      assert.strictEqual(altEl.textContent, '65m');
+      assert.strictEqual(pitchEl.textContent, '-60°');
+      assert.strictEqual(capEl.textContent, 'Continuous');
+      assert.strictEqual(headEl.textContent, 'Follow Wayline');
+      assert.strictEqual(turnEl.textContent, 'Curved Coordinated');
+      assert.strictEqual(ovEl.textContent, '80% / 75%');
+      assert.strictEqual(spdEl.textContent, '6 m/s');
+
+      assert.strictEqual(rows[0].classList.contains('active-matrix-row'), false, 'Non-active row must not have active class');
+      assert.strictEqual(rows[1].classList.contains('active-matrix-row'), true, 'Active pattern row must receive active-matrix-row class');
+    } finally {
+      document.getElementById = origGetElementById;
+      document.querySelectorAll = origQuerySelectorAll;
+      global.getActiveLayer = origGetActiveLayer;
+    }
+  });
+});
+
+describe('v1.173.0 Low-Latency Video Casting & Local Recording Service (Issue #97)', () => {
+  test('correctly derives WebSocket URL from HTTP and HTTPS bases', () => {
+    const client = new VideoCastClient();
+    assert.strictEqual(client.getWsUrl('http://127.0.0.1:8765'), 'ws://127.0.0.1:8765/api/video/stream');
+    assert.strictEqual(client.getWsUrl('https://192.168.1.50:8765/'), 'wss://192.168.1.50:8765/api/video/stream');
+  });
+
+  test('manages recording state, timer, and DOM button indicators', () => {
+    const client = new VideoCastClient();
+    const mockRecBtn = {
+      classList: {
+        classes: new Set(),
+        add(c) { this.classes.add(c); },
+        remove(c) { this.classes.delete(c); },
+        contains(c) { return this.classes.has(c); }
+      },
+      setAttribute(k, v) { this[k] = v; },
+      title: ''
+    };
+    const mockTimer = {
+      classList: {
+        classes: new Set(['hidden']),
+        add(c) { this.classes.add(c); },
+        remove(c) { this.classes.delete(c); },
+        contains(c) { return this.classes.has(c); }
+      },
+      textContent: '00:00'
+    };
+
+    const origGetElementById = document.getElementById;
+    document.getElementById = (id) => {
+      if (id === 'video-cast-rec-btn') return mockRecBtn;
+      if (id === 'video-cast-rec-timer') return mockTimer;
+      return null;
+    };
+
+    try {
+      client.setRecordingState(true, 15);
+      assert.strictEqual(client.isRecording, true);
+      assert.strictEqual(client.recordDurationSec, 15);
+      assert.strictEqual(mockRecBtn.classList.contains('is-recording'), true);
+      assert.strictEqual(mockTimer.classList.contains('hidden'), false);
+
+      client.updateRecordTimerUI();
+      assert.strictEqual(mockTimer.textContent, '00:15');
+
+      client.setRecordingState(false, 0);
+      assert.strictEqual(client.isRecording, false);
+      assert.strictEqual(mockRecBtn.classList.contains('is-recording'), false);
+      assert.strictEqual(mockTimer.classList.contains('hidden'), true);
+      assert.strictEqual(mockTimer.textContent, '00:00');
+    } finally {
+      document.getElementById = origGetElementById;
+      if (client.recordTimer) clearInterval(client.recordTimer);
+    }
+  });
+
+  test('updates status badge text, dot colors, and sidebar pill', () => {
+    const client = new VideoCastClient();
+    const mockDot = { style: {} };
+    const mockText = { textContent: '' };
+    const mockPill = { textContent: '', style: {} };
+
+    const origGetElementById = document.getElementById;
+    document.getElementById = (id) => {
+      if (id === 'video-cast-status-dot') return mockDot;
+      if (id === 'video-cast-status-text') return mockText;
+      if (id === 'sidebar-video-status-pill') return mockPill;
+      return null;
+    };
+
+    try {
+      client.updateStatusBadge('connected');
+      assert.strictEqual(mockText.textContent, 'LIVE');
+      assert.strictEqual(mockPill.textContent, 'LIVE');
+      assert.strictEqual(mockDot.style.background, '#10b981');
+
+      client.updateStatusBadge('connecting');
+      assert.strictEqual(mockText.textContent, 'CONNECTING');
+      assert.strictEqual(mockPill.textContent, 'CONNECTING');
+      assert.strictEqual(mockDot.style.background, '#f59e0b');
+
+      client.updateStatusBadge('disconnected');
+      assert.strictEqual(mockText.textContent, 'OFFLINE');
+      assert.strictEqual(mockPill.textContent, 'OFFLINE');
+      assert.strictEqual(mockDot.style.background, '#ef4444');
+    } finally {
+      document.getElementById = origGetElementById;
+    }
+  });
+
+  test('registers and unregisters canvases properly', () => {
+    const client = new VideoCastClient();
+    const canvas1 = { id: 'c1' };
+    const canvas2 = { id: 'c2' };
+
+    client.registerCanvas(canvas1);
+    client.registerCanvas(canvas2);
+    assert.strictEqual(client.canvases.size, 2);
+
+    client.unregisterCanvas(canvas1);
+    assert.strictEqual(client.canvases.size, 1);
+    assert.strictEqual(client.canvases.has(canvas2), true);
+  });
+
+  test('updates RTMP Ingest UI with LAN address, stream status, and firewall badge', () => {
+    const client = new VideoCastClient();
+    const mockUrlCode = { textContent: '' };
+    const mockFwBadge = { className: '', textContent: '', title: '' };
+    const mockTip = { textContent: '', innerHTML: '' };
+
+    const origGetElementById = document.getElementById;
+    document.getElementById = (id) => {
+      if (id === 'video-cast-rtmp-url-text') return mockUrlCode;
+      if (id === 'video-cast-fw-badge') return mockFwBadge;
+      if (id === 'video-cast-rtmp-tip') return mockTip;
+      return null;
+    };
+
+    try {
+      client.updateRtmpUI({
+        primaryUrl: 'rtmp://192.168.1.44:1935/live/stream',
+        firewall: { open: true, message: 'Port 1935 is open' },
+        activeStreams: [{ publisherIp: '192.168.1.50', durationSec: 42 }]
+      });
+
+      assert.strictEqual(mockUrlCode.textContent, 'rtmp://192.168.1.44:1935/live/stream');
+      assert.strictEqual(mockFwBadge.className, 'video-cast-fw-badge is-open');
+      assert.strictEqual(mockFwBadge.textContent, '🟢 Port 1935 Open');
+      assert.ok(mockTip.innerHTML.includes('192.168.1.50'));
+
+      // Test blocked firewall
+      client.updateRtmpUI({
+        primaryUrl: 'rtmp://127.0.0.1:1935/live/stream',
+        firewall: { open: false, message: 'Firewall blocked' },
+        activeStreams: []
+      });
+
+      assert.strictEqual(mockFwBadge.className, 'video-cast-fw-badge is-blocked');
+      assert.strictEqual(mockFwBadge.textContent, '⚠️ Port 1935 Rule Needed');
+    } finally {
+      document.getElementById = origGetElementById;
+    }
+  });
+});
+
+describe('v1.173.1 Satellite Cloud Cover Overlay Fix', () => {
+  test('Version Consistency across required locations for v1.173.1', () => {
+    assertVersionConsistency('1.173.1');
+  });
+
+  test('cloudCoverLayer uses active goes_east_conus_ch13 endpoint and does not use defunct goes_east_ir', () => {
+    const mapEngineSrc = fs.readFileSync(path.join(__dirname, 'src', 'map', 'MapEngine.js'), 'utf8');
+    assert.ok(mapEngineSrc.includes('goes_east_conus_ch13'), 'MapEngine.js must configure goes_east_conus_ch13 for cloudCoverLayer');
+    assert.strictEqual(mapEngineSrc.includes('goes_east_ir'), false, 'MapEngine.js must not contain defunct goes_east_ir');
+  });
+
+  test('TileCacheManager treats real-time mesonet satellite cloud tiles as live bypass to prevent stale caching', () => {
+    const { TileCacheManager } = require('./tools/companion/tile_cache.js');
+    const cacheMgr = new TileCacheManager();
+    const liveCloudUrl = 'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes_east_conus_ch13/5/8/12.png';
+    assert.strictEqual(cacheMgr.isLiveBypassUrl(liveCloudUrl), true, 'Live Mesonet satellite cloud tiles must bypass cache');
+    assert.strictEqual(cacheMgr.getTtlForUrl(liveCloudUrl), 0, 'Live Mesonet satellite cloud tiles must have 0 TTL');
+  });
+});
+
+describe('v1.174.0 Embedded RTMP Ingest & Windows Firewall Configuration', () => {
+  test('Version Consistency across required locations for v1.174.0', () => {
+    assertVersionConsistency('1.174.0');
+  });
+
+  test('Embedded RTMP Ingest server exports and handles AMF0 command framing', () => {
+    const { RTMPServer, AMF0 } = require('./tools/companion/rtmp_server.js');
+    assert.ok(RTMPServer);
+    assert.ok(AMF0);
+
+    const testCmd = ['connect', 1, { app: 'live' }];
+    const buf = AMF0.encode(testCmd);
+    assert.ok(Buffer.isBuffer(buf));
+    const decoded = AMF0.decode(buf);
+    assert.strictEqual(decoded[0], 'connect');
+    assert.strictEqual(decoded[1], 1);
+    assert.strictEqual(decoded[2].app, 'live');
+  });
+
+  test('VideoService integrates RTMP Server and exposes firewall status', () => {
+    const { VideoService } = require('./tools/companion/video_service.js');
+    const service = new VideoService({ rtmpPort: 19355, autoRestart: false });
+    assert.ok(service.rtmpServer);
+    assert.strictEqual(typeof service.startRtmp, 'function');
+    assert.strictEqual(typeof service.stopRtmp, 'function');
+
+    const fw = VideoService.checkFirewall('Aalaapi Sky RTMP Ingest', 1935);
+    assert.strictEqual(typeof fw.open, 'boolean');
+    assert.strictEqual(fw.port, 1935);
+  });
+
+  test('Windows Firewall setup scripts exist and reference TCP port 1935', () => {
+    const psScript = fs.readFileSync(path.join(__dirname, 'tools', 'companion', 'setup-rtmp-firewall.ps1'), 'utf8');
+    assert.ok(psScript.includes('1935'), 'setup-rtmp-firewall.ps1 must configure port 1935');
+    assert.ok(psScript.includes('Aalaapi Sky RTMP Ingest'), 'setup-rtmp-firewall.ps1 must specify rule name');
+
+    const batScript = fs.readFileSync(path.join(__dirname, 'tools', 'companion', 'setup-rtmp-firewall.bat'), 'utf8');
+    assert.ok(batScript.includes('setup-rtmp-firewall.ps1'), 'setup-rtmp-firewall.bat must launch setup-rtmp-firewall.ps1');
+  });
+
+  test('UI templates contain RTMP Ingest bar, copy button, and firewall badge', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('id="video-cast-rtmp-bar"'), 'Template must contain video-cast-rtmp-bar');
+    assert.ok(template.includes('id="video-cast-copy-rtmp-btn"'), 'Template must contain video-cast-copy-rtmp-btn');
+    assert.ok(template.includes('id="video-cast-fw-badge"'), 'Template must contain video-cast-fw-badge');
+    assert.ok(template.includes('rtmp://127.0.0.1:1935/live/stream'), 'Template must contain default embedded RTMP stream URL');
+  });
+});
+
+describe('v1.175.0 360° Spherical Panorama Stationary Capture Engine Expansion Suite', () => {
+  test('Version Consistency across required locations for v1.175.0', () => {
+    assertVersionConsistency('1.175.0');
+  });
+
+  test('calculatePhotoSphereOverlap calculates horizontal and vertical overlap correctly', () => {
+    const pg = require('./src/patterns/PatternGenerators.js');
+    assert.ok(typeof pg.calculatePhotoSphereOverlap === 'function');
+
+    // 12 shots per ring (30° step) with 82.1° HFOV
+    const overlap12 = pg.calculatePhotoSphereOverlap(12, 82.1, 52.6);
+    assert.strictEqual(overlap12.step, 30.0);
+    assert.strictEqual(overlap12.horizOverlap, 63); // (1 - 30/82.1) * 100 = 63.46 -> 63%
+    assert.strictEqual(overlap12.vertOverlap, 43);  // (1 - 30/52.6) * 100 = 42.96 -> 43%
+    assert.strictEqual(overlap12.quality, 'Adequate');
+
+    // 16 shots per ring (22.5° step) with 82.1° HFOV -> Optimal
+    const overlap16 = pg.calculatePhotoSphereOverlap(16, 82.1, 52.6);
+    assert.strictEqual(overlap16.step, 22.5);
+    assert.strictEqual(overlap16.horizOverlap, 73); // (1 - 22.5/82.1) * 100 = 72.59 -> 73%
+    assert.strictEqual(overlap16.quality, 'Optimal');
+
+    // 8 shots per ring (45° step) with 82.1° HFOV -> Marginal
+    const overlap8 = pg.calculatePhotoSphereOverlap(8, 82.1, 52.6);
+    assert.strictEqual(overlap8.horizOverlap, 45);
+    assert.strictEqual(overlap8.quality, 'Marginal');
+  });
+
+  test('estimatePhotoSphereDuration computes duration and battery consumption', () => {
+    const pg = require('./src/patterns/PatternGenerators.js');
+    assert.ok(typeof pg.estimatePhotoSphereDuration === 'function');
+
+    // 37 shots, 1x AEB, 2.0s settling
+    const est1x = pg.estimatePhotoSphereDuration(37, 1, 2.0, 12);
+    assert.ok(est1x.totalSeconds > 100 && est1x.totalSeconds < 200);
+    assert.ok(est1x.durationText.includes('m'));
+    assert.ok(est1x.batteryPct >= 5 && est1x.batteryPct <= 15);
+
+    // 49 shots (Zenith Sphere), 5x AEB, 2.0s settling -> longer duration
+    const est5x = pg.estimatePhotoSphereDuration(49, 5, 2.0, 12);
+    assert.ok(est5x.totalSeconds > est1x.totalSeconds);
+    assert.ok(est5x.batteryPct > est1x.batteryPct);
+  });
+
+  test('generatePhotoSphereCoordinates supports Zenith Sky row and Multi-Tier AEB', () => {
+    const pg = require('./src/patterns/PatternGenerators.js');
+
+    // 1. Standard 37-shot sphere without Zenith
+    const standardSphere = pg.generatePhotoSphereCoordinates(50, {
+      photoSphereRings: { zenith: false, ring1: true, ring2: true, ring3: true, nadir: true },
+      photoSphereShotsPerRing: 12,
+      photoSphereAebMode: 'none',
+      photoSphereMode: 'actionGroup'
+    });
+    assert.strictEqual(standardSphere.totalShots, 37); // 12*3 + 1
+    assert.strictEqual(standardSphere.hasZenith, false);
+    assert.strictEqual(standardSphere.totalRawPhotos, 37);
+    assert.strictEqual(standardSphere.waypoints.length, 1);
+    assert.strictEqual(standardSphere.waypoints[0].isPhotoSphereActionGroup, true);
+
+    // 2. Zenith Sphere with 49 positions and 5-shot AEB
+    const zenithSphere5x = pg.generatePhotoSphereCoordinates(60, {
+      photoSphereRings: { zenith: true, ring1: true, ring2: true, ring3: true, nadir: true },
+      photoSphereShotsPerRing: 12,
+      photoSphereAebMode: '5',
+      photoSphereMode: 'actionGroup'
+    });
+    assert.strictEqual(zenithSphere5x.totalShots, 49); // 12*4 + 1
+    assert.strictEqual(zenithSphere5x.hasZenith, true);
+    assert.strictEqual(zenithSphere5x.totalRawPhotos, 49 * 5); // 245 raw exposures!
+    assert.strictEqual(zenithSphere5x.waypoints[0].aebMultiplier, 5);
+
+    // Verify Zenith row pitch is +20°
+    const zenithAction = zenithSphere5x.waypoints[0].photoSphereActions.find(a => a.isZenith);
+    assert.ok(zenithAction, 'Action sequence must contain zenith actions');
+    assert.strictEqual(zenithAction.pitch, 20);
+    assert.strictEqual(zenithAction.ringIndex, -1);
+    assert.strictEqual(zenithAction.aebMultiplier, 5);
+  });
+
+  test('WpmlCompiler builds actionGroup with upward pitch and 5-shot AEB triggers', () => {
+    const pg = require('./src/patterns/PatternGenerators.js');
+    const { buildWaylinesWpml } = require('./src/export/WpmlCompiler.js');
+
+    const zenithSphere = pg.generatePhotoSphereCoordinates(45, {
+      photoSphereRings: { zenith: true, ring1: false, ring2: false, ring3: false, nadir: false },
+      photoSphereShotsPerRing: 8,
+      photoSphereAebMode: '5',
+      photoSphereMode: 'actionGroup'
+    });
+
+    const wp = zenithSphere.waypoints[0];
+    wp.lat = 41.3215;
+    wp.lon = -88.9950;
+    wp.gridType = 'photo-sphere';
+
+    const wpml = buildWaylinesWpml([wp], 45, 1.0, 1.0, 20, 0, 41.3215, -88.9950, 'photo-sphere', {
+      isConsumerDrone: false,
+      droneType: 'mini4pro'
+    });
+
+    // Upward pitch 20 in gimbal pitch action
+    assert.ok(wpml.includes('<wpml:gimbalPitchRotateAngle>20</wpml:gimbalPitchRotateAngle>'), 'Must serialize positive upward pitch for Zenith row');
+    
+    // Each position has 1 base photo + 4 AEB photos = 5 takePhoto triggers per position (8 positions * 5 = 40 photos)
+    const takePhotoMatches = wpml.match(/<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>/g) || [];
+    assert.strictEqual(takePhotoMatches.length, 40, '8 zenith positions * 5 photos = 40 takePhoto actions');
+  });
+
+  test('generateGPanoXmpMetadata includes dynamic zenith cropping and download helper exists', () => {
+    const { generateGPanoXmpMetadata, downloadGPanoXmpFile } = require('./src/export/WpmlCompiler.js');
+    assert.ok(typeof generateGPanoXmpMetadata === 'function');
+    assert.ok(typeof downloadGPanoXmpFile === 'function');
+
+    // With Zenith captured -> CroppedAreaTopPixels is 0
+    const xmpWithZenith = generateGPanoXmpMetadata({ hasZenith: true, height: 4000 });
+    assert.ok(xmpWithZenith.includes('<GPano:CroppedAreaTopPixels>0</GPano:CroppedAreaTopPixels>'));
+
+    // Without Zenith captured -> CroppedAreaTopPixels is offset for zenith sky opening
+    const xmpNoZenith = generateGPanoXmpMetadata({ hasZenith: false, height: 4000 });
+    const expectedCrop = Math.round(4000 * (20.0 / 180.0)); // 444
+    assert.ok(xmpNoZenith.includes(`<GPano:CroppedAreaTopPixels>${expectedCrop}</GPano:CroppedAreaTopPixels>`));
+  });
+
+  test('UI templates contain Zenith row toggle, AEB mode select, overlap advisor, and XMP download button', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('id="photo-sphere-ring-zenith"'), 'Template must contain photo-sphere-ring-zenith');
+    assert.ok(template.includes('id="photo-sphere-preset-zenith"'), 'Template must contain photo-sphere-preset-zenith');
+    assert.ok(template.includes('id="photo-sphere-aeb-mode"'), 'Template must contain photo-sphere-aeb-mode');
+    assert.ok(template.includes('id="photo-sphere-overlap-advisor"'), 'Template must contain photo-sphere-overlap-advisor');
+    assert.ok(template.includes('id="photo-sphere-duration-badge"'), 'Template must contain photo-sphere-duration-badge');
+    assert.ok(template.includes('id="photo-sphere-download-xmp-btn"'), 'Template must contain photo-sphere-download-xmp-btn');
+    assert.ok(template.includes('value="16"'), 'Template must contain 16-shot ring density');
   });
 });
 

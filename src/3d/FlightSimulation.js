@@ -418,6 +418,13 @@ function recreate3DWaypointsAndPaths() {
       colorHex = 0xec4899; // Pink
     } else if (wp.gridType === 'corridor' || wp.isCorridor) {
       colorHex = 0x6366f1; // Electric Indigo
+    } else if (wp.gridType === 'photo-sphere' || wp.isPhotoSphere || wp.isPhotoSpherePoint) {
+      if (wp.ringIndex === -1 || wp.isZenith) colorHex = 0x38bdf8; // Sky Blue for Zenith (+20°)
+      else if (wp.ringIndex === 0) colorHex = 0x06b6d4; // Cyan for Row 1 (-15°)
+      else if (wp.ringIndex === 1) colorHex = 0xf59e0b; // Amber for Row 2 (-45°)
+      else if (wp.ringIndex === 2) colorHex = 0xa855f7; // Purple for Row 3 (-75°)
+      else if (wp.ringIndex === 3) colorHex = 0x10b981; // Emerald for Nadir (-90°)
+      else colorHex = 0x38bdf8;
     } else {
       const ring = wp.ringIndex;
       if (ring === 0) colorHex = 0xa855f7; // purple
@@ -438,6 +445,60 @@ function recreate3DWaypointsAndPaths() {
     sphereMesh.userData = { isWaypointSphere: true };
     sphereMesh.visible = (!showDroneModels || fpvActive);
     waypointsGroup.add(sphereMesh);
+
+    // 3D Spherical Ray Cage & Look Vectors for Stationary Photo Sphere
+    if (wp.isPhotoSphereActionGroup && Array.isArray(wp.photoSphereActions) && wp.photoSphereActions.length > 0) {
+      const sphereRadius = 14.0;
+      const wireSphereGeom = new THREE.SphereGeometry(sphereRadius, 16, 8);
+      const wireSphereMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.18
+      });
+      const wireSphereMesh = new THREE.Mesh(wireSphereGeom, wireSphereMat);
+      wireSphereMesh.position.set(x3d, y3d, z3d);
+      wireSphereMesh.userData = { isPhotoSphereRayCage: true };
+      waypointsGroup.add(wireSphereMesh);
+
+      const rayLen = sphereRadius * 1.15;
+      const rayPoints = [];
+      const rayColors = [];
+      wp.photoSphereActions.forEach(act => {
+        const yawRad = (act.yaw || 0) * (Math.PI / 180.0);
+        const pitchRad = (act.pitch !== undefined ? act.pitch : -45) * (Math.PI / 180.0);
+        
+        // Ray vector in 3D scene (Y up, -Z north, X east)
+        const rx = rayLen * Math.cos(pitchRad) * Math.sin(yawRad);
+        const ry = rayLen * Math.sin(-pitchRad);
+        const rz = -rayLen * Math.cos(pitchRad) * Math.cos(yawRad);
+
+        rayPoints.push(new THREE.Vector3(x3d, y3d, z3d));
+        rayPoints.push(new THREE.Vector3(x3d + rx, y3d + ry, z3d + rz));
+
+        let c = new THREE.Color(0x06b6d4);
+        if (act.isZenith || act.ringIndex === -1) c = new THREE.Color(0x38bdf8);
+        else if (act.ringIndex === 0) c = new THREE.Color(0x06b6d4);
+        else if (act.ringIndex === 1) c = new THREE.Color(0xf59e0b);
+        else if (act.ringIndex === 2) c = new THREE.Color(0xa855f7);
+        else if (act.ringIndex === 3) c = new THREE.Color(0x10b981);
+        rayColors.push(c.r, c.g, c.b);
+        rayColors.push(c.r, c.g, c.b);
+      });
+
+      if (rayPoints.length > 0) {
+        const rayGeom = new THREE.BufferGeometry().setFromPoints(rayPoints);
+        rayGeom.setAttribute('color', new THREE.Float32BufferAttribute(rayColors, 3));
+        const rayMat = new THREE.LineBasicMaterial({
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.75
+        });
+        const rayLines = new THREE.LineSegments(rayGeom, rayMat);
+        rayLines.userData = { isPhotoSphereRays: true };
+        waypointsGroup.add(rayLines);
+      }
+    }
 
     if (showDroneModels) {
       const hp = getWaypointHeadingAndPitch(idx, waypoints);
@@ -503,6 +564,8 @@ function recreate3DWaypointsAndPaths() {
         segColor = 0xf59e0b; // Amber/Gold Ribbon for Star Pass Convergent Cross-Hatch
       } else if (wp.gridType === 'corridor' || wp.isCorridor || nextWp.gridType === 'corridor' || nextWp.isCorridor) {
         segColor = 0x6366f1; // Electric Indigo Ribbon for Corridor Mapping
+      } else if (wp.gridType === 'photo-sphere' || wp.isPhotoSphere || wp.isPhotoSpherePoint || nextWp.gridType === 'photo-sphere' || nextWp.isPhotoSphere || nextWp.isPhotoSpherePoint) {
+        segColor = 0x38bdf8; // Sky Blue Ribbon for Photo Sphere
       } else {
         const nextRing = nextWp.ringIndex;
         if (nextRing === 0) segColor = 0xa855f7;

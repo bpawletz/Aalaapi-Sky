@@ -2260,6 +2260,155 @@ const scenarios = [
         await page.waitForTimeout(800);
       }
     }
+  },
+  {
+    id: 'feature_video_cast',
+    name: 'Low-Latency Video Casting & Local Lossless MP4 Recording (Issue #97)',
+    description: 'Real-time WebSocket video casting to responsive canvas, source switching, REC pulsing button, duration timer, and 3D FPV HUD viewfinder overlay.',
+    issueRef: 'Issue #97',
+    run: async (page) => {
+      // 1. Center map on default rural location (Utica, IL)
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Open Video Cast Panel from Section 4 launcher
+      await page.evaluate(() => {
+        const btn = document.getElementById('sidebar-video-cast-btn');
+        if (btn) btn.click();
+
+        // Update RTMP banner with simulated active LAN ingest
+        if (window.videoCastClient) {
+          window.videoCastClient.updateRtmpUI({
+            primaryUrl: 'rtmp://192.168.1.44:1935/live/stream',
+            firewall: { open: true, message: 'Port 1935 open' },
+            activeStreams: [{ publisherIp: '192.168.1.88', durationSec: 15 }]
+          });
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 2b. Test clicking the 📋 Copy RTMP URL button
+      await page.evaluate(() => {
+        const copyBtn = document.getElementById('video-cast-copy-rtmp-btn');
+        if (copyBtn) copyBtn.click();
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Switch stream source to test pattern
+      await page.evaluate(() => {
+        const sel = document.getElementById('video-cast-source-select');
+        if (sel) {
+          sel.value = 'test';
+          sel.dispatchEvent(new Event('change'));
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // 4. Trigger REC recording
+      await page.evaluate(() => {
+        if (window.videoCastClient) {
+          window.videoCastClient.setRecordingState(true, 1);
+        }
+      });
+      await page.waitForTimeout(2000);
+
+      // 5. Stop REC recording
+      await page.evaluate(() => {
+        if (window.videoCastClient) {
+          window.videoCastClient.setRecordingState(false, 0);
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // 6. Open Recorded Clips Modal
+      await page.evaluate(() => {
+        const galleryBtn = document.getElementById('video-cast-gallery-btn');
+        if (galleryBtn) galleryBtn.click();
+      });
+      await page.waitForTimeout(1200);
+
+      // 7. Close Clips Modal
+      await page.evaluate(() => {
+        const modal = document.getElementById('video-recordings-modal');
+        if (modal) modal.classList.add('hidden');
+      });
+      await page.waitForTimeout(600);
+
+      // 8. Minimize & restore Video Cast Panel
+      await page.evaluate(() => {
+        const minBtn = document.getElementById('video-cast-minimize-btn');
+        if (minBtn) minBtn.click();
+      });
+      await page.waitForTimeout(800);
+
+      await page.evaluate(() => {
+        const minBtn = document.getElementById('video-cast-minimize-btn');
+        if (minBtn) minBtn.click();
+      });
+      await page.waitForTimeout(800);
+
+      // 9. Open 3D FPV HUD to showcase Live Viewfinder overlay & HUD REC button
+      await page.evaluate(() => {
+        const fpvBtn = document.getElementById('btn-3d-fpv');
+        if (fpvBtn) fpvBtn.click();
+        const threeModal = document.getElementById('three-preview-modal');
+        if (threeModal) threeModal.classList.remove('hidden');
+        const hud = document.getElementById('fpv-hud-overlay');
+        if (hud) hud.classList.remove('hidden');
+      });
+      await page.waitForTimeout(2000);
+
+      // 10. Close FPV view and re-center map
+      await page.evaluate(() => {
+        const threeModal = document.getElementById('three-preview-modal');
+        if (threeModal) threeModal.classList.add('hidden');
+        const hud = document.getElementById('fpv-hud-overlay');
+        if (hud) hud.classList.add('hidden');
+      });
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+    }
+  }  ,
+  {
+    id: 'feature_satellite_cloud_cover',
+    name: 'Satellite Cloud Cover (IR) Overlay',
+    description: 'Real-time NOAA GOES Infrared Channel 13 satellite cloud cover layer over rural flight area.',
+    issueRef: 'v1.173.1 Fix',
+    run: async (page) => {
+      // 1. Center map squarely on default rural coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Enable Satellite Cloud Cover overlay
+      await page.evaluate(() => {
+        if (typeof map !== 'undefined' && typeof cloudCoverLayer !== 'undefined') {
+          if (!map.hasLayer(cloudCoverLayer)) {
+            cloudCoverLayer.addTo(map);
+          }
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 3. Zoom out to zoom 5 to view regional cloud cover
+      await page.evaluate(() => {
+        if (typeof map !== 'undefined') map.setZoom(5);
+      });
+      await page.waitForTimeout(1500);
+
+      // 4. Zoom in to zoom 7
+      await page.evaluate(() => {
+        if (typeof map !== 'undefined') map.setZoom(7);
+      });
+      await page.waitForTimeout(1500);
+
+      // 5. Re-center map at zoom 6
+      await page.evaluate(() => {
+        if (typeof map !== 'undefined') {
+          map.setView([41.3215, -88.9950], 6);
+        }
+      });
+      await page.waitForTimeout(1000);
+    }
   }
 ];
 

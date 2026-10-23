@@ -53,6 +53,8 @@ const { TileCacheManager } = require('./tile_cache.js');
 const tileCache = new TileCacheManager();
 const AmbientTelemetryBuffer = require('./buffer.js');
 const telemetryBuffer = new AmbientTelemetryBuffer();
+const { VideoService } = require('./video_service.js');
+const videoService = new VideoService();
 const mcpServer = require('./mcp_server.js');
 let cachedWeatherTelemetry = null;
 const CONFIG_FILE = path.resolve(__dirname, '../../scratch/companion_config.json');
@@ -913,6 +915,9 @@ function stopScanners() {
   }
   if (adsbTracker) {
     try { adsbTracker.destroy(); } catch (e) {}
+  }
+  if (typeof videoService !== 'undefined' && videoService && typeof videoService.stop === 'function') {
+    try { videoService.stop(); } catch (e) {}
   }
 }
 
@@ -5261,6 +5266,113 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 10b. Video Casting & Local Recording Endpoints (Issue #97)
+    if (pathname === '/api/video/status' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(videoService.getStatus()));
+      return;
+    }
+
+    if (pathname === '/api/video/rtmp/status' && req.method === 'GET') {
+      const lanAddrs = getLanAddresses();
+      const rtmpInfo = videoService.getRtmpStatus();
+      const port = rtmpInfo.port || 1935;
+      const rtmpUrls = lanAddrs.map(lan => `rtmp://${lan.address}:${port}/live/stream`);
+      if (rtmpUrls.length === 0) {
+        rtmpUrls.push(`rtmp://127.0.0.1:${port}/live/stream`);
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        ...rtmpInfo,
+        lanUrls: rtmpUrls,
+        primaryUrl: rtmpUrls[0] || `rtmp://127.0.0.1:${port}/live/stream`
+      }));
+      return;
+    }
+
+    if (pathname === '/api/video/firewall' && req.method === 'GET') {
+      const fw = VideoService.checkFirewall('Aalaapi Sky RTMP Ingest', 1935);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(fw));
+      return;
+    }
+
+    if (pathname === '/api/video/source' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const data = body ? JSON.parse(body) : {};
+          const status = videoService.setSource(data.source || data.url);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, status }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      });
+      return;
+    }
+
+    if (pathname === '/api/record/start' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const data = body ? JSON.parse(body) : {};
+          const result = videoService.startRecording(data.filename);
+          res.writeHead(result.success ? 200 : 400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      });
+      return;
+    }
+
+    if (pathname === '/api/record/stop' && req.method === 'POST') {
+      const result = videoService.stopRecording();
+      res.writeHead(result.success ? 200 : 400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
+
+    if (pathname === '/api/record/status' && req.method === 'GET') {
+      const status = videoService.getStatus();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        recording: status.recording,
+        durationSec: status.recordDurationSec,
+        frames: status.recordFrames,
+        filePath: status.recordPath
+      }));
+      return;
+    }
+
+    if (pathname === '/api/record/list' && req.method === 'GET') {
+      const list = videoService.getRecordingsList();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, count: list.length, recordings: list }));
+      return;
+    }
+
+    if ((pathname.startsWith('/api/record/download/') || pathname === '/api/record/download') && req.method === 'GET') {
+      let filename = '';
+      if (pathname.startsWith('/api/record/download/')) {
+        filename = decodeURIComponent(pathname.slice('/api/record/download/'.length));
+      } else {
+        filename = url.searchParams.get('file') || url.searchParams.get('filename') || '';
+      }
+      if (!filename) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Filename parameter is required' }));
+        return;
+      }
+      videoService.streamRecordingFile(filename, req, res);
+      return;
+    }
+
     // 11. Heartbeat / Health Check
     if (pathname === '/health') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -5819,6 +5931,22 @@ if (require.main === module) {
     startBleScanner();
     startWifiScanner();
 
+// Handle RFC 6455 WebSocket upgrades for video casting
+server.on('upgrade', (req, socket, head) => {
+  try {
+    const u = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    if (u.pathname === '/api/video/stream') {
+      videoService.handleUpgrade(req, socket, head);
+    } else {
+      socket.destroy();
+    }
+  } catch (_) {
+    socket.destroy();
+  }
+});
+
+    videoService.start();
+    videoService.startRtmp().catch(err => console.warn('Could not bind RTMP port 1935:', err.message));
     // Start Server on all network interfaces (0.0.0.0) so LAN tablets/phones can connect
     server.listen(PORT, '0.0.0.0', () => {
       const isPlain = process.argv.includes('--plain') ||
@@ -5888,6 +6016,8 @@ module.exports = {
   broadcastCompanionStatus,
   broadcastMediaProgress,
   updateMediaPullProgress,
+  videoService,
+  VideoService,
   tileCache,
   TileCacheManager,
   telemetryBuffer,

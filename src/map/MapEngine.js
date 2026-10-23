@@ -470,7 +470,7 @@ function initMap() {
   });
 
   // Satellite Cloud Cover Overlay (NOAA GOES / IEM Infrared - Free, Open, Zero API Key)
-  cloudCoverLayer = L.tileLayer('https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes_east_ir/{z}/{x}/{y}.png', {
+  cloudCoverLayer = L.tileLayer('https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes_east_conus_ch13/{z}/{x}/{y}.png', {
     maxZoom: 22,
     maxNativeZoom: 8,
     opacity: 0.50,

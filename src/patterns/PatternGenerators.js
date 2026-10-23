@@ -435,38 +435,111 @@ function generateGridMultiOrbitComboCoordinates(radius, rotation, captureMode, s
   return { waypoints, photos };
 }
 
+// ============================================================================
+// 360° Spherical Panorama Stationary Capture Engine (v1.157.0 - Issue #134 Update)
+// Upward Zenith Sky Capture, Multi-Tier AEB (1x/3x/5x), FOV Overlap & Duration
+// ============================================================================
+
+function calculatePhotoSphereOverlap(shotsPerRing = 12, hfov = 82.1, vfov = 52.6) {
+  const step = 360.0 / Math.max(1, shotsPerRing);
+  const horizOverlap = Math.max(0, Math.min(99, Math.round((1.0 - (step / hfov)) * 100)));
+  const vertPitchDelta = 30.0; // Standard 30° row spacing
+  const vertOverlap = Math.max(0, Math.min(99, Math.round((1.0 - (vertPitchDelta / vfov)) * 100)));
+  let quality = 'Adequate';
+  if (horizOverlap >= 65 && vertOverlap >= 40) quality = 'Optimal';
+  else if (horizOverlap <= 45 || vertOverlap < 30) quality = 'Marginal';
+  return { horizOverlap, vertOverlap, quality, step };
+}
+
+function estimatePhotoSphereDuration(totalPositions, aebMultiplier = 1, settlingTime = 2.0, shotsPerRing = 12) {
+  const step = 360.0 / Math.max(1, shotsPerRing);
+  const yawTimePerShot = Math.max(0.6, step / 35.0); // ~35 deg/sec yaw speed
+  const shutterTimePerExposure = 0.7; // shutter trigger + write buffer
+  const exposureTime = shutterTimePerExposure * aebMultiplier;
+  const timePerPosition = yawTimePerShot + settlingTime + exposureTime;
+  const totalSeconds = Math.round(totalPositions * timePerPosition + 12); // +12s setup/climb
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  const durationText = `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+  const batteryPct = Math.min(95, Math.max(1, Math.round((totalSeconds / 60) * 3.4)));
+  return { totalSeconds, durationText, batteryPct };
+}
+
 function updatePhotoSphereBadge() {
   if (typeof document === 'undefined') return;
   const badge = document.getElementById('photo-sphere-shot-count-badge');
-  if (!badge) return;
+  const rZenith = document.getElementById('photo-sphere-ring-zenith');
   const r1 = document.getElementById('photo-sphere-ring-1');
   const r2 = document.getElementById('photo-sphere-ring-2');
   const r3 = document.getElementById('photo-sphere-ring-3');
   const rNadir = document.getElementById('photo-sphere-ring-nadir');
   const shotsSelect = document.getElementById('photo-sphere-shots-per-ring');
+  const settlingSlider = document.getElementById('photo-sphere-settling-time');
+  const aebSelect = document.getElementById('photo-sphere-aeb-mode') || document.getElementById('photo-sphere-aeb');
+  
   const shots = shotsSelect ? (parseInt(shotsSelect.value, 10) || 12) : 12;
-  let count = 0;
-  if (r1 && r1.checked) count += shots;
-  if (r2 && r2.checked) count += shots;
-  if (r3 && r3.checked) count += shots;
-  if (rNadir && rNadir.checked) count += 1;
-  badge.textContent = `${count} Shot${count === 1 ? '' : 's'} Total`;
+  const settling = settlingSlider ? (parseFloat(settlingSlider.value) || 2.0) : 2.0;
+  
+  let aebMode = 'none';
+  let aebMultiplier = 1;
+  if (aebSelect) {
+    if (aebSelect.tagName === 'SELECT') {
+      aebMode = aebSelect.value || 'none';
+      aebMultiplier = (aebMode === '5') ? 5 : (aebMode === '3' ? 3 : 1);
+    } else if (aebSelect.type === 'checkbox') {
+      aebMode = aebSelect.checked ? '3' : 'none';
+      aebMultiplier = aebSelect.checked ? 3 : 1;
+    }
+  }
+
+  let positions = 0;
+  if (rZenith && rZenith.checked) positions += shots;
+  if (r1 && r1.checked) positions += shots;
+  if (r2 && r2.checked) positions += shots;
+  if (r3 && r3.checked) positions += shots;
+  if (rNadir && rNadir.checked) positions += 1;
+
+  const totalRawPhotos = positions * aebMultiplier;
+  
+  if (badge) {
+    if (aebMultiplier > 1) {
+      badge.textContent = `${positions} Positions (${totalRawPhotos} Photos - ${aebMultiplier}x AEB)`;
+    } else {
+      badge.textContent = `${positions} Shot${positions === 1 ? '' : 's'} Total`;
+    }
+  }
+
+  // Update Overlap Advisor & Duration Metrics
+  const overlapInfo = calculatePhotoSphereOverlap(shots);
+  const overlapEl = document.getElementById('photo-sphere-overlap-advisor');
+  if (overlapEl) {
+    overlapEl.textContent = `Overlap: ${overlapInfo.horizOverlap}% Horiz / ${overlapInfo.vertOverlap}% Vert (${overlapInfo.quality})`;
+    overlapEl.style.color = overlapInfo.quality === 'Optimal' ? '#34d399' : (overlapInfo.quality === 'Marginal' ? '#f59e0b' : '#38bdf8');
+  }
+
+  const durationInfo = estimatePhotoSphereDuration(positions, aebMultiplier, settling, shots);
+  const durationBadge = document.getElementById('photo-sphere-duration-badge');
+  if (durationBadge) {
+    durationBadge.textContent = `⏱️ ${durationInfo.durationText} | ~${durationInfo.batteryPct}% Battery`;
+  }
 }
 
-// Generate 360° Photo Sphere coordinates (v1.154.0 - Issue #134)
-// Supports selective elevation rings, configurable shots per ring, stationary action groups, and settling delay
+// Generate 360° Photo Sphere coordinates (v1.157.0 - Issue #134 Expansion)
+// Supports Zenith Sky (+20°), selective elevation rings, configurable shots per ring, multi-tier AEB, and stationary action groups
 function generatePhotoSphereCoordinates(baseAltitude, layer) {
   const waypoints = [];
   const photos = [];
 
   let rings = (layer && layer.photoSphereRings) ? layer.photoSphereRings : null;
   if (!rings && typeof document !== 'undefined') {
+    const rZenith = document.getElementById('photo-sphere-ring-zenith');
     const r1 = document.getElementById('photo-sphere-ring-1');
     const r2 = document.getElementById('photo-sphere-ring-2');
     const r3 = document.getElementById('photo-sphere-ring-3');
     const rNadir = document.getElementById('photo-sphere-ring-nadir');
-    if ((r1 && typeof r1.checked === 'boolean') || (r2 && typeof r2.checked === 'boolean') || (r3 && typeof r3.checked === 'boolean') || (rNadir && typeof rNadir.checked === 'boolean')) {
+    if ((rZenith && typeof rZenith.checked === 'boolean') || (r1 && typeof r1.checked === 'boolean') || (r2 && typeof r2.checked === 'boolean') || (r3 && typeof r3.checked === 'boolean') || (rNadir && typeof rNadir.checked === 'boolean')) {
       rings = {
+        zenith: rZenith && typeof rZenith.checked === 'boolean' ? rZenith.checked : false,
         ring1: r1 && typeof r1.checked === 'boolean' ? r1.checked : true,
         ring2: r2 && typeof r2.checked === 'boolean' ? r2.checked : true,
         ring3: r3 && typeof r3.checked === 'boolean' ? r3.checked : true,
@@ -475,16 +548,16 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
     }
   }
   if (!rings) {
-    rings = { ring1: true, ring2: true, ring3: true, nadir: true };
+    rings = { zenith: false, ring1: true, ring2: true, ring3: true, nadir: true };
   }
 
   // Fallback safety: ensure at least one ring is active
-  if (!rings.ring1 && !rings.ring2 && !rings.ring3 && !rings.nadir) {
+  if (!rings.zenith && !rings.ring1 && !rings.ring2 && !rings.ring3 && !rings.nadir) {
     rings.ring1 = true;
   }
 
   const rawShots = (layer && layer.photoSphereShotsPerRing !== undefined) ? Number(layer.photoSphereShotsPerRing) : 12;
-  const shotsPerRing = Math.max(6, Math.min(24, isNaN(rawShots) ? 12 : rawShots));
+  const shotsPerRing = Math.max(6, Math.min(36, isNaN(rawShots) ? 12 : rawShots));
   const step = 360.0 / shotsPerRing;
 
   const rawSettling = (layer && layer.photoSphereSettlingTime !== undefined) ? Number(layer.photoSphereSettlingTime) : 2.0;
@@ -498,9 +571,37 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
   if (!mode) {
     mode = 'discreteNodes';
   }
-  const aebEnabled = Boolean(layer && layer.photoSphereAebEnabled);
+
+  // Multi-tier AEB mode: 'none' (1x), '3' (3-shot), '5' (5-shot)
+  let aebMode = null;
+  if (layer && layer.photoSphereAebMode && layer.photoSphereAebMode !== 'none') {
+    aebMode = String(layer.photoSphereAebMode);
+  } else if (layer && layer.photoSphereAebEnabled) {
+    aebMode = (layer.photoSphereAebMode === '5') ? '5' : '3';
+  } else if (layer && layer.photoSphereAebMode === 'none' && layer.photoSphereAebEnabled === false) {
+    aebMode = 'none';
+  }
+  if (!aebMode && typeof document !== 'undefined') {
+    const psAebSelect = document.getElementById('photo-sphere-aeb-mode');
+    if (psAebSelect && psAebSelect.value) {
+      aebMode = psAebSelect.value;
+    } else {
+      const psAeb = document.getElementById('photo-sphere-aeb');
+      if (psAeb && typeof psAeb.checked === 'boolean') {
+        aebMode = psAeb.checked ? '3' : 'none';
+      }
+    }
+  }
+  if (!aebMode) {
+    aebMode = 'none';
+  }
+  const aebMultiplier = (aebMode === '5') ? 5 : (aebMode === '3' ? 3 : 1);
+  const aebEnabled = (aebMultiplier > 1);
+
+  const zenithPitch = (layer && layer.photoSphereZenithPitch !== undefined) ? Number(layer.photoSphereZenithPitch) : 20.0;
 
   const rows = [];
+  if (rings.zenith) rows.push({ pitch: zenithPitch, count: shotsPerRing, step: step, ringIndex: -1, isZenith: true });
   if (rings.ring1) rows.push({ pitch: -15, count: shotsPerRing, step: step, ringIndex: 0 });
   if (rings.ring2) rows.push({ pitch: -45, count: shotsPerRing, step: step, ringIndex: 1 });
   if (rings.ring3) rows.push({ pitch: -75, count: shotsPerRing, step: step, ringIndex: 2 });
@@ -515,9 +616,12 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
         yaw: heading,
         pitch: row.pitch,
         ringIndex: row.ringIndex,
+        isZenith: Boolean(row.isZenith),
         shotIndex: shotIndex++,
         hoverTime: settlingTime,
-        aebEnabled: aebEnabled
+        aebEnabled: aebEnabled,
+        aebMode: aebMode,
+        aebMultiplier: aebMultiplier
       };
       allActions.push(actionItem);
 
@@ -532,11 +636,14 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
         layerPattern: 'photo-sphere',
         isPhotoSpherePoint: true,
         ringIndex: row.ringIndex,
+        isZenith: Boolean(row.isZenith),
         isRingStart: (i === 0),
         shotIndex: actionItem.shotIndex,
         hoverTime: settlingTime,
         photoSphereMode: mode,
-        aebEnabled: aebEnabled
+        aebEnabled: aebEnabled,
+        aebMode: aebMode,
+        aebMultiplier: aebMultiplier
       };
       photos.push(pt);
       if (mode !== 'actionGroup') {
@@ -551,9 +658,12 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
       yaw: 0,
       pitch: -90,
       ringIndex: 3,
+      isZenith: false,
       shotIndex: shotIndex++,
       hoverTime: settlingTime,
-      aebEnabled: aebEnabled
+      aebEnabled: aebEnabled,
+      aebMode: aebMode,
+      aebMultiplier: aebMultiplier
     };
     allActions.push(nadirAction);
 
@@ -568,11 +678,14 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
       layerPattern: 'photo-sphere',
       isPhotoSpherePoint: true,
       ringIndex: 3,
+      isZenith: false,
       isRingStart: true,
       shotIndex: nadirAction.shotIndex,
       hoverTime: settlingTime,
       photoSphereMode: mode,
-      aebEnabled: aebEnabled
+      aebEnabled: aebEnabled,
+      aebMode: aebMode,
+      aebMultiplier: aebMultiplier
     };
     photos.push(nadirPt);
     if (mode !== 'actionGroup') {
@@ -586,7 +699,7 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
       x: 0,
       y: 0,
       alt: baseAltitude,
-      pitch: -15,
+      pitch: rows.length > 0 ? rows[0].pitch : -15,
       heading: 0,
       headingMode: 'smoothTransition',
       gridType: 'photo-sphere',
@@ -597,11 +710,27 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
       photoSphereActions: allActions,
       photoSphereMode: 'actionGroup',
       totalShots: allActions.length,
-      aebEnabled: aebEnabled
+      totalRawPhotos: allActions.length * aebMultiplier,
+      aebEnabled: aebEnabled,
+      aebMode: aebMode,
+      aebMultiplier: aebMultiplier,
+      hasZenithRing: Boolean(rings.zenith)
     });
   }
 
-  return { waypoints, photos, totalShots: allActions.length, mode };
+  const overlapMetrics = calculatePhotoSphereOverlap(shotsPerRing);
+  const durationMetrics = estimatePhotoSphereDuration(allActions.length, aebMultiplier, settlingTime, shotsPerRing);
+
+  return {
+    waypoints,
+    photos,
+    totalShots: allActions.length,
+    totalRawPhotos: allActions.length * aebMultiplier,
+    mode,
+    overlap: overlapMetrics,
+    duration: durationMetrics,
+    hasZenith: Boolean(rings.zenith)
+  };
 }
 
 // ============================================================================
@@ -1874,4 +2003,23 @@ if (typeof window !== 'undefined') {
   window.generateHelixCoordinates = generateHelixCoordinates;
   window.generateStarPassCoordinates = generateStarPassCoordinates;
   window.generateCorridorCoordinates = generateCorridorCoordinates;
+  window.generatePhotoSphereCoordinates = generatePhotoSphereCoordinates;
+  window.calculatePhotoSphereOverlap = calculatePhotoSphereOverlap;
+  window.estimatePhotoSphereDuration = estimatePhotoSphereDuration;
+  window.updatePhotoSphereBadge = updatePhotoSphereBadge;
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    generatePhotoSphereCoordinates,
+    calculatePhotoSphereOverlap,
+    estimatePhotoSphereDuration,
+    updatePhotoSphereBadge,
+    generateLightArtCoordinates,
+    generateVerticalFacadeCoordinates,
+    generateHelixCoordinates,
+    generateStarPassCoordinates,
+    generateCorridorCoordinates
+  };
+}
+

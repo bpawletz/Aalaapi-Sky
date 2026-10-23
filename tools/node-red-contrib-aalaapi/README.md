@@ -95,3 +95,9 @@ Import `examples/auto-splat-pipeline.json` into Node-RED:
 ```
 
 This immediately trains a 3D Gaussian Splat model upon plugging in an SD card or connecting the DJI RC 2 controller over USB!
+
+---
+
+## 📖 In-Depth Documentation
+
+For detailed mathematical formulations of coordinate transformations (ENU $\rightarrow$ OpenGL $c2w$ $\rightarrow$ COLMAP $w2c$ extrinsics $t = -R \cdot C$), Shepperd's quaternion method, and downstream pipeline recipes, refer to the [Aalaapi Sky Node-RED Integration Guide](file:///docs/NODE_RED_INTEGRATION_GUIDE.md).

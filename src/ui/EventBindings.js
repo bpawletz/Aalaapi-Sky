@@ -818,9 +818,10 @@ function initUIEventListeners() {
     });
   }
 
-  // 360 Photo Sphere Ring Controls & Presets (v1.125.1)
+  // 360 Photo Sphere Ring Controls & Presets (v1.157.0 - Issue #134 Update)
   const setupPhotoSphereRingListeners = () => {
     const ringIds = [
+      { id: 'photo-sphere-ring-zenith', prop: 'zenith' },
       { id: 'photo-sphere-ring-1', prop: 'ring1' },
       { id: 'photo-sphere-ring-2', prop: 'ring2' },
       { id: 'photo-sphere-ring-3', prop: 'ring3' },
@@ -831,7 +832,7 @@ function initUIEventListeners() {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (!activeLayer) return;
       if (!activeLayer.photoSphereRings) {
-        activeLayer.photoSphereRings = { ring1: true, ring2: true, ring3: true, nadir: true };
+        activeLayer.photoSphereRings = { zenith: false, ring1: true, ring2: true, ring3: true, nadir: true };
       }
       ringIds.forEach(({ id, prop }) => {
         const el = document.getElementById(id);
@@ -859,31 +860,36 @@ function initUIEventListeners() {
       }
     });
 
-    const setRings = (r1, r2, r3, rn) => {
+    const setRings = (rZenith, r1, r2, r3, rn) => {
+      const elZenith = document.getElementById('photo-sphere-ring-zenith');
       const el1 = document.getElementById('photo-sphere-ring-1');
       const el2 = document.getElementById('photo-sphere-ring-2');
       const el3 = document.getElementById('photo-sphere-ring-3');
       const elN = document.getElementById('photo-sphere-ring-nadir');
-      if (el1) el1.checked = r1;
-      if (el2) el2.checked = r2;
-      if (el3) el3.checked = r3;
-      if (elN) elN.checked = rn;
+      if (elZenith) elZenith.checked = Boolean(rZenith);
+      if (el1) el1.checked = Boolean(r1);
+      if (el2) el2.checked = Boolean(r2);
+      if (el3) el3.checked = Boolean(r3);
+      if (elN) elN.checked = Boolean(rn);
       syncRingsToActiveLayer();
     };
 
     const btnFull = document.getElementById('photo-sphere-preset-full');
+    const btnZenith = document.getElementById('photo-sphere-preset-zenith');
     const btnPano = document.getElementById('photo-sphere-preset-pano');
     const btnOblique = document.getElementById('photo-sphere-preset-oblique');
 
-    if (btnFull) btnFull.addEventListener('click', () => setRings(true, true, true, true));
-    if (btnPano) btnPano.addEventListener('click', () => setRings(true, false, false, false));
-    if (btnOblique) btnOblique.addEventListener('click', () => setRings(true, true, false, false));
+    if (btnFull) btnFull.addEventListener('click', () => setRings(false, true, true, true, true));
+    if (btnZenith) btnZenith.addEventListener('click', () => setRings(true, true, true, true, true));
+    if (btnPano) btnPano.addEventListener('click', () => setRings(false, true, false, false, false));
+    if (btnOblique) btnOblique.addEventListener('click', () => setRings(false, true, true, false, false));
 
     const psMode = document.getElementById('photo-sphere-mode');
     const psShots = document.getElementById('photo-sphere-shots-per-ring');
     const psSettling = document.getElementById('photo-sphere-settling-time');
     const psSettlingVal = document.getElementById('photo-sphere-settling-time-val');
     const psAeb = document.getElementById('photo-sphere-aeb');
+    const psAebMode = document.getElementById('photo-sphere-aeb-mode');
 
     const updatePhotoSphereConfig = () => {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -895,7 +901,14 @@ function initUIEventListeners() {
         activeLayer.photoSphereSettlingTime = sVal;
         if (psSettlingVal) psSettlingVal.textContent = `${sVal}s`;
       }
-      if (psAeb) activeLayer.photoSphereAebEnabled = psAeb.checked;
+      if (psAebMode) {
+        activeLayer.photoSphereAebMode = psAebMode.value;
+        activeLayer.photoSphereAebEnabled = (psAebMode.value !== 'none');
+        if (psAeb) psAeb.checked = (psAebMode.value !== 'none');
+      } else if (psAeb) {
+        activeLayer.photoSphereAebEnabled = psAeb.checked;
+        activeLayer.photoSphereAebMode = psAeb.checked ? '3' : 'none';
+      }
       if (typeof updatePhotoSphereBadge === 'function') {
         updatePhotoSphereBadge();
       }
@@ -911,6 +924,18 @@ function initUIEventListeners() {
       psSettling.addEventListener('change', updatePhotoSphereConfig);
     }
     if (psAeb) psAeb.addEventListener('change', updatePhotoSphereConfig);
+    if (psAebMode) psAebMode.addEventListener('change', updatePhotoSphereConfig);
+
+    const btnDownloadXmp = document.getElementById('photo-sphere-download-xmp-btn');
+    if (btnDownloadXmp) {
+      btnDownloadXmp.addEventListener('click', () => {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        const hasZenith = activeLayer && activeLayer.photoSphereRings ? Boolean(activeLayer.photoSphereRings.zenith) : false;
+        if (typeof downloadGPanoXmpFile === 'function') {
+          downloadGPanoXmpFile({ hasZenith, filename: 'photosphere_equirectangular_metadata.xmp' });
+        }
+      });
+    }
   };
   setupPhotoSphereRingListeners();
 
@@ -2444,10 +2469,77 @@ function initUIEventListeners() {
   const tabWorkflowBtn = document.getElementById('intro-tab-workflow');
   const tabFeaturesBtn = document.getElementById('intro-tab-features');
   const tabTipsBtn = document.getElementById('intro-tab-tips');
+  const tabMatrixBtn = document.getElementById('intro-tab-matrix');
 
   if (tabWorkflowBtn) tabWorkflowBtn.addEventListener('click', () => switchIntroTab('workflow'));
   if (tabFeaturesBtn) tabFeaturesBtn.addEventListener('click', () => switchIntroTab('features'));
   if (tabTipsBtn) tabTipsBtn.addEventListener('click', () => switchIntroTab('tips'));
+  if (tabMatrixBtn) tabMatrixBtn.addEventListener('click', () => switchIntroTab('matrix'));
+
+  // Wire up Jump to Setting deep-links from Intro Modal
+  document.addEventListener('click', (e) => {
+    const jumpBtn = e.target.closest('.jump-setting-btn');
+    if (!jumpBtn) return;
+    const targetId = jumpBtn.getAttribute('data-jump-to');
+    if (!targetId) return;
+
+    if (typeof closeIntroModal === 'function') {
+      closeIntroModal();
+    } else {
+      const modal = document.getElementById('quickstart-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      const sidebar = document.querySelector('.sidebar');
+      if (sidebar) sidebar.classList.add('open');
+    }
+
+    let targetEl = document.getElementById(targetId);
+    if (!targetEl && targetId === 'grid-type') {
+      targetEl = document.querySelector('.pattern-selector-grid') || document.getElementById('layers-list-container');
+    }
+
+    if (targetEl) {
+      const parentSection = targetEl.closest('.collapsible, .accordion, .section, #grid-geometry-section, #mission-failsafes-section, #flight-settings-section, #layer-settings-card');
+      if (parentSection) {
+        parentSection.classList.remove('collapsed');
+        parentSection.style.display = 'block';
+      }
+
+      if (typeof targetEl.scrollIntoView === 'function') {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      const highlightTarget = targetEl.closest('.control-group, .card, .pattern-card, .sidebar-section') || targetEl;
+      if (highlightTarget && highlightTarget.classList) {
+        highlightTarget.classList.remove('setting-focus-pulse');
+        void highlightTarget.offsetWidth;
+        highlightTarget.classList.add('setting-focus-pulse');
+        setTimeout(() => {
+          highlightTarget.classList.remove('setting-focus-pulse');
+        }, 2000);
+      }
+    }
+  });
+
+  // Wire up Settings Matrix category filter buttons
+  const matrixFilterBtns = document.querySelectorAll('.matrix-filter-btn');
+  matrixFilterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      matrixFilterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cat = btn.getAttribute('data-category');
+      const rows = document.querySelectorAll('#matrix-table-body tr');
+      rows.forEach(r => {
+        if (cat === 'all' || r.getAttribute('data-category') === cat) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    });
+  });
 
   // Wire up Spotlight Tour controls
   const tourNextBtn = document.getElementById('tour-next-btn');

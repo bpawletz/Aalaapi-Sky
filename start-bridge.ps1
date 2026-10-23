@@ -12,6 +12,17 @@ Write-Host "==========================================================" -Foregro
 Write-Host "[*] Script Directory: $scriptDir" -ForegroundColor DarkGray
 Write-Host "[*] Loop Runner active (AALAAPI_RESTART_LOOP=1)" -ForegroundColor DarkGray
 
+# Check Windows Firewall for RTMP Ingest (TCP 1935)
+try {
+    $fwCheck = netsh advfirewall firewall show rule name="Aalaapi Sky RTMP Ingest" 2>$null
+    if ($fwCheck -match "1935") {
+        Write-Host "[+] Windows Firewall: RTMP Ingest (TCP 1935) is OPEN." -ForegroundColor Green
+    } else {
+        Write-Host "[!] Windows Firewall: RTMP port 1935 rule not found." -ForegroundColor Yellow
+        Write-Host "    To enable direct DJI RC 2 streaming, run: .\tools\companion\setup-rtmp-firewall.bat" -ForegroundColor Yellow
+    }
+} catch {}
+
 do {
     Write-Host ""
     Write-Host "[*] Starting Aalaapi Sky Bridge companion service..." -ForegroundColor Cyan
