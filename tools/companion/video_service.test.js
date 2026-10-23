@@ -149,6 +149,10 @@ describe('VideoService Tests (Issue #97)', () => {
     assert.equal(rtmpStatus.listening, true);
     assert.equal(rtmpStatus.port, testRtmpPort);
     assert.equal(typeof rtmpStatus.firewall, 'object');
+    assert.ok(Array.isArray(rtmpStatus.lanUrls));
+    assert.ok(rtmpStatus.lanUrls.length > 0);
+    assert.ok(rtmpStatus.primaryUrl.startsWith('rtmp://'));
+    assert.ok(rtmpStatus.primaryUrl.includes(String(testRtmpPort)));
 
     // Simulate publisher connect event
     testService.rtmpServer.emit('publisher_connect', {

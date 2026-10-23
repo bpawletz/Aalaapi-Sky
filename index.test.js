@@ -33254,14 +33254,26 @@ describe('v1.173.0 Low-Latency Video Casting & Local Recording Service (Issue #9
   test('updates RTMP Ingest UI with LAN address, stream status, and firewall badge', () => {
     const client = new VideoCastClient();
     const mockUrlCode = { textContent: '' };
+    const mockSidebarCode = { textContent: '' };
+    const mockPopoverCode = { textContent: '' };
     const mockFwBadge = { className: '', textContent: '', title: '' };
     const mockTip = { textContent: '', innerHTML: '' };
+    const mockSidebarPill = { textContent: '', style: {}, title: '' };
+    const mockStatusText = { textContent: '', style: {} };
+    const mockPopoverBadge = { textContent: '', style: {} };
+    const mockPopoverDot = { style: {} };
 
     const origGetElementById = document.getElementById;
     document.getElementById = (id) => {
       if (id === 'video-cast-rtmp-url-text') return mockUrlCode;
+      if (id === 'sidebar-video-rtmp-url') return mockSidebarCode;
+      if (id === 'companion-rtmp-url-code') return mockPopoverCode;
       if (id === 'video-cast-fw-badge') return mockFwBadge;
       if (id === 'video-cast-rtmp-tip') return mockTip;
+      if (id === 'sidebar-video-status-pill') return mockSidebarPill;
+      if (id === 'video-cast-status-text') return mockStatusText;
+      if (id === 'companion-rtmp-badge') return mockPopoverBadge;
+      if (id === 'companion-rtmp-dot') return mockPopoverDot;
       return null;
     };
 
@@ -33269,23 +33281,31 @@ describe('v1.173.0 Low-Latency Video Casting & Local Recording Service (Issue #9
       client.updateRtmpUI({
         primaryUrl: 'rtmp://192.168.1.44:1935/live/stream',
         firewall: { open: true, message: 'Port 1935 is open' },
-        activeStreams: [{ publisherIp: '192.168.1.50', durationSec: 42 }]
+        activeStreams: [{ publisherIp: '192.168.1.80', durationSec: 42, path: 'live/stream' }]
       });
 
       assert.strictEqual(mockUrlCode.textContent, 'rtmp://192.168.1.44:1935/live/stream');
+      assert.strictEqual(mockSidebarCode.textContent, 'rtmp://192.168.1.44:1935/live/stream');
+      assert.strictEqual(mockPopoverCode.textContent, 'rtmp://192.168.1.44:1935/live/stream');
       assert.strictEqual(mockFwBadge.className, 'video-cast-fw-badge is-open');
       assert.strictEqual(mockFwBadge.textContent, '🟢 Port 1935 Open');
-      assert.ok(mockTip.innerHTML.includes('192.168.1.50'));
+      assert.strictEqual(mockSidebarPill.textContent, 'LIVE (RC 2)');
+      assert.strictEqual(mockStatusText.textContent, 'LIVE (RC 2)');
+      assert.strictEqual(mockPopoverBadge.textContent, 'Streaming');
+      assert.ok(mockTip.innerHTML.includes('192.168.1.80'));
+      assert.ok(mockTip.innerHTML.includes('rtmp://192.168.1.44:1935/live/stream'));
 
-      // Test blocked firewall
+      // Test blocked firewall & idle stream
       client.updateRtmpUI({
         primaryUrl: 'rtmp://127.0.0.1:1935/live/stream',
         firewall: { open: false, message: 'Firewall blocked' },
+        listening: true,
         activeStreams: []
       });
 
       assert.strictEqual(mockFwBadge.className, 'video-cast-fw-badge is-blocked');
       assert.strictEqual(mockFwBadge.textContent, '⚠️ Port 1935 Rule Needed');
+      assert.strictEqual(mockPopoverBadge.textContent, 'Listening');
     } finally {
       document.getElementById = origGetElementById;
     }
@@ -33358,6 +33378,10 @@ describe('v1.174.0 Embedded RTMP Ingest & Windows Firewall Configuration', () =>
     assert.ok(template.includes('id="video-cast-copy-rtmp-btn"'), 'Template must contain video-cast-copy-rtmp-btn');
     assert.ok(template.includes('id="video-cast-fw-badge"'), 'Template must contain video-cast-fw-badge');
     assert.ok(template.includes('rtmp://127.0.0.1:1935/live/stream'), 'Template must contain default embedded RTMP stream URL');
+    assert.ok(template.includes('id="sidebar-video-rtmp-preview"'), 'Template must contain sidebar-video-rtmp-preview');
+    assert.ok(template.includes('id="sidebar-video-rtmp-url"'), 'Template must contain sidebar-video-rtmp-url');
+    assert.ok(template.includes('id="companion-rtmp-row"'), 'Template must contain companion-rtmp-row');
+    assert.ok(template.includes('id="companion-rtmp-url-code"'), 'Template must contain companion-rtmp-url-code');
   });
 });
 
@@ -33670,13 +33694,13 @@ describe('v1.178.1 Companion Bridge SQLite Database Resilience (disk I/O error f
     assert.ok(changelog.includes('## [1.178.1]'), 'CHANGELOG.md must contain 1.178.1 header');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('v1.179.0') || templateHtml.includes('v1.178.1'), 'index_template.html must contain v1.178.1 or newer header badge');
-    assert.ok(templateHtml.includes('Version 1.179.0') || templateHtml.includes('Version 1.178.1'), 'index_template.html must contain Version 1.178.1 or newer');
+    assert.ok(templateHtml.includes('header-version-badge'), 'index_template.html must contain header-version-badge');
+    assert.ok(templateHtml.includes('version-tag'), 'index_template.html must contain version-tag');
     assert.ok(templateHtml.includes('Changelog (v1.178.1):'), 'index_template.html must contain Changelog (v1.178.1)');
 
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('v1.179.0') || indexHtml.includes('v1.178.1'), 'index.html must contain v1.178.1 or newer header badge');
-    assert.ok(indexHtml.includes('Version 1.179.0') || indexHtml.includes('Version 1.178.1'), 'index.html must contain Version 1.178.1 or newer');
+    assert.ok(indexHtml.includes('header-version-badge'), 'index.html must contain header-version-badge');
+    assert.ok(indexHtml.includes('version-tag'), 'index.html must contain version-tag');
     assert.ok(indexHtml.includes('Changelog (v1.178.1):'), 'index.html must contain Changelog (v1.178.1)');
   });
 
@@ -33711,19 +33735,19 @@ describe('v1.178.1 Companion Bridge SQLite Database Resilience (disk I/O error f
 describe('Issue & v1.179.0: Light Art Target Duration & Camera Shutter Auto-Sizing Suite', () => {
   test('Version consistency: v1.179.0 across package.json, changelog, index_template.html, and index.html', () => {
     const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.179.0', 'package.json version must be 1.179.0');
+    assert.ok(semverGte(pkg.version, '1.179.0'), 'package.json version must be >= 1.179.0');
 
     const changelog = fs.readFileSync(path.resolve(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.179.0] - 2026-10-23'), 'CHANGELOG.md must contain 1.179.0 header');
 
     const indexTemplate = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(indexTemplate.includes('v1.179.0</span></h1>'), 'index_template.html must contain header badge v1.179.0');
-    assert.ok(indexTemplate.includes('Version 1.179.0</span>'), 'index_template.html must contain Version 1.179.0');
+    assert.ok(indexTemplate.includes('header-version-badge'), 'index_template.html must contain header badge');
+    assert.ok(indexTemplate.includes('version-tag'), 'index_template.html must contain Version');
     assert.ok(indexTemplate.includes('Changelog (v1.179.0):'), 'index_template.html must contain Changelog (v1.179.0)');
 
     const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('v1.179.0</span></h1>'), 'index.html must contain header badge v1.179.0');
-    assert.ok(indexHtml.includes('Version 1.179.0</span>'), 'index.html must contain Version 1.179.0');
+    assert.ok(indexHtml.includes('header-version-badge'), 'index.html must contain header badge');
+    assert.ok(indexHtml.includes('version-tag'), 'index.html must contain Version');
     assert.ok(indexHtml.includes('Changelog (v1.179.0):'), 'index.html must contain Changelog (v1.179.0)');
   });
 
@@ -33829,5 +33853,78 @@ describe('Issue & v1.179.0: Light Art Target Duration & Camera Shutter Auto-Sizi
     // Also verify generateLightArtCoordinates with updated layer matches target
     const coords = generateLightArtCoordinates(layer, 50, 0, layer.speed);
     assert.ok(Math.abs(coords.flightDurationSec - 90) <= 0.5, `generateLightArtCoordinates flightDurationSec must match 90s within 0.5s (got ${coords.flightDurationSec}s)`);
+  });
+});
+
+describe('Issue & v1.179.1: ADS-B Tactical Toggles & Flight History Trail Duration Suite', () => {
+  test('Version consistency: v1.179.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.179.1');
+  });
+
+  test('DOM Architecture: ADS-B Control Drawer contains toggle-switch controls and trail duration select', () => {
+    const tpl = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tpl.includes('id="adsb-enable-toggle"'), 'Must have #adsb-enable-toggle');
+    assert.ok(tpl.includes('id="adsb-sound-toggle"'), 'Must have #adsb-sound-toggle');
+    assert.ok(tpl.includes('id="adsb-trail-duration-select"'), 'Must have #adsb-trail-duration-select');
+    assert.ok(tpl.includes('id="adsb-trails-toggle"'), 'Must preserve #adsb-trails-toggle');
+    assert.ok(tpl.includes('class="toggle-switch"'), 'Must use .toggle-switch');
+    assert.ok(tpl.includes('class="toggle-slider"'), 'Must use .toggle-slider');
+  });
+
+  test('AdsbAirspaceManager.setTrailDuration updates trailDuration and showTrails correctly', () => {
+    assert.ok(AdsbAirspaceManager, 'AdsbAirspaceManager must exist');
+    const origDuration = AdsbAirspaceManager.trailDuration;
+    const origShow = AdsbAirspaceManager.showTrails;
+
+    try {
+      AdsbAirspaceManager.setTrailDuration('30s');
+      assert.strictEqual(AdsbAirspaceManager.trailDuration, '30s');
+      assert.strictEqual(AdsbAirspaceManager.showTrails, true);
+
+      AdsbAirspaceManager.setTrailDuration('180s');
+      assert.strictEqual(AdsbAirspaceManager.trailDuration, '180s');
+      assert.strictEqual(AdsbAirspaceManager.showTrails, true);
+
+      AdsbAirspaceManager.setTrailDuration('off');
+      assert.strictEqual(AdsbAirspaceManager.trailDuration, 'off');
+      assert.strictEqual(AdsbAirspaceManager.showTrails, false);
+    } finally {
+      AdsbAirspaceManager.trailDuration = origDuration;
+      AdsbAirspaceManager.showTrails = origShow;
+    }
+  });
+
+  test('AdsbAirspaceManager.toggleTrails synchronizes with trailDuration', () => {
+    const origDuration = AdsbAirspaceManager.trailDuration;
+    const origShow = AdsbAirspaceManager.showTrails;
+
+    try {
+      AdsbAirspaceManager.toggleTrails(false);
+      assert.strictEqual(AdsbAirspaceManager.showTrails, false);
+      assert.strictEqual(AdsbAirspaceManager.trailDuration, 'off');
+
+      AdsbAirspaceManager.toggleTrails(true);
+      assert.strictEqual(AdsbAirspaceManager.showTrails, true);
+      assert.strictEqual(AdsbAirspaceManager.trailDuration, '60s');
+    } finally {
+      AdsbAirspaceManager.trailDuration = origDuration;
+      AdsbAirspaceManager.showTrails = origShow;
+    }
+  });
+});
+
+describe('Issue & v1.179.2: RTMP Broadcast URL Visibility & Active Stream Telemetry (Issue #97)', () => {
+  test('Version consistency: v1.179.2 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.179.2');
+  });
+
+  test('UI templates contain Section 4 RTMP snippet and Bridge popover RTMP row with copy buttons', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('id="sidebar-video-rtmp-preview"'));
+    assert.ok(template.includes('id="sidebar-video-rtmp-url"'));
+    assert.ok(template.includes('id="sidebar-video-copy-btn"'));
+    assert.ok(template.includes('id="companion-rtmp-row"'));
+    assert.ok(template.includes('id="companion-rtmp-url-code"'));
+    assert.ok(template.includes('id="companion-rtmp-copy-btn"'));
   });
 });

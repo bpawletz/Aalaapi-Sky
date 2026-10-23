@@ -81,7 +81,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.179.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.179.2</span></h1>
         </div>
       </div>
 
@@ -3203,6 +3203,18 @@
                 <button id="companion-usb-help-btn" class="companion-help-circle-btn" type="button" title="How to connect DJI RC 2 via USB-C">?</button>
               </span>
             </div>
+            <!-- Embedded RTMP Video Ingest Status Row (Issue #97) -->
+            <div class="companion-status-row" id="companion-rtmp-row">
+              <span style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 5px; min-width: 0;">
+                <span id="companion-rtmp-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block; flex-shrink: 0;"></span>
+                <span style="white-space: nowrap;">RTMP Ingest:</span>
+                <code id="companion-rtmp-url-code" style="color: #38bdf8; font-family: monospace; font-size: 0.66rem; user-select: all; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="Broadcast URL for DJI Fly RTMP Streaming">rtmp://127.0.0.1:1935/live/stream</code>
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <span id="companion-rtmp-badge" style="color: #94a3b8; font-size: 0.68rem; font-weight: 600;">Offline</span>
+                <button id="companion-rtmp-copy-btn" class="companion-help-circle-btn" type="button" title="Copy RTMP Ingest URL for DJI Fly" style="font-size: 0.65rem; width: auto; height: 18px; padding: 0 5px; border-radius: 4px;">Copy</button>
+              </span>
+            </div>
             <!-- MCP Node Monitor Grid (Issue #94: Native Model Context Protocol Support & Gemini AI Integration) -->
             <div id="mcp-monitor-section" class="mcp-monitor-section" style="margin-top: 4px; padding: 6px 8px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; display: flex; flex-direction: column; gap: 5px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -3333,6 +3345,12 @@
               </span>
               <span id="sidebar-video-status-pill" class="badge-tag" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700;">OFFLINE</span>
             </button>
+            <!-- Compact RTMP Ingest URL snippet (Issue #97) -->
+            <div id="sidebar-video-rtmp-preview" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 8px; background: rgba(0, 0, 0, 0.35); border: 1px dashed rgba(6, 182, 212, 0.3); border-radius: 6px; font-size: 0.65rem; margin-top: 4px;">
+              <span style="color: var(--text-muted); font-size: 0.62rem; text-transform: uppercase; font-weight: 600; white-space: nowrap;">RTMP:</span>
+              <code id="sidebar-video-rtmp-url" style="color: #38bdf8; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; user-select: all;" title="Broadcast URL for DJI RC 2 Live Streaming">rtmp://127.0.0.1:1935/live/stream</code>
+              <button id="sidebar-video-copy-btn" type="button" class="btn-secondary" style="padding: 1px 5px; font-size: 0.62rem; border-radius: 4px; white-space: nowrap; flex-shrink: 0;" title="Copy RTMP Ingest URL for DJI Fly">Copy</button>
+            </div>
             <!-- Ambient Telemetry & Airspace Replay Buffer Section (Issue #142) -->
             <div id="bridge-ambient-buffer-section" class="bridge-ambient-buffer-section" style="margin-top: 6px; padding: 10px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -3626,9 +3644,9 @@
                   <span style="font-weight: 600;">Airspace Monitoring</span>
                   <span class="adsb-control-sub">Real-time sub-second deconfliction stream</span>
                 </label>
-                <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
+                <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0; margin: 0;">
                   <input type="checkbox" id="adsb-enable-toggle" checked style="opacity: 0; width: 0; height: 0;">
-                  <span class="slider round"></span>
+                  <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
                 </label>
               </div>
               
@@ -3637,20 +3655,9 @@
                   <span style="font-weight: 600;">Auditory Warning Chime</span>
                   <span class="adsb-control-sub">30s cooldown per aircraft</span>
                 </label>
-                <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
+                <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0; margin: 0;">
                   <input type="checkbox" id="adsb-sound-toggle" checked style="opacity: 0; width: 0; height: 0;">
-                  <span class="slider round"></span>
-                </label>
-              </div>
-
-              <div class="adsb-card-row" style="margin-top: 10px;">
-                <label for="adsb-trails-toggle" class="adsb-control-label">
-                  <span style="font-weight: 600;">Flight History Trails</span>
-                  <span class="adsb-control-sub">Breadcrumb track vectors on map</span>
-                </label>
-                <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
-                  <input type="checkbox" id="adsb-trails-toggle" checked style="opacity: 0; width: 0; height: 0;">
-                  <span class="slider round"></span>
+                  <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
                 </label>
               </div>
 
@@ -3661,6 +3668,23 @@
                   <option value="chime">Dual-Tone Chime Only</option>
                   <option value="voice">Vocal Advisory Only</option>
                 </select>
+              </div>
+
+              <div class="adsb-card-row" style="margin-top: 10px; align-items: center;">
+                <label for="adsb-trail-duration-select" class="adsb-control-label">
+                  <span style="font-weight: 600;">Flight History Trails</span>
+                  <span class="adsb-control-sub">Breadcrumb track vectors on map</span>
+                </label>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <select id="adsb-trail-duration-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.72rem; border-radius: 5px; padding: 3px 8px; font-weight: 500;">
+                    <option value="off">Off (No Trails)</option>
+                    <option value="30s">Short (30s / 15 pts)</option>
+                    <option value="60s" selected>Standard (1m / 30 pts)</option>
+                    <option value="180s">Extended (3m / 60 pts)</option>
+                    <option value="300s">Long (5m / 100 pts)</option>
+                  </select>
+                  <input type="checkbox" id="adsb-trails-toggle" checked style="display: none;">
+                </div>
               </div>
             </div>
 
@@ -6201,7 +6225,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.179.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.179.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6262,6 +6286,18 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+                    <div>
+            <strong style="color: var(--text-main);">Changelog (v1.179.2):</strong>
+            <ul style="padding-left: 18px; margin: 4px 0 12px; color: var(--text-muted); font-size: 0.82rem;">
+              <li><strong>RTMP Broadcast URL &amp; Telemetry (Issue #97):</strong> Displayed active broadcast ingest URL and live telemetry in the terminal dashboard, Section 4 sidebar preview, and Bridge popover drawer with auto-refresh polling and 1-click copy buttons.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.179.1):</strong>
+            <ul style="padding-left: 18px; margin: 4px 0 12px; color: var(--text-muted); font-size: 0.82rem;">
+              <li><strong>ADS-B Tactical Controls &amp; Trail Duration:</strong> Upgraded ADS-B Airspace controls with responsive toggle switches and a flexible Flight History Trail duration dropdown (Off, 30s, 1m, 3m, 5m).</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.179.0):</strong>
             <ul style="padding-left: 18px; margin: 4px 0 12px; color: var(--text-muted); font-size: 0.82rem;">

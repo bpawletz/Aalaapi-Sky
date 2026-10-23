@@ -145,14 +145,32 @@ class VideoService {
   }
 
   /**
-   * Returns current RTMP server status and active streams.
+   * Returns current RTMP server status and active streams including LAN broadcast URLs.
    */
   getRtmpStatus() {
     const serverStatus = this.rtmpServer.getStatus();
     const firewallStatus = VideoService.checkFirewall('Aalaapi Sky RTMP Ingest', this.rtmpPort);
+
+    const os = require('node:os');
+    const nets = os.networkInterfaces();
+    const lanUrls = [];
+    const port = this.rtmpPort || 1935;
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name]) {
+        if (net.family === 'IPv4' && !net.internal) {
+          lanUrls.push(`rtmp://${net.address}:${port}/live/stream`);
+        }
+      }
+    }
+    if (lanUrls.length === 0) {
+      lanUrls.push(`rtmp://127.0.0.1:${port}/live/stream`);
+    }
+
     return {
       ...serverStatus,
-      firewall: firewallStatus
+      firewall: firewallStatus,
+      lanUrls,
+      primaryUrl: lanUrls[0]
     };
   }
 
