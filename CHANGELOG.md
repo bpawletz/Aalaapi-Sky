@@ -1,3 +1,39 @@
+## [1.179.2] - 2026-10-23
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **RTMP Broadcast URL Visibility & Active Stream Telemetry (Issue #97)**:
+  - Displayed full broadcast ingest URL (`rtmp://<LAN_IP>:1935/live/stream`) and active stream stats (`● ACTIVE STREAM from <IP>, Xs, Y MB`) on Line 9b of the companion bridge terminal stat screen (`top_dashboard.js`).
+  - Added compact RTMP broadcast URL snippet directly beneath the Live Video Cast button in Section 4 of the sidebar (`#sidebar-video-rtmp-preview`) with a 1-click `Copy` button.
+  - Added RTMP Ingest status row to the Bridge & Hardware popout drawer (`#bridge-status-popover`) with real-time status indicator (`Offline`, `Listening`, or `Streaming`) and 1-click `Copy` button.
+  - Integrated 2-second background status poller in `VideoCastClient.js` dynamically updating the live RTMP URL, active stream badge, and Section 4 `LIVE (RC 2)` status indicator.
+
+#### Under the Hood & Technical Details
+- **VideoService & VideoCastClient (`tools/companion/video_service.js`, `src/bridge/VideoCastClient.js`)**:
+  - `VideoService::getRtmpStatus()` now queries non-internal IPv4 network interfaces to provide `lanUrls` and `primaryUrl`.
+  - `VideoCastClient` starts a 2s timer upon initialization (`startStatusPoller()`), continuously fetching `/api/video/rtmp/status` and keeping UI elements in sync.
+
+## [1.179.1] - 2026-10-23
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Tactile .toggle-switch UI Controls (#adsb-enable-toggle, #adsb-sound-toggle)**:
+  - Replaced unstyled switch markup with tactile, glow-responsive .toggle-switch and .toggle-slider controls across Airspace Monitoring and Auditory Warning Chime in the ADS-B Control Drawer.
+- **Flight History Trails Multi-Duration Dropdown (#adsb-trail-duration-select)**:
+  - Upgraded binary trail toggle into an intuitive flight history vector depth selector:
+    - Off (Disable map breadcrumbs for decluttered map operations in high-density traffic).
+    - Short (30s / 15 pts) (Compact vector indicators for fast-moving local traffic).
+    - Standard (1m / 30 pts) (Balanced situational awareness default).
+    - Extended (3m / 60 pts) (Deep flight corridor history).
+    - Long (5m / 100 pts) (Full sector transit visualization).
+  - Preserves #adsb-trails-toggle for backward compatibility with existing tests and scripts.
+
+#### Under the Hood & Technical Details
+- **src/bridge/ApiClient.js**: Added 	railDuration state ('30s' | '60s' | '180s' | '300s' | 'off'), persistence in localStorage (alaapi_adsb_trail_duration), and dynamic point pruning in cHistory rendering.
+- **index_template.html**: Enhanced ADS-B settings card layout with grouped controls and clean dropdown styling.
+
 ## [1.179.0] - 2026-10-23
 
 Introduces Target Flight Duration & Exposure Time Limit Auto-Sizing for Light Art (Sky Painting) missions, allowing aerial photographers to match camera shutter windows with 1-click auto-scaling of artwork physical dimensions.

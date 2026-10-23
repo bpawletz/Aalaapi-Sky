@@ -410,6 +410,21 @@ function renderFrame(state, options = {}) {
   const devLine = `${ANSI.bold}DEVICES${ANSI.reset}   RC 2: ${rc2StatusStr}   RTMP: ${rtmpStatusStr}   ADS-B: ${adsbStatusStr}   Remote ID: ${ridStatusStr}`;
   lines.push(padRight(` ${devLine}`, cols));
 
+  // Line 9b: Dedicated RTMP Ingest & Broadcast URL
+  const primaryRtmpUrl = (rtmpDev.lanUrls && rtmpDev.lanUrls[0]) || rtmpDev.primaryUrl || `rtmp://127.0.0.1:${rtmpDev.port || 1935}/live/stream`;
+  let rtmpStatusDetail = '';
+  if (rtmpDev.activeStreams && rtmpDev.activeStreams.length > 0) {
+    const s = rtmpDev.activeStreams[0];
+    const mb = s.bytesRelayed ? (s.bytesRelayed / (1024 * 1024)).toFixed(2) : '0.00';
+    rtmpStatusDetail = `${ANSI.green}● ACTIVE STREAM${ANSI.reset} from ${s.publisherIp} (${s.durationSec || 0}s, ${mb} MB)`;
+  } else if (rtmpDev.listening) {
+    rtmpStatusDetail = `${ANSI.cyan}ready for DJI RC 2 push${ANSI.reset}`;
+  } else {
+    rtmpStatusDetail = `${ANSI.yellow}port ${rtmpDev.port || 1935} closed${ANSI.reset}`;
+  }
+  const rtmpUrlLine = `${ANSI.bold}RTMP URL${ANSI.reset}  ${ANSI.yellow}${ANSI.bold}${primaryRtmpUrl}${ANSI.reset}   ${rtmpStatusDetail}`;
+  lines.push(padRight(` ${rtmpUrlLine}`, cols));
+
   // Line 10: Tile Cache Stats
   const tc = state.tileCache || { totalFiles: 0, sizeMb: 0, maxMb: 2048, hitRatePercent: 0, evictions: 0, bypassCount: 0 };
   const tcRatio = tc.maxMb > 0 ? tc.sizeMb / tc.maxMb : 0;
