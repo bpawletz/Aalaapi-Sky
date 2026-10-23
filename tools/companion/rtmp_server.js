@@ -481,6 +481,24 @@ class RTMPSession extends EventEmitter {
         rawKey = rawKey.slice(this.appName.length + 1);
       }
       this.streamKey = rawKey || 'stream';
+
+      // Stream collision protection: reject second publisher targeting an active stream
+      const existing = this.server.getPublisher(this.fullStreamPath);
+      if (existing && existing !== this) {
+        const errorMsg = `Stream '${this.fullStreamPath}' is already in use by ${existing.remoteAddress}. Please choose a unique stream key (e.g. /${this.appName}/drone2).`;
+        this.sendStatus(transId, 'error', 'NetStream.Publish.BadName', errorMsg);
+        this.server.emit('publisher_collision', {
+          streamPath: this.fullStreamPath,
+          existingPublisherIp: existing.remoteAddress,
+          rejectedPublisherIp: this.remoteAddress,
+          message: errorMsg
+        });
+        setTimeout(() => {
+          try { this.socket.destroy(); } catch (_) {}
+        }, 200);
+        return;
+      }
+
       this.role = 'publisher';
 
       this.server.registerPublisher(this);
@@ -705,6 +723,16 @@ class RTMPServer extends EventEmitter {
         resolve();
       }
     });
+  }
+
+  getPublisher(streamPath) {
+    const rec = this.streams.get(streamPath);
+    if (!rec || !rec.publisher) return null;
+    if (rec.publisher.socket && rec.publisher.socket.destroyed) {
+      rec.publisher = null;
+      return null;
+    }
+    return rec.publisher;
   }
 
   getStreamRecord(streamPath) {

@@ -159,3 +159,111 @@ test('RTMPServer: lifecycle, handshake, and publisher/subscriber relay', async (
     throw e;
   }
 });
+
+test('RTMPServer: stream collision rejects second publisher on active stream key with NetStream.Publish.BadName', async () => {
+  const testPort = 19400 + Math.floor(Math.random() * 500);
+  const server = new RTMPServer({ port: testPort, host: '127.0.0.1' });
+  await server.start();
+
+  let collisionEvent = null;
+  server.on('publisher_collision', (info) => {
+    collisionEvent = info;
+  });
+
+  // Helper to connect and handshake
+  async function connectAndHandshake() {
+    const c = net.createConnection({ port: testPort, host: '127.0.0.1' });
+    await new Promise((r) => c.on('connect', r));
+
+    const c0c1 = Buffer.allocUnsafe(1537);
+    c0c1.writeUInt8(3, 0);
+    crypto.randomFillSync(c0c1, 1, 1536);
+    c.write(c0c1);
+
+    await new Promise((resolve) => {
+      let received = Buffer.alloc(0);
+      function onData(chunk) {
+        received = Buffer.concat([received, chunk]);
+        if (received.length >= 3073) {
+          c.off('data', onData);
+          resolve();
+        }
+      }
+      c.on('data', onData);
+    });
+
+    const c2 = Buffer.allocUnsafe(1536);
+    crypto.randomFillSync(c2);
+    c.write(c2);
+    await new Promise((r) => setTimeout(r, 40));
+
+    // Send connect
+    const connectPayload = AMF0.encode(['connect', 1, { app: 'live' }]);
+    const chunkHeader = Buffer.allocUnsafe(12);
+    chunkHeader.writeUInt8(3, 0);
+    chunkHeader.writeUInt8(0, 1); chunkHeader.writeUInt8(0, 2); chunkHeader.writeUInt8(0, 3);
+    chunkHeader.writeUInt8((connectPayload.length >> 16) & 0xFF, 4);
+    chunkHeader.writeUInt8((connectPayload.length >> 8) & 0xFF, 5);
+    chunkHeader.writeUInt8(connectPayload.length & 0xFF, 6);
+    chunkHeader.writeUInt8(20, 7);
+    chunkHeader.writeUInt32LE(0, 8);
+    c.write(Buffer.concat([chunkHeader, connectPayload]));
+    await new Promise((r) => setTimeout(r, 60));
+    return c;
+  }
+
+  // 1. First publisher connects
+  const client1 = await connectAndHandshake();
+  const pubPayload1 = AMF0.encode(['publish', 2, null, 'live/stream', 'live']);
+  const pubHdr1 = Buffer.allocUnsafe(12);
+  pubHdr1.writeUInt8(4, 0);
+  pubHdr1.writeUInt8(0, 1); pubHdr1.writeUInt8(0, 2); pubHdr1.writeUInt8(0, 3);
+  pubHdr1.writeUInt8((pubPayload1.length >> 16) & 0xFF, 4);
+  pubHdr1.writeUInt8((pubPayload1.length >> 8) & 0xFF, 5);
+  pubHdr1.writeUInt8(pubPayload1.length & 0xFF, 6);
+  pubHdr1.writeUInt8(20, 7);
+  pubHdr1.writeUInt32LE(1, 8);
+  client1.write(Buffer.concat([pubHdr1, pubPayload1]));
+  await new Promise((r) => setTimeout(r, 80));
+
+  assert.equal(server.getStatus().activeStreams.length, 1);
+  assert.equal(server.getStatus().activeStreams[0].path, 'live/stream');
+
+  // 2. Second publisher attempts to connect to the exact same stream
+  const client2 = await connectAndHandshake();
+
+  let client2Response = Buffer.alloc(0);
+  client2.on('data', (d) => {
+    client2Response = Buffer.concat([client2Response, d]);
+  });
+
+  const pubPayload2 = AMF0.encode(['publish', 2, null, 'live/stream', 'live']);
+  const pubHdr2 = Buffer.allocUnsafe(12);
+  pubHdr2.writeUInt8(4, 0);
+  pubHdr2.writeUInt8(0, 1); pubHdr2.writeUInt8(0, 2); pubHdr2.writeUInt8(0, 3);
+  pubHdr2.writeUInt8((pubPayload2.length >> 16) & 0xFF, 4);
+  pubHdr2.writeUInt8((pubPayload2.length >> 8) & 0xFF, 5);
+  pubHdr2.writeUInt8(pubPayload2.length & 0xFF, 6);
+  pubHdr2.writeUInt8(20, 7);
+  pubHdr2.writeUInt32LE(1, 8);
+  client2.write(Buffer.concat([pubHdr2, pubPayload2]));
+  await new Promise((r) => setTimeout(r, 120));
+
+  // 3. Verify collision event was emitted
+  assert.ok(collisionEvent, 'publisher_collision event must be emitted');
+  assert.equal(collisionEvent.streamPath, 'live/stream');
+  assert.ok(collisionEvent.message.includes('already in use'));
+
+  // 4. Verify client2 response contains NetStream.Publish.BadName error
+  const client2Str = client2Response.toString('latin1');
+  assert.ok(client2Str.includes('NetStream.Publish.BadName'), 'Client 2 must receive NetStream.Publish.BadName error');
+  assert.ok(client2Str.includes('already in use'), 'Client 2 must receive descriptive error message');
+
+  // 5. Verify client1 is still the sole active publisher
+  assert.equal(server.getStatus().activeStreams.length, 1);
+  assert.equal(server.getStatus().activeStreams[0].path, 'live/stream');
+
+  client1.destroy();
+  client2.destroy();
+  await server.stop();
+});

@@ -33928,3 +33928,133 @@ describe('Issue & v1.179.2: RTMP Broadcast URL Visibility & Active Stream Teleme
     assert.ok(template.includes('id="companion-rtmp-copy-btn"'));
   });
 });
+
+describe('Issue & v1.179.3: RTMP Stream Collision Rejection & SSE Telemetry (Issue #97)', () => {
+  test('Version consistency: v1.179.3 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.179.3');
+  });
+
+  test('applyCompanionStatusUI dispatches data.rtmp to videoCastClient over SSE', () => {
+    let receivedRtmp = null;
+    const origWindowVc = typeof window !== 'undefined' ? window.videoCastClient : undefined;
+    const origGlobalVc = global.videoCastClient;
+    const mockVc = {
+      updateRtmpUI: (rtmp) => {
+        receivedRtmp = rtmp;
+      }
+    };
+    if (typeof window !== 'undefined') window.videoCastClient = mockVc;
+    global.videoCastClient = mockVc;
+
+    try {
+      applyCompanionStatusUI({
+        connected: false,
+        rtmp: {
+          listening: true,
+          port: 1935,
+          activeStreams: [{ publisherIp: '192.168.1.88', durationSec: 15 }]
+        }
+      });
+
+      assert.ok(receivedRtmp);
+      assert.strictEqual(receivedRtmp.listening, true);
+      assert.strictEqual(receivedRtmp.activeStreams[0].publisherIp, '192.168.1.88');
+    } finally {
+      if (typeof window !== 'undefined') window.videoCastClient = origWindowVc;
+      global.videoCastClient = origGlobalVc;
+    }
+  });
+});
+
+describe('v1.180.0: ADS-B Flight History Trails Purge & Radar Reset (Option C)', () => {
+  test('Version consistency: v1.180.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.180.0');
+  });
+
+  test('UI templates contain #adsb-clear-trails-btn and #adsb-clear-radar-btn', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('id="adsb-clear-trails-btn"'), 'Must have #adsb-clear-trails-btn in index_template.html');
+    assert.ok(template.includes('id="adsb-clear-radar-btn"'), 'Must have #adsb-clear-radar-btn in index_template.html');
+  });
+
+  test('AdsbAirspaceManager.clearTrails removes trail polylines and flushes acHistory while preserving aircraft markers', () => {
+    const removedLayers = [];
+    const mockLayerGroup = {
+      removeLayer: (layer) => { removedLayers.push(layer); },
+      addLayer: () => {}
+    };
+
+    const origLayerGroup = AdsbAirspaceManager.layerGroup;
+    AdsbAirspaceManager.layerGroup = mockLayerGroup;
+    AdsbAirspaceManager.mapMarkers.clear();
+    AdsbAirspaceManager.mapTrails.clear();
+    AdsbAirspaceManager.acHistory.clear();
+
+    try {
+      const mockPoly1 = { id: 'poly1' };
+      const mockPoly2 = { id: 'poly2' };
+      AdsbAirspaceManager.mapTrails.set('A12345', mockPoly1);
+      AdsbAirspaceManager.mapTrails.set('B67890', mockPoly2);
+
+      AdsbAirspaceManager.acHistory.set('A12345', [[41.0, -88.0, 1000, Date.now()]]);
+      AdsbAirspaceManager.acHistory.set('B67890', [[41.1, -88.1, 2000, Date.now()]]);
+
+      const mockMarker = { id: 'marker1' };
+      AdsbAirspaceManager.mapMarkers.set('A12345', mockMarker);
+
+      AdsbAirspaceManager.clearTrails();
+
+      assert.strictEqual(AdsbAirspaceManager.mapTrails.size, 0, 'mapTrails must be empty after clearTrails()');
+      assert.strictEqual(AdsbAirspaceManager.acHistory.size, 0, 'acHistory must be empty after clearTrails()');
+      assert.strictEqual(removedLayers.length, 2, 'Both polylines must be removed from layerGroup');
+      assert.strictEqual(AdsbAirspaceManager.mapMarkers.size, 1, 'Active aircraft markers must remain untouched');
+    } finally {
+      AdsbAirspaceManager.layerGroup = origLayerGroup;
+      AdsbAirspaceManager.mapTrails.clear();
+      AdsbAirspaceManager.acHistory.clear();
+      AdsbAirspaceManager.mapMarkers.clear();
+    }
+  });
+
+  test('AdsbAirspaceManager.clearAll clears markers, trails, history and notifies companion server', async () => {
+    let clearedLayers = false;
+    const mockLayerGroup = {
+      clearLayers: () => { clearedLayers = true; },
+      removeLayer: () => {}
+    };
+
+    let fetchUrl = null;
+    let fetchMethod = null;
+    const origFetch = global.fetch;
+    global.fetch = async (url, opts) => {
+      fetchUrl = url;
+      fetchMethod = opts && opts.method;
+      return { ok: true, json: async () => ({}) };
+    };
+
+    const origLayerGroup = AdsbAirspaceManager.layerGroup;
+    AdsbAirspaceManager.layerGroup = mockLayerGroup;
+
+    try {
+      AdsbAirspaceManager.aircraft = [{ hex: 'A12345', flight: 'N123' }];
+      AdsbAirspaceManager.breachedAircraft = ['A12345'];
+      AdsbAirspaceManager.mapMarkers.set('A12345', {});
+      AdsbAirspaceManager.mapTrails.set('A12345', {});
+      AdsbAirspaceManager.acHistory.set('A12345', [[41.0, -88.0, 1000, Date.now()]]);
+
+      await AdsbAirspaceManager.clearAll(true);
+
+      assert.strictEqual(AdsbAirspaceManager.aircraft.length, 0);
+      assert.strictEqual(AdsbAirspaceManager.breachedAircraft.length, 0);
+      assert.strictEqual(AdsbAirspaceManager.mapMarkers.size, 0);
+      assert.strictEqual(AdsbAirspaceManager.mapTrails.size, 0);
+      assert.strictEqual(AdsbAirspaceManager.acHistory.size, 0);
+      assert.strictEqual(clearedLayers, true);
+      assert.ok(fetchUrl && fetchUrl.includes('/api/airspace/clear'));
+      assert.strictEqual(fetchMethod, 'POST');
+    } finally {
+      global.fetch = origFetch;
+      AdsbAirspaceManager.layerGroup = origLayerGroup;
+    }
+  });
+});
