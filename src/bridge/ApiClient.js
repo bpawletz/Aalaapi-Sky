@@ -2624,6 +2624,7 @@ const AdsbAirspaceManager = {
   layerGroup: null,
   mapMarkers: new Map(), // hex -> Leaflet marker
   showTrails: true,
+  trailDuration: '60s', // 'off' | '30s' | '60s' | '180s' | '300s'
   mapTrails: new Map(), // hex -> Leaflet polyline
   acHistory: new Map(), // hex -> Array<[lat, lon, alt, time]>
   audioContext: null,
@@ -2902,6 +2903,12 @@ const AdsbAirspaceManager = {
         const savedTrails = localStorage.getItem('aalaapi_adsb_show_trails');
         if (savedTrails !== null) this.showTrails = savedTrails === 'true';
 
+        const savedDuration = localStorage.getItem('aalaapi_adsb_trail_duration');
+        if (savedDuration) {
+          this.trailDuration = savedDuration;
+          this.showTrails = (savedDuration !== 'off');
+        }
+
         const savedRadius = localStorage.getItem('aalaapi_adsb_radius_mi');
         if (savedRadius) this.radiusMiles = parseFloat(savedRadius) || 3.0;
 
@@ -2936,6 +2943,7 @@ const AdsbAirspaceManager = {
         localStorage.setItem('aalaapi_adsb_sound', String(this.soundEnabled));
         localStorage.setItem('aalaapi_adsb_sound_type', this.soundType);
         localStorage.setItem('aalaapi_adsb_show_trails', String(this.showTrails));
+        localStorage.setItem('aalaapi_adsb_trail_duration', this.trailDuration || '60s');
         localStorage.setItem('aalaapi_adsb_radius_mi', String(this.radiusMiles));
         localStorage.setItem('aalaapi_adsb_ceiling_ft', String(this.ceilingFeet));
         localStorage.setItem('aalaapi_adsb_custom_endpoint', this.customEndpoint || '');
@@ -3103,8 +3111,28 @@ const AdsbAirspaceManager = {
     this.updateControlsUI();
   },
 
+  setTrailDuration(duration) {
+    this.trailDuration = duration || '60s';
+    this.showTrails = (this.trailDuration !== 'off');
+    this.saveSettings();
+    if (!this.showTrails) {
+      for (const poly of this.mapTrails.values()) {
+        if (this.layerGroup && this.layerGroup.removeLayer) this.layerGroup.removeLayer(poly);
+      }
+      this.mapTrails.clear();
+    } else {
+      this.updateMapMarkers();
+    }
+    this.updateControlsUI();
+  },
+
   toggleTrails(forceState) {
     this.showTrails = forceState !== undefined ? forceState : !this.showTrails;
+    if (this.showTrails && this.trailDuration === 'off') {
+      this.trailDuration = '60s';
+    } else if (!this.showTrails) {
+      this.trailDuration = 'off';
+    }
     this.saveSettings();
     if (!this.showTrails) {
       for (const poly of this.mapTrails.values()) {
@@ -3693,10 +3721,12 @@ const AdsbAirspaceManager = {
       if (Array.isArray(ac.history) && ac.history.length > 0 && hist.length === 0) {
         hist.push(...ac.history);
       }
+      const maxPointsMap = { '30s': 15, '60s': 30, '180s': 60, '300s': 100, 'off': 0 };
+      const maxPts = maxPointsMap[this.trailDuration] !== undefined ? maxPointsMap[this.trailDuration] : 30;
       const lastPt = hist[hist.length - 1];
       if (!lastPt || Math.abs(lastPt[0] - ac.latitude) > 0.00005 || Math.abs(lastPt[1] - ac.longitude) > 0.00005) {
         hist.push([ac.latitude, ac.longitude, ac.altitude || 0, Date.now()]);
-        if (hist.length > 60) hist.shift();
+        while (hist.length > maxPts && hist.length > 0) hist.shift();
       }
 
       // Render/Update Flight History Trail
@@ -3848,6 +3878,9 @@ const AdsbAirspaceManager = {
 
     const trailsToggle = document.getElementById('adsb-trails-toggle');
     if (trailsToggle) trailsToggle.checked = this.showTrails;
+
+    const trailDurationSelect = document.getElementById('adsb-trail-duration-select');
+    if (trailDurationSelect) trailDurationSelect.value = this.showTrails ? (this.trailDuration || '60s') : 'off';
 
     const soundSelect = document.getElementById('adsb-sound-type-select');
     if (soundSelect) soundSelect.value = this.soundType;
@@ -4337,6 +4370,13 @@ const AdsbAirspaceManager = {
     const trailsToggle = document.getElementById('adsb-trails-toggle');
     if (trailsToggle) {
       trailsToggle.addEventListener('change', (e) => this.toggleTrails(e.target.checked));
+    }
+
+    const trailDurationSelect = document.getElementById('adsb-trail-duration-select');
+    if (trailDurationSelect) {
+      trailDurationSelect.addEventListener('change', (e) => {
+        this.setTrailDuration(e.target.value);
+      });
     }
 
     const soundSelect = document.getElementById('adsb-sound-type-select');

@@ -26,6 +26,7 @@ class VideoCastClient {
     this.fpvVideoEnabled = true;
     this.lastFrameTime = 0;
     this.listenersAttached = false;
+    this.statusPollTimer = null;
   }
 
   /**
@@ -250,15 +251,42 @@ class VideoCastClient {
     } catch (_) {}
   }
 
+  startStatusPoller() {
+    if (this.statusPollTimer) return;
+    this.fetchRtmpStatus();
+    this.statusPollTimer = setInterval(() => {
+      this.fetchRtmpStatus();
+    }, 2000);
+  }
+
+  stopStatusPoller() {
+    if (this.statusPollTimer) {
+      clearInterval(this.statusPollTimer);
+      this.statusPollTimer = null;
+    }
+  }
+
   /**
    * Updates RTMP URL, active streaming indicators, and firewall badges in the UI.
    */
   updateRtmpUI(data) {
     if (typeof document === 'undefined' || !data) return;
 
+    const primary = data.primaryUrl || (data.lanUrls && data.lanUrls[0]) || 'rtmp://127.0.0.1:1935/live/stream';
+
     const urlCode = document.getElementById('video-cast-rtmp-url-text');
-    if (urlCode && data.primaryUrl) {
-      urlCode.textContent = data.primaryUrl;
+    if (urlCode && primary) {
+      urlCode.textContent = primary;
+    }
+
+    const sidebarCode = document.getElementById('sidebar-video-rtmp-url');
+    if (sidebarCode && primary) {
+      sidebarCode.textContent = primary;
+    }
+
+    const popoverCode = document.getElementById('companion-rtmp-url-code');
+    if (popoverCode && primary) {
+      popoverCode.textContent = primary;
     }
 
     const fwBadge = document.getElementById('video-cast-fw-badge');
@@ -274,15 +302,51 @@ class VideoCastClient {
       }
     }
 
+    const popoverBadge = document.getElementById('companion-rtmp-badge');
+    const popoverDot = document.getElementById('companion-rtmp-dot');
+
     // Active RTMP stream indicator
     const tip = document.getElementById('video-cast-rtmp-tip');
+    const statusText = document.getElementById('video-cast-status-text');
+    const sidebarPill = document.getElementById('sidebar-video-status-pill');
+
     if (data.activeStreams && data.activeStreams.length > 0) {
       const active = data.activeStreams[0];
+      const activePath = active.path || 'live/stream';
+      const activeUrl = primary.replace(/\/live\/stream$/, '') + '/' + activePath;
+
       if (tip) {
-        tip.innerHTML = `<span style="color: #34d399; font-weight: 600;">🟢 Active RTMP stream from ${active.publisherIp} (${active.durationSec}s)</span>`;
+        tip.innerHTML = `<span style="color: #34d399; font-weight: 700;">🟢 ACTIVE STREAM: <span style="font-family: monospace; color: #38bdf8;">${activeUrl}</span> (from ${active.publisherIp}, ${active.durationSec}s)</span>`;
       }
-    } else if (tip) {
-      tip.textContent = 'In DJI Fly: Settings → Transmission → Live Streaming → RTMP.';
+      if (statusText) {
+        statusText.textContent = 'LIVE (RC 2)';
+        statusText.style.color = '#34d399';
+      }
+      if (sidebarPill) {
+        sidebarPill.textContent = 'LIVE (RC 2)';
+        sidebarPill.style.background = 'rgba(16, 185, 129, 0.2)';
+        sidebarPill.style.color = '#34d399';
+        sidebarPill.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        sidebarPill.title = `Active RTMP Feed: ${activeUrl} from ${active.publisherIp}`;
+      }
+      if (popoverBadge) {
+        popoverBadge.textContent = 'Streaming';
+        popoverBadge.style.color = '#34d399';
+      }
+      if (popoverDot) {
+        popoverDot.style.background = '#10b981';
+      }
+    } else {
+      if (tip) {
+        tip.textContent = 'In DJI Fly: Settings → Transmission → Live Streaming → RTMP.';
+      }
+      if (popoverBadge) {
+        popoverBadge.textContent = data.listening ? 'Listening' : 'Offline';
+        popoverBadge.style.color = data.listening ? '#38bdf8' : '#94a3b8';
+      }
+      if (popoverDot) {
+        popoverDot.style.background = data.listening ? '#06b6d4' : '#64748b';
+      }
     }
   }
 
@@ -667,38 +731,55 @@ class VideoCastClient {
       modalCloseBtn.addEventListener('click', () => recordingsModal.classList.add('hidden'));
     }
 
-    // Copy RTMP Ingest URL button
-    const copyRtmpBtn = document.getElementById('video-cast-copy-rtmp-btn');
-    const rtmpUrlText = document.getElementById('video-cast-rtmp-url-text');
-    if (copyRtmpBtn && rtmpUrlText) {
-      copyRtmpBtn.addEventListener('click', async (e) => {
+    // Copy RTMP Ingest URL buttons (Panel, Section 4 sidebar, and Bridge popover)
+    const handleCopy = async (e, textEl, btn) => {
+      if (e) {
         e.preventDefault();
-        const urlToCopy = (rtmpUrlText.textContent || '').trim();
-        if (!urlToCopy) return;
+        e.stopPropagation();
+      }
+      const urlToCopy = (textEl ? textEl.textContent : '').trim();
+      if (!urlToCopy) return;
 
-        let copied = false;
-        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-          try {
-            await navigator.clipboard.writeText(urlToCopy);
-            copied = true;
-          } catch (_) {}
-        }
-        if (!copied && typeof document !== 'undefined') {
-          try {
-            const ta = document.createElement('textarea');
-            ta.value = urlToCopy;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-          } catch (_) {}
-        }
+      let copied = false;
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(urlToCopy);
+          copied = true;
+        } catch (_) {}
+      }
+      if (!copied && typeof document !== 'undefined') {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = urlToCopy;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          copied = true;
+        } catch (_) {}
+      }
 
-        const origText = copyRtmpBtn.textContent;
-        copyRtmpBtn.textContent = '✓ Copied!';
-        setTimeout(() => { copyRtmpBtn.textContent = origText; }, 2000);
-      });
-    }
+      const origText = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = origText; }, 2000);
+    };
+
+    const copyMappings = [
+      { btnId: 'video-cast-copy-rtmp-btn', textId: 'video-cast-rtmp-url-text' },
+      { btnId: 'sidebar-video-copy-btn', textId: 'sidebar-video-rtmp-url' },
+      { btnId: 'companion-rtmp-copy-btn', textId: 'companion-rtmp-url-code' }
+    ];
+
+    copyMappings.forEach(({ btnId, textId }) => {
+      const btn = document.getElementById(btnId);
+      const textEl = document.getElementById(textId);
+      if (btn && textEl) {
+        btn.addEventListener('click', (e) => handleCopy(e, textEl, btn));
+      }
+    });
+
+    // Start background status poller (updates RTMP broadcast URL & active streaming stats every 2s)
+    this.startStatusPoller();
 
     // FPV Video Background toggle button
     const fpvVideoToggleBtn = document.getElementById('fpv-video-toggle-btn');
