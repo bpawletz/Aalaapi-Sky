@@ -1,3 +1,16 @@
+## [1.182.1] - 2026-10-23
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Browser Automation & E2E Test Suite Stability (Closes #144)**:
+  - Upgraded underlying browser automation harness to Playwright 1.64.1, maintaining seamless compatibility with Chromium and WebKit rendering engines across continuous integration and test verification.
+
+#### Under the Hood & Technical Details
+- **Dependencies (`package.json`, `package-lock.json`)**:
+  - Upgraded `playwright` dependency to `^1.64.1` (Playwright Core 1.64.1).
+  - Incorporates upstream fixes for Chromium 155+ preflighted cross-origin redirect aborts and Electron window capture lifecycle stability.
+
 ## [1.182.0] - 2026-10-23
 
 Continuous 3D canvas tilt, interactive SVG compass rose observer alignment, and ground clearance safety deck for Light Art (Sky Painting) long-exposure aerial photography.

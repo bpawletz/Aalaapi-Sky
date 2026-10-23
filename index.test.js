@@ -34270,3 +34270,19 @@ describe('Issue & v1.182.0: Light Art Continuous 3D Canvas Tilt, Compass Rose & 
     assert.ok(html.includes('id="light-art-elevate-btn"'), 'must contain #light-art-elevate-btn');
   });
 });
+
+
+describe('Issue #144 & v1.182.1: Playwright 1.64.1 Dependency Upgrade & Version Consistency', () => {
+  test('v1.182.1: version consistency across all 5 required locations', () => {
+    assertVersionConsistency('1.182.1');
+  });
+
+  test('package.json and node_modules specify Playwright >= 1.64.1', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.ok(pkg.dependencies.playwright, 'playwright must be declared in dependencies');
+    assert.strictEqual(pkg.dependencies.playwright, '^1.64.1');
+
+    const installedPkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'node_modules', 'playwright', 'package.json'), 'utf8'));
+    assert.ok(semverGte(installedPkg.version, '1.64.1'), `installed playwright version (${installedPkg.version}) must be >= 1.64.1`);
+  });
+});
