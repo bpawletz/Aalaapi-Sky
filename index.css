@@ -3454,6 +3454,172 @@ html, body {
 }
 
 /* ==========================================================================
+   RC 2 to Companion Bridge Connection Step Cards (.rc2-connect-cards-grid)
+   ========================================================================== */
+.rc2-connect-cards-section {
+  margin: 8px 0 16px 0;
+}
+
+.rc2-connect-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 1200px) {
+  .rc2-connect-cards-grid {
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .rc2-connect-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rc2-step-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
+.rc2-step-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 6px 18px rgba(6, 182, 212, 0.18);
+}
+
+.rc2-step-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.rc2-step-badge {
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.rc2-step-badge.step-1 {
+  background: rgba(6, 182, 212, 0.18);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+}
+
+.rc2-step-badge.step-2 {
+  background: rgba(168, 85, 247, 0.18);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.rc2-step-badge.step-3 {
+  background: rgba(56, 189, 248, 0.18);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.rc2-step-badge.step-4 {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.rc2-step-badge.step-5 {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.rc2-step-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.rc2-step-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.rc2-step-desc {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+  flex: 1;
+}
+
+.rc2-step-desc strong {
+  color: #e2e8f0;
+}
+
+.rc2-step-desc code {
+  color: #38bdf8;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.72rem;
+}
+
+.rc2-step-code-box {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  padding: 4px 6px;
+  margin-top: 4px;
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.rc2-step-code-box code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc2-step-code-box .btn-copy-cmd {
+  padding: 2px 6px;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.rc2-step-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 6px;
+  margin-top: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+
+/* ==========================================================================
    Flight Pattern Layers & Transitions (v1.62.0)
    ========================================================================== */
 .layers-manager-container {

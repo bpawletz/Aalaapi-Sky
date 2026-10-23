@@ -14,6 +14,15 @@ try {
   // Built-in node:sqlite unavailable on legacy node
 }
 
+function sleepSync(ms) {
+  try {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  } catch (_) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {}
+  }
+}
+
 const DEFAULT_DB_PATH = path.resolve(__dirname, '../../scratch/missions.db');
 
 class DiagnosticsDatabase {
@@ -26,7 +35,7 @@ class DiagnosticsDatabase {
   init() {
     if (!DatabaseSync) {
       console.warn('[DIAG DB] node:sqlite is not available in this Node runtime. Fallback mode active.');
-      return;
+      return false;
     }
 
     try {
@@ -35,9 +44,43 @@ class DiagnosticsDatabase {
         fs.mkdirSync(dir, { recursive: true });
       }
 
-      this.db = new DatabaseSync(this.dbPath);
-      this.db.exec('PRAGMA journal_mode = WAL;');
-      this.db.exec('PRAGMA synchronous = NORMAL;');
+      if (this.db) {
+        try { this.db.close(); } catch (_) {}
+        this.db = null;
+      }
+
+      let lastErr = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          this.db = new DatabaseSync(this.dbPath);
+          break;
+        } catch (err) {
+          lastErr = err;
+          sleepSync(100 * (attempt + 1));
+        }
+      }
+
+      if (!this.db) {
+        throw lastErr || new Error('Failed to open database');
+      }
+
+      // Allow up to 5000ms for temporary locks to clear
+      try {
+        this.db.exec('PRAGMA busy_timeout = 5000;');
+      } catch (_) {}
+
+      // Attempt WAL journal mode; fallback to DELETE if WAL / shared memory is blocked (e.g., OneDrive sync locks)
+      try {
+        this.db.exec('PRAGMA journal_mode = WAL;');
+      } catch (walErr) {
+        try {
+          this.db.exec('PRAGMA journal_mode = DELETE;');
+        } catch (_) {}
+      }
+
+      try {
+        this.db.exec('PRAGMA synchronous = NORMAL;');
+      } catch (_) {}
 
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS mission_diagnostics (
@@ -247,13 +290,25 @@ class DiagnosticsDatabase {
           }
         }
       } catch (e) {}
+      return true;
     } catch (err) {
       console.error('[DIAG DB ERROR] Failed to initialize SQLite database:', err.message);
       this.db = null;
+      return false;
     }
   }
 
+  ensureDb() {
+    if (!this.db && DatabaseSync) {
+      try {
+        this.init();
+      } catch (_) {}
+    }
+    return Boolean(this.db);
+  }
+
   saveDiagnostic(payload = {}) {
+    this.ensureDb();
     if (!this.db) return { success: false, error: 'Database not initialized' };
 
     try {
@@ -387,6 +442,7 @@ class DiagnosticsDatabase {
   }
 
   getHistory(limit = 50, offset = 0) {
+    this.ensureDb();
     if (!this.db) return [];
     try {
       const stmt = this.db.prepare(`
@@ -411,6 +467,7 @@ class DiagnosticsDatabase {
   }
 
   getBadMissions(limit = 50, offset = 0) {
+    this.ensureDb();
     if (!this.db) return [];
     try {
       const stmt = this.db.prepare(`
@@ -435,6 +492,7 @@ class DiagnosticsDatabase {
   }
 
   getLatestBadMission() {
+    this.ensureDb();
     if (!this.db) return null;
     try {
       const stmt = this.db.prepare(`
@@ -452,6 +510,7 @@ class DiagnosticsDatabase {
   }
 
   getByIdOrArchiveIdOrUuid(identifier) {
+    this.ensureDb();
     if (!this.db || identifier === undefined || identifier === null) return null;
     let cleanId = String(identifier).trim();
     try {

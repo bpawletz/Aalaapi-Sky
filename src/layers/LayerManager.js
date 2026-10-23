@@ -152,6 +152,8 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     hyperlapseEndHeading: 90,
     hyperlapseWaypointMode: 'dense', // 'dense' (discrete frames) or 'spline' (2 control waypoints)
     lightArtPreset: 'spiral', // 'spiral', 'helix', 'star', 'heart', 'circle'
+    lightArtSizeMode: 'manual', // 'manual' (radius slider) or 'timeLimit' (auto-size to target duration)
+    lightArtTargetDuration: 60, // target flight duration in seconds for auto-sizing
     lightArtOrientation: 'horizontal', // 'horizontal' or 'vertical'
     lightArtRadius: 25,
     lightArtTurns: 3,
@@ -903,6 +905,10 @@ function saveActiveLayerFromUi(targetLayer) {
   if (laStarRatio) layer.lightArtStarRatio = parseFloat(laStarRatio.value) || 0.45;
   if (laClimb) layer.lightArtClimb = parseFloat(laClimb.value) || 15;
   if (laCameraAz) layer.lightArtCameraAzimuth = parseFloat(laCameraAz.value) || 0;
+  const laSizeMode = document.getElementById('light-art-size-mode');
+  const laTargetDur = document.getElementById('light-art-target-duration');
+  if (laSizeMode && laSizeMode.value) layer.lightArtSizeMode = laSizeMode.value;
+  if (laTargetDur) layer.lightArtTargetDuration = Math.max(5, parseFloat(laTargetDur.value) || 60);
 
   // Vertical Facade controls
   const fWidth = document.getElementById('facade-width');
@@ -1234,6 +1240,14 @@ function syncUiWithActiveLayer() {
   if (laClimbVal) laClimbVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15) : `${layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15}m`;
   if (laCameraAz) laCameraAz.value = layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0;
   if (laCameraAzVal) laCameraAzVal.textContent = `${layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0}°`;
+  const laSizeMode = document.getElementById('light-art-size-mode');
+  const laTargetDur = document.getElementById('light-art-target-duration');
+  const laTargetDurVal = document.getElementById('light-art-target-duration-val');
+  const laCalcRadiusVal = document.getElementById('light-art-calculated-radius-val');
+  if (laSizeMode) laSizeMode.value = layer.lightArtSizeMode || 'manual';
+  if (laTargetDur) laTargetDur.value = layer.lightArtTargetDuration !== undefined ? layer.lightArtTargetDuration : 60;
+  if (laTargetDurVal) laTargetDurVal.textContent = `${layer.lightArtTargetDuration !== undefined ? layer.lightArtTargetDuration : 60}s`;
+  if (laCalcRadiusVal) laCalcRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25) : `${layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25}m`;
 
   if (typeof updateLightArtUiFields === 'function') {
     updateLightArtUiFields(layer);
@@ -2467,6 +2481,21 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
 
     let gridData;
     if (gridType === 'light-art') {
+      if (layer.lightArtSizeMode === 'timeLimit') {
+        const targetDur = layer.lightArtTargetDuration || 60;
+        const calcRadius = (typeof calculateLightArtRadiusForDuration === 'function')
+          ? calculateLightArtRadiusForDuration(layer, targetDur, speed)
+          : (layer.lightArtRadius || 25);
+        layer.lightArtRadius = calcRadius;
+        if (typeof document !== 'undefined') {
+          const laRadiusSlider = document.getElementById('light-art-radius');
+          const laRadiusVal = document.getElementById('light-art-radius-val');
+          const laCalcRadiusVal = document.getElementById('light-art-calculated-radius-val');
+          if (laRadiusSlider) laRadiusSlider.value = calcRadius;
+          if (laRadiusVal) laRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(calcRadius) : `${calcRadius}m`;
+          if (laCalcRadiusVal) laCalcRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(calcRadius) : `${calcRadius}m`;
+        }
+      }
       gridData = generateLightArtCoordinates(layer, altitude, defaultGimbalPitch, speed);
       if (typeof updateLightArtBadge === 'function') {
         updateLightArtBadge(gridData);

@@ -2822,6 +2822,11 @@ function updateLightArtBadge(gridData) {
   const dur = Math.round(gridData.flightDurationSec);
   const shutter = gridData.recommendedShutterSec || Math.ceil(dur + 2);
   badge.textContent = `${dur}s Stroke | ${shutter}s Shutter`;
+  const laCalcRadiusVal = document.getElementById('light-art-calculated-radius-val');
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (laCalcRadiusVal && activeLayer && activeLayer.lightArtRadius) {
+    laCalcRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(activeLayer.lightArtRadius) : `${activeLayer.lightArtRadius}m`;
+  }
 }
 
 function updateLightArtUiFields(layer) {
@@ -2833,6 +2838,16 @@ function updateLightArtUiFields(layer) {
   const starOpts = document.getElementById('light-art-star-opts');
   const helixOpts = document.getElementById('light-art-helix-opts');
   const azOpts = document.getElementById('light-art-azimuth-opts');
+  const sizeMode = layer ? (layer.lightArtSizeMode || 'manual') : 'manual';
+  const durationOpts = document.getElementById('light-art-duration-opts');
+  const radiusOpts = document.getElementById('light-art-radius-opts');
+
+  if (durationOpts) {
+    durationOpts.style.display = (sizeMode === 'timeLimit') ? 'block' : 'none';
+  }
+  if (radiusOpts) {
+    radiusOpts.style.display = (sizeMode === 'manual') ? 'block' : 'none';
+  }
 
   if (spiralOpts) {
     spiralOpts.style.display = (preset === 'spiral') ? 'block' : 'none';

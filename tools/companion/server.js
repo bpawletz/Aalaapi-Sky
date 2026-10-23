@@ -5954,6 +5954,10 @@ if (require.main === module) {
     // Check and kill any previously running companion instance on the target port
     await killExistingCompanion(PORT);
 
+    // If an existing companion process was holding locks during module load, re-initialize databases now
+    if (!checklistDb.db) checklistDb.init();
+    if (!diagDb.db) diagDb.init();
+
     // Initial status check & adaptive background polling
     // 8s when RC 2 is connected, 12s when unplugged (prevents continuous powershell.exe CPU saturation)
     updateRc2Status();
