@@ -9394,4 +9394,46 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.ok(evalResult.calcRadText && evalResult.calcRadText.length > 0, 'Calculated radius readout must be populated');
     });
   });
+
+  describe('v1.180.0: ADS-B Flight History Purge & Radar Reset UI Controls', () => {
+    test('E2E: #adsb-clear-trails-btn flushes trail breadcrumbs and #adsb-clear-radar-btn purges radar state with feedback', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const clearTrailsBtn = document.getElementById('adsb-clear-trails-btn');
+        const clearRadarBtn = document.getElementById('adsb-clear-radar-btn');
+        const durationSelect = document.getElementById('adsb-trail-duration-select');
+
+        const hasClearTrails = Boolean(clearTrailsBtn);
+        const hasClearRadar = Boolean(clearRadarBtn);
+        const hasDurationSelect = Boolean(durationSelect);
+
+        // Test clicking Clear Trails button
+        let textBeforeTrails = clearTrailsBtn ? clearTrailsBtn.textContent.trim() : null;
+        if (clearTrailsBtn) clearTrailsBtn.click();
+        let textAfterTrails = clearTrailsBtn ? clearTrailsBtn.textContent.trim() : null;
+
+        // Test clicking Clear All Radar button
+        let textBeforeRadar = clearRadarBtn ? clearRadarBtn.textContent.trim() : null;
+        if (clearRadarBtn) clearRadarBtn.click();
+        let textAfterRadar = clearRadarBtn ? clearRadarBtn.textContent.trim() : null;
+
+        return {
+          hasClearTrails,
+          hasClearRadar,
+          hasDurationSelect,
+          textBeforeTrails,
+          textAfterTrails,
+          textBeforeRadar,
+          textAfterRadar
+        };
+      });
+
+      assert.strictEqual(evalResult.hasClearTrails, true, '#adsb-clear-trails-btn must exist in DOM');
+      assert.strictEqual(evalResult.hasClearRadar, true, '#adsb-clear-radar-btn must exist in DOM');
+      assert.strictEqual(evalResult.hasDurationSelect, true, '#adsb-trail-duration-select must exist in DOM');
+      assert.strictEqual(evalResult.textBeforeTrails, 'Clear');
+      assert.strictEqual(evalResult.textAfterTrails, 'Cleared!');
+      assert.strictEqual(evalResult.textBeforeRadar, 'Clear All');
+      assert.strictEqual(evalResult.textAfterRadar, 'Cleared!');
+    });
+  });
 });
