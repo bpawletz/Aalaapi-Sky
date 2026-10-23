@@ -6776,3 +6776,124 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   color: #fbbf24;
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
+
+
+/* Camera ND Filter Recommendation & Exposure Advisor */
+.header-nd-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.header-nd-badge:hover {
+  background: rgba(245, 158, 11, 0.28);
+  border-color: #fbbf24;
+  transform: translateY(-1px);
+}
+
+.nd-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+  gap: 6px;
+}
+
+.nd-filter-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  color: var(--text-main);
+  text-align: center;
+}
+
+.nd-filter-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.nd-filter-chip.active {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+.nd-filter-chip.recommended {
+  border-color: #fbbf24;
+  position: relative;
+}
+
+.nd-filter-chip.recommended.active {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #fbbf24;
+  color: #fbbf24;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+.nd-chip-header {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.nd-chip-name {
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.nd-chip-rec-tag {
+  font-size: 0.55rem;
+  font-weight: 800;
+  background: #fbbf24;
+  color: #0f172a;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.nd-chip-stops {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.nd-chip-trans {
+  font-size: 0.60rem;
+  opacity: 0.75;
+}
+
+.nd-mode-tab-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.nd-mode-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.nd-mode-tab-btn.active {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  font-weight: 700;
+}

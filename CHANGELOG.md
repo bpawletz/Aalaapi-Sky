@@ -1,3 +1,58 @@
+## [1.177.0] - 2026-10-23
+
+Introduces an adaptive hardware synchronization architecture in Aalaapi Sky that conditionally detects operating system platforms and progressively discloses the optimal USB transfer method! On Android tablets and ChromeOS, dynamically surfaces direct WebUSB OTG communication via `navigator.usb` for zero-install 1-click KMZ pushing and telemetry log pulling without background services or Termux, while preserving the robust Aalaapi Bridge companion architecture on Windows/macOS.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Adaptive Platform Detection (`getSyncPlatform()`)**:
+  - Automatically identifies Android tablets, ChromeOS, and desktop (Windows/macOS) environments using `navigator.userAgentData.platform` with user-agent fallback.
+  - Dynamically discloses **Direct USB Sync (Android / OTG)** controls on mobile and tablet platforms, while defaulting to Aalaapi Bridge on desktop to eliminate Windows WPD MTP driver conflicts.
+- **Direct WebUSB KMZ Mission Push (`#webusb-sync-btn`)**:
+  - Connect a standard USB-C OTG cable from an Android tablet directly to the DJI RC 2 controller.
+  - 1-click transmission of generated `.kmz` mission files directly into the controller's internal storage (`/Android/data/dji.go.v5/files/waypoint/`) with zero command-line setup.
+- **Direct WebUSB Flight Log Pull (`#webusb-pull-log-btn`)**:
+  - Read and extract `FlightRecord_*.txt` files directly over USB bulk endpoints for immediate flight telemetry inspection.
+
+#### Under the Hood & Technical Details
+- **`src/bridge/WebUsbMtp.js`**:
+  - Implemented client-side PTP/MTP protocol state machine over WebUSB (`navigator.usb`).
+  - Implemented `OpenSession`, `GetStorageIDs`, `SendObjectInfo`, `SendObject`, and `GetObject` container binary frames for DJI RC 2 (`0x2ca3`).
+- **`src/bridge/DjiLogDecryptor.js`**:
+  - Added in-browser flight log header parsing and `SubtleCrypto` AES decryption primitives.
+- **Guide Modal Updates**:
+  - Added Adaptive WebUSB 1-click OTG instructions to the Android & Tablet guide tab.
+
+## [1.176.0] - 2026-10-23
+
+Introduces an automated, scientifically calibrated Camera Neutral Density (ND) Filter Recommendation & Exposure Advisor system in Aalaapi Sky! Features a dynamic topbar weather pill badge, an integrated popover telemetry card, and an interactive glassmorphic modal box (`#nd-filter-modal`) that calculates real-time incident scene illuminance (Lux) and EV₁₀₀ from live solar ephemeris and METAR cloud cover, accounting for drone fixed apertures (f/1.7) and shooting modes (180° cinematic video, photogrammetry motion-freeze protection, and long exposure).
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Topbar Weather Pill ND Filter Indicator (`#header-nd-filter-badge`)**:
+  - Live filter badge directly inside `#header-telemetry-pill` displaying the recommended neutral density filter (e.g. `📷 ND16` or `📷 None`).
+  - Clicking the badge opens the Camera ND Filter Advisor modal directly from the top navigation bar.
+- **Floating Weather Popover ND Filter Card (`#pop-nd-filter-card`)**:
+  - Displays real-time incident scene lighting conditions ($EV_{100}$ and Lux), target shutter speed under the 180° shutter angle rule, and a 1-click launcher to open the advisor modal.
+- **Interactive Glassmorphic ND Filter Advisor Modal (`#nd-filter-modal`)**:
+  - Real-time environmental sync displaying Solar Altitude/Azimuth, sky cloud condition from METAR, scene illuminance (Lux), and $EV_{100}$.
+  - Target shooting presets for 180° Cinematic Video (24, 30, 60, 120 fps), Photogrammetry / Survey (motion blur freeze protection), and Long Exposure (daytime water smoothing).
+  - Drone optics selector supporting DJI Mini 4 Pro, DJI Air 3 (wide and tele), Mavic 3 Pro, Inspire 3, Skyrover X1, and custom cameras.
+  - Automatically identifies fixed-aperture lenses ($f/1.7$) and advises appropriate filtration to prevent midday overexposure at video frame rates.
+  - Interactive Filter Wheel (chips from None/UV through ND1000) with visual "BEST" match badges and dynamic exposure deviation ($\Delta EV$) preview.
+- **Section 3 Sun & Lighting Advisor Synchronization**:
+  - Added an ND Filter recommendation readout and quick launcher inside Section 3 `#sun-lighting-subcard`.
+
+#### Under the Hood & Technical Details
+- **`src/geo/NdFilterAdvisor.js`**:
+  - Implemented `calculateSceneLux()` computing direct and diffuse daylight illuminance modulated by solar elevation and METAR cloud attenuation octas.
+  - Implemented `calculateNdRecommendation()` solving for required optical stop reduction $\Delta\text{stops} = \log_2(T_{\text{target}} / T_{\text{base}})$.
+  - Integrated `updateAllNdUi()` hook into `updateSolarEphemeris()` and `updateWeatherPanelUI()`.
+- **`index.css`**:
+  - Added `.header-nd-badge`, `.nd-filter-chip`, `.nd-chips-grid`, and `.nd-mode-tab-btn` responsive styling.
+
+
 ## [1.175.0] - 2026-10-23
 
 Expands the 360° Spherical Panorama Stationary Capture Engine with dedicated Upward Zenith Sky (+20°) capture, multi-tier AEB exposure bracketing (Single, 3-Shot, 5-Shot HDR), an automated FOV & overlap advisor, live capture duration and battery estimators, an interactive 3D spherical ray cage in the 3D HUD, and 1-click GPano XMP sidecar export.

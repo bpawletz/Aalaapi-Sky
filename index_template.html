@@ -81,7 +81,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.175.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.177.0</span></h1>
         </div>
       </div>
 
@@ -127,6 +127,7 @@
           <button id="header-telemetry-pill" class="header-telemetry-pill" type="button" title="Click to view full Mission Details &amp; Live Weather Station">
             <span class="pill-weather-group">
               <span id="header-weather-summary" style="color: #38bdf8; font-size: 0.72rem; font-weight: 600;">☀️ Weather</span>
+              <span id="header-nd-filter-badge" class="header-nd-badge" title="Recommended Camera ND Filter (Click to open ND Advisor)">📷 None</span>
               <span id="header-tfr-warning-badge" class="header-tfr-badge is-operational" title="FAA TFR Service: Operational (Airspace Clear)">🛡️ TFR</span>
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </span>
@@ -2713,6 +2714,13 @@
                   <option value="OVC">Overcast / Diffused (OVC / 8 octas)</option>
                 </select>
               </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                <span style="color: var(--text-muted);"><span style="color: #38bdf8;">📷</span> ND Filter Rec:</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span id="sun-advisor-nd-filter" style="font-weight: 700; color: #38bdf8; font-family: monospace;">ND16 (-4 stops)</span>
+                  <button id="btn-open-nd-modal-advisor" type="button" class="btn-sm" style="padding: 1px 6px; font-size: 0.68rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; cursor: pointer;">Advisor ↗</button>
+                </div>
+              </div>
             </div>
             <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">2D map renders active sun ray bearing &amp; cast shadows. 3D viewport matches real-world sun angle.</p>
           </div> <!-- /sun-lighting-subcard -->
@@ -3208,6 +3216,33 @@
                 </button>
               </div>
             </div>
+            <!-- WebUSB Direct Actions (Android / ChromeOS USB OTG Sync) -->
+            <div id="webusb-direct-actions" style="display: none; width: 100%; flex-direction: column; gap: 6px; padding: 6px 8px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 6px; margin-top: 2px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; font-size: 0.72rem; color: #4ade80; display: inline-flex; align-items: center; gap: 5px;">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
+                  <span>Direct USB Sync (Android / OTG)</span>
+                </span>
+                <span style="font-size: 0.65rem; color: var(--text-muted);">Zero-Install WebUSB</span>
+              </div>
+              <div style="display: flex; gap: 6px; width: 100%;">
+                <button id="webusb-sync-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(34, 197, 94, 0.18); border: 1px solid rgba(34, 197, 94, 0.5); color: #4ade80; cursor: pointer;" title="Connect USB-C OTG cable and write mission KMZ directly to DJI RC 2">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                  USB Push KMZ
+                </button>
+                <button id="webusb-pull-log-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; cursor: pointer;" title="Pull and inspect flight telemetry logs via WebUSB">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  USB Pull Logs
+                </button>
+              </div>
+            </div>
+
             <!-- Contextual Help / Status Hint -->
             <div id="companion-offline-hint" style="font-size: 0.68rem; color: #38bdf8; display: flex; align-items: center; justify-content: space-between; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer;" title="Open RC 2 Sync &amp; Setup Guide">
               <span style="display: flex; align-items: center; gap: 4px;">
@@ -3376,6 +3411,21 @@
               <button id="pop-btn-toggle-solar-timeline" class="btn-sm" type="button" style="padding: 1px 6px; font-size: 0.66rem; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">▾ 24h Timeline</button>
             </div>
             <div id="pop-solar-timeline" class="hidden" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.7rem; display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto;"></div>
+          </div>
+          <!-- Camera ND Filter & Optics Advisor -->
+          <div class="popover-nd-card" id="pop-nd-filter-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <div class="pnd-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="pnd-title" style="font-size: 0.75rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 5px;">
+                <span>📷</span>
+                <span>Camera ND Filter</span>
+              </span>
+              <span id="pop-nd-badge" class="badge-tag" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">ND16</span>
+            </div>
+            <div id="pop-nd-summary" class="pnd-summary" style="font-size: 0.74rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">Bright Daylight (EV 14.8) • 1/60s (30fps 180° Rule)</div>
+            <div class="pnd-action-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+              <span id="pop-nd-shutter-hint" style="font-size: 0.68rem; color: var(--text-muted);">Base: 1/1000s → Filter: 1/60s</span>
+              <button id="pop-btn-open-nd-modal" class="btn-sm" type="button" style="padding: 1px 8px; font-size: 0.66rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; cursor: pointer;">🎛️ ND Advisor ↗</button>
+            </div>
           </div>
           <!-- Active TFR & NOTAM Airspace Monitor -->
           <div class="popover-tfr-card" id="popover-tfr-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
@@ -4021,6 +4071,22 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #4ade80; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ⚡ Adaptive Hardware Sync &amp; WebUSB for Android (v1.177.0) (Closes #115)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              True zero-install mission synchronization and flight telemetry log pulling for field pilots! Intelligently detects user operating system: on Android tablets and ChromeOS, dynamically surfaces <strong>Direct USB Sync</strong> via <code>navigator.usb</code> OTG for 1-click KMZ pushing and log extraction without Termux or background services, while preserving the robust <strong>Aalaapi Bridge</strong> daemon on desktop to avoid Windows WPD driver lockouts.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📷 Camera ND Filter Recommendation &amp; Exposure Advisor (v1.176.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Calibrated camera neutral density (ND) filtration engine! Features an instant <strong>Topbar Weather Pill Badge</strong> (<code>📷 ND16</code>), an integrated popover telemetry card, and an interactive <strong>ND Filter Advisor Modal</strong> (<code>#nd-filter-modal</code>). Dynamically calculates incident solar lux and EV₁₀₀ from live astronomical solar position and METAR cloud cover, accounts for fixed-aperture lenses (f/1.7), prevents photogrammetry motion blur, and models 180° cinematic video frame rates with interactive filter chips from None/UV to ND1000.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🌐 360° Spherical Panorama Stationary Capture Engine Expansion (v1.175.0)
@@ -5639,8 +5705,23 @@
             <strong>📱 Android / Samsung Tablet Field Transfer:</strong> Plan flights in Chrome on your Samsung phone or tablet and transfer missions to your DJI RC 2 in the field without any PC!
           </div>
 
+          <div style="font-weight: 700; color: #4ade80; font-size: 0.88rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <span>⚡ Method 1: Adaptive 1-Click Direct USB Sync (WebUSB / Chrome OTG) — Zero-Install!</span>
+          </div>
+          <ol class="guide-steps" style="margin-bottom: 14px;">
+            <li>
+              <strong>Connect USB-C OTG Cable:</strong> Connect an OTG USB-C cable between your Android tablet/phone and the DJI RC 2 controller.
+            </li>
+            <li>
+              <strong>Direct USB Push:</strong> In the sidebar under Hardware Sync, tap <strong>"⚡ USB Push KMZ"</strong>. Chrome will prompt for permission to access the connected DJI RC 2 MTP device.
+            </li>
+            <li>
+              <strong>Instant Controller Transfer:</strong> Aalaapi Sky automatically writes the active mission KMZ directly to <code>/Android/data/dji.go.v5/files/waypoint/</code> via native in-browser WebUSB. Reopen DJI Fly and fly!
+            </li>
+          </ol>
+
           <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-            <span>⚡ Method 1: Zero-Install (Samsung "My Files" via USB-C Cable) — Works Today!</span>
+            <span>📁 Method 2: Manual Copy via Samsung "My Files" App</span>
           </div>
           <ol class="guide-steps">
             <li>
@@ -5668,7 +5749,7 @@
           </ol>
 
           <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; margin: 14px 0 6px; display: flex; align-items: center; gap: 6px;">
-            <span>🛠️ Method 2: Running Aalaapi Bridge on Android (Termux + ADB)</span>
+            <span>🛠️ Method 3: Running Aalaapi Bridge on Android (Termux + ADB)</span>
           </div>
           <ol class="guide-steps">
             <li>
@@ -5880,7 +5961,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.175.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.177.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5941,6 +6022,20 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+                        <strong style="color: var(--text-main);">Changelog (v1.177.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Adaptive Hardware Sync &amp; WebUSB (Closes #115):</strong> Progressive disclosure of USB transfer protocols: direct WebUSB MTP for Android/ChromeOS field tablets and local Aalaapi Bridge companion for desktop.</li>
+              <li><strong>Direct USB OTG KMZ Push:</strong> 1-click mission writing directly to connected DJI RC 2 controllers over USB-C OTG cables without Termux or background daemons.</li>
+            </ul>
+            <strong style="color: var(--text-main);">Changelog (v1.176.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Camera ND Filter Recommendation &amp; Exposure Advisor:</strong> Live incident scene illuminance (Lux) and EV₁₀₀ computed from real-time solar elevation and METAR cloud cover octas.</li>
+              <li><strong>Topbar Weather Pill Badge:</strong> Direct ND filter recommendation badge (e.g. <code>📷 ND16</code>) integrated into the topbar telemetry weather pill with 1-click modal launch.</li>
+              <li><strong>Interactive ND Filter Advisor Modal (<code>#nd-filter-modal</code>):</strong> Glassmorphism modal supporting 180° cinematic video, photogrammetry motion-freeze protection, long exposure, fixed-aperture drone optics (f/1.7), and interactive filter chips (None/UV to ND1000).</li>
+              <li><strong>Section 3 Sun &amp; Lighting Advisor Sync:</strong> Live ND filter readout and quick launcher inside Section 3.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.174.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -11105,6 +11200,160 @@
       </div>
       <footer class="modal-footer" style="padding: 10px 16px;">
         <button type="button" class="btn-secondary" onclick="document.getElementById('video-recordings-modal').classList.add('hidden')" style="font-size: 0.75rem; padding: 6px 12px;">Close</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Camera ND Filter & Exposure Advisor Modal -->
+  <div id="nd-filter-modal" class="modal-overlay hidden" style="z-index: 10055;">
+    <div class="modal glass" style="max-width: 680px; width: 94vw; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+      <header class="modal-header" style="padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.02);">
+        <h2 style="display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0;">
+          <span>📷</span>
+          <span>Camera ND Filter &amp; Exposure Advisor</span>
+        </h2>
+        <button id="close-nd-filter-modal-btn" class="close-btn" type="button" aria-label="Close ND Advisor">&times;</button>
+      </header>
+
+      <div class="modal-content" style="padding: 16px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px;">
+        <!-- Live Astronomical & Weather Sync Strip -->
+        <div class="nd-env-strip" style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px 14px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 1rem;">☀️</span>
+            <div>
+              <div style="font-size: 0.68rem; color: var(--text-muted);">Solar Alt / Az</div>
+              <div id="nd-env-solar-alt" style="font-size: 0.8rem; font-weight: 700; color: var(--text-main);">--°</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 0.68rem; color: var(--text-muted);">Sky Condition</div>
+            <div id="nd-env-sky-cover" style="font-size: 0.8rem; font-weight: 600; color: #38bdf8;">Clear Daylight</div>
+          </div>
+          <div>
+            <div style="font-size: 0.68rem; color: var(--text-muted);">Ambient Lux</div>
+            <div id="nd-env-lux" style="font-size: 0.8rem; font-weight: 700; color: #fbbf24;">80,000 lx</div>
+          </div>
+          <div>
+            <div style="font-size: 0.68rem; color: var(--text-muted);">Calculated EV₁₀₀</div>
+            <div id="nd-env-ev" style="font-size: 0.8rem; font-weight: 700; color: #34d399;">EV 15.0</div>
+          </div>
+        </div>
+
+        <!-- Mode Presets Selector -->
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Target Shooting Mission</label>
+          <div class="nd-mode-tabs" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+            <button type="button" class="btn-sm nd-mode-tab-btn active" data-nd-mode="cinematic" style="padding: 6px 10px; font-size: 0.75rem; border-radius: 6px;">
+              🎬 180° Cinematic Video
+            </button>
+            <button type="button" class="btn-sm nd-mode-tab-btn" data-nd-mode="photogrammetry" style="padding: 6px 10px; font-size: 0.75rem; border-radius: 6px;">
+              🗺️ Photogrammetry / Survey
+            </button>
+            <button type="button" class="btn-sm nd-mode-tab-btn" data-nd-mode="long_exposure" style="padding: 6px 10px; font-size: 0.75rem; border-radius: 6px;">
+              🌊 Long Exposure
+            </button>
+          </div>
+        </div>
+
+        <!-- Hardware & Exposure Parameters -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="control-group">
+            <label for="nd-input-camera" style="font-size: 0.75rem;">Drone &amp; Camera Model</label>
+            <select id="nd-input-camera" class="form-select" style="font-size: 0.75rem; padding: 5px 8px;">
+              <option value="dji_mini_4_pro_std" selected>DJI Mini 4 Pro (Fixed f/1.7, 24mm)</option>
+              <option value="dji_mini_4_pro_wide">DJI Mini 4 Pro + Wide (Fixed f/1.7, 14mm)</option>
+              <option value="dji_air_3_wide">DJI Air 3 - Wide (Fixed f/1.7, 24mm)</option>
+              <option value="dji_air_3_tele">DJI Air 3 - Tele (Fixed f/2.8, 70mm)</option>
+              <option value="dji_mavic_3_pro">DJI Mavic 3 Pro / Enterprise (f/2.8-f/11)</option>
+              <option value="dji_inspire_3">DJI Inspire 3 (Full-Frame f/1.4-f/16)</option>
+              <option value="skyrover_x1_std">Skyrover X1 (Fixed f/2.0, 26mm)</option>
+              <option value="custom">Custom Camera...</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="nd-input-aperture" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
+              <span>Lens Aperture</span>
+              <span id="nd-aperture-fixed-notice" style="font-size: 0.65rem; color: #fbbf24;">(Fixed Lens)</span>
+            </label>
+            <select id="nd-input-aperture" class="form-select" style="font-size: 0.75rem; padding: 5px 8px;">
+              <option value="1.4">f/1.4</option>
+              <option value="1.7" selected>f/1.7 (Mini 4 / Air 3 Wide)</option>
+              <option value="2.0">f/2.0</option>
+              <option value="2.8">f/2.8</option>
+              <option value="4.0">f/4.0</option>
+              <option value="5.6">f/5.6</option>
+              <option value="8.0">f/8.0</option>
+              <option value="11.0">f/11.0</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="nd-input-iso" style="font-size: 0.75rem;">Sensor Sensitivity (ISO)</label>
+            <select id="nd-input-iso" class="form-select" style="font-size: 0.75rem; padding: 5px 8px;">
+              <option value="50">ISO 50</option>
+              <option value="100" selected>ISO 100 (Base Clean Dynamic Range)</option>
+              <option value="200">ISO 200</option>
+              <option value="400">ISO 400</option>
+              <option value="800">ISO 800</option>
+              <option value="1600">ISO 1600</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="nd-input-fps" style="font-size: 0.75rem;">Video Frame Rate / Target Shutter</label>
+            <select id="nd-input-fps" class="form-select" style="font-size: 0.75rem; padding: 5px 8px;">
+              <option value="24">24 fps (1/48s 180° Shutter)</option>
+              <option value="30" selected>30 fps (1/60s 180° Shutter)</option>
+              <option value="60">60 fps (1/120s 180° Shutter)</option>
+              <option value="120">120 fps (1/240s 180° Shutter)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Calculated Optics & Best Match Recommendation Box -->
+        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-main);">Recommended Optical Filter:</span>
+            <span id="nd-recommended-badge" class="badge-tag" style="font-size: 0.78rem; font-weight: 700; padding: 2px 10px; border-radius: 6px; background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">ND16</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 0.74rem;">
+            <div><span style="color: var(--text-muted); display: block;">Base Shutter (No Filter):</span><strong id="nd-metric-base-shutter" style="color: var(--text-main);">1/1000s</strong></div>
+            <div><span style="color: var(--text-muted); display: block;">Target Shutter:</span><strong id="nd-metric-target-shutter" style="color: var(--accent-cyan);">1/60s</strong></div>
+            <div><span style="color: var(--text-muted); display: block;">Required Reduction:</span><strong id="nd-metric-required-stops" style="color: #fbbf24;">-4.0 Stops</strong></div>
+          </div>
+
+          <div id="nd-recommendation-note" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 6px;"></div>
+        </div>
+
+        <!-- Interactive Filter Chips Matrix -->
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Interactive Filter Wheel (Tap to simulate alternate filters):</label>
+          <div id="nd-filter-chips-container" class="nd-chips-grid"></div>
+        </div>
+
+        <!-- Live Exposure Result for Active Chip -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; font-size: 0.74rem;">
+          <div><span>Resulting Shutter: </span><strong id="nd-preview-shutter" style="font-family: monospace; color: var(--text-main);">1/60s</strong></div>
+          <div id="nd-preview-delta" style="font-weight: 700; color: #10b981;">Well Exposed</div>
+        </div>
+
+        <!-- Pro Field Tips Accordion -->
+        <details style="font-size: 0.73rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px;">
+          <summary style="cursor: pointer; font-weight: 600; color: var(--text-main);">💡 Operational Pilot Tips for ND Filters &amp; Shutter Speed</summary>
+          <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.45;">
+            <li><strong>180° Shutter Rule:</strong> For natural, cinematic motion blur in video, set shutter speed to 1/(2 &times; fps). At 30fps, aim for 1/60s.</li>
+            <li><strong>Fixed-Aperture Drones:</strong> Drones like the DJI Mini 4 Pro and Air 3 (wide) lack an adjustable iris (fixed at f/1.7). On sunny days, ND16, ND32, or ND64 is strictly required to avoid extreme overexposure.</li>
+            <li><strong>Photogrammetry Cautions:</strong> Never use heavy ND filters for 2D orthomosaic or 3D Gaussian splatting missions. Slower shutter speeds cause motion blur from aircraft movement.</li>
+            <li><strong>CPL (Polarizer):</strong> Useful for cutting water surface glare or foliage reflections; absorbs approx. 1 to 1.5 stops of light.</li>
+          </ul>
+        </details>
+      </div>
+
+      <footer class="modal-footer" style="padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.02);">
+        <button id="close-nd-filter-modal-footer-btn" type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.78rem;">Close</button>
+        <button id="apply-nd-filter-btn" type="button" class="btn-primary" style="padding: 6px 18px; font-size: 0.78rem; font-weight: 600;">Apply to Mission Camera</button>
       </footer>
     </div>
   </div>
