@@ -186,3 +186,63 @@ test('Top Dashboard - Dashboard ring buffer, clearAndRealign & mode switching', 
   dashboard.setMode('top');
   assert.equal(dashboard.mode, 'top');
 });
+
+test('Top Dashboard - Unified SSE sub-channel breakdown and event throughput metrics (v1.195.0 - Issue #173)', (t) => {
+  const emptyState = {
+    version: '1.195.0',
+    port: 8765,
+    startTime: Date.now() - 60000,
+    mode: 'top',
+    logBuffer: [],
+    process: { cpuPercent: 1.5, rssMb: 42, heapUsedMb: 24, heapTotalMb: 36, loopLagMs: 2, childProcs: 0 },
+    metrics: { totalRequests: 10, reqPerSec: 0.5, status2xx: 10, status3xx: 0, status4xx: 0, status5xx: 0, avgMs: 5, topEndpoints: [] },
+    devices: {
+      rc2: { connected: true, missionsCount: 3 },
+      adsb: { connected: true, tcpPort: 30003, aircraftCount: 4 },
+      remoteId: { activeCount: 2 },
+      rtmp: { listening: true, port: 1935 }
+    },
+    tileCache: { totalFiles: 100, sizeMb: 20, maxMb: 2048, hitRatePercent: 85, evictions: 0, bypassCount: 2 }
+  };
+
+  // Test 1: Remote ID client displayed when sseRemoteId > 0
+  const subChannelState = {
+    ...emptyState,
+    clients: {
+      sseTotal: 3,
+      sseStatus: 1,
+      sseUnified: 0,
+      sseAirspace: 1,
+      sseRemoteId: 1,
+      mcpCount: 0,
+      events: { status: 15, airspace: 42, remoteId: 8, progress: 0, total: 65 }
+    }
+  };
+
+  // Compact rendering (cols: 80)
+  const compactOutput = renderFrame(subChannelState, { cols: 80, rows: 24 });
+  assert.ok(compactOutput.includes('SSE 3 (status 1, unified 0, airspace 1, rid 1)'), 'Should format rid in client breakdown');
+  assert.ok(compactOutput.includes('EV') && compactOutput.includes('st 15 air 42 rid 8'), 'Should render compact event throughput counter');
+
+  // Wide rendering (cols: 100)
+  const wideOutput = renderFrame(subChannelState, { cols: 100, rows: 24 });
+  assert.ok(wideOutput.includes('EVENTS') && wideOutput.includes('status 15  airspace 42  rid 8'), 'Should render expanded event throughput counter on wide terminals');
+
+  // Test 2: Unified client connection scenario (SSE 1, unified 1, discrete 0)
+  const unifiedState = {
+    ...emptyState,
+    clients: {
+      sseTotal: 1,
+      sseStatus: 0,
+      sseUnified: 1,
+      sseAirspace: 0,
+      sseRemoteId: 0,
+      mcpCount: 0,
+      events: { status: 120, airspace: 350, remoteId: 45, progress: 2, total: 517 }
+    }
+  };
+
+  const unifiedOutput = renderFrame(unifiedState, { cols: 80, rows: 24 });
+  assert.ok(unifiedOutput.includes('SSE 1 (status 0, unified 1, airspace 0)'), 'Should report unified client without rid suffix when 0');
+  assert.ok(unifiedOutput.includes('EV') && unifiedOutput.includes('st 120 air 350 rid 45'), 'Should display high-volume sub-channel event broadcast counts');
+});

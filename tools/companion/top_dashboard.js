@@ -378,11 +378,19 @@ function renderFrame(state, options = {}) {
   lines.push(padRight(` ${reqStr}`, cols));
 
   // Line 7: Connected SSE / MCP Clients
-  const cli = state.clients || { sseTotal: 0, sseStatus: 0, sseUnified: 0, sseAirspace: 0, mcpCount: 0 };
+  const cli = state.clients || { sseTotal: 0, sseStatus: 0, sseUnified: 0, sseAirspace: 0, sseRemoteId: 0, mcpCount: 0 };
   const sseTotalNum = (typeof cli.sseTotal === 'object' && cli.sseTotal !== null)
     ? (cli.sseTotal.total || 0)
     : (typeof cli.sseTotal === 'number' ? cli.sseTotal : 0);
-  const cliStr = `${ANSI.bold}CLIENTS${ANSI.reset}   SSE ${sseTotalNum} (status ${cli.sseStatus || 0}, unified ${cli.sseUnified || 0}, airspace ${cli.sseAirspace || 0})   MCP ${cli.mcpCount || 0}`;
+  const ridPart = (typeof cli.sseRemoteId === 'number' && cli.sseRemoteId > 0) ? `, rid ${cli.sseRemoteId}` : '';
+  const ev = cli.events || {};
+  let evPart = '';
+  if (ev && typeof ev.total === 'number' && ev.total > 0) {
+    evPart = cols >= 90
+      ? `   ${ANSI.gray}EVENTS${ANSI.reset} status ${ev.status || 0}  airspace ${ev.airspace || 0}  rid ${ev.remoteId || 0}`
+      : `   ${ANSI.gray}EV${ANSI.reset} st ${ev.status || 0} air ${ev.airspace || 0} rid ${ev.remoteId || 0}`;
+  }
+  const cliStr = `${ANSI.bold}CLIENTS${ANSI.reset}   SSE ${sseTotalNum} (status ${cli.sseStatus || 0}, unified ${cli.sseUnified || 0}, airspace ${cli.sseAirspace || 0}${ridPart})   MCP ${cli.mcpCount || 0}${evPart}`;
   lines.push(padRight(` ${cliStr}`, cols));
 
   // Line 8: Divider
@@ -490,7 +498,7 @@ class Dashboard {
     this.getRemoteIdStatus = options.getRemoteIdStatus || (() => ({ activeCount: 0 }));
     this.getRtmpStatus = options.getRtmpStatus || (() => null);
     this.getTileCacheStats = options.getTileCacheStats || (() => ({ totalFiles: 0, sizeMb: 0, maxSizeMb: 2048, hitRatePercent: 0, lruPruneCount: 0, bypassCount: 0 }));
-    this.getClientCounts = options.getClientCounts || (() => ({ sseTotal: 0, sseStatus: 0, sseUnified: 0, sseAirspace: 0, mcpCount: 0 }));
+    this.getClientCounts = options.getClientCounts || (() => ({ sseTotal: 0, sseStatus: 0, sseUnified: 0, sseAirspace: 0, sseRemoteId: 0, mcpCount: 0 }));
   }
 
   pushLog(logLine) {

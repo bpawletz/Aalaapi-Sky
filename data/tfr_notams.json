@@ -1,5 +1,27 @@
 [
   {
+    "notam_id": "6/2061",
+    "facility": "ZME",
+    "state": "TN",
+    "type": "SECURITY",
+    "description": "Memphis, TN, Monday, October 26, 2026 through Monday, October 26, 2026 Local",
+    "mod_date": "10/24/2026 14:22:00",
+    "mod_abs_time": "202610241422",
+    "is_new": "Y",
+    "gid": "6/2061"
+  },
+  {
+    "notam_id": "6/2060",
+    "facility": "ZLC",
+    "state": "MT",
+    "type": "VIP",
+    "description": "BOZEMAN, MT, Monday, October 26, 2026 Local",
+    "mod_date": "10/24/2026 14:14:00",
+    "mod_abs_time": "202610241414",
+    "is_new": "Y",
+    "gid": "6/2060"
+  },
+  {
     "notam_id": "6/2058",
     "facility": "ZDC",
     "state": "VA",
@@ -73,7 +95,7 @@
     "description": "Houston, TX, Friday, October 30, 2026 through Sunday, November 1, 2026 UTC",
     "mod_date": "10/23/2026 14:45:00",
     "mod_abs_time": "202610231445",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/1947"
   },
   {

@@ -35526,4 +35526,24 @@ describe('v1.194.0: SSE-First Architecture Policy & Zero-Polling Mandate Suite (
   });
 });
 
+describe('v1.195.0: Companion Bridge Unified SSE Sub-Channel Telemetry & Broadcast Metrics (Issue #173)', () => {
+  test('Version consistency: v1.195.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.195.0');
+  });
+
+  test('Companion Server exports sseBroadcastMetrics and includes events in getSseClientsCount', () => {
+    const companionServer = require('./tools/companion/server.js');
+    assert.ok(companionServer.sseBroadcastMetrics, 'sseBroadcastMetrics must be exported');
+    assert.strictEqual(typeof companionServer.sseBroadcastMetrics.total, 'number');
+    assert.strictEqual(typeof companionServer.sseBroadcastMetrics.status, 'number');
+    assert.strictEqual(typeof companionServer.sseBroadcastMetrics.airspace, 'number');
+    assert.strictEqual(typeof companionServer.sseBroadcastMetrics.remoteId, 'number');
+    assert.strictEqual(typeof companionServer.sseBroadcastMetrics.progress, 'number');
+
+    const counts = companionServer.getSseClientsCount();
+    assert.ok(counts.events, 'getSseClientsCount must include events sub-object');
+    assert.strictEqual(typeof counts.events.total, 'number');
+  });
+});
+
 });
