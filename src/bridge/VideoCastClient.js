@@ -230,10 +230,6 @@ class VideoCastClient {
         }
       }
     } catch (_) {}
-
-    if (!this.hasReceivedSseRtmp) {
-      await this.fetchRtmpStatus();
-    }
   }
 
   /**
@@ -659,9 +655,6 @@ class VideoCastClient {
     }
 
     if (!panel.classList.contains('hidden')) {
-      if (!this.hasReceivedSseRtmp) {
-        this.fetchRtmpStatus();
-      }
       if (!this.isConnected && !this.isConnecting) {
         this.connect();
       }
@@ -821,11 +814,6 @@ class VideoCastClient {
         btn.addEventListener('click', (e) => handleCopy(e, textEl, btn));
       }
     });
-
-    // One-shot initial hydration if SSE has not delivered RTMP status yet
-    if (!this.hasReceivedSseRtmp) {
-      this.fetchRtmpStatus();
-    }
 
     // FPV Video Background toggle button
     const fpvVideoToggleBtn = document.getElementById('fpv-video-toggle-btn');
