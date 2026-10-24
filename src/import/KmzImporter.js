@@ -726,18 +726,25 @@ function showHeadingHelpPopover(anchorEl) {
     popover.id = 'wp-heading-help-popover';
     popover.setAttribute('data-draggable-modal', 'true');
     popover.innerHTML = `
-      <div class="wp-help-title" data-modal-drag-handle="true">
-        <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
-        <span>Heading Mode</span>
-        <button class="wp-help-close" id="wp-heading-help-close-btn" title="Close">✕</button>
+      <div class="wp-help-title modal-header" data-modal-drag-handle="true" style="display:flex;justify-content:space-between;align-items:center;cursor:grab;user-select:none;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
+          <span>Heading Mode</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button class="panel-collapse-btn" id="wp-heading-help-toggle-btn" type="button" title="Minimize / Expand Popover" aria-label="Minimize / Expand Popover" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:2px 4px;line-height:1;">▼</button>
+          <button class="wp-help-close" id="wp-heading-help-close-btn" title="Close">✕</button>
+        </div>
       </div>
-      <div class="wp-help-tab-row">
-        <button class="wp-help-tab active" data-mode="followWayline">Follow Path</button>
-        <button class="wp-help-tab" data-mode="fixed">Fixed (N)</button>
-        <button class="wp-help-tab" data-mode="towardPOI">POI</button>
-        <button class="wp-help-tab" data-mode="custom">Custom</button>
+      <div id="wp-heading-help-body">
+        <div class="wp-help-tab-row">
+          <button class="wp-help-tab active" data-mode="followWayline">Follow Path</button>
+          <button class="wp-help-tab" data-mode="fixed">Fixed (N)</button>
+          <button class="wp-help-tab" data-mode="towardPOI">POI</button>
+          <button class="wp-help-tab" data-mode="custom">Custom</button>
+        </div>
+        <div class="wp-help-content" id="wp-heading-help-content"></div>
       </div>
-      <div class="wp-help-content" id="wp-heading-help-content"></div>
     `;
     document.body.appendChild(popover);
     if (typeof window !== 'undefined' && typeof window.initModalDraggable === 'function') {
@@ -788,6 +795,17 @@ function showHeadingHelpPopover(anchorEl) {
         e.stopPropagation();
         popover.style.display = 'none';
         popover._anchorEl = null;
+      });
+    }
+    const headingToggleBtn = popover.querySelector('#wp-heading-help-toggle-btn');
+    const headingBody = popover.querySelector('#wp-heading-help-body');
+    if (headingToggleBtn && headingBody) {
+      headingToggleBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const isHidden = headingBody.style.display === 'none';
+        headingBody.style.display = isHidden ? '' : 'none';
+        headingToggleBtn.textContent = isHidden ? '▼' : '▲';
+        popover.classList.toggle('collapsed', !isHidden);
       });
     }
 

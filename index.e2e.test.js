@@ -10084,4 +10084,91 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
   });
 
+  describe('Universal Floating Box & Modal Collapse Toggles E2E Suite (v1.191.0, Issue #166)', () => {
+    test('E2E: All 2D and 3D floating panels collapse to header bars and expand back on toggle click', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const panels = [
+          { btnId: 'minimize-elevation-profile-btn', panelId: 'elevation-profile-drawer', bodyId: 'elevation-profile-body' },
+          { btnId: 'replay-2d-minimize-btn', panelId: 'replay-2d-bar', bodyId: 'replay-2d-body' },
+          { btnId: 'adsb-drawer-minimize-btn', panelId: 'adsb-control-drawer', bodySelector: '.adsb-drawer-body' },
+          { btnId: 'remote-id-cal-minimize-btn', panelId: 'remote-id-calibration-panel', bodyId: 'remote-id-cal-body-wrapper' },
+          { btnId: 'bridge-popover-minimize-btn', panelId: 'bridge-status-popover', bodySelector: '.popover-body' },
+          { btnId: 'telemetry-weather-minimize-btn', panelId: 'telemetry-weather-popover', bodySelector: '.popover-body' },
+          { btnId: 'mission-time-minimize-btn', panelId: 'mission-time-popover', bodySelector: '.popover-body' },
+          { btnId: 'three-hud-controls-toggle-btn', panelId: 'three-hud-controls', bodyId: 'three-hud-controls-body' },
+          { btnId: 'three-instructions-toggle-btn', panelId: 'three-instructions', bodyId: 'three-instructions-body' },
+          { btnId: 'diag-hud-overlay-toggle-btn', panelId: 'diag-hud-overlay', bodyId: 'diag-hud-overlay-body' },
+          { btnId: 'diag-hud-controls-toggle-btn', panelId: 'diag-hud-controls', bodyId: 'diag-hud-controls-body' },
+          { btnId: 'diag-wireframe-toggle-btn', panelId: 'diag-wireframe-panel', bodyId: 'diag-wireframe-body' },
+          { btnId: 'diag-path-legend-toggle-btn', panelId: 'diag-path-legend', bodyId: 'diag-path-legend-body' },
+        ];
+
+        const results = [];
+        for (const { btnId, panelId, bodyId, bodySelector } of panels) {
+          const btn = document.getElementById(btnId);
+          const panel = document.getElementById(panelId);
+          if (!btn || !panel) {
+            results.push({ panelId, error: 'Button or panel missing' });
+            continue;
+          }
+          const body = bodyId ? document.getElementById(bodyId) : (bodySelector ? panel.querySelector(bodySelector) : null);
+
+          // Click collapse
+          btn.click();
+          const collapsed = panel.classList.contains('collapsed');
+          const bodyHidden = body ? window.getComputedStyle(body).display === 'none' : true;
+          const btnIconCollapsed = btn.textContent.trim();
+
+          // Click expand
+          btn.click();
+          const expanded = !panel.classList.contains('collapsed');
+          const bodyVisible = body ? window.getComputedStyle(body).display !== 'none' : true;
+          const btnIconExpanded = btn.textContent.trim();
+
+          results.push({
+            panelId,
+            collapsed,
+            bodyHidden,
+            btnIconCollapsed,
+            expanded,
+            bodyVisible,
+            btnIconExpanded
+          });
+        }
+
+        // Test modal collapse button injection and interaction
+        const configModal = document.getElementById('config-modal');
+        const modalDialog = configModal ? configModal.querySelector('.modal') : null;
+        const modalCollapseBtn = modalDialog ? modalDialog.querySelector('.modal-collapse-btn') : null;
+
+        let modalCollapseSuccess = false;
+        if (modalCollapseBtn && modalDialog) {
+          modalCollapseBtn.click();
+          const isModalCollapsed = modalDialog.classList.contains('modal-collapsed');
+          const modalBtnText = modalCollapseBtn.textContent.trim();
+          modalCollapseBtn.click();
+          const isModalExpanded = !modalDialog.classList.contains('modal-collapsed');
+          modalCollapseSuccess = isModalCollapsed && modalBtnText === '▲' && isModalExpanded;
+        }
+
+        return {
+          results,
+          modalCollapseSuccess
+        };
+      });
+
+      assert.strictEqual(evalResult.results.length, 13, 'Must test all 13 floating panels');
+      for (const res of evalResult.results) {
+        assert.strictEqual(res.error, undefined, `Panel ${res.panelId} should not report errors`);
+        assert.strictEqual(res.collapsed, true, `Panel ${res.panelId} must have collapsed class on click`);
+        assert.strictEqual(res.bodyHidden, true, `Panel ${res.panelId} body must be hidden when collapsed`);
+        assert.strictEqual(res.btnIconCollapsed, '▲', `Panel ${res.panelId} button icon must be ▲ when collapsed`);
+        assert.strictEqual(res.expanded, true, `Panel ${res.panelId} must restore expanded class on second click`);
+        assert.strictEqual(res.bodyVisible, true, `Panel ${res.panelId} body must be visible when expanded`);
+        assert.strictEqual(res.btnIconExpanded, '▼', `Panel ${res.panelId} button icon must be ▼ when expanded`);
+      }
+      assert.strictEqual(evalResult.modalCollapseSuccess, true, 'Modal collapse toggle must collapse and expand modal dialog');
+    });
+  });
+
 });

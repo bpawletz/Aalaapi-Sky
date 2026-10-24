@@ -337,15 +337,50 @@ export function initModalDraggable(modalOverlayOrId) {
 /**
  * Initializes all modal overlays and floating panels in the document.
  */
+/**
+ * Injects a standardized minimize/expand toggle button into every modal dialog header
+ * allowing users to collapse dialogs to their headers and view the map beneath.
+ */
+export function initUniversalModalCollapseToggles() {
+  if (typeof document === 'undefined') return;
+  const modals = document.querySelectorAll('.modal-overlay .modal');
+  modals.forEach(modal => {
+    const header = modal.querySelector('.modal-header');
+    if (!header || header.querySelector('.modal-collapse-btn')) return;
+    const closeBtn = header.querySelector('.close-btn, button[aria-label^="Close"], button[aria-label^="close"]');
+    const collapseBtn = document.createElement('button');
+    collapseBtn.type = 'button';
+    collapseBtn.className = 'modal-collapse-btn';
+    collapseBtn.title = 'Minimize / Expand Modal';
+    collapseBtn.setAttribute('aria-label', 'Minimize / Expand Modal');
+    collapseBtn.textContent = '▼';
+    collapseBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.85rem;padding:2px 6px;line-height:1;border-radius:4px;transition:var(--transition-smooth);';
+    collapseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      modal.classList.toggle('modal-collapsed');
+      const isCollapsed = modal.classList.contains('modal-collapsed');
+      collapseBtn.textContent = isCollapsed ? '▲' : '▼';
+      collapseBtn.title = isCollapsed ? 'Expand Modal' : 'Minimize Modal';
+    });
+    if (closeBtn && closeBtn.parentNode) {
+      closeBtn.parentNode.insertBefore(collapseBtn, closeBtn);
+    } else {
+      header.appendChild(collapseBtn);
+    }
+  });
+}
+
 export function initAllModalsDraggable() {
   if (typeof document === 'undefined') return;
 
   const dialogs = document.querySelectorAll(
-    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel, #video-cast-panel, #elevation-profile-drawer, #replay-2d-bar, #diag-wireframe-panel, #bridge-status-popover, #telemetry-weather-popover, #mission-time-popover, #adsb-control-drawer, #remote-id-calibration-panel, #stats-panel, #three-hud-legend, #map-mission-legend, #airspace-legend-container, #wp-heading-help-popover'
+    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel, #video-cast-panel, #elevation-profile-drawer, #replay-2d-bar, #diag-wireframe-panel, #bridge-status-popover, #telemetry-weather-popover, #mission-time-popover, #adsb-control-drawer, #remote-id-calibration-panel, #stats-panel, #three-hud-legend, #three-hud-controls, #three-instructions, #diag-hud-overlay, #diag-hud-controls, #diag-path-legend, #map-mission-legend, #airspace-legend-container, #wp-heading-help-popover'
   );
   dialogs.forEach(dialog => {
     initModalDraggable(dialog);
   });
+
+  initUniversalModalCollapseToggles();
 }
 
 /**
@@ -370,7 +405,7 @@ export function resetModalPosition(modalOverlayOrId) {
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', () => {
     const dialogs = document.querySelectorAll(
-      '.modal-overlay:not(.hidden), [data-draggable-modal]:not(.hidden), #fpv-editor-panel:not(.hidden), #video-cast-panel:not(.hidden), #elevation-profile-drawer:not(.hidden), #replay-2d-bar:not(.hidden), #diag-wireframe-panel:not(.hidden), #bridge-status-popover:not(.hidden), #telemetry-weather-popover:not(.hidden), #mission-time-popover:not(.hidden), #adsb-control-drawer:not(.hidden), #remote-id-calibration-panel:not(.hidden), #stats-panel:not(.hidden), #three-hud-legend:not(.hidden), #map-mission-legend:not(.hidden), #airspace-legend-container:not(.hidden), #wp-heading-help-popover:not([style*="display: none"])'
+      '.modal-overlay:not(.hidden), [data-draggable-modal]:not(.hidden), #fpv-editor-panel:not(.hidden), #video-cast-panel:not(.hidden), #elevation-profile-drawer:not(.hidden), #replay-2d-bar:not(.hidden), #diag-wireframe-panel:not(.hidden), #bridge-status-popover:not(.hidden), #telemetry-weather-popover:not(.hidden), #mission-time-popover:not(.hidden), #adsb-control-drawer:not(.hidden), #remote-id-calibration-panel:not(.hidden), #stats-panel:not(.hidden), #three-hud-legend:not(.hidden), #three-hud-controls:not(.hidden), #three-instructions:not(.hidden), #diag-hud-overlay:not(.hidden), #diag-hud-controls:not(.hidden), #diag-path-legend:not(.hidden), #map-mission-legend:not(.hidden), #airspace-legend-container:not(.hidden), #wp-heading-help-popover:not([style*="display: none"])'
     );
     dialogs.forEach(dialog => {
       const modal = dialog.querySelector('.modal') || dialog;
@@ -397,6 +432,7 @@ if (typeof window !== 'undefined') {
 
   window.initModalDraggable = initModalDraggable;
   window.initAllModalsDraggable = initAllModalsDraggable;
+  window.initUniversalModalCollapseToggles = initUniversalModalCollapseToggles;
   window.resetModalPosition = resetModalPosition;
   window.clampModalPosition = clampModalPosition;
 

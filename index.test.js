@@ -35080,4 +35080,65 @@ NODATA_value  -9999
   });
 });
 
+describe('Universal Floating Box & Modal Collapse Toggles Suite (v1.191.0 - Issue #166)', () => {
+  test('Version consistency: v1.191.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.191.0');
+  });
+
+  test('DOM Architecture: All 2D and 3D floating boxes, popovers, drawers, and legends have minimize buttons in index_template.html', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    
+    // 2D Map floating boxes
+    assert.ok(template.includes('id="minimize-elevation-profile-btn"'), 'Elevation profile drawer must have minimize button');
+    assert.ok(template.includes('id="replay-2d-minimize-btn"'), 'Replay 2D bar must have minimize button');
+    assert.ok(template.includes('id="remote-id-cal-minimize-btn"'), 'Remote ID calibration panel must have minimize button');
+    assert.ok(template.includes('id="bridge-popover-minimize-btn"'), 'Bridge status popover must have minimize button');
+    assert.ok(template.includes('id="telemetry-weather-minimize-btn"'), 'Telemetry weather popover must have minimize button');
+    assert.ok(template.includes('id="mission-time-minimize-btn"'), 'Mission time popover must have minimize button');
+    assert.ok(template.includes('id="adsb-drawer-minimize-btn"'), 'ADS-B control drawer must have minimize button');
+    const kmzSrc = fs.readFileSync(path.join(__dirname, 'src', 'import', 'KmzImporter.js'), 'utf8');
+    assert.ok(kmzSrc.includes('id="wp-heading-help-toggle-btn"'), 'Heading help popover must have minimize button');
+
+    // 3D Map HUD boxes
+    assert.ok(template.includes('id="three-hud-controls-toggle-btn"'), '3D HUD controls must have minimize button');
+    assert.ok(template.includes('id="three-instructions-toggle-btn"'), '3D Instructions must have minimize button');
+    assert.ok(template.includes('id="diag-hud-overlay-toggle-btn"'), 'Diagnostics HUD overlay must have minimize button');
+    assert.ok(template.includes('id="diag-hud-controls-toggle-btn"'), 'Diagnostics HUD controls must have minimize button');
+    assert.ok(template.includes('id="diag-wireframe-toggle-btn"'), 'Diagnostics wireframe panel must have minimize button');
+    assert.ok(template.includes('id="diag-path-legend-toggle-btn"'), 'Diagnostics path legend must have minimize button');
+  });
+
+  test('CSS Architecture: Standardized minimize button, collapsed state, and modal-collapsed rules exist in index.css', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('.modal-collapse-btn'), 'index.css must define .modal-collapse-btn');
+    assert.ok(css.includes('.modal-collapsed'), 'index.css must define .modal-collapsed');
+    assert.ok(css.includes('.panel-collapse-btn'), 'index.css must define .panel-collapse-btn');
+    assert.ok(css.includes('.elevation-profile-drawer.collapsed'), 'index.css must define .elevation-profile-drawer.collapsed');
+    assert.ok(css.includes('.replay-2d-bar.collapsed'), 'index.css must define .replay-2d-bar.collapsed');
+    assert.ok(css.includes('.remote-id-calibration-panel.collapsed'), 'index.css must define .remote-id-calibration-panel.collapsed');
+    assert.ok(css.includes('.adsb-control-drawer.collapsed'), 'index.css must define .adsb-control-drawer.collapsed');
+    assert.ok(css.includes('.bridge-status-popover.collapsed'), 'index.css must define .bridge-status-popover.collapsed');
+    assert.ok(css.includes('.telemetry-weather-popover.collapsed'), 'index.css must define .telemetry-weather-popover.collapsed');
+    assert.ok(css.includes('.hud-controls.collapsed #three-hud-controls-body'), 'index.css must define .hud-controls.collapsed #three-hud-controls-body');
+    assert.ok(css.includes('.diag-hud-overlay.collapsed'), 'index.css must define .diag-hud-overlay.collapsed');
+    assert.ok(css.includes('.diag-hud-controls.collapsed'), 'index.css must define .diag-hud-controls.collapsed');
+    assert.ok(css.includes('.diag-path-legend.collapsed'), 'index.css must define .diag-path-legend.collapsed');
+  });
+
+  test('ModalDragManager and EventBindings: collapse/minimize toggle handlers and export definitions exist', () => {
+    const modalDragSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'ModalDragManager.js'), 'utf8');
+    assert.ok(modalDragSrc.includes('export function initUniversalModalCollapseToggles()'), 'ModalDragManager must export initUniversalModalCollapseToggles');
+    assert.ok(modalDragSrc.includes('modal-collapse-btn'), 'ModalDragManager must reference modal-collapse-btn');
+    assert.ok(modalDragSrc.includes('modal-collapsed'), 'ModalDragManager must toggle modal-collapsed');
+    assert.ok(modalDragSrc.includes('aria-label'), 'ModalDragManager must set accessible aria-label');
+
+    const eventBindingsSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'EventBindings.js'), 'utf8');
+    assert.ok(eventBindingsSrc.includes('initFloatingBoxesCollapseToggles'), 'EventBindings must define initFloatingBoxesCollapseToggles');
+    assert.ok(eventBindingsSrc.includes('minimize-elevation-profile-btn'), 'EventBindings must wire minimize-elevation-profile-btn');
+    assert.ok(eventBindingsSrc.includes('replay-2d-minimize-btn'), 'EventBindings must wire replay-2d-minimize-btn');
+    assert.ok(eventBindingsSrc.includes('three-hud-controls-toggle-btn'), 'EventBindings must wire three-hud-controls-toggle-btn');
+    assert.ok(eventBindingsSrc.includes('diag-hud-overlay-toggle-btn'), 'EventBindings must wire diag-hud-overlay-toggle-btn');
+  });
+});
+
 });
