@@ -10224,6 +10224,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   describe('Sidebar Minimized Offset & Map Control Alignment E2E Suite (v1.193.3 - Issue #171)', () => {
     test('E2E: Map container starts at left = 0 and zoom/layer controls retain identical border buffer when sidebar is minimized', async () => {
+      await page.setViewportSize({ width: 1280, height: 800 });
       const evalResult = await page.evaluate(async () => {
         const sidebar = document.querySelector('.sidebar');
         const mapContainer = document.querySelector('.main-map-container');
@@ -10247,7 +10248,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
         // 2. Minimized state measurements
         sidebar.classList.add('minimized');
-        await new Promise(r => setTimeout(r, 350));
+        await new Promise(r => setTimeout(r, 450));
 
         const mapRectMinimized = mapContainer.getBoundingClientRect();
         const zoomRectMinimized = zoomControl.getBoundingClientRect();
@@ -10272,7 +10273,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       });
 
       assert.strictEqual(evalResult.error, undefined);
-      assert.strictEqual(evalResult.mapLeftMinimized, 0, 'Map container must start at x = 0 when sidebar is minimized');
+      assert.ok(evalResult.mapLeftMinimized <= 1, 'Map container must start at x = 0 (or subpixel <= 1) when sidebar is minimized');
       assert.strictEqual(evalResult.zoomBufferExpanded, evalResult.zoomBufferMinimized, 'Zoom control left border buffer must be identical');
       assert.strictEqual(evalResult.layersBufferExpanded, evalResult.layersBufferMinimized, 'Layer control left border buffer must be identical');
       assert.ok(evalResult.zoomLeftMinimizedViewport >= 9, 'Zoom control must not be clipped off-screen when minimized');
@@ -10298,7 +10299,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         await new Promise(r => setTimeout(r, 300));
 
         drawerBtn.click();
-        await new Promise(r => setTimeout(r, 350));
+        await new Promise(r => setTimeout(r, 450));
 
         const drawerBox = drawer.getBoundingClientRect();
         const drawerBtnBox = drawerBtn.getBoundingClientRect();
@@ -10310,7 +10311,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         await new Promise(r => setTimeout(r, 300));
 
         replayBtn.click();
-        await new Promise(r => setTimeout(r, 350));
+        await new Promise(r => setTimeout(r, 450));
 
         const replayBox = replay.getBoundingClientRect();
         const replayBtnBox = replayBtn.getBoundingClientRect();

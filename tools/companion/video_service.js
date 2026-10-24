@@ -85,6 +85,131 @@ class VideoService {
   }
 
   /**
+   * In-memory cache for video capture device enumeration to prevent repeated synchronous child process execution.
+   */
+  static _deviceCache = null;
+  static _deviceCacheTimestamp = 0;
+
+  static clearDeviceCache() {
+    VideoService._deviceCache = null;
+    VideoService._deviceCacheTimestamp = 0;
+  }
+
+  /**
+   * Normalizes raw device entries into standardized device items with friendly names and types.
+   */
+  static formatDeviceList(rawList) {
+    if (!Array.isArray(rawList) || rawList.length === 0) {
+      return [
+        { index: 0, value: '0', name: 'USB/HDMI Capture Card (UVC 0)', label: 'USB/HDMI Capture Card (UVC 0)', type: 'capture_card' },
+        { index: 1, value: '1', name: 'Secondary Capture Card (UVC 1)', label: 'Secondary Capture Card (UVC 1)', type: 'capture_card' }
+      ];
+    }
+
+    return rawList.map((item, idx) => {
+      const name = (item.FriendlyName || item.name || `Video Device ${idx}`).trim();
+      const lower = name.toLowerCase();
+      let type = 'uvc';
+      let icon = '📹';
+      let category = 'UVC';
+
+      if (/capture|hdmi|cam link|camlink|elgato|avermedia|ezcap|grabber/.test(lower) ||
+          (lower.includes('usb') && lower.includes('video') && !lower.includes('webcam') && !lower.includes('camera'))) {
+        type = 'capture_card';
+        icon = '🔌';
+        category = 'HDMI Capture';
+      } else if (/webcam|camera|integrated|facetime/.test(lower)) {
+        type = 'webcam';
+        icon = '📷';
+        category = 'Webcam';
+      }
+
+      return {
+        index: idx,
+        value: String(idx),
+        name,
+        label: `${icon} ${name} (${category} ${idx})`,
+        type,
+        instanceId: item.InstanceId || item.id || null
+      };
+    });
+  }
+
+  /**
+   * Enumerate available video capture devices with friendly USB/HDMI names (cached with 30s TTL).
+   */
+  static getVideoDevices(ttlMs = 30000) {
+    const now = Date.now();
+    if (VideoService._deviceCache && (now - VideoService._deviceCacheTimestamp < ttlMs)) {
+      return VideoService._deviceCache;
+    }
+
+    let devices = null;
+
+    if (process.platform === 'win32') {
+      try {
+        const { execFileSync } = require('node:child_process');
+        const out = execFileSync(
+          'powershell.exe',
+          ['-NoProfile', '-Command', 'Get-PnpDevice -Class Camera, Image | Where-Object Status -eq OK | Select-Object FriendlyName, InstanceId | ConvertTo-Json'],
+          { timeout: 3500, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
+        );
+        if (out && out.trim()) {
+          const parsed = JSON.parse(out.trim());
+          const raw = Array.isArray(parsed) ? parsed : [parsed];
+          devices = VideoService.formatDeviceList(raw);
+        }
+      } catch (_) {
+        // Fallback handled below
+      }
+    } else if (process.platform === 'linux') {
+      try {
+        const v4lDir = '/sys/class/video4linux';
+        if (fs.existsSync(v4lDir)) {
+          const dirs = fs.readdirSync(v4lDir)
+            .filter(d => /^video\d+$/.test(d))
+            .sort((a, b) => parseInt(a.replace('video', ''), 10) - parseInt(b.replace('video', ''), 10));
+
+          if (dirs.length > 0) {
+            const raw = [];
+            for (const d of dirs) {
+              const idx = parseInt(d.replace('video', ''), 10);
+              const nameFile = path.join(v4lDir, d, 'name');
+              let devName = `Video Device ${idx}`;
+              if (fs.existsSync(nameFile)) {
+                try { devName = fs.readFileSync(nameFile, 'utf8').trim() || devName; } catch (_) {}
+              }
+              raw.push({ FriendlyName: devName, InstanceId: `/dev/${d}` });
+            }
+            devices = VideoService.formatDeviceList(raw);
+          }
+        }
+      } catch (_) {}
+    } else if (process.platform === 'darwin') {
+      try {
+        const { execFileSync } = require('node:child_process');
+        const out = execFileSync('system_profiler', ['SPCameraDataType', '-json'], { timeout: 3500, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+        if (out && out.trim()) {
+          const parsed = JSON.parse(out.trim());
+          const cams = parsed?.SPCameraDataType || [];
+          if (cams.length > 0) {
+            const raw = cams.map((c, i) => ({ FriendlyName: c._name || `Camera ${i}`, InstanceId: c.spcamera_unique_id || null }));
+            devices = VideoService.formatDeviceList(raw);
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (!devices || devices.length === 0) {
+      devices = VideoService.formatDeviceList([]);
+    }
+
+    VideoService._deviceCache = devices;
+    VideoService._deviceCacheTimestamp = now;
+    return devices;
+  }
+
+  /**
    * In-memory cache for Windows Firewall checks to avoid repeated synchronous child process execution.
    */
   static _firewallCache = new Map();
@@ -509,7 +634,9 @@ class VideoService {
 
   getStatus() {
     this.status.clientCount = this.clients.size;
-    return Object.assign({}, this.status);
+    return Object.assign({}, this.status, {
+      devices: VideoService.getVideoDevices()
+    });
   }
 
   getRecordingsList() {

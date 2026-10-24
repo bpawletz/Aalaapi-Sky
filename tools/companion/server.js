@@ -512,7 +512,10 @@ function broadcastCompanionStatus(status) {
   const rtmpStatus = (typeof videoService !== 'undefined' && videoService.getRtmpStatus)
     ? videoService.getRtmpStatus()
     : null;
-  const payloadStr = JSON.stringify({ ...st, droneCount, mcp: mcpMetrics, rtmp: rtmpStatus, version: VERSION });
+  const videoDevices = (typeof videoService !== 'undefined' && typeof VideoService.getVideoDevices === 'function')
+    ? VideoService.getVideoDevices()
+    : null;
+  const payloadStr = JSON.stringify({ ...st, droneCount, mcp: mcpMetrics, videoDevices, rtmp: rtmpStatus, version: VERSION });
   for (const client of sseStatusClients) {
     try {
       client.res.write(`data: ${payloadStr}\n\n`);
@@ -526,6 +529,9 @@ function broadcastCompanionStatus(status) {
       client.res.write(`event: status\ndata: ${payloadStr}\n\n`);
       if (rtmpStatus) {
         client.res.write(`event: rtmp-status\ndata: ${JSON.stringify(rtmpStatus)}\n\n`);
+      }
+      if (videoDevices) {
+        client.res.write(`event: video-devices\ndata: ${JSON.stringify({ devices: videoDevices })}\n\n`);
       }
     } catch (_) {
       try { client.res.end(); } catch (e) {}
@@ -3305,7 +3311,10 @@ const server = http.createServer(async (req, res) => {
       const rtmpStatus = (typeof videoService !== 'undefined' && videoService.getRtmpStatus)
         ? videoService.getRtmpStatus()
         : null;
-      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, rtmp: rtmpStatus, version: VERSION })}\n\n`);
+      const videoDevices = (typeof videoService !== 'undefined' && typeof VideoService.getVideoDevices === 'function')
+        ? VideoService.getVideoDevices()
+        : null;
+      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, videoDevices, rtmp: rtmpStatus, version: VERSION })}\n\n`);
       return;
     }
 
@@ -4837,9 +4846,15 @@ const server = http.createServer(async (req, res) => {
       const rtmpStatus = (typeof videoService !== 'undefined' && videoService.getRtmpStatus)
         ? videoService.getRtmpStatus()
         : null;
-      res.write(`event: status\ndata: ${JSON.stringify({ ...cachedRc2Status, droneCount, rtmp: rtmpStatus, version: VERSION })}\n\n`);
+      const videoDevices = (typeof videoService !== 'undefined' && typeof VideoService.getVideoDevices === 'function')
+        ? VideoService.getVideoDevices()
+        : null;
+      res.write(`event: status\ndata: ${JSON.stringify({ ...cachedRc2Status, droneCount, videoDevices, rtmp: rtmpStatus, version: VERSION })}\n\n`);
       if (rtmpStatus) {
         res.write(`event: rtmp-status\ndata: ${JSON.stringify(rtmpStatus)}\n\n`);
+      }
+      if (videoDevices) {
+        res.write(`event: video-devices\ndata: ${JSON.stringify({ devices: videoDevices })}\n\n`);
       }
       const activeDrones = airspaceTracker.getActiveDrones();
       res.write(`event: remote-id\ndata: ${JSON.stringify({
@@ -5530,6 +5545,13 @@ const server = http.createServer(async (req, res) => {
       const fw = VideoService.checkFirewall('Aalaapi Sky RTMP Ingest', 1935);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(fw));
+      return;
+    }
+
+    if (pathname === '/api/video/devices' && req.method === 'GET') {
+      const devices = VideoService.getVideoDevices();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ devices }));
       return;
     }
 

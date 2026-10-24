@@ -1249,14 +1249,18 @@ function applyCompanionStatusUI(data) {
     if (vc && typeof vc.updateRtmpUI === 'function') {
 
       vc.updateRtmpUI(data.rtmp);
-
     }
-
   }
 
+  if (data && data.videoDevices) {
+    const vc = (typeof window !== 'undefined' && window.videoCastClient) ||
+               (typeof global !== 'undefined' && global.videoCastClient) ||
+               (typeof videoCastClient !== 'undefined' ? videoCastClient : null);
+    if (vc && typeof vc.updateDevicesUI === 'function') {
+      vc.updateDevicesUI(data.videoDevices);
+    }
+  }
 }
-
-
 
 function connectCompanionStatusStream() {
 

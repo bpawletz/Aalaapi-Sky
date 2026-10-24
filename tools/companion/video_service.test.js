@@ -187,4 +187,59 @@ describe('VideoService Tests (Issue #97)', () => {
     assert.strictEqual(res2, res1, 'Subsequent call within TTL must return cached reference');
     assert.ok(duration < 20, `Cached check must return in < 20ms (took ${duration}ms)`);
   });
+
+  it('VideoService.formatDeviceList normalizes capture cards, webcams, and generic devices with friendly labels', () => {
+    const raw = [
+      { FriendlyName: 'USB2.0 HD UVC WebCam', InstanceId: 'USB\\VID_322E&PID_202C' },
+      { FriendlyName: 'Cam Link 4K', InstanceId: 'USB\\VID_0FD9&PID_0066' },
+      { FriendlyName: 'USB Video', InstanceId: 'USB\\VID_534D&PID_2109' }
+    ];
+
+    const formatted = VideoService.formatDeviceList(raw);
+    assert.strictEqual(formatted.length, 3);
+
+    // Webcam
+    assert.strictEqual(formatted[0].type, 'webcam');
+    assert.strictEqual(formatted[0].index, 0);
+    assert.strictEqual(formatted[0].value, '0');
+    assert.ok(formatted[0].label.includes('USB2.0 HD UVC WebCam'));
+    assert.ok(formatted[0].label.includes('📷'));
+
+    // HDMI Capture Card (Cam Link 4K)
+    assert.strictEqual(formatted[1].type, 'capture_card');
+    assert.strictEqual(formatted[1].index, 1);
+    assert.strictEqual(formatted[1].value, '1');
+    assert.ok(formatted[1].label.includes('Cam Link 4K'));
+    assert.ok(formatted[1].label.includes('🔌'));
+
+    // HDMI Capture Card (Generic USB Video)
+    assert.strictEqual(formatted[2].type, 'capture_card');
+    assert.strictEqual(formatted[2].index, 2);
+    assert.strictEqual(formatted[2].value, '2');
+    assert.ok(formatted[2].label.includes('USB Video'));
+    assert.ok(formatted[2].label.includes('🔌'));
+  });
+
+  it('VideoService.getVideoDevices returns structured device array and caches with TTL', () => {
+    VideoService.clearDeviceCache();
+    const dev1 = VideoService.getVideoDevices(30000);
+    assert.ok(Array.isArray(dev1));
+    assert.ok(dev1.length > 0);
+    assert.strictEqual(typeof dev1[0].name, 'string');
+    assert.strictEqual(typeof dev1[0].value, 'string');
+    assert.strictEqual(typeof dev1[0].label, 'string');
+
+    // Repeated call within TTL should return cached reference immediately
+    const t0 = Date.now();
+    const dev2 = VideoService.getVideoDevices(30000);
+    const elapsed = Date.now() - t0;
+    assert.strictEqual(dev2, dev1);
+    assert.ok(elapsed < 20);
+  });
+
+  it('VideoService.getStatus includes devices array', () => {
+    const status = service.getStatus();
+    assert.ok(Array.isArray(status.devices));
+    assert.ok(status.devices.length > 0);
+  });
 });

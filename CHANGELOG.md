@@ -1,3 +1,49 @@
+## [1.197.1] - 2026-10-24
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Photo Sphere Waypoint Gimbal Horizon Orientation (Closes #178)**:
+  - Fixed an issue where the camera gimbal collapsed down to -90° (nadir ground-lock) at every waypoint photo station during 360° Photo Sphere missions.
+  - Commands and preserves discrete ring pitches (+20°, -15°, -45°, -75°, -90°) at every spherical node so pilots capture complete, unobstructed horizons and sky segments.
+
+#### Under the Hood & Technical Details
+- **`src/export/WpmlCompiler.js`**:
+  - Suppressed `<wpml:waypointPoiPoint>` coordinates and `<wpml:waypointHeadingPoiIndex>` targeting specifically for `photo-sphere` missions, emitting neutral `0.000000,0.000000,0.000000` to prevent DJI Fly firmware from locking gimbal orientation onto the ground marker.
+  - Prioritized discrete waypoint `pitch` / `gimbalPitch` over layer-level fallback pitch defaults in the Three-Tier Cascading Hierarchy for photo sphere patterns.
+- **`src/patterns/PatternGenerators.js` & `src/layers/LayerManager.js`**:
+  - Populated `gimbalPitch` identically to `pitch` on all generated spherical ring waypoints ensuring complete schema property parity across compilers.
+
+## [1.197.0] - 2026-10-24
+
+Dynamic enumeration of friendly USB/HDMI capture device names in video cast controls, and comprehensive pilot screen streaming and lossless recording guide for DJI RC-N3 paired with Samsung Galaxy S25 Ultra and Android flagships.
+
+### Added
+
+#### Pilot & Operational Features
+- **Friendly USB/HDMI Capture Device Name Enumeration (Closes #177)**:
+  - The Live Video Cast dropdown (`#video-cast-source-select`) now dynamically queries and displays friendly hardware names for connected USB video capture cards and webcams (e.g., `🔌 USB Video (HDMI Capture 0)`, `🔌 Cam Link 4K (HDMI Capture 1)`, `📷 USB2.0 HD UVC WebCam (Webcam 0)`).
+  - Eliminates guesswork for pilots with built-in laptop webcams or multiple external capture dongles when streaming drone flight screens.
+  - Automatically identifies HDMI capture cards and marks them with dedicated capture badges and device indices.
+- **DJI RC-N3 & Android Screen Streaming Guide**:
+  - Added comprehensive field guide ([`docs/RC_N3_ANDROID_SCREEN_STREAMING_GUIDE.md`](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/docs/RC_N3_ANDROID_SCREEN_STREAMING_GUIDE.md)) for connecting DJI RC-N3, RC-N2, and RC-N1 controllers tethered to Samsung Galaxy S25 Ultra and Android flagships.
+  - Details hardware multiport hub cabling (host, data, power delivery pass-through, and HDMI output), Samsung One UI 7 settings (disabling Samsung DeX auto-launch for true screen mirroring), and sub-5ms low-latency FPV casting into Aalaapi Sky.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/video_service.js`**:
+  - Implemented `VideoService.getVideoDevices()` with cross-platform support (PowerShell PnP enumeration on Windows, `/sys/class/video4linux` on Linux, `system_profiler` on macOS).
+  - Normalizes raw OS hardware records into structured device metadata (`name`, `label`, `type`, `value`, `instanceId`).
+  - Implemented 30-second TTL caching (`_deviceCache`) to prevent repeated child process execution and ensure compliance with the repository SSE-First Architecture Policy.
+  - Integrated `devices: VideoService.getVideoDevices()` directly into `VideoService.prototype.getStatus()`.
+- **`tools/companion/server.js`**:
+  - Added `GET /api/video/devices` REST endpoint for one-shot device queries.
+  - Wired `videoDevices` into the initial handshake payloads and live broadcast events for `/api/status/stream` and the unified multiplexed stream `/api/stream`.
+- **`src/bridge/VideoCastClient.js`**:
+  - Implemented `updateDevicesUI(devices)` dynamically populating detected hardware names into `#video-cast-source-select` while preserving active user source selections.
+  - Wired device hydration into `fetchStatus()`.
+- **`src/bridge/ApiClient.js`**:
+  - Dispatches `data.videoDevices` directly to `videoCastClient.updateDevicesUI` upon receiving companion status SSE events.
+
 ## [1.196.3] - 2026-10-24
 
 360° Photo Sphere multi-angle camera frustum visualization in 3D views, consumer drone discrete waypoints execution defaulting, and simulated telemetry photo expansion.
