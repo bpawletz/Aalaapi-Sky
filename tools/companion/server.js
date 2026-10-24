@@ -3268,7 +3268,14 @@ const server = http.createServer(async (req, res) => {
         ? airspaceTracker.getActiveDrones().length
         : 0;
       const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
-      const statusPayload = { ...cachedRc2Status, droneCount, sseClients: getSseClientsCount(), mcp: mcpMetrics, version: VERSION };
+      const statusPayload = {
+        ...cachedRc2Status,
+        droneCount,
+        sseClients: getSseClientsCount(),
+        mcp: mcpMetrics,
+        metrics: bridgeMetrics ? bridgeMetrics.snapshot() : null,
+        version: VERSION
+      };
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(statusPayload));
       return;
@@ -5499,6 +5506,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/video/rtmp/status' && req.method === 'GET') {
+      const clientIp = req.socket.remoteAddress || req.headers['x-forwarded-for'] || '127.0.0.1';
+      const clientPort = req.socket.remotePort || 'unknown';
+      const referer = req.headers['referer'] || 'direct';
+      console.warn(`[RTMP STATUS HIT] ${new Date().toLocaleTimeString()} from ${clientIp}:${clientPort} | Referer: ${referer}`);
       const lanAddrs = getLanAddresses();
       const rtmpInfo = videoService.getRtmpStatus();
       const port = rtmpInfo.port || 1935;

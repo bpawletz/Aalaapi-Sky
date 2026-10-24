@@ -1,3 +1,14 @@
+## [1.196.2] - 2026-10-24
+
+Diagnostic trace logging on legacy REST endpoints and exposed live bridge metrics snapshot in the companion status API.
+
+### Fixed
+
+#### Under the Hood & Technical Details
+- **`tools/companion/server.js`**:
+  - Exposed live `metrics: bridgeMetrics.snapshot()` on `GET /api/status` for real-time endpoint inspection.
+  - Added caller IP, port, and referer diagnostic logging on `GET /api/video/rtmp/status` to immediately identify and isolate rogue or orphaned client processes.
+
 ## [1.196.1] - 2026-10-24
 
 Eliminates residual RTMP status REST requests, streams live RTMP state in initial SSE connection handshakes, enforces HTTP no-cache headers on bridge web assets, and decays idle endpoint rates in the dashboard.
