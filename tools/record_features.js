@@ -2798,6 +2798,82 @@ const scenarios = [
       });
       await page.waitForTimeout(800);
     }
+  },
+  {
+    id: 'feature_draggable_hud_panels',
+    name: 'Draggable Modeless Floating HUD Panels & GUI Ergonomics',
+    description: 'Demonstrates modeless floating HUD dragging with grip affordance, keyboard arrow nudge, pattern category filtering, and sidebar quick-nav accordion control (Issue #158, v1.188.0).',
+    issueRef: 'Issue #158 / v1.188.0',
+    run: async (page) => {
+      // 1. Center map at default rural benchmark location [41.3215, -88.9950]
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+
+      // 2. Filter Pattern Cards by Category
+      const structurePill = await page.locator('.pattern-filter-pill[data-category="structure"]');
+      if (await structurePill.isVisible()) {
+        await structurePill.click();
+        await page.waitForTimeout(800);
+      }
+
+      const creativePill = await page.locator('.pattern-filter-pill[data-category="creative"]');
+      if (await creativePill.isVisible()) {
+        await creativePill.click();
+        await page.waitForTimeout(800);
+      }
+
+      const allPill = await page.locator('.pattern-filter-pill[data-category="all"]');
+      if (await allPill.isVisible()) {
+        await allPill.click();
+        await page.waitForTimeout(800);
+      }
+
+      // 3. Demonstrate Sidebar Quick Navigation Chips & Accordion Toggle
+      const quickNavSection3 = await page.locator('.sidebar-nav-chip[data-target-section="mission-failsafes-section"]');
+      if (await quickNavSection3.isVisible()) {
+        await quickNavSection3.click();
+        await page.waitForTimeout(800);
+      }
+
+      const collapseAllBtn = await page.locator('#sidebar-collapse-all-quick-btn');
+      if (await collapseAllBtn.isVisible()) {
+        await collapseAllBtn.click();
+        await page.waitForTimeout(800);
+        await collapseAllBtn.click();
+        await page.waitForTimeout(800);
+      }
+
+      // 4. Demonstrate Draggable Floating HUD Panel (Video Cast Panel)
+      await page.evaluate(() => {
+        const panel = document.getElementById('video-cast-panel');
+        if (panel) panel.classList.remove('hidden');
+      });
+      await page.waitForTimeout(600);
+
+      const videoHeader = await page.locator('#video-cast-panel .video-cast-header');
+      if (await videoHeader.isVisible()) {
+        const box = await videoHeader.boundingBox();
+        if (box) {
+          const startX = box.x + box.width / 2;
+          const startY = box.y + box.height / 2;
+          await page.mouse.move(startX, startY);
+          await page.mouse.down();
+          await page.mouse.move(startX + 120, startY + 80, { steps: 15 });
+          await page.mouse.up();
+          await page.waitForTimeout(800);
+
+          // Double click to re-center/reset
+          await videoHeader.dblclick();
+          await page.waitForTimeout(800);
+        }
+      }
+
+      await page.evaluate(() => {
+        const panel = document.getElementById('video-cast-panel');
+        if (panel) panel.classList.add('hidden');
+      });
+      await page.waitForTimeout(500);
+    }
   }
 ];
 

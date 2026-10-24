@@ -95,7 +95,7 @@ export function initModalDraggable(modalOverlayOrId) {
   // Tier 3: First child element
   // Tier 4: The modal card itself (using top-zone fallback)
   const handle = modal.querySelector(
-    '.modal-header, .photo-inspector-header, .fpv-editor-header, .video-cast-header, .elevation-profile-header, .replay-2d-header, .diag-modal-header, [data-modal-drag-handle]'
+    '.modal-header, .photo-inspector-header, .fpv-editor-header, .video-cast-header, .elevation-profile-header, .replay-2d-header, .diag-modal-header, .diag-wireframe-header, .popover-header, .legend-header, .adsb-drawer-header, .remote-id-cal-header, .stats-panel-header, #hud-legend-header, .wp-help-title, [data-modal-drag-handle]'
   ) || modal.querySelector('header') || modal.firstElementChild || modal;
 
   container._modalDraggableInitialized = true;
@@ -114,6 +114,8 @@ export function initModalDraggable(modalOverlayOrId) {
                          container.hasAttribute('data-center-x');
 
   let isDragging = false;
+  let hasMoved = false;
+  let suppressClickUntil = 0;
   let startPointerX = 0;
   let startPointerY = 0;
   let currentTranslateX = 0;
@@ -156,6 +158,7 @@ export function initModalDraggable(modalOverlayOrId) {
     }
 
     isDragging = true;
+    hasMoved = false;
     activePointerId = e.pointerId;
     startPointerX = e.clientX;
     startPointerY = e.clientY;
@@ -177,6 +180,7 @@ export function initModalDraggable(modalOverlayOrId) {
       handle.setPointerCapture(e.pointerId);
     } catch (_) {}
 
+    e.stopPropagation();
     e.preventDefault();
   }
 
@@ -188,6 +192,10 @@ export function initModalDraggable(modalOverlayOrId) {
     const deltaX = e.clientX - startPointerX;
     const deltaY = e.clientY - startPointerY;
 
+    if (Math.hypot(deltaX, deltaY) > 3) {
+      hasMoved = true;
+    }
+
     const proposedX = currentTranslateX + deltaX;
     const proposedY = currentTranslateY + deltaY;
 
@@ -195,6 +203,8 @@ export function initModalDraggable(modalOverlayOrId) {
     modal.style.transform = hasBaseCenterX
       ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
       : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+
+    e.stopPropagation();
   }
 
   function endDrag(e) {
@@ -214,6 +224,10 @@ export function initModalDraggable(modalOverlayOrId) {
       } catch (_) {}
     }
 
+    if (hasMoved) {
+      suppressClickUntil = Date.now() + 120;
+    }
+
     const styleTransform = modal.style.transform || '';
     const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
     if (match) {
@@ -221,14 +235,68 @@ export function initModalDraggable(modalOverlayOrId) {
       currentTranslateY = parseFloat(match[2]) || 0;
       modalPositions.set(containerKey, { x: currentTranslateX, y: currentTranslateY });
     }
+
+    if (e) {
+      e.stopPropagation();
+    }
   }
 
-  function onDblClick(e) {
-    if (isInteractiveElement(e.target)) return;
+  function resetPosition() {
     modal.style.transform = '';
     currentTranslateX = 0;
     currentTranslateY = 0;
     modalPositions.delete(containerKey);
+  }
+
+  function onDblClick(e) {
+    if (isInteractiveElement(e.target)) return;
+    resetPosition();
+  }
+
+  function onKeyDown(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      resetPosition();
+      return;
+    }
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      if (isInteractiveElement(e.target) && e.target !== handle && !e.target.classList.contains('modal-drag-grip')) return;
+      e.preventDefault();
+      const step = e.shiftKey ? 30 : 15;
+      let dx = 0;
+      let dy = 0;
+      if (e.key === 'ArrowUp') dy = -step;
+      else if (e.key === 'ArrowDown') dy = step;
+      else if (e.key === 'ArrowLeft') dx = -step;
+      else if (e.key === 'ArrowRight') dx = step;
+
+      const styleTransform = modal.style.transform || '';
+      const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+      let curX = match ? (parseFloat(match[1]) || 0) : 0;
+      let curY = match ? (parseFloat(match[2]) || 0) : 0;
+
+      const proposedX = curX + dx;
+      const proposedY = curY + dy;
+      const clamped = clampModalPosition(modal, handle, proposedX, proposedY);
+      modal.style.transform = hasBaseCenterX
+        ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
+        : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+      modalPositions.set(containerKey, { x: clamped.x, y: clamped.y });
+    }
+  }
+
+  function onClickCapture(e) {
+    if (isInteractiveElement(e.target)) {
+      return;
+    }
+    if (Date.now() < suppressClickUntil) {
+      suppressClickUntil = 0;
+      e.stopPropagation();
+      e.preventDefault();
+      if (typeof e.stopImmediatePropagation === 'function') {
+        e.stopImmediatePropagation();
+      }
+    }
   }
 
   handle.addEventListener('pointerdown', onPointerDown);
@@ -236,6 +304,8 @@ export function initModalDraggable(modalOverlayOrId) {
   handle.addEventListener('pointerup', endDrag);
   handle.addEventListener('pointercancel', endDrag);
   handle.addEventListener('dblclick', onDblClick);
+  handle.addEventListener('keydown', onKeyDown);
+  handle.addEventListener('click', onClickCapture, true);
 
   // Observer for overlay unhiding to keep clamped
   const ObserverClass = (typeof MutationObserver !== 'undefined' && MutationObserver) ||
@@ -271,7 +341,7 @@ export function initAllModalsDraggable() {
   if (typeof document === 'undefined') return;
 
   const dialogs = document.querySelectorAll(
-    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel, #video-cast-panel, #elevation-profile-drawer, #replay-2d-bar'
+    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel, #video-cast-panel, #elevation-profile-drawer, #replay-2d-bar, #diag-wireframe-panel, #bridge-status-popover, #telemetry-weather-popover, #mission-time-popover, #adsb-control-drawer, #remote-id-calibration-panel, #stats-panel, #three-hud-legend, #map-mission-legend, #airspace-legend-container, #wp-heading-help-popover'
   );
   dialogs.forEach(dialog => {
     initModalDraggable(dialog);
@@ -300,7 +370,7 @@ export function resetModalPosition(modalOverlayOrId) {
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', () => {
     const dialogs = document.querySelectorAll(
-      '.modal-overlay:not(.hidden), [data-draggable-modal]:not(.hidden), #fpv-editor-panel:not(.hidden), #video-cast-panel:not(.hidden), #elevation-profile-drawer:not(.hidden), #replay-2d-bar:not(.hidden)'
+      '.modal-overlay:not(.hidden), [data-draggable-modal]:not(.hidden), #fpv-editor-panel:not(.hidden), #video-cast-panel:not(.hidden), #elevation-profile-drawer:not(.hidden), #replay-2d-bar:not(.hidden), #diag-wireframe-panel:not(.hidden), #bridge-status-popover:not(.hidden), #telemetry-weather-popover:not(.hidden), #mission-time-popover:not(.hidden), #adsb-control-drawer:not(.hidden), #remote-id-calibration-panel:not(.hidden), #stats-panel:not(.hidden), #three-hud-legend:not(.hidden), #map-mission-legend:not(.hidden), #airspace-legend-container:not(.hidden), #wp-heading-help-popover:not([style*="display: none"])'
     );
     dialogs.forEach(dialog => {
       const modal = dialog.querySelector('.modal') || dialog;

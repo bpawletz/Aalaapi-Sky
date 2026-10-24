@@ -81,7 +81,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.188.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.189.0</span></h1>
         </div>
       </div>
 
@@ -217,6 +217,19 @@
       <!-- Sidebar / Panel for Controls -->
       <aside class="sidebar glass">
         <div class="scroll-container">
+          <!-- Sidebar Section Quick-Nav & Accordion Toolbar (v1.188.0) -->
+          <div id="sidebar-quick-nav" class="sidebar-quick-nav" role="navigation" aria-label="Sidebar Sections Quick Navigation">
+            <div class="sidebar-quick-nav-pills">
+              <button type="button" class="sidebar-nav-chip" data-target-section="mission-db-section" title="Jump to 0. Historical Flight DB">0. DB</button>
+              <button type="button" class="sidebar-nav-chip active" data-target-section="layers-and-location-section" title="Jump to 1. Pattern Layers &amp; Tools">1. Patterns</button>
+              <button type="button" class="sidebar-nav-chip" data-target-section="grid-geometry-section" title="Jump to 2. Layer Properties">2. Layer</button>
+              <button type="button" class="sidebar-nav-chip" data-target-section="mission-failsafes-section" title="Jump to 3. Mission Failsafes &amp; Defaults">3. Defaults</button>
+              <button type="button" class="sidebar-nav-chip" data-target-section="hardware-sync-section" title="Jump to 4. Actions &amp; Live Sync">4. Sync</button>
+            </div>
+            <button id="sidebar-collapse-all-quick-btn" class="sidebar-nav-toggle-btn" type="button" title="Collapse / Expand All Sections" aria-label="Toggle All Sections">
+              <span id="sidebar-collapse-all-quick-icon">↕️</span>
+            </button>
+          </div>
           <!-- Section 0: Missions & Historical Flight Database (Issue #123) -->
           <section class="control-section mission-db-section" id="mission-db-section">
             <h3 id="mission-db-title" style="display: flex; justify-content: space-between; align-items: center;">
@@ -326,8 +339,17 @@
             </select>
             
             <!-- Custom visual selector cards -->
+            <!-- Section 1 Pattern Category Filter Bar (v1.188.0) -->
+            <div id="pattern-category-filter-bar" class="pattern-category-filter-bar" role="toolbar" aria-label="Pattern Categories">
+              <button type="button" class="pattern-filter-pill active" data-category="all" aria-pressed="true">All (22)</button>
+              <button type="button" class="pattern-filter-pill" data-category="mapping" aria-pressed="false">Mapping &amp; 3D</button>
+              <button type="button" class="pattern-filter-pill" data-category="structure" aria-pressed="false">Orbit &amp; Structure</button>
+              <button type="button" class="pattern-filter-pill" data-category="linear" aria-pressed="false">Linear &amp; Route</button>
+              <button type="button" class="pattern-filter-pill" data-category="creative" aria-pressed="false">Creative &amp; Pano</button>
+              <button type="button" class="pattern-filter-pill" data-category="safety" aria-pressed="false">Safety &amp; GCP</button>
+            </div>
             <div class="pattern-selector-grid">
-              <div class="pattern-card" data-value="single" title="2D Map (Nadir Grid)">
+              <div class="pattern-card" data-value="single" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="false" title="2D Map (Nadir Grid)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="2,2"/>
                   <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
@@ -335,7 +357,7 @@
                 </svg>
                 <span>2D Grid</span>
               </div>
-              <div class="pattern-card active" data-value="double" title="3D Splat (Double Grid)">
+              <div class="pattern-card active" data-value="double" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="true" title="3D Splat (Double Grid)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2"/>
                   <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
@@ -343,7 +365,7 @@
                 </svg>
                 <span>Double Grid</span>
               </div>
-              <div class="pattern-card" data-value="target-splat" title="Target Splat (3D Frustum-Pruned Grid)">
+              <div class="pattern-card" data-value="target-splat" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="false" title="Target Splat (3D Frustum-Pruned Grid)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="8" stroke-dasharray="2,2"/>
                   <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
@@ -351,7 +373,7 @@
                 </svg>
                 <span>Target Splat</span>
               </div>
-              <div class="pattern-card" data-value="orbit" title="3D Object (Circular Orbit)">
+              <div class="pattern-card" data-value="orbit" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="3D Object (Circular Orbit)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="8"/>
                   <circle cx="12" cy="12" r="2" fill="currentColor"/>
@@ -359,7 +381,7 @@
                 </svg>
                 <span>Orbit</span>
               </div>
-              <div class="pattern-card" data-value="multi-orbit" title="3D Object (Multi-Tiered Orbit)">
+              <div class="pattern-card" data-value="multi-orbit" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="3D Object (Multi-Tiered Orbit)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="8" stroke-dasharray="2,2"/>
                   <circle cx="12" cy="12" r="5"/>
@@ -367,7 +389,7 @@
                 </svg>
                 <span>Multi-Orbit</span>
               </div>
-              <div class="pattern-card" data-value="tower" title="3D Structure (Tower Audit Inspection)">
+              <div class="pattern-card" data-value="tower" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="3D Structure (Tower Audit Inspection)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 2l-6 20h12L12 2z"/>
                   <line x1="9" y1="12" x2="15" y2="12"/>
@@ -376,7 +398,7 @@
                 </svg>
                 <span>Tower</span>
               </div>
-              <div class="pattern-card" data-value="vertical-facade" title="Vertical Facade Grid (Dams, Bridge Pylons, Building Facades)">
+              <div class="pattern-card" data-value="vertical-facade" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="Vertical Facade Grid (Dams, Bridge Pylons, Building Facades)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="4" y="3" width="16" height="18" rx="1"/>
                   <line x1="4" y1="8" x2="20" y2="8"/>
@@ -386,7 +408,7 @@
                 </svg>
                 <span style="color: #34d399;">Vertical Facade</span>
               </div>
-              <div class="pattern-card" data-value="continuous-helix" title="Continuous Helix (Corkscrew Orbit Ascent/Descent)">
+              <div class="pattern-card" data-value="continuous-helix" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="Continuous Helix (Corkscrew Orbit Ascent/Descent)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 19c2-8 14-8 16 0"/>
                   <path d="M5 13c2-6 12-6 14 0"/>
@@ -395,14 +417,14 @@
                 </svg>
                 <span style="color: #a78bfa;">Continuous Helix</span>
               </div>
-              <div class="pattern-card" data-value="star-pass" title="Star Pass (Cross-Hatch Convergent POI Inspection)">
+              <div class="pattern-card" data-value="star-pass" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="Star Pass (Cross-Hatch Convergent POI Inspection)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                   <circle cx="12" cy="12" r="2" fill="currentColor"/>
                 </svg>
                 <span style="color: #f59e0b;">Star Pass</span>
               </div>
-              <div class="pattern-card" data-value="photo-sphere" title="360° Photo Sphere (Equirectangular Panorama)">
+              <div class="pattern-card" data-value="photo-sphere" data-pattern-category="creative" role="button" tabindex="0" aria-pressed="false" title="360° Photo Sphere (Equirectangular Panorama)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="9"/>
                   <ellipse cx="12" cy="12" rx="9" ry="4" stroke-dasharray="2,2"/>
@@ -411,7 +433,7 @@
                 </svg>
                 <span>360 Pano</span>
               </div>
-              <div class="pattern-card" data-value="hyperlapse" title="Hyperlapse (Interval Moving Time-Lapse)">
+              <div class="pattern-card" data-value="hyperlapse" data-pattern-category="creative" role="button" tabindex="0" aria-pressed="false" title="Hyperlapse (Interval Moving Time-Lapse)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 17l6-6 4 4 6-8" stroke-dasharray="2,2"/>
                   <circle cx="4" cy="17" r="2" fill="currentColor"/>
@@ -421,13 +443,13 @@
                 </svg>
                 <span>Hyperlapse</span>
               </div>
-              <div class="pattern-card" data-value="light-art" title="Light Art & Sky Painting (Long Exposure Calligraphy)">
+              <div class="pattern-card" data-value="light-art" data-pattern-category="creative" role="button" tabindex="0" aria-pressed="false" title="Light Art & Sky Painting (Long Exposure Calligraphy)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="#ec4899"/>
                 </svg>
                 <span style="color: #f472b6;">Light Art</span>
               </div>
-              <div class="pattern-card" data-value="grid-orbit-combo" title="2D + 3D Hybrid (Grid + Orbit Combo)">
+              <div class="pattern-card" data-value="grid-orbit-combo" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="false" title="2D + 3D Hybrid (Grid + Orbit Combo)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3,3" opacity="0.5"/>
                   <circle cx="12" cy="12" r="6"/>
@@ -436,7 +458,7 @@
                 </svg>
                 <span>Hybrid Combo</span>
               </div>
-              <div class="pattern-card" data-value="grid-multi-orbit-combo" title="2D + 3D Hybrid (Grid + Multi-Orbit)">
+              <div class="pattern-card" data-value="grid-multi-orbit-combo" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="false" title="2D + 3D Hybrid (Grid + Multi-Orbit)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="9"/>
                   <circle cx="12" cy="12" r="5" stroke-dasharray="2,2"/>
@@ -444,14 +466,14 @@
                 </svg>
                 <span>Multi-Hybrid</span>
               </div>
-              <div class="pattern-card" data-value="road-following" title="Road Following (Offset Path)">
+              <div class="pattern-card" data-value="road-following" data-pattern-category="linear" role="button" tabindex="0" aria-pressed="false" title="Road Following (Offset Path)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 22V17C4 13 8 11 12 11C16 11 20 9 20 5V2" stroke-dasharray="3,3"/>
                   <path d="M8 22V17C8 14 11 13 14 13C17 13 24 11 24 5V2" opacity="0.5"/>
                 </svg>
                 <span>Road Follow</span>
               </div>
-              <div class="pattern-card" data-value="corridor" title="Multi-Pass Corridor Mapping (Linear Features, Transmission Lines, Roads, Rivers)">
+              <div class="pattern-card" data-value="corridor" data-pattern-category="linear" role="button" tabindex="0" aria-pressed="false" title="Multi-Pass Corridor Mapping (Linear Features, Transmission Lines, Roads, Rivers)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 22L8 2M20 22L16 2" stroke="#6366f1" stroke-width="2"/>
                   <line x1="12" y1="2" x2="12" y2="22" stroke="#818cf8" stroke-dasharray="2,2"/>
@@ -459,7 +481,7 @@
                 </svg>
                 <span style="color: #818cf8;">Corridor</span>
               </div>
-              <div class="pattern-card" data-value="freeform" title="Freeform Flight Plan (Manual Waypoints)">
+              <div class="pattern-card" data-value="freeform" data-pattern-category="linear" role="button" tabindex="0" aria-pressed="false" title="Freeform Flight Plan (Manual Waypoints)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="5" cy="19" r="2" fill="currentColor"/>
                   <circle cx="12" cy="6" r="2" fill="currentColor"/>
@@ -468,7 +490,7 @@
                 </svg>
                 <span>Freeform</span>
               </div>
-              <div class="pattern-card auto-plan-card" id="auto-plan-btn" title="Auto-Plan Tool: Drag to Box & Survey Area">
+              <div class="pattern-card auto-plan-card" id="auto-plan-btn" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="false" title="Auto-Plan Tool: Drag to Box & Survey Area">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="7"/>
                   <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
@@ -480,7 +502,7 @@
                 <span>Auto-Plan</span>
                 <span class="pattern-badge-tool">TOOL</span>
               </div>
-              <div class="pattern-card exclusion-card" data-value="exclusion-box" title="Exclusion Zone (Rectangular Box)">
+              <div class="pattern-card exclusion-card" data-value="exclusion-box" data-pattern-category="safety" role="button" tabindex="0" aria-pressed="false" title="Exclusion Zone (Rectangular Box)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" stroke="#ef4444"/>
                   <line x1="3" y1="3" x2="21" y2="21" stroke="#ef4444" stroke-width="2"/>
@@ -488,7 +510,7 @@
                 <span style="color: #f87171;">Exclusion (Box)</span>
                 <span class="pattern-badge-restricted">SAFETY</span>
               </div>
-              <div class="pattern-card exclusion-card" data-value="exclusion-freeform" title="Exclusion Zone (Freeform Polygon)">
+              <div class="pattern-card exclusion-card" data-value="exclusion-freeform" data-pattern-category="safety" role="button" tabindex="0" aria-pressed="false" title="Exclusion Zone (Freeform Polygon)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="4,19 12,4 20,9 18,20" stroke="#ef4444" stroke-width="2"/>
                   <line x1="4" y1="4" x2="20" y2="20" stroke="#ef4444" stroke-width="2"/>
@@ -496,7 +518,7 @@
                 <span style="color: #f87171;">Exclusion (Poly)</span>
                 <span class="pattern-badge-restricted">SAFETY</span>
               </div>
-              <div class="pattern-card boundary-card" data-value="boundary-polygon" title="Boundary / Parcel (Drawing Layer)">
+              <div class="pattern-card boundary-card" data-value="boundary-polygon" data-pattern-category="safety" role="button" tabindex="0" aria-pressed="false" title="Boundary / Parcel (Drawing Layer)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="3,6 9,3 15,6 21,3 21,18 15,21 9,18 3,21" stroke="#06b6d4" stroke-dasharray="3,3"/>
                   <polyline points="9,3 9,18" stroke="#06b6d4" opacity="0.6"/>
@@ -506,7 +528,7 @@
                 <span style="color: #22d3ee;">Boundary</span>
                 <span class="pattern-badge-tool" style="background: rgba(6, 182, 212, 0.2); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.35);">DRAWING</span>
               </div>
-              <div class="pattern-card fiducial-card" data-value="fiducial-markers" title="Fiducial Markers & Ground Control Points (GCPs)">
+              <div class="pattern-card fiducial-card" data-value="fiducial-markers" data-pattern-category="safety" role="button" tabindex="0" aria-pressed="false" title="Fiducial Markers & Ground Control Points (GCPs)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="9" stroke="#f59e0b"/>
                   <circle cx="12" cy="12" r="4" stroke="#f59e0b"/>
@@ -3248,9 +3270,10 @@
         </div>
 
         <!-- Calibration Popover Panel -->
-        <div id="remote-id-calibration-panel" class="remote-id-calibration-panel hidden">
-          <div class="remote-id-cal-header">
+        <div id="remote-id-calibration-panel" class="remote-id-calibration-panel hidden" data-draggable-modal="true">
+          <div class="remote-id-cal-header" data-modal-drag-handle="true">
             <div class="remote-id-cal-title">
+              <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition panel">&#x22EE;&#x22EE;</span>
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"/>
                 <line x1="12" y1="2" x2="12" y2="6"/>
@@ -3311,9 +3334,10 @@
       </div>
 
       <!-- Floating Topbar Bridge & Hardware Status Popover (Issue #128) -->
-      <div id="bridge-status-popover" class="bridge-status-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 360px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 10px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
-        <div class="popover-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+      <div id="bridge-status-popover" class="bridge-status-popover hidden" data-draggable-modal="true" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 360px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 10px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
+        <div class="popover-header" data-modal-drag-handle="true" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
           <div class="popover-title" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+            <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
             <span style="font-size: 1.05rem;">🌉</span>
             <span>Aalaapi Bridge &amp; Hardware Sync</span>
           </div>
@@ -3586,9 +3610,10 @@
       </div>
 
       <!-- Floating Topbar Telemetry & Weather Popover -->
-      <div id="telemetry-weather-popover" class="telemetry-weather-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 340px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
-        <div class="popover-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+      <div id="telemetry-weather-popover" class="telemetry-weather-popover hidden" data-draggable-modal="true" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 340px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
+        <div class="popover-header" data-modal-drag-handle="true" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
           <div class="popover-title" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+            <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#38bdf8" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             <span>Mission Details &amp; Live Weather</span>
           </div>
@@ -3681,9 +3706,10 @@
       </div>
 
       <!-- Floating Topbar Mission Time & Planned Schedule Popover -->
-      <div id="mission-time-popover" class="mission-time-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 350px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
-        <div class="popover-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+      <div id="mission-time-popover" class="mission-time-popover hidden" data-draggable-modal="true" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 350px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
+        <div class="popover-header" data-modal-drag-handle="true" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
           <div class="popover-title" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+            <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#f59e0b" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span>Mission Time &amp; Solar Ephemeris</span>
           </div>
@@ -3745,9 +3771,10 @@
       </div>
 
       <!-- ADS-B Airspace Control Side Drawer (Issue #92) -->
-      <div id="adsb-control-drawer" class="adsb-control-drawer hidden" aria-labelledby="adsb-drawer-title">
-        <div class="adsb-drawer-header">
+      <div id="adsb-control-drawer" class="adsb-control-drawer hidden" data-draggable-modal="true" aria-labelledby="adsb-drawer-title">
+        <div class="adsb-drawer-header" data-modal-drag-handle="true">
           <div class="adsb-drawer-title" id="adsb-drawer-title">
+            <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition drawer">&#x22EE;&#x22EE;</span>
             <span style="font-size: 1.15rem;">✈️</span>
             <div>
               <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
@@ -4052,9 +4079,9 @@
       </div>
 
       <!-- Floating Stats Panel (Hidden by default, activated via Topbar HUD Pill) -->
-      <div class="stats-panel glass hidden" id="stats-panel">
-        <div class="stats-panel-header">
-          <h3>Mission Details</h3>
+      <div class="stats-panel glass hidden" id="stats-panel" data-draggable-modal="true">
+        <div class="stats-panel-header" data-modal-drag-handle="true">
+          <h3 style="display: flex; align-items: center; gap: 6px;"><span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition panel">&#x22EE;&#x22EE;</span>Mission Details</h3>
           <button id="stats-toggle-btn" class="stats-toggle-btn" type="button" aria-label="Toggle stats details">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 12 15 18 9"/>
@@ -4311,6 +4338,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🗺️ Draggable Map Legends, Popovers &amp; Drawers (v1.189.0) (Closes #164)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Complete dragging freedom across the entire application interface! Move the <strong>Altitude &amp; Mission Layers Legend</strong>, <strong>Dynamic Airspace Overlays Legend</strong>, <strong>Aalaapi Bridge &amp; Hardware Sync Popover</strong>, <strong>Mission Details &amp; Live Weather Popover</strong>, <strong>Mission Time &amp; Solar Ephemeris Popover</strong>, <strong>Manned Aircraft ADS-B Radar Drawer</strong>, <strong>Map &amp; Remote ID Alignment Calibration Panel</strong>, and <strong>3D HUD Waypoint Colors Legend</strong> anywhere on screen. Features tactile grips (<code>&#x22EE;&#x22EE;</code>), double-click reset, automatic position persistence across redraws, and Leaflet/Three.js interaction isolation.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🪟 Draggable Modeless Floating HUD Panels (v1.188.0) (Closes #158)
@@ -6470,7 +6505,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.188.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.189.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6591,11 +6626,22 @@
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                     <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.189.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Draggable Legends, Popovers &amp; Drawers (Closes #164):</strong> Tactile drag-and-drop capability enabled across all floating UI components: Altitude/Layers Map Legend, Airspace Overlays Legend, Bridge &amp; Hardware Sync, Mission Details &amp; Weather, Mission Time &amp; Solar Ephemeris, ADS-B Radar Drawer, Remote ID Alignment Panel, and 3D HUD Waypoint Colors Legend.</li>
+                <li><strong>Tactile Grips &amp; Click Suppression:</strong> Prominent drag grips (<code>&#x22EE;&#x22EE;</code>) with capture-phase click filtering to prevent unintentional accordion toggling or document outside-click closure after dragging.</li>
+                <li><strong>Session Position Memory &amp; Edge Clamping:</strong> Dynamic DOM-rebuilt controls (e.g. Leaflet map legends) preserve moved coordinates without snapping back; double-click header instantly restores default docking.</li>
+              </ul>
+            </li>
+                                    <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.188.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
-                <li><strong>Draggable Floating HUD Panels (Closes #158):</strong> Enabled smooth pointer/touch-based dragging across modeless floating HUD panels including Live Video Cast (<code>#video-cast-panel</code>), Flight Elevation Profile (<code>#elevation-profile-drawer</code>), and 2D Replay Bar (<code>#replay-2d-bar</code>).</li>
+                <li><strong>Draggable Floating HUD Panels (Closes #158):</strong> Enabled smooth pointer/touch and keyboard arrow-key dragging across floating map HUD panels including Live Video Cast (<code>#video-cast-panel</code>), Flight Elevation Profile (<code>#elevation-profile-drawer</code>), 2D Replay Bar (<code>#replay-2d-bar</code>), and 3D Wireframe Toolkit (<code>#diag-wireframe-panel</code>).</li>
                 <li><strong>Base Transform Support &amp; Edge Clamping:</strong> ModalDragManager natively supports horizontally centered panels utilizing CSS <code>translateX(-50%)</code> with dynamic clamping and double-click re-centering shortcuts.</li>
-                <li><strong>Tactile Grip Affordances:</strong> Added high-visibility grab grips (<code>&#x22EE;&#x22EE;</code>) with <code>grab</code> and <code>grabbing</code> cursor feedback.</li>
+                <li><strong>Section 1 Pattern Category Filter Bar:</strong> Grouped the 22 pattern cards into instant category filter pills (<em>All, Mapping &amp; 3D, Orbit &amp; Structure, Linear &amp; Route, Creative &amp; Pano, Safety &amp; GCP</em>) with keyboard accessibility (<code>role="button"</code>, <code>tabindex="0"</code>, <code>aria-pressed</code>).</li>
+                <li><strong>Sidebar Section Quick-Navigation Toolbar:</strong> Added jump chips (0. DB, 1. Patterns, 2. Layer, 3. Defaults, 4. Sync) and a 1-click collapse/expand-all toggle button at the top of the sidebar.</li>
+                <li><strong>Daylight Field Mode Contrast Completeness:</strong> Added comprehensive <code>[data-theme="light"]</code> styles for all floating HUD drawers, search controls, and native <code>color-scheme</code> adaptation.</li>
+                <li><strong>Tactile Grip Affordances &amp; Accessibility:</strong> High-visibility grab grips (<code>&#x22EE;&#x22EE;</code>), high-contrast <code>:focus-visible</code> rings, and <code>prefers-reduced-motion</code> decorative animation dampening.</li>
               </ul>
             </li>
                                     <li style="margin-bottom: 8px;">
@@ -10488,9 +10534,12 @@
         </div>
 
         <!-- Floating HUD Legend -->
-        <div id="three-hud-legend" class="hud-legend" style="position: absolute; bottom: 16px; right: 16px; z-index: 10; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; user-select: none;">
-          <div id="hud-legend-header" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer;" title="Click to minimize or expand waypoint legend">
-            <span style="font-weight: bold; color: var(--accent-cyan);">Waypoint Colors</span>
+        <div id="three-hud-legend" class="hud-legend" data-draggable-modal="true" style="position: absolute; bottom: 16px; right: 16px; z-index: 10; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; user-select: none;">
+          <div id="hud-legend-header" data-modal-drag-handle="true" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer;" title="Click to minimize or expand waypoint legend">
+            <span style="font-weight: bold; color: var(--accent-cyan); display: flex; align-items: center; gap: 4px;">
+              <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition legend">&#x22EE;&#x22EE;</span>
+              <span>Waypoint Colors</span>
+            </span>
             <button id="hud-legend-toggle-btn" type="button" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1;" title="Minimize/Expand Legend">▼</button>
           </div>
           <div id="hud-legend-body" style="display: flex; flex-direction: column; gap: 6px;">
@@ -10770,9 +10819,10 @@
             </div>
 
             <!-- Interactive 3D Wireframe Toolkit & Inspector Card -->
-            <div id="diag-wireframe-panel" class="diag-wireframe-panel" style="display: none; position: absolute; top: 16px; left: 16px; z-index: 25; background: rgba(15, 23, 42, 0.92); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 10px 14px; backdrop-filter: blur(8px); box-shadow: 0 4px 16px rgba(0,0,0,0.5); width: 280px; font-size: 0.75rem; color: var(--text-main);">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div id="diag-wireframe-panel" class="diag-wireframe-panel" data-draggable-modal="true" style="display: none; position: absolute; top: 16px; left: 16px; z-index: 25; background: rgba(15, 23, 42, 0.92); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 10px 14px; backdrop-filter: blur(8px); box-shadow: 0 4px 16px rgba(0,0,0,0.5); width: 280px; font-size: 0.75rem; color: var(--text-main);">
+              <div class="diag-wireframe-header modal-header" data-modal-drag-handle="true" tabindex="0" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; cursor: grab; user-select: none;">
                 <span style="font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                  <span class="modal-drag-grip" title="Drag to reposition wireframe toolkit" aria-hidden="true">&#x22EE;&#x22EE;</span>
                   <span>🏗️ 3D Wireframe Toolkit</span>
                 </span>
                 <span id="diag-wireframe-count-badge" class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.65rem; padding: 1px 6px;">0 lines</span>
