@@ -1667,6 +1667,12 @@ body.modal-drag-active {
 #remote-id-calibration-panel.modal-dragging,
 #stats-panel.modal-dragging,
 #three-hud-legend.modal-dragging,
+#three-hud-controls.modal-dragging,
+#three-instructions.modal-dragging,
+#diag-hud-overlay.modal-dragging,
+#diag-hud-controls.modal-dragging,
+#diag-wireframe-panel.modal-dragging,
+#diag-path-legend.modal-dragging,
 #map-mission-legend.modal-dragging,
 #airspace-legend-container.modal-dragging,
 #wp-heading-help-popover.modal-dragging {
@@ -2920,6 +2926,167 @@ body.modal-drag-active {
 .legend-toggle-btn:hover {
   color: var(--accent-cyan) !important;
   background: rgba(255, 255, 255, 0.05);
+}
+
+/* Universal Floating Panel & Modal Collapse Styles (Issue #166) */
+.modal-collapse-btn,
+.panel-collapse-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  transition: var(--transition-smooth);
+  line-height: 1;
+}
+
+.modal-collapse-btn:hover,
+.panel-collapse-btn:hover {
+  color: var(--accent-cyan);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.modal.modal-collapsed {
+  max-height: 52px !important;
+  height: auto !important;
+  overflow: hidden !important;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.modal.modal-collapsed > *:not(.modal-header) {
+  display: none !important;
+}
+
+.elevation-profile-drawer.collapsed {
+  height: 38px !important;
+  min-height: 38px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+.elevation-profile-drawer.collapsed #elevation-profile-body {
+  display: none !important;
+}
+
+.replay-2d-bar.collapsed {
+  height: 38px !important;
+  min-height: 38px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+.replay-2d-bar.collapsed #replay-2d-body {
+  display: none !important;
+}
+
+.remote-id-calibration-panel.collapsed {
+  max-height: 42px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+.remote-id-calibration-panel.collapsed #remote-id-cal-body-wrapper {
+  display: none !important;
+}
+
+.adsb-control-drawer.collapsed {
+  max-height: 52px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+.adsb-control-drawer.collapsed .adsb-drawer-body {
+  display: none !important;
+}
+
+.bridge-status-popover.collapsed,
+.telemetry-weather-popover.collapsed,
+.mission-time-popover.collapsed {
+  max-height: 44px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+.bridge-status-popover.collapsed .popover-body,
+.telemetry-weather-popover.collapsed .popover-body,
+.mission-time-popover.collapsed .popover-body {
+  display: none !important;
+}
+
+#wp-heading-help-popover.collapsed {
+  max-height: 36px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+#wp-heading-help-popover.collapsed #wp-heading-help-body {
+  display: none !important;
+}
+
+.hud-controls.collapsed {
+  max-height: 38px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+.hud-controls.collapsed #three-hud-controls-body {
+  display: none !important;
+}
+
+#three-instructions.collapsed {
+  max-height: 34px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+#three-instructions.collapsed #three-instructions-body {
+  display: none !important;
+}
+
+.diag-hud-overlay.collapsed {
+  max-height: 34px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+.diag-hud-overlay.collapsed #diag-hud-overlay-body {
+  display: none !important;
+}
+
+.diag-hud-controls.collapsed {
+  max-height: 36px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+.diag-hud-controls.collapsed #diag-hud-controls-body {
+  display: none !important;
+}
+
+.diag-wireframe-panel.collapsed {
+  max-height: 40px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+.diag-wireframe-panel.collapsed #diag-wireframe-body {
+  display: none !important;
+}
+
+.diag-path-legend.collapsed {
+  max-height: 32px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+.diag-path-legend.collapsed #diag-path-legend-body {
+  display: none !important;
 }
 
 /* Collapsible Control Sections (Sidebar Topics) */
@@ -7517,7 +7684,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.190.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.191.0</span></h1>
         </div>
       </div>
 
@@ -10586,20 +10753,23 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
             <span id="elev-profile-stats" style="font-size: 0.7rem; color: var(--text-muted);"></span>
+            <button id="minimize-elevation-profile-btn" class="panel-collapse-btn" type="button" aria-label="Minimize Elevation Profile" title="Minimize / Expand Elevation Profile" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 2px 4px;">▼</button>
             <button id="close-elevation-profile-btn" type="button" aria-label="Close Elevation Profile" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; line-height: 1; padding: 2px 4px;">&times;</button>
           </div>
         </div>
-        <div style="position: relative; width: 100%; height: 110px; margin-top: 4px;">
-          <canvas id="elevation-profile-canvas" height="110" style="width: 100%; height: 110px; display: block;"></canvas>
-          <div id="elevation-profile-tooltip" style="display: none; position: absolute; pointer-events: none; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--accent-cyan); border-radius: 4px; padding: 4px 8px; font-size: 0.68rem; color: #fff; z-index: 10; white-space: nowrap;"></div>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; padding: 0 4px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 3px; background: #10b981; border-radius: 2px;"></span> Ground Surface (MSL)</span>
-            <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 3px; background: #06b6d4; border-radius: 2px;"></span> Flight Altitude (MSL)</span>
-            <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 1px; border-top: 1px dashed #f59e0b;"></span> Target AGL Clearance</span>
+        <div id="elevation-profile-body">
+          <div style="position: relative; width: 100%; height: 110px; margin-top: 4px;">
+            <canvas id="elevation-profile-canvas" height="110" style="width: 100%; height: 110px; display: block;"></canvas>
+            <div id="elevation-profile-tooltip" style="display: none; position: absolute; pointer-events: none; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--accent-cyan); border-radius: 4px; padding: 4px 8px; font-size: 0.68rem; color: #fff; z-index: 10; white-space: nowrap;"></div>
           </div>
-          <div>Hover along profile to inspect waypoint altitude &amp; terrain gradient</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; padding: 0 4px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 3px; background: #10b981; border-radius: 2px;"></span> Ground Surface (MSL)</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 3px; background: #06b6d4; border-radius: 2px;"></span> Flight Altitude (MSL)</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 1px; border-top: 1px dashed #f59e0b;"></span> Target AGL Clearance</span>
+            </div>
+            <div>Hover along profile to inspect waypoint altitude &amp; terrain gradient</div>
+          </div>
         </div>
       </div>
 
@@ -10622,39 +10792,42 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <button id="replay-2d-open-3d-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.72rem; height: 24px; display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: var(--accent-cyan); font-weight: 600;" title="Jump into unified 3D Digital Twin at current timestamp">
               <span>🧊 3D Cockpit</span>
             </button>
+            <button id="replay-2d-minimize-btn" class="panel-collapse-btn" type="button" aria-label="Minimize 2D Replay" title="Minimize / Expand 2D Replay" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 2px 6px;">▼</button>
             <button id="replay-2d-close-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.72rem; height: 24px; border-radius: 6px;" title="Exit 2D Replay Mode">&times; Exit</button>
           </div>
         </div>
 
-        <!-- Row 2: Timeline Scrubber Slider -->
-        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
-          <span id="replay-2d-current-time" style="font-family: monospace; font-size: 0.75rem; color: var(--accent-cyan); min-width: 44px;">00:00</span>
-          <input id="replay-2d-scrubber" type="range" min="0" max="1000" value="0" aria-label="Playback Scrubber" style="flex: 1; accent-color: #06b6d4; cursor: pointer; height: 6px; border-radius: 3px;" />
-          <span id="replay-2d-total-time" style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted); min-width: 44px; text-align: right;">00:00</span>
-        </div>
-
-        <!-- Row 3: Play/Pause, Speed Selector, and Live HUD Telemetry readouts -->
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <button id="replay-2d-play-btn" type="button" class="btn-primary" style="padding: 4px 12px; font-size: 0.74rem; height: 26px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-              <span id="replay-2d-play-icon">▶ Play</span>
-            </button>
-            <div style="display: flex; gap: 2px; background: rgba(0,0,0,0.3); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color);">
-              <button class="replay-2d-speed-btn active" data-speed="1" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: rgba(6, 182, 212, 0.25); color: var(--accent-cyan); cursor: pointer;">1x</button>
-              <button class="replay-2d-speed-btn" data-speed="2" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">2x</button>
-              <button class="replay-2d-speed-btn" data-speed="5" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">5x</button>
-              <button class="replay-2d-speed-btn" data-speed="10" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">10x</button>
-            </div>
+        <div id="replay-2d-body">
+          <!-- Row 2: Timeline Scrubber Slider -->
+          <div style="display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 6px;">
+            <span id="replay-2d-current-time" style="font-family: monospace; font-size: 0.75rem; color: var(--accent-cyan); min-width: 44px;">00:00</span>
+            <input id="replay-2d-scrubber" type="range" min="0" max="1000" value="0" aria-label="Playback Scrubber" style="flex: 1; accent-color: #06b6d4; cursor: pointer; height: 6px; border-radius: 3px;" />
+            <span id="replay-2d-total-time" style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted); min-width: 44px; text-align: right;">00:00</span>
           </div>
 
-          <!-- Telemetry HUD Gauges -->
-          <div style="display: flex; align-items: center; gap: 12px; font-size: 0.72rem; font-family: monospace;">
-            <div><span style="color: var(--text-muted);">ALT:</span> <span id="replay-2d-hud-alt" style="color: #38bdf8; font-weight: 600;">0.0m</span></div>
-            <div><span style="color: var(--text-muted);">SPD:</span> <span id="replay-2d-hud-spd" style="color: #38bdf8; font-weight: 600;">0.0m/s</span></div>
-            <div><span style="color: var(--text-muted);">HDG:</span> <span id="replay-2d-hud-yaw" style="color: #38bdf8; font-weight: 600;">0°</span></div>
-            <div><span style="color: var(--text-muted);">POS:</span> <span id="replay-2d-hud-pos" style="color: var(--text-main);">--</span></div>
-            <div id="replay-2d-hud-drift-container" style="display: none;"><span style="color: var(--text-muted);">DRIFT:</span> <span id="replay-2d-hud-drift" style="color: #a855f7; font-weight: 600;">0 cm</span></div>
-            <span id="replay-2d-hud-breach" class="badge hidden" style="font-size: 0.68rem; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; font-weight: 700;">⚠️ RESTRICTED AIRSPACE</span>
+          <!-- Row 3: Play/Pause, Speed Selector, and Live HUD Telemetry readouts -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button id="replay-2d-play-btn" type="button" class="btn-primary" style="padding: 4px 12px; font-size: 0.74rem; height: 26px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                <span id="replay-2d-play-icon">▶ Play</span>
+              </button>
+              <div style="display: flex; gap: 2px; background: rgba(0,0,0,0.3); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color);">
+                <button class="replay-2d-speed-btn active" data-speed="1" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: rgba(6, 182, 212, 0.25); color: var(--accent-cyan); cursor: pointer;">1x</button>
+                <button class="replay-2d-speed-btn" data-speed="2" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">2x</button>
+                <button class="replay-2d-speed-btn" data-speed="5" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">5x</button>
+                <button class="replay-2d-speed-btn" data-speed="10" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">10x</button>
+              </div>
+            </div>
+
+            <!-- Telemetry HUD Gauges -->
+            <div style="display: flex; align-items: center; gap: 12px; font-size: 0.72rem; font-family: monospace;">
+              <div><span style="color: var(--text-muted);">ALT:</span> <span id="replay-2d-hud-alt" style="color: #38bdf8; font-weight: 600;">0.0m</span></div>
+              <div><span style="color: var(--text-muted);">SPD:</span> <span id="replay-2d-hud-spd" style="color: #38bdf8; font-weight: 600;">0.0m/s</span></div>
+              <div><span style="color: var(--text-muted);">HDG:</span> <span id="replay-2d-hud-yaw" style="color: #38bdf8; font-weight: 600;">0°</span></div>
+              <div><span style="color: var(--text-muted);">POS:</span> <span id="replay-2d-hud-pos" style="color: var(--text-main);">--</span></div>
+              <div id="replay-2d-hud-drift-container" style="display: none;"><span style="color: var(--text-muted);">DRIFT:</span> <span id="replay-2d-hud-drift" style="color: #a855f7; font-weight: 600;">0 cm</span></div>
+              <span id="replay-2d-hud-breach" class="badge hidden" style="font-size: 0.68rem; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; font-weight: 700;">⚠️ RESTRICTED AIRSPACE</span>
+            </div>
           </div>
         </div>
       </div>
@@ -10727,15 +10900,19 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               </svg>
               <span>Map &amp; Remote ID Alignment</span>
             </div>
-            <span id="remote-id-transport-badge" style="font-size: 0.65rem; color: #38bdf8; font-weight: 600;"></span>
-            <button id="remote-id-cal-close-btn" class="remote-id-cal-close-btn" type="button" aria-label="Close Calibration Panel" title="Close Alignment Panel">✕</button>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span id="remote-id-transport-badge" style="font-size: 0.65rem; color: #38bdf8; font-weight: 600;"></span>
+              <button id="remote-id-cal-minimize-btn" class="panel-collapse-btn" type="button" aria-label="Minimize Calibration Panel" title="Minimize / Expand Calibration Panel" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 6px; line-height: 1;">▼</button>
+              <button id="remote-id-cal-close-btn" class="remote-id-cal-close-btn" type="button" aria-label="Close Calibration Panel" title="Close Alignment Panel">✕</button>
+            </div>
           </div>
 
-          <p class="remote-id-cal-desc">
-            Compensate for satellite imagery georeferencing shifts or civilian GPS drift by fine-tuning the Remote ID overlay.
-          </p>
+          <div id="remote-id-cal-body-wrapper">
+            <p class="remote-id-cal-desc">
+              Compensate for satellite imagery georeferencing shifts or civilian GPS drift by fine-tuning the Remote ID overlay.
+            </p>
 
-          <div class="remote-id-cal-body">
+            <div class="remote-id-cal-body">
             <!-- Nudge Crosshair D-Pad -->
             <div class="remote-id-cal-dpad">
               <div class="dpad-row">
@@ -10774,6 +10951,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               </div>
             </div>
           </div>
+          </div>
         </div>
       </div>
 
@@ -10785,7 +10963,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <span style="font-size: 1.05rem;">🌉</span>
             <span>Aalaapi Bridge &amp; Hardware Sync</span>
           </div>
-          <button id="bridge-popover-close-btn" class="popover-close-btn" type="button" aria-label="Close Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px;">✕</button>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button id="bridge-popover-minimize-btn" class="panel-collapse-btn" type="button" aria-label="Minimize Bridge Popover" title="Minimize / Expand Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 4px; line-height: 1;">▼</button>
+            <button id="bridge-popover-close-btn" class="popover-close-btn" type="button" aria-label="Close Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px;">✕</button>
+          </div>
         </div>
         <div class="popover-body" style="display: flex; flex-direction: column; gap: 8px;">
           <!-- RC 2 Companion Live Sync Container -->
@@ -11061,7 +11242,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#38bdf8" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             <span>Mission Details &amp; Live Weather</span>
           </div>
-          <button id="telemetry-popover-close-btn" class="popover-close-btn" type="button" aria-label="Close Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px;">✕</button>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button id="telemetry-weather-minimize-btn" class="panel-collapse-btn" type="button" aria-label="Minimize Weather Popover" title="Minimize / Expand Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 4px; line-height: 1;">▼</button>
+            <button id="telemetry-popover-close-btn" class="popover-close-btn" type="button" aria-label="Close Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px;">✕</button>
+          </div>
         </div>
         <div class="popover-body" style="display: flex; flex-direction: column; gap: 10px;">
           <div class="popover-stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
@@ -11157,7 +11341,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#f59e0b" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span>Mission Time &amp; Solar Ephemeris</span>
           </div>
-          <button id="mission-time-popover-close-btn" class="popover-close-btn" type="button" aria-label="Close Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px;">✕</button>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button id="mission-time-minimize-btn" class="panel-collapse-btn" type="button" aria-label="Minimize Mission Time Popover" title="Minimize / Expand Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 4px; line-height: 1;">▼</button>
+            <button id="mission-time-popover-close-btn" class="popover-close-btn" type="button" aria-label="Close Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px;">✕</button>
+          </div>
         </div>
         <div class="popover-body" style="display: flex; flex-direction: column; gap: 10px;">
           <!-- Mode Segmented Switcher -->
@@ -11228,7 +11415,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               <div style="font-size: 0.68rem; color: var(--text-muted);">1090 MHz ADS-B Transponder Monitor</div>
             </div>
           </div>
-          <button id="adsb-drawer-close-btn" type="button" class="popover-close-btn" aria-label="Close ADS-B Drawer" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.95rem; padding: 2px 6px;">✕</button>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button id="adsb-drawer-minimize-btn" class="panel-collapse-btn" type="button" aria-label="Minimize ADS-B Drawer" title="Minimize / Expand ADS-B Drawer" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 6px; line-height: 1;">▼</button>
+            <button id="adsb-drawer-close-btn" type="button" class="popover-close-btn" aria-label="Close ADS-B Drawer" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.95rem; padding: 2px 6px;">✕</button>
+          </div>
         </div>
 
         <div class="adsb-drawer-body">
@@ -11782,6 +11972,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🔽 Universal Box Collapse &amp; Minimize Toggles (v1.191.0) (Closes #166)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Complete collapse/minimize freedom across all 2D and 3D floating boxes! Minimize the <strong>Map Overlays Legend</strong>, <strong>Flight Elevation Profile Drawer</strong>, <strong>2D Flight Replay Bar</strong>, <strong>ADS-B Radar Drawer</strong>, <strong>Map &amp; Remote ID Alignment Panel</strong>, <strong>Bridge / Weather / Time Popovers</strong>, <strong>3D Scene Controls</strong>, <strong>Navigation Instructions</strong>, <strong>Cockpit Telemetry HUD</strong>, <strong>3D Camera Controls</strong>, <strong>3D Wireframe Toolkit</strong>, <strong>3D Path Legend</strong>, and all <strong>Modal Dialogs</strong> into compact docked title bars to view the map without closing your session.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🗺️ Draggable Map Legends, Popovers &amp; Drawers (v1.189.0) (Closes #164)
@@ -13949,7 +14147,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.190.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.191.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14070,8 +14268,9 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                     <li style="margin-bottom: 8px;">
-              <strong style="color: var(--text-main);">Changelog (v1.190.0):</strong>
+              <strong style="color: var(--text-main);">Changelog (v1.191.0):</strong>
               <ul style="margin: 4px 0 10px 0; padding-left: 18px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.4;">
+                <li><strong>Universal Box Collapse &amp; Minimize Toggles (Closes #166):</strong> Standardized minimize/expand toggles (<code>&#x25BC;</code> / <code>&#x25B2;</code>) and draggable headers added across all 2D Map floating boxes, drawers, legends, popovers, 3D Preview HUD controls, 3D Diagnostics telemetry and camera panels, and all modal dialogs.</li>
                 <li><strong>High-Resolution DEM Sources (Closes #165):</strong> Dedicated multi-source terrain following supporting Drone Recon DSM/DTM (2cm–10cm GeoTIFF / .asc), USGS 3DEP LiDAR (1m–3m USA via ImageServer multipoint queries), and EU National LiDAR (0.5m–5m Europe via IGN France RGE ALTI and national repositories).</li>
                 <li><strong>Projected Coordinate System Engine:</strong> Integrated pure JS geodetic forward projection supporting UTM North/South zones (EPSG:326xx/327xx, NAD83, ETRS89) and Web Mercator (EPSG:3857) during sub-pixel bilinear interpolation for photogrammetry outputs (WebODM, Pix4D, Metashape).</li>
                 <li><strong>Esri ASCII Grid (.asc) Parser:</strong> Added native client-side decoding for UK DEFRA and European National LiDAR ASCII elevation grids.</li>
@@ -17679,32 +17878,41 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div id="three-container" style="width: 100%; height: 100%; background: #070a13;"></div>
         
         <!-- Floating HUD Overlay Controls -->
-        <div class="hud-controls" style="position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 10; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.8rem; pointer-events: auto;">
-          <button id="btn-3d-autorotate" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
-            <span>Auto-Rotate</span>
-            <span id="indicator-3d-autorotate" style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
-          </button>
-          <button id="btn-3d-reset" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left;">Reset Camera</button>
-          <button id="btn-3d-toggle-cones" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
-            <span>Camera Cones</span>
-            <span id="indicator-3d-cones" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-          </button>
-          <button id="btn-3d-toggle-footprints" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
-            <span>Footprints</span>
-            <span id="indicator-3d-footprints" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-          </button>
-          <button id="btn-3d-toggle-drones" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
-            <span>3D Drones</span>
-            <span id="indicator-3d-drones" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-          </button>
-          <button id="btn-3d-toggle-noise" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
-            <span>Noise Rings</span>
-            <span id="indicator-3d-noise" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-          </button>
-          <button id="btn-3d-fpv" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
-            <span>FPV Mode</span>
-            <span id="indicator-3d-fpv" style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
-          </button>
+        <div id="three-hud-controls" class="hud-controls" data-draggable-modal="true" style="position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; gap: 6px; z-index: 10; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.8rem; pointer-events: auto;">
+          <div id="three-hud-controls-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 5px; margin-bottom: 4px; cursor: grab; user-select: none;">
+            <span style="display: flex; align-items: center; gap: 5px; font-weight: 700; color: #38bdf8; font-size: 0.78rem;">
+              <span class="modal-drag-grip" title="Drag to reposition 3D controls">⋮⋮</span>
+              <span>🎛️ 3D Controls</span>
+            </span>
+            <button id="three-hud-controls-toggle-btn" class="panel-collapse-btn" type="button" aria-label="Minimize 3D Controls" title="Minimize / Expand 3D Controls" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1;">▼</button>
+          </div>
+          <div id="three-hud-controls-body" style="display: flex; flex-direction: column; gap: 8px;">
+            <button id="btn-3d-autorotate" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
+              <span>Auto-Rotate</span>
+              <span id="indicator-3d-autorotate" style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
+            </button>
+            <button id="btn-3d-reset" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left;">Reset Camera</button>
+            <button id="btn-3d-toggle-cones" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
+              <span>Camera Cones</span>
+              <span id="indicator-3d-cones" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+            </button>
+            <button id="btn-3d-toggle-footprints" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
+              <span>Footprints</span>
+              <span id="indicator-3d-footprints" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+            </button>
+            <button id="btn-3d-toggle-drones" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
+              <span>3D Drones</span>
+              <span id="indicator-3d-drones" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+            </button>
+            <button id="btn-3d-toggle-noise" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
+              <span>Noise Rings</span>
+              <span id="indicator-3d-noise" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+            </button>
+            <button id="btn-3d-fpv" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
+              <span>FPV Mode</span>
+              <span id="indicator-3d-fpv" style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
+            </button>
+          </div>
         </div>
 
         <!-- FPV Walkthrough HUD Overlay -->
@@ -18005,8 +18213,17 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
 
         <!-- Helper Instructions -->
-        <div id="three-instructions" style="position: absolute; top: 16px; right: 16px; z-index: 10; color: var(--text-muted); font-size: 0.75rem; background: rgba(15, 23, 42, 0.6); padding: 6px 10px; border-radius: 6px; pointer-events: none; border: 1px solid rgba(255,255,255,0.04); backdrop-filter: blur(4px);">
-          Left-click & drag: Rotate | Scroll: Zoom | Right-click & drag: Pan
+        <div id="three-instructions" data-draggable-modal="true" style="position: absolute; top: 16px; right: 16px; z-index: 10; color: var(--text-muted); font-size: 0.75rem; background: rgba(15, 23, 42, 0.85); padding: 8px 12px; border-radius: 8px; pointer-events: auto; border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 4px; max-width: 280px;">
+          <div id="three-instructions-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; cursor: grab; user-select: none;">
+            <span style="display: flex; align-items: center; gap: 5px; font-weight: 600; color: var(--text-main); font-size: 0.72rem;">
+              <span class="modal-drag-grip" title="Drag to reposition instructions">⋮⋮</span>
+              <span>🖱️ Navigation Help</span>
+            </span>
+            <button id="three-instructions-toggle-btn" class="panel-collapse-btn" type="button" aria-label="Minimize Navigation Help" title="Minimize / Expand Navigation Help" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1;">▼</button>
+          </div>
+          <div id="three-instructions-body" style="font-size: 0.72rem; color: var(--text-muted); padding-top: 2px;">
+            Left-click &amp; drag: Rotate &bull; Scroll: Zoom &bull; Right-click &amp; drag: Pan
+          </div>
         </div>
       </div>
       <footer class="modal-footer" style="padding: 12px 24px;">
@@ -18200,38 +18417,47 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div id="diag-3d-canvas-container" class="diag-3d-canvas-container">
             
             <!-- Live Cockpit HUD Overlay -->
-            <div id="diag-hud-overlay" class="diag-hud-overlay">
-              <div>
-                <div style="color: var(--text-muted); font-size: 0.65rem;">ALTITUDE</div>
-                <div id="diag-hud-alt" style="font-weight: 700; color: #38bdf8; font-size: 0.95rem;">21.0 m</div>
+            <div id="diag-hud-overlay" class="diag-hud-overlay" data-draggable-modal="true" style="pointer-events: auto; display: flex; flex-direction: column; gap: 4px;">
+              <div id="diag-hud-overlay-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 4px; cursor: grab; user-select: none; width: 100%;">
+                <span style="display: flex; align-items: center; gap: 4px; font-weight: 700; color: #38bdf8; font-size: 0.75rem;">
+                  <span class="modal-drag-grip" title="Drag to reposition cockpit overlay">⋮⋮</span>
+                  <span>✈️ Cockpit Telemetry</span>
+                </span>
+                <button id="diag-hud-overlay-toggle-btn" class="panel-collapse-btn" type="button" aria-label="Minimize Cockpit HUD" title="Minimize / Expand Cockpit HUD" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1;">▼</button>
               </div>
-              <div>
-                <div style="color: var(--text-muted); font-size: 0.65rem;">SPEED</div>
-                <div id="diag-hud-speed" style="font-weight: 700; color: #4ade80; font-size: 0.95rem;">4.1 m/s</div>
-              </div>
-              <div>
-                <div style="color: var(--text-muted); font-size: 0.65rem;">GIMBAL PITCH</div>
-                <div id="diag-hud-pitch" style="font-weight: 700; color: #fbbf24; font-size: 0.95rem;">-60.0&deg;</div>
-              </div>
-              <div>
-                <div style="color: var(--text-muted); font-size: 0.65rem;">BATTERY</div>
-                <div id="diag-hud-battery" style="font-weight: 700; color: #a78bfa; font-size: 0.95rem;">87%</div>
-              </div>
-              <div>
-                <div style="color: var(--text-muted); font-size: 0.65rem;">GPS SATS</div>
-                <div id="diag-hud-sats" style="font-weight: 700; color: #22d3ee; font-size: 0.95rem;">24</div>
-              </div>
-              <div>
-                <div style="color: var(--text-muted); font-size: 0.65rem;">GPS POSITION</div>
-                <div id="diag-hud-coords" style="font-weight: 700; color: #f43f5e; font-size: 0.85rem; letter-spacing: -0.2px;">40.013000, -83.176500</div>
-              </div>
-              <div id="diag-hud-drift-container">
-                <div style="color: var(--text-muted); font-size: 0.65rem;">DRIFT ERROR</div>
-                <div id="diag-hud-drift" style="font-weight: 700; color: #c084fc; font-size: 0.95rem;">0 cm</div>
-              </div>
-              <div id="diag-hud-dba-container">
-                <div style="color: var(--text-muted); font-size: 0.65rem;">GROUND NOISE</div>
-                <div id="diag-hud-dba" style="font-weight: 700; color: #10b981; font-size: 0.95rem;">-- dBA</div>
+              <div id="diag-hud-overlay-body" style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.65rem;">ALTITUDE</div>
+                  <div id="diag-hud-alt" style="font-weight: 700; color: #38bdf8; font-size: 0.95rem;">21.0 m</div>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.65rem;">SPEED</div>
+                  <div id="diag-hud-speed" style="font-weight: 700; color: #4ade80; font-size: 0.95rem;">4.1 m/s</div>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.65rem;">GIMBAL PITCH</div>
+                  <div id="diag-hud-pitch" style="font-weight: 700; color: #fbbf24; font-size: 0.95rem;">-60.0&deg;</div>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.65rem;">BATTERY</div>
+                  <div id="diag-hud-battery" style="font-weight: 700; color: #a78bfa; font-size: 0.95rem;">87%</div>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.65rem;">GPS SATS</div>
+                  <div id="diag-hud-sats" style="font-weight: 700; color: #22d3ee; font-size: 0.95rem;">24</div>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.65rem;">GPS POSITION</div>
+                  <div id="diag-hud-coords" style="font-weight: 700; color: #f43f5e; font-size: 0.85rem; letter-spacing: -0.2px;">40.013000, -83.176500</div>
+                </div>
+                <div id="diag-hud-drift-container">
+                  <div style="color: var(--text-muted); font-size: 0.65rem;">DRIFT ERROR</div>
+                  <div id="diag-hud-drift" style="font-weight: 700; color: #c084fc; font-size: 0.95rem;">0 cm</div>
+                </div>
+                <div id="diag-hud-dba-container">
+                  <div style="color: var(--text-muted); font-size: 0.65rem;">GROUND NOISE</div>
+                  <div id="diag-hud-dba" style="font-weight: 700; color: #10b981; font-size: 0.95rem;">-- dBA</div>
+                </div>
               </div>
             </div>
 
@@ -18241,26 +18467,35 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             </div>
 
             <!-- Diagnostic HUD Controls -->
-            <div class="diag-hud-controls" id="diag-hud-controls">
-              <button id="diag-btn-autorotate" class="btn-secondary"><span>↻</span> Auto‑Rotate</button>
-              <span id="diag-indicator-autorotate" class="diag-indicator"></span>
-              <button id="diag-btn-reset" class="btn-secondary" title="Reset camera view, rewind flight to start, and reset ground footprints"><span>⟲</span> Reset</button>
-              <span id="diag-indicator-reset" class="diag-indicator"></span>
-              <button id="diag-btn-toggle-cones" class="btn-secondary"><span>⦿</span> Camera Cones</button>
-              <span id="diag-indicator-cones" class="diag-indicator"></span>
-              <button id="diag-btn-toggle-footprints" class="btn-secondary"><span>⌘</span> Footprints</button>
-              <span id="diag-indicator-footprints" class="diag-indicator"></span>
-              <button id="diag-btn-reset-footprints" class="btn-secondary" title="Clear and reset all painted ground coverage footprints"><span>🧹</span> Clear Footprints</button>
-              <button id="diag-btn-toggle-noise" class="btn-secondary active" title="Toggle 3D Ground Acoustic Footprints and Live Drone Noise Ripple"><span>🔊</span> Noise Footprints</button>
-              <span id="diag-indicator-noise" class="diag-indicator active"></span>
-              <button id="diag-btn-toggle-drones" class="btn-secondary"><span>✈</span> 3D Drones</button>
-              <span id="diag-indicator-drones" class="diag-indicator"></span>
-              <button id="diag-btn-toggle-mesh" class="btn-secondary active" title="Toggle AI 3D Reconstructed Solid Building Mesh"><span>🤖</span> AI Mesh</button>
-              <span id="diag-indicator-mesh" class="diag-indicator active"></span>
-              <button id="diag-btn-toggle-wireframe" class="btn-secondary active" title="Toggle 3D Architectural Wireframe Extrusion"><span>🏗️</span> Wireframe</button>
-              <span id="diag-indicator-wireframe" class="diag-indicator active"></span>
-              <button id="diag-btn-fpv" class="btn-secondary"><span>📡</span> FPV Mode</button>
-              <span id="diag-indicator-fpv" class="diag-indicator"></span>
+            <div class="diag-hud-controls" id="diag-hud-controls" data-draggable-modal="true" style="pointer-events: auto;">
+              <div id="diag-hud-controls-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 5px; cursor: grab; user-select: none;">
+                <span style="display: flex; align-items: center; gap: 4px; font-weight: 700; color: #38bdf8; font-size: 0.75rem;">
+                  <span class="modal-drag-grip" title="Drag to reposition 3D controls">⋮⋮</span>
+                  <span>🎥 Controls</span>
+                </span>
+                <button id="diag-hud-controls-toggle-btn" class="panel-collapse-btn" type="button" aria-label="Minimize 3D Controls" title="Minimize / Expand 3D Controls" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1;">▼</button>
+              </div>
+              <div id="diag-hud-controls-body" style="display: flex; flex-direction: column; gap: 5px;">
+                <button id="diag-btn-autorotate" class="btn-secondary"><span>↻</span> Auto‑Rotate</button>
+                <span id="diag-indicator-autorotate" class="diag-indicator"></span>
+                <button id="diag-btn-reset" class="btn-secondary" title="Reset camera view, rewind flight to start, and reset ground footprints"><span>⟲</span> Reset</button>
+                <span id="diag-indicator-reset" class="diag-indicator"></span>
+                <button id="diag-btn-toggle-cones" class="btn-secondary"><span>⦿</span> Camera Cones</button>
+                <span id="diag-indicator-cones" class="diag-indicator"></span>
+                <button id="diag-btn-toggle-footprints" class="btn-secondary"><span>⌘</span> Footprints</button>
+                <span id="diag-indicator-footprints" class="diag-indicator"></span>
+                <button id="diag-btn-reset-footprints" class="btn-secondary" title="Clear and reset all painted ground coverage footprints"><span>🧹</span> Clear Footprints</button>
+                <button id="diag-btn-toggle-noise" class="btn-secondary active" title="Toggle 3D Ground Acoustic Footprints and Live Drone Noise Ripple"><span>🔊</span> Noise Footprints</button>
+                <span id="diag-indicator-noise" class="diag-indicator active"></span>
+                <button id="diag-btn-toggle-drones" class="btn-secondary"><span>✈</span> 3D Drones</button>
+                <span id="diag-indicator-drones" class="diag-indicator"></span>
+                <button id="diag-btn-toggle-mesh" class="btn-secondary active" title="Toggle AI 3D Reconstructed Solid Building Mesh"><span>🤖</span> AI Mesh</button>
+                <span id="diag-indicator-mesh" class="diag-indicator active"></span>
+                <button id="diag-btn-toggle-wireframe" class="btn-secondary active" title="Toggle 3D Architectural Wireframe Extrusion"><span>🏗️</span> Wireframe</button>
+                <span id="diag-indicator-wireframe" class="diag-indicator active"></span>
+                <button id="diag-btn-fpv" class="btn-secondary"><span>📡</span> FPV Mode</button>
+                <span id="diag-indicator-fpv" class="diag-indicator"></span>
+              </div>
             </div>
 
             <!-- 3D / 2D Camera View Toggle -->
@@ -18276,8 +18511,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                   <span class="modal-drag-grip" title="Drag to reposition wireframe toolkit" aria-hidden="true">&#x22EE;&#x22EE;</span>
                   <span>🏗️ 3D Wireframe Toolkit</span>
                 </span>
-                <span id="diag-wireframe-count-badge" class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.65rem; padding: 1px 6px;">0 lines</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span id="diag-wireframe-count-badge" class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.65rem; padding: 1px 6px;">0 lines</span>
+                  <button id="diag-wireframe-toggle-btn" class="panel-collapse-btn" type="button" aria-label="Minimize Wireframe Toolkit" title="Minimize / Expand Wireframe Toolkit" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1;">▼</button>
+                </div>
               </div>
+              <div id="diag-wireframe-body">
               <div id="diag-wireframe-selected-info" style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px; padding: 4px 6px; background: rgba(0,0,0,0.25); border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
                 Click line to select &amp; inspect
               </div>
@@ -18338,29 +18577,39 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                   </div>
                 </div>
               </div>
+              </div>
             </div>
 
             <!-- Path Legend -->
-            <div id="diag-path-legend" class="diag-path-legend">
-              <div id="diag-legend-planned" style="display: flex; align-items: center; gap: 5px;">
-                <span id="diag-legend-planned-swatch" style="width: 10px; height: 3px; background: #06b6d4; display: inline-block; border-radius: 2px;"></span>
-                <span id="diag-legend-planned-text" style="color: var(--text-muted);">Planned Flight Path</span>
+            <div id="diag-path-legend" class="diag-path-legend" data-draggable-modal="true" style="pointer-events: auto; display: flex; flex-direction: column; gap: 4px;">
+              <div id="diag-path-legend-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 3px; margin-bottom: 3px; cursor: grab; user-select: none;">
+                <span style="display: flex; align-items: center; gap: 4px; font-weight: 600; color: #38bdf8; font-size: 0.72rem;">
+                  <span class="modal-drag-grip" title="Drag to reposition path legend">⋮⋮</span>
+                  <span>🗺️ Path Legend</span>
+                </span>
+                <button id="diag-path-legend-toggle-btn" class="panel-collapse-btn" type="button" aria-label="Minimize Path Legend" title="Minimize / Expand Path Legend" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1;">▼</button>
               </div>
-              <div id="diag-legend-actual" style="display: none; align-items: center; gap: 5px;">
-                <span style="width: 10px; height: 3px; background: #f59e0b; display: inline-block; border-radius: 2px;"></span>
-                <span id="diag-legend-actual-text" style="color: #fbbf24; font-weight: 600;">Actual Flown GPS</span>
-              </div>
-              <div id="diag-legend-photo" style="display: flex; align-items: center; gap: 5px;">
-                <span style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
-                <span id="diag-legend-photo-text" style="color: var(--text-muted);">Photo Trigger</span>
-              </div>
-              <div id="diag-legend-boundary" style="display: none; align-items: center; gap: 5px;">
-                <span style="width: 10px; height: 3px; border-top: 2px dashed #06b6d4; display: inline-block;"></span>
-                <span id="diag-legend-boundary-text" style="color: var(--text-muted);">Flight Boundary</span>
-              </div>
-              <div id="diag-legend-wireframe" style="display: none; align-items: center; gap: 5px;">
-                <span style="width: 10px; height: 3px; background: #38bdf8; display: inline-block; border-radius: 2px; box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);"></span>
-                <span id="diag-legend-wireframe-text" style="color: #38bdf8; font-weight: 600;">3D Wireframe</span>
+              <div id="diag-path-legend-body" style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <div id="diag-legend-planned" style="display: flex; align-items: center; gap: 5px;">
+                  <span id="diag-legend-planned-swatch" style="width: 10px; height: 3px; background: #06b6d4; display: inline-block; border-radius: 2px;"></span>
+                  <span id="diag-legend-planned-text" style="color: var(--text-muted);">Planned Flight Path</span>
+                </div>
+                <div id="diag-legend-actual" style="display: none; align-items: center; gap: 5px;">
+                  <span style="width: 10px; height: 3px; background: #f59e0b; display: inline-block; border-radius: 2px;"></span>
+                  <span id="diag-legend-actual-text" style="color: #fbbf24; font-weight: 600;">Actual Flown GPS</span>
+                </div>
+                <div id="diag-legend-photo" style="display: flex; align-items: center; gap: 5px;">
+                  <span style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
+                  <span id="diag-legend-photo-text" style="color: var(--text-muted);">Photo Trigger</span>
+                </div>
+                <div id="diag-legend-boundary" style="display: none; align-items: center; gap: 5px;">
+                  <span style="width: 10px; height: 3px; border-top: 2px dashed #06b6d4; display: inline-block;"></span>
+                  <span id="diag-legend-boundary-text" style="color: var(--text-muted);">Flight Boundary</span>
+                </div>
+                <div id="diag-legend-wireframe" style="display: none; align-items: center; gap: 5px;">
+                  <span style="width: 10px; height: 3px; background: #38bdf8; display: inline-block; border-radius: 2px; box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);"></span>
+                  <span id="diag-legend-wireframe-text" style="color: #38bdf8; font-weight: 600;">3D Wireframe</span>
+                </div>
               </div>
             </div>
           </div>
@@ -24650,15 +24899,50 @@ function initModalDraggable(modalOverlayOrId) {
 /**
  * Initializes all modal overlays and floating panels in the document.
  */
+/**
+ * Injects a standardized minimize/expand toggle button into every modal dialog header
+ * allowing users to collapse dialogs to their headers and view the map beneath.
+ */
+function initUniversalModalCollapseToggles() {
+  if (typeof document === 'undefined') return;
+  const modals = document.querySelectorAll('.modal-overlay .modal');
+  modals.forEach(modal => {
+    const header = modal.querySelector('.modal-header');
+    if (!header || header.querySelector('.modal-collapse-btn')) return;
+    const closeBtn = header.querySelector('.close-btn, button[aria-label^="Close"], button[aria-label^="close"]');
+    const collapseBtn = document.createElement('button');
+    collapseBtn.type = 'button';
+    collapseBtn.className = 'modal-collapse-btn';
+    collapseBtn.title = 'Minimize / Expand Modal';
+    collapseBtn.setAttribute('aria-label', 'Minimize / Expand Modal');
+    collapseBtn.textContent = '▼';
+    collapseBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.85rem;padding:2px 6px;line-height:1;border-radius:4px;transition:var(--transition-smooth);';
+    collapseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      modal.classList.toggle('modal-collapsed');
+      const isCollapsed = modal.classList.contains('modal-collapsed');
+      collapseBtn.textContent = isCollapsed ? '▲' : '▼';
+      collapseBtn.title = isCollapsed ? 'Expand Modal' : 'Minimize Modal';
+    });
+    if (closeBtn && closeBtn.parentNode) {
+      closeBtn.parentNode.insertBefore(collapseBtn, closeBtn);
+    } else {
+      header.appendChild(collapseBtn);
+    }
+  });
+}
+
 function initAllModalsDraggable() {
   if (typeof document === 'undefined') return;
 
   const dialogs = document.querySelectorAll(
-    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel, #video-cast-panel, #elevation-profile-drawer, #replay-2d-bar, #diag-wireframe-panel, #bridge-status-popover, #telemetry-weather-popover, #mission-time-popover, #adsb-control-drawer, #remote-id-calibration-panel, #stats-panel, #three-hud-legend, #map-mission-legend, #airspace-legend-container, #wp-heading-help-popover'
+    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel, #video-cast-panel, #elevation-profile-drawer, #replay-2d-bar, #diag-wireframe-panel, #bridge-status-popover, #telemetry-weather-popover, #mission-time-popover, #adsb-control-drawer, #remote-id-calibration-panel, #stats-panel, #three-hud-legend, #three-hud-controls, #three-instructions, #diag-hud-overlay, #diag-hud-controls, #diag-path-legend, #map-mission-legend, #airspace-legend-container, #wp-heading-help-popover'
   );
   dialogs.forEach(dialog => {
     initModalDraggable(dialog);
   });
+
+  initUniversalModalCollapseToggles();
 }
 
 /**
@@ -24683,7 +24967,7 @@ function resetModalPosition(modalOverlayOrId) {
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', () => {
     const dialogs = document.querySelectorAll(
-      '.modal-overlay:not(.hidden), [data-draggable-modal]:not(.hidden), #fpv-editor-panel:not(.hidden), #video-cast-panel:not(.hidden), #elevation-profile-drawer:not(.hidden), #replay-2d-bar:not(.hidden), #diag-wireframe-panel:not(.hidden), #bridge-status-popover:not(.hidden), #telemetry-weather-popover:not(.hidden), #mission-time-popover:not(.hidden), #adsb-control-drawer:not(.hidden), #remote-id-calibration-panel:not(.hidden), #stats-panel:not(.hidden), #three-hud-legend:not(.hidden), #map-mission-legend:not(.hidden), #airspace-legend-container:not(.hidden), #wp-heading-help-popover:not([style*="display: none"])'
+      '.modal-overlay:not(.hidden), [data-draggable-modal]:not(.hidden), #fpv-editor-panel:not(.hidden), #video-cast-panel:not(.hidden), #elevation-profile-drawer:not(.hidden), #replay-2d-bar:not(.hidden), #diag-wireframe-panel:not(.hidden), #bridge-status-popover:not(.hidden), #telemetry-weather-popover:not(.hidden), #mission-time-popover:not(.hidden), #adsb-control-drawer:not(.hidden), #remote-id-calibration-panel:not(.hidden), #stats-panel:not(.hidden), #three-hud-legend:not(.hidden), #three-hud-controls:not(.hidden), #three-instructions:not(.hidden), #diag-hud-overlay:not(.hidden), #diag-hud-controls:not(.hidden), #diag-path-legend:not(.hidden), #map-mission-legend:not(.hidden), #airspace-legend-container:not(.hidden), #wp-heading-help-popover:not([style*="display: none"])'
     );
     dialogs.forEach(dialog => {
       const modal = dialog.querySelector('.modal') || dialog;
@@ -24710,6 +24994,7 @@ if (typeof window !== 'undefined') {
 
   window.initModalDraggable = initModalDraggable;
   window.initAllModalsDraggable = initAllModalsDraggable;
+  window.initUniversalModalCollapseToggles = initUniversalModalCollapseToggles;
   window.resetModalPosition = resetModalPosition;
   window.clampModalPosition = clampModalPosition;
 
@@ -33784,8 +34069,54 @@ function initUIEventListeners() {
     initAllModalsDraggable();
   }
 
+  // Setup Floating 2D/3D Boxes Collapse Toggles (Issue #166)
+  initFloatingBoxesCollapseToggles();
+
   // Setup Terrain Following & Elevation Profile Listeners (Issue #129)
   initTerrainFollowListeners();
+}
+
+/**
+ * Universal toggle listener initialization for all 2D and 3D floating boxes,
+ * drawers, legends, popovers, and HUD panels.
+ */
+function initFloatingBoxesCollapseToggles() {
+  if (typeof document === 'undefined') return;
+
+  const toggleConfigs = [
+    { btnId: 'minimize-elevation-profile-btn', panelId: 'elevation-profile-drawer', bodyId: 'elevation-profile-body' },
+    { btnId: 'replay-2d-minimize-btn', panelId: 'replay-2d-bar', bodyId: 'replay-2d-body' },
+    { btnId: 'adsb-drawer-minimize-btn', panelId: 'adsb-control-drawer', bodySelector: '.adsb-drawer-body' },
+    { btnId: 'remote-id-cal-minimize-btn', panelId: 'remote-id-calibration-panel', bodyId: 'remote-id-cal-body-wrapper' },
+    { btnId: 'bridge-popover-minimize-btn', panelId: 'bridge-status-popover', bodySelector: '.popover-body' },
+    { btnId: 'telemetry-weather-minimize-btn', panelId: 'telemetry-weather-popover', bodySelector: '.popover-body' },
+    { btnId: 'mission-time-minimize-btn', panelId: 'mission-time-popover', bodySelector: '.popover-body' },
+    { btnId: 'three-hud-controls-toggle-btn', panelId: 'three-hud-controls', bodyId: 'three-hud-controls-body' },
+    { btnId: 'three-instructions-toggle-btn', panelId: 'three-instructions', bodyId: 'three-instructions-body' },
+    { btnId: 'diag-hud-overlay-toggle-btn', panelId: 'diag-hud-overlay', bodyId: 'diag-hud-overlay-body' },
+    { btnId: 'diag-hud-controls-toggle-btn', panelId: 'diag-hud-controls', bodyId: 'diag-hud-controls-body' },
+    { btnId: 'diag-wireframe-toggle-btn', panelId: 'diag-wireframe-panel', bodyId: 'diag-wireframe-body' },
+    { btnId: 'diag-path-legend-toggle-btn', panelId: 'diag-path-legend', bodyId: 'diag-path-legend-body' },
+  ];
+
+  toggleConfigs.forEach(({ btnId, panelId, bodyId, bodySelector }) => {
+    const btn = document.getElementById(btnId);
+    const panel = document.getElementById(panelId);
+    if (!btn || !panel) return;
+    const body = bodyId ? document.getElementById(bodyId) : (bodySelector ? panel.querySelector(bodySelector) : null);
+    
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.classList.toggle('collapsed');
+      const isCollapsed = panel.classList.contains('collapsed');
+      if (body) {
+        body.style.display = isCollapsed ? 'none' : '';
+      }
+      btn.textContent = isCollapsed ? '▲' : '▼';
+      btn.title = isCollapsed ? 'Expand Panel' : 'Minimize Panel';
+      btn.setAttribute('aria-label', isCollapsed ? 'Expand Panel' : 'Minimize Panel');
+    });
+  });
 }
 
 function initTerrainFollowListeners() {
@@ -43086,6 +43417,7 @@ function updateMapLegend() {
 // show/hide each section dynamically.
 let airspaceLegendControl = null;
 const airspaceActiveSet = new Set(); // stores layer-name strings
+let isAirspaceLegendCollapsed = false;
 
 function initAirspaceLegend() {
   airspaceLegendControl = L.control({ position: 'bottomleft' });
@@ -43135,23 +43467,59 @@ function updateAirspaceLegend(e) {
 
   container.replaceChildren();
   container.setAttribute('data-draggable-modal', 'true');
+  if (isAirspaceLegendCollapsed) {
+    container.classList.add('collapsed');
+  } else {
+    container.classList.remove('collapsed');
+  }
 
   const headerDiv = document.createElement('div');
   headerDiv.className = 'legend-header';
   headerDiv.setAttribute('data-modal-drag-handle', 'true');
-  headerDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;';
+  headerDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;cursor:grab;user-select:none;';
+
+  const leftGroup = document.createElement('div');
+  leftGroup.style.cssText = 'display:flex;align-items:center;gap:6px;';
 
   const airGrip = document.createElement('span');
   airGrip.className = 'modal-drag-grip';
   airGrip.setAttribute('aria-hidden', 'true');
   airGrip.title = 'Drag to reposition legend';
   airGrip.textContent = '\u22EE\u22EE';
-  headerDiv.appendChild(airGrip);
+  leftGroup.appendChild(airGrip);
 
   const h4 = document.createElement('h4');
   h4.style.cssText = 'margin:0;line-height:1.2;';
   h4.textContent = 'Map Overlays';
-  headerDiv.appendChild(h4);
+  leftGroup.appendChild(h4);
+
+  headerDiv.appendChild(leftGroup);
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'legend-toggle-btn airspace-legend-toggle-btn';
+  toggleBtn.id = 'airspace-legend-toggle-btn';
+  toggleBtn.title = 'Minimize / Expand Airspace Legend';
+  toggleBtn.setAttribute('aria-label', 'Minimize / Expand Airspace Legend');
+  toggleBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:2px 4px;border-radius:4px;';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '14');
+  svg.setAttribute('height', '14');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  polyline.setAttribute('points', '6 9 12 15 18 9');
+  svg.appendChild(polyline);
+  toggleBtn.appendChild(svg);
+  toggleBtn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    container.classList.toggle('collapsed');
+    isAirspaceLegendCollapsed = container.classList.contains('collapsed');
+  });
+  headerDiv.appendChild(toggleBtn);
 
   container.appendChild(headerDiv);
 
@@ -66982,18 +67350,25 @@ function showHeadingHelpPopover(anchorEl) {
     popover.id = 'wp-heading-help-popover';
     popover.setAttribute('data-draggable-modal', 'true');
     popover.innerHTML = `
-      <div class="wp-help-title" data-modal-drag-handle="true">
-        <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
-        <span>Heading Mode</span>
-        <button class="wp-help-close" id="wp-heading-help-close-btn" title="Close">✕</button>
+      <div class="wp-help-title modal-header" data-modal-drag-handle="true" style="display:flex;justify-content:space-between;align-items:center;cursor:grab;user-select:none;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
+          <span>Heading Mode</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button class="panel-collapse-btn" id="wp-heading-help-toggle-btn" type="button" title="Minimize / Expand Popover" aria-label="Minimize / Expand Popover" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:2px 4px;line-height:1;">▼</button>
+          <button class="wp-help-close" id="wp-heading-help-close-btn" title="Close">✕</button>
+        </div>
       </div>
-      <div class="wp-help-tab-row">
-        <button class="wp-help-tab active" data-mode="followWayline">Follow Path</button>
-        <button class="wp-help-tab" data-mode="fixed">Fixed (N)</button>
-        <button class="wp-help-tab" data-mode="towardPOI">POI</button>
-        <button class="wp-help-tab" data-mode="custom">Custom</button>
+      <div id="wp-heading-help-body">
+        <div class="wp-help-tab-row">
+          <button class="wp-help-tab active" data-mode="followWayline">Follow Path</button>
+          <button class="wp-help-tab" data-mode="fixed">Fixed (N)</button>
+          <button class="wp-help-tab" data-mode="towardPOI">POI</button>
+          <button class="wp-help-tab" data-mode="custom">Custom</button>
+        </div>
+        <div class="wp-help-content" id="wp-heading-help-content"></div>
       </div>
-      <div class="wp-help-content" id="wp-heading-help-content"></div>
     `;
     document.body.appendChild(popover);
     if (typeof window !== 'undefined' && typeof window.initModalDraggable === 'function') {
@@ -67044,6 +67419,17 @@ function showHeadingHelpPopover(anchorEl) {
         e.stopPropagation();
         popover.style.display = 'none';
         popover._anchorEl = null;
+      });
+    }
+    const headingToggleBtn = popover.querySelector('#wp-heading-help-toggle-btn');
+    const headingBody = popover.querySelector('#wp-heading-help-body');
+    if (headingToggleBtn && headingBody) {
+      headingToggleBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const isHidden = headingBody.style.display === 'none';
+        headingBody.style.display = isHidden ? '' : 'none';
+        headingToggleBtn.textContent = isHidden ? '▼' : '▲';
+        popover.classList.toggle('collapsed', !isHidden);
       });
     }
 
