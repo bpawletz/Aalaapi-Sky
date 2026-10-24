@@ -2890,6 +2890,37 @@ const scenarios = [
       });
       await page.waitForTimeout(500);
     }
+  },
+  {
+    id: 'feature_sidebar_minimize_alignment',
+    name: 'Map Zoom & Layer Button Alignment with Sidebar Minimized',
+    description: 'Demonstrates Leaflet zoom and layer control buttons maintaining identical 10px border buffer when toggling sidebar minimized (Issue #171, v1.193.3).',
+    issueRef: 'Issue #171 / v1.193.3',
+    run: async (page) => {
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 1. Initial view with sidebar expanded
+      const sidebarToggleBtn = await page.locator('#sidebar-toggle');
+      await page.waitForTimeout(1000);
+
+      // 2. Toggle sidebar minimized (collapses left menu)
+      if (await sidebarToggleBtn.isVisible()) {
+        await sidebarToggleBtn.click();
+        await page.waitForTimeout(1500);
+
+        // 3. Interact with zoom in and layer control in minimized state
+        const zoomIn = await page.locator('.leaflet-control-zoom-in');
+        if (await zoomIn.isVisible()) {
+          await zoomIn.click();
+          await page.waitForTimeout(800);
+        }
+
+        // 4. Toggle sidebar back to expanded
+        await sidebarToggleBtn.click();
+        await page.waitForTimeout(1500);
+      }
+    }
   }
 ];
 

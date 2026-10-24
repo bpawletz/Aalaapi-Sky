@@ -3,6 +3,7 @@
   color-scheme: dark;
   --font-primary: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
   --font-secondary: 'Plus Jakarta Sans', sans-serif;
+  --sidebar-width: 380px;
   
   /* Color Palette - Cyber Dark Sleek */
   --bg-main: #0b0f19;
@@ -268,8 +269,8 @@ html, body {
 
 /* Sidebar / Settings Panel */
 .sidebar {
-  width: 380px;
-  min-width: 380px;
+  width: var(--sidebar-width, 380px);
+  min-width: var(--sidebar-width, 380px);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -3128,11 +3129,12 @@ body.modal-drag-active {
 /* Sidebar Minimization on Desktop */
 @media (min-width: 769px) {
   .sidebar {
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
   }
   
   .sidebar.minimized {
-    margin-left: -400px;
+    margin-left: calc(-1 * var(--sidebar-width, 380px));
+    box-shadow: none !important;
   }
 }
 

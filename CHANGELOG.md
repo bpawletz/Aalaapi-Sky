@@ -1,3 +1,35 @@
+## [1.194.0] - 2026-10-24
+
+Repository-wide SSE-First API architecture policy, elimination of client-side RTMP status polling, and TTL-cached firewall verification.
+
+### Added
+
+#### Pilot & Operational Features
+- **Zero-Polling RTMP Status & Live Ingest (Closes #172)**:
+  - Live Video Cast status badges and incoming stream dropdown entries now update 100% event-driven via Server-Sent Events (SSE).
+  - Eliminates repetitive background REST requests, dropping idle bridge network polling to zero and ensuring immediate FPV feed reaction.
+
+#### Under the Hood & Technical Details
+- **Repository Guidelines (`AGENTS.md`)**:
+  - Enacted Section 13 codifying a strict **SSE-First Architecture Policy & Zero-Polling Mandate**: real-time telemetry, hardware feeds, and status updates must use SSE push streams. REST GET endpoints are restricted to one-shot initial hydration and disconnected fallbacks; continuous client polling loops are prohibited.
+- **Client-Side Event-Driven Migration (`src/bridge/VideoCastClient.js`)**:
+  - Removed `startStatusPoller()`, `stopStatusPoller()`, and `statusPollTimer` interval. Connected RTMP updates directly to `ApiClient.js` SSE stream events.
+- **Companion Firewall Check Caching (`tools/companion/video_service.js`)**:
+  - Added in-memory caching with a 60-second TTL to `VideoService.checkFirewall()` to eliminate synchronous child process spawning (`netsh advfirewall`) during status checks.
+- **Unified SSE Stream RTMP Event (`tools/companion/server.js`)**:
+  - Emits dedicated `event: rtmp-status` and enriched companion status payloads over the `/api/stream` multiplexed stream.
+
+## [1.193.3] - 2026-10-24
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Map Zoom & Layer Button Alignment When Sidebar is Minimized (Closes #171)**: Fixed an issue where collapsing the left menu caused the Leaflet zoom (+/-) and layer control buttons to shift 20px off-screen to the left, clipping their borders and rounded corners. Map controls now preserve the exact same 10px left border buffer whether the left menu is expanded or minimized.
+
+#### Under the Hood & Technical Details
+- **Shared CSS --sidebar-width Variable**: Introduced --sidebar-width: 380px in :root and updated .sidebar and .sidebar.minimized in index.css to derive width and negative margin from the single variable (margin-left: calc(-1 * var(--sidebar-width, 380px))), eliminating the legacy -400px mismatch and preventing off-screen flex shifting of .main-map-container.
+- **Sidebar Minimized Shadow Cleanup**: Explicitly cleared ox-shadow: none !important; on .sidebar.minimized to ensure zero bleed onto the map canvas when tucked off-screen.
+
 ## [1.193.2] - 2026-10-24
 
 Eliminates jumping and float-back animation anomalies when dragging horizontally centered floating dialogs such as the Flight Elevation Profile Drawer (`#elevation-profile-drawer`) and 2D Flight Replay Bar (`#replay-2d-bar`).

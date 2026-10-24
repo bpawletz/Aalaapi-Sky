@@ -26,7 +26,7 @@ class VideoCastClient {
     this.fpvVideoEnabled = true;
     this.lastFrameTime = 0;
     this.listenersAttached = false;
-    this.statusPollTimer = null;
+    this.hasReceivedSseRtmp = false;
     this.userSelectedManualSource = false;
   }
 
@@ -231,7 +231,9 @@ class VideoCastClient {
       }
     } catch (_) {}
 
-    await this.fetchRtmpStatus();
+    if (!this.hasReceivedSseRtmp) {
+      await this.fetchRtmpStatus();
+    }
   }
 
   /**
@@ -252,26 +254,12 @@ class VideoCastClient {
     } catch (_) {}
   }
 
-  startStatusPoller() {
-    if (this.statusPollTimer) return;
-    this.fetchRtmpStatus();
-    this.statusPollTimer = setInterval(() => {
-      this.fetchRtmpStatus();
-    }, 2000);
-  }
-
-  stopStatusPoller() {
-    if (this.statusPollTimer) {
-      clearInterval(this.statusPollTimer);
-      this.statusPollTimer = null;
-    }
-  }
-
   /**
    * Updates RTMP URL, active streaming indicators, and firewall badges in the UI.
    */
   updateRtmpUI(data) {
     if (typeof document === 'undefined' || !data) return;
+    this.hasReceivedSseRtmp = true;
 
     const primary = data.primaryUrl || (data.lanUrls && data.lanUrls[0]) || 'rtmp://127.0.0.1:1935/live/stream';
 
@@ -671,7 +659,9 @@ class VideoCastClient {
     }
 
     if (!panel.classList.contains('hidden')) {
-      this.fetchRtmpStatus();
+      if (!this.hasReceivedSseRtmp) {
+        this.fetchRtmpStatus();
+      }
       if (!this.isConnected && !this.isConnecting) {
         this.connect();
       }
@@ -832,8 +822,10 @@ class VideoCastClient {
       }
     });
 
-    // Start background status poller (updates RTMP broadcast URL & active streaming stats every 2s)
-    this.startStatusPoller();
+    // One-shot initial hydration if SSE has not delivered RTMP status yet
+    if (!this.hasReceivedSseRtmp) {
+      this.fetchRtmpStatus();
+    }
 
     // FPV Video Background toggle button
     const fpvVideoToggleBtn = document.getElementById('fpv-video-toggle-btn');

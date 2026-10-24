@@ -512,6 +512,9 @@ function broadcastCompanionStatus(status) {
   for (const client of sseUnifiedClients) {
     try {
       client.res.write(`event: status\ndata: ${payloadStr}\n\n`);
+      if (rtmpStatus) {
+        client.res.write(`event: rtmp-status\ndata: ${JSON.stringify(rtmpStatus)}\n\n`);
+      }
     } catch (_) {
       try { client.res.end(); } catch (e) {}
       sseUnifiedClients.delete(client);

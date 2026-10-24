@@ -174,4 +174,17 @@ describe('VideoService Tests (Issue #97)', () => {
     assert.equal(testService.rtmpServer.listening, false);
     testService.stop();
   });
+
+  it('caches firewall status with 60s TTL to prevent repeated netsh child process execution', () => {
+    VideoService.clearFirewallCache();
+    const res1 = VideoService.checkFirewall('Aalaapi Sky RTMP Ingest', 1935, 60000);
+    assert.equal(typeof res1, 'object');
+
+    // Repeated call should hit cache immediately (< 20ms)
+    const tStart = Date.now();
+    const res2 = VideoService.checkFirewall('Aalaapi Sky RTMP Ingest', 1935, 60000);
+    const duration = Date.now() - tStart;
+    assert.strictEqual(res2, res1, 'Subsequent call within TTL must return cached reference');
+    assert.ok(duration < 20, `Cached check must return in < 20ms (took ${duration}ms)`);
+  });
 });
