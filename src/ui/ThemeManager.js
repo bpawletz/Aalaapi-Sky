@@ -550,6 +550,11 @@ function initPatternSelectorCards() {
   if (!selectEl || typeof selectEl.addEventListener !== 'function') return;
 
   cards.forEach(card => {
+    // Accessibility attributes
+    if (!card.hasAttribute('role')) card.setAttribute('role', 'button');
+    if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-pressed', card.classList.contains('active') ? 'true' : 'false');
+
     card.addEventListener('click', () => {
       const val = card.getAttribute('data-value');
       if (!val) return; // Special tool cards (such as #auto-plan-btn) manage their own actions
@@ -559,12 +564,24 @@ function initPatternSelectorCards() {
       
       // Sync active state in UI
       cards.forEach(c => {
-        if (c.getAttribute('data-value')) c.classList.remove('active');
+        if (c.getAttribute('data-value')) {
+          c.classList.remove('active');
+          c.setAttribute('aria-pressed', 'false');
+        }
       });
       card.classList.add('active');
+      card.setAttribute('aria-pressed', 'true');
       
       // Dispatch change event to trigger existing app listeners
       selectEl.dispatchEvent(new Event('change'));
+    });
+
+    // Keyboard support: Enter and Space
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        card.click();
+      }
     });
   });
 
@@ -577,8 +594,18 @@ function initPatternSelectorCards() {
       if (!cardVal) return;
       if (cardVal === val) {
         card.classList.add('active');
+        card.setAttribute('aria-pressed', 'true');
+        // If card was hidden by category filter, reveal it
+        if (card.classList.contains('pattern-card-filtered-out')) {
+          const cat = card.getAttribute('data-pattern-category');
+          if (cat) {
+            const pill = document.querySelector(`.pattern-filter-pill[data-category="${cat}"]`);
+            if (pill) pill.click();
+          }
+        }
       } else {
         card.classList.remove('active');
+        card.setAttribute('aria-pressed', 'false');
       }
     });
   };
@@ -587,10 +614,48 @@ function initPatternSelectorCards() {
   
   // Initial sync
   syncCardsFromSelect();
+
+  initPatternCategoryFilter();
+}
+
+/**
+ * Section 1 Pattern Category Filter Pills (v1.188.0)
+ * Filters 22 flat pattern cards into organized categories: All, Mapping, Orbit & 3D, Linear, Creative, Safety & GCP.
+ */
+function initPatternCategoryFilter() {
+  if (typeof document === 'undefined') return;
+  const filterBar = document.getElementById('pattern-category-filter-bar');
+  if (!filterBar) return;
+
+  const pills = filterBar.querySelectorAll('.pattern-filter-pill');
+  const cards = document.querySelectorAll('.pattern-card');
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      const category = pill.getAttribute('data-category') || 'all';
+
+      pills.forEach(p => {
+        p.classList.remove('active');
+        p.setAttribute('aria-pressed', 'false');
+      });
+      pill.classList.add('active');
+      pill.setAttribute('aria-pressed', 'true');
+
+      cards.forEach(card => {
+        const cardCat = card.getAttribute('data-pattern-category') || 'mapping';
+        if (category === 'all' || cardCat === category) {
+          card.classList.remove('pattern-card-filtered-out');
+        } else {
+          card.classList.add('pattern-card-filtered-out');
+        }
+      });
+    });
+  });
 }
 
 if (typeof window !== 'undefined') {
   window.initPatternSelectorCards = initPatternSelectorCards;
+  window.initPatternCategoryFilter = initPatternCategoryFilter;
 }
 
 if (typeof document !== 'undefined') {

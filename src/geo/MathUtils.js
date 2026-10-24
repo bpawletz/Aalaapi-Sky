@@ -1213,6 +1213,8 @@ function updateMapLegend() {
     mapLegend = L.control({ position: 'bottomright' });
     mapLegend.onAdd = function () {
       const div = L.DomUtil.create('div', 'map-legend glass');
+      div.id = 'map-mission-legend';
+      div.setAttribute('data-draggable-modal', 'true');
       L.DomEvent.disableClickPropagation(div);
       if (isLegendCollapsed) {
         div.classList.add('collapsed');
@@ -1258,7 +1260,15 @@ function updateMapLegend() {
       
       const headerDiv = document.createElement('div');
       headerDiv.className = 'legend-header';
+      headerDiv.setAttribute('data-modal-drag-handle', 'true');
       headerDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px;';
+
+      const gripSpan = document.createElement('span');
+      gripSpan.className = 'modal-drag-grip';
+      gripSpan.setAttribute('aria-hidden', 'true');
+      gripSpan.title = 'Drag to reposition legend';
+      gripSpan.textContent = '\u22EE\u22EE';
+      headerDiv.appendChild(gripSpan);
 
       const h4 = document.createElement('h4');
       h4.style.cssText = 'margin: 0; line-height: 1.2;';
@@ -1308,6 +1318,10 @@ function updateMapLegend() {
             isLegendCollapsed = div.classList.contains('collapsed');
           });
         }
+        if (typeof window !== 'undefined' && typeof window.initModalDraggable === 'function') {
+          div._modalDraggableInitialized = false;
+          window.initModalDraggable(div);
+        }
       }, 0);
       
       return div;
@@ -1324,6 +1338,8 @@ function updateMapLegend() {
 
   mapLegend.onAdd = function () {
     const div = L.DomUtil.create('div', 'map-legend glass');
+    div.id = 'map-mission-legend';
+    div.setAttribute('data-draggable-modal', 'true');
     L.DomEvent.disableClickPropagation(div);
     if (isLegendCollapsed) {
       div.classList.add('collapsed');
@@ -1433,7 +1449,15 @@ function updateMapLegend() {
 
     const headerDiv = document.createElement('div');
     headerDiv.className = 'legend-header';
+    headerDiv.setAttribute('data-modal-drag-handle', 'true');
     headerDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px;';
+
+    const gripSpan = document.createElement('span');
+    gripSpan.className = 'modal-drag-grip';
+    gripSpan.setAttribute('aria-hidden', 'true');
+    gripSpan.title = 'Drag to reposition legend';
+    gripSpan.textContent = '\u22EE\u22EE';
+    headerDiv.appendChild(gripSpan);
 
     const h4 = document.createElement('h4');
     h4.style.cssText = 'margin: 0; line-height: 1.2;';
@@ -1482,6 +1506,10 @@ function updateMapLegend() {
           div.classList.toggle('collapsed');
           isLegendCollapsed = div.classList.contains('collapsed');
         });
+      }
+      if (typeof window !== 'undefined' && typeof window.initModalDraggable === 'function') {
+        div._modalDraggableInitialized = false;
+        window.initModalDraggable(div);
       }
     }, 0);
 
@@ -1544,10 +1572,19 @@ function updateAirspaceLegend(e) {
   const powerLinesZoomedOut = powerLinesActive && currentZoom < POWER_LINES_MIN_ZOOM;
 
   container.replaceChildren();
+  container.setAttribute('data-draggable-modal', 'true');
 
   const headerDiv = document.createElement('div');
   headerDiv.className = 'legend-header';
+  headerDiv.setAttribute('data-modal-drag-handle', 'true');
   headerDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;';
+
+  const airGrip = document.createElement('span');
+  airGrip.className = 'modal-drag-grip';
+  airGrip.setAttribute('aria-hidden', 'true');
+  airGrip.title = 'Drag to reposition legend';
+  airGrip.textContent = '\u22EE\u22EE';
+  headerDiv.appendChild(airGrip);
 
   const h4 = document.createElement('h4');
   h4.style.cssText = 'margin:0;line-height:1.2;';
@@ -1708,6 +1745,10 @@ function updateAirspaceLegend(e) {
   }
 
   container.appendChild(contentDiv);
+  if (typeof window !== 'undefined' && typeof window.initModalDraggable === 'function') {
+    container._modalDraggableInitialized = false;
+    window.initModalDraggable(container);
+  }
 }
 
 // Apply or remove FeatureServer data based on current zoom level.

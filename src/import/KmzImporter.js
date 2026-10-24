@@ -724,9 +724,11 @@ function showHeadingHelpPopover(anchorEl) {
   if (!popover) {
     popover = document.createElement('div');
     popover.id = 'wp-heading-help-popover';
+    popover.setAttribute('data-draggable-modal', 'true');
     popover.innerHTML = `
-      <div class="wp-help-title">
-        Heading Mode
+      <div class="wp-help-title" data-modal-drag-handle="true">
+        <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
+        <span>Heading Mode</span>
         <button class="wp-help-close" id="wp-heading-help-close-btn" title="Close">✕</button>
       </div>
       <div class="wp-help-tab-row">
@@ -738,6 +740,9 @@ function showHeadingHelpPopover(anchorEl) {
       <div class="wp-help-content" id="wp-heading-help-content"></div>
     `;
     document.body.appendChild(popover);
+    if (typeof window !== 'undefined' && typeof window.initModalDraggable === 'function') {
+      window.initModalDraggable(popover);
+    }
 
     const helpContent = {
       followWayline: {

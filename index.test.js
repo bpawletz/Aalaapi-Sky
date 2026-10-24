@@ -34802,6 +34802,169 @@ describe('v1.188.0: Draggable Modeless Floating HUD Panels (Issue #158)', () => 
       elevPanel.remove();
     }
   });
+
+  test('Keyboard Navigation: Arrow keys reposition draggable panels and respect viewport clamping', () => {
+    const initFn = window.initModalDraggable || global.initModalDraggable;
+    const panel = document.createElement('div');
+    panel.id = 'arrow-drag-test-panel';
+    panel.className = 'glass';
+    panel.setAttribute('data-draggable-modal', 'true');
+    panel.innerHTML = '<header class="modal-header" data-modal-drag-handle="true"><span class="modal-drag-grip">⋮⋮</span><span>Draggable Tool</span></header>';
+    document.body.appendChild(panel);
+
+    try {
+      initFn(panel);
+      const handle = panel.querySelector('.modal-header');
+      assert.ok(handle, 'Handle must exist');
+
+      // Test ArrowRight keydown
+      handle.dispatchEvent(new window.KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'ArrowRight' }));
+      assert.ok(panel.style.transform.includes('translate3d('), 'Transform must be updated by ArrowRight');
+
+      // Test Shift+ArrowDown keydown (large step)
+      handle.dispatchEvent(new window.KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'ArrowDown', shiftKey: true }));
+      assert.ok(panel.style.transform.includes('translate3d('), 'Transform must be updated by Shift+ArrowDown');
+
+      // Double-click resets
+      handle.dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }));
+      assert.strictEqual(panel.style.transform, '', 'Double click must reset transform to empty string');
+    } finally {
+      panel.remove();
+    }
+  });
+
+  test('DOM Architecture: #pattern-category-filter-bar and 22 categorized pattern cards in index_template.html', () => {
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tpl.includes('id="pattern-category-filter-bar"'), 'Must contain #pattern-category-filter-bar');
+    assert.ok(tpl.includes('data-category="all"'), 'Must have All category pill');
+    assert.ok(tpl.includes('data-category="mapping"'), 'Must have Mapping category pill');
+    assert.ok(tpl.includes('data-category="structure"'), 'Must have Structure category pill');
+    assert.ok(tpl.includes('data-category="linear"'), 'Must have Linear category pill');
+    assert.ok(tpl.includes('data-category="creative"'), 'Must have Creative category pill');
+    assert.ok(tpl.includes('data-category="safety"'), 'Must have Safety category pill');
+
+    const cardMatches = tpl.match(/class="pattern-card[^"]*"/g) || [];
+    assert.strictEqual(cardMatches.length, 22, 'Must feature exactly 22 pattern cards in Section 1');
+
+    const categorizedMatches = tpl.match(/data-pattern-category="[^"]+"/g) || [];
+    assert.strictEqual(categorizedMatches.length, 22, 'All 22 pattern cards must have data-pattern-category');
+  });
+
+  test('DOM Architecture: #sidebar-quick-nav toolbar and accessible section headers in index_template.html', () => {
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tpl.includes('id="sidebar-quick-nav"'), 'Must contain #sidebar-quick-nav');
+    assert.ok(tpl.includes('id="sidebar-collapse-all-quick-btn"'), 'Must contain #sidebar-collapse-all-quick-btn');
+    assert.ok(tpl.includes('data-target-section="mission-db-section"'), 'Must feature jump chip to Section 0');
+    assert.ok(tpl.includes('data-target-section="layers-and-location-section"'), 'Must feature jump chip to Section 1');
+    assert.ok(tpl.includes('data-target-section="grid-geometry-section"'), 'Must feature jump chip to Section 2');
+    assert.ok(tpl.includes('data-target-section="mission-failsafes-section"'), 'Must feature jump chip to Section 3');
+    assert.ok(tpl.includes('data-target-section="hardware-sync-section"'), 'Must feature jump chip to Section 4');
+  });
+
+  test('CSS Architecture: color-scheme, focus-visible rings, and reduced motion in index.css', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('color-scheme: dark;'), ':root must define color-scheme: dark');
+    assert.ok(css.includes('color-scheme: light;'), '[data-theme="light"] must define color-scheme: light');
+    assert.ok(css.includes(':focus-visible'), 'CSS must define high-contrast :focus-visible rings');
+    assert.ok(css.includes('prefers-reduced-motion: reduce'), 'CSS must support prefers-reduced-motion: reduce');
+    assert.ok(css.includes('.pattern-filter-pill'), 'CSS must style .pattern-filter-pill');
+    assert.ok(css.includes('.sidebar-quick-nav'), 'CSS must style .sidebar-quick-nav');
+    assert.ok(css.includes('.pattern-card-filtered-out'), 'CSS must style .pattern-card-filtered-out');
+  });
+});
+
+
+describe('v1.189.0: Draggable Map Legends, Popovers & Floating Drawers Suite (Issue #164)', () => {
+  test('Version consistency: v1.189.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.189.0');
+  });
+
+  test('DOM Architecture: Topbar popovers, drawers, and floating panels are marked data-draggable-modal="true" with drag handles and grips', () => {
+    const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const targetIds = [
+      'bridge-status-popover',
+      'telemetry-weather-popover',
+      'mission-time-popover',
+      'adsb-control-drawer',
+      'remote-id-calibration-panel',
+      'three-hud-legend',
+      'stats-panel'
+    ];
+
+    targetIds.forEach(id => {
+      const elRegex = new RegExp(`id="${id}"[^>]*data-draggable-modal="true"`);
+      assert.ok(elRegex.test(tpl), `Element #${id} must have data-draggable-modal="true"`);
+    });
+
+    assert.ok(tpl.includes('id="bridge-status-popover"'), 'bridge-status-popover must exist');
+    assert.ok(tpl.includes('id="telemetry-weather-popover"'), 'telemetry-weather-popover must exist');
+    assert.ok(tpl.includes('id="mission-time-popover"'), 'mission-time-popover must exist');
+    assert.ok(tpl.includes('id="adsb-control-drawer"'), 'adsb-control-drawer must exist');
+    assert.ok(tpl.includes('id="remote-id-calibration-panel"'), 'remote-id-calibration-panel must exist');
+    assert.ok(tpl.includes('id="three-hud-legend"'), 'three-hud-legend must exist');
+    assert.ok(tpl.includes('id="stats-panel"'), 'stats-panel must exist');
+  });
+
+  test('ModalDragManager click suppression: Releasing a drag suppresses subsequent clicks to prevent unintentional closure or toggle', () => {
+    const initFn = window.initModalDraggable || global.initModalDraggable;
+    const popover = document.createElement('div');
+    popover.id = 'suppression-test-popover';
+    popover.className = 'glass';
+    popover.setAttribute('data-draggable-modal', 'true');
+    popover.innerHTML = '<div class="popover-header" data-modal-drag-handle="true"><span class="modal-drag-grip">⋮⋮</span><span>Popover Header</span></div>';
+    document.body.appendChild(popover);
+
+    let clickCount = 0;
+    popover.querySelector('.popover-header').addEventListener('click', () => {
+      clickCount++;
+    });
+
+    try {
+      initFn(popover);
+      const handle = popover.querySelector('.popover-header');
+
+      // 1. Simulate a drag (pointerdown, pointermove > 3px, pointerup)
+      handle.dispatchEvent(new window.PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100, pointerId: 1 }));
+      handle.dispatchEvent(new window.PointerEvent('pointermove', { bubbles: true, clientX: 125, clientY: 120, pointerId: 1 }));
+      handle.dispatchEvent(new window.PointerEvent('pointerup', { bubbles: true, clientX: 125, clientY: 120, pointerId: 1 }));
+
+      // Immediately dispatch a click event right after drag
+      const clickEvt = new window.MouseEvent('click', { bubbles: true, cancelable: true });
+      handle.dispatchEvent(clickEvt);
+
+      assert.strictEqual(clickCount, 0, 'Click event immediately following a drag must be suppressed');
+
+      // 2. Simulate a simple stationary tap / click (no pointermove)
+      handle.dispatchEvent(new window.PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100, pointerId: 2 }));
+      handle.dispatchEvent(new window.PointerEvent('pointerup', { bubbles: true, clientX: 100, clientY: 100, pointerId: 2 }));
+
+      // Stationary click had hasMoved=false, so suppressClickUntil was not set
+      const tapEvt = new window.MouseEvent('click', { bubbles: true, cancelable: true });
+      handle.dispatchEvent(tapEvt);
+
+      assert.strictEqual(clickCount, 1, 'Stationary click without drag motion must fire normally');
+    } finally {
+      popover.remove();
+    }
+  });
+
+  test('Leaflet Map Legend: MathUtils assigns stable #map-mission-legend ID, data-draggable-modal, and tactile grip', () => {
+    const mathCode = fs.readFileSync(path.join(__dirname, 'src', 'geo', 'MathUtils.js'), 'utf8');
+    assert.ok(mathCode.includes("div.id = 'map-mission-legend'"), "Map legend must have stable div.id = 'map-mission-legend'");
+    assert.ok(mathCode.includes("div.setAttribute('data-draggable-modal', 'true')"), "Map legend must have data-draggable-modal");
+    assert.ok(mathCode.includes("gripSpan.className = 'modal-drag-grip'"), "Map legend must create .modal-drag-grip");
+    assert.ok(mathCode.includes("window.initModalDraggable(div)"), "Map legend must call window.initModalDraggable");
+  });
+
+  test('CSS Architecture: cursor grab/grabbing and modal-dragging elevation rules for popovers, legends, and drawers', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('.popover-header'), 'CSS must include .popover-header in grab rules');
+    assert.ok(css.includes('.legend-header'), 'CSS must include .legend-header in grab rules');
+    assert.ok(css.includes('.adsb-drawer-header'), 'CSS must include .adsb-drawer-header in grab rules');
+    assert.ok(css.includes('#bridge-status-popover.modal-dragging'), 'CSS must include #bridge-status-popover.modal-dragging elevation');
+    assert.ok(css.includes('#three-hud-legend.modal-dragging'), 'CSS must include #three-hud-legend.modal-dragging elevation');
+    assert.ok(css.includes('#map-mission-legend.modal-dragging'), 'CSS must include #map-mission-legend.modal-dragging elevation');
+  });
 });
 
 });

@@ -1,5 +1,6 @@
 /* Global Variables & Theme Configuration */
 :root, [data-theme="dark"] {
+  color-scheme: dark;
   --font-primary: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
   --font-secondary: 'Plus Jakarta Sans', sans-serif;
   
@@ -30,6 +31,7 @@
 }
 
 [data-theme="light"] {
+  color-scheme: light;
   /* Color Palette - High-Contrast Daylight Field Mode */
   --bg-main: #f1f5f9;
   --bg-sidebar: rgba(255, 255, 255, 0.94);
@@ -1558,6 +1560,15 @@ html, body {
 .video-cast-header,
 .elevation-profile-header,
 .replay-2d-header,
+.diag-modal-header,
+.diag-wireframe-header,
+.popover-header,
+.legend-header,
+.adsb-drawer-header,
+.remote-id-cal-header,
+.stats-panel-header,
+#hud-legend-header,
+.wp-help-title,
 [data-modal-drag-handle] {
   cursor: grab;
   user-select: none;
@@ -1573,6 +1584,13 @@ html, body {
 
 .modal.modal-dragging .modal-header,
 .modal.modal-dragging .photo-inspector-header,
+.modal.modal-dragging .popover-header,
+.modal.modal-dragging .legend-header,
+.modal.modal-dragging .adsb-drawer-header,
+.modal.modal-dragging .remote-id-cal-header,
+.modal.modal-dragging .stats-panel-header,
+.modal.modal-dragging #hud-legend-header,
+.modal.modal-dragging .wp-help-title,
 .modal.modal-dragging [data-modal-drag-handle] {
   cursor: grabbing !important;
 }
@@ -1624,7 +1642,17 @@ body.modal-drag-active {
 #fpv-editor-panel.modal-dragging,
 #video-cast-panel.modal-dragging,
 #elevation-profile-drawer.modal-dragging,
-#replay-2d-bar.modal-dragging {
+#replay-2d-bar.modal-dragging,
+#bridge-status-popover.modal-dragging,
+#mission-time-popover.modal-dragging,
+#telemetry-weather-popover.modal-dragging,
+#adsb-control-drawer.modal-dragging,
+#remote-id-calibration-panel.modal-dragging,
+#stats-panel.modal-dragging,
+#three-hud-legend.modal-dragging,
+#map-mission-legend.modal-dragging,
+#airspace-legend-container.modal-dragging,
+#wp-heading-help-popover.modal-dragging {
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(6, 182, 212, 0.5) !important;
   transition: none !important;
 }
@@ -7182,4 +7210,225 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   font-size: 0.78rem;
   padding-bottom: 5px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ==========================================================================
+   GUI & UX Modern Improvements Suite (v1.188.0)
+   ========================================================================== */
+
+/* 1. Sidebar Section Quick-Nav Toolbar */
+.sidebar-quick-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 10px 8px 10px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 8px;
+  background: rgba(15, 23, 42, 0.55);
+  border-radius: 8px;
+}
+
+.sidebar-quick-nav-pills {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-quick-nav-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar-nav-chip {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sidebar-nav-chip:hover {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--accent-cyan);
+  border-color: rgba(6, 182, 212, 0.35);
+}
+
+.sidebar-nav-chip.active {
+  background: rgba(6, 182, 212, 0.25);
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+.sidebar-nav-toggle-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.sidebar-nav-toggle-btn:hover {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--accent-cyan);
+  border-color: rgba(6, 182, 212, 0.35);
+}
+
+/* 2. Sticky & Accessible Section Accordion Headers */
+.control-section h3 {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* 3. Section 1 Pattern Category Filter Bar */
+.pattern-category-filter-bar {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 4px 0 6px 0;
+  margin-top: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.pattern-category-filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.pattern-filter-pill {
+  flex-shrink: 0;
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.pattern-filter-pill:hover {
+  background: rgba(30, 41, 59, 0.8);
+  color: var(--text-main);
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+.pattern-filter-pill.active {
+  background: rgba(6, 182, 212, 0.2);
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 6px rgba(6, 182, 212, 0.25);
+}
+
+.pattern-card-filtered-out {
+  display: none !important;
+}
+
+/* 4. Daylight Field Mode ([data-theme="light"]) Surface & Contrast Polish */
+[data-theme="light"] .elevation-profile-drawer,
+[data-theme="light"] .replay-2d-bar,
+[data-theme="light"] .video-cast-panel,
+[data-theme="light"] .bridge-status-popover,
+[data-theme="light"] .adsb-card,
+[data-theme="light"] .diag-wireframe-panel {
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .pattern-card {
+  background: rgba(241, 245, 249, 0.9) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] .pattern-card:hover {
+  background: #ffffff !important;
+  border-color: var(--accent-cyan) !important;
+}
+
+[data-theme="light"] .pattern-card.active {
+  background: rgba(8, 145, 178, 0.12) !important;
+  border-color: var(--accent-cyan) !important;
+}
+
+[data-theme="light"] .pattern-card.active > span:not(.pattern-badge-tool):not(.pattern-badge-restricted) {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .sidebar-quick-nav {
+  background: rgba(241, 245, 249, 0.9) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] .sidebar-nav-chip {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] .sidebar-nav-chip:hover {
+  background: rgba(8, 145, 178, 0.1) !important;
+  color: var(--accent-cyan) !important;
+}
+
+[data-theme="light"] .sidebar-nav-chip.active {
+  background: rgba(8, 145, 178, 0.18) !important;
+  color: var(--accent-cyan) !important;
+  border-color: var(--accent-cyan) !important;
+}
+
+[data-theme="light"] .pattern-filter-pill {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+[data-theme="light"] .pattern-filter-pill:hover {
+  background: rgba(241, 245, 249, 0.9) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .pattern-filter-pill.active {
+  background: rgba(8, 145, 178, 0.15) !important;
+  color: var(--accent-cyan) !important;
+  border-color: var(--accent-cyan) !important;
+}
+
+/* 5. Accessibility: High-Contrast Focus Visible Rings */
+:where(button, input, select, textarea, [role="button"], .pattern-card, [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--accent-cyan) !important;
+  outline-offset: 2px !important;
+}
+
+/* 6. Accessibility: Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -17,6 +17,7 @@
   <style>
 /* Global Variables & Theme Configuration */
 :root, [data-theme="dark"] {
+  color-scheme: dark;
   --font-primary: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
   --font-secondary: 'Plus Jakarta Sans', sans-serif;
   
@@ -47,6 +48,7 @@
 }
 
 [data-theme="light"] {
+  color-scheme: light;
   /* Color Palette - High-Contrast Daylight Field Mode */
   --bg-main: #f1f5f9;
   --bg-sidebar: rgba(255, 255, 255, 0.94);
@@ -1575,6 +1577,15 @@ html, body {
 .video-cast-header,
 .elevation-profile-header,
 .replay-2d-header,
+.diag-modal-header,
+.diag-wireframe-header,
+.popover-header,
+.legend-header,
+.adsb-drawer-header,
+.remote-id-cal-header,
+.stats-panel-header,
+#hud-legend-header,
+.wp-help-title,
 [data-modal-drag-handle] {
   cursor: grab;
   user-select: none;
@@ -1590,6 +1601,13 @@ html, body {
 
 .modal.modal-dragging .modal-header,
 .modal.modal-dragging .photo-inspector-header,
+.modal.modal-dragging .popover-header,
+.modal.modal-dragging .legend-header,
+.modal.modal-dragging .adsb-drawer-header,
+.modal.modal-dragging .remote-id-cal-header,
+.modal.modal-dragging .stats-panel-header,
+.modal.modal-dragging #hud-legend-header,
+.modal.modal-dragging .wp-help-title,
 .modal.modal-dragging [data-modal-drag-handle] {
   cursor: grabbing !important;
 }
@@ -1641,7 +1659,17 @@ body.modal-drag-active {
 #fpv-editor-panel.modal-dragging,
 #video-cast-panel.modal-dragging,
 #elevation-profile-drawer.modal-dragging,
-#replay-2d-bar.modal-dragging {
+#replay-2d-bar.modal-dragging,
+#bridge-status-popover.modal-dragging,
+#mission-time-popover.modal-dragging,
+#telemetry-weather-popover.modal-dragging,
+#adsb-control-drawer.modal-dragging,
+#remote-id-calibration-panel.modal-dragging,
+#stats-panel.modal-dragging,
+#three-hud-legend.modal-dragging,
+#map-mission-legend.modal-dragging,
+#airspace-legend-container.modal-dragging,
+#wp-heading-help-popover.modal-dragging {
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(6, 182, 212, 0.5) !important;
   transition: none !important;
 }
@@ -7201,6 +7229,227 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* ==========================================================================
+   GUI & UX Modern Improvements Suite (v1.188.0)
+   ========================================================================== */
+
+/* 1. Sidebar Section Quick-Nav Toolbar */
+.sidebar-quick-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 10px 8px 10px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 8px;
+  background: rgba(15, 23, 42, 0.55);
+  border-radius: 8px;
+}
+
+.sidebar-quick-nav-pills {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-quick-nav-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar-nav-chip {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sidebar-nav-chip:hover {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--accent-cyan);
+  border-color: rgba(6, 182, 212, 0.35);
+}
+
+.sidebar-nav-chip.active {
+  background: rgba(6, 182, 212, 0.25);
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+.sidebar-nav-toggle-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.sidebar-nav-toggle-btn:hover {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--accent-cyan);
+  border-color: rgba(6, 182, 212, 0.35);
+}
+
+/* 2. Sticky & Accessible Section Accordion Headers */
+.control-section h3 {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* 3. Section 1 Pattern Category Filter Bar */
+.pattern-category-filter-bar {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 4px 0 6px 0;
+  margin-top: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.pattern-category-filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.pattern-filter-pill {
+  flex-shrink: 0;
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.pattern-filter-pill:hover {
+  background: rgba(30, 41, 59, 0.8);
+  color: var(--text-main);
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+.pattern-filter-pill.active {
+  background: rgba(6, 182, 212, 0.2);
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 6px rgba(6, 182, 212, 0.25);
+}
+
+.pattern-card-filtered-out {
+  display: none !important;
+}
+
+/* 4. Daylight Field Mode ([data-theme="light"]) Surface & Contrast Polish */
+[data-theme="light"] .elevation-profile-drawer,
+[data-theme="light"] .replay-2d-bar,
+[data-theme="light"] .video-cast-panel,
+[data-theme="light"] .bridge-status-popover,
+[data-theme="light"] .adsb-card,
+[data-theme="light"] .diag-wireframe-panel {
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .pattern-card {
+  background: rgba(241, 245, 249, 0.9) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] .pattern-card:hover {
+  background: #ffffff !important;
+  border-color: var(--accent-cyan) !important;
+}
+
+[data-theme="light"] .pattern-card.active {
+  background: rgba(8, 145, 178, 0.12) !important;
+  border-color: var(--accent-cyan) !important;
+}
+
+[data-theme="light"] .pattern-card.active > span:not(.pattern-badge-tool):not(.pattern-badge-restricted) {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .sidebar-quick-nav {
+  background: rgba(241, 245, 249, 0.9) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] .sidebar-nav-chip {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] .sidebar-nav-chip:hover {
+  background: rgba(8, 145, 178, 0.1) !important;
+  color: var(--accent-cyan) !important;
+}
+
+[data-theme="light"] .sidebar-nav-chip.active {
+  background: rgba(8, 145, 178, 0.18) !important;
+  color: var(--accent-cyan) !important;
+  border-color: var(--accent-cyan) !important;
+}
+
+[data-theme="light"] .pattern-filter-pill {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+[data-theme="light"] .pattern-filter-pill:hover {
+  background: rgba(241, 245, 249, 0.9) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .pattern-filter-pill.active {
+  background: rgba(8, 145, 178, 0.15) !important;
+  color: var(--accent-cyan) !important;
+  border-color: var(--accent-cyan) !important;
+}
+
+/* 5. Accessibility: High-Contrast Focus Visible Rings */
+:where(button, input, select, textarea, [role="button"], .pattern-card, [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--accent-cyan) !important;
+  outline-offset: 2px !important;
+}
+
+/* 6. Accessibility: Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 </style>
   
   <!-- App Icon & Favicon -->
@@ -7268,7 +7517,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.188.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.189.0</span></h1>
         </div>
       </div>
 
@@ -7404,6 +7653,19 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       <!-- Sidebar / Panel for Controls -->
       <aside class="sidebar glass">
         <div class="scroll-container">
+          <!-- Sidebar Section Quick-Nav & Accordion Toolbar (v1.188.0) -->
+          <div id="sidebar-quick-nav" class="sidebar-quick-nav" role="navigation" aria-label="Sidebar Sections Quick Navigation">
+            <div class="sidebar-quick-nav-pills">
+              <button type="button" class="sidebar-nav-chip" data-target-section="mission-db-section" title="Jump to 0. Historical Flight DB">0. DB</button>
+              <button type="button" class="sidebar-nav-chip active" data-target-section="layers-and-location-section" title="Jump to 1. Pattern Layers &amp; Tools">1. Patterns</button>
+              <button type="button" class="sidebar-nav-chip" data-target-section="grid-geometry-section" title="Jump to 2. Layer Properties">2. Layer</button>
+              <button type="button" class="sidebar-nav-chip" data-target-section="mission-failsafes-section" title="Jump to 3. Mission Failsafes &amp; Defaults">3. Defaults</button>
+              <button type="button" class="sidebar-nav-chip" data-target-section="hardware-sync-section" title="Jump to 4. Actions &amp; Live Sync">4. Sync</button>
+            </div>
+            <button id="sidebar-collapse-all-quick-btn" class="sidebar-nav-toggle-btn" type="button" title="Collapse / Expand All Sections" aria-label="Toggle All Sections">
+              <span id="sidebar-collapse-all-quick-icon">↕️</span>
+            </button>
+          </div>
           <!-- Section 0: Missions & Historical Flight Database (Issue #123) -->
           <section class="control-section mission-db-section" id="mission-db-section">
             <h3 id="mission-db-title" style="display: flex; justify-content: space-between; align-items: center;">
@@ -7513,8 +7775,17 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             </select>
             
             <!-- Custom visual selector cards -->
+            <!-- Section 1 Pattern Category Filter Bar (v1.188.0) -->
+            <div id="pattern-category-filter-bar" class="pattern-category-filter-bar" role="toolbar" aria-label="Pattern Categories">
+              <button type="button" class="pattern-filter-pill active" data-category="all" aria-pressed="true">All (22)</button>
+              <button type="button" class="pattern-filter-pill" data-category="mapping" aria-pressed="false">Mapping &amp; 3D</button>
+              <button type="button" class="pattern-filter-pill" data-category="structure" aria-pressed="false">Orbit &amp; Structure</button>
+              <button type="button" class="pattern-filter-pill" data-category="linear" aria-pressed="false">Linear &amp; Route</button>
+              <button type="button" class="pattern-filter-pill" data-category="creative" aria-pressed="false">Creative &amp; Pano</button>
+              <button type="button" class="pattern-filter-pill" data-category="safety" aria-pressed="false">Safety &amp; GCP</button>
+            </div>
             <div class="pattern-selector-grid">
-              <div class="pattern-card" data-value="single" title="2D Map (Nadir Grid)">
+              <div class="pattern-card" data-value="single" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="false" title="2D Map (Nadir Grid)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="2,2"/>
                   <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
@@ -7522,7 +7793,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span>2D Grid</span>
               </div>
-              <div class="pattern-card active" data-value="double" title="3D Splat (Double Grid)">
+              <div class="pattern-card active" data-value="double" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="true" title="3D Splat (Double Grid)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2"/>
                   <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
@@ -7530,7 +7801,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span>Double Grid</span>
               </div>
-              <div class="pattern-card" data-value="target-splat" title="Target Splat (3D Frustum-Pruned Grid)">
+              <div class="pattern-card" data-value="target-splat" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="false" title="Target Splat (3D Frustum-Pruned Grid)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="8" stroke-dasharray="2,2"/>
                   <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
@@ -7538,7 +7809,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span>Target Splat</span>
               </div>
-              <div class="pattern-card" data-value="orbit" title="3D Object (Circular Orbit)">
+              <div class="pattern-card" data-value="orbit" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="3D Object (Circular Orbit)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="8"/>
                   <circle cx="12" cy="12" r="2" fill="currentColor"/>
@@ -7546,7 +7817,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span>Orbit</span>
               </div>
-              <div class="pattern-card" data-value="multi-orbit" title="3D Object (Multi-Tiered Orbit)">
+              <div class="pattern-card" data-value="multi-orbit" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="3D Object (Multi-Tiered Orbit)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="8" stroke-dasharray="2,2"/>
                   <circle cx="12" cy="12" r="5"/>
@@ -7554,7 +7825,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span>Multi-Orbit</span>
               </div>
-              <div class="pattern-card" data-value="tower" title="3D Structure (Tower Audit Inspection)">
+              <div class="pattern-card" data-value="tower" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="3D Structure (Tower Audit Inspection)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 2l-6 20h12L12 2z"/>
                   <line x1="9" y1="12" x2="15" y2="12"/>
@@ -7563,7 +7834,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span>Tower</span>
               </div>
-              <div class="pattern-card" data-value="vertical-facade" title="Vertical Facade Grid (Dams, Bridge Pylons, Building Facades)">
+              <div class="pattern-card" data-value="vertical-facade" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="Vertical Facade Grid (Dams, Bridge Pylons, Building Facades)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="4" y="3" width="16" height="18" rx="1"/>
                   <line x1="4" y1="8" x2="20" y2="8"/>
@@ -7573,7 +7844,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span style="color: #34d399;">Vertical Facade</span>
               </div>
-              <div class="pattern-card" data-value="continuous-helix" title="Continuous Helix (Corkscrew Orbit Ascent/Descent)">
+              <div class="pattern-card" data-value="continuous-helix" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="Continuous Helix (Corkscrew Orbit Ascent/Descent)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 19c2-8 14-8 16 0"/>
                   <path d="M5 13c2-6 12-6 14 0"/>
@@ -7582,14 +7853,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span style="color: #a78bfa;">Continuous Helix</span>
               </div>
-              <div class="pattern-card" data-value="star-pass" title="Star Pass (Cross-Hatch Convergent POI Inspection)">
+              <div class="pattern-card" data-value="star-pass" data-pattern-category="structure" role="button" tabindex="0" aria-pressed="false" title="Star Pass (Cross-Hatch Convergent POI Inspection)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                   <circle cx="12" cy="12" r="2" fill="currentColor"/>
                 </svg>
                 <span style="color: #f59e0b;">Star Pass</span>
               </div>
-              <div class="pattern-card" data-value="photo-sphere" title="360° Photo Sphere (Equirectangular Panorama)">
+              <div class="pattern-card" data-value="photo-sphere" data-pattern-category="creative" role="button" tabindex="0" aria-pressed="false" title="360° Photo Sphere (Equirectangular Panorama)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="9"/>
                   <ellipse cx="12" cy="12" rx="9" ry="4" stroke-dasharray="2,2"/>
@@ -7598,7 +7869,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span>360 Pano</span>
               </div>
-              <div class="pattern-card" data-value="hyperlapse" title="Hyperlapse (Interval Moving Time-Lapse)">
+              <div class="pattern-card" data-value="hyperlapse" data-pattern-category="creative" role="button" tabindex="0" aria-pressed="false" title="Hyperlapse (Interval Moving Time-Lapse)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 17l6-6 4 4 6-8" stroke-dasharray="2,2"/>
                   <circle cx="4" cy="17" r="2" fill="currentColor"/>
@@ -7608,13 +7879,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span>Hyperlapse</span>
               </div>
-              <div class="pattern-card" data-value="light-art" title="Light Art & Sky Painting (Long Exposure Calligraphy)">
+              <div class="pattern-card" data-value="light-art" data-pattern-category="creative" role="button" tabindex="0" aria-pressed="false" title="Light Art & Sky Painting (Long Exposure Calligraphy)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="#ec4899"/>
                 </svg>
                 <span style="color: #f472b6;">Light Art</span>
               </div>
-              <div class="pattern-card" data-value="grid-orbit-combo" title="2D + 3D Hybrid (Grid + Orbit Combo)">
+              <div class="pattern-card" data-value="grid-orbit-combo" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="false" title="2D + 3D Hybrid (Grid + Orbit Combo)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3,3" opacity="0.5"/>
                   <circle cx="12" cy="12" r="6"/>
@@ -7623,7 +7894,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span>Hybrid Combo</span>
               </div>
-              <div class="pattern-card" data-value="grid-multi-orbit-combo" title="2D + 3D Hybrid (Grid + Multi-Orbit)">
+              <div class="pattern-card" data-value="grid-multi-orbit-combo" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="false" title="2D + 3D Hybrid (Grid + Multi-Orbit)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="9"/>
                   <circle cx="12" cy="12" r="5" stroke-dasharray="2,2"/>
@@ -7631,14 +7902,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span>Multi-Hybrid</span>
               </div>
-              <div class="pattern-card" data-value="road-following" title="Road Following (Offset Path)">
+              <div class="pattern-card" data-value="road-following" data-pattern-category="linear" role="button" tabindex="0" aria-pressed="false" title="Road Following (Offset Path)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 22V17C4 13 8 11 12 11C16 11 20 9 20 5V2" stroke-dasharray="3,3"/>
                   <path d="M8 22V17C8 14 11 13 14 13C17 13 24 11 24 5V2" opacity="0.5"/>
                 </svg>
                 <span>Road Follow</span>
               </div>
-              <div class="pattern-card" data-value="corridor" title="Multi-Pass Corridor Mapping (Linear Features, Transmission Lines, Roads, Rivers)">
+              <div class="pattern-card" data-value="corridor" data-pattern-category="linear" role="button" tabindex="0" aria-pressed="false" title="Multi-Pass Corridor Mapping (Linear Features, Transmission Lines, Roads, Rivers)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 22L8 2M20 22L16 2" stroke="#6366f1" stroke-width="2"/>
                   <line x1="12" y1="2" x2="12" y2="22" stroke="#818cf8" stroke-dasharray="2,2"/>
@@ -7646,7 +7917,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span style="color: #818cf8;">Corridor</span>
               </div>
-              <div class="pattern-card" data-value="freeform" title="Freeform Flight Plan (Manual Waypoints)">
+              <div class="pattern-card" data-value="freeform" data-pattern-category="linear" role="button" tabindex="0" aria-pressed="false" title="Freeform Flight Plan (Manual Waypoints)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="5" cy="19" r="2" fill="currentColor"/>
                   <circle cx="12" cy="6" r="2" fill="currentColor"/>
@@ -7655,7 +7926,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </svg>
                 <span>Freeform</span>
               </div>
-              <div class="pattern-card auto-plan-card" id="auto-plan-btn" title="Auto-Plan Tool: Drag to Box & Survey Area">
+              <div class="pattern-card auto-plan-card" id="auto-plan-btn" data-pattern-category="mapping" role="button" tabindex="0" aria-pressed="false" title="Auto-Plan Tool: Drag to Box & Survey Area">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="7"/>
                   <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
@@ -7667,7 +7938,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <span>Auto-Plan</span>
                 <span class="pattern-badge-tool">TOOL</span>
               </div>
-              <div class="pattern-card exclusion-card" data-value="exclusion-box" title="Exclusion Zone (Rectangular Box)">
+              <div class="pattern-card exclusion-card" data-value="exclusion-box" data-pattern-category="safety" role="button" tabindex="0" aria-pressed="false" title="Exclusion Zone (Rectangular Box)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" stroke="#ef4444"/>
                   <line x1="3" y1="3" x2="21" y2="21" stroke="#ef4444" stroke-width="2"/>
@@ -7675,7 +7946,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <span style="color: #f87171;">Exclusion (Box)</span>
                 <span class="pattern-badge-restricted">SAFETY</span>
               </div>
-              <div class="pattern-card exclusion-card" data-value="exclusion-freeform" title="Exclusion Zone (Freeform Polygon)">
+              <div class="pattern-card exclusion-card" data-value="exclusion-freeform" data-pattern-category="safety" role="button" tabindex="0" aria-pressed="false" title="Exclusion Zone (Freeform Polygon)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="4,19 12,4 20,9 18,20" stroke="#ef4444" stroke-width="2"/>
                   <line x1="4" y1="4" x2="20" y2="20" stroke="#ef4444" stroke-width="2"/>
@@ -7683,7 +7954,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <span style="color: #f87171;">Exclusion (Poly)</span>
                 <span class="pattern-badge-restricted">SAFETY</span>
               </div>
-              <div class="pattern-card boundary-card" data-value="boundary-polygon" title="Boundary / Parcel (Drawing Layer)">
+              <div class="pattern-card boundary-card" data-value="boundary-polygon" data-pattern-category="safety" role="button" tabindex="0" aria-pressed="false" title="Boundary / Parcel (Drawing Layer)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="3,6 9,3 15,6 21,3 21,18 15,21 9,18 3,21" stroke="#06b6d4" stroke-dasharray="3,3"/>
                   <polyline points="9,3 9,18" stroke="#06b6d4" opacity="0.6"/>
@@ -7693,7 +7964,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <span style="color: #22d3ee;">Boundary</span>
                 <span class="pattern-badge-tool" style="background: rgba(6, 182, 212, 0.2); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.35);">DRAWING</span>
               </div>
-              <div class="pattern-card fiducial-card" data-value="fiducial-markers" title="Fiducial Markers & Ground Control Points (GCPs)">
+              <div class="pattern-card fiducial-card" data-value="fiducial-markers" data-pattern-category="safety" role="button" tabindex="0" aria-pressed="false" title="Fiducial Markers & Ground Control Points (GCPs)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="9" stroke="#f59e0b"/>
                   <circle cx="12" cy="12" r="4" stroke="#f59e0b"/>
@@ -10435,9 +10706,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
 
         <!-- Calibration Popover Panel -->
-        <div id="remote-id-calibration-panel" class="remote-id-calibration-panel hidden">
-          <div class="remote-id-cal-header">
+        <div id="remote-id-calibration-panel" class="remote-id-calibration-panel hidden" data-draggable-modal="true">
+          <div class="remote-id-cal-header" data-modal-drag-handle="true">
             <div class="remote-id-cal-title">
+              <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition panel">&#x22EE;&#x22EE;</span>
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"/>
                 <line x1="12" y1="2" x2="12" y2="6"/>
@@ -10498,9 +10770,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       </div>
 
       <!-- Floating Topbar Bridge & Hardware Status Popover (Issue #128) -->
-      <div id="bridge-status-popover" class="bridge-status-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 360px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 10px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
-        <div class="popover-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+      <div id="bridge-status-popover" class="bridge-status-popover hidden" data-draggable-modal="true" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 360px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 10px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
+        <div class="popover-header" data-modal-drag-handle="true" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
           <div class="popover-title" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+            <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
             <span style="font-size: 1.05rem;">🌉</span>
             <span>Aalaapi Bridge &amp; Hardware Sync</span>
           </div>
@@ -10773,9 +11046,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       </div>
 
       <!-- Floating Topbar Telemetry & Weather Popover -->
-      <div id="telemetry-weather-popover" class="telemetry-weather-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 340px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
-        <div class="popover-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+      <div id="telemetry-weather-popover" class="telemetry-weather-popover hidden" data-draggable-modal="true" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 340px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
+        <div class="popover-header" data-modal-drag-handle="true" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
           <div class="popover-title" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+            <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#38bdf8" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             <span>Mission Details &amp; Live Weather</span>
           </div>
@@ -10868,9 +11142,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       </div>
 
       <!-- Floating Topbar Mission Time & Planned Schedule Popover -->
-      <div id="mission-time-popover" class="mission-time-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 350px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
-        <div class="popover-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+      <div id="mission-time-popover" class="mission-time-popover hidden" data-draggable-modal="true" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 350px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
+        <div class="popover-header" data-modal-drag-handle="true" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
           <div class="popover-title" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+            <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#f59e0b" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span>Mission Time &amp; Solar Ephemeris</span>
           </div>
@@ -10932,9 +11207,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       </div>
 
       <!-- ADS-B Airspace Control Side Drawer (Issue #92) -->
-      <div id="adsb-control-drawer" class="adsb-control-drawer hidden" aria-labelledby="adsb-drawer-title">
-        <div class="adsb-drawer-header">
+      <div id="adsb-control-drawer" class="adsb-control-drawer hidden" data-draggable-modal="true" aria-labelledby="adsb-drawer-title">
+        <div class="adsb-drawer-header" data-modal-drag-handle="true">
           <div class="adsb-drawer-title" id="adsb-drawer-title">
+            <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition drawer">&#x22EE;&#x22EE;</span>
             <span style="font-size: 1.15rem;">✈️</span>
             <div>
               <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
@@ -11239,9 +11515,9 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       </div>
 
       <!-- Floating Stats Panel (Hidden by default, activated via Topbar HUD Pill) -->
-      <div class="stats-panel glass hidden" id="stats-panel">
-        <div class="stats-panel-header">
-          <h3>Mission Details</h3>
+      <div class="stats-panel glass hidden" id="stats-panel" data-draggable-modal="true">
+        <div class="stats-panel-header" data-modal-drag-handle="true">
+          <h3 style="display: flex; align-items: center; gap: 6px;"><span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition panel">&#x22EE;&#x22EE;</span>Mission Details</h3>
           <button id="stats-toggle-btn" class="stats-toggle-btn" type="button" aria-label="Toggle stats details">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 12 15 18 9"/>
@@ -11498,6 +11774,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🗺️ Draggable Map Legends, Popovers &amp; Drawers (v1.189.0) (Closes #164)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Complete dragging freedom across the entire application interface! Move the <strong>Altitude &amp; Mission Layers Legend</strong>, <strong>Dynamic Airspace Overlays Legend</strong>, <strong>Aalaapi Bridge &amp; Hardware Sync Popover</strong>, <strong>Mission Details &amp; Live Weather Popover</strong>, <strong>Mission Time &amp; Solar Ephemeris Popover</strong>, <strong>Manned Aircraft ADS-B Radar Drawer</strong>, <strong>Map &amp; Remote ID Alignment Calibration Panel</strong>, and <strong>3D HUD Waypoint Colors Legend</strong> anywhere on screen. Features tactile grips (<code>&#x22EE;&#x22EE;</code>), double-click reset, automatic position persistence across redraws, and Leaflet/Three.js interaction isolation.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🪟 Draggable Modeless Floating HUD Panels (v1.188.0) (Closes #158)
@@ -13657,7 +13941,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.188.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.189.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -13778,11 +14062,22 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                     <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.189.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Draggable Legends, Popovers &amp; Drawers (Closes #164):</strong> Tactile drag-and-drop capability enabled across all floating UI components: Altitude/Layers Map Legend, Airspace Overlays Legend, Bridge &amp; Hardware Sync, Mission Details &amp; Weather, Mission Time &amp; Solar Ephemeris, ADS-B Radar Drawer, Remote ID Alignment Panel, and 3D HUD Waypoint Colors Legend.</li>
+                <li><strong>Tactile Grips &amp; Click Suppression:</strong> Prominent drag grips (<code>&#x22EE;&#x22EE;</code>) with capture-phase click filtering to prevent unintentional accordion toggling or document outside-click closure after dragging.</li>
+                <li><strong>Session Position Memory &amp; Edge Clamping:</strong> Dynamic DOM-rebuilt controls (e.g. Leaflet map legends) preserve moved coordinates without snapping back; double-click header instantly restores default docking.</li>
+              </ul>
+            </li>
+                                    <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.188.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
-                <li><strong>Draggable Floating HUD Panels (Closes #158):</strong> Enabled smooth pointer/touch-based dragging across modeless floating HUD panels including Live Video Cast (<code>#video-cast-panel</code>), Flight Elevation Profile (<code>#elevation-profile-drawer</code>), and 2D Replay Bar (<code>#replay-2d-bar</code>).</li>
+                <li><strong>Draggable Floating HUD Panels (Closes #158):</strong> Enabled smooth pointer/touch and keyboard arrow-key dragging across floating map HUD panels including Live Video Cast (<code>#video-cast-panel</code>), Flight Elevation Profile (<code>#elevation-profile-drawer</code>), 2D Replay Bar (<code>#replay-2d-bar</code>), and 3D Wireframe Toolkit (<code>#diag-wireframe-panel</code>).</li>
                 <li><strong>Base Transform Support &amp; Edge Clamping:</strong> ModalDragManager natively supports horizontally centered panels utilizing CSS <code>translateX(-50%)</code> with dynamic clamping and double-click re-centering shortcuts.</li>
-                <li><strong>Tactile Grip Affordances:</strong> Added high-visibility grab grips (<code>&#x22EE;&#x22EE;</code>) with <code>grab</code> and <code>grabbing</code> cursor feedback.</li>
+                <li><strong>Section 1 Pattern Category Filter Bar:</strong> Grouped the 22 pattern cards into instant category filter pills (<em>All, Mapping &amp; 3D, Orbit &amp; Structure, Linear &amp; Route, Creative &amp; Pano, Safety &amp; GCP</em>) with keyboard accessibility (<code>role="button"</code>, <code>tabindex="0"</code>, <code>aria-pressed</code>).</li>
+                <li><strong>Sidebar Section Quick-Navigation Toolbar:</strong> Added jump chips (0. DB, 1. Patterns, 2. Layer, 3. Defaults, 4. Sync) and a 1-click collapse/expand-all toggle button at the top of the sidebar.</li>
+                <li><strong>Daylight Field Mode Contrast Completeness:</strong> Added comprehensive <code>[data-theme="light"]</code> styles for all floating HUD drawers, search controls, and native <code>color-scheme</code> adaptation.</li>
+                <li><strong>Tactile Grip Affordances &amp; Accessibility:</strong> High-visibility grab grips (<code>&#x22EE;&#x22EE;</code>), high-contrast <code>:focus-visible</code> rings, and <code>prefers-reduced-motion</code> decorative animation dampening.</li>
               </ul>
             </li>
                                     <li style="margin-bottom: 8px;">
@@ -17675,9 +17970,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
 
         <!-- Floating HUD Legend -->
-        <div id="three-hud-legend" class="hud-legend" style="position: absolute; bottom: 16px; right: 16px; z-index: 10; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; user-select: none;">
-          <div id="hud-legend-header" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer;" title="Click to minimize or expand waypoint legend">
-            <span style="font-weight: bold; color: var(--accent-cyan);">Waypoint Colors</span>
+        <div id="three-hud-legend" class="hud-legend" data-draggable-modal="true" style="position: absolute; bottom: 16px; right: 16px; z-index: 10; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; user-select: none;">
+          <div id="hud-legend-header" data-modal-drag-handle="true" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer;" title="Click to minimize or expand waypoint legend">
+            <span style="font-weight: bold; color: var(--accent-cyan); display: flex; align-items: center; gap: 4px;">
+              <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition legend">&#x22EE;&#x22EE;</span>
+              <span>Waypoint Colors</span>
+            </span>
             <button id="hud-legend-toggle-btn" type="button" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1;" title="Minimize/Expand Legend">▼</button>
           </div>
           <div id="hud-legend-body" style="display: flex; flex-direction: column; gap: 6px;">
@@ -17957,9 +18255,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             </div>
 
             <!-- Interactive 3D Wireframe Toolkit & Inspector Card -->
-            <div id="diag-wireframe-panel" class="diag-wireframe-panel" style="display: none; position: absolute; top: 16px; left: 16px; z-index: 25; background: rgba(15, 23, 42, 0.92); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 10px 14px; backdrop-filter: blur(8px); box-shadow: 0 4px 16px rgba(0,0,0,0.5); width: 280px; font-size: 0.75rem; color: var(--text-main);">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div id="diag-wireframe-panel" class="diag-wireframe-panel" data-draggable-modal="true" style="display: none; position: absolute; top: 16px; left: 16px; z-index: 25; background: rgba(15, 23, 42, 0.92); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 10px 14px; backdrop-filter: blur(8px); box-shadow: 0 4px 16px rgba(0,0,0,0.5); width: 280px; font-size: 0.75rem; color: var(--text-main);">
+              <div class="diag-wireframe-header modal-header" data-modal-drag-handle="true" tabindex="0" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; cursor: grab; user-select: none;">
                 <span style="font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                  <span class="modal-drag-grip" title="Drag to reposition wireframe toolkit" aria-hidden="true">&#x22EE;&#x22EE;</span>
                   <span>🏗️ 3D Wireframe Toolkit</span>
                 </span>
                 <span id="diag-wireframe-count-badge" class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.65rem; padding: 1px 6px;">0 lines</span>
@@ -23857,6 +24156,11 @@ function initPatternSelectorCards() {
   if (!selectEl || typeof selectEl.addEventListener !== 'function') return;
 
   cards.forEach(card => {
+    // Accessibility attributes
+    if (!card.hasAttribute('role')) card.setAttribute('role', 'button');
+    if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-pressed', card.classList.contains('active') ? 'true' : 'false');
+
     card.addEventListener('click', () => {
       const val = card.getAttribute('data-value');
       if (!val) return; // Special tool cards (such as #auto-plan-btn) manage their own actions
@@ -23866,12 +24170,24 @@ function initPatternSelectorCards() {
       
       // Sync active state in UI
       cards.forEach(c => {
-        if (c.getAttribute('data-value')) c.classList.remove('active');
+        if (c.getAttribute('data-value')) {
+          c.classList.remove('active');
+          c.setAttribute('aria-pressed', 'false');
+        }
       });
       card.classList.add('active');
+      card.setAttribute('aria-pressed', 'true');
       
       // Dispatch change event to trigger existing app listeners
       selectEl.dispatchEvent(new Event('change'));
+    });
+
+    // Keyboard support: Enter and Space
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        card.click();
+      }
     });
   });
 
@@ -23884,8 +24200,18 @@ function initPatternSelectorCards() {
       if (!cardVal) return;
       if (cardVal === val) {
         card.classList.add('active');
+        card.setAttribute('aria-pressed', 'true');
+        // If card was hidden by category filter, reveal it
+        if (card.classList.contains('pattern-card-filtered-out')) {
+          const cat = card.getAttribute('data-pattern-category');
+          if (cat) {
+            const pill = document.querySelector(`.pattern-filter-pill[data-category="${cat}"]`);
+            if (pill) pill.click();
+          }
+        }
       } else {
         card.classList.remove('active');
+        card.setAttribute('aria-pressed', 'false');
       }
     });
   };
@@ -23894,10 +24220,48 @@ function initPatternSelectorCards() {
   
   // Initial sync
   syncCardsFromSelect();
+
+  initPatternCategoryFilter();
+}
+
+/**
+ * Section 1 Pattern Category Filter Pills (v1.188.0)
+ * Filters 22 flat pattern cards into organized categories: All, Mapping, Orbit & 3D, Linear, Creative, Safety & GCP.
+ */
+function initPatternCategoryFilter() {
+  if (typeof document === 'undefined') return;
+  const filterBar = document.getElementById('pattern-category-filter-bar');
+  if (!filterBar) return;
+
+  const pills = filterBar.querySelectorAll('.pattern-filter-pill');
+  const cards = document.querySelectorAll('.pattern-card');
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      const category = pill.getAttribute('data-category') || 'all';
+
+      pills.forEach(p => {
+        p.classList.remove('active');
+        p.setAttribute('aria-pressed', 'false');
+      });
+      pill.classList.add('active');
+      pill.setAttribute('aria-pressed', 'true');
+
+      cards.forEach(card => {
+        const cardCat = card.getAttribute('data-pattern-category') || 'mapping';
+        if (category === 'all' || cardCat === category) {
+          card.classList.remove('pattern-card-filtered-out');
+        } else {
+          card.classList.add('pattern-card-filtered-out');
+        }
+      });
+    });
+  });
 }
 
 if (typeof window !== 'undefined') {
   window.initPatternSelectorCards = initPatternSelectorCards;
+  window.initPatternCategoryFilter = initPatternCategoryFilter;
 }
 
 if (typeof document !== 'undefined') {
@@ -24029,7 +24393,7 @@ function initModalDraggable(modalOverlayOrId) {
   // Tier 3: First child element
   // Tier 4: The modal card itself (using top-zone fallback)
   const handle = modal.querySelector(
-    '.modal-header, .photo-inspector-header, .fpv-editor-header, .video-cast-header, .elevation-profile-header, .replay-2d-header, .diag-modal-header, [data-modal-drag-handle]'
+    '.modal-header, .photo-inspector-header, .fpv-editor-header, .video-cast-header, .elevation-profile-header, .replay-2d-header, .diag-modal-header, .diag-wireframe-header, .popover-header, .legend-header, .adsb-drawer-header, .remote-id-cal-header, .stats-panel-header, #hud-legend-header, .wp-help-title, [data-modal-drag-handle]'
   ) || modal.querySelector('header') || modal.firstElementChild || modal;
 
   container._modalDraggableInitialized = true;
@@ -24048,6 +24412,8 @@ function initModalDraggable(modalOverlayOrId) {
                          container.hasAttribute('data-center-x');
 
   let isDragging = false;
+  let hasMoved = false;
+  let suppressClickUntil = 0;
   let startPointerX = 0;
   let startPointerY = 0;
   let currentTranslateX = 0;
@@ -24090,6 +24456,7 @@ function initModalDraggable(modalOverlayOrId) {
     }
 
     isDragging = true;
+    hasMoved = false;
     activePointerId = e.pointerId;
     startPointerX = e.clientX;
     startPointerY = e.clientY;
@@ -24111,6 +24478,7 @@ function initModalDraggable(modalOverlayOrId) {
       handle.setPointerCapture(e.pointerId);
     } catch (_) {}
 
+    e.stopPropagation();
     e.preventDefault();
   }
 
@@ -24122,6 +24490,10 @@ function initModalDraggable(modalOverlayOrId) {
     const deltaX = e.clientX - startPointerX;
     const deltaY = e.clientY - startPointerY;
 
+    if (Math.hypot(deltaX, deltaY) > 3) {
+      hasMoved = true;
+    }
+
     const proposedX = currentTranslateX + deltaX;
     const proposedY = currentTranslateY + deltaY;
 
@@ -24129,6 +24501,8 @@ function initModalDraggable(modalOverlayOrId) {
     modal.style.transform = hasBaseCenterX
       ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
       : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+
+    e.stopPropagation();
   }
 
   function endDrag(e) {
@@ -24148,6 +24522,10 @@ function initModalDraggable(modalOverlayOrId) {
       } catch (_) {}
     }
 
+    if (hasMoved) {
+      suppressClickUntil = Date.now() + 120;
+    }
+
     const styleTransform = modal.style.transform || '';
     const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
     if (match) {
@@ -24155,14 +24533,68 @@ function initModalDraggable(modalOverlayOrId) {
       currentTranslateY = parseFloat(match[2]) || 0;
       modalPositions.set(containerKey, { x: currentTranslateX, y: currentTranslateY });
     }
+
+    if (e) {
+      e.stopPropagation();
+    }
   }
 
-  function onDblClick(e) {
-    if (isInteractiveElement(e.target)) return;
+  function resetPosition() {
     modal.style.transform = '';
     currentTranslateX = 0;
     currentTranslateY = 0;
     modalPositions.delete(containerKey);
+  }
+
+  function onDblClick(e) {
+    if (isInteractiveElement(e.target)) return;
+    resetPosition();
+  }
+
+  function onKeyDown(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      resetPosition();
+      return;
+    }
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      if (isInteractiveElement(e.target) && e.target !== handle && !e.target.classList.contains('modal-drag-grip')) return;
+      e.preventDefault();
+      const step = e.shiftKey ? 30 : 15;
+      let dx = 0;
+      let dy = 0;
+      if (e.key === 'ArrowUp') dy = -step;
+      else if (e.key === 'ArrowDown') dy = step;
+      else if (e.key === 'ArrowLeft') dx = -step;
+      else if (e.key === 'ArrowRight') dx = step;
+
+      const styleTransform = modal.style.transform || '';
+      const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+      let curX = match ? (parseFloat(match[1]) || 0) : 0;
+      let curY = match ? (parseFloat(match[2]) || 0) : 0;
+
+      const proposedX = curX + dx;
+      const proposedY = curY + dy;
+      const clamped = clampModalPosition(modal, handle, proposedX, proposedY);
+      modal.style.transform = hasBaseCenterX
+        ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
+        : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+      modalPositions.set(containerKey, { x: clamped.x, y: clamped.y });
+    }
+  }
+
+  function onClickCapture(e) {
+    if (isInteractiveElement(e.target)) {
+      return;
+    }
+    if (Date.now() < suppressClickUntil) {
+      suppressClickUntil = 0;
+      e.stopPropagation();
+      e.preventDefault();
+      if (typeof e.stopImmediatePropagation === 'function') {
+        e.stopImmediatePropagation();
+      }
+    }
   }
 
   handle.addEventListener('pointerdown', onPointerDown);
@@ -24170,6 +24602,8 @@ function initModalDraggable(modalOverlayOrId) {
   handle.addEventListener('pointerup', endDrag);
   handle.addEventListener('pointercancel', endDrag);
   handle.addEventListener('dblclick', onDblClick);
+  handle.addEventListener('keydown', onKeyDown);
+  handle.addEventListener('click', onClickCapture, true);
 
   // Observer for overlay unhiding to keep clamped
   const ObserverClass = (typeof MutationObserver !== 'undefined' && MutationObserver) ||
@@ -24205,7 +24639,7 @@ function initAllModalsDraggable() {
   if (typeof document === 'undefined') return;
 
   const dialogs = document.querySelectorAll(
-    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel, #video-cast-panel, #elevation-profile-drawer, #replay-2d-bar'
+    '.modal-overlay, [data-draggable-modal], #fpv-editor-panel, #video-cast-panel, #elevation-profile-drawer, #replay-2d-bar, #diag-wireframe-panel, #bridge-status-popover, #telemetry-weather-popover, #mission-time-popover, #adsb-control-drawer, #remote-id-calibration-panel, #stats-panel, #three-hud-legend, #map-mission-legend, #airspace-legend-container, #wp-heading-help-popover'
   );
   dialogs.forEach(dialog => {
     initModalDraggable(dialog);
@@ -24234,7 +24668,7 @@ function resetModalPosition(modalOverlayOrId) {
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', () => {
     const dialogs = document.querySelectorAll(
-      '.modal-overlay:not(.hidden), [data-draggable-modal]:not(.hidden), #fpv-editor-panel:not(.hidden), #video-cast-panel:not(.hidden), #elevation-profile-drawer:not(.hidden), #replay-2d-bar:not(.hidden)'
+      '.modal-overlay:not(.hidden), [data-draggable-modal]:not(.hidden), #fpv-editor-panel:not(.hidden), #video-cast-panel:not(.hidden), #elevation-profile-drawer:not(.hidden), #replay-2d-bar:not(.hidden), #diag-wireframe-panel:not(.hidden), #bridge-status-popover:not(.hidden), #telemetry-weather-popover:not(.hidden), #mission-time-popover:not(.hidden), #adsb-control-drawer:not(.hidden), #remote-id-calibration-panel:not(.hidden), #stats-panel:not(.hidden), #three-hud-legend:not(.hidden), #map-mission-legend:not(.hidden), #airspace-legend-container:not(.hidden), #wp-heading-help-popover:not([style*="display: none"])'
     );
     dialogs.forEach(dialog => {
       const modal = dialog.querySelector('.modal') || dialog;
@@ -32976,6 +33410,10 @@ function initUIEventListeners() {
     // Only bind if the section isn't guide-section
     const section = header.closest('.control-section');
     if (section && !section.classList.contains('guide-section')) {
+      // Accessibility attributes
+      header.setAttribute('role', 'button');
+      header.setAttribute('tabindex', '0');
+
       // Restore previous collapsed state if saved; default to collapsed
       const sectionIndex = Array.from(document.querySelectorAll('.control-section')).indexOf(section);
       const isCollapsed = localStorage.getItem(`aalaapi_sky_section_${sectionIndex}_collapsed`);
@@ -32992,21 +33430,34 @@ function initUIEventListeners() {
           section.classList.add('collapsed');
         }
       }
+      header.setAttribute('aria-expanded', !section.classList.contains('collapsed') ? 'true' : 'false');
 
-      header.addEventListener('click', (e) => {
-        if (e && e.target && e.target.closest('button, input, select, a')) return;
+      const toggleSection = (e) => {
+        if (e && e.target && e.target.closest('button, input, select, a') && e.target !== header) return;
         const wasCollapsed = section.classList.contains('collapsed');
         section.classList.toggle('collapsed');
+        header.setAttribute('aria-expanded', wasCollapsed ? 'true' : 'false');
         localStorage.setItem(`aalaapi_sky_section_${sectionIndex}_collapsed`, !wasCollapsed);
 
         if (isAccordionMode && wasCollapsed) { // wasCollapsed means we are now expanding
           document.querySelectorAll('.control-section').forEach(otherSection => {
             if (otherSection !== section && !otherSection.classList.contains('guide-section')) {
               otherSection.classList.add('collapsed');
+              const otherHeader = otherSection.querySelector('h3');
+              if (otherHeader) otherHeader.setAttribute('aria-expanded', 'false');
               const otherIndex = Array.from(document.querySelectorAll('.control-section')).indexOf(otherSection);
               localStorage.setItem(`aalaapi_sky_section_${otherIndex}_collapsed`, 'true');
             }
           });
+        }
+      };
+
+      header.addEventListener('click', toggleSection);
+      header.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (e.target && e.target.closest('button, input, select, a') && e.target !== header) return;
+          e.preventDefault();
+          toggleSection(e);
         }
       });
     }
@@ -33021,6 +33472,8 @@ function initUIEventListeners() {
       document.querySelectorAll('.control-section').forEach((section, idx) => {
         if (!section.classList.contains('guide-section')) {
           section.classList.add('collapsed');
+          const h3 = section.querySelector('h3');
+          if (h3) h3.setAttribute('aria-expanded', 'false');
           localStorage.setItem(`aalaapi_sky_section_${idx}_collapsed`, 'true');
         }
       });
@@ -33032,11 +33485,16 @@ function initUIEventListeners() {
       document.querySelectorAll('.control-section').forEach((section, idx) => {
         if (!section.classList.contains('guide-section')) {
           section.classList.remove('collapsed');
+          const h3 = section.querySelector('h3');
+          if (h3) h3.setAttribute('aria-expanded', 'true');
           localStorage.setItem(`aalaapi_sky_section_${idx}_collapsed`, 'false');
         }
       });
     });
   }
+
+  // Sidebar Section Quick-Navigation Toolbar (v1.188.0)
+  initSidebarQuickNav();
   
   // Run initial toggle to setup correct view state
   togglePatternParameters();
@@ -33490,6 +33948,60 @@ function initTerrainFollowListeners() {
  * Transforms sidebar value display numbers into interactive click-to-type inputs
  * allowing pilots to click any number and type exact values in active units.
  */
+
+/**
+ * Sidebar Section Quick-Navigation Toolbar (v1.188.0)
+ * Jump directly to any sidebar section or toggle all sections open/closed with 1 click.
+ */
+function initSidebarQuickNav() {
+  if (typeof document === 'undefined') return;
+  const quickNav = document.getElementById('sidebar-quick-nav');
+  if (!quickNav) return;
+
+  const chips = quickNav.querySelectorAll('.sidebar-nav-chip');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const targetId = chip.getAttribute('data-target-section');
+      if (!targetId) return;
+      const targetSection = document.getElementById(targetId);
+      if (!targetSection) return;
+
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+
+      targetSection.classList.remove('collapsed');
+      const h3 = targetSection.querySelector('h3');
+      if (h3) h3.setAttribute('aria-expanded', 'true');
+      targetSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+
+  const toggleAllBtn = document.getElementById('sidebar-collapse-all-quick-btn');
+  if (toggleAllBtn) {
+    toggleAllBtn.addEventListener('click', () => {
+      const sections = Array.from(document.querySelectorAll('.control-section')).filter(s => !s.classList.contains('guide-section'));
+      const anyExpanded = sections.some(s => !s.classList.contains('collapsed'));
+
+      sections.forEach((section, idx) => {
+        if (anyExpanded) {
+          section.classList.add('collapsed');
+          const h3 = section.querySelector('h3');
+          if (h3) h3.setAttribute('aria-expanded', 'false');
+          localStorage.setItem(`aalaapi_sky_section_${idx}_collapsed`, 'true');
+        } else {
+          section.classList.remove('collapsed');
+          const h3 = section.querySelector('h3');
+          if (h3) h3.setAttribute('aria-expanded', 'true');
+          localStorage.setItem(`aalaapi_sky_section_${idx}_collapsed`, 'false');
+        }
+      });
+      const allCollapsedNow = anyExpanded;
+      toggleAllBtn.setAttribute('title', allCollapsedNow ? 'Expand All Sections' : 'Collapse All Sections');
+      toggleAllBtn.setAttribute('aria-label', allCollapsedNow ? 'Expand All Sections' : 'Collapse All Sections');
+      toggleAllBtn.setAttribute('data-state', allCollapsedNow ? 'collapsed' : 'expanded');
+    });
+  }
+}
 // -------------------- src/ui/SidebarManager.js --------------------
 function initClickToTypeInputs() {
   if (typeof document === 'undefined') return;
@@ -42226,6 +42738,8 @@ function updateMapLegend() {
     mapLegend = L.control({ position: 'bottomright' });
     mapLegend.onAdd = function () {
       const div = L.DomUtil.create('div', 'map-legend glass');
+      div.id = 'map-mission-legend';
+      div.setAttribute('data-draggable-modal', 'true');
       L.DomEvent.disableClickPropagation(div);
       if (isLegendCollapsed) {
         div.classList.add('collapsed');
@@ -42271,7 +42785,15 @@ function updateMapLegend() {
       
       const headerDiv = document.createElement('div');
       headerDiv.className = 'legend-header';
+      headerDiv.setAttribute('data-modal-drag-handle', 'true');
       headerDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px;';
+
+      const gripSpan = document.createElement('span');
+      gripSpan.className = 'modal-drag-grip';
+      gripSpan.setAttribute('aria-hidden', 'true');
+      gripSpan.title = 'Drag to reposition legend';
+      gripSpan.textContent = '\u22EE\u22EE';
+      headerDiv.appendChild(gripSpan);
 
       const h4 = document.createElement('h4');
       h4.style.cssText = 'margin: 0; line-height: 1.2;';
@@ -42321,6 +42843,10 @@ function updateMapLegend() {
             isLegendCollapsed = div.classList.contains('collapsed');
           });
         }
+        if (typeof window !== 'undefined' && typeof window.initModalDraggable === 'function') {
+          div._modalDraggableInitialized = false;
+          window.initModalDraggable(div);
+        }
       }, 0);
       
       return div;
@@ -42337,6 +42863,8 @@ function updateMapLegend() {
 
   mapLegend.onAdd = function () {
     const div = L.DomUtil.create('div', 'map-legend glass');
+    div.id = 'map-mission-legend';
+    div.setAttribute('data-draggable-modal', 'true');
     L.DomEvent.disableClickPropagation(div);
     if (isLegendCollapsed) {
       div.classList.add('collapsed');
@@ -42446,7 +42974,15 @@ function updateMapLegend() {
 
     const headerDiv = document.createElement('div');
     headerDiv.className = 'legend-header';
+    headerDiv.setAttribute('data-modal-drag-handle', 'true');
     headerDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px;';
+
+    const gripSpan = document.createElement('span');
+    gripSpan.className = 'modal-drag-grip';
+    gripSpan.setAttribute('aria-hidden', 'true');
+    gripSpan.title = 'Drag to reposition legend';
+    gripSpan.textContent = '\u22EE\u22EE';
+    headerDiv.appendChild(gripSpan);
 
     const h4 = document.createElement('h4');
     h4.style.cssText = 'margin: 0; line-height: 1.2;';
@@ -42495,6 +43031,10 @@ function updateMapLegend() {
           div.classList.toggle('collapsed');
           isLegendCollapsed = div.classList.contains('collapsed');
         });
+      }
+      if (typeof window !== 'undefined' && typeof window.initModalDraggable === 'function') {
+        div._modalDraggableInitialized = false;
+        window.initModalDraggable(div);
       }
     }, 0);
 
@@ -42557,10 +43097,19 @@ function updateAirspaceLegend(e) {
   const powerLinesZoomedOut = powerLinesActive && currentZoom < POWER_LINES_MIN_ZOOM;
 
   container.replaceChildren();
+  container.setAttribute('data-draggable-modal', 'true');
 
   const headerDiv = document.createElement('div');
   headerDiv.className = 'legend-header';
+  headerDiv.setAttribute('data-modal-drag-handle', 'true');
   headerDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;';
+
+  const airGrip = document.createElement('span');
+  airGrip.className = 'modal-drag-grip';
+  airGrip.setAttribute('aria-hidden', 'true');
+  airGrip.title = 'Drag to reposition legend';
+  airGrip.textContent = '\u22EE\u22EE';
+  headerDiv.appendChild(airGrip);
 
   const h4 = document.createElement('h4');
   h4.style.cssText = 'margin:0;line-height:1.2;';
@@ -42721,6 +43270,10 @@ function updateAirspaceLegend(e) {
   }
 
   container.appendChild(contentDiv);
+  if (typeof window !== 'undefined' && typeof window.initModalDraggable === 'function') {
+    container._modalDraggableInitialized = false;
+    window.initModalDraggable(container);
+  }
 }
 
 // Apply or remove FeatureServer data based on current zoom level.
@@ -65798,9 +66351,11 @@ function showHeadingHelpPopover(anchorEl) {
   if (!popover) {
     popover = document.createElement('div');
     popover.id = 'wp-heading-help-popover';
+    popover.setAttribute('data-draggable-modal', 'true');
     popover.innerHTML = `
-      <div class="wp-help-title">
-        Heading Mode
+      <div class="wp-help-title" data-modal-drag-handle="true">
+        <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition popover">&#x22EE;&#x22EE;</span>
+        <span>Heading Mode</span>
         <button class="wp-help-close" id="wp-heading-help-close-btn" title="Close">✕</button>
       </div>
       <div class="wp-help-tab-row">
@@ -65812,6 +66367,9 @@ function showHeadingHelpPopover(anchorEl) {
       <div class="wp-help-content" id="wp-heading-help-content"></div>
     `;
     document.body.appendChild(popover);
+    if (typeof window !== 'undefined' && typeof window.initModalDraggable === 'function') {
+      window.initModalDraggable(popover);
+    }
 
     const helpContent = {
       followWayline: {
