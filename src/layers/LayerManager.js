@@ -124,8 +124,8 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     roadFocusMode: 'focusRoad',
     terrainFollow: 'inherit',
     targetAgl: 'inherit',
-    terrainSource: 'auto',
-    maxSlopeAngle: 20,
+    terrainSource: 'inherit',
+    maxSlopeAngle: 'inherit',
     elevationData: null,
     targetPoly: [],
     targetMode: 'radius', // 'polygon' or 'radius'
@@ -304,6 +304,26 @@ function getEffectiveLayerTargetAgl(layer) {
   }
   const altEl = typeof document !== 'undefined' ? document.getElementById('altitude') : null;
   return altEl ? (parseFloat(altEl.value) || 50) : 50;
+}
+
+function getEffectiveLayerTerrainSource(layer) {
+  if (layer && layer.terrainSource && layer.terrainSource !== 'inherit') {
+    return layer.terrainSource;
+  }
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('global-terrain-source') : null;
+  return (globalEl && globalEl.value) ? globalEl.value : 'auto';
+}
+
+function getEffectiveLayerMaxSlope(layer) {
+  if (layer && layer.maxSlopeAngle !== undefined && layer.maxSlopeAngle !== null && layer.maxSlopeAngle !== 'inherit') {
+    const parsed = parseInt(layer.maxSlopeAngle, 10);
+    if (!isNaN(parsed)) return parsed;
+  }
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('global-max-slope-angle') : null;
+  if (globalEl && !isNaN(parseInt(globalEl.value, 10))) {
+    return parseInt(globalEl.value, 10);
+  }
+  return 20;
 }
 
 // Safely parse gimbal pitch angles preserving 0° horizontal camera tilt without falsy-zero fallback bugs
@@ -548,6 +568,22 @@ function updateInheritOptionLabels() {
     tfOpt.textContent = `🌐 Inherit Global (${globalTfEl.checked ? 'Enabled' : 'Disabled'})`;
   }
 
+  const tfSourceOpt = document.getElementById('layer-terrain-source-inherit-opt');
+  const globalTfSourceEl = document.getElementById('global-terrain-source');
+  if (tfSourceOpt && globalTfSourceEl) {
+    const srcMap = {
+      'auto': 'Auto',
+      'drone-recon': 'Drone Recon DSM',
+      'usgs-3dep': 'USGS 3DEP 1m-3m',
+      'eu-lidar': 'EU LiDAR 1m',
+      'open-meteo': 'Copernicus 30m',
+      'bridge': 'Companion Cache',
+      'geotiff': 'Custom GeoTIFF'
+    };
+    const srcLabel = srcMap[globalTfSourceEl.value] || globalTfSourceEl.value;
+    tfSourceOpt.textContent = `🌐 Inherit Global (${srcLabel})`;
+  }
+
   const captureOpt = document.getElementById('layer-capture-mode-inherit-opt');
   if (captureOpt && globalCaptureModeEl) {
     const mapName = {
@@ -745,7 +781,10 @@ function saveActiveLayerFromUi(targetLayer) {
   if (layerTfSourceEl) layer.terrainSource = layerTfSourceEl.value;
 
   const layerMaxSlopeEl = document.getElementById('layer-max-slope-angle');
-  if (layerMaxSlopeEl) layer.maxSlopeAngle = parseInt(layerMaxSlopeEl.value, 10) || 20;
+  if (layerMaxSlopeEl) {
+    const val = layerMaxSlopeEl.value;
+    layer.maxSlopeAngle = (val === 'inherit' || val === '') ? 'inherit' : (parseInt(val, 10) || 20);
+  }
   if (gimbalPitchEl) layer.gimbalPitch = parseGimbalPitch(gimbalPitchEl.value, -60);
 
   if (layerCaptureModeEl && layerCaptureModeEl.value) {
@@ -1039,8 +1078,9 @@ function syncUiWithActiveLayer() {
 
   setVal('layer-terrain-follow', layer.terrainFollow || 'inherit');
   setVal('layer-target-agl', layer.targetAgl !== undefined ? layer.targetAgl : 'inherit');
-  setVal('layer-terrain-source', layer.terrainSource || 'auto');
-  setVal('layer-max-slope-angle', layer.maxSlopeAngle !== undefined ? layer.maxSlopeAngle : 20);
+  setVal('layer-terrain-source', layer.terrainSource || 'inherit');
+  const effectiveSlope = getEffectiveLayerMaxSlope(layer);
+  setVal('layer-max-slope-angle', (layer.maxSlopeAngle !== undefined && layer.maxSlopeAngle !== 'inherit') ? layer.maxSlopeAngle : effectiveSlope);
 
   const tfSettingsWrapper = document.getElementById('layer-terrain-follow-settings-wrapper');
   if (tfSettingsWrapper) {
@@ -2753,7 +2793,9 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     const targetAgl = (typeof getEffectiveLayerTargetAgl === 'function')
       ? getEffectiveLayerTargetAgl(layer)
       : (typeof layer.altitude === 'number' ? layer.altitude : 50);
-    const maxSlope = layer.maxSlopeAngle !== undefined ? layer.maxSlopeAngle : 20;
+    const maxSlope = (typeof getEffectiveLayerMaxSlope === 'function')
+      ? getEffectiveLayerMaxSlope(layer)
+      : (layer.maxSlopeAngle !== undefined && layer.maxSlopeAngle !== 'inherit' ? layer.maxSlopeAngle : 20);
 
     waypoints = elevationServiceInstance.applyTerrainFollowingSync(waypoints, {
       targetAgl,
@@ -3410,12 +3452,19 @@ async function refreshLayerElevationsAsync(layerId) {
   isRefreshingLayerElevations = true;
   try {
     const coords = layer.waypoints.map(wp => ({ lat: wp.lat, lon: wp.lon }));
-    const elevations = await elevationServiceInstance.fetchElevations(coords, { source: layer.terrainSource || 'auto' });
+    const effectiveSource = (typeof getEffectiveLayerTerrainSource === 'function')
+      ? getEffectiveLayerTerrainSource(layer)
+      : (layer.terrainSource || 'auto');
+    const effectiveSlope = (typeof getEffectiveLayerMaxSlope === 'function')
+      ? getEffectiveLayerMaxSlope(layer)
+      : (layer.maxSlopeAngle || 20);
+
+    const elevations = await elevationServiceInstance.fetchElevations(coords, { source: effectiveSource });
     layer.elevationData = elevations;
     const targetAgl = getEffectiveLayerTargetAgl(layer);
     layer.waypoints = elevationServiceInstance.applyTerrainFollowingSync(layer.waypoints, {
       targetAgl,
-      maxSlopeAngle: layer.maxSlopeAngle || 20,
+      maxSlopeAngle: effectiveSlope,
       elevations
     });
     if (typeof updateElevationProfileUi === 'function') {
@@ -3431,4 +3480,37 @@ async function refreshLayerElevationsAsync(layerId) {
   } finally {
     isRefreshingLayerElevations = false;
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.getEffectiveLayerTerrainSource = getEffectiveLayerTerrainSource;
+  window.getEffectiveLayerMaxSlope = getEffectiveLayerMaxSlope;
+  window.getEffectiveLayerTerrainFollow = getEffectiveLayerTerrainFollow;
+  window.getEffectiveLayerTargetAgl = getEffectiveLayerTargetAgl;
+  window.refreshLayerElevationsAsync = refreshLayerElevationsAsync;
+  window.updateInheritOptionLabels = updateInheritOptionLabels;
+}
+if (typeof global !== 'undefined') {
+  global.getEffectiveLayerTerrainSource = getEffectiveLayerTerrainSource;
+  global.getEffectiveLayerMaxSlope = getEffectiveLayerMaxSlope;
+  global.getEffectiveLayerTerrainFollow = getEffectiveLayerTerrainFollow;
+  global.getEffectiveLayerTargetAgl = getEffectiveLayerTargetAgl;
+  global.refreshLayerElevationsAsync = refreshLayerElevationsAsync;
+  global.updateInheritOptionLabels = updateInheritOptionLabels;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    getEffectiveLayerCaptureMode,
+    getEffectiveLayerPathMode,
+    getEffectiveLayerHeadingMode,
+    getEffectiveLayerCustomHeading,
+    getEffectiveLayerHoverTime,
+    getEffectiveLayerTerrainFollow,
+    getEffectiveLayerTargetAgl,
+    getEffectiveLayerTerrainSource,
+    getEffectiveLayerMaxSlope,
+    refreshLayerElevationsAsync,
+    updateInheritOptionLabels
+  };
 }

@@ -35141,4 +35141,88 @@ describe('Universal Floating Box & Modal Collapse Toggles Suite (v1.191.0 - Issu
   });
 });
 
+describe('Global Terrain Following Synchronization & 3-Tier Cascading Hierarchy Suite (v1.192.0 - Issue #167)', () => {
+  test('Version consistency: v1.192.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.192.0');
+  });
+
+  test('DOM Architecture: Section 3 Global Defaults and Section 2 Layer Properties contain synchronized terrain controls', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+
+    // Section 3 Global Defaults
+    assert.ok(template.includes('id="global-terrain-source"'), 'Section 3 must have #global-terrain-source');
+    assert.ok(template.includes('id="global-max-slope-angle"'), 'Section 3 must have #global-max-slope-angle');
+    assert.ok(template.includes('id="global-max-slope-val"'), 'Section 3 must have #global-max-slope-val');
+    assert.ok(template.includes('id="global-dem-file-input"'), 'Section 3 must have #global-dem-file-input');
+    assert.ok(template.includes('id="global-dem-status-badge"'), 'Section 3 must have #global-dem-status-badge');
+    assert.ok(template.includes('id="global-dem-upload-container"'), 'Section 3 must have #global-dem-upload-container');
+
+    // Section 2 Layer Properties
+    assert.ok(template.includes('id="layer-terrain-source-inherit-opt"'), 'Section 2 #layer-terrain-source must have #layer-terrain-source-inherit-opt');
+    assert.ok(template.includes('value="inherit" id="layer-terrain-source-inherit-opt"'), 'Section 2 inherit option must have value="inherit"');
+
+    // index.html compiled output
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('id="global-terrain-source"'), 'index.html must contain #global-terrain-source');
+    assert.ok(indexHtml.includes('id="layer-terrain-source-inherit-opt"'), 'index.html must contain #layer-terrain-source-inherit-opt');
+  });
+
+  test('LayerManager: getEffectiveLayerTerrainSource and getEffectiveLayerMaxSlope follow 3-tier cascade', () => {
+    const {
+      getEffectiveLayerTerrainSource,
+      getEffectiveLayerMaxSlope
+    } = require('./src/layers/LayerManager.js');
+
+    assert.strictEqual(typeof getEffectiveLayerTerrainSource, 'function', 'getEffectiveLayerTerrainSource must be a function');
+    assert.strictEqual(typeof getEffectiveLayerMaxSlope, 'function', 'getEffectiveLayerMaxSlope must be a function');
+
+    global._stubElements = global._stubElements || {};
+    const prevSrc = global._stubElements['global-terrain-source'];
+    const prevSlope = global._stubElements['global-max-slope-angle'];
+    global._stubElements['global-terrain-source'] = { value: 'drone-recon' };
+    global._stubElements['global-max-slope-angle'] = { value: '25' };
+
+    try {
+      // Test 1: Inherit resolves to global
+      const inheritingLayer = {
+        id: 'layer-test-inherit',
+        terrainSource: 'inherit',
+        maxSlopeAngle: 'inherit'
+      };
+      assert.strictEqual(getEffectiveLayerTerrainSource(inheritingLayer), 'drone-recon', 'Inheriting layer must resolve to global terrain source');
+      assert.strictEqual(getEffectiveLayerMaxSlope(inheritingLayer), 25, 'Inheriting layer must resolve to global max slope');
+
+      // Test 2: Explicit override takes precedence
+      const overriddenLayer = {
+        id: 'layer-test-override',
+        terrainSource: 'eu-lidar',
+        maxSlopeAngle: 15
+      };
+      assert.strictEqual(getEffectiveLayerTerrainSource(overriddenLayer), 'eu-lidar', 'Overridden layer terrain source must take precedence');
+      assert.strictEqual(getEffectiveLayerMaxSlope(overriddenLayer), 15, 'Overridden layer max slope must take precedence');
+
+      // Test 3: Null layer resolves safely to global
+      assert.strictEqual(getEffectiveLayerTerrainSource(null), 'drone-recon', 'Null layer must fallback to global terrain source');
+      assert.strictEqual(getEffectiveLayerMaxSlope(null), 25, 'Null layer must fallback to global max slope');
+    } finally {
+      if (prevSrc !== undefined) global._stubElements['global-terrain-source'] = prevSrc;
+      else delete global._stubElements['global-terrain-source'];
+      if (prevSlope !== undefined) global._stubElements['global-max-slope-angle'] = prevSlope;
+      else delete global._stubElements['global-max-slope-angle'];
+    }
+  });
+
+  test('EventBindings & LayerManager: export and wire global terrain following event listeners', () => {
+    const eventBindingsSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'EventBindings.js'), 'utf8');
+    assert.ok(eventBindingsSrc.includes('globalTfSourceSelect'), 'EventBindings must reference globalTfSourceSelect');
+    assert.ok(eventBindingsSrc.includes('globalMaxSlopeInput'), 'EventBindings must reference globalMaxSlopeInput');
+    assert.ok(eventBindingsSrc.includes('globalDemFileInput'), 'EventBindings must reference globalDemFileInput');
+
+    const layerMgrSrc = fs.readFileSync(path.join(__dirname, 'src', 'layers', 'LayerManager.js'), 'utf8');
+    assert.ok(layerMgrSrc.includes('getEffectiveLayerTerrainSource'), 'LayerManager must export getEffectiveLayerTerrainSource');
+    assert.ok(layerMgrSrc.includes('getEffectiveLayerMaxSlope'), 'LayerManager must export getEffectiveLayerMaxSlope');
+    assert.ok(layerMgrSrc.includes('layer-terrain-source-inherit-opt'), 'LayerManager must update layer-terrain-source-inherit-opt');
+  });
+});
+
 });
