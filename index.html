@@ -7696,7 +7696,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.193.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.193.1</span></h1>
         </div>
       </div>
 
@@ -14201,7 +14201,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.193.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.193.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14322,6 +14322,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                     <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.193.1):</strong>
+              <ul style="margin: 4px 0 10px 0; padding-left: 18px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.4;">
+                <li><strong>Corridor Centerline &amp; Waypoint Movement Synchronization (Closes #169):</strong> Centerline Nodes (C1, C2, C3...) and the dashed polyline now translate in unison with parallel swath flight waypoints when clicking the map or dragging the center marker, preserving custom curvatures and added nodes without requiring a reset.</li>
+              </ul>
               <strong style="color: var(--text-main);">Changelog (v1.193.0):</strong>
               <ul style="margin: 4px 0 10px 0; padding-left: 18px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.4;">
                 <li><strong>Missing DEM Data Visualization &amp; Cliff Drop Prevention (Closes #168):</strong> Ground surface line in the Flight Elevation Profile no longer plummets into a 0m sea-level cliff when waypoints extend beyond loaded surveyor DEM bounds. Missing segments are visually highlighted with a red-hatched warning zone, dashed warning stroke (<code>#f87171</code>), header missing percentage badge, and hover tooltips.</li>
@@ -27728,6 +27732,25 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         ];
         layer.corridorCenterline = effectiveCenterline;
         if (layer.id === activeLayerId) corridorCenterline = effectiveCenterline;
+      } else {
+        // Keep existing centerline nodes in sync with layer center using local offsets (v1.193.1 - Issue #169)
+        effectiveCenterline.forEach(node => {
+          if (node.x === undefined || node.y === undefined || isNaN(node.x) || isNaN(node.y)) {
+            if (typeof geodeticToLocal === 'function' && node.lat != null && node.lon != null) {
+              const off = geodeticToLocal(node.lat, node.lon, centerLat, centerLon);
+              node.x = off.x;
+              node.y = off.y;
+            }
+          } else if (typeof localToGeodetic === 'function') {
+            const geo = localToGeodetic(node.x, node.y, centerLat, centerLon, 0);
+            node.lat = geo.lat;
+            node.lon = geo.lon;
+          }
+        });
+        layer.corridorCenterline = effectiveCenterline;
+        if (layer.id === activeLayerId && typeof corridorCenterline !== 'undefined') {
+          corridorCenterline = effectiveCenterline;
+        }
       }
       gridData = generateCorridorCoordinates(layer, effectiveCenterline, sPhoto, altitude, defaultGimbalPitch, speed, centerLat, centerLon);
     } else if (gridType === 'tower') {
@@ -37713,6 +37736,8 @@ function renderCorridorNodeTable() {
   const container = document.getElementById('corridor-node-list');
   const badge = document.getElementById('corridor-vertex-badge');
   if (!container) return;
+  // Prevent blowing away input focus if pilot is actively editing coordinates
+  if (typeof container.contains === "function" && typeof document !== "undefined" && document.activeElement && container.contains(document.activeElement)) return;
 
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   const nodes = (activeLayer && Array.isArray(activeLayer.corridorCenterline))
@@ -38352,6 +38377,9 @@ function setGridCenter(lat, lng) {
     });
     centerMarker.on('dragend', () => {
       centerMarker.openPopup();
+      if (typeof renderCorridorNodeTable === 'function') {
+        renderCorridorNodeTable();
+      }
     });
     centerMarker.on('click', (e) => {
       L.DomEvent.stopPropagation(e);
@@ -38368,6 +38396,9 @@ function setGridCenter(lat, lng) {
   updatePoiListUI();
   updateGrid();
   updateOpenSkyLink();
+  if (typeof renderCorridorNodeTable === 'function') {
+    renderCorridorNodeTable();
+  }
 }
 
 function updatePoiMarkerPopup(poi, idx) {

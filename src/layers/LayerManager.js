@@ -2656,6 +2656,25 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         ];
         layer.corridorCenterline = effectiveCenterline;
         if (layer.id === activeLayerId) corridorCenterline = effectiveCenterline;
+      } else {
+        // Keep existing centerline nodes in sync with layer center using local offsets (v1.193.1 - Issue #169)
+        effectiveCenterline.forEach(node => {
+          if (node.x === undefined || node.y === undefined || isNaN(node.x) || isNaN(node.y)) {
+            if (typeof geodeticToLocal === 'function' && node.lat != null && node.lon != null) {
+              const off = geodeticToLocal(node.lat, node.lon, centerLat, centerLon);
+              node.x = off.x;
+              node.y = off.y;
+            }
+          } else if (typeof localToGeodetic === 'function') {
+            const geo = localToGeodetic(node.x, node.y, centerLat, centerLon, 0);
+            node.lat = geo.lat;
+            node.lon = geo.lon;
+          }
+        });
+        layer.corridorCenterline = effectiveCenterline;
+        if (layer.id === activeLayerId && typeof corridorCenterline !== 'undefined') {
+          corridorCenterline = effectiveCenterline;
+        }
       }
       gridData = generateCorridorCoordinates(layer, effectiveCenterline, sPhoto, altitude, defaultGimbalPitch, speed, centerLat, centerLon);
     } else if (gridType === 'tower') {

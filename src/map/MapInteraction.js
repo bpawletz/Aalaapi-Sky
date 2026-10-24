@@ -317,6 +317,9 @@ function setGridCenter(lat, lng) {
     });
     centerMarker.on('dragend', () => {
       centerMarker.openPopup();
+      if (typeof renderCorridorNodeTable === 'function') {
+        renderCorridorNodeTable();
+      }
     });
     centerMarker.on('click', (e) => {
       L.DomEvent.stopPropagation(e);
@@ -333,6 +336,9 @@ function setGridCenter(lat, lng) {
   updatePoiListUI();
   updateGrid();
   updateOpenSkyLink();
+  if (typeof renderCorridorNodeTable === 'function') {
+    renderCorridorNodeTable();
+  }
 }
 
 function updatePoiMarkerPopup(poi, idx) {

@@ -2939,6 +2939,8 @@ function renderCorridorNodeTable() {
   const container = document.getElementById('corridor-node-list');
   const badge = document.getElementById('corridor-vertex-badge');
   if (!container) return;
+  // Prevent blowing away input focus if pilot is actively editing coordinates
+  if (typeof container.contains === "function" && typeof document !== "undefined" && document.activeElement && container.contains(document.activeElement)) return;
 
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   const nodes = (activeLayer && Array.isArray(activeLayer.corridorCenterline))
