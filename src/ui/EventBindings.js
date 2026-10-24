@@ -3452,6 +3452,10 @@ export function initFloatingBoxesCollapseToggles() {
       btn.textContent = isCollapsed ? '▲' : '▼';
       btn.title = isCollapsed ? 'Expand Panel' : 'Minimize Panel';
       btn.setAttribute('aria-label', isCollapsed ? 'Expand Panel' : 'Minimize Panel');
+      if (isCollapsed && typeof ensureElementInViewport === 'function') {
+        ensureElementInViewport(panel);
+        setTimeout(() => ensureElementInViewport(panel), 50);
+      }
     });
   });
 }

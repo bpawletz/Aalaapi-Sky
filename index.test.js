@@ -35546,4 +35546,26 @@ describe('v1.195.0: Companion Bridge Unified SSE Sub-Channel Telemetry & Broadca
   });
 });
 
+describe('v1.196.0: Dynamic Viewport Auto-Clamping on Panel Minimize (Issue #174)', () => {
+  test('Version consistency: v1.196.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.196.0');
+  });
+
+  test('ModalDragManager: exports ensureElementInViewport and handles out-of-bounds delta adjustment', () => {
+    const modalDragSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'ModalDragManager.js'), 'utf8');
+    assert.ok(modalDragSrc.includes('export function ensureElementInViewport('), 'Must export ensureElementInViewport');
+    assert.ok(modalDragSrc.includes('winH - minPadding'), 'Must calculate bottom boundary against viewport height');
+    assert.ok(modalDragSrc.includes('winW - minPadding'), 'Must calculate right boundary against viewport width');
+    assert.ok(modalDragSrc.includes('formatModalTransform'), 'Must update formatModalTransform');
+  });
+
+  test('EventBindings & ModalDragManager: minimize listeners invoke ensureElementInViewport on collapse', () => {
+    const modalDragSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'ModalDragManager.js'), 'utf8');
+    assert.ok(modalDragSrc.includes('ensureElementInViewport(modal)'), 'Modal collapse listener must invoke ensureElementInViewport');
+
+    const eventBindingsSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'EventBindings.js'), 'utf8');
+    assert.ok(eventBindingsSrc.includes('ensureElementInViewport(panel)'), 'Floating box collapse listener must invoke ensureElementInViewport');
+  });
+});
+
 });
