@@ -141,10 +141,12 @@ function init3DPreview() {
     const planeOffsetX = (1.5 - distX_tiles) * tileWidthMeters;
     const planeOffsetZ = (1.5 - distY_tiles) * tileWidthMeters;
 
-    const groundGeom = new THREE.PlaneGeometry(planeSize, planeSize, 32, 32);
-
     const hasElevation = (typeof elevationServiceInstance !== 'undefined') &&
       ((elevationServiceInstance.cachedDem !== null) || (waypoints && waypoints.some(wp => typeof wp.surfaceElevation === 'number' && wp.surfaceElevation !== 0)));
+
+    // Use 48x48 mesh subdivision when elevation/DEM data is active for fine topographical relief
+    const meshSegments = hasElevation ? 48 : 32;
+    const groundGeom = new THREE.PlaneGeometry(planeSize, planeSize, meshSegments, meshSegments);
 
     if (hasElevation && groundGeom.attributes && groundGeom.attributes.position) {
       const pos = groundGeom.attributes.position;
@@ -196,6 +198,21 @@ function init3DPreview() {
     groundMesh.rotation.x = -Math.PI / 2; // Lie flat on Y plane
     groundMesh.position.set(planeOffsetX, -0.2, planeOffsetZ); // Position slightly below Y=0 grid
     threeScene.add(groundMesh);
+
+    // If elevation is active, overlay a subtle cybernetic wireframe grid on the 3D terrain surface
+    if (hasElevation) {
+      const wireframeGeom = new THREE.WireframeGeometry(groundGeom);
+      const wireframeMat = new THREE.LineBasicMaterial({
+        color: 0x06b6d4,
+        transparent: true,
+        opacity: 0.18,
+        depthWrite: false
+      });
+      const wireframeMesh = new THREE.LineSegments(wireframeGeom, wireframeMat);
+      wireframeMesh.rotation.x = -Math.PI / 2;
+      wireframeMesh.position.set(planeOffsetX, -0.19, planeOffsetZ);
+      threeScene.add(wireframeMesh);
+    }
 
     // Cache variables for FPV immediately so they are available right away
     threeGroundCanvas = groundCanvas;
