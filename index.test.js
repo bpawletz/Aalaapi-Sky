@@ -35606,4 +35606,19 @@ describe('v1.196.1: Eliminate Residual RTMP Status Requests & Enforce SSE-First 
   });
 });
 
+
+describe('v1.196.2: Companion Metrics Endpoint & Caller Diagnostic Tracing', () => {
+  test('Version consistency: v1.196.2 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.196.2');
+  });
+
+  test('Companion Server: /api/status payload includes metrics snapshot and RTMP warning trace', () => {
+    const serverSrc = fs.readFileSync(path.join(__dirname, 'tools', 'companion', 'server.js'), 'utf8');
+    assert.ok(serverSrc.includes('metrics: bridgeMetrics ? bridgeMetrics.snapshot() : null'),
+      'Must expose bridgeMetrics in status payload');
+    assert.ok(serverSrc.includes('[RTMP STATUS HIT]'),
+      'Must include caller IP and referer trace log on legacy RTMP status endpoint');
+  });
+});
+
 });
