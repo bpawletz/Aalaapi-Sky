@@ -27,6 +27,68 @@ const modalPositions = new Map();
  * @param {number} proposedY 
  * @returns {{ x: number, y: number }}
  */
+/**
+ * Accurately parses current modal translation offsets from inline style.transform.
+ * Safely extracts both positive and negative values for standard translate3d(Xpx, Ypx)
+ * and horizontally centered calc(-50% [+-] Xpx) formats normalized by browsers.
+ * 
+ * @param {string} styleTransform 
+ * @returns {{ x: number, y: number }}
+ */
+export function parseModalTransform(styleTransform) {
+  if (!styleTransform || typeof styleTransform !== 'string') {
+    return { x: 0, y: 0 };
+  }
+
+  // 1. Check for centered calc(-50% [+-] Xpx)
+  const calcMatch = styleTransform.match(/calc\(\s*-50%\s*([+-])\s*(-?\d+(?:\.\d+)?)\s*px\s*\)\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+  if (calcMatch) {
+    const sign = calcMatch[1] === '-' ? -1 : 1;
+    const val = parseFloat(calcMatch[2]) || 0;
+    const x = sign * val;
+    const y = parseFloat(calcMatch[3]) || 0;
+    return { x, y };
+  }
+
+  // 2. Check for pure -50% with zero offset: translate3d(-50%, Ypx, ...) or translate(-50%, Ypx)
+  const baseCenterMatch = styleTransform.match(/translate(?:3d)?\(\s*-50%\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+  if (baseCenterMatch) {
+    const y = parseFloat(baseCenterMatch[1]) || 0;
+    return { x: 0, y };
+  }
+
+  // 3. Check for standard translate3d(Xpx, Ypx, ...) or translate(Xpx, Ypx)
+  const stdMatch = styleTransform.match(/translate(?:3d)?\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+  if (stdMatch) {
+    const x = parseFloat(stdMatch[1]) || 0;
+    const y = parseFloat(stdMatch[2]) || 0;
+    return { x, y };
+  }
+
+  return { x: 0, y: 0 };
+}
+
+/**
+ * Standardizes formatting of modal translation CSS strings.
+ * 
+ * @param {number} x 
+ * @param {number} y 
+ * @param {boolean} hasBaseCenterX 
+ * @returns {string}
+ */
+export function formatModalTransform(x, y, hasBaseCenterX) {
+  if (hasBaseCenterX) {
+    if (x === 0) {
+      return `translate3d(-50%, ${y}px, 0)`;
+    } else if (x > 0) {
+      return `translate3d(calc(-50% + ${x}px), ${y}px, 0)`;
+    } else {
+      return `translate3d(calc(-50% - ${Math.abs(x)}px), ${y}px, 0)`;
+    }
+  }
+  return `translate3d(${x}px, ${y}px, 0)`;
+}
+
 export function clampModalPosition(modal, handle, proposedX, proposedY) {
   if (typeof window === 'undefined') {
     return { x: proposedX, y: proposedY };
@@ -36,13 +98,9 @@ export function clampModalPosition(modal, handle, proposedX, proposedY) {
   const handleRect = handle ? handle.getBoundingClientRect() : modalRect;
 
   const styleTransform = modal.style.transform || '';
-  let curX = 0;
-  let curY = 0;
-  const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
-  if (match) {
-    curX = parseFloat(match[1]) || 0;
-    curY = parseFloat(match[2]) || 0;
-  }
+  const parsed = parseModalTransform(styleTransform);
+  const curX = parsed.x;
+  const curY = parsed.y;
 
   const baseLeft = modalRect.left - curX;
   const baseTop = modalRect.top - curY;
@@ -128,9 +186,7 @@ export function initModalDraggable(modalOverlayOrId) {
     const saved = modalPositions.get(containerKey);
     currentTranslateX = saved.x;
     currentTranslateY = saved.y;
-    modal.style.transform = hasBaseCenterX
-      ? `translate3d(calc(-50% + ${currentTranslateX}px), ${currentTranslateY}px, 0)`
-      : `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0)`;
+    modal.style.transform = formatModalTransform(currentTranslateX, currentTranslateY, hasBaseCenterX);
   }
 
   function isInteractiveElement(target) {
@@ -163,15 +219,9 @@ export function initModalDraggable(modalOverlayOrId) {
     startPointerX = e.clientX;
     startPointerY = e.clientY;
 
-    const styleTransform = modal.style.transform || '';
-    const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
-    if (match) {
-      currentTranslateX = parseFloat(match[1]) || 0;
-      currentTranslateY = parseFloat(match[2]) || 0;
-    } else {
-      currentTranslateX = 0;
-      currentTranslateY = 0;
-    }
+    const parsed = parseModalTransform(modal.style.transform);
+    currentTranslateX = parsed.x;
+    currentTranslateY = parsed.y;
 
     modal.classList.add('modal-dragging');
     document.body.classList.add('modal-drag-active');
@@ -200,9 +250,7 @@ export function initModalDraggable(modalOverlayOrId) {
     const proposedY = currentTranslateY + deltaY;
 
     const clamped = clampModalPosition(modal, handle, proposedX, proposedY);
-    modal.style.transform = hasBaseCenterX
-      ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
-      : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+    modal.style.transform = formatModalTransform(clamped.x, clamped.y, hasBaseCenterX);
 
     e.stopPropagation();
   }
@@ -228,13 +276,10 @@ export function initModalDraggable(modalOverlayOrId) {
       suppressClickUntil = Date.now() + 120;
     }
 
-    const styleTransform = modal.style.transform || '';
-    const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
-    if (match) {
-      currentTranslateX = parseFloat(match[1]) || 0;
-      currentTranslateY = parseFloat(match[2]) || 0;
-      modalPositions.set(containerKey, { x: currentTranslateX, y: currentTranslateY });
-    }
+    const parsed = parseModalTransform(modal.style.transform);
+    currentTranslateX = parsed.x;
+    currentTranslateY = parsed.y;
+    modalPositions.set(containerKey, { x: currentTranslateX, y: currentTranslateY });
 
     if (e) {
       e.stopPropagation();
@@ -270,17 +315,14 @@ export function initModalDraggable(modalOverlayOrId) {
       else if (e.key === 'ArrowLeft') dx = -step;
       else if (e.key === 'ArrowRight') dx = step;
 
-      const styleTransform = modal.style.transform || '';
-      const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
-      let curX = match ? (parseFloat(match[1]) || 0) : 0;
-      let curY = match ? (parseFloat(match[2]) || 0) : 0;
+      const parsed = parseModalTransform(modal.style.transform);
+      const curX = parsed.x;
+      const curY = parsed.y;
 
       const proposedX = curX + dx;
       const proposedY = curY + dy;
       const clamped = clampModalPosition(modal, handle, proposedX, proposedY);
-      modal.style.transform = hasBaseCenterX
-        ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
-        : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+      modal.style.transform = formatModalTransform(clamped.x, clamped.y, hasBaseCenterX);
       modalPositions.set(containerKey, { x: clamped.x, y: clamped.y });
     }
   }
@@ -316,12 +358,11 @@ export function initModalDraggable(modalOverlayOrId) {
     const observer = new ObserverClass(mutations => {
       for (const m of mutations) {
         if (m.type === 'attributes' && m.attributeName === 'class') {
+          if (isDragging) continue;
           if (!container.classList.contains('hidden') && modalPositions.has(containerKey)) {
             const pos = modalPositions.get(containerKey);
             const clamped = clampModalPosition(modal, handle, pos.x, pos.y);
-            modal.style.transform = hasBaseCenterX
-              ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
-              : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+            modal.style.transform = formatModalTransform(clamped.x, clamped.y, hasBaseCenterX);
             modalPositions.set(containerKey, clamped);
           }
         }
@@ -415,21 +456,17 @@ if (typeof window !== 'undefined') {
                         modal.hasAttribute('data-center-x') ||
                         dialog.hasAttribute('data-center-x');
       if (modal && modal.style.transform) {
-        const match = modal.style.transform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
-        if (match) {
-          const curX = parseFloat(match[1]) || 0;
-          const curY = parseFloat(match[2]) || 0;
-          const clamped = clampModalPosition(modal, handle, curX, curY);
-          modal.style.transform = isCenterX
-            ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
-            : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
-          const containerKey = dialog.id || modal.id || dialog;
-          modalPositions.set(containerKey, clamped);
-        }
+        const parsed = parseModalTransform(modal.style.transform);
+        const clamped = clampModalPosition(modal, handle, parsed.x, parsed.y);
+        modal.style.transform = formatModalTransform(clamped.x, clamped.y, isCenterX);
+        const containerKey = dialog.id || modal.id || dialog;
+        modalPositions.set(containerKey, clamped);
       }
     });
   });
 
+  window.parseModalTransform = parseModalTransform;
+  window.formatModalTransform = formatModalTransform;
   window.initModalDraggable = initModalDraggable;
   window.initAllModalsDraggable = initAllModalsDraggable;
   window.initUniversalModalCollapseToggles = initUniversalModalCollapseToggles;

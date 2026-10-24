@@ -1,3 +1,17 @@
+## [1.193.2] - 2026-10-24
+
+Eliminates jumping and float-back animation anomalies when dragging horizontally centered floating dialogs such as the Flight Elevation Profile Drawer (`#elevation-profile-drawer`) and 2D Flight Replay Bar (`#replay-2d-bar`).
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Elevation Profile Dragging Stability**: Eliminated erratic jumping when moving the Flight Elevation Profile drawer leftward or upward. The drawer now responds instantaneously to pointer movements and remains securely parked at the target location without gliding or snapping back when released. (Closes #170)
+
+#### Under the Hood & Technical Details
+- **Normalized Negative `calc()` Transform Parsing**: Implemented robust `parseModalTransform(styleTransform)` and `formatModalTransform(x, y, hasBaseCenterX)` in `src/ui/ModalDragManager.js` supporting browser-normalized `calc(-50% - Xpx)` and `calc(-50% + Xpx)` negative/positive coordinates, preventing fallback to `(0, 0)`.
+- **CSS Transition Scoping**: Removed `transition: all` and `transition: transform` from `.elevation-profile-drawer` and `.replay-2d-bar` in `index.css`, scoping transitions strictly to `opacity`, `box-shadow`, and `border-color` to prevent delayed CSS transform animations.
+- **MutationObserver Drag Guard**: Guarded class attribute MutationObserver in `ModalDragManager.js` to skip re-clamping during active dragging sequences.
+
 ## [1.193.1] - 2026-10-24
 
 ### Fixed

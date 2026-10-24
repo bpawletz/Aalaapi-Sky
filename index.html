@@ -4663,7 +4663,7 @@ body.modal-drag-active {
 }
 
 #target-splat-dimension-warning {
-  transition: all 0.25s ease-in-out;
+  transition: opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 #target-splat-fix-dims-btn:hover {
@@ -6916,7 +6916,7 @@ body.modal-drag-active {
   flex-direction: column;
   gap: 8px;
   color: #f8fafc;
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity 0.25s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .replay-2d-bar.hidden {
@@ -7696,7 +7696,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.193.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.193.2</span></h1>
         </div>
       </div>
 
@@ -14201,7 +14201,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.193.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.193.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14321,6 +14321,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                    <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.193.2):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Elevation Profile Dragging Stability (Closes #170):</strong> Fixed negative <code>calc(-50% - Xpx)</code> browser transform normalization in <code>ModalDragManager.js</code> preventing erratic jumping when dragging leftward or upward.</li>
+                <li><strong>Zero Transform Transition Lag:</strong> Scoped CSS transitions on <code>.elevation-profile-drawer</code> and <code>.replay-2d-bar</code> to prevent 250ms CSS gliding / float-back behavior upon pointer release.</li>
+              </ul>
+            </li>
                                     <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.193.1):</strong>
               <ul style="margin: 4px 0 10px 0; padding-left: 18px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.4;">
@@ -24658,6 +24665,68 @@ const modalPositions = new Map();
  * @param {number} proposedY 
  * @returns {{ x: number, y: number }}
  */
+/**
+ * Accurately parses current modal translation offsets from inline style.transform.
+ * Safely extracts both positive and negative values for standard translate3d(Xpx, Ypx)
+ * and horizontally centered calc(-50% [+-] Xpx) formats normalized by browsers.
+ * 
+ * @param {string} styleTransform 
+ * @returns {{ x: number, y: number }}
+ */
+function parseModalTransform(styleTransform) {
+  if (!styleTransform || typeof styleTransform !== 'string') {
+    return { x: 0, y: 0 };
+  }
+
+  // 1. Check for centered calc(-50% [+-] Xpx)
+  const calcMatch = styleTransform.match(/calc\(\s*-50%\s*([+-])\s*(-?\d+(?:\.\d+)?)\s*px\s*\)\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+  if (calcMatch) {
+    const sign = calcMatch[1] === '-' ? -1 : 1;
+    const val = parseFloat(calcMatch[2]) || 0;
+    const x = sign * val;
+    const y = parseFloat(calcMatch[3]) || 0;
+    return { x, y };
+  }
+
+  // 2. Check for pure -50% with zero offset: translate3d(-50%, Ypx, ...) or translate(-50%, Ypx)
+  const baseCenterMatch = styleTransform.match(/translate(?:3d)?\(\s*-50%\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+  if (baseCenterMatch) {
+    const y = parseFloat(baseCenterMatch[1]) || 0;
+    return { x: 0, y };
+  }
+
+  // 3. Check for standard translate3d(Xpx, Ypx, ...) or translate(Xpx, Ypx)
+  const stdMatch = styleTransform.match(/translate(?:3d)?\(\s*(-?\d+(?:\.\d+)?)\s*px\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
+  if (stdMatch) {
+    const x = parseFloat(stdMatch[1]) || 0;
+    const y = parseFloat(stdMatch[2]) || 0;
+    return { x, y };
+  }
+
+  return { x: 0, y: 0 };
+}
+
+/**
+ * Standardizes formatting of modal translation CSS strings.
+ * 
+ * @param {number} x 
+ * @param {number} y 
+ * @param {boolean} hasBaseCenterX 
+ * @returns {string}
+ */
+function formatModalTransform(x, y, hasBaseCenterX) {
+  if (hasBaseCenterX) {
+    if (x === 0) {
+      return `translate3d(-50%, ${y}px, 0)`;
+    } else if (x > 0) {
+      return `translate3d(calc(-50% + ${x}px), ${y}px, 0)`;
+    } else {
+      return `translate3d(calc(-50% - ${Math.abs(x)}px), ${y}px, 0)`;
+    }
+  }
+  return `translate3d(${x}px, ${y}px, 0)`;
+}
+
 function clampModalPosition(modal, handle, proposedX, proposedY) {
   if (typeof window === 'undefined') {
     return { x: proposedX, y: proposedY };
@@ -24667,13 +24736,9 @@ function clampModalPosition(modal, handle, proposedX, proposedY) {
   const handleRect = handle ? handle.getBoundingClientRect() : modalRect;
 
   const styleTransform = modal.style.transform || '';
-  let curX = 0;
-  let curY = 0;
-  const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
-  if (match) {
-    curX = parseFloat(match[1]) || 0;
-    curY = parseFloat(match[2]) || 0;
-  }
+  const parsed = parseModalTransform(styleTransform);
+  const curX = parsed.x;
+  const curY = parsed.y;
 
   const baseLeft = modalRect.left - curX;
   const baseTop = modalRect.top - curY;
@@ -24759,9 +24824,7 @@ function initModalDraggable(modalOverlayOrId) {
     const saved = modalPositions.get(containerKey);
     currentTranslateX = saved.x;
     currentTranslateY = saved.y;
-    modal.style.transform = hasBaseCenterX
-      ? `translate3d(calc(-50% + ${currentTranslateX}px), ${currentTranslateY}px, 0)`
-      : `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0)`;
+    modal.style.transform = formatModalTransform(currentTranslateX, currentTranslateY, hasBaseCenterX);
   }
 
   function isInteractiveElement(target) {
@@ -24794,15 +24857,9 @@ function initModalDraggable(modalOverlayOrId) {
     startPointerX = e.clientX;
     startPointerY = e.clientY;
 
-    const styleTransform = modal.style.transform || '';
-    const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
-    if (match) {
-      currentTranslateX = parseFloat(match[1]) || 0;
-      currentTranslateY = parseFloat(match[2]) || 0;
-    } else {
-      currentTranslateX = 0;
-      currentTranslateY = 0;
-    }
+    const parsed = parseModalTransform(modal.style.transform);
+    currentTranslateX = parsed.x;
+    currentTranslateY = parsed.y;
 
     modal.classList.add('modal-dragging');
     document.body.classList.add('modal-drag-active');
@@ -24831,9 +24888,7 @@ function initModalDraggable(modalOverlayOrId) {
     const proposedY = currentTranslateY + deltaY;
 
     const clamped = clampModalPosition(modal, handle, proposedX, proposedY);
-    modal.style.transform = hasBaseCenterX
-      ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
-      : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+    modal.style.transform = formatModalTransform(clamped.x, clamped.y, hasBaseCenterX);
 
     e.stopPropagation();
   }
@@ -24859,13 +24914,10 @@ function initModalDraggable(modalOverlayOrId) {
       suppressClickUntil = Date.now() + 120;
     }
 
-    const styleTransform = modal.style.transform || '';
-    const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
-    if (match) {
-      currentTranslateX = parseFloat(match[1]) || 0;
-      currentTranslateY = parseFloat(match[2]) || 0;
-      modalPositions.set(containerKey, { x: currentTranslateX, y: currentTranslateY });
-    }
+    const parsed = parseModalTransform(modal.style.transform);
+    currentTranslateX = parsed.x;
+    currentTranslateY = parsed.y;
+    modalPositions.set(containerKey, { x: currentTranslateX, y: currentTranslateY });
 
     if (e) {
       e.stopPropagation();
@@ -24901,17 +24953,14 @@ function initModalDraggable(modalOverlayOrId) {
       else if (e.key === 'ArrowLeft') dx = -step;
       else if (e.key === 'ArrowRight') dx = step;
 
-      const styleTransform = modal.style.transform || '';
-      const match = styleTransform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
-      let curX = match ? (parseFloat(match[1]) || 0) : 0;
-      let curY = match ? (parseFloat(match[2]) || 0) : 0;
+      const parsed = parseModalTransform(modal.style.transform);
+      const curX = parsed.x;
+      const curY = parsed.y;
 
       const proposedX = curX + dx;
       const proposedY = curY + dy;
       const clamped = clampModalPosition(modal, handle, proposedX, proposedY);
-      modal.style.transform = hasBaseCenterX
-        ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
-        : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+      modal.style.transform = formatModalTransform(clamped.x, clamped.y, hasBaseCenterX);
       modalPositions.set(containerKey, { x: clamped.x, y: clamped.y });
     }
   }
@@ -24947,12 +24996,11 @@ function initModalDraggable(modalOverlayOrId) {
     const observer = new ObserverClass(mutations => {
       for (const m of mutations) {
         if (m.type === 'attributes' && m.attributeName === 'class') {
+          if (isDragging) continue;
           if (!container.classList.contains('hidden') && modalPositions.has(containerKey)) {
             const pos = modalPositions.get(containerKey);
             const clamped = clampModalPosition(modal, handle, pos.x, pos.y);
-            modal.style.transform = hasBaseCenterX
-              ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
-              : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+            modal.style.transform = formatModalTransform(clamped.x, clamped.y, hasBaseCenterX);
             modalPositions.set(containerKey, clamped);
           }
         }
@@ -25046,21 +25094,17 @@ if (typeof window !== 'undefined') {
                         modal.hasAttribute('data-center-x') ||
                         dialog.hasAttribute('data-center-x');
       if (modal && modal.style.transform) {
-        const match = modal.style.transform.match(/translate3d\(\s*(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?\s*,\s*(-?\d+(?:\.\d+)?)\s*px/);
-        if (match) {
-          const curX = parseFloat(match[1]) || 0;
-          const curY = parseFloat(match[2]) || 0;
-          const clamped = clampModalPosition(modal, handle, curX, curY);
-          modal.style.transform = isCenterX
-            ? `translate3d(calc(-50% + ${clamped.x}px), ${clamped.y}px, 0)`
-            : `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
-          const containerKey = dialog.id || modal.id || dialog;
-          modalPositions.set(containerKey, clamped);
-        }
+        const parsed = parseModalTransform(modal.style.transform);
+        const clamped = clampModalPosition(modal, handle, parsed.x, parsed.y);
+        modal.style.transform = formatModalTransform(clamped.x, clamped.y, isCenterX);
+        const containerKey = dialog.id || modal.id || dialog;
+        modalPositions.set(containerKey, clamped);
       }
     });
   });
 
+  window.parseModalTransform = parseModalTransform;
+  window.formatModalTransform = formatModalTransform;
   window.initModalDraggable = initModalDraggable;
   window.initAllModalsDraggable = initAllModalsDraggable;
   window.initUniversalModalCollapseToggles = initUniversalModalCollapseToggles;
@@ -27567,8 +27611,10 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     return { waypoints: [], photos: [], isDrawingLayer: true };
   }
 
-  const centerLat = (layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : globalCenterLat;
-  const centerLon = (layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : globalCenterLon;
+  const centerLat = (globalCenterLat !== undefined && globalCenterLat !== null) ? globalCenterLat : ((layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : 0);
+  const centerLon = (globalCenterLon !== undefined && globalCenterLon !== null) ? globalCenterLon : ((layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : 0);
+  layer.centerLat = centerLat;
+  layer.centerLon = centerLon;
 
   let gridWidth = layer.gridWidth !== undefined ? layer.gridWidth : 100;
   let gridHeight = layer.gridHeight !== undefined ? layer.gridHeight : 100;
