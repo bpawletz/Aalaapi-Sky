@@ -89,6 +89,75 @@ export function formatModalTransform(x, y, hasBaseCenterX) {
   return `translate3d(${x}px, ${y}px, 0)`;
 }
 
+/**
+ * Automatically inspects an element's bounding geometry and clamps its transform
+ * within the visible browser viewport so it never minimizes or collapses offscreen.
+ * 
+ * @param {HTMLElement} element The modal card or floating panel
+ * @param {number} minPadding Minimum boundary padding from viewport edges (default: 8px)
+ * @returns {{ x: number, y: number, clamped: boolean }} The adjusted transform offsets
+ */
+export function ensureElementInViewport(element, minPadding = 8) {
+  if (typeof window === 'undefined' || !element) {
+    return { x: 0, y: 0, clamped: false };
+  }
+
+  const modal = element.querySelector?.('.modal') || element;
+  const handle = modal.querySelector?.('[data-modal-drag-handle], .elevation-profile-header, .replay-2d-header, .modal-header') || modal;
+
+  const isCenterX = modal.classList.contains('elevation-profile-drawer') ||
+                    modal.classList.contains('replay-2d-bar') ||
+                    modal.hasAttribute('data-center-x') ||
+                    element.hasAttribute?.('data-center-x');
+
+  const cur = parseModalTransform(modal.style.transform);
+
+  // Temporarily disable CSS transition so getBoundingClientRect() reflects instantaneous layout
+  const prevTransition = modal.style.transition;
+  modal.style.transition = 'none';
+
+  const elRect = modal.getBoundingClientRect();
+  const hRect = handle.getBoundingClientRect();
+  const winH = window.innerHeight;
+  const winW = window.innerWidth;
+
+  let deltaY = 0;
+  // If bottom edge of collapsed box falls past the bottom of the viewport
+  if (elRect.bottom > winH - minPadding) {
+    deltaY = (winH - minPadding) - elRect.bottom;
+  } else if (hRect.top < minPadding) {
+    // If top edge of header falls above the top of the viewport
+    deltaY = minPadding - hRect.top;
+  }
+
+  let deltaX = 0;
+  // If right edge falls past the right of the viewport
+  if (elRect.right > winW - minPadding) {
+    deltaX = (winW - minPadding) - elRect.right;
+  } else if (elRect.left < minPadding) {
+    // If left edge falls past the left of the viewport
+    deltaX = minPadding - elRect.left;
+  }
+
+  let result = { x: cur.x, y: cur.y, clamped: false };
+
+  if (Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
+    const newX = Math.round(cur.x + deltaX);
+    const newY = Math.round(cur.y + deltaY);
+    modal.style.transform = formatModalTransform(newX, newY, isCenterX);
+    const containerKey = element.id || modal.id || element;
+    modalPositions.set(containerKey, { x: newX, y: newY });
+    result = { x: newX, y: newY, clamped: true };
+  }
+
+  // Restore previous transition via microtask so paint renders cleanly
+  requestAnimationFrame(() => {
+    modal.style.transition = prevTransition;
+  });
+
+  return result;
+}
+
 export function clampModalPosition(modal, handle, proposedX, proposedY) {
   if (typeof window === 'undefined') {
     return { x: proposedX, y: proposedY };
@@ -402,6 +471,11 @@ export function initUniversalModalCollapseToggles() {
       const isCollapsed = modal.classList.contains('modal-collapsed');
       collapseBtn.textContent = isCollapsed ? '▲' : '▼';
       collapseBtn.title = isCollapsed ? 'Expand Modal' : 'Minimize Modal';
+      if (isCollapsed) {
+        ensureElementInViewport(modal);
+        // Secondary check after CSS layout settles
+        setTimeout(() => ensureElementInViewport(modal), 50);
+      }
     });
     if (closeBtn && closeBtn.parentNode) {
       closeBtn.parentNode.insertBefore(collapseBtn, closeBtn);
@@ -472,6 +546,7 @@ if (typeof window !== 'undefined') {
   window.initUniversalModalCollapseToggles = initUniversalModalCollapseToggles;
   window.resetModalPosition = resetModalPosition;
   window.clampModalPosition = clampModalPosition;
+  window.ensureElementInViewport = ensureElementInViewport;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => initAllModalsDraggable());
