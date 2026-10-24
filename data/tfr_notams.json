@@ -1,5 +1,71 @@
 [
   {
+    "notam_id": "6/2074",
+    "facility": "ZOB",
+    "state": "MI",
+    "type": "SECURITY",
+    "description": "SELFRIDGE ANGB, MI, Sunday, October 25, 2026 Local",
+    "mod_date": "10/24/2026 20:46:00",
+    "mod_abs_time": "202610242046",
+    "is_new": "Y",
+    "gid": "6/2074"
+  },
+  {
+    "notam_id": "6/2072",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "E FARMINGTON, CO, Saturday, October 24, 2026 through Sunday, October 25, 2026 UTC",
+    "mod_date": "10/24/2026 19:28:00",
+    "mod_abs_time": "202610241928",
+    "is_new": "Y",
+    "gid": "6/2072"
+  },
+  {
+    "notam_id": "6/2071",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "NE FARMINGTON, CO, Saturday, October 24, 2026 through Sunday, October 25, 2026 UTC",
+    "mod_date": "10/24/2026 19:28:00",
+    "mod_abs_time": "202610241928",
+    "is_new": "Y",
+    "gid": "6/2071"
+  },
+  {
+    "notam_id": "6/2070",
+    "facility": "ZHU",
+    "state": "TX",
+    "type": "SECURITY",
+    "description": "Corpus Christi, TX, Tuesday, October 27, 2026 Local",
+    "mod_date": "10/24/2026 18:17:00",
+    "mod_abs_time": "202610241817",
+    "is_new": "Y",
+    "gid": "6/2070"
+  },
+  {
+    "notam_id": "6/2069",
+    "facility": "ZKC",
+    "state": "KS",
+    "type": "VIP",
+    "description": "Topeka, KS, Monday, October 26, 2026 through Monday, October 26, 2026 Local",
+    "mod_date": "10/24/2026 16:53:00",
+    "mod_abs_time": "202610241653",
+    "is_new": "Y",
+    "gid": "6/2069"
+  },
+  {
+    "notam_id": "6/2066",
+    "facility": "ZME",
+    "state": "TN",
+    "type": "VIP",
+    "description": "Memphis, TN, Monday, October 26, 2026 through Monday, October 26, 2026 Local",
+    "mod_date": "10/24/2026 15:39:00",
+    "mod_abs_time": "202610241539",
+    "is_new": "Y",
+    "gid": "6/2066"
+  },
+  {
     "notam_id": "6/2061",
     "facility": "ZME",
     "state": "TN",
@@ -84,7 +150,7 @@
     "description": "MAYPORT, FL, Sunday, October 25, 2026 through Saturday, October 31, 2026 Local",
     "mod_date": "10/23/2026 15:18:00",
     "mod_abs_time": "202610231518",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/1949"
   },
   {
@@ -262,17 +328,6 @@
     "mod_abs_time": "202610201533",
     "is_new": "N",
     "gid": "6/0818"
-  },
-  {
-    "notam_id": "6/0474",
-    "facility": "ZSE",
-    "state": "CA",
-    "type": "HAZARDS",
-    "description": "18NM NW YREKA, CA, Monday, October 19, 2026 through Monday, November 2, 2026 UTC",
-    "mod_date": "10/19/2026 19:56:00",
-    "mod_abs_time": "202610191956",
-    "is_new": "N",
-    "gid": "6/0474"
   },
   {
     "notam_id": "6/0293",

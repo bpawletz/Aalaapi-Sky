@@ -1,4 +1,27 @@
 function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, captureMode) {
+  if (!waypoints || waypoints.length === 0) return null;
+  if (waypoints.length === 1 && (waypoints[0].isPhotoSphereActionGroup || waypoints[0].isPhotoSpherePoint || waypoints[0].isPhotoSphere || waypoints[0].gridType === 'photo-sphere' || waypoints[0].layerPattern === 'photo-sphere')) {
+    const wp = waypoints[0];
+    const shots = wp.totalRawPhotos || wp.totalShots || (Array.isArray(wp.photoSphereActions) ? wp.photoSphereActions.length : 1);
+    const settling = (wp.hoverTime !== undefined && !isNaN(wp.hoverTime)) ? Number(wp.hoverTime) : 2.0;
+    const flightTimeSeconds = Math.round(shots * (settling + 1.5) + 30);
+    const min = Math.floor(flightTimeSeconds / 60);
+    const sec = Math.round(flightTimeSeconds % 60);
+    return {
+      waypointsCount: 1,
+      photoCount: shots,
+      lineSpacing: sLine,
+      photoSpacing: sPhoto,
+      distance: 0,
+      timeStr: `${min}m ${sec}s`,
+      flightTimeSeconds: flightTimeSeconds,
+      maxNearestNeighborDist: 0,
+      hasIsolatedWaypoint: false,
+      isFarFromTakeoff: false,
+      userDistanceToTakeoff: null,
+      intersectingTfrs: []
+    };
+  }
   if (waypoints.length < 2) return null;
 
   // 1. Calculate path length in meters
