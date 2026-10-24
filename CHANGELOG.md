@@ -1,3 +1,26 @@
+## [1.192.0] - 2026-10-24
+
+Three-Tier Cascading Hierarchy synchronization for Terrain Following settings, adding Global DEM Data Source, Global Max Slope Angle, and Global Drone Recon / LiDAR File Upload dropzone.
+
+### Added
+
+#### Pilot & Operational Features
+- **Three-Tier Global Terrain Settings Synchronization (Closes #167)**:
+  - Added **Default Elevation Data Source** (#global-terrain-source) in Section 3 Global Defaults supporting all 6 DEM sources (Auto, Drone Recon, USGS 3DEP, EU LiDAR, Copernicus Global, Companion Bridge, and Custom GeoTIFF).
+  - Added **Default Max Slope** (#global-max-slope-angle) slider in Section 3 Global Defaults enforcing a mission-wide gradient ceiling (10°–35°).
+  - Added **Global Drone Recon / LiDAR File Upload** (#global-dem-file-input / .tif, .asc) dropzone in Section 3, allowing pilots to load a site DSM once and automatically propagate it across all flight layers.
+- **Cascading Layer Inheritance**:
+  - Section 2 Layer Elevation Data Source now defaults to 🌐 Inherit Global (#layer-terrain-source-inherit-opt), reflecting the active global provider.
+  - When a layer sets its DEM source or slope limit to inherit, it dynamically resolves to Tier 1 Global Defaults. When explicitly set on a layer, the layer setting overrides Tier 1.
+
+#### Under the Hood & Technical Details
+- **Resolution Helpers (src/layers/LayerManager.js)**:
+  - Implemented getEffectiveLayerTerrainSource(layer) and getEffectiveLayerMaxSlope(layer).
+  - Updated updateInheritOptionLabels() to dynamically show the resolved global DEM source name.
+  - Updated generateLayerWaypoints() and refreshLayerElevationsAsync() to sample elevations using effective cascaded sources and slope limits.
+- **Event Synchronization (src/ui/EventBindings.js)**:
+  - Wired #global-terrain-source, #global-max-slope-angle, and #global-dem-file-input to trigger immediate waypoint re-smoothing, 2D/3D visual updates, and layer label synchronization.
+
 ## [1.191.0] - 2026-10-24
 
 Universal collapse/minimize toggles and draggable repositioning for all 2D Map and 3D Map floating boxes, legends, drawers, popovers, and modal dialogs.

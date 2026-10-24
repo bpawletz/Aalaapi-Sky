@@ -7684,7 +7684,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.191.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.192.0</span></h1>
         </div>
       </div>
 
@@ -9456,6 +9456,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               <div class="control-group" style="margin-bottom: 8px;">
                 <label for="layer-terrain-source" style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 3px;">Elevation Data Source</label>
                 <select id="layer-terrain-source" class="form-select" style="font-size: 0.78rem; padding: 3px 6px;">
+                  <option value="inherit" id="layer-terrain-source-inherit-opt">🌐 Inherit Global (Auto)</option>
                   <option value="auto">🌐 Auto (Best Available / Bridge Cache)</option>
                   <option value="drone-recon">🚁 Drone Recon DSM/DTM (2cm–10cm GeoTIFF / .asc)</option>
                   <option value="usgs-3dep">🇺🇸 USGS 3DEP LiDAR (1m–3m USA)</option>
@@ -10359,6 +10360,36 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                   <span class="value-display"><span id="global-target-agl-val">50</span> <span id="global-target-agl-unit">m</span></span>
                 </div>
                 <input type="range" id="global-target-agl" min="10" max="150" value="50" class="slider" aria-label="Global Default Target AGL">
+
+                <div class="control-group" style="margin-top: 8px; margin-bottom: 8px;">
+                  <div class="control-label">
+                    <span>Default Max Slope</span>
+                    <span class="value-display"><span id="global-max-slope-val">20</span>°</span>
+                  </div>
+                  <input type="range" id="global-max-slope-angle" min="10" max="35" value="20" class="slider" aria-label="Global Default Max Slope">
+                  <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.68rem;">Global slope gradient ceiling for all survey layers.</p>
+                </div>
+
+                <div class="control-group" style="margin-bottom: 8px;">
+                  <label for="global-terrain-source" style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 3px;">Default Elevation Data Source</label>
+                  <select id="global-terrain-source" class="form-select" style="font-size: 0.78rem; padding: 3px 6px;">
+                    <option value="auto">🌐 Auto (Best Available / Bridge Cache)</option>
+                    <option value="drone-recon">🚁 Drone Recon DSM/DTM (2cm–10cm GeoTIFF / .asc)</option>
+                    <option value="usgs-3dep">🇺🇸 USGS 3DEP LiDAR (1m–3m USA)</option>
+                    <option value="eu-lidar">🇪🇺 EU & National LiDAR (0.5m–5m Europe / .asc)</option>
+                    <option value="open-meteo">🌍 Copernicus Global DEM (30m Worldwide)</option>
+                    <option value="bridge">🖥️ Companion Bridge Local Cache</option>
+                    <option value="geotiff">📂 Uploaded Local GeoTIFF DEM</option>
+                  </select>
+                </div>
+
+                <div id="global-dem-upload-container" style="display: none; margin-bottom: 8px; border: 1px dashed rgba(6, 182, 212, 0.35); border-radius: 6px; padding: 8px; text-align: center; background: rgba(6, 182, 212, 0.05);">
+                  <label for="global-dem-file-input" style="font-size: 0.75rem; color: var(--accent-cyan); cursor: pointer; display: block;">
+                    📂 Choose Global Drone Recon / LiDAR File (.tif / .dem / .asc)
+                  </label>
+                  <input type="file" id="global-dem-file-input" accept=".tif,.tiff,.dem,.asc,.txt" style="display: none;">
+                  <div id="global-dem-status-badge" style="font-size: 0.68rem; color: var(--text-muted); margin-top: 4px;">No DEM loaded</div>
+                </div>
               </div>
             </div>
           </div> <!-- /global-defaults-subcard -->
@@ -14147,7 +14178,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.191.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.192.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14268,6 +14299,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                     <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.192.0):</strong>
+              <ul style="margin: 4px 0 10px 0; padding-left: 18px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.4;">
+                <li><strong>Three-Tier Global Terrain Settings Sync (Closes #167):</strong> Section 3 Global Defaults now features Default Elevation Data Source (Auto, Drone Recon, USGS 3DEP, EU LiDAR, Copernicus Global, Companion Bridge, Local GeoTIFF), Default Max Slope (10°–35°), and Global Drone Recon / LiDAR File Upload dropzone.</li>
+                <li><strong>Cascading Layer Inheritance:</strong> Section 2 Layer Elevation Data Source now defaults to 🌐 Inherit Global, dynamically resolving to the mission-wide elevation provider, with layer overrides taking precedence when explicitly chosen.</li>
+              </ul>
               <strong style="color: var(--text-main);">Changelog (v1.191.0):</strong>
               <ul style="margin: 4px 0 10px 0; padding-left: 18px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.4;">
                 <li><strong>Universal Box Collapse &amp; Minimize Toggles (Closes #166):</strong> Standardized minimize/expand toggles (<code>&#x25BC;</code> / <code>&#x25B2;</code>) and draggable headers added across all 2D Map floating boxes, drawers, legends, popovers, 3D Preview HUD controls, 3D Diagnostics telemetry and camera panels, and all modal dialogs.</li>
@@ -25131,8 +25167,8 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     roadFocusMode: 'focusRoad',
     terrainFollow: 'inherit',
     targetAgl: 'inherit',
-    terrainSource: 'auto',
-    maxSlopeAngle: 20,
+    terrainSource: 'inherit',
+    maxSlopeAngle: 'inherit',
     elevationData: null,
     targetPoly: [],
     targetMode: 'radius', // 'polygon' or 'radius'
@@ -25311,6 +25347,26 @@ function getEffectiveLayerTargetAgl(layer) {
   }
   const altEl = typeof document !== 'undefined' ? document.getElementById('altitude') : null;
   return altEl ? (parseFloat(altEl.value) || 50) : 50;
+}
+
+function getEffectiveLayerTerrainSource(layer) {
+  if (layer && layer.terrainSource && layer.terrainSource !== 'inherit') {
+    return layer.terrainSource;
+  }
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('global-terrain-source') : null;
+  return (globalEl && globalEl.value) ? globalEl.value : 'auto';
+}
+
+function getEffectiveLayerMaxSlope(layer) {
+  if (layer && layer.maxSlopeAngle !== undefined && layer.maxSlopeAngle !== null && layer.maxSlopeAngle !== 'inherit') {
+    const parsed = parseInt(layer.maxSlopeAngle, 10);
+    if (!isNaN(parsed)) return parsed;
+  }
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('global-max-slope-angle') : null;
+  if (globalEl && !isNaN(parseInt(globalEl.value, 10))) {
+    return parseInt(globalEl.value, 10);
+  }
+  return 20;
 }
 
 // Safely parse gimbal pitch angles preserving 0° horizontal camera tilt without falsy-zero fallback bugs
@@ -25555,6 +25611,22 @@ function updateInheritOptionLabels() {
     tfOpt.textContent = `🌐 Inherit Global (${globalTfEl.checked ? 'Enabled' : 'Disabled'})`;
   }
 
+  const tfSourceOpt = document.getElementById('layer-terrain-source-inherit-opt');
+  const globalTfSourceEl = document.getElementById('global-terrain-source');
+  if (tfSourceOpt && globalTfSourceEl) {
+    const srcMap = {
+      'auto': 'Auto',
+      'drone-recon': 'Drone Recon DSM',
+      'usgs-3dep': 'USGS 3DEP 1m-3m',
+      'eu-lidar': 'EU LiDAR 1m',
+      'open-meteo': 'Copernicus 30m',
+      'bridge': 'Companion Cache',
+      'geotiff': 'Custom GeoTIFF'
+    };
+    const srcLabel = srcMap[globalTfSourceEl.value] || globalTfSourceEl.value;
+    tfSourceOpt.textContent = `🌐 Inherit Global (${srcLabel})`;
+  }
+
   const captureOpt = document.getElementById('layer-capture-mode-inherit-opt');
   if (captureOpt && globalCaptureModeEl) {
     const mapName = {
@@ -25752,7 +25824,10 @@ function saveActiveLayerFromUi(targetLayer) {
   if (layerTfSourceEl) layer.terrainSource = layerTfSourceEl.value;
 
   const layerMaxSlopeEl = document.getElementById('layer-max-slope-angle');
-  if (layerMaxSlopeEl) layer.maxSlopeAngle = parseInt(layerMaxSlopeEl.value, 10) || 20;
+  if (layerMaxSlopeEl) {
+    const val = layerMaxSlopeEl.value;
+    layer.maxSlopeAngle = (val === 'inherit' || val === '') ? 'inherit' : (parseInt(val, 10) || 20);
+  }
   if (gimbalPitchEl) layer.gimbalPitch = parseGimbalPitch(gimbalPitchEl.value, -60);
 
   if (layerCaptureModeEl && layerCaptureModeEl.value) {
@@ -26046,8 +26121,9 @@ function syncUiWithActiveLayer() {
 
   setVal('layer-terrain-follow', layer.terrainFollow || 'inherit');
   setVal('layer-target-agl', layer.targetAgl !== undefined ? layer.targetAgl : 'inherit');
-  setVal('layer-terrain-source', layer.terrainSource || 'auto');
-  setVal('layer-max-slope-angle', layer.maxSlopeAngle !== undefined ? layer.maxSlopeAngle : 20);
+  setVal('layer-terrain-source', layer.terrainSource || 'inherit');
+  const effectiveSlope = getEffectiveLayerMaxSlope(layer);
+  setVal('layer-max-slope-angle', (layer.maxSlopeAngle !== undefined && layer.maxSlopeAngle !== 'inherit') ? layer.maxSlopeAngle : effectiveSlope);
 
   const tfSettingsWrapper = document.getElementById('layer-terrain-follow-settings-wrapper');
   if (tfSettingsWrapper) {
@@ -27760,7 +27836,9 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     const targetAgl = (typeof getEffectiveLayerTargetAgl === 'function')
       ? getEffectiveLayerTargetAgl(layer)
       : (typeof layer.altitude === 'number' ? layer.altitude : 50);
-    const maxSlope = layer.maxSlopeAngle !== undefined ? layer.maxSlopeAngle : 20;
+    const maxSlope = (typeof getEffectiveLayerMaxSlope === 'function')
+      ? getEffectiveLayerMaxSlope(layer)
+      : (layer.maxSlopeAngle !== undefined && layer.maxSlopeAngle !== 'inherit' ? layer.maxSlopeAngle : 20);
 
     waypoints = elevationServiceInstance.applyTerrainFollowingSync(waypoints, {
       targetAgl,
@@ -28417,12 +28495,19 @@ async function refreshLayerElevationsAsync(layerId) {
   isRefreshingLayerElevations = true;
   try {
     const coords = layer.waypoints.map(wp => ({ lat: wp.lat, lon: wp.lon }));
-    const elevations = await elevationServiceInstance.fetchElevations(coords, { source: layer.terrainSource || 'auto' });
+    const effectiveSource = (typeof getEffectiveLayerTerrainSource === 'function')
+      ? getEffectiveLayerTerrainSource(layer)
+      : (layer.terrainSource || 'auto');
+    const effectiveSlope = (typeof getEffectiveLayerMaxSlope === 'function')
+      ? getEffectiveLayerMaxSlope(layer)
+      : (layer.maxSlopeAngle || 20);
+
+    const elevations = await elevationServiceInstance.fetchElevations(coords, { source: effectiveSource });
     layer.elevationData = elevations;
     const targetAgl = getEffectiveLayerTargetAgl(layer);
     layer.waypoints = elevationServiceInstance.applyTerrainFollowingSync(layer.waypoints, {
       targetAgl,
-      maxSlopeAngle: layer.maxSlopeAngle || 20,
+      maxSlopeAngle: effectiveSlope,
       elevations
     });
     if (typeof updateElevationProfileUi === 'function') {
@@ -28438,6 +28523,39 @@ async function refreshLayerElevationsAsync(layerId) {
   } finally {
     isRefreshingLayerElevations = false;
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.getEffectiveLayerTerrainSource = getEffectiveLayerTerrainSource;
+  window.getEffectiveLayerMaxSlope = getEffectiveLayerMaxSlope;
+  window.getEffectiveLayerTerrainFollow = getEffectiveLayerTerrainFollow;
+  window.getEffectiveLayerTargetAgl = getEffectiveLayerTargetAgl;
+  window.refreshLayerElevationsAsync = refreshLayerElevationsAsync;
+  window.updateInheritOptionLabels = updateInheritOptionLabels;
+}
+if (typeof global !== 'undefined') {
+  global.getEffectiveLayerTerrainSource = getEffectiveLayerTerrainSource;
+  global.getEffectiveLayerMaxSlope = getEffectiveLayerMaxSlope;
+  global.getEffectiveLayerTerrainFollow = getEffectiveLayerTerrainFollow;
+  global.getEffectiveLayerTargetAgl = getEffectiveLayerTargetAgl;
+  global.refreshLayerElevationsAsync = refreshLayerElevationsAsync;
+  global.updateInheritOptionLabels = updateInheritOptionLabels;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    getEffectiveLayerCaptureMode,
+    getEffectiveLayerPathMode,
+    getEffectiveLayerHeadingMode,
+    getEffectiveLayerCustomHeading,
+    getEffectiveLayerHoverTime,
+    getEffectiveLayerTerrainFollow,
+    getEffectiveLayerTargetAgl,
+    getEffectiveLayerTerrainSource,
+    getEffectiveLayerMaxSlope,
+    refreshLayerElevationsAsync,
+    updateInheritOptionLabels
+  };
 }
 // -------------------- src/map/MapEngine.js --------------------
 function getCurrentWaypoints() {
@@ -34135,6 +34253,12 @@ function initTerrainFollowListeners() {
   const globalTargetAglWrapper = document.getElementById('global-target-agl-wrapper');
   const globalTargetAglInput = document.getElementById('global-target-agl');
   const globalTargetAglVal = document.getElementById('global-target-agl-val');
+  const globalMaxSlopeInput = document.getElementById('global-max-slope-angle');
+  const globalMaxSlopeVal = document.getElementById('global-max-slope-val');
+  const globalTfSourceSelect = document.getElementById('global-terrain-source');
+  const globalDemUploadWrapper = document.getElementById('global-dem-upload-container');
+  const globalDemFileInput = document.getElementById('global-dem-file-input');
+  const globalDemStatusBadge = document.getElementById('global-dem-status-badge');
 
   const openProfileBtn = document.getElementById('open-elevation-profile-btn');
   const closeProfileBtn = document.getElementById('close-elevation-profile-btn');
@@ -34294,6 +34418,79 @@ function initTerrainFollowListeners() {
       if (globalTargetAglVal) globalTargetAglVal.textContent = Math.round(val);
       if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
       if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+    });
+  }
+
+  if (globalMaxSlopeInput) {
+    globalMaxSlopeInput.addEventListener('input', () => {
+      const val = parseInt(globalMaxSlopeInput.value, 10) || 20;
+      if (globalMaxSlopeVal) globalMaxSlopeVal.textContent = val;
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer && (layer.maxSlopeAngle === 'inherit' || !layer.maxSlopeAngle)) {
+        if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+        if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+      }
+    });
+  }
+
+  if (globalTfSourceSelect) {
+    globalTfSourceSelect.addEventListener('change', () => {
+      const src = globalTfSourceSelect.value;
+      if (globalDemUploadWrapper) {
+        const needsUpload = (src === 'geotiff' || src === 'drone-recon' || src === 'eu-lidar');
+        globalDemUploadWrapper.style.display = needsUpload ? 'block' : 'none';
+      }
+      if (typeof updateInheritOptionLabels === 'function') updateInheritOptionLabels();
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer && (layer.terrainSource === 'inherit' || !layer.terrainSource)) {
+        layer.elevationData = null;
+        if (typeof refreshLayerElevationsAsync === 'function') {
+          refreshLayerElevationsAsync(layer.id);
+        } else if (typeof redrawCurrentMission === 'function') {
+          redrawCurrentMission();
+        }
+      }
+    });
+  }
+
+  if (globalDemFileInput) {
+    globalDemFileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const isAscii = file.name.toLowerCase().endsWith('.asc') || file.name.toLowerCase().endsWith('.txt');
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          if (typeof elevationServiceInstance !== 'undefined') {
+            const dem = elevationServiceInstance.loadDemFile(event.target.result, file.name);
+            if (globalDemStatusBadge) {
+              const resInfo = dem.resolutionLabel ? (' • ' + dem.resolutionLabel) : '';
+              const projInfo = dem.isProjected ? ' [Projected]' : ' [WGS84]';
+              globalDemStatusBadge.textContent = '✓ Loaded: ' + dem.width + '×' + dem.height + projInfo + resInfo + ' (' + Math.round(dem.minElev) + 'm–' + Math.round(dem.maxElev) + 'm MSL)';
+              globalDemStatusBadge.style.color = 'var(--accent-green, #10b981)';
+            }
+            const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+            if (layer && (layer.terrainSource === 'inherit' || !layer.terrainSource)) {
+              layer.elevationData = null;
+              if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+              if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+              if (elevationServiceInstance.activeDemGridLayer && typeof map !== 'undefined') {
+                elevationServiceInstance.generateDemGridOverlay(map);
+              }
+            }
+          }
+        } catch (err) {
+          if (globalDemStatusBadge) {
+            globalDemStatusBadge.textContent = '⚠️ Error parsing DEM: ' + err.message;
+            globalDemStatusBadge.style.color = '#ef4444';
+          }
+        }
+      };
+      if (isAscii) {
+        reader.readAsText(file);
+      } else {
+        reader.readAsArrayBuffer(file);
+      }
     });
   }
 
