@@ -9779,6 +9779,309 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.ok(evalResult.draggedTransform.includes('calc(-50% + '), 'Expected calc(-50% + Xpx) on #elevation-profile-drawer, got ' + evalResult.draggedTransform);
       assert.strictEqual(evalResult.resetTransform, '', 'Double-click must reset #elevation-profile-drawer transform to empty string');
     });
+
+    test('E2E: Keyboard arrow keys reposition draggable HUD panels and Escape resets transform', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const panel = document.getElementById('video-cast-panel');
+        panel.classList.remove('hidden');
+        await new Promise(r => setTimeout(r, 50));
+
+        const handle = panel.querySelector('.video-cast-header');
+        handle.setAttribute('tabindex', '0');
+        handle.focus();
+
+        // Dispatch ArrowRight
+        handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+        const transformRight = panel.style.transform;
+
+        // Dispatch ArrowDown with shiftKey for larger step
+        handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true, bubbles: true, cancelable: true }));
+        const transformDown = panel.style.transform;
+
+        // Dispatch Escape to reset
+        handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+        const resetTransform = panel.style.transform;
+
+        panel.classList.add('hidden');
+        return { transformRight, transformDown, resetTransform };
+      });
+
+      assert.ok(evalResult.transformRight.includes('translate3d(15px, 0px, 0px)'), 'ArrowRight should translate panel by 15px X');
+      assert.ok(evalResult.transformDown.includes('translate3d(15px, 30px, 0px)'), 'Shift+ArrowDown should add 30px Y translation');
+      assert.strictEqual(evalResult.resetTransform, '', 'Escape should reset panel transform');
+    });
+
+    test('E2E: #diag-wireframe-panel is registered as draggable with handle and drag grip', async () => {
+      const result = await page.evaluate(() => {
+        const diagPanel = document.getElementById('diag-wireframe-panel');
+        if (!diagPanel) return { exists: false };
+        const handle = diagPanel.querySelector('[data-modal-drag-handle]');
+        const grip = diagPanel.querySelector('.modal-drag-grip');
+        return {
+          exists: true,
+          isDraggable: diagPanel.getAttribute('data-draggable-modal') === 'true',
+          hasHandle: !!handle,
+          hasGrip: !!grip
+        };
+      });
+
+      assert.strictEqual(result.exists, true, '#diag-wireframe-panel must exist');
+      assert.strictEqual(result.isDraggable, true, '#diag-wireframe-panel must have data-draggable-modal="true"');
+      assert.strictEqual(result.hasHandle, true, '#diag-wireframe-panel must have a drag handle');
+      assert.strictEqual(result.hasGrip, true, '#diag-wireframe-panel must have a modal drag grip');
+    });
+  });
+
+  describe('Section 1 Pattern Category Filter & Keyboard Accessibility E2E Suite (v1.188.0)', () => {
+    test('E2E: Category filter bar toggles filtered classes and All restores all 22 cards', async () => {
+      const result = await page.evaluate(async () => {
+        const filterBar = document.getElementById('pattern-category-filter-bar');
+        const allPills = Array.from(document.querySelectorAll('.pattern-filter-pill'));
+        const allCards = Array.from(document.querySelectorAll('.pattern-card'));
+
+        // Select Structure pill
+        const structurePill = document.querySelector('.pattern-filter-pill[data-category="structure"]');
+        if (structurePill) structurePill.click();
+        await new Promise(r => setTimeout(r, 60));
+
+        const hiddenCardsAfterStructure = document.querySelectorAll('.pattern-card.pattern-card-filtered-out').length;
+        const visibleStructureCards = document.querySelectorAll('.pattern-card:not(.pattern-card-filtered-out)').length;
+
+        // Select All pill
+        const allPill = document.querySelector('.pattern-filter-pill[data-category="all"]');
+        if (allPill) allPill.click();
+        await new Promise(r => setTimeout(r, 60));
+
+        const hiddenCardsAfterAll = document.querySelectorAll('.pattern-card.pattern-card-filtered-out').length;
+
+        return {
+          hasFilterBar: !!filterBar,
+          pillCount: allPills.length,
+          totalCards: allCards.length,
+          hiddenCardsAfterStructure,
+          visibleStructureCards,
+          hiddenCardsAfterAll
+        };
+      });
+
+      assert.strictEqual(result.hasFilterBar, true, '#pattern-category-filter-bar must exist');
+      assert.strictEqual(result.pillCount, 6, 'Should have 6 category filter pills');
+      assert.strictEqual(result.totalCards, 22, 'Should have 22 pattern cards');
+      assert.ok(result.hiddenCardsAfterStructure > 0, 'Structure filter should hide non-structure cards');
+      assert.strictEqual(result.visibleStructureCards, 6, 'Structure category should display 6 cards');
+      assert.strictEqual(result.hiddenCardsAfterAll, 0, 'All filter should restore all 22 cards');
+    });
+
+    test('E2E: Pattern cards have role="button", tabindex="0", and keyboard Enter activates them', async () => {
+      const result = await page.evaluate(async () => {
+        const cards = Array.from(document.querySelectorAll('.pattern-card'));
+        const allHaveRole = cards.every(c => c.getAttribute('role') === 'button');
+        const allHaveTabindex = cards.every(c => c.getAttribute('tabindex') === '0');
+
+        const firstCard = cards[0];
+        let clicked = false;
+        const clickListener = () => { clicked = true; };
+        firstCard.addEventListener('click', clickListener, { once: true });
+
+        firstCard.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+        await new Promise(r => setTimeout(r, 20));
+
+        return {
+          allHaveRole,
+          allHaveTabindex,
+          clicked
+        };
+      });
+
+      assert.strictEqual(result.allHaveRole, true, 'All pattern cards must have role="button"');
+      assert.strictEqual(result.allHaveTabindex, true, 'All pattern cards must have tabindex="0"');
+      assert.strictEqual(result.clicked, true, 'Pressing Enter on pattern card must trigger click');
+    });
+  });
+
+  describe('Sidebar Quick-Navigation Toolbar & Section Collapsible Controls E2E Suite (v1.188.0)', () => {
+    test('E2E: #sidebar-quick-nav contains 5 section jump chips that link to sections', async () => {
+      const result = await page.evaluate(() => {
+        const nav = document.getElementById('sidebar-quick-nav');
+        const chips = Array.from(document.querySelectorAll('.sidebar-nav-chip'));
+        const chipTargets = chips.map(c => c.getAttribute('data-target-section'));
+        return {
+          navExists: !!nav,
+          chipCount: chips.length,
+          chipTargets
+        };
+      });
+
+      assert.strictEqual(result.navExists, true, '#sidebar-quick-nav must exist');
+      assert.strictEqual(result.chipCount, 5, 'Must have 5 section quick navigation chips');
+      assert.deepStrictEqual(result.chipTargets, [
+        'mission-db-section',
+        'layers-and-location-section',
+        'grid-geometry-section',
+        'mission-failsafes-section',
+        'hardware-sync-section'
+      ]);
+    });
+
+    test('E2E: #sidebar-collapse-all-quick-btn toggles collapsed state on all collapsible sections', async () => {
+      const result = await page.evaluate(async () => {
+        const btn = document.getElementById('sidebar-collapse-all-quick-btn');
+        const sections = Array.from(document.querySelectorAll('.control-section.collapsible'));
+
+        // Click to collapse all
+        btn.click();
+        await new Promise(r => setTimeout(r, 50));
+        const collapsedCountAfterFirst = document.querySelectorAll('.control-section.collapsible.collapsed').length;
+        const btnStateAfterFirst = btn.getAttribute('data-state');
+        const ariaLabelAfterFirst = btn.getAttribute('aria-label');
+
+        // Click again to expand all
+        btn.click();
+        await new Promise(r => setTimeout(r, 50));
+        const collapsedCountAfterSecond = document.querySelectorAll('.control-section.collapsible.collapsed').length;
+        const btnStateAfterSecond = btn.getAttribute('data-state');
+        const ariaLabelAfterSecond = btn.getAttribute('aria-label');
+
+        return {
+          btnExists: !!btn,
+          totalSections: sections.length,
+          collapsedCountAfterFirst,
+          btnStateAfterFirst,
+          ariaLabelAfterFirst,
+          collapsedCountAfterSecond,
+          btnStateAfterSecond,
+          ariaLabelAfterSecond
+        };
+      });
+
+      assert.strictEqual(result.btnExists, true, '#sidebar-collapse-all-quick-btn must exist');
+      assert.strictEqual(result.collapsedCountAfterFirst, result.totalSections, 'All sections should be collapsed');
+      assert.strictEqual(result.btnStateAfterFirst, 'collapsed', 'Button data-state should change to collapsed');
+      assert.strictEqual(result.ariaLabelAfterFirst, 'Expand All Sections', 'Button aria-label should change to Expand All Sections');
+      assert.strictEqual(result.collapsedCountAfterSecond, 0, 'All sections should be expanded');
+      assert.strictEqual(result.btnStateAfterSecond, 'expanded', 'Button data-state should change to expanded');
+      assert.strictEqual(result.ariaLabelAfterSecond, 'Collapse All Sections', 'Button aria-label should change to Collapse All Sections');
+    });
+  });
+
+
+  describe('Draggable Map Legends, Topbar Popovers & Floating Drawers E2E Suite (v1.189.0, Issue #164)', () => {
+    test('E2E: Topbar popovers (#bridge-status-popover, #telemetry-weather-popover, #mission-time-popover) have grips, handles, and are draggable', async () => {
+      const result = await page.evaluate(() => {
+        const bridge = document.getElementById('bridge-status-popover');
+        const telemetry = document.getElementById('telemetry-weather-popover');
+        const mtime = document.getElementById('mission-time-popover');
+        const adsb = document.getElementById('adsb-control-drawer');
+        const hudLegend = document.getElementById('three-hud-legend');
+
+        return {
+          bridgeDraggable: bridge ? bridge.getAttribute('data-draggable-modal') === 'true' : false,
+          bridgeGrip: bridge ? !!bridge.querySelector('.modal-drag-grip') : false,
+          bridgeHandle: bridge ? !!bridge.querySelector('[data-modal-drag-handle]') : false,
+
+          telemetryDraggable: telemetry ? telemetry.getAttribute('data-draggable-modal') === 'true' : false,
+          telemetryGrip: telemetry ? !!telemetry.querySelector('.modal-drag-grip') : false,
+          telemetryHandle: telemetry ? !!telemetry.querySelector('[data-modal-drag-handle]') : false,
+
+          mtimeDraggable: mtime ? mtime.getAttribute('data-draggable-modal') === 'true' : false,
+          mtimeGrip: mtime ? !!mtime.querySelector('.modal-drag-grip') : false,
+          mtimeHandle: mtime ? !!mtime.querySelector('[data-modal-drag-handle]') : false,
+
+          adsbDraggable: adsb ? adsb.getAttribute('data-draggable-modal') === 'true' : false,
+          adsbGrip: adsb ? !!adsb.querySelector('.modal-drag-grip') : false,
+          adsbHandle: adsb ? !!adsb.querySelector('[data-modal-drag-handle]') : false,
+
+          hudLegendDraggable: hudLegend ? hudLegend.getAttribute('data-draggable-modal') === 'true' : false,
+          hudLegendGrip: hudLegend ? !!hudLegend.querySelector('.modal-drag-grip') : false,
+          hudLegendHandle: hudLegend ? !!hudLegend.querySelector('[data-modal-drag-handle]') : false
+        };
+      });
+
+      assert.strictEqual(result.bridgeDraggable, true, '#bridge-status-popover must be draggable');
+      assert.strictEqual(result.bridgeGrip, true, '#bridge-status-popover must have grip');
+      assert.strictEqual(result.bridgeHandle, true, '#bridge-status-popover must have drag handle');
+
+      assert.strictEqual(result.telemetryDraggable, true, '#telemetry-weather-popover must be draggable');
+      assert.strictEqual(result.telemetryGrip, true, '#telemetry-weather-popover must have grip');
+      assert.strictEqual(result.telemetryHandle, true, '#telemetry-weather-popover must have drag handle');
+
+      assert.strictEqual(result.mtimeDraggable, true, '#mission-time-popover must be draggable');
+      assert.strictEqual(result.mtimeGrip, true, '#mission-time-popover must have grip');
+      assert.strictEqual(result.mtimeHandle, true, '#mission-time-popover must have drag handle');
+
+      assert.strictEqual(result.adsbDraggable, true, '#adsb-control-drawer must be draggable');
+      assert.strictEqual(result.adsbGrip, true, '#adsb-control-drawer must have grip');
+      assert.strictEqual(result.adsbHandle, true, '#adsb-control-drawer must have drag handle');
+
+      assert.strictEqual(result.hudLegendDraggable, true, '#three-hud-legend must be draggable');
+      assert.strictEqual(result.hudLegendGrip, true, '#three-hud-legend must have grip');
+      assert.strictEqual(result.hudLegendHandle, true, '#three-hud-legend must have drag handle');
+    });
+
+    test('E2E: Dragging #telemetry-weather-popover translates position and resets on double-click', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const popover = document.getElementById('telemetry-weather-popover');
+        popover.classList.remove('hidden');
+
+        const handle = popover.querySelector('.popover-header');
+        if (!handle) return { error: 'Handle not found' };
+
+        // Pointer drag simulation
+        handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 200, clientY: 200, pointerId: 1 }));
+        handle.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 250, clientY: 260, pointerId: 1 }));
+        handle.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 250, clientY: 260, pointerId: 1 }));
+
+        const draggedTransform = popover.style.transform;
+
+        // Double click reset
+        handle.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+        const resetTransform = popover.style.transform;
+
+        popover.classList.add('hidden');
+
+        return {
+          draggedTransform,
+          resetTransform
+        };
+      });
+
+      assert.ok(evalResult.draggedTransform.includes('translate3d('), 'Popover must translate on drag');
+      assert.strictEqual(evalResult.resetTransform, '', 'Double click must reset popover position');
+    });
+
+    test('E2E: Dragging #three-hud-legend does not trigger accordion collapse toggle', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const hudLegend = document.getElementById('three-hud-legend');
+        const handle = document.getElementById('hud-legend-header');
+        const body = document.getElementById('hud-legend-body');
+        if (!handle || !body) return { error: 'Elements not found' };
+
+        const initialDisplay = body.style.display;
+
+        // Perform drag move
+        handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 500, clientY: 500, pointerId: 1 }));
+        handle.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 540, clientY: 530, pointerId: 1 }));
+        handle.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 540, clientY: 530, pointerId: 1 }));
+
+        // Immediately following click that browsers generate after pointerup
+        handle.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+        const afterDragDisplay = body.style.display;
+        const draggedTransform = hudLegend.style.transform;
+
+        // Reset
+        handle.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+        return {
+          initialDisplay,
+          afterDragDisplay,
+          draggedTransform
+        };
+      });
+
+      assert.ok(evalResult.draggedTransform.includes('translate3d('), 'HUD legend must be translated on drag');
+      assert.strictEqual(evalResult.afterDragDisplay, evalResult.initialDisplay, 'Drag motion must not toggle accordion collapse');
+    });
   });
 
 });

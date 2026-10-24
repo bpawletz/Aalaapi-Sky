@@ -1,5 +1,38 @@
 [
   {
+    "notam_id": "6/2017",
+    "facility": "ZHU",
+    "state": "MS",
+    "type": "HAZARDS",
+    "description": "14NM E CAMP SHELBY, MS, Saturday, October 24, 2026 through Tuesday, October 27, 2026 UTC",
+    "mod_date": "10/24/2026 00:08:00",
+    "mod_abs_time": "202610240008",
+    "is_new": "Y",
+    "gid": "6/2017"
+  },
+  {
+    "notam_id": "6/2018",
+    "facility": "ZHU",
+    "state": "MS",
+    "type": "HAZARDS",
+    "description": "9NM S CAMP SHELBY, MS, Saturday, October 24, 2026 through Tuesday, October 27, 2026 UTC",
+    "mod_date": "10/24/2026 00:08:00",
+    "mod_abs_time": "202610240008",
+    "is_new": "Y",
+    "gid": "6/2018"
+  },
+  {
+    "notam_id": "6/2016",
+    "facility": "ZHU",
+    "state": "MS",
+    "type": "HAZARDS",
+    "description": "14NM NW LUCEDALE, MS, Saturday, October 24, 2026 through Tuesday, October 27, 2026 UTC",
+    "mod_date": "10/24/2026 00:07:00",
+    "mod_abs_time": "202610240007",
+    "is_new": "Y",
+    "gid": "6/2016"
+  },
+  {
     "notam_id": "6/2014",
     "facility": "ZLC",
     "state": "ID",
@@ -42,17 +75,6 @@
     "mod_abs_time": "202610231829",
     "is_new": "Y",
     "gid": "6/1973"
-  },
-  {
-    "notam_id": "6/1963",
-    "facility": "ZAN",
-    "state": "AK",
-    "type": "HAZARDS",
-    "description": "ATIGUN PASS, AK, Friday, October 23, 2026 through Saturday, October 24, 2026 UTC",
-    "mod_date": "10/23/2026 17:08:00",
-    "mod_abs_time": "202610231708",
-    "is_new": "Y",
-    "gid": "6/1963"
   },
   {
     "notam_id": "6/1949",

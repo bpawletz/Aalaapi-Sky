@@ -3047,6 +3047,10 @@ function initUIEventListeners() {
     // Only bind if the section isn't guide-section
     const section = header.closest('.control-section');
     if (section && !section.classList.contains('guide-section')) {
+      // Accessibility attributes
+      header.setAttribute('role', 'button');
+      header.setAttribute('tabindex', '0');
+
       // Restore previous collapsed state if saved; default to collapsed
       const sectionIndex = Array.from(document.querySelectorAll('.control-section')).indexOf(section);
       const isCollapsed = localStorage.getItem(`aalaapi_sky_section_${sectionIndex}_collapsed`);
@@ -3063,21 +3067,34 @@ function initUIEventListeners() {
           section.classList.add('collapsed');
         }
       }
+      header.setAttribute('aria-expanded', !section.classList.contains('collapsed') ? 'true' : 'false');
 
-      header.addEventListener('click', (e) => {
-        if (e && e.target && e.target.closest('button, input, select, a')) return;
+      const toggleSection = (e) => {
+        if (e && e.target && e.target.closest('button, input, select, a') && e.target !== header) return;
         const wasCollapsed = section.classList.contains('collapsed');
         section.classList.toggle('collapsed');
+        header.setAttribute('aria-expanded', wasCollapsed ? 'true' : 'false');
         localStorage.setItem(`aalaapi_sky_section_${sectionIndex}_collapsed`, !wasCollapsed);
 
         if (isAccordionMode && wasCollapsed) { // wasCollapsed means we are now expanding
           document.querySelectorAll('.control-section').forEach(otherSection => {
             if (otherSection !== section && !otherSection.classList.contains('guide-section')) {
               otherSection.classList.add('collapsed');
+              const otherHeader = otherSection.querySelector('h3');
+              if (otherHeader) otherHeader.setAttribute('aria-expanded', 'false');
               const otherIndex = Array.from(document.querySelectorAll('.control-section')).indexOf(otherSection);
               localStorage.setItem(`aalaapi_sky_section_${otherIndex}_collapsed`, 'true');
             }
           });
+        }
+      };
+
+      header.addEventListener('click', toggleSection);
+      header.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (e.target && e.target.closest('button, input, select, a') && e.target !== header) return;
+          e.preventDefault();
+          toggleSection(e);
         }
       });
     }
@@ -3092,6 +3109,8 @@ function initUIEventListeners() {
       document.querySelectorAll('.control-section').forEach((section, idx) => {
         if (!section.classList.contains('guide-section')) {
           section.classList.add('collapsed');
+          const h3 = section.querySelector('h3');
+          if (h3) h3.setAttribute('aria-expanded', 'false');
           localStorage.setItem(`aalaapi_sky_section_${idx}_collapsed`, 'true');
         }
       });
@@ -3103,11 +3122,16 @@ function initUIEventListeners() {
       document.querySelectorAll('.control-section').forEach((section, idx) => {
         if (!section.classList.contains('guide-section')) {
           section.classList.remove('collapsed');
+          const h3 = section.querySelector('h3');
+          if (h3) h3.setAttribute('aria-expanded', 'true');
           localStorage.setItem(`aalaapi_sky_section_${idx}_collapsed`, 'false');
         }
       });
     });
   }
+
+  // Sidebar Section Quick-Navigation Toolbar (v1.188.0)
+  initSidebarQuickNav();
   
   // Run initial toggle to setup correct view state
   togglePatternParameters();
@@ -3561,3 +3585,57 @@ function initTerrainFollowListeners() {
  * Transforms sidebar value display numbers into interactive click-to-type inputs
  * allowing pilots to click any number and type exact values in active units.
  */
+
+/**
+ * Sidebar Section Quick-Navigation Toolbar (v1.188.0)
+ * Jump directly to any sidebar section or toggle all sections open/closed with 1 click.
+ */
+function initSidebarQuickNav() {
+  if (typeof document === 'undefined') return;
+  const quickNav = document.getElementById('sidebar-quick-nav');
+  if (!quickNav) return;
+
+  const chips = quickNav.querySelectorAll('.sidebar-nav-chip');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const targetId = chip.getAttribute('data-target-section');
+      if (!targetId) return;
+      const targetSection = document.getElementById(targetId);
+      if (!targetSection) return;
+
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+
+      targetSection.classList.remove('collapsed');
+      const h3 = targetSection.querySelector('h3');
+      if (h3) h3.setAttribute('aria-expanded', 'true');
+      targetSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+
+  const toggleAllBtn = document.getElementById('sidebar-collapse-all-quick-btn');
+  if (toggleAllBtn) {
+    toggleAllBtn.addEventListener('click', () => {
+      const sections = Array.from(document.querySelectorAll('.control-section')).filter(s => !s.classList.contains('guide-section'));
+      const anyExpanded = sections.some(s => !s.classList.contains('collapsed'));
+
+      sections.forEach((section, idx) => {
+        if (anyExpanded) {
+          section.classList.add('collapsed');
+          const h3 = section.querySelector('h3');
+          if (h3) h3.setAttribute('aria-expanded', 'false');
+          localStorage.setItem(`aalaapi_sky_section_${idx}_collapsed`, 'true');
+        } else {
+          section.classList.remove('collapsed');
+          const h3 = section.querySelector('h3');
+          if (h3) h3.setAttribute('aria-expanded', 'true');
+          localStorage.setItem(`aalaapi_sky_section_${idx}_collapsed`, 'false');
+        }
+      });
+      const allCollapsedNow = anyExpanded;
+      toggleAllBtn.setAttribute('title', allCollapsedNow ? 'Expand All Sections' : 'Collapse All Sections');
+      toggleAllBtn.setAttribute('aria-label', allCollapsedNow ? 'Expand All Sections' : 'Collapse All Sections');
+      toggleAllBtn.setAttribute('data-state', allCollapsedNow ? 'collapsed' : 'expanded');
+    });
+  }
+}

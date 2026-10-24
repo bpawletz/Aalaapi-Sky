@@ -1,23 +1,64 @@
+## [1.189.0] - 2026-10-23
+
+Empowers pilots and operators with full dragging freedom across all floating map legends, topbar popovers, and analysis drawers with tactile grips, automatic position persistence, and gesture isolation.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Draggable Map Legends & Floating Drawers**: Extended tactile drag-and-drop capability to all remaining floating UI cards:
+  - Altitude & Mission Layers map legend (`#map-mission-legend`).
+  - Dynamic Airspace & LAANC overlays legend (`#airspace-legend-container`).
+  - Topbar Bridge & Hardware Sync popover (`#bridge-status-popover`).
+  - Mission Details & Live Weather Station popover (`#telemetry-weather-popover`).
+  - Mission Time & Solar Ephemeris popover (`#mission-time-popover`).
+  - Manned Aircraft Radar ADS-B drawer (`#adsb-control-drawer`).
+  - Map & Remote ID Alignment Calibration panel (`#remote-id-calibration-panel`).
+  - 3D FPV HUD Waypoint Colors legend (`#three-hud-legend`).
+  - Floating Mission Details stats panel (`#stats-panel`).
+  - Waypoint heading mode help popover (`#wp-heading-help-popover`).
+- **Tactile Drag Grips & Click Suppression**: Each floating dialog displays a prominent tactile grip (`⋮⋮`) in its header. Releasing a drag safely suppresses click events to prevent accidental closure or accordion collapsing.
+- **Double-Click Header Reset & Session Memory**: Double-clicking any header resets the card to its default docked location. Dragged coordinates persist across layer switching and camera panning without snapping back. (Closes #164)
+
+#### Under the Hood & Technical Details
+- **ModalDragManager Refinement**: Expanded handle resolution to include `.popover-header`, `.legend-header`, `.adsb-drawer-header`, `.remote-id-cal-header`, `.stats-panel-header`, `#hud-legend-header`, and `.wp-help-title`. Added motion distance thresholding (`Math.hypot(deltaX, deltaY) > 3`) and capture-phase click filtering (`suppressClickUntil`) in `src/ui/ModalDragManager.js`.
+- **Dynamic Leaflet Legend Re-initialization**: Configured `updateMapLegend` and `updateAirspaceLegend` in `src/geo/MathUtils.js` with stable DOM IDs (`map-mission-legend`) and automatic `initModalDraggable` re-binding upon layer or zoom gates updates.
+
 ## [1.188.0] - 2026-10-23
 
-Universal modeless floating HUD window dragging, tactile grips, and base CSS transform support for Live Video Cast, Elevation Profile, and 2D Replay.
+Comprehensive GUI & UX modernization featuring draggable floating HUD panels, pattern selector category filtering, sidebar quick-navigation, Daylight Field Mode contrast completeness, and keyboard accessibility.
 
 ### Added
 
 #### Pilot & Operational Features
 - **Draggable Modeless Floating HUD Panels (Closes #158)**:
-  - Enabled smooth pointer/touch-based dragging across modeless floating HUD windows without blocking full-screen backdrops (`.modal-overlay`).
-  - **Live Video Cast Panel (`#video-cast-panel`)**: Pilots can freely drag the live drone video feed anywhere across the map to keep waypoints and telemetry clear while maintaining uninterrupted map interactivity.
-  - **Flight Elevation Cross-Section Profile (`#elevation-profile-drawer`)**: Allows dragging the terrain relief and MSL/AGL altitude cross-section chart up or down across the canvas.
-  - **2D Flight Replay Bar (`#replay-2d-bar`)**: Allows moving the telemetry timeline scrubber and flight playback controls freely over the map.
+  - Enabled smooth pointer/touch and keyboard arrow-key dragging across floating map HUD panels including Live Video Cast (`#video-cast-panel`), Flight Elevation Profile (`#elevation-profile-drawer`), 2D Replay Bar (`#replay-2d-bar`), and 3D Wireframe Toolkit (`#diag-wireframe-panel`).
   - **Tactile Grab Grip Affordances (`⋮⋮`)**: Added high-visibility grab grips (`.modal-drag-grip`) and `grab` / `grabbing` cursor feedback on all panel headers.
   - **Session Position Persistence & Double-Click Re-Center**: Remembers dragged panel positions during the active flight session, and provides instant `dblclick` header shortcuts to restore default alignments.
+- **Section 1 Pattern Category Filter Bar**:
+  - Grouped the 22 flight pattern cards in Section 1 into instant filter pills (`All (22)`, `Mapping & 3D`, `Orbit & Structure`, `Linear & Route`, `Creative & Pano`, `Safety & GCP`) to dramatically accelerate pattern discovery and reduce cognitive clutter.
+  - Full keyboard accessibility with `role="button"`, `tabindex="0"`, `aria-pressed`, and `Enter`/`Space` activation.
+- **Sidebar Section Quick-Navigation Toolbar**:
+  - Added a compact quick-navigation pill bar (`0. DB`, `1. Patterns`, `2. Layer`, `3. Defaults`, `4. Sync`) at the top of the sidebar with 1-click jumps and smooth scrolling.
+  - Added 1-click **Collapse / Expand All Sections** toggle button (`#sidebar-collapse-all-quick-btn`) directly in the sidebar without opening settings.
+  - Sticky section headers (`.control-section > h3`) preserve section titles during scrolling and feature full keyboard toggle support.
+- **Daylight Field Mode Contrast Completeness**:
+  - Polished High-Contrast Daylight Field Mode (`[data-theme="light"]`) across all floating drawers, popovers, and ADS-B cards, eliminating dark un-themed islands.
+  - Native browser `color-scheme` adaptation on `:root` and `[data-theme="light"]` for system scrollbars and native menus.
+- **Enhanced Focus & Motion Accessibility**:
+  - High-contrast `:focus-visible` outline rings across interactive controls and keyboard arrow-key repositioning for draggable panels.
+  - Dampened infinite pulsing animations for pilots with `prefers-reduced-motion` enabled.
 
 #### Under the Hood & Technical Details
 - **Base CSS Transform & Horizontal Centering Support (`ModalDragManager.js`)**:
   - Enhanced `ModalDragManager` to natively handle bottom/center-anchored floating elements that utilize base CSS transforms (`transform: translateX(-50%)`).
   - Formulated regex matching `(?:calc\(\s*-50%\s*\+\s*)?(-?\d+(?:\.\d+)?)\s*px\s*\)?` to eliminate visual displacement jumps on drag initiation.
-  - Wired dynamic viewport boundary clamping (`clampModalPosition()`) and responsive window resize realignment.
+  - Wired dynamic viewport boundary clamping (`clampModalPosition()`), responsive window resize realignment, and keyboard arrow-key positioning.
+- **Pattern Selector Filter & Keyboard Navigation (`ThemeManager.js`)**:
+  - Implemented `initPatternCategoryFilter()` to filter `.pattern-card` elements by `data-pattern-category` using `.pattern-card-filtered-out`.
+  - Added `role="button"`, `tabindex="0"`, `aria-pressed` synchronization, and `Enter`/`Space` key handlers on pattern cards.
+- **Sidebar Quick Navigation & Accordion Accessibility (`EventBindings.js`)**:
+  - Implemented `initSidebarQuickNav()` managing section jump chips and quick mass collapse/expand toggling.
+  - Updated section headers with `role="button"`, `tabindex="0"`, and `aria-expanded` attributes.
 
 ## [1.187.0] - 2026-10-23
 
