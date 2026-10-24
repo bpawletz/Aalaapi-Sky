@@ -168,13 +168,14 @@ class BridgeMetrics {
     if (!ep) {
       if (this.endpoints.size >= this.maxEndpoints) {
         key = `${method.toUpperCase()} OTHER`;
-        ep = this.endpoints.get(key) || { count: 0, totalMs: 0, errors: 0 };
+        ep = this.endpoints.get(key) || { count: 0, totalMs: 0, errors: 0, lastTime: 0 };
       } else {
-        ep = { count: 0, totalMs: 0, errors: 0 };
+        ep = { count: 0, totalMs: 0, errors: 0, lastTime: 0 };
       }
     }
     ep.count++;
     ep.totalMs += ms;
+    ep.lastTime = Date.now();
     if (status >= 400) ep.errors++;
     this.endpoints.set(key, ep);
   }
@@ -190,12 +191,13 @@ class BridgeMetrics {
       const parts = key.split(' ');
       const method = parts[0] || 'GET';
       const path = parts.slice(1).join(' ') || key;
+      const isQuiet = (Date.now() - (data.lastTime || 0)) > 15000;
       return {
         key,
         method,
         path,
         count: data.count,
-        reqPerSec: Math.round((data.count / elapsedSec) * 10) / 10,
+        reqPerSec: isQuiet ? 0 : Math.round((data.count / elapsedSec) * 10) / 10,
         avgMs: data.count > 0 ? Math.round(data.totalMs / data.count) : 0,
         errors: data.errors
       };

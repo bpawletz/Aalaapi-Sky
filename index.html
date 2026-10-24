@@ -7698,7 +7698,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.196.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.196.1</span></h1>
         </div>
       </div>
 
@@ -14211,7 +14211,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.195.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.196.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14331,6 +14331,20 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                    <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.196.1):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Zero Residual RTMP Polling &amp; Instant Ingest (Closes #175):</strong> Eliminated startup, panel toggle, and reconnection REST requests to <code>/api/video/rtmp/status</code>. Initial RTMP status, LAN URLs, and firewall health now stream instantaneously in the initial SSE connection handshake.</li>
+                <li><strong>Companion Web Server No-Cache Headers:</strong> Enforced strict <code>no-cache, no-store, must-revalidate</code> HTTP response headers on static assets (<code>.html</code>, <code>.js</code>, <code>.css</code>) served by the bridge, preventing browsers from caching stale bundles.</li>
+                <li><strong>Top Dashboard Request Rate Decay:</strong> Refined idle endpoint calculation so rates cleanly decay to <code>0.0 REQ/s</code> after 15s of inactivity.</li>
+              </ul>
+            </li>
+                                    <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.196.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Off-Screen Minimize &amp; Collapse Prevention (Closes #174):</strong> Fixed an issue where floating drawers or HUD boxes dragged near viewport edges could minimize off-screen. Position is dynamically re-clamped within safe margins upon collapse.</li>
+              </ul>
+            </li>
                                     <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.195.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
@@ -83569,10 +83583,6 @@ class VideoCastClient {
         }
       }
     } catch (_) {}
-
-    if (!this.hasReceivedSseRtmp) {
-      await this.fetchRtmpStatus();
-    }
   }
 
   /**
@@ -83998,9 +84008,6 @@ class VideoCastClient {
     }
 
     if (!panel.classList.contains('hidden')) {
-      if (!this.hasReceivedSseRtmp) {
-        this.fetchRtmpStatus();
-      }
       if (!this.isConnected && !this.isConnecting) {
         this.connect();
       }
@@ -84160,11 +84167,6 @@ class VideoCastClient {
         btn.addEventListener('click', (e) => handleCopy(e, textEl, btn));
       }
     });
-
-    // One-shot initial hydration if SSE has not delivered RTMP status yet
-    if (!this.hasReceivedSseRtmp) {
-      this.fetchRtmpStatus();
-    }
 
     // FPV Video Background toggle button
     const fpvVideoToggleBtn = document.getElementById('fpv-video-toggle-btn');

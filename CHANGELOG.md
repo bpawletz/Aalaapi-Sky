@@ -1,3 +1,24 @@
+## [1.196.1] - 2026-10-24
+
+Eliminates residual RTMP status REST requests, streams live RTMP state in initial SSE connection handshakes, enforces HTTP no-cache headers on bridge web assets, and decays idle endpoint rates in the dashboard.
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Zero Residual RTMP Polling & Instant Stream Ingest (Closes #175)**:
+  - Eliminated residual `GET /api/video/rtmp/status` REST requests during application startup, panel toggles, and reconnection attempts.
+  - Initial RTMP status, LAN streaming URLs, and firewall state now stream instantaneously in the very first Server-Sent Events (SSE) connection handshake.
+  - Video Cast dropdown entries and port status badges populate immediately upon connecting to the Companion Bridge without touching REST endpoints.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/server.js`**:
+  - Included `rtmp: videoService.getRtmpStatus()` in the initial handshake payloads for both `/api/status/stream` and `/api/stream`.
+  - Added strict `Cache-Control: no-cache, no-store, must-revalidate, max-age=0`, `Pragma: no-cache`, and `Expires: 0` headers to all static assets (`.html`, `.js`, `.css`) served by the bridge web server, preventing browser tabs from retaining stale bundles with polling intervals.
+- **`src/bridge/VideoCastClient.js`**:
+  - Removed proactive calls to `fetchRtmpStatus()` on `initUI()`, `togglePanel()`, and `fetchStatus()`, completing 100% event-driven SSE migration.
+- **`tools/companion/top_dashboard.js`**:
+  - Refined endpoint request rate decay so that endpoints idle for more than 15 seconds accurately report `0.0 REQ/s` instead of indefinitely displaying cumulative startup averages.
+
 ## [1.196.0] - 2026-10-24
 
 Dynamic viewport boundary auto-clamping on panel minimization and collapse, preventing floating drawers, popovers, and modal dialogs from shifting off the viewable screen.

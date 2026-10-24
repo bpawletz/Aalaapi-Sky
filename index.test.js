@@ -35568,4 +35568,42 @@ describe('v1.196.0: Dynamic Viewport Auto-Clamping on Panel Minimize (Issue #174
   });
 });
 
+
+describe('v1.196.1: Eliminate Residual RTMP Status Requests & Enforce SSE-First Ingest (Issue #175)', () => {
+  test('Version consistency: v1.196.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.196.1');
+  });
+
+  test('Companion Server: Static web files serve strict no-cache headers', () => {
+    const serverSrc = fs.readFileSync(path.join(__dirname, 'tools', 'companion', 'server.js'), 'utf8');
+    assert.ok(serverSrc.includes("headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'"),
+      'Must set no-cache on static web assets (.html, .js, .css)');
+  });
+
+  test('Companion Server: Initial SSE handshake includes rtmp status on /api/status/stream and /api/stream', () => {
+    const serverSrc = fs.readFileSync(path.join(__dirname, 'tools', 'companion', 'server.js'), 'utf8');
+    assert.ok(serverSrc.includes('rtmp: rtmpStatus, version: VERSION'),
+      'Must include rtmp in status stream initial handshake');
+    assert.ok(serverSrc.includes('event: rtmp-status'),
+      'Must support rtmp-status event broadcast');
+  });
+
+  test('VideoCastClient: Does not make automatic REST requests to /api/video/rtmp/status on initUI or togglePanel', () => {
+    const vcSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'VideoCastClient.js'), 'utf8');
+    const initUiBlock = vcSrc.slice(vcSrc.indexOf('initUI() {'), vcSrc.indexOf('const videoCastClient = new VideoCastClient();'));
+    assert.ok(!initUiBlock.includes('this.fetchRtmpStatus();'), 'initUI must not proactively call fetchRtmpStatus');
+
+    const togglePanelBlock = vcSrc.slice(vcSrc.indexOf('togglePanel(show) {'), vcSrc.indexOf('toggleMinimize() {'));
+    assert.ok(!togglePanelBlock.includes('this.fetchRtmpStatus();'), 'togglePanel must not proactively call fetchRtmpStatus');
+  });
+
+  test('Top Dashboard: Endpoint request rates decay to 0.0 when idle > 15s', () => {
+    const topDashSrc = fs.readFileSync(path.join(__dirname, 'tools', 'companion', 'top_dashboard.js'), 'utf8');
+    assert.ok(topDashSrc.includes('const isQuiet = (Date.now() - (data.lastTime || 0)) > 15000;'),
+      'Must check if endpoint has been quiet for > 15s');
+    assert.ok(topDashSrc.includes('reqPerSec: isQuiet ? 0 :'),
+      'Must decay reqPerSec to 0 when quiet');
+  });
+});
+
 });
