@@ -1,3 +1,31 @@
+## [1.190.0] - 2026-10-23
+
+High-resolution Digital Elevation Model (DEM) multi-source terrain following with Drone Recon DSM/DTM (2cm-10cm), USGS 3DEP LiDAR (1m-3m), EU National LiDAR (0.5m-5m), UTM projected GeoTIFFs, and interactive 2D/3D DEM grid inspection.
+
+### Added
+
+#### Pilot & Operational Features
+- **High-Resolution DEM Sources (Closes #165)**:
+  - **Drone Recon DSM/DTM (Sub-Decimeter)**: Support for centimeter-accurate photogrammetry outputs (WebODM, Pix4D, Agisoft Metashape, RealityCapture) in .tif or .asc format with automatic Projected Coordinate System handling.
+  - **USGS 3DEP LiDAR (1m-3m USA)**: Live batch elevation sampling via the official USGS 3DEP Elevation ImageServer (getSamples multipoint queries) and EPQS v1 REST API with automatic global Copernicus DEM fallback outside conterminous US bounds.
+  - **EU & National LiDAR (0.5m-5m Europe)**: Live European elevation routing (IGN France RGE ALTI 1m API for France/Territories, Swisstopo 0.5m/2m, and EU-DEM 25m) with automatic global fallback.
+- **2D DEM Grid / Heatmap Overlay**:
+  - Added a dedicated 2D DEM Grid button (#toggle-dem-grid-overlay-btn) on the sidebar rendering a hypsometric emerald-to-amber elevation heatmap overlay across the Leaflet map with fine grid cell borders.
+- **3D Cybernetic Terrain Floor Wireframe**:
+  - Upgraded the 3D FPV HUD ground mesh to a dense 48x48 vertex subdivision when elevation data is active, and rendered a cybernetic terrain wireframe overlay that adheres to the displaced ground surface.
+- **Esri ASCII Grid (.asc) Support**:
+  - Added native client-side decoding for .asc / .txt LiDAR elevation files widely distributed by UK DEFRA, IGN France, and European open data portals.
+
+#### Under the Hood & Technical Details
+- **Projected Coordinate System Engine (src/geo/ElevationService.js)**:
+  - Implemented pure JS latLonToUtm(lat, lon, zone, isSouth) and latLonToWebMercator(lat, lon) forward projections.
+  - Inspects GeoKeyDirectoryTag (34735) for ProjectedCSTypeGeoKey (UTM North zones 32601-32660, UTM South zones 32701-32760, NAD83 UTM 26901-26923, ETRS89 UTM 25828-25838, and Web Mercator 3857).
+  - Performs bilinear interpolation directly in projected raster coordinate space.
+- **Companion Bridge High-Res Proxy (	ools/companion/server.js)**:
+  - Enhanced /api/elevation to accept ?source=usgs-3dep and ?source=eu-lidar with local disk caching via TileCacheManager.
+- **Credits & Documentation (CREDITS.md & FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md)**:
+  - Added USGS 3DEP and European National LiDAR (IGN France RGE ALTI, Swisstopo, UK DEFRA) open data licensing attributions.
+
 ## [1.189.0] - 2026-10-23
 
 Empowers pilots and operators with full dragging freedom across all floating map legends, topbar popovers, and analysis drawers with tactile grips, automatic position persistence, and gesture isolation.

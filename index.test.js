@@ -34967,4 +34967,117 @@ describe('v1.189.0: Draggable Map Legends, Popovers & Floating Drawers Suite (Is
   });
 });
 
+describe('High-Resolution DEM Sources Suite (v1.190.0 - Issue #165)', () => {
+  test('Version consistency: v1.190.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.190.0');
+  });
+
+  test('UI templates contain all 3 high-res DEM source options, .asc file accept, and 2D DEM Grid button', () => {
+    const template = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    for (const [name, html] of [['index_template.html', template], ['index.html', indexHtml]]) {
+      assert.ok(html.includes('value="drone-recon"'), `${name} must contain drone-recon option`);
+      assert.ok(html.includes('value="usgs-3dep"'), `${name} must contain usgs-3dep option`);
+      assert.ok(html.includes('value="eu-lidar"'), `${name} must contain eu-lidar option`);
+      assert.ok(html.includes('.asc'), `${name} must accept .asc files in DEM file input`);
+      assert.ok(html.includes('id="toggle-dem-grid-overlay-btn"'), `${name} must contain toggle-dem-grid-overlay-btn`);
+    }
+  });
+
+  test('ElevationService: GeoCoordProjector latLonToUtm and latLonToWebMercator forward projections', () => {
+    const { elevationServiceInstance } = require('./src/geo/ElevationService.js');
+    assert.ok(elevationServiceInstance, 'elevationServiceInstance must exist');
+
+    // Test default rural benchmark [41.3215, -88.9950]
+    const utm = elevationServiceInstance.latLonToUtm(41.3215, -88.9950);
+    assert.strictEqual(utm.zone, 16, 'UTM zone for lon -88.9950 must be 16');
+    assert.strictEqual(utm.isSouth, false, 'Northern hemisphere must have isSouth=false');
+    assert.ok(Math.abs(utm.x - 333030.98) < 5.0, 'UTM Easting should be ~333,030m');
+    assert.ok(Math.abs(utm.y - 4576367.39) < 5.0, 'UTM Northing should be ~4,576,367m');
+
+    // Test Web Mercator projection
+    const wm = elevationServiceInstance.latLonToWebMercator(41.3215, -88.9950);
+    assert.ok(Math.abs(wm.x - (-9906878.08)) < 10.0, 'Web Mercator X should match standard radius');
+    assert.ok(Math.abs(wm.y - 5059879.12) < 10.0, 'Web Mercator Y should match standard radius');
+  });
+
+  test('ElevationService: parseAsciiGrid parses Esri ASCII Grid LiDAR format with bilinear interpolation', () => {
+    const { elevationServiceInstance } = require('./src/geo/ElevationService.js');
+    const ascText = `ncols         4
+nrows         4
+xllcorner     333000.0
+yllcorner     4576300.0
+cellsize      25.0
+NODATA_value  -9999
+140.5 141.2 142.0 143.1
+139.8 140.4 141.5 142.6
+138.9 139.5 140.6 141.8
+138.0 138.7 139.8 141.0`;
+
+    const dem = elevationServiceInstance.parseAsciiGrid(ascText);
+    assert.strictEqual(dem.type, 'asc');
+    assert.strictEqual(dem.width, 4);
+    assert.strictEqual(dem.height, 4);
+    assert.strictEqual(dem.minElev, 138.0);
+    assert.ok(Math.abs(dem.maxElev - 143.1) < 0.001);
+    assert.strictEqual(dem.isProjected, true);
+
+    // Test sampling at benchmark [41.3215, -88.9950] -> UTM (333030.98, 4576367.39)
+    const elev = dem.sampleAt(41.3215, -88.9950);
+    assert.ok(typeof elev === 'number' && !isNaN(elev), 'Sampled elevation must be a valid number');
+    assert.ok(elev >= 138.0 && elev <= 143.1, `Sampled elevation (${elev}) must be within grid range [138.0, 143.1]`);
+  });
+
+  test('ElevationService: loadDemFile handles both binary GeoTIFF and text ASCII Grid (.asc)', () => {
+    const { elevationServiceInstance } = require('./src/geo/ElevationService.js');
+    const ascText = `ncols 2\nnrows 2\nxllcorner 0\nyllcorner 0\ncellsize 1\nNODATA_value -9999\n50 60\n70 80`;
+    const dem = elevationServiceInstance.loadDemFile(ascText, 'sample_lidar.asc');
+    assert.strictEqual(dem.type, 'asc');
+    assert.strictEqual(dem.width, 2);
+    assert.strictEqual(dem.height, 2);
+    assert.strictEqual(dem.minElev, 50);
+    assert.strictEqual(dem.maxElev, 80);
+  });
+
+  test('ElevationService: 2D DEM Grid overlay generator and toggle methods exist and execute cleanly', () => {
+    const { elevationServiceInstance } = require('./src/geo/ElevationService.js');
+    assert.strictEqual(typeof elevationServiceInstance.generateDemGridOverlay, 'function');
+    assert.strictEqual(typeof elevationServiceInstance.clearDemGridOverlay, 'function');
+    assert.strictEqual(typeof elevationServiceInstance.toggleDemGridOverlay, 'function');
+
+    // In non-DOM environment, returns null cleanly without throwing
+    const res = elevationServiceInstance.generateDemGridOverlay(null);
+    assert.strictEqual(res, null);
+    const toggled = elevationServiceInstance.toggleDemGridOverlay(null);
+    assert.ok(typeof toggled === 'boolean');
+  });
+
+  test('Companion Bridge: /api/elevation handles ?source=usgs-3dep and ?source=eu-lidar', () => {
+    const serverCode = fs.readFileSync(path.join(__dirname, 'tools', 'companion', 'server.js'), 'utf8');
+    assert.ok(serverCode.includes("source === 'usgs-3dep'"), "server.js must handle source === 'usgs-3dep'");
+    assert.ok(serverCode.includes("source === 'eu-lidar'"), "server.js must handle source === 'eu-lidar'");
+    assert.ok(serverCode.includes('3DEPElevation/ImageServer/getSamples'), 'server.js must query USGS 3DEP ImageServer getSamples');
+  });
+
+  test('SceneManager: 3D terrain ground plane configures 48x48 subdivision and wireframe overlay', () => {
+    const sceneCode = fs.readFileSync(path.join(__dirname, 'src', '3d', 'SceneManager.js'), 'utf8');
+    assert.ok(sceneCode.includes('hasElevation ? 48 : 32'), 'SceneManager must use 48 segments when elevation is active');
+    assert.ok(sceneCode.includes('wireframeGeom = new THREE.WireframeGeometry'), 'SceneManager must create wireframe overlay on terrain surface');
+    assert.ok(sceneCode.includes('wireframeMesh = new THREE.LineSegments'), 'SceneManager must add wireframe LineSegments');
+  });
+
+  test('CREDITS.md and Documentation synchronization for USGS 3DEP and EU LiDAR', () => {
+    const credits = fs.readFileSync('CREDITS.md', 'utf8');
+    assert.ok(credits.includes('USGS) 3DEP Elevation Program'), 'CREDITS.md must credit USGS 3DEP');
+    assert.ok(credits.includes('European & National LiDAR Data Providers'), 'CREDITS.md must credit EU LiDAR');
+    assert.ok(credits.includes('IGN France'), 'CREDITS.md must credit IGN France');
+
+    const docs = fs.readFileSync(path.join(__dirname, 'docs', 'FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md'), 'utf8');
+    assert.ok(docs.includes('Drone Recon DSM/DTM'), 'Docs must include Drone Recon DSM/DTM');
+    assert.ok(docs.includes('USGS 3DEP LiDAR (1m–3m USA)'), 'Docs must include USGS 3DEP LiDAR');
+    assert.ok(docs.includes('EU & National LiDAR (0.5m–5m Europe)'), 'Docs must include EU & National LiDAR');
+  });
+});
+
 });

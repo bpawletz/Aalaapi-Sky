@@ -13,10 +13,11 @@
 
 class ElevationService {
   constructor() {
-    this.cache = new Map(); // "lat,lon" -> elevationMeters
-    this.cachedDem = null;   // Active parsed GeoTIFF DEM object
+    this.cache = new Map(); // "source:lat,lon" -> elevationMeters
+    this.cachedDem = null;   // Active parsed GeoTIFF or ASCII Grid DEM object
     this.bridgeUrl = 'http://127.0.0.1:8765';
     this.isBridgeAvailable = null;
+    this.activeDemGridLayer = null; // 2D Leaflet grid/heatmap layer
   }
 
   /**
@@ -40,8 +41,9 @@ class ElevationService {
   /**
    * Format coordinate key for cache
    */
-  coordKey(lat, lon) {
-    return `${Number(lat).toFixed(6)},${Number(lon).toFixed(6)}`;
+  coordKey(lat, lon, source = '') {
+    const pfx = source ? `${source}:` : '';
+    return `${pfx}${Number(lat).toFixed(6)},${Number(lon).toFixed(6)}`;
   }
 
   /**
@@ -71,7 +73,7 @@ class ElevationService {
     const missingCoords = [];
 
     coordinates.forEach((c, idx) => {
-      const key = this.coordKey(c.lat, c.lon);
+      const key = this.coordKey(c.lat, c.lon, source);
       if (this.cache.has(key)) {
         results[idx] = this.cache.get(key);
       } else {
@@ -84,13 +86,20 @@ class ElevationService {
       return results;
     }
 
-    // 3. Batch query missing coordinates in chunks of up to 100 (Open-Meteo max per request)
+    // 3. Batch query missing coordinates in chunks of up to 100
     const BATCH_SIZE = 100;
     const fetchedElevations = [];
 
     for (let i = 0; i < missingCoords.length; i += BATCH_SIZE) {
       const chunk = missingCoords.slice(i, i + BATCH_SIZE);
-      const chunkElevations = await this._queryElevationBatch(chunk, options);
+      let chunkElevations;
+      if (source === 'usgs-3dep') {
+        chunkElevations = await this._queryUsgs3DepBatch(chunk, options);
+      } else if (source === 'eu-lidar') {
+        chunkElevations = await this._queryEuLidarBatch(chunk, options);
+      } else {
+        chunkElevations = await this._queryElevationBatch(chunk, options);
+      }
       fetchedElevations.push(...chunkElevations);
     }
 
@@ -101,7 +110,7 @@ class ElevationService {
         : 0;
       results[origIdx] = elev;
       const c = coordinates[origIdx];
-      this.cache.set(this.coordKey(c.lat, c.lon), elev);
+      this.cache.set(this.coordKey(c.lat, c.lon, source), elev);
     });
 
     return results;
@@ -235,8 +244,211 @@ class ElevationService {
   }
 
   /**
+   * USGS 3DEP 1m - 3m LiDAR query handler.
+   * Uses USGS 3DEPElevation ImageServer (getSamples multipoint query) with fallback
+   * to EPQS v1 REST API and global Open-Meteo DEM if outside US coverage.
+   *
+   * @param {Array<{lat: number, lon: number}>} chunk
+   * @param {Object} [options]
+   * @returns {Promise<number[]>}
+   */
+  async _queryUsgs3DepBatch(chunk, options = {}) {
+    if (typeof fetch === 'undefined') return chunk.map(() => 0);
+
+    // Try Companion Bridge proxy first
+    const useBridge = options.source !== 'direct' && this.isBridgeAvailable !== false;
+    if (useBridge) {
+      try {
+        const lats = chunk.map(c => Number(c.lat).toFixed(6)).join(',');
+        const lons = chunk.map(c => Number(c.lon).toFixed(6)).join(',');
+        const proxyUrl = `${this.bridgeUrl}/api/elevation?source=usgs-3dep&latitude=${lats}&longitude=${lons}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.elevation) && data.elevation.length === chunk.length) {
+            this.isBridgeAvailable = true;
+            return data.elevation;
+          }
+        }
+      } catch (err) {
+        // Fall back to direct USGS query
+      }
+    }
+
+    // Direct USGS 3DEP ImageServer multipoint query
+    try {
+      const points = chunk.map(c => [Number(c.lon), Number(c.lat)]);
+      const geom = JSON.stringify({ points, spatialReference: { wkid: 4326 } });
+      const usgsUrl = `https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/getSamples?geometry=${encodeURIComponent(geom)}&geometryType=esriGeometryMultipoint&returnFirstValueOnly=true&f=json`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch(usgsUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.samples) && data.samples.length === chunk.length) {
+          const vals = data.samples.map(s => {
+            const val = parseFloat(s.value);
+            return (!isNaN(val) && val > -9000 && val < 10000) ? val : null;
+          });
+          // If any sample is valid, fill missing via global fallback
+          if (vals.some(v => v !== null)) {
+            const fallbackVals = await this._queryElevationBatch(chunk, options);
+            return vals.map((v, idx) => (v !== null ? v : fallbackVals[idx]));
+          }
+        }
+      }
+    } catch (err) {
+      if (typeof Logger !== 'undefined' && Logger.warn) {
+        Logger.warn('USGS 3DEP ImageServer query error, falling back to global DEM:', err.message);
+      }
+    }
+
+    // Automatic global fallback for points outside USGS 3DEP coverage
+    return this._queryElevationBatch(chunk, options);
+  }
+
+  /**
+   * EU & National LiDAR (0.5m - 5m) query handler.
+   * Queries Companion Bridge (with IGN France RGE ALTI 1m, Swisstopo, or EU-DEM)
+   * or direct IGN/Open-Meteo European DEM fallback.
+   *
+   * @param {Array<{lat: number, lon: number}>} chunk
+   * @param {Object} [options]
+   * @returns {Promise<number[]>}
+   */
+  async _queryEuLidarBatch(chunk, options = {}) {
+    if (typeof fetch === 'undefined') return chunk.map(() => 0);
+
+    // Try Companion Bridge proxy first
+    const useBridge = options.source !== 'direct' && this.isBridgeAvailable !== false;
+    if (useBridge) {
+      try {
+        const lats = chunk.map(c => Number(c.lat).toFixed(6)).join(',');
+        const lons = chunk.map(c => Number(c.lon).toFixed(6)).join(',');
+        const proxyUrl = `${this.bridgeUrl}/api/elevation?source=eu-lidar&latitude=${lats}&longitude=${lons}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.elevation) && data.elevation.length === chunk.length) {
+            this.isBridgeAvailable = true;
+            return data.elevation;
+          }
+        }
+      } catch (err) {
+        // Fall back to direct query
+      }
+    }
+
+    // Check if points are in France/Territories bounding box for direct IGN Altimétrie API
+    const inFrance = chunk.every(c => c.lat >= 41.0 && c.lat <= 51.5 && c.lon >= -5.5 && c.lon <= 10.0);
+    if (inFrance) {
+      try {
+        const lons = chunk.map(c => Number(c.lon).toFixed(6)).join('|');
+        const lats = chunk.map(c => Number(c.lat).toFixed(6)).join('|');
+        const ignUrl = `https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json?lon=${lons}&lat=${lats}&resource=ign_rge_alti_wld`;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(ignUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.elevations) && data.elevations.length === chunk.length) {
+            return data.elevations.map(e => (typeof e.z === 'number' && !isNaN(e.z)) ? e.z : 0);
+          }
+        }
+      } catch (err) {
+        if (typeof Logger !== 'undefined' && Logger.warn) {
+          Logger.warn('IGN France LiDAR API query error, falling back to global DEM:', err.message);
+        }
+      }
+    }
+
+    // Fall back to Copernicus European DEM via Open-Meteo
+    return this._queryElevationBatch(chunk, options);
+  }
+
+  /**
    * Pure JavaScript GeoTIFF DEM parser for single-band Float32 / Int16 elevation rasters.
    * Supports standard TIFF 6.0 uncompressed rasters with ModelTiepointTag and ModelPixelScaleTag.
+   *
+   * @param {ArrayBuffer} arrayBuffer
+   * @returns {Object} Parsed DEM object
+   */
+  /**
+   * Helper: Project WGS84 Geodetic coordinates (lat, lon) to UTM Easting/Northing meters.
+   *
+   * @param {number} lat
+   * @param {number} lon
+   * @param {number} [forcedZone]
+   * @param {boolean} [isSouth]
+   * @returns {{x: number, y: number, zone: number, isSouth: boolean}}
+   */
+  latLonToUtm(lat, lon, forcedZone = null, isSouth = null) {
+    const zone = forcedZone || (Math.floor((lon + 180) / 6) + 1);
+    const south = (isSouth !== null) ? isSouth : (lat < 0);
+    const lonOrigin = (zone - 1) * 6 - 180 + 3;
+    const lonOriginRad = (lonOrigin * Math.PI) / 180.0;
+    const latRad = (lat * Math.PI) / 180.0;
+    const lonRad = (lon * Math.PI) / 180.0;
+
+    const a = 6378137.0;
+    const f = 1 / 298.257223563;
+    const e2 = f * (2 - f);
+    const k0 = 0.9996;
+
+    const ePrime2 = e2 / (1 - e2);
+    const sinLat = Math.sin(latRad);
+    const cosLat = Math.cos(latRad);
+    const tanLat = Math.tan(latRad);
+
+    const N = a / Math.sqrt(1 - e2 * sinLat * sinLat);
+    const T = tanLat * tanLat;
+    const C = ePrime2 * cosLat * cosLat;
+    const A = cosLat * (lonRad - lonOriginRad);
+
+    const M = a * ((1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256) * latRad
+      - (3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * e2 * e2 * e2 / 1024) * Math.sin(2 * latRad)
+      + (15 * e2 * e2 / 256 + 45 * e2 * e2 * e2 / 1024) * Math.sin(4 * latRad)
+      - (35 * e2 * e2 * e2 / 3072) * Math.sin(6 * latRad));
+
+    const easting = k0 * N * (A + (1 - T + C) * Math.pow(A, 3) / 6 + (5 - 18 * T + T * T + 72 * C - 58 * ePrime2) * Math.pow(A, 5) / 120) + 500000.0;
+    let northing = k0 * (M + N * tanLat * (A * A / 2 + (5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4) / 24 + (61 - 58 * T + T * T + 600 * C - 330 * ePrime2) * Math.pow(A, 6) / 720));
+    if (south) {
+      northing += 10000000.0;
+    }
+    return { x: easting, y: northing, zone, isSouth: south };
+  }
+
+  /**
+   * Helper: Project WGS84 Geodetic coordinates (lat, lon) to Web Mercator (EPSG:3857) meters.
+   *
+   * @param {number} lat
+   * @param {number} lon
+   * @returns {{x: number, y: number}}
+   */
+  latLonToWebMercator(lat, lon) {
+    const r = 6378137.0;
+    const x = ((lon * Math.PI) / 180.0) * r;
+    const clampedLat = Math.max(-85.05112878, Math.min(85.05112878, lat));
+    const y = Math.log(Math.tan(Math.PI / 4 + (clampedLat * Math.PI) / 360.0)) * r;
+    return { x, y };
+  }
+
+  /**
+   * Pure JavaScript GeoTIFF DEM parser for single-band Float32 / Int16 elevation rasters.
+   * Supports standard TIFF 6.0 uncompressed rasters with ModelTiepointTag, ModelPixelScaleTag,
+   * and GeoKeyDirectoryTag (UTM Zones 1-60N/S, NAD83, ETRS89, Web Mercator EPSG:3857, or WGS84 EPSG:4326).
    *
    * @param {ArrayBuffer} arrayBuffer
    * @returns {Object} Parsed DEM object
@@ -296,7 +508,6 @@ class ElevationService {
       const { type, count, valueOrOffset } = entry;
 
       let valueOffset = valueOrOffset;
-      // If data fits in 4 bytes, valueOffset is the value itself
       const typeSizes = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 8: 2, 9: 4, 11: 4, 12: 8 };
       const size = typeSizes[type] || 1;
       const totalSize = count * size;
@@ -314,7 +525,6 @@ class ElevationService {
         else if (type === 3) vals.push(dataView.getUint16(off, littleEndian));
         else if (type === 4) vals.push(dataView.getUint32(off, littleEndian));
         else if (type === 5) {
-          // RATIONAL
           const num = dataView.getUint32(off, littleEndian);
           const den = dataView.getUint32(off + 4, littleEndian);
           vals.push(den !== 0 ? num / den : 0);
@@ -330,14 +540,49 @@ class ElevationService {
     const height = (readTagValues(257) || [])[0]; // ImageLength
     const bitsPerSample = (readTagValues(258) || [32])[0];
     const sampleFormat = (readTagValues(339) || [1])[0]; // 1=uint, 2=int, 3=float
-    const stripOffsets = readTagValues(273) || [];
+    const stripOffsets = readTagValues(273) || readTagValues(324) || []; // StripOffsets or TileOffsets
     const rowsPerStrip = (readTagValues(278) || [height])[0];
-    const stripByteCounts = readTagValues(279) || [];
     const pixelScale = readTagValues(33550); // ModelPixelScaleTag [scaleX, scaleY, scaleZ]
     const tiepoints = readTagValues(33922);  // ModelTiepointTag [i, j, k, x, y, z]
+    const geoKeyDir = readTagValues(34735);  // GeoKeyDirectoryTag
 
     if (!width || !height || stripOffsets.length === 0) {
       throw new Error('TIFF missing essential raster dimensions or strip offsets');
+    }
+
+    // Inspect GeoKeyDirectoryTag for Projected CRS (e.g. ProjectedCSTypeGeoKey 3072)
+    let projectedCrs = null;
+    let utmZone = null;
+    let utmIsSouth = false;
+    let isWebMercator = false;
+
+    if (geoKeyDir && geoKeyDir.length >= 4) {
+      const numKeys = geoKeyDir[3];
+      for (let k = 0; k < numKeys; k++) {
+        const offset = 4 + k * 4;
+        if (offset + 3 < geoKeyDir.length) {
+          const keyId = geoKeyDir[offset];
+          const val = geoKeyDir[offset + 3];
+          if (keyId === 3072) { // ProjectedCSTypeGeoKey
+            projectedCrs = val;
+            if (val >= 32601 && val <= 32660) {
+              utmZone = val - 32600;
+              utmIsSouth = false;
+            } else if (val >= 32701 && val <= 32760) {
+              utmZone = val - 32700;
+              utmIsSouth = true;
+            } else if (val >= 26901 && val <= 26923) {
+              utmZone = val - 26900;
+              utmIsSouth = false;
+            } else if (val >= 25828 && val <= 25838) {
+              utmZone = val - 25800;
+              utmIsSouth = false;
+            } else if (val === 3857 || val === 900913) {
+              isWebMercator = true;
+            }
+          }
+        }
+      }
     }
 
     // Extract elevation raster matrix
@@ -380,7 +625,6 @@ class ElevationService {
     let scaleX = 1, scaleY = 1;
 
     if (tiepoints && tiepoints.length >= 6) {
-      // tiepoint: [i, j, k, x, y, z]
       originX = tiepoints[3] - tiepoints[0] * (pixelScale ? pixelScale[0] : 1);
       originY = tiepoints[4] + tiepoints[1] * (pixelScale ? pixelScale[1] : 1);
     }
@@ -390,11 +634,13 @@ class ElevationService {
       scaleY = pixelScale[1];
     }
 
+    // Heuristic detection: If originX > 180 or originY > 90, the raster is projected in meters!
+    const isProjected = Math.abs(originX) > 360 || Math.abs(originY) > 90 || projectedCrs !== null;
+
     // Calculate bounds & stats
     let minElev = Infinity, maxElev = -Infinity;
     for (let i = 0; i < raster.length; i++) {
       const v = raster[i];
-      // Filter out typical NODATA values (-9999, -32767, etc.)
       if (v > -9000 && v < 10000) {
         if (v < minElev) minElev = v;
         if (v > maxElev) maxElev = v;
@@ -411,7 +657,23 @@ class ElevationService {
     const maxY = originY;
     const minY = originY - height * scaleY;
 
+    // Approximate ground resolution label
+    let resolutionLabel = '';
+    if (isProjected) {
+      if (scaleX < 1.0) {
+        resolutionLabel = `${(scaleX * 100).toFixed(1)} cm/px`;
+      } else {
+        resolutionLabel = `${scaleX.toFixed(2)} m/px`;
+      }
+    } else {
+      // Degrees to meters approximate (1 deg ~ 111,320m at equator)
+      const resM = scaleX * 111320;
+      resolutionLabel = `${resM.toFixed(1)} m/px`;
+    }
+
+    const self = this;
     const dem = {
+      type: 'geotiff',
       width,
       height,
       minElev,
@@ -425,19 +687,37 @@ class ElevationService {
       minY,
       maxY,
       raster,
+      isProjected,
+      projectedCrs,
+      utmZone,
+      utmIsSouth,
+      isWebMercator,
+      resolutionLabel,
       /**
-       * Sample elevation at georeferenced coordinate (lon/lat or X/Y) with bilinear interpolation
+       * Sample elevation at georeferenced coordinate (lat, lon) with bilinear interpolation
        */
       sampleAt: (lat, lon) => {
-        // Assume X is lon, Y is lat for WGS84 GeoTIFFs
-        const x = lon;
-        const y = lat;
+        let x = lon;
+        let y = lat;
+
+        // Project coordinate if DEM is in a projected coordinate system (UTM or Web Mercator)
+        if (isProjected) {
+          if (isWebMercator) {
+            const wm = self.latLonToWebMercator(lat, lon);
+            x = wm.x;
+            y = wm.y;
+          } else {
+            // UTM Projection
+            const utm = self.latLonToUtm(lat, lon, utmZone, utmIsSouth);
+            x = utm.x;
+            y = utm.y;
+          }
+        }
 
         const colFloat = (x - originX) / scaleX;
         const rowFloat = (originY - y) / scaleY;
 
         if (colFloat < 0 || colFloat >= width - 1 || rowFloat < 0 || rowFloat >= height - 1) {
-          // Clamp to boundary edge if closely adjacent
           const c = Math.max(0, Math.min(width - 1, Math.round(colFloat)));
           const r = Math.max(0, Math.min(height - 1, Math.round(rowFloat)));
           const v = raster[r * width + c];
@@ -459,9 +739,9 @@ class ElevationService {
 
         // Bilinear interpolation
         const val = (1 - dx) * (1 - dy) * v00 +
-                    dx * (1 - dy) * v10 +
-                    (1 - dx) * dy * v01 +
-                    dx * dy * v11;
+          dx * (1 - dy) * v10 +
+          (1 - dx) * dy * v01 +
+          dx * dy * v11;
 
         return (val > -9000 && val < 10000) ? val : minElev;
       }
@@ -469,6 +749,159 @@ class ElevationService {
 
     this.cachedDem = dem;
     return dem;
+  }
+
+  /**
+   * Pure JavaScript Esri ASCII Grid (.asc / .txt) LiDAR DEM parser.
+   * Widely used by UK DEFRA, IGN France, and European National LiDAR repositories.
+   *
+   * @param {string} asciiText
+   * @returns {Object} Parsed DEM object
+   */
+  parseAsciiGrid(asciiText) {
+    if (typeof asciiText !== 'string' || !asciiText.trim()) {
+      throw new Error('Invalid ASCII Grid input: expected string');
+    }
+
+    const lines = asciiText.trim().split(/\r?\n/);
+    const header = {};
+    let dataLineIdx = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      const parts = line.split(/\s+/);
+      if (parts.length === 2 && ['ncols', 'nrows', 'xllcorner', 'yllcorner', 'xllcenter', 'yllcenter', 'cellsize', 'nodata_value'].includes(parts[0].toLowerCase())) {
+        header[parts[0].toLowerCase()] = parseFloat(parts[1]);
+      } else {
+        dataLineIdx = i;
+        break;
+      }
+    }
+
+    const width = Math.round(header.ncols);
+    const height = Math.round(header.nrows);
+    const cellsize = header.cellsize;
+    const nodata = header.nodata_value !== undefined ? header.nodata_value : -9999;
+
+    if (!width || !height || !cellsize) {
+      throw new Error('ASCII Grid missing required header entries (ncols, nrows, cellsize)');
+    }
+
+    const xll = (header.xllcorner !== undefined) ? header.xllcorner : (header.xllcenter - cellsize / 2);
+    const yll = (header.yllcorner !== undefined) ? header.yllcorner : (header.yllcenter - cellsize / 2);
+
+    const originX = xll;
+    const originY = yll + height * cellsize; // Top-left origin
+    const scaleX = cellsize;
+    const scaleY = cellsize;
+
+    const raster = new Float32Array(width * height);
+    let p = 0;
+    for (let i = dataLineIdx; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      const tokens = line.split(/\s+/);
+      for (let t = 0; t < tokens.length; t++) {
+        if (p < raster.length) {
+          raster[p++] = parseFloat(tokens[t]);
+        }
+      }
+    }
+
+    const isProjected = Math.abs(originX) > 360 || Math.abs(originY) > 90;
+
+    let minElev = Infinity, maxElev = -Infinity;
+    for (let i = 0; i < raster.length; i++) {
+      const v = raster[i];
+      if (v !== nodata && v > -9000 && v < 10000) {
+        if (v < minElev) minElev = v;
+        if (v > maxElev) maxElev = v;
+      }
+    }
+    if (minElev === Infinity) { minElev = 0; maxElev = 0; }
+
+    const resolutionLabel = `${cellsize < 1 ? (cellsize * 100).toFixed(0) + ' cm' : cellsize.toFixed(1) + ' m'}/px`;
+    const self = this;
+
+    const dem = {
+      type: 'asc',
+      width,
+      height,
+      minElev,
+      maxElev,
+      originX,
+      originY,
+      scaleX,
+      scaleY,
+      minX: originX,
+      maxX: originX + width * scaleX,
+      minY: originY - height * scaleY,
+      maxY: originY,
+      raster,
+      isProjected,
+      resolutionLabel,
+      sampleAt: (lat, lon) => {
+        let x = lon;
+        let y = lat;
+
+        if (isProjected) {
+          // Default to UTM conversion
+          const utm = self.latLonToUtm(lat, lon);
+          x = utm.x;
+          y = utm.y;
+        }
+
+        const colFloat = (x - originX) / scaleX;
+        const rowFloat = (originY - y) / scaleY;
+
+        if (colFloat < 0 || colFloat >= width - 1 || rowFloat < 0 || rowFloat >= height - 1) {
+          const c = Math.max(0, Math.min(width - 1, Math.round(colFloat)));
+          const r = Math.max(0, Math.min(height - 1, Math.round(rowFloat)));
+          const v = raster[r * width + c];
+          return (v !== nodata && v > -9000 && v < 10000) ? v : minElev;
+        }
+
+        const c0 = Math.floor(colFloat);
+        const c1 = c0 + 1;
+        const r0 = Math.floor(rowFloat);
+        const r1 = r0 + 1;
+
+        const dx = colFloat - c0;
+        const dy = rowFloat - r0;
+
+        const v00 = raster[r0 * width + c0];
+        const v10 = raster[r0 * width + c1];
+        const v01 = raster[r1 * width + c0];
+        const v11 = raster[r1 * width + c1];
+
+        const val = (1 - dx) * (1 - dy) * v00 +
+          dx * (1 - dy) * v10 +
+          (1 - dx) * dy * v01 +
+          dx * dy * v11;
+
+        return (val !== nodata && val > -9000 && val < 10000) ? val : minElev;
+      }
+    };
+
+    this.cachedDem = dem;
+    return dem;
+  }
+
+  /**
+   * Unified file loader supporting GeoTIFF (.tif / .dem) or Esri ASCII Grid (.asc / .txt).
+   *
+   * @param {ArrayBuffer|string} fileData
+   * @param {string} filename
+   * @returns {Object} Parsed DEM object
+   */
+  loadDemFile(fileData, filename = '') {
+    const isAscii = filename.toLowerCase().endsWith('.asc') || filename.toLowerCase().endsWith('.txt') || (typeof fileData === 'string');
+    if (isAscii) {
+      const text = (typeof fileData === 'string') ? fileData : new TextDecoder('utf-8').decode(fileData);
+      return this.parseAsciiGrid(text);
+    }
+    return this.parseGeoTiff(fileData);
   }
 
   /**
@@ -556,6 +989,162 @@ class ElevationService {
     return R * c;
   }
 
+
+  /**
+   * Generate an interactive 2D DEM Grid heatmap overlay on the Leaflet map.
+   * Renders color-coded elevation cells across the active DEM bounds or mission area.
+   *
+   * @param {Object} map Leaflet map instance
+   * @param {Object} [bounds] Leaflet LatLngBounds
+   * @returns {Object|null} Leaflet layerGroup or imageOverlay
+   */
+  generateDemGridOverlay(map, bounds = null) {
+    if (typeof L === 'undefined' || !map) return null;
+    this.clearDemGridOverlay(map);
+
+    let targetBounds = bounds;
+    if (!targetBounds) {
+      if (typeof getCurrentWaypoints === 'function') {
+        const wps = getCurrentWaypoints();
+        if (wps && wps.length > 0) {
+          const lats = wps.map(w => w.lat);
+          const lons = wps.map(w => w.lon);
+          const minLat = Math.min(...lats) - 0.002;
+          const maxLat = Math.max(...lats) + 0.002;
+          const minLon = Math.min(...lons) - 0.002;
+          const maxLon = Math.max(...lons) + 0.002;
+          targetBounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
+        }
+      }
+    }
+
+    if (!targetBounds) {
+      targetBounds = map.getBounds();
+    }
+
+    const gridRows = 24;
+    const gridCols = 24;
+    const sw = targetBounds.getSouthWest();
+    const ne = targetBounds.getNorthEast();
+
+    const latStep = (ne.lat - sw.lat) / gridRows;
+    const lonStep = (ne.lng - sw.lng) / gridCols;
+
+    const sampleCoords = [];
+    for (let r = 0; r < gridRows; r++) {
+      for (let c = 0; c < gridCols; c++) {
+        sampleCoords.push({
+          lat: sw.lat + (r + 0.5) * latStep,
+          lon: sw.lng + (c + 0.5) * lonStep,
+          row: r,
+          col: c
+        });
+      }
+    }
+
+    const elevs = this.sampleElevationsSync(sampleCoords);
+    let minE = Infinity, maxE = -Infinity;
+    elevs.forEach(e => {
+      if (e > -9000 && e < 10000) {
+        if (e < minE) minE = e;
+        if (e > maxE) maxE = e;
+      }
+    });
+
+    if (minE === Infinity || maxE === minE) {
+      minE = 100;
+      maxE = 150;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = gridCols * 16;
+    canvas.height = gridRows * 16;
+    const ctx = canvas.getContext('2d');
+
+    // Elevation color mapping function (hypsometric emerald -> amber -> coral)
+    const getColor = (val) => {
+      const t = Math.max(0, Math.min(1, (val - minE) / (maxE - minE)));
+      if (t < 0.35) {
+        // Emerald low
+        const k = t / 0.35;
+        const r = Math.round(16 + k * (52 - 16));
+        const g = Math.round(185 + k * (211 - 185));
+        const b = Math.round(129 - k * 30);
+        return `rgba(${r}, ${g}, ${b}, 0.50)`;
+      } else if (t < 0.7) {
+        // Amber mid
+        const k = (t - 0.35) / 0.35;
+        const r = Math.round(52 + k * (245 - 52));
+        const g = Math.round(211 - k * (211 - 158));
+        const b = Math.round(99 - k * 88);
+        return `rgba(${r}, ${g}, ${b}, 0.55)`;
+      } else {
+        // Coral high
+        const k = (t - 0.7) / 0.3;
+        const r = Math.round(245 + k * 10);
+        const g = Math.round(158 - k * 90);
+        const b = Math.round(11 + k * 57);
+        return `rgba(${r}, ${g}, ${b}, 0.60)`;
+      }
+    };
+
+    const cellW = canvas.width / gridCols;
+    const cellH = canvas.height / gridRows;
+
+    sampleCoords.forEach((pt, idx) => {
+      const e = elevs[idx];
+      ctx.fillStyle = getColor(e);
+      // Flip Y because canvas origin is top-left, while rows start from South
+      const drawY = canvas.height - (pt.row + 1) * cellH;
+      const drawX = pt.col * cellW;
+      ctx.fillRect(drawX, drawY, cellW, cellH);
+
+      // Fine grid border
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(drawX, drawY, cellW, cellH);
+    });
+
+    const overlay = L.imageOverlay(canvas.toDataURL(), targetBounds, {
+      opacity: 0.85,
+      interactive: false,
+      zIndex: 450
+    });
+
+    overlay.addTo(map);
+    this.activeDemGridLayer = overlay;
+    return overlay;
+  }
+
+  /**
+   * Clear 2D DEM Grid overlay from map
+   *
+   * @param {Object} map
+   */
+  clearDemGridOverlay(map) {
+    if (this.activeDemGridLayer) {
+      if (map && map.hasLayer(this.activeDemGridLayer)) {
+        map.removeLayer(this.activeDemGridLayer);
+      }
+      this.activeDemGridLayer = null;
+    }
+  }
+
+  /**
+   * Toggle 2D DEM Grid overlay visibility
+   *
+   * @param {Object} map
+   * @returns {boolean} Whether layer is now visible
+   */
+  toggleDemGridOverlay(map) {
+    if (this.activeDemGridLayer) {
+      this.clearDemGridOverlay(map);
+      return false;
+    } else {
+      this.generateDemGridOverlay(map);
+      return true;
+    }
+  }
   /**
    * Generate 2D cross-section elevation profile along the wayline track
    *
@@ -813,6 +1402,9 @@ if (typeof window !== 'undefined') {
   window.ElevationServiceClass = ElevationService;
   window.drawElevationProfileChart = drawElevationProfileChart;
   window.updateElevationProfileUi = updateElevationProfileUi;
+  window.toggleDemGridOverlay = function(map) {
+    return elevationServiceInstance.toggleDemGridOverlay(map || window.map);
+  };
 }
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {

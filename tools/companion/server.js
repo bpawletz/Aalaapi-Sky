@@ -5743,10 +5743,11 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // 10c-2. Digital Elevation Model (DEM) Caching Proxy (Issue #129)
+    // 10c-2. Multi-Source Digital Elevation Model (DEM) Caching Proxy (Issue #129, #165)
     if (pathname === '/api/elevation' && (req.method === 'GET' || req.method === 'POST')) {
       let lats = url.searchParams.get('latitude') || url.searchParams.get('lats');
       let lons = url.searchParams.get('longitude') || url.searchParams.get('lons');
+      let source = url.searchParams.get('source') || 'auto';
 
       if (req.method === 'POST') {
         let body = '';
@@ -5756,6 +5757,7 @@ const server = http.createServer(async (req, res) => {
         });
         try {
           const parsed = JSON.parse(body);
+          if (parsed.source) source = parsed.source;
           if (Array.isArray(parsed.coordinates)) {
             lats = parsed.coordinates.map(c => Number(c.lat).toFixed(6)).join(',');
             lons = parsed.coordinates.map(c => Number(c.lon).toFixed(6)).join(',');
@@ -5769,6 +5771,80 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      const latArr = lats.split(',').map(Number);
+      const lonArr = lons.split(',').map(Number);
+
+      // 1. USGS 3DEP LiDAR (1m - 3m) Handler
+      if (source === 'usgs-3dep') {
+        const points = latArr.map((lat, idx) => [lonArr[idx], lat]);
+        const geom = JSON.stringify({ points, spatialReference: { wkid: 4326 } });
+        const usgsUrl = `https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/getSamples?geometry=${encodeURIComponent(geom)}&geometryType=esriGeometryMultipoint&returnFirstValueOnly=true&f=json`;
+
+        try {
+          const cached = tileCache.get(usgsUrl);
+          if (cached && cached.buffer) {
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Aalaapi-Cache': 'HIT', 'Access-Control-Allow-Origin': '*' });
+            res.end(cached.buffer);
+            return;
+          }
+
+          const upstream = await fetchUpstreamBinary(usgsUrl, { 'User-Agent': 'Aalaapi-Sky-Bridge/' + VERSION });
+          if (upstream.statusCode === 200 && upstream.buffer) {
+            try {
+              const data = JSON.parse(upstream.buffer.toString('utf-8'));
+              if (Array.isArray(data.samples)) {
+                const elevs = data.samples.map(s => {
+                  const val = parseFloat(s.value);
+                  return (!isNaN(val) && val > -9000 && val < 10000) ? val : 0;
+                });
+                const payload = Buffer.from(JSON.stringify({ success: true, elevation: elevs, source: 'usgs-3dep', resolution: '1m-3m' }));
+                tileCache.put(usgsUrl, payload, 'application/json', { isStatic: true });
+                res.writeHead(200, { 'Content-Type': 'application/json', 'X-Aalaapi-Cache': 'MISS', 'Access-Control-Allow-Origin': '*' });
+                res.end(payload);
+                return;
+              }
+            } catch (pErr) {}
+          }
+        } catch (uErr) {
+          // If USGS failed, fall through to Open-Meteo fallback
+        }
+      }
+
+      // 2. EU & National LiDAR Handler (IGN France RGE ALTI 1m if within France, else global)
+      if (source === 'eu-lidar') {
+        const inFrance = latArr.every(lat => lat >= 41.0 && lat <= 51.5) && lonArr.every(lon => lon >= -5.5 && lon <= 10.0);
+        if (inFrance) {
+          const lonsPipe = lonArr.map(n => n.toFixed(6)).join('|');
+          const latsPipe = latArr.map(n => n.toFixed(6)).join('|');
+          const ignUrl = `https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json?lon=${lonsPipe}&lat=${latsPipe}&resource=ign_rge_alti_wld`;
+
+          try {
+            const cached = tileCache.get(ignUrl);
+            if (cached && cached.buffer) {
+              res.writeHead(200, { 'Content-Type': 'application/json', 'X-Aalaapi-Cache': 'HIT', 'Access-Control-Allow-Origin': '*' });
+              res.end(cached.buffer);
+              return;
+            }
+
+            const upstream = await fetchUpstreamBinary(ignUrl, { 'User-Agent': 'Aalaapi-Sky-Bridge/' + VERSION });
+            if (upstream.statusCode === 200 && upstream.buffer) {
+              try {
+                const data = JSON.parse(upstream.buffer.toString('utf-8'));
+                if (Array.isArray(data.elevations)) {
+                  const elevs = data.elevations.map(e => (typeof e.z === 'number' && !isNaN(e.z)) ? e.z : 0);
+                  const payload = Buffer.from(JSON.stringify({ success: true, elevation: elevs, source: 'eu-lidar', resolution: '1m' }));
+                  tileCache.put(ignUrl, payload, 'application/json', { isStatic: true });
+                  res.writeHead(200, { 'Content-Type': 'application/json', 'X-Aalaapi-Cache': 'MISS', 'Access-Control-Allow-Origin': '*' });
+                  res.end(payload);
+                  return;
+                }
+              } catch (pErr) {}
+            }
+          } catch (iErr) {}
+        }
+      }
+
+      // 3. Open-Meteo Global Copernicus DEM (Baseline Fallback)
       const upstreamUrl = 'https://api.open-meteo.com/v1/elevation?latitude=' + lats + '&longitude=' + lons;
       try {
         const cached = tileCache.get(upstreamUrl);

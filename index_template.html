@@ -81,7 +81,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.189.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.190.0</span></h1>
         </div>
       </div>
 
@@ -1853,24 +1853,32 @@
               <div class="control-group" style="margin-bottom: 8px;">
                 <label for="layer-terrain-source" style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 3px;">Elevation Data Source</label>
                 <select id="layer-terrain-source" class="form-select" style="font-size: 0.78rem; padding: 3px 6px;">
-                  <option value="auto">Auto (Bridge Cache / Open-Meteo)</option>
-                  <option value="open-meteo">Open-Meteo Copernicus DEM (Global 30m)</option>
-                  <option value="bridge">Companion Bridge Local Cache</option>
-                  <option value="geotiff">Uploaded Local GeoTIFF DEM</option>
+                  <option value="auto">🌐 Auto (Best Available / Bridge Cache)</option>
+                  <option value="drone-recon">🚁 Drone Recon DSM/DTM (2cm–10cm GeoTIFF / .asc)</option>
+                  <option value="usgs-3dep">🇺🇸 USGS 3DEP LiDAR (1m–3m USA)</option>
+                  <option value="eu-lidar">🇪🇺 EU & National LiDAR (0.5m–5m Europe / .asc)</option>
+                  <option value="open-meteo">🌍 Copernicus Global DEM (30m Worldwide)</option>
+                  <option value="bridge">🖥️ Companion Bridge Local Cache</option>
+                  <option value="geotiff">📂 Uploaded Local GeoTIFF DEM</option>
                 </select>
               </div>
 
               <div id="layer-dem-upload-container" style="display: none; margin-bottom: 8px; border: 1px dashed rgba(6, 182, 212, 0.35); border-radius: 6px; padding: 8px; text-align: center; background: rgba(6, 182, 212, 0.05);">
                 <label for="layer-dem-file-input" style="font-size: 0.75rem; color: var(--accent-cyan); cursor: pointer; display: block;">
-                  📂 Choose GeoTIFF DEM (.tif / .dem)
+                  📂 Choose Drone Recon / LiDAR File (.tif / .dem / .asc)
                 </label>
-                <input type="file" id="layer-dem-file-input" accept=".tif,.tiff,.dem" style="display: none;">
+                <input type="file" id="layer-dem-file-input" accept=".tif,.tiff,.dem,.asc,.txt" style="display: none;">
                 <div id="layer-dem-status-badge" style="font-size: 0.68rem; color: var(--text-muted); margin-top: 4px;">No DEM loaded</div>
               </div>
 
-              <button type="button" id="open-elevation-profile-btn" class="btn btn-secondary" style="width: 100%; font-size: 0.75rem; padding: 4px 8px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; margin-top: 4px;">
-                📊 View Elevation Cross-Section Profile
-              </button>
+              <div style="display: flex; gap: 6px; margin-top: 4px;">
+                <button type="button" id="open-elevation-profile-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                  📊 Profile
+                </button>
+                <button type="button" id="toggle-dem-grid-overlay-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                  🗺️ 2D Grid
+                </button>
+              </div>
             </div>
           </div>
           </div> <!-- /layer-card-flight -->
@@ -6505,7 +6513,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.189.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.190.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6626,6 +6634,13 @@
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                     <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.190.0):</strong>
+              <ul style="margin: 4px 0 10px 0; padding-left: 18px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.4;">
+                <li><strong>High-Resolution DEM Sources (Closes #165):</strong> Dedicated multi-source terrain following supporting Drone Recon DSM/DTM (2cm–10cm GeoTIFF / .asc), USGS 3DEP LiDAR (1m–3m USA via ImageServer multipoint queries), and EU National LiDAR (0.5m–5m Europe via IGN France RGE ALTI and national repositories).</li>
+                <li><strong>Projected Coordinate System Engine:</strong> Integrated pure JS geodetic forward projection supporting UTM North/South zones (EPSG:326xx/327xx, NAD83, ETRS89) and Web Mercator (EPSG:3857) during sub-pixel bilinear interpolation for photogrammetry outputs (WebODM, Pix4D, Metashape).</li>
+                <li><strong>Esri ASCII Grid (.asc) Parser:</strong> Added native client-side decoding for UK DEFRA and European National LiDAR ASCII elevation grids.</li>
+                <li><strong>2D DEM Grid & 3D Terrain Wireframe:</strong> Added toggleable 2D DEM heatmap grid overlay on Leaflet map and 48x48 3D cybernetic terrain wireframe floor in the Three.js FPV HUD.</li>
+              </ul>
               <strong style="color: var(--text-main);">Changelog (v1.189.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li><strong>Draggable Legends, Popovers &amp; Drawers (Closes #164):</strong> Tactile drag-and-drop capability enabled across all floating UI components: Altitude/Layers Map Legend, Airspace Overlays Legend, Bridge &amp; Hardware Sync, Mission Details &amp; Weather, Mission Time &amp; Solar Ephemeris, ADS-B Radar Drawer, Remote ID Alignment Panel, and 3D HUD Waypoint Colors Legend.</li>

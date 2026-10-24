@@ -269,10 +269,12 @@ This matrix details exactly which parameters apply to each of Aalaapi Sky's **21
 
 When surveying undulating topography, valleys, open-pit quarries, or hilly terrain, traditional flat-plane photogrammetry missions produce non-uniform Ground Sampling Distance (GSD) and risk Controlled Flight Into Terrain (CFIT). Aalaapi Sky includes an automated **Terrain Following & DEM Engine** (Issue #129):
 
-1. **Elevation Data Sources**:
-   - **Open-Meteo Global Copernicus DEM**: Global 30m/90m resolution elevation sampling requiring zero API keys.
+1. **Elevation Data Sources (High-Resolution DEMs)**:
+   - **Drone Recon DSM/DTM (Sub-Decimeter 2cm–10cm)**: Native support for centimeter-accurate photogrammetry exports (WebODM, Pix4D, Agisoft Metashape, RealityCapture) in `.tif` or `.asc` format with automatic geodetic forward projection for UTM North/South zones (`EPSG:326xx`/`327xx`), NAD83, ETRS89, and Web Mercator (`EPSG:3857`).
+   - **USGS 3DEP LiDAR (1m–3m USA)**: Live batch elevation sampling via the official USGS 3DEP Elevation ImageServer (`getSamples` multipoint queries) and EPQS v1 REST API with automatic global Copernicus DEM fallback.
+   - **EU & National LiDAR (0.5m–5m Europe)**: Live regional European elevation queries (IGN France RGE ALTI 1m API for France/Territories, Swisstopo 0.5m/2m, and EU-DEM 25m) and Esri ASCII Grid (`.asc`) parsing.
+   - **Open-Meteo Global Copernicus DEM**: Worldwide baseline 30m resolution elevation sampling.
    - **Companion Bridge Caching Proxy**: Local offline tile and elevation response cache (`/api/elevation`).
-   - **Local GeoTIFF Upload**: Direct in-browser parsing of surveyor `.tif` / `.dem` DTM files for air-gapped field operations.
 2. **Dynamic Waypoint Modulation**:
    - Computes target altitude $Z_i = E(x_i, y_i) + \text{Target AGL}$.
    - Applies automated two-pass slope gradient smoothing (maximum climb/descent slope angle $\le 20^\circ$) to eliminate abrupt vertical stair-stepping.

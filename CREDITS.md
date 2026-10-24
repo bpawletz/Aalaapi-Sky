@@ -159,6 +159,17 @@ Aalaapi Sky interfaces with public geospatial, aviation, and meteorological feed
 * **Services**: Electric Power Transmission Lines REST service.
 * **Rights**: U.S. Government work in the public domain.
 
+### U.S. Geological Survey (USGS) 3DEP Elevation Program
+* **Home Page**: [https://www.usgs.gov/3d-elevation-program](https://www.usgs.gov/3d-elevation-program)
+* **Services**: 3DEP ImageServer & Elevation Point Query Service (EPQS)
+* **License**: Public Domain (U.S. Government Work)
+* **Attribution**: Elevation data courtesy of the U.S. Geological Survey (USGS) 3D Elevation Program (3DEP).
+
+### European & National LiDAR Data Providers
+* **IGN France (Institut national de l'information géographique et forestière)**: RGE ALTI 1m LiDAR via Géoplateforme API, Open Licence (Licence Ouverte 2.0 / Etalab).
+* **Federal Office of Topography (Swisstopo)**: swissALTI3D elevation services, Open Government Data (OGD).
+* **UK Environment Agency / DEFRA**: National LiDAR Programme DTM/DSM, Open Government Licence (OGL v3.0).
+
 ### Open-Meteo
 * **Elevation API**: [Open-Meteo.com](https://open-meteo.com/)
 * **License**: [Creative Commons Attribution 4.0 International (CC-BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
