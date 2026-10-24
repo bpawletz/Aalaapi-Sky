@@ -2703,11 +2703,27 @@ const scenarios = [
       });
       await page.waitForTimeout(1200);
 
-      // 4. Open Elevation Cross-Section Profile Drawer
+      // 3b. Switch to USGS 3DEP LiDAR (1m-3m) DEM Source
+      await page.evaluate(() => {
+        const srcSelect = document.getElementById('layer-terrain-source');
+        if (srcSelect) {
+          srcSelect.value = 'usgs-3dep';
+          srcSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 4. Open Elevation Cross-Section Profile Drawer & Toggle 2D DEM Grid
       const openProfileBtn = await page.locator('#open-elevation-profile-btn');
       if (await openProfileBtn.isVisible()) {
         await openProfileBtn.click();
-        await page.waitForTimeout(1500);
+        await page.waitForTimeout(1200);
+      }
+
+      const gridToggleBtn = await page.locator('#toggle-dem-grid-overlay-btn');
+      if (await gridToggleBtn.isVisible()) {
+        await gridToggleBtn.click();
+        await page.waitForTimeout(1200);
       }
 
       // 5. Adjust Target AGL using quick preset pill (80m)
