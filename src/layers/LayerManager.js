@@ -2491,8 +2491,10 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     return { waypoints: [], photos: [], isDrawingLayer: true };
   }
 
-  const centerLat = (layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : globalCenterLat;
-  const centerLon = (layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : globalCenterLon;
+  const centerLat = (globalCenterLat !== undefined && globalCenterLat !== null) ? globalCenterLat : ((layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : 0);
+  const centerLon = (globalCenterLon !== undefined && globalCenterLon !== null) ? globalCenterLon : ((layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : 0);
+  layer.centerLat = centerLat;
+  layer.centerLon = centerLon;
 
   let gridWidth = layer.gridWidth !== undefined ? layer.gridWidth : 100;
   let gridHeight = layer.gridHeight !== undefined ? layer.gridHeight : 100;

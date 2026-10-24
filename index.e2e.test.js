@@ -10171,4 +10171,55 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
   });
 
+
+  describe('Draggable Elevation Profile Stability & Float-Back Prevention E2E Suite (v1.193.2 - Issue #170)', () => {
+    test('E2E: Dragging #elevation-profile-drawer in negative direction and second drag maintains continuous position without jumping or float-back', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const drawer = document.getElementById('elevation-profile-drawer');
+        if (!drawer) return { error: 'drawer missing' };
+        drawer.classList.remove('hidden');
+
+        const handle = drawer.querySelector('.elevation-profile-header');
+        if (!handle) return { error: 'handle missing' };
+
+        // Drag 1: Move left (-100px) and up (-100px)
+        handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 500, clientY: 700, pointerId: 1 }));
+        handle.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 400, clientY: 600, pointerId: 1 }));
+        handle.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 400, clientY: 600, pointerId: 1 }));
+
+        const transformAfterDrag1 = drawer.style.transform;
+
+        // Wait 100ms to verify no float-back animation
+        await new Promise(r => setTimeout(r, 100));
+        const transformAfterWait = drawer.style.transform;
+
+        // Drag 2: Move right (+20px) and up (-10px) from the current position
+        handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 400, clientY: 600, pointerId: 2 }));
+        handle.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 420, clientY: 590, pointerId: 2 }));
+        handle.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 420, clientY: 590, pointerId: 2 }));
+
+        const transformAfterDrag2 = drawer.style.transform;
+
+        // Double-click resets
+        handle.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+        const transformAfterReset = drawer.style.transform;
+
+        drawer.classList.add('hidden');
+
+        return {
+          transformAfterDrag1,
+          transformAfterWait,
+          transformAfterDrag2,
+          transformAfterReset
+        };
+      });
+
+      assert.strictEqual(evalResult.error, undefined);
+      assert.ok(evalResult.transformAfterDrag1.includes('calc(-50% - '), `Drag 1 must have negative calc offset: ${evalResult.transformAfterDrag1}`);
+      assert.strictEqual(evalResult.transformAfterWait, evalResult.transformAfterDrag1, 'Must not float back or animate on release');
+      assert.ok(evalResult.transformAfterDrag2.includes('calc(-50% - '), `Drag 2 must maintain negative continuous offset: ${evalResult.transformAfterDrag2}`);
+      assert.strictEqual(evalResult.transformAfterReset, '', 'Double click must reset transform');
+    });
+  });
+
 });

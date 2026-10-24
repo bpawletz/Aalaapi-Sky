@@ -35424,4 +35424,41 @@ describe('Corridor Centerline & Waypoint Movement Synchronization Suite (v1.193.
     assert.ok(sidebarSrc.includes('container.contains(document.activeElement)'), 'renderCorridorNodeTable must prevent focus loss');
   });
 });
+
+describe('v1.193.2: Draggable Elevation Profile Stability & Negative Calc Transform Fix (Issue #170)', () => {
+  test('Version consistency: v1.193.2 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.193.2');
+  });
+
+  test('parseModalTransform correctly parses positive, negative, and zero calc(-50% ± Xpx) and standard transforms', () => {
+    const parseFn = window.parseModalTransform || global.parseModalTransform;
+    assert.strictEqual(typeof parseFn, 'function', 'parseModalTransform must be defined');
+
+    assert.deepStrictEqual(parseFn('translate3d(calc(-50% + 100px), -80px, 0px)'), { x: 100, y: -80 });
+    assert.deepStrictEqual(parseFn('translate3d(calc(-50% - 120px), -95px, 0px)'), { x: -120, y: -95 });
+    assert.deepStrictEqual(parseFn('translate3d(calc(-50% + -65px), 40px, 0)'), { x: -65, y: 40 });
+    assert.deepStrictEqual(parseFn('translate3d(calc(-50% + 0px), 0px, 0)'), { x: 0, y: 0 });
+    assert.deepStrictEqual(parseFn('translate3d(-50%, -100px, 0)'), { x: 0, y: -100 });
+    assert.deepStrictEqual(parseFn('translate3d(75px, -50px, 0)'), { x: 75, y: -50 });
+    assert.deepStrictEqual(parseFn('translate(-150px, 200px)'), { x: -150, y: 200 });
+    assert.deepStrictEqual(parseFn(''), { x: 0, y: 0 });
+    assert.deepStrictEqual(parseFn(null), { x: 0, y: 0 });
+  });
+
+  test('formatModalTransform formats clean CSS transform strings for centered and standard panels', () => {
+    const fmtFn = window.formatModalTransform || global.formatModalTransform;
+    assert.strictEqual(typeof fmtFn, 'function', 'formatModalTransform must be defined');
+
+    assert.strictEqual(fmtFn(0, -100, true), 'translate3d(-50%, -100px, 0)');
+    assert.strictEqual(fmtFn(40, -80, true), 'translate3d(calc(-50% + 40px), -80px, 0)');
+    assert.strictEqual(fmtFn(-95, 30, true), 'translate3d(calc(-50% - 95px), 30px, 0)');
+    assert.strictEqual(fmtFn(120, -50, false), 'translate3d(120px, -50px, 0)');
+  });
+
+  test('CSS transitions on .elevation-profile-drawer and .replay-2d-bar do not transition transform', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('.elevation-profile-drawer {') && css.includes('transition: opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;'), 'Must scope transitions cleanly');
+  });
+});
+
 });
