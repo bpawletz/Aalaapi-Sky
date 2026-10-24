@@ -3726,6 +3726,123 @@ function initTerrainFollowListeners() {
       profileDrawer.classList.add('hidden');
     });
   }
+
+  // Subscribe to elevation service status updates (v1.193.0 - Issue #168)
+  if (typeof elevationServiceInstance !== 'undefined' && typeof elevationServiceInstance.addStatusListener === 'function') {
+    elevationServiceInstance.addStatusListener((status) => {
+      const layerBadge = document.getElementById('layer-terrain-source-status-badge');
+      if (layerBadge) {
+        const dot = layerBadge.querySelector('.status-indicator-dot');
+        const txt = layerBadge.querySelector('.status-text');
+        if (dot && txt) {
+          if (status.state === 'loading') {
+            dot.style.background = '#38bdf8';
+            txt.textContent = status.message || 'Fetching elevation data...';
+            layerBadge.style.color = '#38bdf8';
+          } else if (status.state === 'fallback') {
+            dot.style.background = '#f59e0b';
+            txt.textContent = status.message || 'Fallback to Copernicus (30m)';
+            layerBadge.style.color = '#f59e0b';
+          } else if (status.state === 'error') {
+            dot.style.background = '#ef4444';
+            txt.textContent = status.message || 'Elevation query failed';
+            layerBadge.style.color = '#ef4444';
+          } else {
+            dot.style.background = '#10b981';
+            txt.textContent = status.message || 'Ready (Auto)';
+            layerBadge.style.color = 'var(--text-muted)';
+          }
+        }
+      }
+
+      const globalBadge = document.getElementById('global-terrain-source-status-badge');
+      if (globalBadge) {
+        const dot = globalBadge.querySelector('.status-indicator-dot');
+        const txt = globalBadge.querySelector('.status-text');
+        if (dot && txt) {
+          if (status.state === 'loading') {
+            dot.style.background = '#38bdf8';
+            txt.textContent = status.message || 'Fetching elevation data...';
+            globalBadge.style.color = '#38bdf8';
+          } else if (status.state === 'fallback') {
+            dot.style.background = '#f59e0b';
+            txt.textContent = status.message || 'Fallback to Copernicus (30m)';
+            globalBadge.style.color = '#f59e0b';
+          } else if (status.state === 'error') {
+            dot.style.background = '#ef4444';
+            txt.textContent = status.message || 'Elevation query failed';
+            globalBadge.style.color = '#ef4444';
+          } else {
+            dot.style.background = '#10b981';
+            txt.textContent = status.message || 'Global: Ready (Auto)';
+            globalBadge.style.color = 'var(--text-muted)';
+          }
+        }
+      }
+
+      if (typeof updateElevationProfileUi === 'function') {
+        updateElevationProfileUi();
+      }
+    });
+  }
+
+  // Interactive elevation profile hover tooltip (v1.193.0 - Issue #168)
+  const profileCanvas = document.getElementById('elevation-profile-canvas');
+  const profileTooltip = document.getElementById('elevation-profile-tooltip');
+  if (profileCanvas && profileTooltip) {
+    profileCanvas.addEventListener('mousemove', (e) => {
+      const rect = profileCanvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const padLeft = 45;
+      const padRight = 20;
+      const chartW = profileCanvas.width - padLeft - padRight;
+      if (mouseX < padLeft || mouseX > profileCanvas.width - padRight) {
+        profileTooltip.style.display = 'none';
+        return;
+      }
+
+      const ratio = (mouseX - padLeft) / chartW;
+      const waypoints = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : [];
+      if (!waypoints || waypoints.length === 0) return;
+      const profile = (typeof elevationServiceInstance !== 'undefined')
+        ? elevationServiceInstance.generateElevationProfile(waypoints)
+        : null;
+      if (!profile || !profile.points || profile.points.length === 0) return;
+
+      const targetDist = ratio * profile.totalDistance;
+      let closestPt = profile.points[0];
+      let minDist = Math.abs(profile.points[0].s - targetDist);
+      for (let i = 1; i < profile.points.length; i++) {
+        const d = Math.abs(profile.points[i].s - targetDist);
+        if (d < minDist) {
+          minDist = d;
+          closestPt = profile.points[i];
+        }
+      }
+
+      profileTooltip.style.display = 'block';
+      const tooltipX = Math.min(rect.width - 150, Math.max(10, mouseX - 60));
+      profileTooltip.style.left = `${tooltipX}px`;
+      profileTooltip.style.top = `10px`;
+      if (closestPt.isMissing) {
+        profileTooltip.innerHTML = `
+          <div style="font-weight: 700; color: #f87171;">⚠️ Missing DEM Data</div>
+          <div>Dist: ${closestPt.s}m | Ground: Unknown</div>
+          <div>Flight: ${closestPt.flightAlt}m MSL</div>
+        `;
+      } else {
+        profileTooltip.innerHTML = `
+          <div><strong>WP #${closestPt.wpIndex + 1}</strong> (${closestPt.s}m)</div>
+          <div>Ground: ${closestPt.groundElev}m MSL</div>
+          <div>Flight: ${closestPt.flightAlt}m MSL (AGL: ${closestPt.agl}m)</div>
+        `;
+      }
+    });
+
+    profileCanvas.addEventListener('mouseleave', () => {
+      profileTooltip.style.display = 'none';
+    });
+  }
 }
 
 /**

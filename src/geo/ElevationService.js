@@ -18,6 +18,66 @@ class ElevationService {
     this.bridgeUrl = 'http://127.0.0.1:8765';
     this.isBridgeAvailable = null;
     this.activeDemGridLayer = null; // 2D Leaflet grid/heatmap layer
+    this.demBoundsLayer = null;     // Leaflet bounding box layer for uploaded DEM
+    this.sourceStatus = {
+      state: 'idle', // 'idle' | 'loading' | 'ready' | 'fallback' | 'error'
+      source: 'auto',
+      effectiveSource: 'auto',
+      fallbackOccurred: false,
+      message: 'Ready (Auto)',
+      count: 0,
+      minElev: 0,
+      maxElev: 0,
+      bounds: null,
+      timestamp: Date.now()
+    };
+    this.statusListeners = [];
+    this._lastFallbackOccurred = false;
+  }
+
+  /**
+   * Subscribe to elevation source status events
+   */
+  addStatusListener(fn) {
+    if (typeof fn === 'function' && !this.statusListeners.includes(fn)) {
+      this.statusListeners.push(fn);
+      try { fn(this.sourceStatus); } catch (e) {}
+    }
+  }
+
+  /**
+   * Unsubscribe from status events
+   */
+  removeStatusListener(fn) {
+    this.statusListeners = this.statusListeners.filter(l => l !== fn);
+  }
+
+  /**
+   * Notify all status listeners
+   */
+  notifyStatusChange(updates = {}) {
+    this.sourceStatus = { ...this.sourceStatus, ...updates, timestamp: Date.now() };
+    this.statusListeners.forEach(fn => {
+      try { fn(this.sourceStatus); } catch (e) {
+        if (typeof Logger !== 'undefined' && Logger.warn) Logger.warn('Status listener error:', e);
+      }
+    });
+  }
+
+  /**
+   * Friendly human label for elevation source key
+   */
+  getSourceLabel(sourceKey) {
+    const labels = {
+      'auto': 'Auto (Copernicus / Bridge)',
+      'drone-recon': 'Drone Recon DSM/DTM',
+      'usgs-3dep': 'USGS 3DEP LiDAR (1m–3m USA)',
+      'eu-lidar': 'EU & National LiDAR (0.5m–5m Europe)',
+      'open-meteo': 'Copernicus Global DEM (30m)',
+      'bridge': 'Companion Bridge Local Cache',
+      'geotiff': 'Uploaded Local GeoTIFF DEM'
+    };
+    return labels[sourceKey] || sourceKey || 'Unknown Source';
   }
 
   /**
@@ -59,12 +119,80 @@ class ElevationService {
     if (!Array.isArray(coordinates) || coordinates.length === 0) return [];
     const source = options.source || 'auto';
 
+    this.notifyStatusChange({
+      state: 'loading',
+      source,
+      effectiveSource: source,
+      count: coordinates.length,
+      message: `Fetching ${this.getSourceLabel(source)} (${coordinates.length} waypoints)...`
+    });
+
     // 1. If GeoTIFF DEM is loaded and selected or auto-active, sample locally
     if ((source === 'geotiff' || (source === 'auto' && this.cachedDem)) && this.cachedDem) {
-      return coordinates.map(coord => {
+      const results = new Array(coordinates.length);
+      const outsideCoords = [];
+      const outsideIndices = [];
+
+      coordinates.forEach((coord, idx) => {
         const val = this.cachedDem.sampleAt(coord.lat, coord.lon);
-        return typeof val === 'number' && !isNaN(val) ? val : 0;
+        if (typeof val === 'number' && !isNaN(val) && val > -9000 && val < 10000) {
+          results[idx] = val;
+        } else {
+          outsideIndices.push(idx);
+          outsideCoords.push(coord);
+        }
       });
+
+      if (outsideCoords.length === 0) {
+        const validElevs = results.filter(e => typeof e === 'number');
+        const minElev = validElevs.length ? Math.min(...validElevs) : 0;
+        const maxElev = validElevs.length ? Math.max(...validElevs) : 0;
+        this.notifyStatusChange({
+          state: 'ready',
+          source,
+          effectiveSource: 'geotiff',
+          fallbackOccurred: false,
+          minElev,
+          maxElev,
+          count: coordinates.length,
+          message: `✓ Ready: ${this.cachedDem.resolutionLabel || 'GeoTIFF'} • ${coordinates.length} waypoints (${Math.round(minElev)}m–${Math.round(maxElev)}m MSL)`
+        });
+        return results;
+      }
+
+      // Hybrid fallback to Copernicus 30m for waypoints outside local GeoTIFF bounds
+      if (typeof fetch !== 'undefined') {
+        try {
+          const fallbackElevs = await this._queryElevationBatch(outsideCoords, options);
+          outsideIndices.forEach((origIdx, i) => {
+            results[origIdx] = fallbackElevs[i] || 0;
+          });
+          const validElevs = results.filter(e => typeof e === 'number');
+          const minElev = validElevs.length ? Math.min(...validElevs) : 0;
+          const maxElev = validElevs.length ? Math.max(...validElevs) : 0;
+          this.notifyStatusChange({
+            state: 'fallback',
+            source,
+            effectiveSource: 'open-meteo',
+            fallbackOccurred: true,
+            minElev,
+            maxElev,
+            count: coordinates.length,
+            message: `⚠️ Hybrid: ${coordinates.length - outsideCoords.length} in GeoTIFF, ${outsideCoords.length} fell back to Copernicus (30m)`
+          });
+          return results;
+        } catch (err) {
+          outsideIndices.forEach((origIdx) => {
+            results[origIdx] = null;
+          });
+        }
+      } else {
+        outsideIndices.forEach((origIdx) => {
+          results[origIdx] = null;
+        });
+      }
+
+      return results;
     }
 
     // 2. Check in-memory cache for coordinates
@@ -113,6 +241,26 @@ class ElevationService {
       this.cache.set(this.coordKey(c.lat, c.lon, source), elev);
     });
 
+    const validElevs = results.filter(e => typeof e === 'number' && !isNaN(e) && e > -9000 && e < 10000);
+    const minElev = validElevs.length ? Math.min(...validElevs) : 0;
+    const maxElev = validElevs.length ? Math.max(...validElevs) : 0;
+    const isFallback = !!this._lastFallbackOccurred;
+    this._lastFallbackOccurred = false;
+    const effSource = isFallback ? 'open-meteo' : source;
+
+    this.notifyStatusChange({
+      state: isFallback ? 'fallback' : 'ready',
+      source,
+      effectiveSource: effSource,
+      fallbackOccurred: isFallback,
+      minElev,
+      maxElev,
+      count: coordinates.length,
+      message: isFallback
+        ? `⚠️ Fallback: Outside high-res coverage • Active: Copernicus Global (30m)`
+        : `✓ Ready: ${this.getSourceLabel(source)} • ${coordinates.length} waypoints (${Math.round(minElev)}m–${Math.round(maxElev)}m MSL)`
+    });
+
     return results;
   }
 
@@ -128,13 +276,13 @@ class ElevationService {
     return coordinates.map(c => {
       if (this.cachedDem) {
         const v = this.cachedDem.sampleAt(c.lat, c.lon);
-        if (typeof v === 'number' && !isNaN(v)) return v;
+        if (typeof v === 'number' && !isNaN(v) && v > -9000 && v < 10000) return v;
       }
       const key = this.coordKey(c.lat, c.lon);
       if (this.cache.has(key)) {
         return this.cache.get(key);
       }
-      return 0;
+      return null;
     });
   }
 
@@ -166,14 +314,23 @@ class ElevationService {
       ? options.elevations
       : this.sampleElevationsSync(coords);
 
+    const firstValid = elevations.find(e => typeof e === 'number' && !isNaN(e) && e > -9000 && e < 10000 && e !== 0) || 50;
+    let runningElev = firstValid;
+
     const initializedWps = waypoints.map((wp, idx) => {
-      const surfaceElev = elevations[idx] || 0;
+      const rawElev = elevations[idx];
+      const isMissing = rawElev === null || rawElev === undefined || isNaN(rawElev);
+      if (!isMissing && rawElev > -9000 && rawElev < 10000) {
+        runningElev = rawElev;
+      }
+      const surfaceElev = isMissing ? runningElev : rawElev;
       const hasWpOverride = wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit';
       const agl = hasWpOverride ? (wp.alt - surfaceElev) : targetAgl;
 
       return {
         ...wp,
-        surfaceElevation: surfaceElev,
+        surfaceElevation: isMissing ? null : surfaceElev,
+        isElevationMissing: isMissing,
         agl: agl,
         alt: hasWpOverride ? wp.alt : (surfaceElev + agl),
         isTerrainFollow: true
@@ -310,6 +467,7 @@ class ElevationService {
     }
 
     // Automatic global fallback for points outside USGS 3DEP coverage
+    this._lastFallbackOccurred = true;
     return this._queryElevationBatch(chunk, options);
   }
 
@@ -375,6 +533,7 @@ class ElevationService {
     }
 
     // Fall back to Copernicus European DEM via Open-Meteo
+    this._lastFallbackOccurred = true;
     return this._queryElevationBatch(chunk, options);
   }
 
@@ -998,9 +1157,10 @@ class ElevationService {
    * @param {Object} [bounds] Leaflet LatLngBounds
    * @returns {Object|null} Leaflet layerGroup or imageOverlay
    */
-  generateDemGridOverlay(map, bounds = null) {
+  generateDemGridOverlay(map, bounds = null, group = null) {
     if (typeof L === 'undefined' || !map) return null;
     this.clearDemGridOverlay(map);
+    const targetGroup = group || (typeof demGridOverlayGroup !== 'undefined' ? demGridOverlayGroup : null);
 
     let targetBounds = bounds;
     if (!targetBounds) {
@@ -1111,8 +1271,40 @@ class ElevationService {
       zIndex: 450
     });
 
-    overlay.addTo(map);
+    if (targetGroup) {
+      targetGroup.addLayer(overlay);
+      if (map && !map.hasLayer(targetGroup)) map.addLayer(targetGroup);
+    } else {
+      overlay.addTo(map);
+    }
     this.activeDemGridLayer = overlay;
+
+    // Draw georeferenced bounding box outline if local DEM is loaded
+    if (this.cachedDem && this.cachedDem.bounds && this.cachedDem.bounds.minLat !== undefined) {
+      const b = this.cachedDem.bounds;
+      this.demBoundsLayer = L.rectangle([[b.minLat, b.minLon], [b.maxLat, b.maxLon]], {
+        color: '#06b6d4',
+        weight: 1.5,
+        dashArray: '4, 4',
+        fill: false,
+        interactive: true
+      }).bindTooltip(`📂 Local DEM Bounds: ${this.cachedDem.width}×${this.cachedDem.height} (${this.cachedDem.resolutionLabel || 'High-Res'})`, { sticky: true });
+      if (targetGroup) targetGroup.addLayer(this.demBoundsLayer);
+      else this.demBoundsLayer.addTo(map);
+    }
+
+    // Update on-map legend
+    if (typeof document !== 'undefined') {
+      const minEl = document.getElementById('dem-legend-min-val');
+      const maxEl = document.getElementById('dem-legend-max-val');
+      const badgeEl = document.getElementById('dem-legend-source-badge');
+      const legendContainer = document.getElementById('dem-grid-legend-container');
+      if (minEl) minEl.textContent = Math.round(minE) + 'm';
+      if (maxEl) maxEl.textContent = Math.round(maxE) + 'm MSL';
+      if (badgeEl) badgeEl.textContent = this.sourceStatus ? this.getSourceLabel(this.sourceStatus.effectiveSource) : 'DEM';
+      if (legendContainer) legendContainer.style.display = 'block';
+    }
+
     return overlay;
   }
 
@@ -1127,6 +1319,16 @@ class ElevationService {
         map.removeLayer(this.activeDemGridLayer);
       }
       this.activeDemGridLayer = null;
+    }
+    if (this.demBoundsLayer) {
+      if (map && map.hasLayer(this.demBoundsLayer)) {
+        map.removeLayer(this.demBoundsLayer);
+      }
+      this.demBoundsLayer = null;
+    }
+    if (typeof document !== 'undefined') {
+      const legendContainer = document.getElementById('dem-grid-legend-container');
+      if (legendContainer) legendContainer.style.display = 'none';
     }
   }
 
@@ -1162,6 +1364,19 @@ class ElevationService {
     let minGround = Infinity, maxGround = -Infinity;
     let minFlight = Infinity, maxFlight = -Infinity;
 
+    let missingCount = 0;
+    const validGrounds = [];
+    waypoints.forEach(wp => {
+      const e = wp.surfaceElevation;
+      if (typeof e === 'number' && !isNaN(e) && e > -9000 && e < 10000 && e !== 0) {
+        validGrounds.push(e);
+      }
+    });
+    const hasRealisticElevations = validGrounds.length > 0;
+    const defaultBaseline = hasRealisticElevations
+      ? (validGrounds.reduce((a, b) => a + b, 0) / validGrounds.length)
+      : 50;
+
     for (let i = 0; i < waypoints.length; i++) {
       const wp = waypoints[i];
       if (i > 0) {
@@ -1175,30 +1390,51 @@ class ElevationService {
         cumulativeDist += d;
       }
 
-      const groundElev = typeof wp.surfaceElevation === 'number' ? wp.surfaceElevation : 0;
-      const flightAlt = typeof wp.alt === 'number' ? wp.alt : (groundElev + 50);
-      const agl = flightAlt - groundElev;
+      let groundElev = wp.surfaceElevation;
+      let isMissing = false;
+      if (wp.isElevationMissing || groundElev === null || groundElev === undefined || isNaN(groundElev)) {
+        isMissing = true;
+      } else if (groundElev === 0 && hasRealisticElevations) {
+        const prevValid = points.slice().reverse().find(p => !p.isMissing);
+        if (prevValid && Math.abs(prevValid.groundElev - 0) > 60) {
+          isMissing = true;
+        }
+      }
 
-      if (groundElev < minGround) minGround = groundElev;
-      if (groundElev > maxGround) maxGround = groundElev;
+      if (isMissing) {
+        missingCount++;
+        const prevValid = points.slice().reverse().find(p => !p.isMissing);
+        groundElev = prevValid ? prevValid.groundElev : defaultBaseline;
+      } else {
+        if (groundElev < minGround) minGround = groundElev;
+        if (groundElev > maxGround) maxGround = groundElev;
+      }
+
+      const flightAlt = typeof wp.alt === 'number' ? wp.alt : (groundElev + 50);
       if (flightAlt < minFlight) minFlight = flightAlt;
       if (flightAlt > maxFlight) maxFlight = flightAlt;
+      const agl = flightAlt - groundElev;
 
       points.push({
         wpIndex: i,
         s: Math.round(cumulativeDist * 10) / 10,
         groundElev: Math.round(groundElev * 10) / 10,
         flightAlt: Math.round(flightAlt * 10) / 10,
-        agl: Math.round(agl * 10) / 10
+        agl: Math.round(agl * 10) / 10,
+        isMissing: isMissing
       });
     }
 
     if (minGround === Infinity) {
-      minGround = 0;
-      maxGround = 0;
+      minGround = defaultBaseline;
+      maxGround = defaultBaseline;
       minFlight = 50;
       maxFlight = 50;
     }
+
+    const coveragePercent = waypoints.length > 0
+      ? Math.round(((waypoints.length - missingCount) / waypoints.length) * 100)
+      : 100;
 
     return {
       totalDistance: Math.round(cumulativeDist * 10) / 10,
@@ -1207,7 +1443,9 @@ class ElevationService {
       maxGround: Math.round(maxGround * 10) / 10,
       minFlight: Math.round(minFlight * 10) / 10,
       maxFlight: Math.round(maxFlight * 10) / 10,
-      reliefMeters: Math.round((maxGround - minGround) * 10) / 10
+      reliefMeters: Math.round((maxGround - minGround) * 10) / 10,
+      missingCount,
+      coveragePercent
     };
   }
 
@@ -1297,44 +1535,73 @@ function drawElevationProfileChart(canvas, profileData) {
     ctx.fillText(Math.round(val) + "m", padLeft - 4, y + 3);
   }
 
-  // Draw Ground Fill & Surface Line
-  ctx.beginPath();
-  profileData.points.forEach((pt, idx) => {
-    const x = getX(pt.s);
-    const y = getY(pt.groundElev);
-    if (idx === 0) {
-      ctx.moveTo(x, padTop + chartH);
-      ctx.lineTo(x, y);
+  // 1. Draw Ground Fill (valid segments in emerald, missing segments in hatched red tint)
+  ctx.save();
+  for (let i = 0; i < profileData.points.length - 1; i++) {
+    const p1 = profileData.points[i];
+    const p2 = profileData.points[i + 1];
+    const x1 = getX(p1.s);
+    const x2 = getX(p2.s);
+    const y1 = getY(p1.groundElev);
+    const y2 = getY(p2.groundElev);
+    const isMissingSegment = p1.isMissing || p2.isMissing;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, padTop + chartH);
+    ctx.lineTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x2, padTop + chartH);
+    ctx.closePath();
+    ctx.fillStyle = isMissingSegment ? 'rgba(239, 68, 68, 0.14)' : 'rgba(16, 185, 129, 0.12)';
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // 2. Draw Ground Line Stroke (green solid for valid, red dashed for missing)
+  for (let i = 0; i < profileData.points.length - 1; i++) {
+    const p1 = profileData.points[i];
+    const p2 = profileData.points[i + 1];
+    const x1 = getX(p1.s);
+    const x2 = getX(p2.s);
+    const y1 = getY(p1.groundElev);
+    const y2 = getY(p2.groundElev);
+    const isMissingSegment = p1.isMissing || p2.isMissing;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    if (isMissingSegment) {
+      ctx.strokeStyle = '#f87171';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
     } else {
-      ctx.lineTo(x, y);
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
     }
-  });
-  ctx.lineTo(getX(profileData.totalDistance), padTop + chartH);
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
-  ctx.fill();
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
 
-  // Ground Line stroke
-  ctx.beginPath();
-  profileData.points.forEach((pt, idx) => {
-    const x = getX(pt.s);
-    const y = getY(pt.groundElev);
-    if (idx === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.strokeStyle = '#10b981';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  // 3. Draw on-canvas alert label if missing data exists
+  if (profileData.missingCount > 0) {
+    ctx.save();
+    ctx.fillStyle = '#f87171';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('⚠️ Missing DEM Coverage', w - padRight - 6, padTop + 14);
+    ctx.restore();
+  }
 
-  // Vertical clearance tethers (AGL dashes)
-  ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([2, 3]);
+  // 4. Vertical clearance tethers (AGL dashes)
   profileData.points.forEach(pt => {
     const x = getX(pt.s);
     ctx.beginPath();
     ctx.moveTo(x, getY(pt.groundElev));
     ctx.lineTo(x, getY(pt.flightAlt));
+    ctx.strokeStyle = pt.isMissing ? 'rgba(239, 68, 68, 0.35)' : 'rgba(245, 158, 11, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 3]);
     ctx.stroke();
   });
   ctx.setLineDash([]);
@@ -1395,6 +1662,29 @@ function updateElevationProfileUi() {
 
   const stats = document.getElementById('elev-profile-stats');
   if (stats) stats.textContent = 'Ground: ' + profile.minGround + 'm–' + profile.maxGround + 'm | Flight: ' + profile.minFlight + 'm–' + profile.maxFlight + 'm';
+
+  const sourceBadge = document.getElementById('elev-profile-source-badge');
+  if (sourceBadge && elevationServiceInstance) {
+    const src = elevationServiceInstance.sourceStatus;
+    if (src && src.state === 'loading') {
+      sourceBadge.textContent = '⏳ Loading...';
+      sourceBadge.style.color = '#38bdf8';
+    } else if (src && src.effectiveSource) {
+      sourceBadge.textContent = elevationServiceInstance.getSourceLabel(src.effectiveSource);
+      sourceBadge.style.color = src.state === 'fallback' ? '#fbbf24' : '#38bdf8';
+    }
+  }
+
+  const missingBadge = document.getElementById('elev-profile-missing-badge');
+  if (missingBadge) {
+    if (profile.missingCount > 0) {
+      missingBadge.style.display = 'inline-flex';
+      const pct = Math.round((profile.missingCount / profile.points.length) * 100);
+      missingBadge.textContent = `⚠️ Missing DEM (${pct}% of route)`;
+    } else {
+      missingBadge.style.display = 'none';
+    }
+  }
 }
 
 if (typeof window !== 'undefined') {
