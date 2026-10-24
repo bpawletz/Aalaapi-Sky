@@ -1,3 +1,23 @@
+## [1.195.0] - 2026-10-24
+
+Live sub-channel event broadcast metrics and enhanced client breakdown telemetry for the Companion Bridge, providing real-time visibility into multiplexed SSE channels (`status`, `airspace`, `remote-id`, `progress`).
+
+### Added
+
+#### Pilot & Operational Features
+- **Companion Bridge SSE Sub-Channel Event Telemetry (Closes #173)**:
+  - Real-time event throughput counter on the Bridge top dashboard CLI (`EVENTS status <count> airspace <count> rid <count>`) displaying live sub-channel message frequency when unified or discrete clients are streaming.
+  - Enhanced `CLIENTS` telemetry line in the Bridge CLI top dashboard displaying Remote ID (`rid`) client connections alongside status, unified, airspace, and MCP sessions.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/server.js`**:
+  - Added `sseBroadcastMetrics` tracking live broadcast dispatches across `status`, `airspace`, `remoteId`, and `progress` channels.
+  - Updated `getSseClientsCount()` and `/api/status` payloads to expose `events` telemetry.
+- **`tools/companion/top_dashboard.js`**:
+  - Extended `renderDashboardFrame()` to format sub-channel client counts (`rid`) and live `EVENTS` throughput counters gracefully within 80-column terminal boundaries.
+- **`tools/companion/top_dashboard.test.js`**:
+  - Added unit regression tests asserting sub-channel client metrics, `rid` representation, and `EVENTS` formatting across compact (80-col) and wide (100-col) viewports.
+
 ## [1.194.0] - 2026-10-24
 
 Repository-wide SSE-First API architecture policy, elimination of client-side RTMP status polling, and TTL-cached firewall verification.

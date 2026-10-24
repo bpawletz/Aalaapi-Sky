@@ -458,6 +458,14 @@ const sseMediaProgressClients = new Set();
 const sseUnifiedClients = new Set();
 const mcpSseClients = new Map(); // sessionId -> { res, req, sessionId, createdAt }
 
+const sseBroadcastMetrics = {
+  status: 0,
+  airspace: 0,
+  remoteId: 0,
+  progress: 0,
+  total: 0
+};
+
 function broadcastRemoteIdAirspace(drones) {
   const droneList = drones || (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones ? airspaceTracker.getActiveDrones() : []);
   if (telemetryBuffer && Array.isArray(droneList) && droneList.length > 0) {
@@ -466,6 +474,8 @@ function broadcastRemoteIdAirspace(drones) {
     }
   }
   if (sseRemoteIdClients.size === 0 && sseUnifiedClients.size === 0) return;
+  sseBroadcastMetrics.remoteId++;
+  sseBroadcastMetrics.total++;
   const payloadStr = JSON.stringify({
     success: true,
     count: droneList.length,
@@ -492,6 +502,8 @@ function broadcastRemoteIdAirspace(drones) {
 
 function broadcastCompanionStatus(status) {
   if (sseStatusClients.size === 0 && sseUnifiedClients.size === 0) return;
+  sseBroadcastMetrics.status++;
+  sseBroadcastMetrics.total++;
   const droneCount = (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones)
     ? airspaceTracker.getActiveDrones().length
     : 0;
@@ -524,6 +536,8 @@ function broadcastCompanionStatus(status) {
 
 function broadcastMediaProgress(prog) {
   if (sseMediaProgressClients.size === 0 && sseUnifiedClients.size === 0) return;
+  sseBroadcastMetrics.progress++;
+  sseBroadcastMetrics.total++;
   const p = prog || (typeof mediaPullProgress !== 'undefined' ? mediaPullProgress : { active: false, percent: 0 });
   const payloadStr = JSON.stringify({ success: true, ...p });
   for (const client of sseMediaProgressClients) {
@@ -546,6 +560,8 @@ function broadcastMediaProgress(prog) {
 
 function broadcastIngestComplete(ingestData) {
   if (sseMediaProgressClients.size === 0 && sseUnifiedClients.size === 0) return;
+  sseBroadcastMetrics.progress++;
+  sseBroadcastMetrics.total++;
   const payloadStr = JSON.stringify({
     success: true,
     event: 'ingest-complete',
@@ -588,6 +604,8 @@ function getAirspaceStatusPayload() {
 
 function broadcastAirspaceStatus() {
   if (sseAirspaceClients.size === 0 && sseUnifiedClients.size === 0) return;
+  sseBroadcastMetrics.airspace++;
+  sseBroadcastMetrics.total++;
   const statusPayload = JSON.stringify(getAirspaceStatusPayload());
   for (const client of sseAirspaceClients) {
     try {
@@ -705,7 +723,8 @@ function getSseClientsCount() {
     mediaProgress: sseMediaProgressClients.size,
     unified: sseUnifiedClients.size,
     mcp: mcpSseClients.size,
-    total: sseAirspaceClients.size + sseRemoteIdClients.size + sseStatusClients.size + sseMediaProgressClients.size + sseUnifiedClients.size + mcpSseClients.size
+    total: sseAirspaceClients.size + sseRemoteIdClients.size + sseStatusClients.size + sseMediaProgressClients.size + sseUnifiedClients.size + mcpSseClients.size,
+    events: { ...sseBroadcastMetrics }
   };
 }
 
@@ -6204,7 +6223,10 @@ function startDashboard() {
         sseStatus: typeof sseStatusClients !== 'undefined' ? sseStatusClients.size : 0,
         sseUnified: typeof sseUnifiedClients !== 'undefined' ? sseUnifiedClients.size : 0,
         sseAirspace: typeof sseAirspaceClients !== 'undefined' ? sseAirspaceClients.size : 0,
-        mcpCount: typeof mcpSseClients !== 'undefined' ? mcpSseClients.size : 0
+        sseRemoteId: typeof sseRemoteIdClients !== 'undefined' ? sseRemoteIdClients.size : 0,
+        sseMedia: typeof sseMediaProgressClients !== 'undefined' ? sseMediaProgressClients.size : 0,
+        mcpCount: typeof mcpSseClients !== 'undefined' ? mcpSseClients.size : 0,
+        events: typeof sseBroadcastMetrics !== 'undefined' ? { ...sseBroadcastMetrics } : { status: 0, airspace: 0, remoteId: 0, progress: 0, total: 0 }
       };
     }
   });
@@ -6374,6 +6396,7 @@ module.exports = {
   adsbTracker,
   getSseAirspaceClientsCount,
   getSseClientsCount,
+  sseBroadcastMetrics,
   sseAirspaceClients,
   sseRemoteIdClients,
   sseStatusClients,
