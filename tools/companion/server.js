@@ -3295,7 +3295,10 @@ const server = http.createServer(async (req, res) => {
         ? airspaceTracker.getActiveDrones().length
         : 0;
       const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
-      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, version: VERSION })}\n\n`);
+      const rtmpStatus = (typeof videoService !== 'undefined' && videoService.getRtmpStatus)
+        ? videoService.getRtmpStatus()
+        : null;
+      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, rtmp: rtmpStatus, version: VERSION })}\n\n`);
       return;
     }
 
@@ -4824,7 +4827,13 @@ const server = http.createServer(async (req, res) => {
       const droneCount = (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones)
         ? airspaceTracker.getActiveDrones().length
         : 0;
-      res.write(`event: status\ndata: ${JSON.stringify({ ...cachedRc2Status, droneCount, version: VERSION })}\n\n`);
+      const rtmpStatus = (typeof videoService !== 'undefined' && videoService.getRtmpStatus)
+        ? videoService.getRtmpStatus()
+        : null;
+      res.write(`event: status\ndata: ${JSON.stringify({ ...cachedRc2Status, droneCount, rtmp: rtmpStatus, version: VERSION })}\n\n`);
+      if (rtmpStatus) {
+        res.write(`event: rtmp-status\ndata: ${JSON.stringify(rtmpStatus)}\n\n`);
+      }
       const activeDrones = airspaceTracker.getActiveDrones();
       res.write(`event: remote-id\ndata: ${JSON.stringify({
         success: true,
@@ -6005,11 +6014,17 @@ const server = http.createServer(async (req, res) => {
           '.txt': 'text/plain; charset=utf-8'
         };
         const contentType = mimeTypes[ext] || 'application/octet-stream';
-        res.writeHead(200, {
+        const headers = {
           'Content-Type': contentType,
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Private-Network': 'true'
-        });
+        };
+        if (ext === '.html' || ext === '.js' || ext === '.css' || ext === '.json') {
+          headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0';
+          headers['Pragma'] = 'no-cache';
+          headers['Expires'] = '0';
+        }
+        res.writeHead(200, headers);
         if (req.method === 'HEAD') {
           res.end();
           return;
