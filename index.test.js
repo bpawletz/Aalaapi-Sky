@@ -35334,4 +35334,94 @@ describe('Elevation Source Status, Leaflet Map Layer & Missing DEM Profile Visua
   });
 });
 
+describe('Corridor Centerline & Waypoint Movement Synchronization Suite (v1.193.1 - Issue #169)', () => {
+  test('Version consistency: v1.193.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.193.1');
+  });
+
+  test('generateLayerWaypoints dynamically translates centerline nodes when centerLat and centerLon change', () => {
+    const layer = createDefaultLayer('test-corr-sync', 'Sync Test Corridor', 0, 'corridor');
+    layer.corridorWidth = 60;
+    layer.corridorPasses = 3;
+    layer.corridorOvershoot = 20;
+
+    // Initial center A
+    const centerLatA = 41.3215;
+    const centerLonA = -88.9950;
+    const resA = generateLayerWaypoints(layer, centerLatA, centerLonA);
+    assert.ok(resA && resA.waypoints.length > 0, 'Should generate waypoints at Center A');
+    assert.strictEqual(layer.corridorCenterline.length, 3, 'Should have 3 default centerline nodes');
+
+    const origNode0Lat = layer.corridorCenterline[0].lat;
+    const origNode0Lon = layer.corridorCenterline[0].lon;
+    const origNode0X = layer.corridorCenterline[0].x;
+    const origNode0Y = layer.corridorCenterline[0].y;
+
+    // Now move the center to Center B (e.g. user clicked map or dragged centerMarker)
+    const centerLatB = 41.3500;
+    const centerLonB = -88.9500;
+    const resB = generateLayerWaypoints(layer, centerLatB, centerLonB);
+
+    assert.ok(resB && resB.waypoints.length > 0, 'Should generate waypoints at Center B');
+    assert.strictEqual(layer.corridorCenterline.length, 3, 'Should retain 3 centerline nodes');
+
+    // Verify local offsets (x, y) were preserved
+    assert.strictEqual(layer.corridorCenterline[0].x, origNode0X, 'Local X offset must be preserved');
+    assert.strictEqual(layer.corridorCenterline[0].y, origNode0Y, 'Local Y offset must be preserved');
+
+    // Verify geodetic coordinates (lat, lon) were updated to match the new Center B
+    const expectedGeo0 = localToGeodetic(origNode0X, origNode0Y, centerLatB, centerLonB, 0);
+    assert.ok(Math.abs(layer.corridorCenterline[0].lat - expectedGeo0.lat) < 1e-6, 'Centerline Node 0 lat must translate to Center B');
+    assert.ok(Math.abs(layer.corridorCenterline[0].lon - expectedGeo0.lon) < 1e-6, 'Centerline Node 0 lon must translate to Center B');
+    assert.notStrictEqual(layer.corridorCenterline[0].lat, origNode0Lat, 'Node 0 lat must have moved away from old Center A');
+
+    // Verify waypoints and centerline nodes are concentric around Center B
+    const wp0 = resB.waypoints[0];
+    const dLatWp = wp0.lat - centerLatB;
+    const dLonWp = wp0.lon - centerLonB;
+    assert.ok(Math.abs(dLatWp) < 0.01, 'Waypoints must be centered around Center B');
+    assert.ok(Math.abs(dLonWp) < 0.01, 'Waypoints must be centered around Center B');
+  });
+
+  test('Customized corridor curvatures and added nodes are preserved when center moves', () => {
+    const layer = createDefaultLayer('test-corr-custom', 'Custom Corridor', 0, 'corridor');
+    const centerLat1 = 41.3215;
+    const centerLon1 = -88.9950;
+    generateLayerWaypoints(layer, centerLat1, centerLon1);
+
+    // Add a 4th custom node with distinctive offset
+    layer.corridorCenterline.push({
+      lat: 41.3250,
+      lon: -88.9900,
+      x: 120,
+      y: 95,
+      idx: 3,
+      isModified: true
+    });
+    assert.strictEqual(layer.corridorCenterline.length, 4);
+
+    // Move to new center
+    const centerLat2 = 41.3800;
+    const centerLon2 = -88.9200;
+    const res2 = generateLayerWaypoints(layer, centerLat2, centerLon2);
+
+    assert.strictEqual(layer.corridorCenterline.length, 4, 'Must retain all 4 nodes');
+    assert.strictEqual(layer.corridorCenterline[3].x, 120, '4th node X offset preserved');
+    assert.strictEqual(layer.corridorCenterline[3].y, 95, '4th node Y offset preserved');
+
+    const expected4th = localToGeodetic(120, 95, centerLat2, centerLon2, 0);
+    assert.ok(Math.abs(layer.corridorCenterline[3].lat - expected4th.lat) < 1e-6, '4th node lat translated accurately');
+    assert.ok(Math.abs(layer.corridorCenterline[3].lon - expected4th.lon) < 1e-6, '4th node lon translated accurately');
+  });
+
+  test('MapInteraction setGridCenter triggers renderCorridorNodeTable for UI table synchronization', () => {
+    const mapInteractionSrc = fs.readFileSync(path.join(__dirname, 'src', 'map', 'MapInteraction.js'), 'utf8');
+    assert.ok(mapInteractionSrc.includes('renderCorridorNodeTable();'), 'setGridCenter must invoke renderCorridorNodeTable');
+  });
+
+  test('SidebarManager renderCorridorNodeTable guards active input focus', () => {
+    const sidebarSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'SidebarManager.js'), 'utf8');
+    assert.ok(sidebarSrc.includes('container.contains(document.activeElement)'), 'renderCorridorNodeTable must prevent focus loss');
+  });
+});
 });

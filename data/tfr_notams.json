@@ -1,5 +1,16 @@
 [
   {
+    "notam_id": "6/2058",
+    "facility": "ZDC",
+    "state": "VA",
+    "type": "VIP",
+    "description": "Middleburg, VA, Saturday, October 24, 2026 through Sunday, October 25, 2026 Local",
+    "mod_date": "10/24/2026 13:06:00",
+    "mod_abs_time": "202610241306",
+    "is_new": "Y",
+    "gid": "6/2058"
+  },
+  {
     "notam_id": "6/2017",
     "facility": "ZHU",
     "state": "MS",
@@ -66,17 +77,6 @@
     "gid": "6/1947"
   },
   {
-    "notam_id": "6/1932",
-    "facility": "ZJX",
-    "state": "FL",
-    "type": "SECURITY",
-    "description": "MAYPORT, FL",
-    "mod_date": "10/23/2026 12:48:00",
-    "mod_abs_time": "202610231248",
-    "is_new": "Y",
-    "gid": "6/1932"
-  },
-  {
     "notam_id": "6/1910",
     "facility": "ZTL",
     "state": "GA",
@@ -84,19 +84,8 @@
     "description": "Peachtree City, GA, Thursday, October 29, 2026 through Sunday, November 1, 2026 UTC",
     "mod_date": "10/23/2026 12:32:00",
     "mod_abs_time": "202610231232",
-    "is_new": "Y",
-    "gid": "6/1910"
-  },
-  {
-    "notam_id": "6/1870",
-    "facility": "ZDC",
-    "state": "VA",
-    "type": "VIP",
-    "description": "Middleburg, VA, Saturday, October 24, 2026 through Sunday, October 25, 2026 Local",
-    "mod_date": "10/23/2026 01:29:00",
-    "mod_abs_time": "202610230129",
     "is_new": "N",
-    "gid": "6/1870"
+    "gid": "6/1910"
   },
   {
     "notam_id": "6/1800",
@@ -317,17 +306,6 @@
     "mod_abs_time": "202610181517",
     "is_new": "N",
     "gid": "6/0096"
-  },
-  {
-    "notam_id": "6/0008",
-    "facility": "ZAN",
-    "state": "AK",
-    "type": "HAZARDS",
-    "description": "08 ZAN AIRSPACE. GULKANA, AK, Tuesday, October 20, 2026 through Saturday, October 24, 2026 UTC",
-    "mod_date": "10/16/2026 23:40:00",
-    "mod_abs_time": "202610162340",
-    "is_new": "N",
-    "gid": "6/0008"
   },
   {
     "notam_id": "6/9978",
