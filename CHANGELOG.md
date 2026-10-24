@@ -1,3 +1,23 @@
+## [1.193.1] - 2026-10-24
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Corridor Centerline & Waypoint Movement Synchronization (Closes #169)**:
+  - Fixed an issue where clicking on the map or dragging the center marker moved the parallel swath flight waypoints but left Centerline Nodes (C1, C2, C3...) and the dashed polyline stranded at the previous coordinates.
+  - Automatically translates all centerline nodes in unison with flight waypoints while fully preserving custom curvatures, added nodes, and relative offsets.
+  - Eliminated the need to click the "Reset" button in the Multi-Pass Linear Corridor Controls to re-align nodes.
+  - Automatically updates the sidebar Centerline Nodes coordinate table with the new latitude and longitude values upon map repositioning.
+
+#### Under the Hood & Technical Details
+- **LayerManager (`src/layers/LayerManager.js`)**:
+  - Dynamically re-projects `node.lat` and `node.lon` for existing centerline nodes using `localToGeodetic(node.x, node.y, centerLat, centerLon, 0)` in `generateLayerWaypoints`.
+  - Automatically calculates and populates missing `(node.x, node.y)` offsets from geodetic coordinates if absent.
+- **MapInteraction (`src/map/MapInteraction.js`)**:
+  - Wired `renderCorridorNodeTable()` call into `setGridCenter` and `centerMarker.on('dragend')`.
+- **SidebarManager (`src/ui/SidebarManager.js`)**:
+  - Added input focus guard in `renderCorridorNodeTable()` to prevent interrupting active pilot text entry in coordinate input fields.
+
 ## [1.193.0] - 2026-10-24
 
 Real-time elevation source loading and readiness indicators, first-class Leaflet 2D DEM map layer with surveyor bounds, and missing DEM data visualization in the flight elevation cross-section profile.
