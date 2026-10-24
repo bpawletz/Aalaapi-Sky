@@ -81,7 +81,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.192.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.193.0</span></h1>
         </div>
       </div>
 
@@ -1862,6 +1862,10 @@
                   <option value="bridge">🖥️ Companion Bridge Local Cache</option>
                   <option value="geotiff">📂 Uploaded Local GeoTIFF DEM</option>
                 </select>
+                <div id="layer-terrain-source-status-badge" style="font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 5px;">
+                  <span class="status-indicator-dot" style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                  <span class="status-text">Ready (Auto)</span>
+                </div>
               </div>
 
               <div id="layer-dem-upload-container" style="display: none; margin-bottom: 8px; border: 1px dashed rgba(6, 182, 212, 0.35); border-radius: 6px; padding: 8px; text-align: center; background: rgba(6, 182, 212, 0.05);">
@@ -2778,6 +2782,10 @@
                     <option value="bridge">🖥️ Companion Bridge Local Cache</option>
                     <option value="geotiff">📂 Uploaded Local GeoTIFF DEM</option>
                   </select>
+                  <div id="global-terrain-source-status-badge" style="font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 5px;">
+                    <span class="status-indicator-dot" style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                    <span class="status-text">Global: Auto (Copernicus 30m / Bridge)</span>
+                  </div>
                 </div>
 
                 <div id="global-dem-upload-container" style="display: none; margin-bottom: 8px; border: 1px dashed rgba(6, 182, 212, 0.35); border-radius: 6px; padding: 8px; text-align: center; background: rgba(6, 182, 212, 0.05);">
@@ -3170,7 +3178,7 @@
 
       <!-- 2D Elevation Profile Drawer (Issue #129, #158) -->
       <div id="elevation-profile-drawer" class="elevation-profile-drawer hidden" data-draggable-modal="true" data-center-x="true" role="region" aria-label="Flight Elevation Profile">
-        <div class="elevation-profile-header modal-header" data-modal-drag-handle="true">
+        <div class="elevation-profile-header" data-modal-drag-handle="true">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span class="modal-drag-grip" title="Drag to reposition elevation profile" aria-hidden="true">&#x22EE;&#x22EE;</span>
             <span style="font-weight: 700; color: var(--accent-cyan); display: inline-flex; align-items: center; gap: 4px;">
@@ -3178,6 +3186,8 @@
             </span>
             <span id="elev-profile-relief-badge" class="badge" style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 1px 6px; border-radius: 999px;">Relief: 0m</span>
             <span id="elev-profile-dist-badge" class="badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px;">Distance: 0m</span>
+            <span id="elev-profile-source-badge" class="badge" style="font-size: 0.65rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 6px; border-radius: 999px;">Source: Auto</span>
+            <span id="elev-profile-missing-badge" class="badge" style="font-size: 0.65rem; background: rgba(239, 68, 68, 0.18); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); padding: 1px 6px; border-radius: 999px; display: none;">⚠️ Missing DEM</span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
             <span id="elev-profile-stats" style="font-size: 0.7rem; color: var(--text-muted);"></span>
@@ -3195,6 +3205,7 @@
               <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 3px; background: #10b981; border-radius: 2px;"></span> Ground Surface (MSL)</span>
               <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 3px; background: #06b6d4; border-radius: 2px;"></span> Flight Altitude (MSL)</span>
               <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 1px; border-top: 1px dashed #f59e0b;"></span> Target AGL Clearance</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 2px; border-top: 2px dashed #f87171;"></span> Missing DEM</span>
             </div>
             <div>Hover along profile to inspect waypoint altitude &amp; terrain gradient</div>
           </div>
@@ -3204,7 +3215,7 @@
       <!-- Floating 2D Flight Replay HUD & Scrubber Bar (Issue #123, #158) -->
       <div id="replay-2d-bar" class="replay-2d-bar hidden" data-draggable-modal="true" data-center-x="true" role="region" aria-label="2D Flight Replay Controls">
         <!-- Row 1: Header, Flight Name, Layer Cache Snapshot Badge, and Exit -->
-        <div class="replay-2d-header modal-header" data-modal-drag-handle="true" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem;">
+        <div class="replay-2d-header" data-modal-drag-handle="true" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem;">
           <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
             <span class="modal-drag-grip" title="Drag to reposition 2D replay bar" aria-hidden="true">&#x22EE;&#x22EE;</span>
             <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--accent-cyan);">
@@ -6575,7 +6586,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.192.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.193.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6696,6 +6707,12 @@
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                     <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.193.0):</strong>
+              <ul style="margin: 4px 0 10px 0; padding-left: 18px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.4;">
+                <li><strong>Missing DEM Data Visualization &amp; Cliff Drop Prevention (Closes #168):</strong> Ground surface line in the Flight Elevation Profile no longer plummets into a 0m sea-level cliff when waypoints extend beyond loaded surveyor DEM bounds. Missing segments are visually highlighted with a red-hatched warning zone, dashed warning stroke (<code>#f87171</code>), header missing percentage badge, and hover tooltips.</li>
+                <li><strong>Elevation Source Loading &amp; Readiness Indicators:</strong> Real-time animated loading pulse badges added to Section 2 Layer Properties, Section 3 Global Defaults, and the Elevation Profile header, actively flagging provider status and transparent regional LiDAR fallback.</li>
+                <li><strong>First-Class Leaflet Map Layer:</strong> Added <code>⛰️ Elevation DEM Grid &amp; Terrain Heatmap (2D)</code> to Leaflet layer control overlays with surveyor GeoTIFF bounds rectangle and on-map elevation gradient scale legend.</li>
+              </ul>
               <strong style="color: var(--text-main);">Changelog (v1.192.0):</strong>
               <ul style="margin: 4px 0 10px 0; padding-left: 18px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.4;">
                 <li><strong>Three-Tier Global Terrain Settings Sync (Closes #167):</strong> Section 3 Global Defaults now features Default Elevation Data Source (Auto, Drone Recon, USGS 3DEP, EU LiDAR, Copernicus Global, Companion Bridge, Local GeoTIFF), Default Max Slope (10°–35°), and Global Drone Recon / LiDAR File Upload dropzone.</li>

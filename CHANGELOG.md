@@ -1,3 +1,33 @@
+## [1.193.0] - 2026-10-24
+
+Real-time elevation source loading and readiness indicators, first-class Leaflet 2D DEM map layer with surveyor bounds, and missing DEM data visualization in the flight elevation cross-section profile.
+
+### Added
+
+#### Pilot & Operational Features
+- **Missing DEM Data Visualization & Cliff Drop Prevention (Closes #168)**:
+  - Eliminated the artificial 0m sea-level cliff dive in the Flight Elevation Profile when waypoints extend beyond an uploaded surveyor DEM or offline coverage.
+  - Rendered missing elevation segments with an amber/red diagonal hatched warning pattern, dashed warning stroke (#f87171), and an on-canvas warning label ⚠️ No Elevation Data (Outside Coverage).
+  - Added an interactive warning badge in the profile drawer header (#elev-profile-missing-badge) calculating exact missing route percentage.
+  - Implemented automatic online fallback to global Copernicus 30m DEM for waypoints extending outside surveyor GeoTIFF bounds.
+- **Elevation Source Loading & Readiness Indicators**:
+  - Added live status badges in Section 2 Layer Properties (#layer-terrain-source-status-badge) and Section 3 Global Defaults (#global-terrain-source-status-badge) with animated loading pulse dots.
+  - Added #elev-profile-source-badge in the Elevation Profile Drawer header displaying active DEM source and resolution.
+  - Automatic detection and transparent UI flagging when regional high-res LiDAR queries fall back to Copernicus Global 30m.
+- **First-Class Leaflet Map Layer**:
+  - Added ⛰️ Elevation DEM Grid & Terrain Heatmap (2D) to the Leaflet map layer control (L.control.layers) with bi-directional synchronization to the Section 2 #toggle-dem-grid-overlay-btn.
+  - Georeferenced bounding box outline (L.rectangle) rendered on the map for uploaded local GeoTIFF and ASCII Grid datasets.
+  - Added on-map floating elevation gradient scale legend (#dem-grid-legend-container).
+
+#### Under the Hood & Technical Details
+- **ElevationService (src/geo/ElevationService.js)**:
+  - Implemented event-driven sourceStatus state tracking (idle, loading, 
+eady, allback, error) and status listener emitter.
+  - Enhanced sampleElevationsSync, etchElevations, and generateElevationProfile to flag isMissing: true without corrupting elevation metrics to 0m.
+  - Upgraded drawElevationProfileChart to render hatched warning zones and dashed boundary strokes for discontinuous DEM coverage.
+- **MapEngine (src/map/MapEngine.js)**:
+  - Registered demGridOverlayGroup in Leaflet overlays object and wired overlayadd / overlayremove event sync.
+
 ## [1.192.0] - 2026-10-24
 
 Three-Tier Cascading Hierarchy synchronization for Terrain Following settings, adding Global DEM Data Source, Global Max Slope Angle, and Global Drone Recon / LiDAR File Upload dropzone.
