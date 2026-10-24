@@ -3472,6 +3472,12 @@ function initTerrainFollowListeners() {
   const globalTargetAglWrapper = document.getElementById('global-target-agl-wrapper');
   const globalTargetAglInput = document.getElementById('global-target-agl');
   const globalTargetAglVal = document.getElementById('global-target-agl-val');
+  const globalMaxSlopeInput = document.getElementById('global-max-slope-angle');
+  const globalMaxSlopeVal = document.getElementById('global-max-slope-val');
+  const globalTfSourceSelect = document.getElementById('global-terrain-source');
+  const globalDemUploadWrapper = document.getElementById('global-dem-upload-container');
+  const globalDemFileInput = document.getElementById('global-dem-file-input');
+  const globalDemStatusBadge = document.getElementById('global-dem-status-badge');
 
   const openProfileBtn = document.getElementById('open-elevation-profile-btn');
   const closeProfileBtn = document.getElementById('close-elevation-profile-btn');
@@ -3631,6 +3637,79 @@ function initTerrainFollowListeners() {
       if (globalTargetAglVal) globalTargetAglVal.textContent = Math.round(val);
       if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
       if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+    });
+  }
+
+  if (globalMaxSlopeInput) {
+    globalMaxSlopeInput.addEventListener('input', () => {
+      const val = parseInt(globalMaxSlopeInput.value, 10) || 20;
+      if (globalMaxSlopeVal) globalMaxSlopeVal.textContent = val;
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer && (layer.maxSlopeAngle === 'inherit' || !layer.maxSlopeAngle)) {
+        if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+        if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+      }
+    });
+  }
+
+  if (globalTfSourceSelect) {
+    globalTfSourceSelect.addEventListener('change', () => {
+      const src = globalTfSourceSelect.value;
+      if (globalDemUploadWrapper) {
+        const needsUpload = (src === 'geotiff' || src === 'drone-recon' || src === 'eu-lidar');
+        globalDemUploadWrapper.style.display = needsUpload ? 'block' : 'none';
+      }
+      if (typeof updateInheritOptionLabels === 'function') updateInheritOptionLabels();
+      const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (layer && (layer.terrainSource === 'inherit' || !layer.terrainSource)) {
+        layer.elevationData = null;
+        if (typeof refreshLayerElevationsAsync === 'function') {
+          refreshLayerElevationsAsync(layer.id);
+        } else if (typeof redrawCurrentMission === 'function') {
+          redrawCurrentMission();
+        }
+      }
+    });
+  }
+
+  if (globalDemFileInput) {
+    globalDemFileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const isAscii = file.name.toLowerCase().endsWith('.asc') || file.name.toLowerCase().endsWith('.txt');
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          if (typeof elevationServiceInstance !== 'undefined') {
+            const dem = elevationServiceInstance.loadDemFile(event.target.result, file.name);
+            if (globalDemStatusBadge) {
+              const resInfo = dem.resolutionLabel ? (' • ' + dem.resolutionLabel) : '';
+              const projInfo = dem.isProjected ? ' [Projected]' : ' [WGS84]';
+              globalDemStatusBadge.textContent = '✓ Loaded: ' + dem.width + '×' + dem.height + projInfo + resInfo + ' (' + Math.round(dem.minElev) + 'm–' + Math.round(dem.maxElev) + 'm MSL)';
+              globalDemStatusBadge.style.color = 'var(--accent-green, #10b981)';
+            }
+            const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+            if (layer && (layer.terrainSource === 'inherit' || !layer.terrainSource)) {
+              layer.elevationData = null;
+              if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+              if (typeof updateElevationProfileUi === 'function') updateElevationProfileUi();
+              if (elevationServiceInstance.activeDemGridLayer && typeof map !== 'undefined') {
+                elevationServiceInstance.generateDemGridOverlay(map);
+              }
+            }
+          }
+        } catch (err) {
+          if (globalDemStatusBadge) {
+            globalDemStatusBadge.textContent = '⚠️ Error parsing DEM: ' + err.message;
+            globalDemStatusBadge.style.color = '#ef4444';
+          }
+        }
+      };
+      if (isAscii) {
+        reader.readAsText(file);
+      } else {
+        reader.readAsArrayBuffer(file);
+      }
     });
   }
 
