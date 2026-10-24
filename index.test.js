@@ -35621,4 +35621,108 @@ describe('v1.196.2: Companion Metrics Endpoint & Caller Diagnostic Tracing', () 
   });
 });
 
+
+describe('v1.196.3: 360° Photo Sphere Multi-Angle 3D Views & Consumer Execution (Issue #176)', () => {
+  test('Version consistency: v1.196.3 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.196.3');
+  });
+
+  test('DOM Architecture: #photo-sphere-mode defaults to discreteNodes (Multi-Node)', () => {
+    const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tmpl.includes('<option value="discreteNodes" selected>'),
+      'index_template.html must select discreteNodes by default');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('<option value="discreteNodes" selected>'),
+      'index.html must select discreteNodes by default');
+  });
+
+  test('generatePhotoSphereCoordinates generates discrete waypoints for Consumer Drones (DJI Mini 4 Pro 68)', () => {
+    const prevStub = global._stubElements;
+    try {
+      global._stubElements = {
+        'drone-model': { value: '68' },
+        'photo-sphere-mode': { value: 'discreteNodes' },
+        'photo-sphere-ring-zenith': { checked: false },
+        'photo-sphere-ring-1': { checked: true },
+        'photo-sphere-ring-2': { checked: true },
+        'photo-sphere-ring-3': { checked: true },
+        'photo-sphere-ring-nadir': { checked: true },
+        'photo-sphere-shots-per-ring': { value: '12' },
+        'photo-sphere-settling-time': { value: '2.0' },
+        'photo-sphere-aeb-mode': { value: 'none' }
+      };
+
+      const result = generatePhotoSphereCoordinates(16, { droneModel: 68 });
+      // 12 (row 1) + 12 (row 2) + 12 (row 3) + 1 (nadir) = 37 waypoints
+      assert.strictEqual(result.waypoints.length, 37, 'Must generate all 37 distinct waypoints in discreteNodes mode');
+      assert.strictEqual(result.photos.length, 37, 'Must generate 37 photo positions');
+
+      // Check first waypoint (Row 1, Heading 0, Pitch -15)
+      const firstWp = result.waypoints[0];
+      assert.strictEqual(firstWp.heading, 0);
+      assert.strictEqual(firstWp.pitch, -15);
+      assert.strictEqual(firstWp.alt, 16);
+      assert.strictEqual(firstWp.cameraAction, 'takePhoto');
+      assert.strictEqual(firstWp.isPhotoSpherePoint, true);
+
+      // Check nadir waypoint (Last WP, Pitch -90)
+      const nadirWp = result.waypoints[result.waypoints.length - 1];
+      assert.strictEqual(nadirWp.pitch, -90);
+      assert.strictEqual(nadirWp.cameraAction, 'takePhoto');
+    } finally {
+      global._stubElements = prevStub;
+    }
+  });
+
+  test('calculateStats handles single-waypoint photo-sphere action groups without returning null', () => {
+    const actionGroupWp = {
+      lat: 41.3215,
+      lon: -88.9950,
+      alt: 16,
+      gridType: 'photo-sphere',
+      isPhotoSphere: true,
+      isPhotoSphereActionGroup: true,
+      totalShots: 37,
+      totalRawPhotos: 37,
+      hoverTime: 2.0,
+      photoSphereActions: Array(37).fill({ yaw: 0, pitch: -15 })
+    };
+
+    const stats = calculateStats([actionGroupWp], null, 4.0, 15, 15, 'stopAndShoot');
+    assert.ok(stats !== null, 'calculateStats must return non-null stats for photo-sphere action group');
+    assert.strictEqual(stats.waypointsCount, 1, 'Waypoints count must be 1');
+    assert.strictEqual(stats.photoCount, 37, 'Photo count must be 37');
+    assert.strictEqual(stats.distance, 0, 'Flight distance must be 0 for stationary station');
+    assert.ok(stats.flightTimeSeconds > 0, 'Flight time must be estimated accurately');
+  });
+
+  test('generateTelemetryFromWaypoints expands photoSphereActions into simulated photo telemetry points', () => {
+    const actions = [
+      { yaw: 0, pitch: -15, shotIndex: 0, hoverTime: 2 },
+      { yaw: 30, pitch: -15, shotIndex: 1, hoverTime: 2 },
+      { yaw: 60, pitch: -15, shotIndex: 2, hoverTime: 2 },
+      { yaw: 0, pitch: -90, shotIndex: 3, hoverTime: 2 }
+    ];
+
+    const wps = [{
+      lat: 41.3215,
+      lon: -88.9950,
+      alt: 16,
+      gridType: 'photo-sphere',
+      isPhotoSphereActionGroup: true,
+      photoSphereActions: actions
+    }];
+
+    const telem = generateTelemetryFromWaypoints(wps, { altitude: 16, speed: 4, gimbalPitch: -60, isSimulation: true });
+    assert.ok(telem, 'Telemetry must be generated');
+    const photoPoints = telem.points.filter(p => p.isPhoto);
+    assert.strictEqual(photoPoints.length, 4, 'Must generate 4 photo points matching actions');
+    assert.strictEqual(photoPoints[0].pitch, -15);
+    assert.strictEqual(photoPoints[0].yaw, 0);
+    assert.strictEqual(photoPoints[1].yaw, 30);
+    assert.strictEqual(photoPoints[3].pitch, -90);
+    assert.strictEqual(telem.photoCount, 4);
+  });
+});
+
 });

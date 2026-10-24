@@ -609,59 +609,115 @@ function recreate3DWaypointsAndPaths() {
       }
     }
 
-    // Plot Camera FOV Cone
-    const { heading, pitch } = getWaypointHeadingAndPitch(idx, waypoints);
+    // Plot Camera FOV Cone(s)
+    if (wp.isPhotoSphereActionGroup && Array.isArray(wp.photoSphereActions) && wp.photoSphereActions.length > 0) {
+      const coneHeight = 8;
+      const coneGeom = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, coneHeight);
+      const wireGeom = new THREE.EdgesGeometry(coneGeom);
+      const axisPoints = [
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, -coneHeight, 0)
+      ];
+      const axisGeom = new THREE.BufferGeometry().setFromPoints(axisPoints);
 
-    const localConeGroup = new THREE.Group();
-    localConeGroup.position.set(x3d, y3d, z3d);
-    localConeGroup.rotation.y = -heading * Math.PI / 180; // Compass rotation clockwise
+      wp.photoSphereActions.forEach(act => {
+        const actYaw = act.yaw || 0;
+        const actPitch = act.pitch !== undefined ? act.pitch : -45;
 
-    const coneHeight = 8;
-    const coneGeom = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, coneHeight);
+        let coneColorHex = 0x06b6d4;
+        if (act.isZenith || act.ringIndex === -1) coneColorHex = 0x38bdf8;
+        else if (act.ringIndex === 0) coneColorHex = 0x06b6d4;
+        else if (act.ringIndex === 1) coneColorHex = 0xf59e0b;
+        else if (act.ringIndex === 2) coneColorHex = 0xa855f7;
+        else if (act.ringIndex === 3) coneColorHex = 0x10b981;
 
-    let coneColorHex = colorHex;
-    if (!wp.isModified && wp.ringIndex === null) {
-      coneColorHex = 0x06b6d4;
+        const localConeGroup = new THREE.Group();
+        localConeGroup.position.set(x3d, y3d, z3d);
+        localConeGroup.rotation.y = -actYaw * Math.PI / 180;
+
+        const coneMat = new THREE.MeshBasicMaterial({
+          color: coneColorHex,
+          wireframe: false,
+          transparent: true,
+          opacity: 0.15,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const coneMesh = new THREE.Mesh(coneGeom, coneMat);
+        coneMesh.rotation.x = ((90 + actPitch) * Math.PI) / 180;
+
+        const wireMat = new THREE.LineBasicMaterial({
+          color: coneColorHex,
+          transparent: true,
+          opacity: 0.55
+        });
+        coneMesh.add(new THREE.LineSegments(wireGeom, wireMat));
+
+        const axisMat = new THREE.LineBasicMaterial({
+          color: coneColorHex,
+          transparent: true,
+          opacity: 0.4
+        });
+        coneMesh.add(new THREE.Line(axisGeom, axisMat));
+
+        localConeGroup.add(coneMesh);
+        conesGroup.add(localConeGroup);
+        coneGroups.push(localConeGroup);
+      });
+    } else {
+      const { heading, pitch } = getWaypointHeadingAndPitch(idx, waypoints);
+
+      const localConeGroup = new THREE.Group();
+      localConeGroup.position.set(x3d, y3d, z3d);
+      localConeGroup.rotation.y = -heading * Math.PI / 180; // Compass rotation clockwise
+
+      const coneHeight = 8;
+      const coneGeom = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, coneHeight);
+
+      let coneColorHex = colorHex;
+      if (!wp.isModified && wp.ringIndex === null) {
+        coneColorHex = 0x06b6d4;
+      }
+
+      const coneMat = new THREE.MeshBasicMaterial({
+        color: coneColorHex,
+        wireframe: false,
+        transparent: true,
+        opacity: 0.15,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      const coneMesh = new THREE.Mesh(coneGeom, coneMat);
+      coneMesh.rotation.x = ((90 + pitch) * Math.PI) / 180; // Correctly align default downward geometry to gimbal pitch
+
+      // Add wireframe outlines
+      const wireGeom = new THREE.EdgesGeometry(coneGeom);
+      const wireMat = new THREE.LineBasicMaterial({
+        color: coneColorHex,
+        transparent: true,
+        opacity: 0.55
+      });
+      const wireframe = new THREE.LineSegments(wireGeom, wireMat);
+      coneMesh.add(wireframe);
+
+      // Optical Axis Center Ray
+      const axisPoints = [
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, -coneHeight, 0)
+      ];
+      const axisGeom = new THREE.BufferGeometry().setFromPoints(axisPoints);
+      const axisMat = new THREE.LineBasicMaterial({
+        color: coneColorHex,
+        transparent: true,
+        opacity: 0.4
+      });
+      const axisLine = new THREE.Line(axisGeom, axisMat);
+      coneMesh.add(axisLine);
+
+      localConeGroup.add(coneMesh);
+      conesGroup.add(localConeGroup);
+      coneGroups.push(localConeGroup);
     }
-
-    const coneMat = new THREE.MeshBasicMaterial({
-      color: coneColorHex,
-      wireframe: false,
-      transparent: true,
-      opacity: 0.15,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-    const coneMesh = new THREE.Mesh(coneGeom, coneMat);
-    coneMesh.rotation.x = ((90 + pitch) * Math.PI) / 180; // Correctly align default downward geometry to gimbal pitch
-
-    // Add wireframe outlines
-    const wireGeom = new THREE.EdgesGeometry(coneGeom);
-    const wireMat = new THREE.LineBasicMaterial({
-      color: coneColorHex,
-      transparent: true,
-      opacity: 0.55
-    });
-    const wireframe = new THREE.LineSegments(wireGeom, wireMat);
-    coneMesh.add(wireframe);
-
-    // Optical Axis Center Ray
-    const axisPoints = [
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, -coneHeight, 0)
-    ];
-    const axisGeom = new THREE.BufferGeometry().setFromPoints(axisPoints);
-    const axisMat = new THREE.LineBasicMaterial({
-      color: coneColorHex,
-      transparent: true,
-      opacity: 0.4
-    });
-    const axisLine = new THREE.Line(axisGeom, axisMat);
-    coneMesh.add(axisLine);
-
-    localConeGroup.add(coneMesh);
-    conesGroup.add(localConeGroup);
-    coneGroups.push(localConeGroup);
   });
 
   // Plot 3D Points of Interest (Target Poles with glowing Beacon Spheres)

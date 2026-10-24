@@ -1572,6 +1572,21 @@ function initUIEventListeners() {
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
   const droneModelEl = document.getElementById('drone-model');
+  if (droneModelEl) {
+    droneModelEl.addEventListener('change', () => {
+      const droneVal = parseInt(droneModelEl.value, 10);
+      const isConsumer = (typeof isConsumerDrone === 'function') ? isConsumerDrone(droneVal) : (droneVal === 68 || droneVal === 89);
+      const psMode = document.getElementById('photo-sphere-mode');
+      if (isConsumer && psMode) {
+        psMode.value = 'discreteNodes';
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeLayer && activeLayer.pattern === 'photo-sphere') {
+          activeLayer.photoSphereMode = 'discreteNodes';
+          if (typeof updateGrid === 'function') updateGrid();
+        }
+      }
+    });
+  }
   const hfovSlider = document.getElementById('camera-hfov');
   const vfovSlider = document.getElementById('camera-vfov');
   if (cameraModelEl && hfovSlider && vfovSlider) {

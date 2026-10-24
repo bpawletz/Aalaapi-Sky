@@ -925,26 +925,53 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       });
     }
 
-    const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : (isHyperlapse ? 0 : 2);
-    for (let h = 1; h <= hoverTime; h++) {
-      currentTime++;
-      battery -= 0.05;
-      const driftLat = isPureSim ? 0 : Math.sin(currentTime * 0.25) * 0.0000015;
-      const driftLon = isPureSim ? 0 : Math.cos(currentTime * 0.25) * 0.0000015;
-      points.push({
-        time: currentTime,
-        timeStr: formatTime(currentTime),
-        lat: wp.lat + driftLat,
-        lon: wp.lon + driftLon,
-        alt: Math.round(targetAlt * 10) / 10,
-        speed: 0.0,
-        pitch: Math.round(targetPitch * 10) / 10,
-        yaw: Math.round(targetYaw * 10) / 10,
-        battery: Math.max(10, Math.round(battery * 10) / 10),
-        satellites: 24,
-        isPhoto: (isHyperlapse || wp.skipPhoto) ? false : (h === 1),
-        waypointIndex: i
+    if (wp.isPhotoSphereActionGroup && Array.isArray(wp.photoSphereActions) && wp.photoSphereActions.length > 0) {
+      wp.photoSphereActions.forEach((act, actIdx) => {
+        const actYaw = act.yaw !== undefined ? act.yaw : targetYaw;
+        const actPitch = act.pitch !== undefined ? act.pitch : targetPitch;
+        const settleSec = Math.max(1, Math.round(act.hoverTime || 2));
+        for (let s = 1; s <= settleSec; s++) {
+          currentTime++;
+          battery -= 0.04;
+          points.push({
+            time: currentTime,
+            timeStr: formatTime(currentTime),
+            lat: wp.lat,
+            lon: wp.lon,
+            alt: Math.round(targetAlt * 10) / 10,
+            speed: 0.0,
+            pitch: Math.round(actPitch * 10) / 10,
+            yaw: Math.round(actYaw * 10) / 10,
+            battery: Math.max(10, Math.round(battery * 10) / 10),
+            satellites: 24,
+            isPhoto: (s === settleSec),
+            photoIndex: act.shotIndex !== undefined ? act.shotIndex : actIdx,
+            waypointIndex: i
+          });
+        }
       });
+    } else {
+      const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : (isHyperlapse ? 0 : 2);
+      for (let h = 1; h <= hoverTime; h++) {
+        currentTime++;
+        battery -= 0.05;
+        const driftLat = isPureSim ? 0 : Math.sin(currentTime * 0.25) * 0.0000015;
+        const driftLon = isPureSim ? 0 : Math.cos(currentTime * 0.25) * 0.0000015;
+        points.push({
+          time: currentTime,
+          timeStr: formatTime(currentTime),
+          lat: wp.lat + driftLat,
+          lon: wp.lon + driftLon,
+          alt: Math.round(targetAlt * 10) / 10,
+          speed: 0.0,
+          pitch: Math.round(targetPitch * 10) / 10,
+          yaw: Math.round(targetYaw * 10) / 10,
+          battery: Math.max(10, Math.round(battery * 10) / 10),
+          satellites: 24,
+          isPhoto: (isHyperlapse || wp.skipPhoto) ? false : (h === 1),
+          waypointIndex: i
+        });
+      }
     }
   }
 
@@ -1005,7 +1032,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     ? options.photoCount
     : (options.photoLocations && options.photoLocations.length > 0
       ? options.photoLocations.length
-      : (isHyperlapse ? Math.max(simulatedPhotos, 1) : waypoints.filter(w => !w.skipPhoto).length));
+      : (isHyperlapse ? Math.max(simulatedPhotos, 1) : Math.max(simulatedPhotos, waypoints.filter(w => !w.skipPhoto).length)));
   const wpAlts = waypoints.map(wp => (wp.altitude !== undefined ? wp.altitude : (wp.alt !== undefined ? wp.alt : defaultAlt)));
   const maxAltitude = wpAlts.length > 0 ? wpAlts.reduce((max, a) => Math.max(max, a), wpAlts[0]) : defaultAlt;
 

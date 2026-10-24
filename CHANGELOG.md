@@ -1,3 +1,28 @@
+## [1.196.3] - 2026-10-24
+
+360° Photo Sphere multi-angle camera frustum visualization in 3D views, consumer drone discrete waypoints execution defaulting, and simulated telemetry photo expansion.
+
+### Fixed
+
+#### Pilot & Operational Features
+- **360° Photo Sphere Multi-Angle 3D Views & Consumer Execution (Closes #176)**:
+  - Defaulted the Photo Sphere Execution Engine to **Discrete Waypoints (Multi-Node)** on Consumer Drones (DJI Mini 4 Pro and DJI Air 3), ensuring DJI Fly automatically rotates through all 25–49 yaw and pitch angles rather than halting or prematurely triggering Return to Home after a single waypoint.
+  - In 3D Flight Path Walkthrough (`FlightSimulation.js`), all 25–49 camera FOV pyramid cones are rendered with color-coded elevation ring styling (Sky Blue Zenith, Cyan Row 1, Amber Row 2, Purple Row 3, Emerald Nadir) regardless of whether discrete or stationary execution is selected.
+  - In Flight Diagnostics & 3D Digital Twin (`DigitalTwin.js`), simulated telemetry now generates photo points for each spherical capture angle, rendering the full array of emerald camera frustums and displaying accurate planned photo counts.
+  - Telemetry HUD (`calculateStats`) now supports single-waypoint photo sphere action groups without returning null, reporting accurate photo totals and estimated capture duration in dock summaries.
+
+#### Under the Hood & Technical Details
+- **`src/patterns/PatternGenerators.js`**:
+  - Automatically defaults `mode` to `discreteNodes` when target drone is consumer (`isConsumerDrone`), and explicitly tags `cameraAction: 'takePhoto'` on every generated waypoint.
+- **`src/3d/FlightSimulation.js`**:
+  - In `redraw3DScene`, loops over `wp.photoSphereActions` when `isPhotoSphereActionGroup` is present to construct directional camera FOV cones for all 360° capture angles.
+- **`src/import/TelemetryParsers.js`**:
+  - In `generateTelemetryFromWaypoints`, expands `wp.photoSphereActions` into discrete telemetry points with matching `yaw`, `pitch`, and `isPhoto: true`, accurately tracking photo counts.
+- **`src/ui/TelemetryHud.js`**:
+  - Guarded `calculateStats` against `waypoints.length < 2` for photo sphere missions, calculating duration and photo count directly from action items.
+- **`src/ui/EventBindings.js`**:
+  - Bound dynamic change handler on `#drone-model` to sync `#photo-sphere-mode` to `discreteNodes` when switching to consumer drone profiles.
+
 ## [1.196.2] - 2026-10-24
 
 Diagnostic trace logging on legacy REST endpoints and exposed live bridge metrics snapshot in the companion status API.

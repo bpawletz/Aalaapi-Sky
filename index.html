@@ -7698,7 +7698,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.196.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.196.3</span></h1>
         </div>
       </div>
 
@@ -8643,8 +8643,8 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               <div>
                 <label for="photo-sphere-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Execution Engine</label>
                 <select id="photo-sphere-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 2px 6px;">
-                  <option value="discreteNodes">Discrete Waypoints (Multi-Node)</option>
-                  <option value="actionGroup" selected>Stationary Action Group (Single Point)</option>
+                  <option value="discreteNodes" selected>Discrete Waypoints (Multi-Node - Mini / Air)</option>
+                  <option value="actionGroup">Stationary Action Group (Single Point - Enterprise)</option>
                 </select>
               </div>
               <div>
@@ -14211,7 +14211,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.196.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.196.3</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14331,6 +14331,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                    <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.196.3):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>360° Photo Sphere Multi-Angle 3D Views &amp; Execution (Closes #176):</strong> Defaulted photo spheres to Discrete Waypoints (Multi-Node) for consumer drones (Mini 4 Pro / Air 3) to prevent premature RTH, rendered all 25–49 spherical camera cones in 3D views, and expanded simulated telemetry photo frustums.</li>
+              </ul>
+            </li>
                                     <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.196.2):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
@@ -32635,6 +32641,21 @@ function initUIEventListeners() {
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
   const droneModelEl = document.getElementById('drone-model');
+  if (droneModelEl) {
+    droneModelEl.addEventListener('change', () => {
+      const droneVal = parseInt(droneModelEl.value, 10);
+      const isConsumer = (typeof isConsumerDrone === 'function') ? isConsumerDrone(droneVal) : (droneVal === 68 || droneVal === 89);
+      const psMode = document.getElementById('photo-sphere-mode');
+      if (isConsumer && psMode) {
+        psMode.value = 'discreteNodes';
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeLayer && activeLayer.pattern === 'photo-sphere') {
+          activeLayer.photoSphereMode = 'discreteNodes';
+          if (typeof updateGrid === 'function') updateGrid();
+        }
+      }
+    });
+  }
   const hfovSlider = document.getElementById('camera-hfov');
   const vfovSlider = document.getElementById('camera-vfov');
   if (cameraModelEl && hfovSlider && vfovSlider) {
@@ -39960,6 +39981,7 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
         isRingStart: (i === 0),
         shotIndex: actionItem.shotIndex,
         hoverTime: settlingTime,
+        cameraAction: 'takePhoto',
         photoSphereMode: mode,
         aebEnabled: aebEnabled,
         aebMode: aebMode,
@@ -40002,6 +40024,7 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
       isRingStart: true,
       shotIndex: nadirAction.shotIndex,
       hoverTime: settlingTime,
+      cameraAction: 'takePhoto',
       photoSphereMode: mode,
       aebEnabled: aebEnabled,
       aebMode: aebMode,
@@ -47457,6 +47480,29 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 // -------------------- src/ui/TelemetryHud.js --------------------
 function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, captureMode) {
+  if (!waypoints || waypoints.length === 0) return null;
+  if (waypoints.length === 1 && (waypoints[0].isPhotoSphereActionGroup || waypoints[0].isPhotoSpherePoint || waypoints[0].isPhotoSphere || waypoints[0].gridType === 'photo-sphere' || waypoints[0].layerPattern === 'photo-sphere')) {
+    const wp = waypoints[0];
+    const shots = wp.totalRawPhotos || wp.totalShots || (Array.isArray(wp.photoSphereActions) ? wp.photoSphereActions.length : 1);
+    const settling = (wp.hoverTime !== undefined && !isNaN(wp.hoverTime)) ? Number(wp.hoverTime) : 2.0;
+    const flightTimeSeconds = Math.round(shots * (settling + 1.5) + 30);
+    const min = Math.floor(flightTimeSeconds / 60);
+    const sec = Math.round(flightTimeSeconds % 60);
+    return {
+      waypointsCount: 1,
+      photoCount: shots,
+      lineSpacing: sLine,
+      photoSpacing: sPhoto,
+      distance: 0,
+      timeStr: `${min}m ${sec}s`,
+      flightTimeSeconds: flightTimeSeconds,
+      maxNearestNeighborDist: 0,
+      hasIsolatedWaypoint: false,
+      isFarFromTakeoff: false,
+      userDistanceToTakeoff: null,
+      intersectingTfrs: []
+    };
+  }
   if (waypoints.length < 2) return null;
 
   // 1. Calculate path length in meters
@@ -67361,26 +67407,53 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       });
     }
 
-    const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : (isHyperlapse ? 0 : 2);
-    for (let h = 1; h <= hoverTime; h++) {
-      currentTime++;
-      battery -= 0.05;
-      const driftLat = isPureSim ? 0 : Math.sin(currentTime * 0.25) * 0.0000015;
-      const driftLon = isPureSim ? 0 : Math.cos(currentTime * 0.25) * 0.0000015;
-      points.push({
-        time: currentTime,
-        timeStr: formatTime(currentTime),
-        lat: wp.lat + driftLat,
-        lon: wp.lon + driftLon,
-        alt: Math.round(targetAlt * 10) / 10,
-        speed: 0.0,
-        pitch: Math.round(targetPitch * 10) / 10,
-        yaw: Math.round(targetYaw * 10) / 10,
-        battery: Math.max(10, Math.round(battery * 10) / 10),
-        satellites: 24,
-        isPhoto: (isHyperlapse || wp.skipPhoto) ? false : (h === 1),
-        waypointIndex: i
+    if (wp.isPhotoSphereActionGroup && Array.isArray(wp.photoSphereActions) && wp.photoSphereActions.length > 0) {
+      wp.photoSphereActions.forEach((act, actIdx) => {
+        const actYaw = act.yaw !== undefined ? act.yaw : targetYaw;
+        const actPitch = act.pitch !== undefined ? act.pitch : targetPitch;
+        const settleSec = Math.max(1, Math.round(act.hoverTime || 2));
+        for (let s = 1; s <= settleSec; s++) {
+          currentTime++;
+          battery -= 0.04;
+          points.push({
+            time: currentTime,
+            timeStr: formatTime(currentTime),
+            lat: wp.lat,
+            lon: wp.lon,
+            alt: Math.round(targetAlt * 10) / 10,
+            speed: 0.0,
+            pitch: Math.round(actPitch * 10) / 10,
+            yaw: Math.round(actYaw * 10) / 10,
+            battery: Math.max(10, Math.round(battery * 10) / 10),
+            satellites: 24,
+            isPhoto: (s === settleSec),
+            photoIndex: act.shotIndex !== undefined ? act.shotIndex : actIdx,
+            waypointIndex: i
+          });
+        }
       });
+    } else {
+      const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : (isHyperlapse ? 0 : 2);
+      for (let h = 1; h <= hoverTime; h++) {
+        currentTime++;
+        battery -= 0.05;
+        const driftLat = isPureSim ? 0 : Math.sin(currentTime * 0.25) * 0.0000015;
+        const driftLon = isPureSim ? 0 : Math.cos(currentTime * 0.25) * 0.0000015;
+        points.push({
+          time: currentTime,
+          timeStr: formatTime(currentTime),
+          lat: wp.lat + driftLat,
+          lon: wp.lon + driftLon,
+          alt: Math.round(targetAlt * 10) / 10,
+          speed: 0.0,
+          pitch: Math.round(targetPitch * 10) / 10,
+          yaw: Math.round(targetYaw * 10) / 10,
+          battery: Math.max(10, Math.round(battery * 10) / 10),
+          satellites: 24,
+          isPhoto: (isHyperlapse || wp.skipPhoto) ? false : (h === 1),
+          waypointIndex: i
+        });
+      }
     }
   }
 
@@ -67441,7 +67514,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     ? options.photoCount
     : (options.photoLocations && options.photoLocations.length > 0
       ? options.photoLocations.length
-      : (isHyperlapse ? Math.max(simulatedPhotos, 1) : waypoints.filter(w => !w.skipPhoto).length));
+      : (isHyperlapse ? Math.max(simulatedPhotos, 1) : Math.max(simulatedPhotos, waypoints.filter(w => !w.skipPhoto).length)));
   const wpAlts = waypoints.map(wp => (wp.altitude !== undefined ? wp.altitude : (wp.alt !== undefined ? wp.alt : defaultAlt)));
   const maxAltitude = wpAlts.length > 0 ? wpAlts.reduce((max, a) => Math.max(max, a), wpAlts[0]) : defaultAlt;
 
@@ -70682,59 +70755,115 @@ function recreate3DWaypointsAndPaths() {
       }
     }
 
-    // Plot Camera FOV Cone
-    const { heading, pitch } = getWaypointHeadingAndPitch(idx, waypoints);
+    // Plot Camera FOV Cone(s)
+    if (wp.isPhotoSphereActionGroup && Array.isArray(wp.photoSphereActions) && wp.photoSphereActions.length > 0) {
+      const coneHeight = 8;
+      const coneGeom = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, coneHeight);
+      const wireGeom = new THREE.EdgesGeometry(coneGeom);
+      const axisPoints = [
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, -coneHeight, 0)
+      ];
+      const axisGeom = new THREE.BufferGeometry().setFromPoints(axisPoints);
 
-    const localConeGroup = new THREE.Group();
-    localConeGroup.position.set(x3d, y3d, z3d);
-    localConeGroup.rotation.y = -heading * Math.PI / 180; // Compass rotation clockwise
+      wp.photoSphereActions.forEach(act => {
+        const actYaw = act.yaw || 0;
+        const actPitch = act.pitch !== undefined ? act.pitch : -45;
 
-    const coneHeight = 8;
-    const coneGeom = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, coneHeight);
+        let coneColorHex = 0x06b6d4;
+        if (act.isZenith || act.ringIndex === -1) coneColorHex = 0x38bdf8;
+        else if (act.ringIndex === 0) coneColorHex = 0x06b6d4;
+        else if (act.ringIndex === 1) coneColorHex = 0xf59e0b;
+        else if (act.ringIndex === 2) coneColorHex = 0xa855f7;
+        else if (act.ringIndex === 3) coneColorHex = 0x10b981;
 
-    let coneColorHex = colorHex;
-    if (!wp.isModified && wp.ringIndex === null) {
-      coneColorHex = 0x06b6d4;
+        const localConeGroup = new THREE.Group();
+        localConeGroup.position.set(x3d, y3d, z3d);
+        localConeGroup.rotation.y = -actYaw * Math.PI / 180;
+
+        const coneMat = new THREE.MeshBasicMaterial({
+          color: coneColorHex,
+          wireframe: false,
+          transparent: true,
+          opacity: 0.15,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const coneMesh = new THREE.Mesh(coneGeom, coneMat);
+        coneMesh.rotation.x = ((90 + actPitch) * Math.PI) / 180;
+
+        const wireMat = new THREE.LineBasicMaterial({
+          color: coneColorHex,
+          transparent: true,
+          opacity: 0.55
+        });
+        coneMesh.add(new THREE.LineSegments(wireGeom, wireMat));
+
+        const axisMat = new THREE.LineBasicMaterial({
+          color: coneColorHex,
+          transparent: true,
+          opacity: 0.4
+        });
+        coneMesh.add(new THREE.Line(axisGeom, axisMat));
+
+        localConeGroup.add(coneMesh);
+        conesGroup.add(localConeGroup);
+        coneGroups.push(localConeGroup);
+      });
+    } else {
+      const { heading, pitch } = getWaypointHeadingAndPitch(idx, waypoints);
+
+      const localConeGroup = new THREE.Group();
+      localConeGroup.position.set(x3d, y3d, z3d);
+      localConeGroup.rotation.y = -heading * Math.PI / 180; // Compass rotation clockwise
+
+      const coneHeight = 8;
+      const coneGeom = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, coneHeight);
+
+      let coneColorHex = colorHex;
+      if (!wp.isModified && wp.ringIndex === null) {
+        coneColorHex = 0x06b6d4;
+      }
+
+      const coneMat = new THREE.MeshBasicMaterial({
+        color: coneColorHex,
+        wireframe: false,
+        transparent: true,
+        opacity: 0.15,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      const coneMesh = new THREE.Mesh(coneGeom, coneMat);
+      coneMesh.rotation.x = ((90 + pitch) * Math.PI) / 180; // Correctly align default downward geometry to gimbal pitch
+
+      // Add wireframe outlines
+      const wireGeom = new THREE.EdgesGeometry(coneGeom);
+      const wireMat = new THREE.LineBasicMaterial({
+        color: coneColorHex,
+        transparent: true,
+        opacity: 0.55
+      });
+      const wireframe = new THREE.LineSegments(wireGeom, wireMat);
+      coneMesh.add(wireframe);
+
+      // Optical Axis Center Ray
+      const axisPoints = [
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, -coneHeight, 0)
+      ];
+      const axisGeom = new THREE.BufferGeometry().setFromPoints(axisPoints);
+      const axisMat = new THREE.LineBasicMaterial({
+        color: coneColorHex,
+        transparent: true,
+        opacity: 0.4
+      });
+      const axisLine = new THREE.Line(axisGeom, axisMat);
+      coneMesh.add(axisLine);
+
+      localConeGroup.add(coneMesh);
+      conesGroup.add(localConeGroup);
+      coneGroups.push(localConeGroup);
     }
-
-    const coneMat = new THREE.MeshBasicMaterial({
-      color: coneColorHex,
-      wireframe: false,
-      transparent: true,
-      opacity: 0.15,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-    const coneMesh = new THREE.Mesh(coneGeom, coneMat);
-    coneMesh.rotation.x = ((90 + pitch) * Math.PI) / 180; // Correctly align default downward geometry to gimbal pitch
-
-    // Add wireframe outlines
-    const wireGeom = new THREE.EdgesGeometry(coneGeom);
-    const wireMat = new THREE.LineBasicMaterial({
-      color: coneColorHex,
-      transparent: true,
-      opacity: 0.55
-    });
-    const wireframe = new THREE.LineSegments(wireGeom, wireMat);
-    coneMesh.add(wireframe);
-
-    // Optical Axis Center Ray
-    const axisPoints = [
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, -coneHeight, 0)
-    ];
-    const axisGeom = new THREE.BufferGeometry().setFromPoints(axisPoints);
-    const axisMat = new THREE.LineBasicMaterial({
-      color: coneColorHex,
-      transparent: true,
-      opacity: 0.4
-    });
-    const axisLine = new THREE.Line(axisGeom, axisMat);
-    coneMesh.add(axisLine);
-
-    localConeGroup.add(coneMesh);
-    conesGroup.add(localConeGroup);
-    coneGroups.push(localConeGroup);
   });
 
   // Plot 3D Points of Interest (Target Poles with glowing Beacon Spheres)
