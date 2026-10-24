@@ -34419,7 +34419,87 @@ describe('v1.184.0: Dynamic Live Stream Dropdown & OpenCV RTMP Subscriber Handsh
 });
 
 
-describe('Third-Party Credits, Open Source Licenses & Trademark Legal Disclaimers (v1.185.0 - Issue #156)', () => {
+  describe('Photo Sphere Waypoint Gimbal Horizon Orientation & POI Lock Suppression (v1.197.1 - Issue #178)', () => {
+    test('Version consistency across required locations for v1.197.1', () => {
+      assertVersionConsistency('1.197.1');
+    });
+
+    test('generatePhotoSphereCoordinates populates gimbalPitch on all discrete ring waypoints', () => {
+      const layer = {
+        id: 'layer-ps',
+        pattern: 'photo-sphere',
+        altitude: 16,
+        photoSphereRings: { zenith: true, ring1: true, ring2: true, ring3: true, nadir: true },
+        photoSphereShotsPerRing: 6,
+        speed: 3.2
+      };
+      const result = generatePhotoSphereCoordinates(16, layer);
+      // 4 rings * 6 shots = 24 + 1 nadir = 25 waypoints
+      assert.ok(Array.isArray(result.waypoints) && result.waypoints.length === 25, 'Photo sphere with 6 shots/ring should have 25 waypoints');
+
+      // Verify that every waypoint has valid gimbalPitch and pitch matching ring angles
+      const expectedPitches = [+20, -15, -45, -75, -90];
+      result.waypoints.forEach((wp) => {
+        assert.ok(typeof wp.gimbalPitch === 'number', 'Every waypoint must have numeric gimbalPitch');
+        assert.strictEqual(wp.gimbalPitch, wp.pitch, 'wp.gimbalPitch must match wp.pitch');
+        assert.ok(expectedPitches.includes(wp.pitch), 'Pitch ' + wp.pitch + ' must be an expected ring angle');
+      });
+    });
+
+    test('buildWaylinesWpml suppresses waypointPoiPoint and preserves ring gimbal pitches for photo spheres', () => {
+      const layer = {
+        id: 'layer-1',
+        enabled: true,
+        pattern: 'photo-sphere',
+        altitude: 16,
+        speed: 3.2,
+        gimbalPitch: -60,
+        targetPoiId: 'poi-center-12345',
+        photoSphereRings: { zenith: true, ring1: true, ring2: true, ring3: true, nadir: true },
+        photoSphereShotsPerRing: 6
+      };
+      const testPois = [
+        { id: 'poi-center-12345', lat: 41.3215, lon: -88.9950, alt: 0 }
+      ];
+      const genRes = generateLayerWaypoints(layer, 41.3215, -88.9950);
+      assert.ok(Array.isArray(genRes.waypoints) && genRes.waypoints.length === 25, 'Layer waypoints should be 25');
+
+      const savedLayers = (typeof flightLayers !== 'undefined') ? [...flightLayers] : [];
+      const savedPois = (typeof pois !== 'undefined') ? [...pois] : [];
+
+      try {
+        global.flightLayers = [layer];
+        global.pois = testPois;
+        global.selectedDroneTarget = 'mini4pro';
+
+        const wpml = buildWaylinesWpml(genRes.waypoints, 16, 3.2, 'smoothTransition', 'goHome', -60, 'stopAndShoot', 'curved', { flightPattern: 'photo-sphere' });
+        assert.ok(wpml, 'WPML must be generated');
+
+        // 1. Assert waypointPoiPoint coordinates are suppressed (0.000000,0.000000,0.000000)
+        assert.ok(!wpml.includes('<wpml:waypointPoiPoint>41.321500,-88.995000,0.000000</wpml:waypointPoiPoint>'), 'Photo sphere must not lock gimbal to ground POI coordinates');
+        assert.ok(wpml.includes('<wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>'), 'Photo sphere must emit zeroed waypointPoiPoint to prevent DJI Fly ground-lock');
+
+        // 2. Assert waypointHeadingPoiIndex is 0
+        assert.ok(wpml.includes('<wpml:waypointHeadingPoiIndex>0</wpml:waypointHeadingPoiIndex>'), 'Photo sphere must emit waypointHeadingPoiIndex 0');
+
+        // 3. Assert placemarks preserve discrete ring pitches (+20, -15, -45, -75, -90) instead of collapsing to layer default -60
+        assert.ok(wpml.includes('<wpml:waypointGimbalPitchAngle>20</wpml:waypointGimbalPitchAngle>'), 'Row 1 zenith/sky angle (+20°) must be preserved');
+        assert.ok(wpml.includes('<wpml:waypointGimbalPitchAngle>-15</wpml:waypointGimbalPitchAngle>'), 'Row 2 horizon angle (-15°) must be preserved');
+        assert.ok(wpml.includes('<wpml:waypointGimbalPitchAngle>-45</wpml:waypointGimbalPitchAngle>'), 'Row 3 oblique angle (-45°) must be preserved');
+        assert.ok(wpml.includes('<wpml:waypointGimbalPitchAngle>-75</wpml:waypointGimbalPitchAngle>'), 'Row 4 steep oblique angle (-75°) must be preserved');
+        assert.ok(wpml.includes('<wpml:waypointGimbalPitchAngle>-90</wpml:waypointGimbalPitchAngle>'), 'Row 5 nadir angle (-90°) must be preserved');
+
+        // 4. Mission validation
+        const val = validateWpmlMission(wpml, '', { isConsumer: true });
+        assert.strictEqual(val.valid, true, 'Photo sphere mission must pass WPML validation: ' + JSON.stringify(val.errors));
+      } finally {
+        global.flightLayers = savedLayers;
+        global.pois = savedPois;
+      }
+    });
+  });
+
+  describe('Third-Party Credits, Open Source Licenses & Trademark Legal Disclaimers (v1.185.0 - Issue #156)', () => {
   test('Version consistency: v1.185.0 across package.json, changelog, index_template.html, and index.html', () => {
     assertVersionConsistency('1.185.0');
   });

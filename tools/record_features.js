@@ -2304,6 +2304,10 @@ const scenarios = [
             firewall: { open: true, message: 'Port 1935 open' },
             activeStreams: [{ publisherIp: '192.168.1.88', durationSec: 15 }]
           });
+          window.videoCastClient.updateDevicesUI([
+            { index: 0, value: '0', name: 'Integrated Camera', label: '📷 Integrated Camera (Webcam 0)', type: 'webcam' },
+            { index: 1, value: '1', name: 'USB Video', label: '🔌 USB Video (HDMI Capture 1)', type: 'capture_card' }
+          ]);
         }
       });
       await page.waitForTimeout(1000);

@@ -225,6 +225,9 @@ class VideoCastClient {
           this.currentSource = data.source;
           this.updateSourceUI(data.source);
         }
+        if (data.devices) {
+          this.updateDevicesUI(data.devices);
+        }
         if (data.recording !== undefined) {
           this.setRecordingState(data.recording, data.recordDurationSec || 0);
         }
@@ -384,6 +387,51 @@ class VideoCastClient {
       if (popoverDot) {
         popoverDot.style.background = data.listening ? '#06b6d4' : '#64748b';
       }
+    }
+  }
+
+  /**
+   * Dynamically populates detected video capture devices and friendly USB/HDMI names
+   * into the Live Video Cast source dropdown (#video-cast-source-select).
+   */
+  updateDevicesUI(devices) {
+    if (typeof document === 'undefined' || !devices || !Array.isArray(devices) || devices.length === 0) return;
+    const srcSelect = document.getElementById('video-cast-source-select');
+    if (!srcSelect) return;
+
+    // Remove any previously appended dynamic capture device options
+    srcSelect.querySelectorAll('.dynamic-capture-device-opt').forEach(el => el.remove());
+
+    const opt0 = srcSelect.querySelector('option[value="0"]');
+    const opt1 = srcSelect.querySelector('option[value="1"]');
+
+    devices.forEach((dev, idx) => {
+      const val = String(dev.value !== undefined ? dev.value : dev.index);
+      const label = dev.label || `${dev.name || 'Capture Device'} (${val})`;
+
+      if (idx === 0 && opt0) {
+        opt0.textContent = label;
+        opt0.setAttribute('data-device-name', dev.name || '');
+      } else if (idx === 1 && opt1) {
+        opt1.textContent = label;
+        opt1.setAttribute('data-device-name', dev.name || '');
+      } else {
+        const customOpt = srcSelect.querySelector('option[value="custom"]');
+        const opt = document.createElement('option');
+        opt.className = 'dynamic-capture-device-opt';
+        opt.value = val;
+        opt.textContent = label;
+        opt.setAttribute('data-device-name', dev.name || '');
+        if (customOpt) {
+          srcSelect.insertBefore(opt, customOpt);
+        } else {
+          srcSelect.appendChild(opt);
+        }
+      }
+    });
+
+    if (this.currentSource && Array.from(srcSelect.options).some(o => o.value === this.currentSource)) {
+      srcSelect.value = this.currentSource;
     }
   }
 

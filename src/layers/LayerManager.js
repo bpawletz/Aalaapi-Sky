@@ -2700,7 +2700,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     waypoints = gridData.waypoints.map((pt, idx) => {
       const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
       const alt = pt.alt !== undefined ? pt.alt : altitude;
-      const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+      const pitch = pt.pitch !== undefined ? pt.pitch : (pt.gimbalPitch !== undefined ? pt.gimbalPitch : defaultGimbalPitch);
       let finalHeading = pt.heading;
       let finalHeadingMode = pt.headingMode || headingMode || null;
       if (finalHeading !== null && finalHeading !== undefined) {
@@ -2710,6 +2710,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         ...geo,
         alt: alt,
         pitch: pitch,
+        gimbalPitch: pitch,
         heading: finalHeading,
         headingMode: finalHeadingMode,
         speed: pt.speed !== undefined ? pt.speed : speed,
@@ -2785,7 +2786,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     photos = gridData.photos.map(pt => {
       const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
       const alt = pt.alt !== undefined ? pt.alt : altitude;
-      const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+      const pitch = pt.pitch !== undefined ? pt.pitch : (pt.gimbalPitch !== undefined ? pt.gimbalPitch : defaultGimbalPitch);
       let finalHeading = pt.heading;
       if (finalHeading !== null && finalHeading !== undefined) {
         finalHeading = (finalHeading + actualRotation) % 360;
@@ -2794,6 +2795,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         ...geo,
         alt: alt,
         pitch: pitch,
+        gimbalPitch: pitch,
         heading: finalHeading,
         origLat: geo.lat,
         origLon: geo.lon,

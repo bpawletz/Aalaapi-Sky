@@ -7698,7 +7698,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.196.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.197.1</span></h1>
         </div>
       </div>
 
@@ -12030,6 +12030,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🔌 USB/HDMI Capture Device Friendly Names &amp; RC-N3 Android Support (v1.197.0) (Closes #177)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Sub-5ms FPV casting and lossless local MP4 recording for smartphone controllers! The Live Video Cast dropdown now dynamically queries and displays friendly hardware names for connected USB HDMI capture cards and webcams (e.g. <code>🔌 USB Video (HDMI Capture 0)</code>, <code>🔌 Cam Link 4K (HDMI Capture 1)</code>). Includes a dedicated pilot setup guide (<code>docs/RC_N3_ANDROID_SCREEN_STREAMING_GUIDE.md</code>) for DJI RC-N3, RC-N2, and RC-N1 paired with Samsung Galaxy S25 Ultra / Android flagships.
+            </p>
+          </div>
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🟢 Zero-Polling RTMP Status &amp; Live Ingest (v1.194.0) (Closes #172)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -14211,7 +14219,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.196.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.197.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14331,6 +14339,19 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                    <li style="margin-bottom: 8px;">
+                                                  <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.197.1):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Photo Sphere Waypoint Gimbal Horizon Orientation (Closes #178):</strong> Commands and preserves discrete ring pitches (+20°, -15°, -45°, -75°, -90°) at every photo station during Photo Sphere missions, suppressing ground POI emission (<code>0.000000,0.000000,0.000000</code>) to prevent DJI Fly autopilot from locking camera pitch straight down to nadir.</li>
+              </ul>
+            </li>
+              <strong style="color: var(--text-main);">Changelog (v1.197.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Friendly USB/HDMI Capture Device Names (Closes #177):</strong> Dynamically queries and displays friendly hardware names for connected USB HDMI capture cards and webcams (e.g. <code>🔌 USB Video (HDMI Capture 0)</code>, <code>🔌 Cam Link 4K (HDMI Capture 1)</code>) in the Live Video Cast dropdown with 30s TTL caching and initial SSE stream delivery.</li>
+                <li><strong>DJI RC-N3 &amp; Android Screen Streaming Guide:</strong> Added comprehensive pilot field guide (<code>docs/RC_N3_ANDROID_SCREEN_STREAMING_GUIDE.md</code>) for sub-5ms latency FPV screen casting and local lossless MP4 recording with RC-N3, RC-N2, RC-N1 and Samsung Galaxy S25 Ultra flagships.</li>
+              </ul>
+            </li>
                                     <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.196.3):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
@@ -27952,7 +27973,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     waypoints = gridData.waypoints.map((pt, idx) => {
       const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
       const alt = pt.alt !== undefined ? pt.alt : altitude;
-      const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+      const pitch = pt.pitch !== undefined ? pt.pitch : (pt.gimbalPitch !== undefined ? pt.gimbalPitch : defaultGimbalPitch);
       let finalHeading = pt.heading;
       let finalHeadingMode = pt.headingMode || headingMode || null;
       if (finalHeading !== null && finalHeading !== undefined) {
@@ -27962,6 +27983,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         ...geo,
         alt: alt,
         pitch: pitch,
+        gimbalPitch: pitch,
         heading: finalHeading,
         headingMode: finalHeadingMode,
         speed: pt.speed !== undefined ? pt.speed : speed,
@@ -28037,7 +28059,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     photos = gridData.photos.map(pt => {
       const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
       const alt = pt.alt !== undefined ? pt.alt : altitude;
-      const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+      const pitch = pt.pitch !== undefined ? pt.pitch : (pt.gimbalPitch !== undefined ? pt.gimbalPitch : defaultGimbalPitch);
       let finalHeading = pt.heading;
       if (finalHeading !== null && finalHeading !== undefined) {
         finalHeading = (finalHeading + actualRotation) % 360;
@@ -28046,6 +28068,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         ...geo,
         alt: alt,
         pitch: pitch,
+        gimbalPitch: pitch,
         heading: finalHeading,
         origLat: geo.lat,
         origLon: geo.lon,
@@ -39971,6 +39994,7 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
         y: 0,
         alt: baseAltitude,
         pitch: row.pitch,
+        gimbalPitch: row.pitch,
         heading: heading,
         headingMode: 'smoothTransition',
         gridType: 'photo-sphere',
@@ -40014,6 +40038,7 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
       y: 0,
       alt: baseAltitude,
       pitch: -90,
+      gimbalPitch: -90,
       heading: 0,
       headingMode: 'smoothTransition',
       gridType: 'photo-sphere',
@@ -48561,11 +48586,13 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       ? wp.pitch
       : (isHyperlapseSweep && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit'
         ? wp.pitch
-        : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
-          ? wp.layerGimbalPitch
-          : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
-            ? wpLayer.gimbalPitch
-            : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : gimbalPitch))));
+        : (isPhotoSphere && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+          ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
+          : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
+            ? wp.layerGimbalPitch
+            : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
+              ? wpLayer.gimbalPitch
+              : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch))))));
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
       const effectiveAltForPitch = (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit')
         ? wp.alt
@@ -49196,10 +49223,10 @@ ${waypointActions.join('\n')}
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>${actualHeadingMode}</wpml:waypointHeadingMode>
           <wpml:waypointHeadingAngle>${(actualHeadingMode === 'smoothTransition' && headingAngleEnable === 1 && (actualHeadingAngle === 0 || Math.abs(actualHeadingAngle) < 0.05)) ? '0.1' : (actualHeadingAngle === 0 ? '0' : actualHeadingAngle.toFixed(1))}</wpml:waypointHeadingAngle>
-          <wpml:waypointPoiPoint>${poiPoint}</wpml:waypointPoiPoint>
+          <wpml:waypointPoiPoint>${isPhotoSphere ? '0.000000,0.000000,0.000000' : poiPoint}</wpml:waypointPoiPoint>
           <wpml:waypointHeadingAngleEnable>${headingAngleEnable}</wpml:waypointHeadingAngleEnable>
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
-          <wpml:waypointHeadingPoiIndex>${targetPoiIndex}</wpml:waypointHeadingPoiIndex>
+          <wpml:waypointHeadingPoiIndex>${isPhotoSphere ? 0 : targetPoiIndex}</wpml:waypointHeadingPoiIndex>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
           <wpml:waypointTurnMode>${actualTurnMode}</wpml:waypointTurnMode>
@@ -52387,14 +52414,18 @@ function applyCompanionStatusUI(data) {
     if (vc && typeof vc.updateRtmpUI === 'function') {
 
       vc.updateRtmpUI(data.rtmp);
-
     }
-
   }
 
+  if (data && data.videoDevices) {
+    const vc = (typeof window !== 'undefined' && window.videoCastClient) ||
+               (typeof global !== 'undefined' && global.videoCastClient) ||
+               (typeof videoCastClient !== 'undefined' ? videoCastClient : null);
+    if (vc && typeof vc.updateDevicesUI === 'function') {
+      vc.updateDevicesUI(data.videoDevices);
+    }
+  }
 }
-
-
 
 function connectCompanionStatusStream() {
 
@@ -83713,6 +83744,9 @@ class VideoCastClient {
           this.currentSource = data.source;
           this.updateSourceUI(data.source);
         }
+        if (data.devices) {
+          this.updateDevicesUI(data.devices);
+        }
         if (data.recording !== undefined) {
           this.setRecordingState(data.recording, data.recordDurationSec || 0);
         }
@@ -83872,6 +83906,51 @@ class VideoCastClient {
       if (popoverDot) {
         popoverDot.style.background = data.listening ? '#06b6d4' : '#64748b';
       }
+    }
+  }
+
+  /**
+   * Dynamically populates detected video capture devices and friendly USB/HDMI names
+   * into the Live Video Cast source dropdown (#video-cast-source-select).
+   */
+  updateDevicesUI(devices) {
+    if (typeof document === 'undefined' || !devices || !Array.isArray(devices) || devices.length === 0) return;
+    const srcSelect = document.getElementById('video-cast-source-select');
+    if (!srcSelect) return;
+
+    // Remove any previously appended dynamic capture device options
+    srcSelect.querySelectorAll('.dynamic-capture-device-opt').forEach(el => el.remove());
+
+    const opt0 = srcSelect.querySelector('option[value="0"]');
+    const opt1 = srcSelect.querySelector('option[value="1"]');
+
+    devices.forEach((dev, idx) => {
+      const val = String(dev.value !== undefined ? dev.value : dev.index);
+      const label = dev.label || `${dev.name || 'Capture Device'} (${val})`;
+
+      if (idx === 0 && opt0) {
+        opt0.textContent = label;
+        opt0.setAttribute('data-device-name', dev.name || '');
+      } else if (idx === 1 && opt1) {
+        opt1.textContent = label;
+        opt1.setAttribute('data-device-name', dev.name || '');
+      } else {
+        const customOpt = srcSelect.querySelector('option[value="custom"]');
+        const opt = document.createElement('option');
+        opt.className = 'dynamic-capture-device-opt';
+        opt.value = val;
+        opt.textContent = label;
+        opt.setAttribute('data-device-name', dev.name || '');
+        if (customOpt) {
+          srcSelect.insertBefore(opt, customOpt);
+        } else {
+          srcSelect.appendChild(opt);
+        }
+      }
+    });
+
+    if (this.currentSource && Array.from(srcSelect.options).some(o => o.value === this.currentSource)) {
+      srcSelect.value = this.currentSource;
     }
   }
 
