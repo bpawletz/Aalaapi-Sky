@@ -635,7 +635,46 @@ function initMap() {
   }
   overlays["🔊 Ground Noise Contours (dBA) (2D)"] = acousticOverlaysGroup;
 
+  // Digital Elevation Model (DEM) Grid & Terrain Heatmap (2D) (v1.193.0 - Issue #168)
+  let demGridOverlayGroup = (typeof window !== 'undefined' && window.demGridOverlayGroup) ? window.demGridOverlayGroup : null;
+  if (!demGridOverlayGroup) {
+    demGridOverlayGroup = L.layerGroup();
+  }
+  if (typeof window !== 'undefined') {
+    window.demGridOverlayGroup = demGridOverlayGroup;
+  }
+  const savedShow2dDemGrid = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_show_2d_dem_grid') : null;
+  if (savedShow2dDemGrid === 'true') {
+    demGridOverlayGroup.addTo(map);
+  }
+  overlays["⛰️ Elevation DEM Grid & Terrain Heatmap (2D)"] = demGridOverlayGroup;
+
   const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
+
+  // On-map DEM Elevation Legend (v1.193.0 - Issue #168)
+  const demLegendControl = L.control({ position: 'bottomleft' });
+  demLegendControl.onAdd = function () {
+    const div = L.DomUtil.create('div', 'map-legend glass dem-grid-legend');
+    L.DomEvent.disableClickPropagation(div);
+    div.id = 'dem-grid-legend-container';
+    div.style.display = 'none';
+    div.style.padding = '6px 10px';
+    div.style.fontSize = '0.72rem';
+    div.style.marginBottom = '6px';
+    div.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
+        <span style="font-weight: 700; color: var(--accent-cyan);">⛰️ Terrain Heatmap</span>
+        <span id="dem-legend-source-badge" class="badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 5px; border-radius: 999px;">DEM</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 0.65rem; color: var(--text-muted);">
+        <span id="dem-legend-min-val">0m</span>
+        <div style="flex: 1; min-width: 90px; height: 6px; border-radius: 3px; background: linear-gradient(to right, rgba(16,185,129,0.7), rgba(245,158,11,0.75), rgba(239,68,68,0.8));"></div>
+        <span id="dem-legend-max-val">100m</span>
+      </div>
+    `;
+    return div;
+  };
+  demLegendControl.addTo(map);
 
   // If running on localhost or file://, disable the OpenStreetMap radio button with styled indicator & tooltip
   if (isLocal) {
@@ -684,6 +723,25 @@ function initMap() {
   // Airspace legend — shown/hidden based on which overlays are active
   initAirspaceLegend();
   map.on('overlayadd overlayremove', function(e) {
+    // Track DEM Grid & Terrain Heatmap state (v1.193.0 - Issue #168)
+    if (e.name === '⛰️ Elevation DEM Grid & Terrain Heatmap (2D)' || (typeof demGridOverlayGroup !== 'undefined' && e.layer === demGridOverlayGroup)) {
+      const isAdd = e.type === 'overlayadd';
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('aalaapi_show_2d_dem_grid', isAdd ? 'true' : 'false');
+      }
+      const toggleBtn = (typeof document !== 'undefined') ? document.getElementById('toggle-dem-grid-overlay-btn') : null;
+      if (toggleBtn) {
+        toggleBtn.style.color = isAdd ? 'var(--accent-cyan)' : '';
+        toggleBtn.style.borderColor = isAdd ? 'var(--accent-cyan)' : '';
+      }
+      if (typeof elevationServiceInstance !== 'undefined') {
+        if (isAdd) {
+          elevationServiceInstance.generateDemGridOverlay(map, null, demGridOverlayGroup);
+        } else {
+          elevationServiceInstance.clearDemGridOverlay(map);
+        }
+      }
+    }
     // Track TFR checkbox state
     if (e.type === 'overlayadd' && e.name === 'Temporary Flight Restrictions (TFR / NOTAM) (US Only)') {
       tfrEnabled = true;

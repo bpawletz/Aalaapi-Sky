@@ -2947,9 +2947,15 @@ body.modal-drag-active {
 }
 
 .elevation-profile-drawer.collapsed {
-  height: 38px !important;
-  min-height: 38px !important;
+  height: auto !important;
+  min-height: 36px !important;
+  max-height: 44px !important;
   overflow: hidden !important;
+  padding: 6px 14px !important;
+}
+
+.elevation-profile-drawer.collapsed .elevation-profile-header {
+  border-bottom: none !important;
   padding-bottom: 0 !important;
 }
 
@@ -2958,9 +2964,15 @@ body.modal-drag-active {
 }
 
 .replay-2d-bar.collapsed {
-  height: 38px !important;
-  min-height: 38px !important;
+  height: auto !important;
+  min-height: 36px !important;
+  max-height: 44px !important;
   overflow: hidden !important;
+  padding: 6px 14px !important;
+}
+
+.replay-2d-bar.collapsed .replay-2d-header {
+  border-bottom: none !important;
   padding-bottom: 0 !important;
 }
 

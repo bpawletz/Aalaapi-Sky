@@ -35225,4 +35225,113 @@ describe('Global Terrain Following Synchronization & 3-Tier Cascading Hierarchy 
   });
 });
 
+describe('Elevation Source Status, Leaflet Map Layer & Missing DEM Profile Visualization Suite (v1.193.0 - Issue #168)', () => {
+  test('Version consistency: v1.193.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.193.0');
+  });
+
+  test('DOM Architecture: Status badges and missing DEM alert elements exist in templates and index.html', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+
+    // Section 2 & 3 status badges
+    assert.ok(template.includes('id="layer-terrain-source-status-badge"'), 'Section 2 must have #layer-terrain-source-status-badge');
+    assert.ok(template.includes('id="global-terrain-source-status-badge"'), 'Section 3 must have #global-terrain-source-status-badge');
+
+    // Elevation Profile Drawer badges
+    assert.ok(template.includes('id="elev-profile-source-badge"'), 'Profile drawer must have #elev-profile-source-badge');
+    assert.ok(template.includes('id="elev-profile-missing-badge"'), 'Profile drawer must have #elev-profile-missing-badge');
+    assert.ok(template.includes('id="elevation-profile-tooltip"'), 'Profile drawer must have #elevation-profile-tooltip');
+
+    // index.html output
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('id="layer-terrain-source-status-badge"'), 'index.html must have #layer-terrain-source-status-badge');
+    assert.ok(indexHtml.includes('id="elev-profile-missing-badge"'), 'index.html must have #elev-profile-missing-badge');
+  });
+
+  test('ElevationService: Source status observer and listener registry methods', () => {
+    const { elevationServiceInstance } = require('./src/geo/ElevationService.js');
+    assert.strictEqual(typeof elevationServiceInstance.addStatusListener, 'function', 'addStatusListener must exist');
+    assert.strictEqual(typeof elevationServiceInstance.notifyStatusChange, 'function', 'notifyStatusChange must exist');
+    assert.strictEqual(typeof elevationServiceInstance.getSourceLabel, 'function', 'getSourceLabel must exist');
+
+    let receivedStatus = null;
+    const listener = (st) => { receivedStatus = st; };
+    elevationServiceInstance.addStatusListener(listener);
+
+    // Initial status received
+    assert.ok(receivedStatus, 'Status listener must receive current status upon subscription');
+
+    // Notification update
+    elevationServiceInstance.notifyStatusChange({
+      state: 'fallback',
+      source: 'usgs-3dep',
+      effectiveSource: 'open-meteo',
+      fallbackOccurred: true,
+      message: 'Test Fallback Message'
+    });
+
+    assert.strictEqual(receivedStatus.state, 'fallback');
+    assert.strictEqual(receivedStatus.effectiveSource, 'open-meteo');
+    assert.strictEqual(receivedStatus.fallbackOccurred, true);
+    assert.strictEqual(receivedStatus.message, 'Test Fallback Message');
+
+    elevationServiceInstance.removeStatusListener(listener);
+  });
+
+  test('ElevationService: Missing DEM data handling and profile visualization without 0m cliff drop', () => {
+    const { elevationServiceInstance, drawElevationProfileChart } = require('./src/geo/ElevationService.js');
+
+    // Waypoints where first 3 have realistic ground elevation (420m) and remaining 3 have missing DEM (null/0)
+    const waypoints = [
+      { lat: 41.321, lon: -88.995, surfaceElevation: 420, alt: 470 },
+      { lat: 41.322, lon: -88.995, surfaceElevation: 422, alt: 472 },
+      { lat: 41.323, lon: -88.995, surfaceElevation: 419, alt: 469 },
+      { lat: 41.324, lon: -88.995, surfaceElevation: 0, alt: 469, isElevationMissing: true },
+      { lat: 41.325, lon: -88.995, surfaceElevation: null, alt: 469 },
+      { lat: 41.326, lon: -88.995, surfaceElevation: 0, alt: 469 }
+    ];
+
+    const profile = elevationServiceInstance.generateElevationProfile(waypoints);
+
+    assert.ok(profile, 'Profile must be generated');
+    assert.strictEqual(profile.missingCount, 3, 'Must detect 3 missing waypoints');
+    assert.strictEqual(profile.coveragePercent, 50, 'Coverage percent must be 50%');
+    assert.ok(profile.minGround >= 400, `minGround (${profile.minGround}m) must not plunge to 0m`);
+    assert.strictEqual(profile.points[3].isMissing, true, 'Point 3 must be flagged isMissing');
+    assert.strictEqual(profile.points[4].isMissing, true, 'Point 4 must be flagged isMissing');
+    assert.strictEqual(profile.points[5].isMissing, true, 'Point 5 must be flagged isMissing');
+
+    // Chart rendering test
+    const dummyCanvas = {
+      width: 700,
+      height: 110,
+      getContext: () => ({
+        clearRect: () => {},
+        beginPath: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        stroke: () => {},
+        fill: () => {},
+        closePath: () => {},
+        fillText: () => {},
+        arc: () => {},
+        save: () => {},
+        restore: () => {},
+        setLineDash: () => {}
+      })
+    };
+
+    assert.doesNotThrow(() => {
+      drawElevationProfileChart(dummyCanvas, profile);
+    }, 'drawElevationProfileChart must execute cleanly with missing data segments');
+  });
+
+  test('MapEngine: demGridOverlayGroup registered as first-class Leaflet overlay and legend initialized', () => {
+    const mapEngineSrc = fs.readFileSync(path.join(__dirname, 'src', 'map', 'MapEngine.js'), 'utf8');
+    assert.ok(mapEngineSrc.includes('demGridOverlayGroup'), 'MapEngine must define demGridOverlayGroup');
+    assert.ok(mapEngineSrc.includes('⛰️ Elevation DEM Grid & Terrain Heatmap (2D)'), 'MapEngine must register DEM Grid in overlays');
+    assert.ok(mapEngineSrc.includes('dem-grid-legend-container'), 'MapEngine must initialize on-map DEM legend');
+  });
+});
+
 });
