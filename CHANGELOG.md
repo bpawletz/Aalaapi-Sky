@@ -1,3 +1,21 @@
+## [1.196.0] - 2026-10-24
+
+Dynamic viewport boundary auto-clamping on panel minimization and collapse, preventing floating drawers, popovers, and modal dialogs from shifting off the viewable screen.
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Off-Screen Minimize & Collapse Prevention (Closes #174)**:
+  - Fixed an issue where floating drawers or HUD boxes dragged near viewport edges (such as the Flight Elevation Profile or 2D Flight Replay bar) could minimize partially or entirely off-screen when toggled.
+  - Automatically re-clamps the element position within safe viewport margins upon minimization, ensuring the header, title, badges, and expand toggle (`▲`) always remain completely visible and clickable.
+
+#### Under the Hood & Technical Details
+- **`src/ui/ModalDragManager.js`**:
+  - Implemented and exported `ensureElementInViewport(element, minPadding = 8)` calculating bounding client rects and adjusting `translate3d` offsets when boundaries are exceeded.
+  - Integrated `ensureElementInViewport` inside `initUniversalModalCollapseToggles()`.
+- **`src/ui/EventBindings.js`**:
+  - Connected `ensureElementInViewport` into `initFloatingBoxesCollapseToggles()`, triggering immediate and microtask layout re-checks upon minimizing any 2D or 3D floating panel.
+
 ## [1.195.0] - 2026-10-24
 
 Live sub-channel event broadcast metrics and enhanced client breakdown telemetry for the Companion Bridge, providing real-time visibility into multiplexed SSE channels (`status`, `airspace`, `remote-id`, `progress`).

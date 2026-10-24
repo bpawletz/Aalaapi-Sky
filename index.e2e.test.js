@@ -10279,4 +10279,56 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
   });
 
+  describe('Dynamic Viewport Auto-Clamping on Panel Minimize E2E Suite (v1.196.0 - Issue #174)', () => {
+    test('E2E: Dragging elevation drawer and replay bar to bottom edge then minimizing keeps headers completely visible in viewport', async () => {
+      const result = await page.evaluate(async () => {
+        const drawer = document.getElementById('elevation-profile-drawer');
+        const drawerBtn = document.getElementById('minimize-elevation-profile-btn');
+        const replay = document.getElementById('replay-2d-bar');
+        const replayBtn = document.getElementById('replay-2d-minimize-btn');
+        const winH = window.innerHeight;
+
+        if (!drawer || !drawerBtn || !replay || !replayBtn) {
+          return { error: 'Drawer or Replay elements missing' };
+        }
+
+        // Test 1: Elevation Drawer dragged down to bottom
+        drawer.classList.remove('hidden');
+        drawer.style.transform = 'translate3d(-50%, 100px, 0)';
+        await new Promise(r => setTimeout(r, 300));
+
+        drawerBtn.click();
+        await new Promise(r => setTimeout(r, 350));
+
+        const drawerBox = drawer.getBoundingClientRect();
+        const drawerBtnBox = drawerBtn.getBoundingClientRect();
+        const drawerValid = (drawerBox.bottom <= winH + 1) && (drawerBox.top >= 0) && (drawerBtnBox.top < winH);
+
+        // Test 2: Replay 2D Bar dragged down to bottom
+        replay.classList.remove('hidden');
+        replay.style.transform = 'translate3d(-50%, 100px, 0)';
+        await new Promise(r => setTimeout(r, 300));
+
+        replayBtn.click();
+        await new Promise(r => setTimeout(r, 350));
+
+        const replayBox = replay.getBoundingClientRect();
+        const replayBtnBox = replayBtn.getBoundingClientRect();
+        const replayValid = (replayBox.bottom <= winH + 1) && (replayBox.top >= 0) && (replayBtnBox.top < winH);
+
+        return {
+          drawerValid,
+          drawerBox: { top: drawerBox.top, bottom: drawerBox.bottom, height: drawerBox.height },
+          replayValid,
+          replayBox: { top: replayBox.top, bottom: replayBox.bottom, height: replayBox.height },
+          winH
+        };
+      });
+
+      assert.strictEqual(result.error, undefined, 'Must run without errors');
+      assert.strictEqual(result.drawerValid, true, `Elevation drawer must be clamped inside viewport: ${JSON.stringify(result.drawerBox)}`);
+      assert.strictEqual(result.replayValid, true, `Replay 2D bar must be clamped inside viewport: ${JSON.stringify(result.replayBox)}`);
+    });
+  });
+
 });
