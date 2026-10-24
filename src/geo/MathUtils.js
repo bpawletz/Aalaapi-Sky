@@ -1524,6 +1524,7 @@ function updateMapLegend() {
 // show/hide each section dynamically.
 let airspaceLegendControl = null;
 const airspaceActiveSet = new Set(); // stores layer-name strings
+let isAirspaceLegendCollapsed = false;
 
 function initAirspaceLegend() {
   airspaceLegendControl = L.control({ position: 'bottomleft' });
@@ -1573,23 +1574,59 @@ function updateAirspaceLegend(e) {
 
   container.replaceChildren();
   container.setAttribute('data-draggable-modal', 'true');
+  if (isAirspaceLegendCollapsed) {
+    container.classList.add('collapsed');
+  } else {
+    container.classList.remove('collapsed');
+  }
 
   const headerDiv = document.createElement('div');
   headerDiv.className = 'legend-header';
   headerDiv.setAttribute('data-modal-drag-handle', 'true');
-  headerDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;';
+  headerDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;cursor:grab;user-select:none;';
+
+  const leftGroup = document.createElement('div');
+  leftGroup.style.cssText = 'display:flex;align-items:center;gap:6px;';
 
   const airGrip = document.createElement('span');
   airGrip.className = 'modal-drag-grip';
   airGrip.setAttribute('aria-hidden', 'true');
   airGrip.title = 'Drag to reposition legend';
   airGrip.textContent = '\u22EE\u22EE';
-  headerDiv.appendChild(airGrip);
+  leftGroup.appendChild(airGrip);
 
   const h4 = document.createElement('h4');
   h4.style.cssText = 'margin:0;line-height:1.2;';
   h4.textContent = 'Map Overlays';
-  headerDiv.appendChild(h4);
+  leftGroup.appendChild(h4);
+
+  headerDiv.appendChild(leftGroup);
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'legend-toggle-btn airspace-legend-toggle-btn';
+  toggleBtn.id = 'airspace-legend-toggle-btn';
+  toggleBtn.title = 'Minimize / Expand Airspace Legend';
+  toggleBtn.setAttribute('aria-label', 'Minimize / Expand Airspace Legend');
+  toggleBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:2px 4px;border-radius:4px;';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '14');
+  svg.setAttribute('height', '14');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  polyline.setAttribute('points', '6 9 12 15 18 9');
+  svg.appendChild(polyline);
+  toggleBtn.appendChild(svg);
+  toggleBtn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    container.classList.toggle('collapsed');
+    isAirspaceLegendCollapsed = container.classList.contains('collapsed');
+  });
+  headerDiv.appendChild(toggleBtn);
 
   container.appendChild(headerDiv);
 

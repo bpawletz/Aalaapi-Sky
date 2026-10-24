@@ -3406,8 +3406,54 @@ function initUIEventListeners() {
     initAllModalsDraggable();
   }
 
+  // Setup Floating 2D/3D Boxes Collapse Toggles (Issue #166)
+  initFloatingBoxesCollapseToggles();
+
   // Setup Terrain Following & Elevation Profile Listeners (Issue #129)
   initTerrainFollowListeners();
+}
+
+/**
+ * Universal toggle listener initialization for all 2D and 3D floating boxes,
+ * drawers, legends, popovers, and HUD panels.
+ */
+export function initFloatingBoxesCollapseToggles() {
+  if (typeof document === 'undefined') return;
+
+  const toggleConfigs = [
+    { btnId: 'minimize-elevation-profile-btn', panelId: 'elevation-profile-drawer', bodyId: 'elevation-profile-body' },
+    { btnId: 'replay-2d-minimize-btn', panelId: 'replay-2d-bar', bodyId: 'replay-2d-body' },
+    { btnId: 'adsb-drawer-minimize-btn', panelId: 'adsb-control-drawer', bodySelector: '.adsb-drawer-body' },
+    { btnId: 'remote-id-cal-minimize-btn', panelId: 'remote-id-calibration-panel', bodyId: 'remote-id-cal-body-wrapper' },
+    { btnId: 'bridge-popover-minimize-btn', panelId: 'bridge-status-popover', bodySelector: '.popover-body' },
+    { btnId: 'telemetry-weather-minimize-btn', panelId: 'telemetry-weather-popover', bodySelector: '.popover-body' },
+    { btnId: 'mission-time-minimize-btn', panelId: 'mission-time-popover', bodySelector: '.popover-body' },
+    { btnId: 'three-hud-controls-toggle-btn', panelId: 'three-hud-controls', bodyId: 'three-hud-controls-body' },
+    { btnId: 'three-instructions-toggle-btn', panelId: 'three-instructions', bodyId: 'three-instructions-body' },
+    { btnId: 'diag-hud-overlay-toggle-btn', panelId: 'diag-hud-overlay', bodyId: 'diag-hud-overlay-body' },
+    { btnId: 'diag-hud-controls-toggle-btn', panelId: 'diag-hud-controls', bodyId: 'diag-hud-controls-body' },
+    { btnId: 'diag-wireframe-toggle-btn', panelId: 'diag-wireframe-panel', bodyId: 'diag-wireframe-body' },
+    { btnId: 'diag-path-legend-toggle-btn', panelId: 'diag-path-legend', bodyId: 'diag-path-legend-body' },
+  ];
+
+  toggleConfigs.forEach(({ btnId, panelId, bodyId, bodySelector }) => {
+    const btn = document.getElementById(btnId);
+    const panel = document.getElementById(panelId);
+    if (!btn || !panel) return;
+    const body = bodyId ? document.getElementById(bodyId) : (bodySelector ? panel.querySelector(bodySelector) : null);
+    
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.classList.toggle('collapsed');
+      const isCollapsed = panel.classList.contains('collapsed');
+      if (body) {
+        body.style.display = isCollapsed ? 'none' : '';
+      }
+      btn.textContent = isCollapsed ? '▲' : '▼';
+      btn.title = isCollapsed ? 'Expand Panel' : 'Minimize Panel';
+      btn.setAttribute('aria-label', isCollapsed ? 'Expand Panel' : 'Minimize Panel');
+    });
+  });
 }
 
 function initTerrainFollowListeners() {

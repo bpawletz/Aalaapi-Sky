@@ -44,39 +44,6 @@
     "gid": "6/2014"
   },
   {
-    "notam_id": "6/1974",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "E FARMINGTON, CO, Friday, October 23, 2026 through Saturday, October 31, 2026 UTC",
-    "mod_date": "10/23/2026 18:30:00",
-    "mod_abs_time": "202610231830",
-    "is_new": "Y",
-    "gid": "6/1974"
-  },
-  {
-    "notam_id": "6/1976",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "NE FARMINGTON, CO, Friday, October 23, 2026 through Saturday, October 31, 2026 UTC",
-    "mod_date": "10/23/2026 18:30:00",
-    "mod_abs_time": "202610231830",
-    "is_new": "Y",
-    "gid": "6/1976"
-  },
-  {
-    "notam_id": "6/1973",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "N FARMINGTON, CO, Friday, October 23, 2026 through Saturday, October 31, 2026 UTC",
-    "mod_date": "10/23/2026 18:29:00",
-    "mod_abs_time": "202610231829",
-    "is_new": "Y",
-    "gid": "6/1973"
-  },
-  {
     "notam_id": "6/1949",
     "facility": "ZJX",
     "state": "FL",
@@ -128,7 +95,7 @@
     "description": "Middleburg, VA, Saturday, October 24, 2026 through Sunday, October 25, 2026 Local",
     "mod_date": "10/23/2026 01:29:00",
     "mod_abs_time": "202610230129",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/1870"
   },
   {
@@ -273,17 +240,6 @@
     "mod_abs_time": "202610212036",
     "is_new": "N",
     "gid": "6/1371"
-  },
-  {
-    "notam_id": "6/1141",
-    "facility": "ZSE",
-    "state": "OR",
-    "type": "HAZARDS",
-    "description": "17NM NW MEDFORD, OR, Wednesday, October 21, 2026 through Wednesday, November 4, 2026 UTC",
-    "mod_date": "10/21/2026 01:55:00",
-    "mod_abs_time": "202610210155",
-    "is_new": "N",
-    "gid": "6/1141"
   },
   {
     "notam_id": "6/0818",

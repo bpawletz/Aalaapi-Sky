@@ -1650,6 +1650,12 @@ body.modal-drag-active {
 #remote-id-calibration-panel.modal-dragging,
 #stats-panel.modal-dragging,
 #three-hud-legend.modal-dragging,
+#three-hud-controls.modal-dragging,
+#three-instructions.modal-dragging,
+#diag-hud-overlay.modal-dragging,
+#diag-hud-controls.modal-dragging,
+#diag-wireframe-panel.modal-dragging,
+#diag-path-legend.modal-dragging,
 #map-mission-legend.modal-dragging,
 #airspace-legend-container.modal-dragging,
 #wp-heading-help-popover.modal-dragging {
@@ -2903,6 +2909,167 @@ body.modal-drag-active {
 .legend-toggle-btn:hover {
   color: var(--accent-cyan) !important;
   background: rgba(255, 255, 255, 0.05);
+}
+
+/* Universal Floating Panel & Modal Collapse Styles (Issue #166) */
+.modal-collapse-btn,
+.panel-collapse-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  transition: var(--transition-smooth);
+  line-height: 1;
+}
+
+.modal-collapse-btn:hover,
+.panel-collapse-btn:hover {
+  color: var(--accent-cyan);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.modal.modal-collapsed {
+  max-height: 52px !important;
+  height: auto !important;
+  overflow: hidden !important;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.modal.modal-collapsed > *:not(.modal-header) {
+  display: none !important;
+}
+
+.elevation-profile-drawer.collapsed {
+  height: 38px !important;
+  min-height: 38px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+.elevation-profile-drawer.collapsed #elevation-profile-body {
+  display: none !important;
+}
+
+.replay-2d-bar.collapsed {
+  height: 38px !important;
+  min-height: 38px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+.replay-2d-bar.collapsed #replay-2d-body {
+  display: none !important;
+}
+
+.remote-id-calibration-panel.collapsed {
+  max-height: 42px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+.remote-id-calibration-panel.collapsed #remote-id-cal-body-wrapper {
+  display: none !important;
+}
+
+.adsb-control-drawer.collapsed {
+  max-height: 52px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+.adsb-control-drawer.collapsed .adsb-drawer-body {
+  display: none !important;
+}
+
+.bridge-status-popover.collapsed,
+.telemetry-weather-popover.collapsed,
+.mission-time-popover.collapsed {
+  max-height: 44px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+.bridge-status-popover.collapsed .popover-body,
+.telemetry-weather-popover.collapsed .popover-body,
+.mission-time-popover.collapsed .popover-body {
+  display: none !important;
+}
+
+#wp-heading-help-popover.collapsed {
+  max-height: 36px !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+#wp-heading-help-popover.collapsed #wp-heading-help-body {
+  display: none !important;
+}
+
+.hud-controls.collapsed {
+  max-height: 38px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+.hud-controls.collapsed #three-hud-controls-body {
+  display: none !important;
+}
+
+#three-instructions.collapsed {
+  max-height: 34px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+#three-instructions.collapsed #three-instructions-body {
+  display: none !important;
+}
+
+.diag-hud-overlay.collapsed {
+  max-height: 34px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+.diag-hud-overlay.collapsed #diag-hud-overlay-body {
+  display: none !important;
+}
+
+.diag-hud-controls.collapsed {
+  max-height: 36px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+.diag-hud-controls.collapsed #diag-hud-controls-body {
+  display: none !important;
+}
+
+.diag-wireframe-panel.collapsed {
+  max-height: 40px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+.diag-wireframe-panel.collapsed #diag-wireframe-body {
+  display: none !important;
+}
+
+.diag-path-legend.collapsed {
+  max-height: 32px !important;
+  overflow: hidden !important;
+  padding-bottom: 4px !important;
+}
+
+.diag-path-legend.collapsed #diag-path-legend-body {
+  display: none !important;
 }
 
 /* Collapsible Control Sections (Sidebar Topics) */

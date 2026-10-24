@@ -1,3 +1,28 @@
+## [1.191.0] - 2026-10-24
+
+Universal collapse/minimize toggles and draggable repositioning for all 2D Map and 3D Map floating boxes, legends, drawers, popovers, and modal dialogs.
+
+### Added
+
+#### Pilot & Operational Features
+- **Universal Floating Box & Modal Collapse Toggles (Closes #166)**:
+  - Added standardized minimize toggles (`▼` / `▲`) to all floating boxes, drawers, legends, and popovers across the 2D Map, 3D Flight Path Preview, and 3D Flight Diagnostics viewports.
+  - **2D Map Elements**: Airspace & Overlays Legend (`#airspace-legend-container`), Flight Elevation Profile drawer (`#elevation-profile-drawer`), 2D Flight Replay bar (`#replay-2d-bar`), ADS-B Manned Aircraft Radar drawer (`#adsb-control-drawer`), Map & Remote ID Alignment panel (`#remote-id-calibration-panel`), Bridge popover (`#bridge-status-popover`), Weather popover (`#telemetry-weather-popover`), Mission Time popover (`#mission-time-popover`), and Waypoint Heading Mode Help popover (`#wp-heading-help-popover`).
+  - **3D Preview Elements**: 3D Scene Controls (`#three-hud-controls`), 3D Navigation Instructions (`#three-instructions`), and FPV HUD panels.
+  - **3D Diagnostics Elements**: Cockpit Telemetry HUD (`#diag-hud-overlay`), Camera & View Controls (`#diag-hud-controls`), 3D Wireframe Toolkit (`#diag-wireframe-panel`), and 3D Path Legend (`#diag-path-legend`).
+  - **Universal Modal Dialog Collapse**: Every `.modal` dialog header now includes a `.modal-collapse-btn` (`▼` / `▲`) allowing pilots to collapse full-screen or dialog modals down to their title bar and inspect the flight path on the map underneath.
+
+#### Under the Hood & Technical Details
+- **ModalDragManager (`src/ui/ModalDragManager.js`)**:
+  - Implemented `initUniversalModalCollapseToggles()` dynamically injecting `.modal-collapse-btn` before close buttons across all modal dialogs.
+  - Registered all new 3D HUD boxes (`#three-hud-controls`, `#three-instructions`, `#diag-hud-overlay`, `#diag-hud-controls`, `#diag-path-legend`) into draggable modeless manager and resize bounds clamping.
+- **EventBindings (`src/ui/EventBindings.js`)**:
+  - Added `initFloatingBoxesCollapseToggles()` managing state persistence, chevron animation, and body visibility transitions for all 2D and 3D overlay panels.
+- **Map Overlays Legend (`src/geo/MathUtils.js`)**:
+  - Integrated persistent `isAirspaceLegendCollapsed` state and interactive `.airspace-legend-toggle-btn` to `#airspace-legend-container`.
+- **CSS Architecture (`index.css`)**:
+  - Created standardized `.modal-collapse-btn`, `.panel-collapse-btn`, `.modal-collapsed`, and `.collapsed` states ensuring consistent vertical minimization and zero viewport overflow.
+
 ## [1.190.0] - 2026-10-23
 
 High-resolution Digital Elevation Model (DEM) multi-source terrain following with Drone Recon DSM/DTM (2cm-10cm), USGS 3DEP LiDAR (1m-3m), EU National LiDAR (0.5m-5m), UTM projected GeoTIFFs, and interactive 2D/3D DEM grid inspection.
