@@ -35461,4 +35461,69 @@ describe('v1.193.2: Draggable Elevation Profile Stability & Negative Calc Transf
   });
 });
 
+describe('v1.193.3: Sidebar Minimized Offset & Map Control Alignment Fix (Issue #171)', () => {
+  test('Version consistency: v1.193.3 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.193.3');
+  });
+
+  test('CSS defines shared --sidebar-width variable and binds .sidebar and .sidebar.minimized negative margin', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('--sidebar-width: 380px;'), 'Must define --sidebar-width in :root');
+    assert.ok(css.includes('width: var(--sidebar-width, 380px);'), '.sidebar width must use --sidebar-width');
+    assert.ok(css.includes('min-width: var(--sidebar-width, 380px);'), '.sidebar min-width must use --sidebar-width');
+    assert.ok(css.includes('margin-left: calc(-1 * var(--sidebar-width, 380px));'), '.sidebar.minimized must use calc(-1 * var(--sidebar-width))');
+    assert.ok(!css.includes('margin-left: -400px;'), 'Must not contain legacy hardcoded -400px margin');
+    assert.ok(css.includes('box-shadow: none !important;'), '.sidebar.minimized must clear box-shadow');
+  });
+});
+
+describe('v1.194.0: SSE-First Architecture Policy & Zero-Polling Mandate Suite (Issue #172)', () => {
+  test('Version consistency: v1.194.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.194.0');
+  });
+
+  test('AGENTS.md defines Section 13 SSE-First Architecture Policy and Zero-Polling Mandate', () => {
+    const agentsDoc = fs.readFileSync(path.join(__dirname, 'AGENTS.md'), 'utf8');
+    assert.ok(agentsDoc.includes('## 13. SSE-First Architecture Policy for Real-Time APIs & Zero-Polling Mandate'), 'AGENTS.md must contain Section 13 header');
+    assert.ok(agentsDoc.includes('Strict Zero-Polling Mandate'), 'AGENTS.md must mandate zero polling');
+    assert.ok(agentsDoc.includes('REST `GET` Endpoints'), 'AGENTS.md must document REST GET roles');
+    assert.ok(agentsDoc.includes('Synchronous Shell/Process Execution Caching'), 'AGENTS.md must document shell execution caching');
+  });
+
+  test('VideoCastClient operates in pure event-driven zero-polling mode and handles SSE RTMP updates', () => {
+    const dom = new JSDOM(`
+      <!DOCTYPE html><html><body>
+      <select id="video-cast-source-select">
+        <option value="test">Synthetic FPV HUD (Test Pattern)</option>
+        <option value="rtmp://127.0.0.1:1935/live/stream" data-rtmp-default="true">Embedded RTMP Ingest (DJI RC 2 / Live Push)</option>
+      </select>
+      <span id="video-cast-status-text">OFFLINE</span>
+      </body></html>
+    `);
+    const origDoc = global.document;
+    global.document = dom.window.document;
+
+    const vc = window.videoCastClient || global.videoCastClient;
+    assert.ok(vc, 'videoCastClient instance must exist');
+    assert.strictEqual(vc.statusPollTimer, undefined, 'statusPollTimer must not exist or be running');
+
+    try {
+      // Simulate receiving SSE RTMP payload via ApiClient
+      vc.updateRtmpUI({
+        listening: true,
+        port: 1935,
+        activeStreams: [{ path: 'live/stream', publisherIp: '192.168.1.80', durationSec: 10 }],
+        primaryUrl: 'rtmp://192.168.1.44:1935/live/stream'
+      });
+
+      assert.strictEqual(vc.hasReceivedSseRtmp, true, 'hasReceivedSseRtmp must be marked true upon receiving SSE');
+      const opt = dom.window.document.querySelector('option[data-rtmp-default="true"]');
+      assert.ok(opt.textContent.includes('RC 2 Live Stream'), 'Option label must reflect active stream');
+      assert.strictEqual(dom.window.document.getElementById('video-cast-status-text').textContent, 'LIVE (RC 2)');
+    } finally {
+      global.document = origDoc;
+    }
+  });
+});
+
 });
