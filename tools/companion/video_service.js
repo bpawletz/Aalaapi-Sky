@@ -85,25 +85,44 @@ class VideoService {
   }
 
   /**
-   * Checks Windows Firewall status for inbound RTMP port 1935.
+   * In-memory cache for Windows Firewall checks to avoid repeated synchronous child process execution.
    */
-  static checkFirewall(ruleName = 'Aalaapi Sky RTMP Ingest', port = 1935) {
+  static _firewallCache = new Map();
+
+  static clearFirewallCache() {
+    VideoService._firewallCache.clear();
+  }
+
+  /**
+   * Checks Windows Firewall status for inbound RTMP port 1935 (cached with 60s TTL).
+   */
+  static checkFirewall(ruleName = 'Aalaapi Sky RTMP Ingest', port = 1935, ttlMs = 60000) {
+    const key = `${ruleName}:${port}`;
+    const now = Date.now();
+    const cached = VideoService._firewallCache.get(key);
+    if (cached && (now - cached.timestamp < ttlMs)) {
+      return cached.result;
+    }
+
     if (process.platform !== 'win32') {
-      return {
+      const res = {
         open: true,
         platform: process.platform,
         port,
         message: 'Non-Windows host; local firewall rules managed by OS packet filter.'
       };
+      VideoService._firewallCache.set(key, { result: res, timestamp: now });
+      return res;
     }
 
+    let res = null;
     try {
       const out = execSync(`netsh advfirewall firewall show rule name="${ruleName}"`, {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe']
       });
       if (out && (out.includes(String(port)) || out.includes(ruleName))) {
-        return {
+        res = {
           open: true,
           platform: 'win32',
           rule: ruleName,
@@ -115,14 +134,19 @@ class VideoService {
       // Command exits with code 1 if rule does not exist
     }
 
-    return {
-      open: false,
-      platform: 'win32',
-      rule: ruleName,
-      port,
-      command: `netsh advfirewall firewall add rule name="${ruleName}" dir=in action=allow protocol=TCP localport=${port} profile=any description="Allows inbound RTMP video streaming from DJI RC 2 to Aalaapi Sky Companion"`,
-      message: `Inbound firewall rule for port ${port} not found. Elevation required to configure.`
-    };
+    if (!res) {
+      res = {
+        open: false,
+        platform: 'win32',
+        rule: ruleName,
+        port,
+        command: `netsh advfirewall firewall add rule name="${ruleName}" dir=in action=allow protocol=TCP localport=${port} profile=any description="Allows inbound RTMP video streaming from DJI RC 2 to Aalaapi Sky Companion"`,
+        message: `Inbound firewall rule for port ${port} not found. Elevation required to configure.`
+      };
+    }
+
+    VideoService._firewallCache.set(key, { result: res, timestamp: now });
+    return res;
   }
 
   /**

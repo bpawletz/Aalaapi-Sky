@@ -186,3 +186,24 @@ Whenever introducing, updating, or referencing any third-party library, CDN scri
    - Ensure Leaflet tile layers (`L.tileLayer`, `L.tileLayer.wms`, `L.esri.featureLayer`) in `src/map/MapEngine.js` configure an accurate, compliant `attribution` property citing the upstream provider.
 6. **Mandatory Test Verification**:
    - Maintain and run the attribution & trademark test suite in `index.test.js` asserting that `CREDITS.md`, `#about-modal`, and trademark legal notices remain intact.
+
+
+## 13. SSE-First Architecture Policy for Real-Time APIs & Zero-Polling Mandate
+To ensure high responsiveness, minimal loop latency, and zero unnecessary CPU/network overhead, all real-time communication between the Aalaapi Sky client and the Companion Bridge MUST follow an **SSE-First Architecture**:
+
+1. **Mandatory SSE for Real-Time Feeds:**
+   - Whenever designing, extending, or consuming APIs for dynamic state—including hardware connectivity (RC 2, RTMP, ADS-B, Remote ID), telemetry, weather, progress indicators, or operational events—agents MUST implement Server-Sent Events (SSE) as the primary transport protocol (e.g., `/api/status/stream`, `/api/airspace/stream`, or the unified multiplexed stream `/api/stream`).
+   - For high-frequency bidirectional or binary feeds (such as raw video frames), RFC 6455 WebSockets are used.
+
+2. **Strict Zero-Polling Mandate:**
+   - Continuous client-side interval polling loops (e.g., `setInterval(fetch, 2000)`) are **STRICTLY PROHIBITED** when an SSE channel is available or can be extended.
+   - Client modules MUST subscribe to the live SSE stream (via `ApiClient.js` or `EventSource`) and react event-driven to state broadcasts.
+
+3. **Role of REST Endpoints:**
+   - **REST `GET` Endpoints**: Restricted exclusively to:
+     1. Initial one-shot hydration/bootstrap upon page load, view mount, or modal open (to immediately populate UI before the first SSE tick arrives).
+     2. Disconnected fallback if the client detects that SSE transport is offline or unsupported.
+   - **REST `POST / PUT / DELETE` Endpoints**: Reserved exclusively for discrete user-initiated actions, mutations, and commands (e.g., mission sync, camera settings overrides, log export, cache clearing).
+
+4. **Synchronous Shell/Process Execution Caching:**
+   - Server-side helpers that execute synchronous child processes or OS queries (such as `netsh advfirewall`, `iwlist`, or system profilers) MUST cache results with an appropriate Time-To-Live (TTL, typically 30–60 seconds) so that status broadcasts and one-shot API queries do not introduce blocking loop lag (p99 latency) or burn CPU.

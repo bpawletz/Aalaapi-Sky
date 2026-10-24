@@ -10222,4 +10222,61 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
   });
 
+  describe('Sidebar Minimized Offset & Map Control Alignment E2E Suite (v1.193.3 - Issue #171)', () => {
+    test('E2E: Map container starts at left = 0 and zoom/layer controls retain identical border buffer when sidebar is minimized', async () => {
+      const evalResult = await page.evaluate(async () => {
+        const sidebar = document.querySelector('.sidebar');
+        const mapContainer = document.querySelector('.main-map-container');
+        const zoomControl = document.querySelector('.leaflet-control-zoom');
+        const layersControl = document.querySelector('.leaflet-control-layers');
+
+        if (!sidebar || !mapContainer || !zoomControl || !layersControl) {
+          return { error: 'Required layout elements missing' };
+        }
+
+        // 1. Expanded state measurements
+        sidebar.classList.remove('minimized');
+        await new Promise(r => setTimeout(r, 50));
+
+        const mapRectExpanded = mapContainer.getBoundingClientRect();
+        const zoomRectExpanded = zoomControl.getBoundingClientRect();
+        const layersRectExpanded = layersControl.getBoundingClientRect();
+
+        const zoomBufferExpanded = Math.round(zoomRectExpanded.left - mapRectExpanded.left);
+        const layersBufferExpanded = Math.round(layersRectExpanded.left - mapRectExpanded.left);
+
+        // 2. Minimized state measurements
+        sidebar.classList.add('minimized');
+        await new Promise(r => setTimeout(r, 350));
+
+        const mapRectMinimized = mapContainer.getBoundingClientRect();
+        const zoomRectMinimized = zoomControl.getBoundingClientRect();
+        const layersRectMinimized = layersControl.getBoundingClientRect();
+
+        const zoomBufferMinimized = Math.round(zoomRectMinimized.left - mapRectMinimized.left);
+        const layersBufferMinimized = Math.round(layersRectMinimized.left - mapRectMinimized.left);
+
+        // Restore sidebar state
+        sidebar.classList.remove('minimized');
+
+        return {
+          mapLeftExpanded: Math.round(mapRectExpanded.left),
+          mapLeftMinimized: Math.round(mapRectMinimized.left),
+          zoomBufferExpanded,
+          zoomBufferMinimized,
+          layersBufferExpanded,
+          layersBufferMinimized,
+          zoomLeftExpandedViewport: Math.round(zoomRectExpanded.left),
+          zoomLeftMinimizedViewport: Math.round(zoomRectMinimized.left)
+        };
+      });
+
+      assert.strictEqual(evalResult.error, undefined);
+      assert.strictEqual(evalResult.mapLeftMinimized, 0, 'Map container must start at x = 0 when sidebar is minimized');
+      assert.strictEqual(evalResult.zoomBufferExpanded, evalResult.zoomBufferMinimized, 'Zoom control left border buffer must be identical');
+      assert.strictEqual(evalResult.layersBufferExpanded, evalResult.layersBufferMinimized, 'Layer control left border buffer must be identical');
+      assert.ok(evalResult.zoomLeftMinimizedViewport >= 9, 'Zoom control must not be clipped off-screen when minimized');
+    });
+  });
+
 });
