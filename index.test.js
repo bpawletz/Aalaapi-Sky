@@ -35846,21 +35846,19 @@ describe('v1.197.2: Zero-Polling SSE Enforcement for Airspace & Tile Cache Stats
   describe('v1.197.3: DirectShow & Windows Media Foundation Device Index Alignment (Issue #181)', () => {
     test('Version consistency: v1.197.3 across package.json, changelog, index_template.html, and index.html', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.197.3');
+      assert.ok(pkg.version === '1.197.3' || pkg.version === '1.197.4', 'pkg.version must be at least 1.197.3');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.197.3] - 2026-10-25'));
       assert.ok(changelog.includes('Closes #181'));
 
       const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-      assert.ok(tmpl.includes('Version 1.197.3'));
       assert.ok(tmpl.includes('Changelog (v1.197.3):'));
-      assert.ok(tmpl.includes('v1.197.3</span>'));
+      assert.ok(tmpl.includes('v1.197.3'));
 
       const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-      assert.ok(indexHtml.includes('Version 1.197.3'));
       assert.ok(indexHtml.includes('Changelog (v1.197.3):'));
-      assert.ok(indexHtml.includes('v1.197.3</span>'));
+      assert.ok(indexHtml.includes('v1.197.3'));
     });
 
     test('VideoCastClient updateDevicesUI sets device value matching hardware index', () => {
@@ -35953,4 +35951,163 @@ describe('v1.197.2: Zero-Polling SSE Enforcement for Airspace & Tile Cache Stats
     }
   });
 });
+
+  describe('v1.197.4: Terminal Gimbal Horizon Restoration & APAS Obstacle Prevention (Issue #182)', () => {
+    test('Version consistency: v1.197.4 across package.json, changelog, index_template.html, and index.html', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.197.4');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.197.4] - 2026-10-25'));
+      assert.ok(changelog.includes('Closes #182'));
+
+      const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(tmpl.includes('Version 1.197.4'));
+      assert.ok(tmpl.includes('Changelog (v1.197.4):'));
+      assert.ok(tmpl.includes('v1.197.4</span>'));
+
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      assert.ok(indexHtml.includes('Version 1.197.4'));
+      assert.ok(indexHtml.includes('Changelog (v1.197.4):'));
+      assert.ok(indexHtml.includes('v1.197.4</span>'));
+    });
+    test('buildWaylinesWpml restores gimbal to horizon (0°) and hovers at final nadir waypoint in discrete Photo Spheres', () => {
+      const origStub = global._stubElements;
+      try {
+        global._stubElements = {
+          'drone-model': { value: '68' },
+          'photo-sphere-mode': { value: 'discreteNodes' },
+          'photo-sphere-ring-zenith': { checked: false },
+          'photo-sphere-ring-1': { checked: true },
+          'photo-sphere-ring-2': { checked: true },
+          'photo-sphere-ring-3': { checked: true },
+          'photo-sphere-ring-nadir': { checked: true },
+          'photo-sphere-shots-per-ring': { value: '12' },
+          'photo-sphere-settling-time': { value: '2.0' },
+          'photo-sphere-aeb-mode': { value: 'none' }
+        };
+
+        const result = generatePhotoSphereCoordinates(16, { droneModel: 68 });
+        assert.strictEqual(result.waypoints.length, 37, 'Must generate 37 discrete waypoints');
+
+        const waypoints = result.waypoints.map(w => ({ ...w, lat: 41.3215, lon: -88.9950 }));
+        const wpml = buildWaylinesWpml(waypoints, 16, 3.2, 'smoothTransition', 'goHome', -60, 'stopAndShoot', 'curved', {
+          flightPattern: 'photo-sphere',
+          gridType: 'photo-sphere',
+          isConsumer: true
+        });
+        assert.ok(wpml, 'WPML must be generated');
+
+        // Extract last placemark (WP 36 - nadir)
+        const placemarks = wpml.split('<Placemark>').slice(1);
+        const lastPm = placemarks[placemarks.length - 1];
+        assert.ok(lastPm.includes('<wpml:index>36</wpml:index>'), 'Last placemark must have index 36');
+        assert.ok(lastPm.includes('<wpml:waypointGimbalPitchAngle>-90</wpml:waypointGimbalPitchAngle>'), 'Last placemark must arrive at nadir -90°');
+
+        // Assert actions in WP 36:
+        // Must contain takePhoto
+        assert.ok(lastPm.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'), 'Must capture nadir photo');
+
+        // Must contain gimbalRotate to 0° AFTER takePhoto
+        const takePhotoIdx = lastPm.indexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
+        const gimbalRestoreIdx = lastPm.indexOf('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>');
+        assert.ok(gimbalRestoreIdx > takePhotoIdx, 'Gimbal restore to 0° must occur after takePhoto');
+
+        // Must contain hover dwell after gimbal restoration to allow mechanical leveling before finishAction engages
+        const postHoverIdx = lastPm.indexOf('<wpml:hoverTime>2.0</wpml:hoverTime>', gimbalRestoreIdx);
+        assert.ok(postHoverIdx > gimbalRestoreIdx, 'Leveling hover dwell must occur after gimbal restoration');
+
+        // Validation against all 10 WPML rules
+        const val = validateWpmlMission(wpml, '', { isConsumer: true, gridType: 'photo-sphere' });
+        assert.strictEqual(val.valid, true, 'Mission must pass WPML validation: ' + JSON.stringify(val.errors));
+      } finally {
+        global._stubElements = origStub;
+      }
+    });
+
+    test('buildWaylinesWpml restores gimbal to horizon (0°) and hovers in single-waypoint photo sphere action group', () => {
+      const actions = [];
+      actions.push({ yaw: 0, pitch: -15, hoverTime: 2.0 });
+      actions.push({ yaw: 0, pitch: -90, hoverTime: 2.0 }); // Nadir shot
+      const wps = [{
+        lat: 41.3215,
+        lon: -88.9950,
+        alt: 16,
+        gridType: 'photo-sphere',
+        isPhotoSphere: true,
+        isPhotoSphereActionGroup: true,
+        photoSphereActions: actions
+      }];
+
+      const wpml = buildWaylinesWpml(wps, 16, 4.0, 'followWayline', 'goHome', -60, 'stopAndShoot', 'curved', {
+        flightPattern: 'photo-sphere',
+        gridType: 'photo-sphere',
+        isConsumer: true
+      });
+      assert.ok(wpml, 'WPML must be generated');
+
+      const placemarks = wpml.split('<Placemark>').slice(1);
+      assert.strictEqual(placemarks.length, 1, 'Single placemark generated');
+      const pm = placemarks[0];
+
+      const lastPhotoIdx = pm.lastIndexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
+      const gimbalRestoreIdx = pm.lastIndexOf('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>');
+      assert.ok(gimbalRestoreIdx > lastPhotoIdx, 'Single waypoint action group must restore gimbal to 0° after final photo');
+    });
+
+    test('validateAndFixWpml audits and injects terminal gimbal restoration if mission finishes at steep downward pitch (<= -45°)', () => {
+      const rawWpml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
+  <Document>
+    <Folder>
+      <Placemark>
+        <Point><coordinates>-88.995,41.3215</coordinates></Point>
+        <wpml:index>0</wpml:index>
+        <wpml:executeHeight>20</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam><wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode></wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>0</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>0</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>0</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger><wpml:actionTriggerType>reachPoint</wpml:actionTriggerType></wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>1</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam><wpml:payloadPositionIndex>0</wpml:payloadPositionIndex></wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
+        <wpml:waypointGimbalHeadingParam>
+          <wpml:waypointGimbalPitchAngle>-90</wpml:waypointGimbalPitchAngle>
+          <wpml:waypointGimbalYawAngle>0</wpml:waypointGimbalYawAngle>
+        </wpml:waypointGimbalHeadingParam>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+
+      const res = validateAndFixWpml(rawWpml, '', { isConsumer: true });
+      assert.ok(res.wpmlXml, 'Repaired WPML must be returned');
+      assert.ok(res.wpmlXml.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'), 'Audit must inject terminal gimbal restoration');
+      assert.ok(res.wpmlXml.includes('<wpml:hoverTime>2.0</wpml:hoverTime>'), 'Audit must inject terminal hover dwell');
+    });
+
+    test('Non-steep missions do not inject extra gimbal restoration at terminal waypoint', () => {
+      const wps = [
+        { lat: 41.3215, lon: -88.9950, alt: 20, pitch: -15 },
+        { lat: 41.3220, lon: -88.9950, alt: 20, pitch: -15 }
+      ];
+
+      const wpml = buildWaylinesWpml(wps, 20, 4.0, 'followWayline', 'goHome', -15, 'stopAndShoot', 'curved', {
+        isConsumer: true
+      });
+      const placemarks = wpml.split('<Placemark>').slice(1);
+      const lastPm = placemarks[placemarks.length - 1];
+
+      // Terminal waypoint with pitch -15 should NOT have an extra gimbalRotate to 0
+      assert.ok(!lastPm.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'), 'Non-steep mission should not inject gimbal restoration to 0°');
+    });
+  });
 });
