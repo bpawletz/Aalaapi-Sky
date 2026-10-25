@@ -109,8 +109,14 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   // DJI Fly to reject the mission at "Go" press (observed on double-grid with 81 action groups).
   let actionGroupId = 1;
 
+  const layersList = (opts.flightLayers && Array.isArray(opts.flightLayers) && opts.flightLayers.length > 0)
+    ? opts.flightLayers
+    : ((typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+      ? global.flightLayers
+      : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null));
+
   const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
-  const gridType = opts.flightPattern || opts.gridType || opts.pattern || ((gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && (w.gridType || w.layerPattern))?.gridType || waypoints.find(w => w && (w.gridType || w.layerPattern))?.layerPattern || ''));
+  const gridType = opts.flightPattern || opts.gridType || opts.pattern || ((gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && (w.gridType || w.layerPattern))?.gridType || waypoints.find(w => w && (w.gridType || w.layerPattern))?.layerPattern || (layersList && layersList.length === 1 && layersList[0].pattern ? layersList[0].pattern : '')));
 
   // Sanitize consecutive duplicate coordinates (DJI APAS collision & zero-distance trajectory solver rule)
   // When consecutive waypoints share identical coordinates (distance < 0.6m, e.g., in-place 360 photo spheres or stacked points),
@@ -228,6 +234,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     if (!wpLayer && layersList && typeof wp.layerIndex === 'number' && layersList[wp.layerIndex]) {
       wpLayer = layersList[wp.layerIndex];
     }
+    if (!wpLayer && layersList && layersList.length === 1 && (layersList[0].pattern === 'hyperlapse' || (opts.flightLayers && opts.flightLayers.length === 1))) {
+      wpLayer = layersList[0];
+    }
     // Only infer layer by accumulation in multi-layer missions where waypoints have layer metadata or stack has > 1 layer
     if (!wpLayer && layersList && layersList.length > 1 && (wp.layerId || wp.layerCaptureMode || wp.layerAltitude || wp.layerPattern)) {
       let accum = 0;
@@ -322,17 +331,21 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       wpLayer && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined &&
       wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch;
 
+    const isContinuousHelix = (gridType === 'continuous-helix') || (wp.isContinuousHelix) || (wp.gridType === 'continuous-helix') || (wp.layerPattern === 'continuous-helix') || (wpLayer && wpLayer.pattern === 'continuous-helix');
+
     const rawWpPitch = isWpPitchOverridden
       ? wp.pitch
       : (isHyperlapseSweep && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit'
         ? wp.pitch
-        : (isPhotoSphere && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+        : (isContinuousHelix && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
           ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-          : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
-            ? wp.layerGimbalPitch
-            : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
-              ? wpLayer.gimbalPitch
-              : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch))))));
+          : (isPhotoSphere && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+            ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
+            : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
+              ? wp.layerGimbalPitch
+              : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
+                ? wpLayer.gimbalPitch
+                : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch)))))));
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
       const effectiveAltForPitch = (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit')
         ? wp.alt
@@ -998,10 +1011,10 @@ ${waypointActions.join('\n')}
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>${actualHeadingMode}</wpml:waypointHeadingMode>
           <wpml:waypointHeadingAngle>${(actualHeadingMode === 'smoothTransition' && headingAngleEnable === 1 && (actualHeadingAngle === 0 || Math.abs(actualHeadingAngle) < 0.05)) ? '0.1' : (actualHeadingAngle === 0 ? '0' : actualHeadingAngle.toFixed(1))}</wpml:waypointHeadingAngle>
-          <wpml:waypointPoiPoint>${isPhotoSphere ? '0.000000,0.000000,0.000000' : poiPoint}</wpml:waypointPoiPoint>
+          <wpml:waypointPoiPoint>${(!isPhotoSphere && !isContinuousHelix && (actualHeadingMode === 'towardPOI' || (targetPoiId && (gridType === 'hyperlapse' || wp.isHyperlapse || (wpLayer && wpLayer.pattern === 'hyperlapse'))))) ? poiPoint : '0.000000,0.000000,0.000000'}</wpml:waypointPoiPoint>
           <wpml:waypointHeadingAngleEnable>${headingAngleEnable}</wpml:waypointHeadingAngleEnable>
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
-          <wpml:waypointHeadingPoiIndex>${isPhotoSphere ? 0 : targetPoiIndex}</wpml:waypointHeadingPoiIndex>
+          <wpml:waypointHeadingPoiIndex>${(!isPhotoSphere && !isContinuousHelix && (actualHeadingMode === 'towardPOI' || (targetPoiId && (gridType === 'hyperlapse' || wp.isHyperlapse || (wpLayer && wpLayer.pattern === 'hyperlapse'))))) ? targetPoiIndex : 0}</wpml:waypointHeadingPoiIndex>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
           <wpml:waypointTurnMode>${actualTurnMode}</wpml:waypointTurnMode>
@@ -1457,6 +1470,24 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           }
         }
       }
+      // Neutralize POI ground target on non-towardPOI waypoints (and all continuous-helix / photo-sphere) to prevent DJI Fly gimbal lock/dance (Issue #183)
+      const effectiveHModeMatch = pms[i].match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
+      const effectiveHMode = effectiveHModeMatch ? effectiveHModeMatch[1].trim() : mode;
+      const optGridType = options && (options.gridType || options.pattern);
+      const isHelixOrSphereOrNoHl = (optGridType === 'continuous-helix') || (optGridType === 'photo-sphere') ||
+        (wpObj && (wpObj.isContinuousHelix || wpObj.isPhotoSphere || wpObj.gridType === 'continuous-helix' || wpObj.gridType === 'photo-sphere')) ||
+        (effectiveHMode !== 'towardPOI' && optGridType !== 'hyperlapse' && !(wpObj && wpObj.isHyperlapse));
+      if (isHelixOrSphereOrNoHl && effectiveHMode !== 'towardPOI') {
+        pms[i] = pms[i].replace(
+          /<wpml:waypointPoiPoint>[^<]+<\/wpml:waypointPoiPoint>/g,
+          '<wpml:waypointPoiPoint>0.000000,0.000000,0.000000<\/wpml:waypointPoiPoint>'
+        );
+        pms[i] = pms[i].replace(
+          /<wpml:waypointHeadingPoiIndex>[^<]+<\/wpml:waypointHeadingPoiIndex>/g,
+          '<wpml:waypointHeadingPoiIndex>0<\/wpml:waypointHeadingPoiIndex>'
+        );
+      }
+
       // Capture Mode Action Sanitization (Three-Tier Cascade: Waypoint -> Layer -> Global)
       const layersListForCap = (options && options.flightLayers) || (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0 ? global.flightLayers : (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) ? flightLayers : null));
       let capLayer = (wpObj && wpObj.layerId && layersListForCap) ? layersListForCap.find(l => l.id === wpObj.layerId) : null;

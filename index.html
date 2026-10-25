@@ -7698,7 +7698,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.197.4</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.197.5</span></h1>
         </div>
       </div>
 
@@ -14219,7 +14219,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.197.4</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.197.5</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14341,6 +14341,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                       <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.197.5):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Eliminated Gimbal Dance &amp; Ground POI Lock (Closes #183):</strong> Neutralized <code>&lt;wpml:waypointPoiPoint&gt;</code> to <code>0.000000,0.000000,0.000000</code> on Continuous Helix and all non-towardPOI waypoints, stopping DJI Fly firmware from violently snapping the camera gimbal down to the ground upon reaching each waypoint. Preserved helical pitch sweep dynamics against layer-level flat pitch defaults.</li>
+              </ul>
+            </li>
+<li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.197.4):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li><strong>Terminal Gimbal Horizon Restoration &amp; APAS Obstacle Prevention (Closes #182):</strong> Restores camera gimbal pitch smoothly to level horizon (0.0°) with a 2.0s settling dwell upon completing the final nadir waypoint in 360° Photo Spheres, preventing DJI Fly APAS omnidirectional obstacle avoidance sensors from false-aborting Return-to-Home into <code>GPSAtti</code>.</li>
@@ -48387,8 +48393,14 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   // DJI Fly to reject the mission at "Go" press (observed on double-grid with 81 action groups).
   let actionGroupId = 1;
 
+  const layersList = (opts.flightLayers && Array.isArray(opts.flightLayers) && opts.flightLayers.length > 0)
+    ? opts.flightLayers
+    : ((typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+      ? global.flightLayers
+      : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null));
+
   const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
-  const gridType = opts.flightPattern || opts.gridType || opts.pattern || ((gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && (w.gridType || w.layerPattern))?.gridType || waypoints.find(w => w && (w.gridType || w.layerPattern))?.layerPattern || ''));
+  const gridType = opts.flightPattern || opts.gridType || opts.pattern || ((gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && (w.gridType || w.layerPattern))?.gridType || waypoints.find(w => w && (w.gridType || w.layerPattern))?.layerPattern || (layersList && layersList.length === 1 && layersList[0].pattern ? layersList[0].pattern : '')));
 
   // Sanitize consecutive duplicate coordinates (DJI APAS collision & zero-distance trajectory solver rule)
   // When consecutive waypoints share identical coordinates (distance < 0.6m, e.g., in-place 360 photo spheres or stacked points),
@@ -48506,6 +48518,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     if (!wpLayer && layersList && typeof wp.layerIndex === 'number' && layersList[wp.layerIndex]) {
       wpLayer = layersList[wp.layerIndex];
     }
+    if (!wpLayer && layersList && layersList.length === 1 && (layersList[0].pattern === 'hyperlapse' || (opts.flightLayers && opts.flightLayers.length === 1))) {
+      wpLayer = layersList[0];
+    }
     // Only infer layer by accumulation in multi-layer missions where waypoints have layer metadata or stack has > 1 layer
     if (!wpLayer && layersList && layersList.length > 1 && (wp.layerId || wp.layerCaptureMode || wp.layerAltitude || wp.layerPattern)) {
       let accum = 0;
@@ -48600,17 +48615,21 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       wpLayer && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined &&
       wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch;
 
+    const isContinuousHelix = (gridType === 'continuous-helix') || (wp.isContinuousHelix) || (wp.gridType === 'continuous-helix') || (wp.layerPattern === 'continuous-helix') || (wpLayer && wpLayer.pattern === 'continuous-helix');
+
     const rawWpPitch = isWpPitchOverridden
       ? wp.pitch
       : (isHyperlapseSweep && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit'
         ? wp.pitch
-        : (isPhotoSphere && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+        : (isContinuousHelix && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
           ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-          : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
-            ? wp.layerGimbalPitch
-            : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
-              ? wpLayer.gimbalPitch
-              : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch))))));
+          : (isPhotoSphere && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+            ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
+            : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
+              ? wp.layerGimbalPitch
+              : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
+                ? wpLayer.gimbalPitch
+                : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch)))))));
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
       const effectiveAltForPitch = (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit')
         ? wp.alt
@@ -49276,10 +49295,10 @@ ${waypointActions.join('\n')}
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>${actualHeadingMode}</wpml:waypointHeadingMode>
           <wpml:waypointHeadingAngle>${(actualHeadingMode === 'smoothTransition' && headingAngleEnable === 1 && (actualHeadingAngle === 0 || Math.abs(actualHeadingAngle) < 0.05)) ? '0.1' : (actualHeadingAngle === 0 ? '0' : actualHeadingAngle.toFixed(1))}</wpml:waypointHeadingAngle>
-          <wpml:waypointPoiPoint>${isPhotoSphere ? '0.000000,0.000000,0.000000' : poiPoint}</wpml:waypointPoiPoint>
+          <wpml:waypointPoiPoint>${(!isPhotoSphere && !isContinuousHelix && (actualHeadingMode === 'towardPOI' || (targetPoiId && (gridType === 'hyperlapse' || wp.isHyperlapse || (wpLayer && wpLayer.pattern === 'hyperlapse'))))) ? poiPoint : '0.000000,0.000000,0.000000'}</wpml:waypointPoiPoint>
           <wpml:waypointHeadingAngleEnable>${headingAngleEnable}</wpml:waypointHeadingAngleEnable>
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
-          <wpml:waypointHeadingPoiIndex>${isPhotoSphere ? 0 : targetPoiIndex}</wpml:waypointHeadingPoiIndex>
+          <wpml:waypointHeadingPoiIndex>${(!isPhotoSphere && !isContinuousHelix && (actualHeadingMode === 'towardPOI' || (targetPoiId && (gridType === 'hyperlapse' || wp.isHyperlapse || (wpLayer && wpLayer.pattern === 'hyperlapse'))))) ? targetPoiIndex : 0}</wpml:waypointHeadingPoiIndex>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
           <wpml:waypointTurnMode>${actualTurnMode}</wpml:waypointTurnMode>
@@ -49735,6 +49754,24 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           }
         }
       }
+      // Neutralize POI ground target on non-towardPOI waypoints (and all continuous-helix / photo-sphere) to prevent DJI Fly gimbal lock/dance (Issue #183)
+      const effectiveHModeMatch = pms[i].match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
+      const effectiveHMode = effectiveHModeMatch ? effectiveHModeMatch[1].trim() : mode;
+      const optGridType = options && (options.gridType || options.pattern);
+      const isHelixOrSphereOrNoHl = (optGridType === 'continuous-helix') || (optGridType === 'photo-sphere') ||
+        (wpObj && (wpObj.isContinuousHelix || wpObj.isPhotoSphere || wpObj.gridType === 'continuous-helix' || wpObj.gridType === 'photo-sphere')) ||
+        (effectiveHMode !== 'towardPOI' && optGridType !== 'hyperlapse' && !(wpObj && wpObj.isHyperlapse));
+      if (isHelixOrSphereOrNoHl && effectiveHMode !== 'towardPOI') {
+        pms[i] = pms[i].replace(
+          /<wpml:waypointPoiPoint>[^<]+<\/wpml:waypointPoiPoint>/g,
+          '<wpml:waypointPoiPoint>0.000000,0.000000,0.000000<\/wpml:waypointPoiPoint>'
+        );
+        pms[i] = pms[i].replace(
+          /<wpml:waypointHeadingPoiIndex>[^<]+<\/wpml:waypointHeadingPoiIndex>/g,
+          '<wpml:waypointHeadingPoiIndex>0<\/wpml:waypointHeadingPoiIndex>'
+        );
+      }
+
       // Capture Mode Action Sanitization (Three-Tier Cascade: Waypoint -> Layer -> Global)
       const layersListForCap = (options && options.flightLayers) || (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0 ? global.flightLayers : (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) ? flightLayers : null));
       let capLayer = (wpObj && wpObj.layerId && layersListForCap) ? layersListForCap.find(l => l.id === wpObj.layerId) : null;

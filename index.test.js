@@ -35846,7 +35846,7 @@ describe('v1.197.2: Zero-Polling SSE Enforcement for Airspace & Tile Cache Stats
   describe('v1.197.3: DirectShow & Windows Media Foundation Device Index Alignment (Issue #181)', () => {
     test('Version consistency: v1.197.3 across package.json, changelog, index_template.html, and index.html', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.197.3' || pkg.version === '1.197.4', 'pkg.version must be at least 1.197.3');
+      assert.ok(semverGte(pkg.version, '1.197.3'), 'pkg.version must be at least 1.197.3');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.197.3] - 2026-10-25'));
@@ -35955,21 +35955,19 @@ describe('v1.197.2: Zero-Polling SSE Enforcement for Airspace & Tile Cache Stats
   describe('v1.197.4: Terminal Gimbal Horizon Restoration & APAS Obstacle Prevention (Issue #182)', () => {
     test('Version consistency: v1.197.4 across package.json, changelog, index_template.html, and index.html', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.197.4');
+      assert.ok(semverGte(pkg.version, '1.197.4'), 'pkg.version must be at least 1.197.4');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.197.4] - 2026-10-25'));
       assert.ok(changelog.includes('Closes #182'));
 
       const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-      assert.ok(tmpl.includes('Version 1.197.4'));
       assert.ok(tmpl.includes('Changelog (v1.197.4):'));
-      assert.ok(tmpl.includes('v1.197.4</span>'));
+      assert.ok(tmpl.includes('v1.197.4'));
 
       const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-      assert.ok(indexHtml.includes('Version 1.197.4'));
       assert.ok(indexHtml.includes('Changelog (v1.197.4):'));
-      assert.ok(indexHtml.includes('v1.197.4</span>'));
+      assert.ok(indexHtml.includes('v1.197.4'));
     });
     test('buildWaylinesWpml restores gimbal to horizon (0°) and hovers at final nadir waypoint in discrete Photo Spheres', () => {
       const origStub = global._stubElements;
@@ -36109,5 +36107,163 @@ describe('v1.197.2: Zero-Polling SSE Enforcement for Airspace & Tile Cache Stats
       // Terminal waypoint with pitch -15 should NOT have an extra gimbalRotate to 0
       assert.ok(!lastPm.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'), 'Non-steep mission should not inject gimbal restoration to 0°');
     });
+  });
+});
+
+describe('Issue #183: Gimbal Dance Elimination & Ground POI Snap Suppression (v1.197.5)', () => {
+  test('Version consistency: v1.197.5 across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.197.5');
+  });
+
+  test('buildWaylinesWpml suppresses ground POI waypointPoiPoint and resets headingPoiIndex for continuous-helix', () => {
+    const layer = {
+      id: 'layer-helix-183',
+      pattern: 'continuous-helix',
+      helixRadiusStart: 5,
+      helixRadiusEnd: 5,
+      helixAltStart: 14,
+      helixAltEnd: 16,
+      helixRevolutions: 1,
+      helixPitchStart: -25,
+      helixPitchEnd: -35,
+      helixHeadingMode: 'towardCenter',
+      gimbalPitch: 0
+    };
+    const coords = generateHelixCoordinates(layer, 5.0, 14, -25);
+    const wps = coords.waypoints.map((pt, i) => ({
+      ...pt,
+      lat: 41.3215 + pt.y * 0.00001,
+      lon: -88.9950 + pt.x * 0.00001,
+      layerPattern: 'continuous-helix'
+    }));
+
+    const origLayers = (typeof flightLayers !== 'undefined') ? [...flightLayers] : [];
+    const origPois = (typeof pois !== 'undefined') ? [...pois] : [];
+
+    try {
+      global.flightLayers = [layer];
+      global.pois = [{ id: 'poi-center-183', lat: 41.3215, lon: -88.9950, alt: 0 }];
+
+      const wpml = buildWaylinesWpml(wps, 14, 3.2, 'smoothTransition', 'goHome', -25, 'stopAndShoot', 'curved', {
+        isConsumer: true,
+        flightLayers: [layer]
+      });
+
+      const placemarks = wpml.split('<Placemark>').slice(1);
+      assert.ok(placemarks.length > 0, 'Placemarks must be generated');
+
+      placemarks.forEach((pm, idx) => {
+        assert.ok(
+          pm.includes('<wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>'),
+          `Waypoint ${idx} must neutralize waypointPoiPoint to 0.000000,0.000000,0.000000 to prevent gimbal dance`
+        );
+        assert.ok(
+          pm.includes('<wpml:waypointHeadingPoiIndex>0</wpml:waypointHeadingPoiIndex>'),
+          `Waypoint ${idx} must reset waypointHeadingPoiIndex to 0`
+        );
+      });
+    } finally {
+      if (typeof flightLayers !== 'undefined') {
+        flightLayers.length = 0;
+        origLayers.forEach(l => flightLayers.push(l));
+      }
+      delete global.flightLayers;
+      if (typeof pois !== 'undefined') {
+        pois.length = 0;
+        origPois.forEach(p => pois.push(p));
+      }
+      delete global.pois;
+    }
+  });
+
+  test('buildWaylinesWpml preserves helical pitch progression when layer gimbalPitch is 0°', () => {
+    const layer = {
+      id: 'layer-helix-flat-pitch',
+      pattern: 'continuous-helix',
+      helixRadiusStart: 5,
+      helixRadiusEnd: 5,
+      helixAltStart: 14,
+      helixAltEnd: 16,
+      helixRevolutions: 1,
+      helixPitchStart: -25,
+      helixPitchEnd: -45,
+      helixHeadingMode: 'towardCenter',
+      gimbalPitch: 0
+    };
+    const coords = generateHelixCoordinates(layer, 5.0, 14, -25);
+    const wps = coords.waypoints.map((pt, i) => ({
+      ...pt,
+      lat: 41.3215 + pt.y * 0.00001,
+      lon: -88.9950 + pt.x * 0.00001,
+      layerGimbalPitch: 0,
+      layerPattern: 'continuous-helix'
+    }));
+
+    const origLayers = (typeof flightLayers !== 'undefined') ? [...flightLayers] : [];
+    try {
+      global.flightLayers = [layer];
+      const wpml = buildWaylinesWpml(wps, 14, 3.2, 'smoothTransition', 'goHome', -25, 'stopAndShoot', 'curved', {
+        isConsumer: true,
+        flightLayers: [layer]
+      });
+
+      const placemarks = wpml.split('<Placemark>').slice(1);
+      const firstPm = placemarks[0];
+      const lastPm = placemarks[placemarks.length - 1];
+
+      assert.ok(firstPm.includes('<wpml:waypointGimbalPitchAngle>-25</wpml:waypointGimbalPitchAngle>'), 'Starts at helixPitchStart (-25°)');
+      assert.ok(lastPm.includes('<wpml:waypointGimbalPitchAngle>-45</wpml:waypointGimbalPitchAngle>'), 'Ends at helixPitchEnd (-45°)');
+    } finally {
+      if (typeof flightLayers !== 'undefined') {
+        flightLayers.length = 0;
+        origLayers.forEach(l => flightLayers.push(l));
+      }
+      delete global.flightLayers;
+    }
+  });
+
+  test('validateAndFixWpml neutralizes rogue ground POI targets on smoothTransition and followWayline while preserving towardPOI', () => {
+    const rawNonPoiWpml = `<kml><Document><Folder>
+      <Placemark>
+        <wpml:index>0</wpml:index>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>180.0</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>41.321500,-88.995000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingPoiIndex>1</wpml:waypointHeadingPoiIndex>
+        </wpml:waypointHeadingParam>
+      </Placemark>
+      <Placemark>
+        <wpml:index>1</wpml:index>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointPoiPoint>41.321500,-88.995000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingPoiIndex>1</wpml:waypointHeadingPoiIndex>
+        </wpml:waypointHeadingParam>
+      </Placemark>
+      <Placemark>
+        <wpml:index>2</wpml:index>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>towardPOI</wpml:waypointHeadingMode>
+          <wpml:waypointPoiPoint>41.321500,-88.995000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingPoiIndex>1</wpml:waypointHeadingPoiIndex>
+        </wpml:waypointHeadingParam>
+      </Placemark>
+    </Folder></Document></kml>`;
+
+    const res = validateAndFixWpml(rawNonPoiWpml, '', { isConsumer: true });
+    const placemarks = res.wpmlXml.split('<Placemark>').slice(1);
+
+    // WP 0: smoothTransition -> neutralized
+    assert.ok(placemarks[0].includes('<wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>'), 'smoothTransition POI must be neutralized');
+    assert.ok(placemarks[0].includes('<wpml:waypointHeadingPoiIndex>0</wpml:waypointHeadingPoiIndex>'), 'smoothTransition POI index must be 0');
+
+    // WP 1: followWayline -> neutralized
+    assert.ok(placemarks[1].includes('<wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>'), 'followWayline POI must be neutralized');
+    assert.ok(placemarks[1].includes('<wpml:waypointHeadingPoiIndex>0</wpml:waypointHeadingPoiIndex>'), 'followWayline POI index must be 0');
+
+    // WP 2: towardPOI -> preserved
+    assert.ok(placemarks[2].includes('<wpml:waypointPoiPoint>41.321500,-88.995000,0.000000</wpml:waypointPoiPoint>'), 'towardPOI POI coordinates must be preserved');
+    assert.ok(placemarks[2].includes('<wpml:waypointHeadingPoiIndex>1</wpml:waypointHeadingPoiIndex>'), 'towardPOI targetPoiIndex must be preserved');
   });
 });
