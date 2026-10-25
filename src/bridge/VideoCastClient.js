@@ -410,9 +410,11 @@ class VideoCastClient {
       const label = dev.label || `${dev.name || 'Capture Device'} (${val})`;
 
       if (idx === 0 && opt0) {
+        opt0.value = val;
         opt0.textContent = label;
         opt0.setAttribute('data-device-name', dev.name || '');
       } else if (idx === 1 && opt1) {
+        opt1.value = val;
         opt1.textContent = label;
         opt1.setAttribute('data-device-name', dev.name || '');
       } else {

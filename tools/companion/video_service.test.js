@@ -220,6 +220,27 @@ describe('VideoService Tests (Issue #97)', () => {
     assert.ok(formatted[2].label.includes('🔌'));
   });
 
+  it('VideoService.formatDeviceList respects DeviceIndex property when provided (Issue #181)', () => {
+    // DirectShow index preservation: J5-CAPTURE has hardware index 1, laptop webcam has index 0
+    const raw = [
+      { FriendlyName: 'USB2.0 HD UVC WebCam', InstanceId: 'USB\\VID_322E&PID_202C', DeviceIndex: 0 },
+      { FriendlyName: 'J5-CAPTURE', InstanceId: 'USB\\VID_0711&PID_0A02', DeviceIndex: 1 }
+    ];
+
+    const formatted = VideoService.formatDeviceList(raw);
+    assert.strictEqual(formatted.length, 2);
+
+    assert.strictEqual(formatted[0].name, 'USB2.0 HD UVC WebCam');
+    assert.strictEqual(formatted[0].index, 0);
+    assert.strictEqual(formatted[0].value, '0');
+    assert.strictEqual(formatted[0].type, 'webcam');
+
+    assert.strictEqual(formatted[1].name, 'J5-CAPTURE');
+    assert.strictEqual(formatted[1].index, 1);
+    assert.strictEqual(formatted[1].value, '1');
+    assert.strictEqual(formatted[1].type, 'capture_card');
+  });
+
   it('VideoService.getVideoDevices returns structured device array and caches with TTL', () => {
     VideoService.clearDeviceCache();
     const dev1 = VideoService.getVideoDevices(30000);

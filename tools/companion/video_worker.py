@@ -95,7 +95,10 @@ class VideoWorker:
         if cap and cap.isOpened():
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-            self.log(f"Successfully opened capture device/feed: {self.source}")
+            actual_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+            actual_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            actual_fps = cap.get(cv2.CAP_PROP_FPS)
+            self.log(f"Successfully opened capture device/feed: {self.source} ({actual_w:.0f}x{actual_h:.0f} @ {actual_fps:.0f}fps)")
             return cap
         else:
             self.log(f"Could not open feed: {self.source}, falling back to synthetic generator")
