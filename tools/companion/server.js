@@ -515,7 +515,10 @@ function broadcastCompanionStatus(status) {
   const videoDevices = (typeof videoService !== 'undefined' && typeof VideoService.getVideoDevices === 'function')
     ? VideoService.getVideoDevices()
     : null;
-  const payloadStr = JSON.stringify({ ...st, droneCount, mcp: mcpMetrics, videoDevices, rtmp: rtmpStatus, version: VERSION });
+  const tileCacheStats = (typeof tileCache !== 'undefined' && tileCache.getStats)
+    ? tileCache.getStats()
+    : null;
+  const payloadStr = JSON.stringify({ ...st, tileCache: tileCacheStats, droneCount, mcp: mcpMetrics, videoDevices, rtmp: rtmpStatus, version: VERSION });
   for (const client of sseStatusClients) {
     try {
       client.res.write(`data: ${payloadStr}\n\n`);
@@ -3274,9 +3277,11 @@ const server = http.createServer(async (req, res) => {
         ? airspaceTracker.getActiveDrones().length
         : 0;
       const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
+      const tileCacheStats = (typeof tileCache !== 'undefined' && tileCache.getStats) ? tileCache.getStats() : null;
       const statusPayload = {
         ...cachedRc2Status,
         droneCount,
+        tileCache: tileCacheStats,
         sseClients: getSseClientsCount(),
         mcp: mcpMetrics,
         metrics: bridgeMetrics ? bridgeMetrics.snapshot() : null,
@@ -3314,7 +3319,8 @@ const server = http.createServer(async (req, res) => {
       const videoDevices = (typeof videoService !== 'undefined' && typeof VideoService.getVideoDevices === 'function')
         ? VideoService.getVideoDevices()
         : null;
-      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, videoDevices, rtmp: rtmpStatus, version: VERSION })}\n\n`);
+      const tileCacheStats = (typeof tileCache !== 'undefined' && tileCache.getStats) ? tileCache.getStats() : null;
+      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, videoDevices, tileCache: tileCacheStats, rtmp: rtmpStatus, version: VERSION })}\n\n`);
       return;
     }
 
@@ -4849,7 +4855,8 @@ const server = http.createServer(async (req, res) => {
       const videoDevices = (typeof videoService !== 'undefined' && typeof VideoService.getVideoDevices === 'function')
         ? VideoService.getVideoDevices()
         : null;
-      res.write(`event: status\ndata: ${JSON.stringify({ ...cachedRc2Status, droneCount, videoDevices, rtmp: rtmpStatus, version: VERSION })}\n\n`);
+      const tileCacheStats = (typeof tileCache !== 'undefined' && tileCache.getStats) ? tileCache.getStats() : null;
+      res.write(`event: status\ndata: ${JSON.stringify({ ...cachedRc2Status, droneCount, videoDevices, tileCache: tileCacheStats, rtmp: rtmpStatus, version: VERSION })}\n\n`);
       if (rtmpStatus) {
         res.write(`event: rtmp-status\ndata: ${JSON.stringify(rtmpStatus)}\n\n`);
       }

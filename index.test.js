@@ -35805,4 +35805,86 @@ describe('v1.196.3: 360° Photo Sphere Multi-Angle 3D Views & Consumer Execution
   });
 });
 
+
+describe('v1.197.2: Zero-Polling SSE Enforcement for Airspace & Tile Cache Stats (Issue #180)', () => {
+  test('Version consistency: v1.197.2 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.197.2');
+  });
+
+  test('AdsbAirspaceManager.processAirspaceData does not invoke fetchAirspaceStatus when streamConnected is true', () => {
+    const origFetch = global.fetch;
+    let fetchCalled = false;
+    global.fetch = async () => {
+      fetchCalled = true;
+      return { ok: true, json: async () => ({}) };
+    };
+
+    try {
+      const manager = window.AdsbAirspaceManager || global.AdsbAirspaceManager;
+      assert.ok(manager, 'AdsbAirspaceManager must exist');
+
+      const prevDrawer = manager.isDrawerOpen;
+      const prevConnected = manager.streamConnected;
+
+      manager.isDrawerOpen = true;
+      manager.streamConnected = true;
+
+      manager.processAirspaceData({ success: true, aircraft: [] });
+      assert.strictEqual(fetchCalled, false, 'processAirspaceData must not trigger HTTP fetch when SSE stream is connected');
+
+      manager.streamConnected = false;
+      manager.processAirspaceData({ success: true, aircraft: [] });
+      assert.strictEqual(fetchCalled, true, 'processAirspaceData must fall back to fetchAirspaceStatus when disconnected');
+
+      manager.isDrawerOpen = prevDrawer;
+      manager.streamConnected = prevConnected;
+    } finally {
+      global.fetch = origFetch;
+    }
+  });
+
+  test('applyCompanionStatusUI updates tileCache in-memory from SSE data without calling fetchBridgeCacheStats', () => {
+    const dom = new JSDOM(`
+      <!DOCTYPE html><html><body>
+      <span id="bridge-cache-stats-text">Cached: 0 tiles (0.00 MB / 2.0 GB)</span>
+      <span id="bridge-cache-hitrate-text">Hit Rate: 0%</span>
+      </body></html>
+    `);
+    const origDoc = global.document;
+    const origFetch = global.fetch;
+    let cacheStatsFetchCalled = false;
+    global.document = dom.window.document;
+    global.fetch = async (url) => {
+      if (String(url).includes('/api/cache/tiles/stats')) {
+        cacheStatsFetchCalled = true;
+      }
+      return { ok: true, json: async () => ({}) };
+    };
+
+    try {
+      const applyUI = window.applyCompanionStatusUI || global.applyCompanionStatusUI;
+      assert.ok(typeof applyUI === 'function', 'applyCompanionStatusUI must exist');
+
+      applyUI({
+        connected: false,
+        tileCache: {
+          totalFiles: 4500,
+          totalSizeMb: 125.4,
+          maxSizeMb: 2048,
+          hitRatePercent: 94.2
+        }
+      });
+
+      assert.strictEqual(cacheStatsFetchCalled, false, 'applyCompanionStatusUI must not call /api/cache/tiles/stats when tileCache is present in payload');
+      const statsSpan = dom.window.document.getElementById('bridge-cache-stats-text');
+      const hitrateSpan = dom.window.document.getElementById('bridge-cache-hitrate-text');
+      assert.ok(statsSpan.textContent.includes('4,500 tiles'), 'Stats span must reflect totalFiles');
+      assert.ok(statsSpan.textContent.includes('125.4 MB'), 'Stats span must reflect totalSizeMb');
+      assert.strictEqual(hitrateSpan.textContent, 'Hit Rate: 94.2%', 'Hit rate span must reflect hitRatePercent');
+    } finally {
+      global.document = origDoc;
+      global.fetch = origFetch;
+    }
+  });
+});
 });
