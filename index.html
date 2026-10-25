@@ -7698,7 +7698,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.197.5</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.198.0</span></h1>
         </div>
       </div>
 
@@ -14022,6 +14022,29 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               <strong>1-Click Sync in Tablet Browser:</strong> Open Chrome on your tablet, navigate to Aalaapi Sky, and the sync card will illuminate <strong>`🟢 Aalaapi Bridge: Online`</strong> with ADB 1-click sync enabled!
             </li>
           </ol>
+
+          <div style="font-weight: 700; color: #38bdf8; font-size: 0.88rem; margin: 16px 0 6px; display: flex; align-items: center; gap: 6px;">
+            <span>📥 Method 4: Pulling Flight Logs from Android Phones (DJI Fly &amp; Neo 2)</span>
+          </div>
+          <ol class="guide-steps" style="margin-bottom: 6px;">
+            <li>
+              <strong>Connect Phone via USB Data Cable:</strong> Plug your Android smartphone (e.g. Samsung Galaxy S25 Ultra, Pixel) into your PC using a data-certified USB-C cable.
+            </li>
+            <li>
+              <strong>Unlock Phone &amp; Set to "Transferring Files" (MTP):</strong>
+              <div style="margin-top: 4px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.45;">
+                • <strong>Unlock Phone:</strong> Unlock your screen with PIN, password, or fingerprint. Android completely locks external USB storage access while locked.<br/>
+                • <strong>Set USB Mode:</strong> Swipe down from the top edge of your phone to open the notification shade. Tap <strong>"Charging this device via USB"</strong> (or USB Settings) and select <strong>"Transferring files" (MTP)</strong>.<br/>
+                • <strong>Tap "Allow":</strong> If a prompt asks <em>"Allow access to phone data?"</em>, tap <strong>Allow</strong>.
+              </div>
+            </li>
+            <li>
+              <strong>Auto-Discovery in Aalaapi Sky:</strong> The Companion Bridge automatically discovers your phone and displays <code>🟢 [Device Name]: Connected</code> with MTP telemetry ready.
+            </li>
+            <li>
+              <strong>1-Click Flight Log Ingestion:</strong> In the Flight Diagnostics modal header or sidebar, click <strong>"📥 Pull Flight Log"</strong>. The bridge automatically extracts the newest encrypted <code>FlightRecord_*.txt</code> log from <code>/Android/data/dji.go.v5/files/FlightRecord/</code>, decrypts the telemetry via the DJI Cloud API, and loads the 3D flight trajectory and cockpit HUD replay immediately!
+            </li>
+          </ol>
         </div>
 
         <!-- Hidden backward-compatible alias pane for legacy test assertions -->
@@ -14219,7 +14242,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.197.5</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.198.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14341,6 +14364,24 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                       <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.198.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Android Smartphone Auto-Discovery &amp; Flight Log Extraction (Closes #186):</strong> Added native USB MTP auto-discovery for connected Android smartphones (e.g. Samsung Galaxy S25 Ultra) flying aircraft like the DJI Neo 2 via DJI Fly. Includes smart screen-lock/charging-only detection, guided USB MTP setup, and 1-click telemetry extraction and decryption.</li>
+              </ul>
+            </li>
+            <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.197.7):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Accurate DJI Mini 4 Pro Storage Identification (Closes #185):</strong> Fixed drive misidentification in the Photo Ingestion modal where Mini 4 Pro MicroSD cards were mislabeled as <code>DJI Neo 2 - Internal Storage</code> and internal storage was unrecognized due to <code>FileSystemLabel</code> resolution and a false <code>DJI_001</code> heuristic. Connected drives are now accurately labeled as <code>DJI Mini 4 Pro - MicroSD Card</code> and <code>DJI Mini 4 Pro - Internal Storage</code>.</li>
+              </ul>
+            </li>
+            <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.197.6):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Eliminated Distorted 2D Photo Ground Coverage Starburst (Closes #184):</strong> Bounded ground footprint geometry on oblique camera pitches (<= 100m) and corrected lateral corner rotation math. Ingesting photos now displays clean camera pins (📸) by default, dynamically showing individual footprints on pin hover/click while retaining bulk footprints as an opt-in layer.</li>
+              </ul>
+            </li>
+<li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.197.5):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li><strong>Eliminated Gimbal Dance &amp; Ground POI Lock (Closes #183):</strong> Neutralized <code>&lt;wpml:waypointPoiPoint&gt;</code> to <code>0.000000,0.000000,0.000000</code> on Continuous Helix and all non-towardPOI waypoints, stopping DJI Fly firmware from violently snapping the camera gimbal down to the ground upon reaching each waypoint. Preserved helical pitch sweep dynamics against layer-level flat pitch defaults.</li>
@@ -20215,6 +20256,7 @@ let pitchLabelsGroup = null; // Separate layer for pitch labels — avoids ghost
 let photoMarkersGroup = null;
 let photoInspectionGroup = null;
 let photoFootprintsGroup = null;
+let singlePhotoFootprintGroup = null;
 let activeInspectionManifest = null;
 let exclusionZonesGroup = null;
 let boundaryLayersGroup = null;
@@ -29624,6 +29666,9 @@ function initMap() {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('aalaapi_show_2d_photo_footprints', e.type === 'overlayadd' ? 'true' : 'false');
       }
+      if (e.type === 'overlayadd' && typeof clearSinglePhotoFootprint === 'function') {
+        clearSinglePhotoFootprint();
+      }
     }
 
     // Track NASA Earth at Night (VIIRS Lights) checkbox state
@@ -29678,6 +29723,7 @@ function initMap() {
   if (!acousticOverlaysGroup) acousticOverlaysGroup = L.layerGroup();
   if (!photoInspectionGroup) photoInspectionGroup = L.layerGroup().addTo(map);
   if (!photoFootprintsGroup) photoFootprintsGroup = L.layerGroup();
+  if (!singlePhotoFootprintGroup) singlePhotoFootprintGroup = L.layerGroup().addTo(map);
 
   // Issue #123: Initialize 2D Flight Replay Engine
   if (typeof init2dReplayEngine === 'function') {
@@ -52310,7 +52356,11 @@ function applyCompanionStatusUI(data) {
 
     if (uText) {
 
-      uText.textContent = 'RC 2 USB Link: Connected';
+      if (data.isAndroid) {
+        uText.textContent = data.deviceName ? `${data.deviceName}: Connected` : 'Android Phone (DJI Fly): Connected';
+      } else {
+        uText.textContent = 'RC 2 USB Link: Connected';
+      }
 
       uText.style.color = '#22c55e';
 
@@ -52326,7 +52376,7 @@ function applyCompanionStatusUI(data) {
 
     if (text) {
 
-      text.textContent = 'DJI RC 2 Connected';
+      text.textContent = data.isAndroid ? (data.deviceName || 'Android Phone Connected') : 'DJI RC 2 Connected';
 
       text.style.color = '#22c55e';
 
@@ -52376,9 +52426,13 @@ function applyCompanionStatusUI(data) {
 
     if (uText) {
 
-      uText.textContent = 'RC 2 USB Link: Unplugged';
-
-      uText.style.color = '#eab308';
+      if (data && data.locked) {
+        uText.textContent = `${data.deviceName || 'Phone'}: Locked / Charging Only`;
+        uText.style.color = '#f59e0b';
+      } else {
+        uText.textContent = 'RC 2 USB Link: Unplugged';
+        uText.style.color = '#eab308';
+      }
 
     }
 
@@ -79487,12 +79541,18 @@ const PhotoInspector = {
 
     modal.classList.remove('hidden');
     this.setupEvents();
+    if (typeof showSinglePhotoFootprint === 'function') {
+      showSinglePhotoFootprint(this.activePhoto);
+    }
   },
 
   close() {
     if (typeof document === 'undefined') return;
     const modal = document.getElementById('photo-inspector-modal');
     if (modal) modal.classList.add('hidden');
+    if (typeof clearSinglePhotoFootprint === 'function') {
+      clearSinglePhotoFootprint();
+    }
   },
 
   updateHeaderUI() {
@@ -81876,12 +81936,38 @@ const PhotoInspector = {
   }
 };
 
+function showSinglePhotoFootprint(photo) {
+  if (!map || typeof L === 'undefined' || !photo || !photo.footprint || !Array.isArray(photo.footprint.coordinates)) return;
+  if (typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup && typeof map.hasLayer === 'function' && map.hasLayer(photoFootprintsGroup)) {
+    return; // Bulk footprints are already visible on map
+  }
+  if (!singlePhotoFootprintGroup) {
+    singlePhotoFootprintGroup = L.layerGroup().addTo(map);
+  }
+  singlePhotoFootprintGroup.clearLayers();
+  const sev = photo.severity || 'clean';
+  L.polygon(photo.footprint.coordinates, {
+    color: sev === 'critical' ? '#ef4444' : (sev === 'warning' ? '#f59e0b' : '#38bdf8'),
+    weight: 2,
+    dashArray: '4, 4',
+    fillColor: sev === 'critical' ? '#ef4444' : (sev === 'warning' ? '#f59e0b' : '#38bdf8'),
+    fillOpacity: 0.22
+  }).addTo(singlePhotoFootprintGroup);
+}
+
+function clearSinglePhotoFootprint() {
+  if (typeof singlePhotoFootprintGroup !== 'undefined' && singlePhotoFootprintGroup && typeof singlePhotoFootprintGroup.clearLayers === 'function') {
+    singlePhotoFootprintGroup.clearLayers();
+  }
+}
+
 function renderPhotoInspectionMapLayer(manifest) {
   if (!map || typeof L === 'undefined' || !photoInspectionGroup) return;
   photoInspectionGroup.clearLayers();
   if (typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup && typeof photoFootprintsGroup.clearLayers === 'function') {
     photoFootprintsGroup.clearLayers();
   }
+  clearSinglePhotoFootprint();
   if (!manifest || !Array.isArray(manifest.photos)) return;
 
   activeInspectionManifest = manifest;
@@ -81892,17 +81978,14 @@ function renderPhotoInspectionMapLayer(manifest) {
     const lon = photo.actual.lon;
     const sev = photo.severity || 'clean';
 
-    if (photo.footprint && Array.isArray(photo.footprint.coordinates)) {
-      const footprintTarget = (typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup)
-        ? photoFootprintsGroup
-        : photoInspectionGroup;
+    if (photo.footprint && Array.isArray(photo.footprint.coordinates) && typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup) {
       L.polygon(photo.footprint.coordinates, {
         color: sev === 'critical' ? '#ef4444' : (sev === 'warning' ? '#f59e0b' : '#38bdf8'),
         weight: 1.5,
         dashArray: '3, 3',
         fillColor: sev === 'critical' ? '#ef4444' : (sev === 'warning' ? '#f59e0b' : '#38bdf8'),
         fillOpacity: 0.15
-      }).addTo(footprintTarget);
+      }).addTo(photoFootprintsGroup);
     }
 
     const iconHtml = `<div class="photo-marker-icon severity-${sev}" title="${photo.filename}">📸</div>`;
@@ -81914,6 +81997,23 @@ function renderPhotoInspectionMapLayer(manifest) {
     });
 
     const marker = L.marker([lat, lon], { icon }).addTo(photoInspectionGroup);
+
+    if (typeof marker.on === 'function') {
+      marker.on('mouseover', () => {
+        showSinglePhotoFootprint(photo);
+      });
+      marker.on('mouseout', () => {
+        if (typeof marker.isPopupOpen === 'function' && !marker.isPopupOpen()) {
+          clearSinglePhotoFootprint();
+        }
+      });
+      marker.on('popupopen', () => {
+        showSinglePhotoFootprint(photo);
+      });
+      marker.on('popupclose', () => {
+        clearSinglePhotoFootprint();
+      });
+    }
     
     const popupContent = `
       <div style="font-size: 0.78rem; display: flex; flex-direction: column; gap: 6px; min-width: 180px;">
@@ -81941,6 +82041,7 @@ function clearPhotoInspectionMapLayer() {
   if (typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup && typeof photoFootprintsGroup.clearLayers === 'function') {
     photoFootprintsGroup.clearLayers();
   }
+  clearSinglePhotoFootprint();
   activeInspectionManifest = null;
 }
 

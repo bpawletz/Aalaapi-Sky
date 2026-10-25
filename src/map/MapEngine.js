@@ -787,6 +787,9 @@ function initMap() {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('aalaapi_show_2d_photo_footprints', e.type === 'overlayadd' ? 'true' : 'false');
       }
+      if (e.type === 'overlayadd' && typeof clearSinglePhotoFootprint === 'function') {
+        clearSinglePhotoFootprint();
+      }
     }
 
     // Track NASA Earth at Night (VIIRS Lights) checkbox state
@@ -841,6 +844,7 @@ function initMap() {
   if (!acousticOverlaysGroup) acousticOverlaysGroup = L.layerGroup();
   if (!photoInspectionGroup) photoInspectionGroup = L.layerGroup().addTo(map);
   if (!photoFootprintsGroup) photoFootprintsGroup = L.layerGroup();
+  if (!singlePhotoFootprintGroup) singlePhotoFootprintGroup = L.layerGroup().addTo(map);
 
   // Issue #123: Initialize 2D Flight Replay Engine
   if (typeof init2dReplayEngine === 'function') {

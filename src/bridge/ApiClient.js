@@ -1013,7 +1013,11 @@ function applyCompanionStatusUI(data) {
 
     if (uText) {
 
-      uText.textContent = 'RC 2 USB Link: Connected';
+      if (data.isAndroid) {
+        uText.textContent = data.deviceName ? `${data.deviceName}: Connected` : 'Android Phone (DJI Fly): Connected';
+      } else {
+        uText.textContent = 'RC 2 USB Link: Connected';
+      }
 
       uText.style.color = '#22c55e';
 
@@ -1029,7 +1033,7 @@ function applyCompanionStatusUI(data) {
 
     if (text) {
 
-      text.textContent = 'DJI RC 2 Connected';
+      text.textContent = data.isAndroid ? (data.deviceName || 'Android Phone Connected') : 'DJI RC 2 Connected';
 
       text.style.color = '#22c55e';
 
@@ -1079,9 +1083,13 @@ function applyCompanionStatusUI(data) {
 
     if (uText) {
 
-      uText.textContent = 'RC 2 USB Link: Unplugged';
-
-      uText.style.color = '#eab308';
+      if (data && data.locked) {
+        uText.textContent = `${data.deviceName || 'Phone'}: Locked / Charging Only`;
+        uText.style.color = '#f59e0b';
+      } else {
+        uText.textContent = 'RC 2 USB Link: Unplugged';
+        uText.style.color = '#eab308';
+      }
 
     }
 
