@@ -1,3 +1,19 @@
+## [1.197.4] - 2026-10-25
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Terminal Gimbal Horizon Restoration & APAS Obstacle Prevention (Closes #182)**:
+  - Fixed an issue where completing a 360° Photo Sphere or steep downward survey left the camera gimbal pinned at nadir (-90°), causing DJI Fly's APAS (Advanced Pilot Assistance Systems) obstacle avoidance to trigger a false collision alarm and abort Return-to-Home into `GPSAtti`.
+  - The final waypoint action sequence now automatically rotates the camera gimbal smoothly back to level horizon (0.0°) and dwells for 2.0s before initiating the mission finish action (`goHome`, `autoLand`), ensuring omnidirectional and forward vision sensors have unobstructed line of sight.
+
+#### Under the Hood & Technical Details
+- **`src/export/WpmlCompiler.js`**:
+  - In `buildWaylinesWpml`, appended terminal `gimbalRotate` (pitch: 0.0°) and `hover` (2.0s) actions at `idx === waypoints.length - 1` whenever `effectivePitch <= -45°` or `isPhotoSphere` is active.
+  - In `validateAndFixWpml`, refined micro-cluster pre-photo hover regex targeting to preserve terminal leveling dwell times, and added a terminal placemark safety audit that inspects the final action group and injects horizon restoration if omitted.
+- **`index.test.js`**:
+  - Added test suite `v1.197.4: Terminal Gimbal Horizon Restoration & APAS Obstacle Prevention (Issue #182)` asserting terminal gimbal restoration in discrete and single-node photo spheres, WPML validation compliance, and exclusion of unnecessary leveling on horizontal flights.
+
 ## [1.197.3] - 2026-10-25
 
 ### 🐛 Fixed

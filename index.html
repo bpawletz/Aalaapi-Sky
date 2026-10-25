@@ -7698,7 +7698,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.197.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.197.4</span></h1>
         </div>
       </div>
 
@@ -14219,7 +14219,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.197.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.197.4</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14340,7 +14340,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                     <li style="margin-bottom: 8px;">
-                                                  <li style="margin-bottom: 8px;">
+                                                                                      <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.197.4):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Terminal Gimbal Horizon Restoration &amp; APAS Obstacle Prevention (Closes #182):</strong> Restores camera gimbal pitch smoothly to level horizon (0.0°) with a 2.0s settling dwell upon completing the final nadir waypoint in 360° Photo Spheres, preventing DJI Fly APAS omnidirectional obstacle avoidance sensors from false-aborting Return-to-Home into <code>GPSAtti</code>.</li>
+              </ul>
+            </li>
+<li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.197.3):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li><strong>DirectShow Hardware Index Alignment (Closes #181):</strong> Synchronized Live Video Cast capture card and webcam enumeration with DirectShow and Windows Media Foundation hardware indexing (<code>cv2.CAP_DSHOW</code>), ensuring selecting an external HDMI capture card like J5-CAPTURE streams the full 1080p drone screen feed rather than the built-in laptop webcam.</li>
@@ -48866,6 +48872,41 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       }
     }
 
+    // Terminal Waypoint Gimbal Horizon Restoration:
+    // When finishing the final waypoint of a mission, if the camera gimbal is pitched steeply downwards (<= -45° or Photo Sphere nadir),
+    // restore gimbal pitch to 0.0° (horizon) and dwell briefly (2.0s).
+    // This ensures DJI Fly APAS omnidirectional obstacle avoidance sensors and forward vision sensors have clear line of sight,
+    // preventing false "Obstacle Detected" aborts into GPSAtti when transitioning to finishAction (goHome, autoLand, etc.).
+    const isLastMissionWaypoint = (idx === waypoints.length - 1);
+    const isSteepDownwardPitch = (effectivePitch <= -45) || isPhotoSphere || (wp && (wp.isPhotoSpherePoint || wp.gridType === 'photo-sphere' || wp.layerPattern === 'photo-sphere'));
+    const hasPhotoOrCaptureAction = waypointActions.some(act => act.includes('takePhoto') || act.includes('stopRecord') || act.includes('startRecord'));
+    if (isLastMissionWaypoint && isSteepDownwardPitch && hasPhotoOrCaptureAction) {
+      waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
+              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
+              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
+              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
+              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
+              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
+              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
+              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+      waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:hoverTime>2.0</wpml:hoverTime>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+    }
+
     let actionsForThisPlacemark = '';
     const placemarkActionGroupBlocks = [];
 
@@ -49898,13 +49939,14 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
               if (hDiff > 180) hDiff = 360 - hDiff;
               if (hDiff >= 60) requiredHover = 5.0;
             }
-            const hoverMatch = pmParts[item.pmIdx].match(/<wpml:hoverTime>([^<]+)<\/wpml:hoverTime>/);
-            if (hoverMatch) {
-              const currentHover = parseFloat(hoverMatch[1]);
+            const prePhotoHoverRegex = /(<wpml:action>[\s\S]*?<wpml:actionActuatorFunc>hover<\/wpml:actionActuatorFunc>[\s\S]*?<wpml:hoverTime>)([^<]+)(<\/wpml:hoverTime>[\s\S]*?<\/wpml:action>[\s\S]*?<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>)/;
+            const preHoverMatch = pmParts[item.pmIdx].match(prePhotoHoverRegex);
+            if (preHoverMatch) {
+              const currentHover = parseFloat(preHoverMatch[2]);
               if (currentHover < requiredHover) {
                 pmParts[item.pmIdx] = pmParts[item.pmIdx].replace(
-                  /<wpml:hoverTime>[^<]+<\/wpml:hoverTime>/g,
-                  `<wpml:hoverTime>${requiredHover}</wpml:hoverTime>`
+                  prePhotoHoverRegex,
+                  `$1${requiredHover}$3`
                 );
               }
             } else {
@@ -49927,6 +49969,47 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
       ci = cj;
     }
     fixedWpml = pmParts.join('<Placemark>');
+  }
+
+  // Terminal Gimbal Horizon Restoration Audit:
+  // When finishing the final waypoint of a mission, if the camera gimbal is pitched steeply downwards (<= -45° or Photo Sphere nadir),
+  // ensure gimbal pitch is restored to 0.0° (horizon) before finishAction (goHome, autoLand, etc.).
+  const lastPlacemarkIndex = fixedWpml.lastIndexOf('<Placemark>');
+  if (lastPlacemarkIndex !== -1) {
+    const lastPlacemark = fixedWpml.substring(lastPlacemarkIndex);
+    const hasLastPhoto = lastPlacemark.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
+    const pitchMatch = lastPlacemark.match(/<wpml:waypointGimbalPitchAngle>([^<]+)<\/wpml:waypointGimbalPitchAngle>/);
+    const terminalPitch = pitchMatch ? parseFloat(pitchMatch[1]) : 0;
+    const hasTerminalRestoration = /(<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>[\s\S]*?<wpml:actionActuatorFunc>gimbalRotate<\/wpml:actionActuatorFunc>[\s\S]*?<wpml:gimbalPitchRotateAngle>0(?:\.0+)?<\/wpml:gimbalPitchRotateAngle>)/.test(lastPlacemark);
+
+    if (hasLastPhoto && terminalPitch <= -45 && !hasTerminalRestoration && lastPlacemark.includes('</wpml:actionGroup>')) {
+      const restoreBlock = `          <wpml:action>
+            <wpml:actionId>9991</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
+              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
+              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
+              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
+              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
+              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
+              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
+              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+          <wpml:action>
+            <wpml:actionId>9992</wpml:actionId>
+            <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:hoverTime>2.0</wpml:hoverTime>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>\n`;
+      const updatedLastPlacemark = lastPlacemark.replace('</wpml:actionGroup>', `${restoreBlock}        </wpml:actionGroup>`);
+      fixedWpml = fixedWpml.substring(0, lastPlacemarkIndex) + updatedLastPlacemark;
+    }
   }
 
   const fallbackSpeed = (options && options.speed && !isNaN(options.speed)) ? options.speed : 4.0;

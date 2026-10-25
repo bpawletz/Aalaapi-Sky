@@ -1,5 +1,27 @@
 [
   {
+    "notam_id": "6/2171",
+    "facility": "ZOB",
+    "state": "PA",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Pittsburgh, PA, Saturday, October 31, 2026 through Sunday, November 1, 2026 UTC",
+    "mod_date": "10/25/2026 15:01:00",
+    "mod_abs_time": "202610251501",
+    "is_new": "Y",
+    "gid": "6/2171"
+  },
+  {
+    "notam_id": "6/2131",
+    "facility": "ZOB",
+    "state": "MI",
+    "type": "VIP",
+    "description": "Flint, MI, Tuesday, October 27, 2026 Local",
+    "mod_date": "10/25/2026 12:14:00",
+    "mod_abs_time": "202610251214",
+    "is_new": "Y",
+    "gid": "6/2131"
+  },
+  {
     "notam_id": "6/2125",
     "facility": "ZFW",
     "state": "TX",
@@ -150,7 +172,7 @@
     "description": "Topeka, KS, Monday, October 26, 2026 through Monday, October 26, 2026 Local",
     "mod_date": "10/24/2026 16:53:00",
     "mod_abs_time": "202610241653",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2069"
   },
   {
@@ -161,7 +183,7 @@
     "description": "Memphis, TN, Monday, October 26, 2026 through Monday, October 26, 2026 Local",
     "mod_date": "10/24/2026 15:39:00",
     "mod_abs_time": "202610241539",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2066"
   },
   {
@@ -172,7 +194,7 @@
     "description": "Memphis, TN, Monday, October 26, 2026 through Monday, October 26, 2026 Local",
     "mod_date": "10/24/2026 14:22:00",
     "mod_abs_time": "202610241422",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2061"
   },
   {
@@ -183,7 +205,7 @@
     "description": "BOZEMAN, MT, Monday, October 26, 2026 Local",
     "mod_date": "10/24/2026 14:14:00",
     "mod_abs_time": "202610241414",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2060"
   },
   {
@@ -194,7 +216,7 @@
     "description": "Middleburg, VA, Saturday, October 24, 2026 through Sunday, October 25, 2026 Local",
     "mod_date": "10/24/2026 13:06:00",
     "mod_abs_time": "202610241306",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2058"
   },
   {
@@ -284,17 +306,6 @@
     "mod_abs_time": "202610222039",
     "is_new": "N",
     "gid": "6/1753"
-  },
-  {
-    "notam_id": "6/1751",
-    "facility": "ZAB",
-    "state": "AZ",
-    "type": "SECURITY",
-    "description": "Libby AAF, AZ, Friday, October 23, 2026 through Sunday, October 25, 2026 Local",
-    "mod_date": "10/22/2026 19:41:00",
-    "mod_abs_time": "202610221941",
-    "is_new": "N",
-    "gid": "6/1751"
   },
   {
     "notam_id": "6/1700",

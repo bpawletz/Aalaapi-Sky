@@ -594,6 +594,41 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       }
     }
 
+    // Terminal Waypoint Gimbal Horizon Restoration:
+    // When finishing the final waypoint of a mission, if the camera gimbal is pitched steeply downwards (<= -45° or Photo Sphere nadir),
+    // restore gimbal pitch to 0.0° (horizon) and dwell briefly (2.0s).
+    // This ensures DJI Fly APAS omnidirectional obstacle avoidance sensors and forward vision sensors have clear line of sight,
+    // preventing false "Obstacle Detected" aborts into GPSAtti when transitioning to finishAction (goHome, autoLand, etc.).
+    const isLastMissionWaypoint = (idx === waypoints.length - 1);
+    const isSteepDownwardPitch = (effectivePitch <= -45) || isPhotoSphere || (wp && (wp.isPhotoSpherePoint || wp.gridType === 'photo-sphere' || wp.layerPattern === 'photo-sphere'));
+    const hasPhotoOrCaptureAction = waypointActions.some(act => act.includes('takePhoto') || act.includes('stopRecord') || act.includes('startRecord'));
+    if (isLastMissionWaypoint && isSteepDownwardPitch && hasPhotoOrCaptureAction) {
+      waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
+              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
+              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
+              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
+              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
+              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
+              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
+              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+      waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:hoverTime>2.0</wpml:hoverTime>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+    }
+
     let actionsForThisPlacemark = '';
     const placemarkActionGroupBlocks = [];
 
@@ -1626,13 +1661,14 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
               if (hDiff > 180) hDiff = 360 - hDiff;
               if (hDiff >= 60) requiredHover = 5.0;
             }
-            const hoverMatch = pmParts[item.pmIdx].match(/<wpml:hoverTime>([^<]+)<\/wpml:hoverTime>/);
-            if (hoverMatch) {
-              const currentHover = parseFloat(hoverMatch[1]);
+            const prePhotoHoverRegex = /(<wpml:action>[\s\S]*?<wpml:actionActuatorFunc>hover<\/wpml:actionActuatorFunc>[\s\S]*?<wpml:hoverTime>)([^<]+)(<\/wpml:hoverTime>[\s\S]*?<\/wpml:action>[\s\S]*?<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>)/;
+            const preHoverMatch = pmParts[item.pmIdx].match(prePhotoHoverRegex);
+            if (preHoverMatch) {
+              const currentHover = parseFloat(preHoverMatch[2]);
               if (currentHover < requiredHover) {
                 pmParts[item.pmIdx] = pmParts[item.pmIdx].replace(
-                  /<wpml:hoverTime>[^<]+<\/wpml:hoverTime>/g,
-                  `<wpml:hoverTime>${requiredHover}</wpml:hoverTime>`
+                  prePhotoHoverRegex,
+                  `$1${requiredHover}$3`
                 );
               }
             } else {
@@ -1655,6 +1691,47 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
       ci = cj;
     }
     fixedWpml = pmParts.join('<Placemark>');
+  }
+
+  // Terminal Gimbal Horizon Restoration Audit:
+  // When finishing the final waypoint of a mission, if the camera gimbal is pitched steeply downwards (<= -45° or Photo Sphere nadir),
+  // ensure gimbal pitch is restored to 0.0° (horizon) before finishAction (goHome, autoLand, etc.).
+  const lastPlacemarkIndex = fixedWpml.lastIndexOf('<Placemark>');
+  if (lastPlacemarkIndex !== -1) {
+    const lastPlacemark = fixedWpml.substring(lastPlacemarkIndex);
+    const hasLastPhoto = lastPlacemark.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
+    const pitchMatch = lastPlacemark.match(/<wpml:waypointGimbalPitchAngle>([^<]+)<\/wpml:waypointGimbalPitchAngle>/);
+    const terminalPitch = pitchMatch ? parseFloat(pitchMatch[1]) : 0;
+    const hasTerminalRestoration = /(<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>[\s\S]*?<wpml:actionActuatorFunc>gimbalRotate<\/wpml:actionActuatorFunc>[\s\S]*?<wpml:gimbalPitchRotateAngle>0(?:\.0+)?<\/wpml:gimbalPitchRotateAngle>)/.test(lastPlacemark);
+
+    if (hasLastPhoto && terminalPitch <= -45 && !hasTerminalRestoration && lastPlacemark.includes('</wpml:actionGroup>')) {
+      const restoreBlock = `          <wpml:action>
+            <wpml:actionId>9991</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
+              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
+              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
+              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
+              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
+              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
+              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
+              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+          <wpml:action>
+            <wpml:actionId>9992</wpml:actionId>
+            <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:hoverTime>2.0</wpml:hoverTime>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>\n`;
+      const updatedLastPlacemark = lastPlacemark.replace('</wpml:actionGroup>', `${restoreBlock}        </wpml:actionGroup>`);
+      fixedWpml = fixedWpml.substring(0, lastPlacemarkIndex) + updatedLastPlacemark;
+    }
   }
 
   const fallbackSpeed = (options && options.speed && !isNaN(options.speed)) ? options.speed : 4.0;
