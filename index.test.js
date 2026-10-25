@@ -35843,6 +35843,72 @@ describe('v1.197.2: Zero-Polling SSE Enforcement for Airspace & Tile Cache Stats
     }
   });
 
+  describe('v1.197.3: DirectShow & Windows Media Foundation Device Index Alignment (Issue #181)', () => {
+    test('Version consistency: v1.197.3 across package.json, changelog, index_template.html, and index.html', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.197.3');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.197.3] - 2026-10-25'));
+      assert.ok(changelog.includes('Closes #181'));
+
+      const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(tmpl.includes('Version 1.197.3'));
+      assert.ok(tmpl.includes('Changelog (v1.197.3):'));
+      assert.ok(tmpl.includes('v1.197.3</span>'));
+
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      assert.ok(indexHtml.includes('Version 1.197.3'));
+      assert.ok(indexHtml.includes('Changelog (v1.197.3):'));
+      assert.ok(indexHtml.includes('v1.197.3</span>'));
+    });
+
+    test('VideoCastClient updateDevicesUI sets device value matching hardware index', () => {
+      const dom = new JSDOM(`
+        <!DOCTYPE html><html><body>
+          <select id="video-cast-source-select">
+            <option value="test">Synthetic FPV HUD (Test Pattern)</option>
+            <option value="rtmp://127.0.0.1:1935/live/stream" data-rtmp-default="true">Embedded RTMP Ingest</option>
+            <option value="0">USB/HDMI Capture Card (UVC 0)</option>
+            <option value="1">Secondary Capture Card (UVC 1)</option>
+            <option value="custom">Custom Stream URL...</option>
+          </select>
+        </body></html>
+      `);
+
+      const origDoc = global.document;
+      global.document = dom.window.document;
+
+      try {
+        const vc = window.videoCastClient || global.videoCastClient;
+        assert.ok(vc, 'videoCastClient instance must exist');
+
+        // Provide devices where J5-CAPTURE has index 1 and webcam has index 0
+        const devices = [
+          { index: 0, value: '0', name: 'USB2.0 HD UVC WebCam', label: '📷 USB2.0 HD UVC WebCam (Webcam 0)', type: 'webcam' },
+          { index: 1, value: '1', name: 'J5-CAPTURE', label: '🔌 J5-CAPTURE (HDMI Capture 1)', type: 'capture_card' }
+        ];
+
+        vc.updateDevicesUI(devices);
+
+        const select = dom.window.document.getElementById('video-cast-source-select');
+        const opt0 = select.querySelector('option[value="0"]');
+        const opt1 = select.querySelector('option[value="1"]');
+
+        assert.ok(opt0, 'Option 0 must exist');
+        assert.ok(opt1, 'Option 1 must exist');
+
+        assert.strictEqual(opt0.value, '0');
+        assert.strictEqual(opt0.textContent, '📷 USB2.0 HD UVC WebCam (Webcam 0)');
+
+        assert.strictEqual(opt1.value, '1');
+        assert.strictEqual(opt1.textContent, '🔌 J5-CAPTURE (HDMI Capture 1)');
+      } finally {
+        global.document = origDoc;
+      }
+    });
+  });
+
   test('applyCompanionStatusUI updates tileCache in-memory from SSE data without calling fetchBridgeCacheStats', () => {
     const dom = new JSDOM(`
       <!DOCTYPE html><html><body>

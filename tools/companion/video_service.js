@@ -107,7 +107,8 @@ class VideoService {
     }
 
     return rawList.map((item, idx) => {
-      const name = (item.FriendlyName || item.name || `Video Device ${idx}`).trim();
+      const devIndex = typeof item.DeviceIndex === 'number' ? item.DeviceIndex : (typeof item.index === 'number' ? item.index : idx);
+      const name = (item.FriendlyName || item.name || `Video Device ${devIndex}`).trim();
       const lower = name.toLowerCase();
       let type = 'uvc';
       let icon = '📹';
@@ -125,10 +126,10 @@ class VideoService {
       }
 
       return {
-        index: idx,
-        value: String(idx),
+        index: devIndex,
+        value: String(devIndex),
         name,
-        label: `${icon} ${name} (${category} ${idx})`,
+        label: `${icon} ${name} (${category} ${devIndex})`,
         type,
         instanceId: item.InstanceId || item.id || null
       };
@@ -149,10 +150,22 @@ class VideoService {
     if (process.platform === 'win32') {
       try {
         const { execFileSync } = require('node:child_process');
+        const psCmd = [
+          'Add-Type -AssemblyName System.Runtime.WindowsRuntime;',
+          '$asTask = [System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq "AsTask" -and $_.GetParameters().Count -eq 1 -and $_.GetGenericArguments().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name.StartsWith("IAsyncOperation") };',
+          '[Windows.Devices.Enumeration.DeviceInformation, Windows.Devices.Enumeration, ContentType = WindowsRuntime] | Out-Null;',
+          '$op = [Windows.Devices.Enumeration.DeviceInformation]::FindAllAsync([Windows.Devices.Enumeration.DeviceClass]::VideoCapture);',
+          '$t = $asTask.MakeGenericMethod([Windows.Devices.Enumeration.DeviceInformationCollection]).Invoke($null, @($op));',
+          '$t.Wait();',
+          '$i = 0;',
+          '$res = @(foreach ($d in $t.Result) { if ($d.IsEnabled) { [PSCustomObject]@{ FriendlyName = $d.Name; InstanceId = $d.Id; DeviceIndex = $i }; $i++ } });',
+          '$res | ConvertTo-Json -Compress'
+        ].join(' ');
+
         const out = execFileSync(
           'powershell.exe',
-          ['-NoProfile', '-Command', 'Get-PnpDevice -Class Camera, Image | Where-Object Status -eq OK | Select-Object FriendlyName, InstanceId | ConvertTo-Json'],
-          { timeout: 3500, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
+          ['-NoProfile', '-Command', psCmd],
+          { timeout: 5000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
         );
         if (out && out.trim()) {
           const parsed = JSON.parse(out.trim());
@@ -160,7 +173,20 @@ class VideoService {
           devices = VideoService.formatDeviceList(raw);
         }
       } catch (_) {
-        // Fallback handled below
+        // Fallback to Get-PnpDevice if WinRT query encounters security or permissions limitations
+        try {
+          const { execFileSync } = require('node:child_process');
+          const out = execFileSync(
+            'powershell.exe',
+            ['-NoProfile', '-Command', 'Get-PnpDevice -Class Camera, Image | Where-Object Status -eq OK | Select-Object FriendlyName, InstanceId | ConvertTo-Json'],
+            { timeout: 3500, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
+          );
+          if (out && out.trim()) {
+            const parsed = JSON.parse(out.trim());
+            const raw = Array.isArray(parsed) ? parsed : [parsed];
+            devices = VideoService.formatDeviceList(raw);
+          }
+        } catch (e) {}
       }
     } else if (process.platform === 'linux') {
       try {

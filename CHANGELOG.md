@@ -1,3 +1,21 @@
+## [1.197.3] - 2026-10-25
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **DirectShow Hardware Index Alignment for Capture Cards & Webcams (Closes #181)**:
+  - Fixed an issue where selecting an external HDMI capture card (such as `J5-CAPTURE`) in the Live Video Cast dropdown inadvertently opened the built-in laptop camera.
+  - Device enumeration now mirrors the actual Windows Media Foundation / DirectShow hardware indices (`cv2.CAP_DSHOW`), ensuring that selecting an HDMI capture card correctly streams the drone screen capture feed at full resolution (e.g., 1080p).
+
+#### Under the Hood & Technical Details
+- **`tools/companion/video_service.js`**:
+  - Replaced PnP device sorting with Windows Media Foundation WinRT query (`[Windows.Devices.Enumeration.DeviceInformation]::FindAllAsync([Windows.Devices.Enumeration.DeviceClass]::VideoCapture)`), matching OpenCV DirectShow device assignment.
+  - Updated `formatDeviceList` to map `item.DeviceIndex` directly to dropdown values (`value: String(devIndex)`).
+- **`src/bridge/VideoCastClient.js`**:
+  - Dynamically synchronized device values in `updateDevicesUI(devices)` to ensure options set matching device indices.
+- **`tools/companion/video_worker.py`**:
+  - Added resolution and frame rate diagnostics upon camera initialization (`width x height @ fps`) to aid field troubleshooting.
+
 ## [1.197.2] - 2026-10-25
 
 ### 🐛 Fixed
