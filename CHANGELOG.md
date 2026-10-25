@@ -1,3 +1,22 @@
+## [1.197.5] - 2026-10-25
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Eliminated Waypoint Arrival Gimbal Dance & Ground POI Lock (Closes #183)**:
+  - Fixed an issue where the camera gimbal violently pitched down to the ground upon arriving at each waypoint and rebounded between waypoints during Continuous Helix and non-POI missions (the "Gimbal Dance" on Flight 28).
+  - Automatically neutralizes `<wpml:waypointPoiPoint>` to `0.000000,0.000000,0.000000` and resets `<wpml:waypointHeadingPoiIndex>` to `0` whenever heading mode is not `towardPOI`, preventing DJI Fly firmware from triggering automated ground POI gimbal overrides. Genuine `towardPOI` missions (Orbit, Multi-Orbit, and POI inspections) continue emitting target POI coordinates normally.
+  - Preserves mathematically computed helical pitch sweeps (`helixPitchStart` to `helixPitchEnd`) against layer-level flat pitch fallbacks in the Three-Tier Cascading Hierarchy.
+
+#### Under the Hood & Technical Details
+- **`src/export/WpmlCompiler.js`**:
+  - In `buildWaylinesWpml`, exempted `isContinuousHelix` from layer-level flat pitch flattening, allowing waypoint-level helical pitch angles to take precedence in the Three-Tier Cascade.
+  - Guarded `<wpml:waypointPoiPoint>` and `<wpml:waypointHeadingPoiIndex>` emission to output target POI coordinates only when `actualHeadingMode === 'towardPOI'` or explicit `targetPoiId` is configured on Hyperlapse missions, emitting neutral `0.000000,0.000000,0.000000` and `0` for all other patterns.
+  - Scoped single-layer mission fallback ensuring waypoints without explicit `layerId` metadata cleanly resolve to the active layer without bleeding into standalone waypoint tests or global state.
+  - In `validateAndFixWpml`, added post-processing sanitation replacing non-neutral ground POI tags on non-`towardPOI` waypoints.
+- **`index.test.js`**:
+  - Added test suite `Issue #183: Gimbal Dance Elimination & Ground POI Snap Suppression (v1.197.5)` asserting neutral POI point emission in continuous helix, preservation of helical pitch sweep under flat layer pitch settings, and sanitization of rogue ground POIs in `validateAndFixWpml`.
+
 ## [1.197.4] - 2026-10-25
 
 ### 🐛 Fixed
