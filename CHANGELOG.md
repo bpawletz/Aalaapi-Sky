@@ -1,3 +1,19 @@
+## [1.197.2] - 2026-10-25
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Eliminated Redundant Airspace & Tile Cache REST Polling (Closes #180)**:
+  - Fixed an issue where keeping the ADS-B Airspace drawer open generated over 13,000 redundant HTTP requests overnight. AdsbAirspaceManager now operates 100% event-driven via the active SSE stream.
+  - Embedded live tile cache capacity and hit rates directly into the SSE status push broadcast, dropping recurring GET /api/cache/tiles/stats polling to zero.
+
+#### Under the Hood & Technical Details
+- **src/bridge/ApiClient.js**:
+  - In AdsbAirspaceManager.processAirspaceData(), guarded 	his.fetchAirspaceStatus() to execute only when !this.streamConnected (disconnected polling fallback).
+  - In pplyCompanionStatusUI(), updated the tile cache statistics DOM display to ingest data.tileCache directly from the SSE payload.
+- **	ools/companion/server.js**:
+  - Embedded 	ileCache metrics inside roadcastCompanionStatus(), GET /api/status, GET /api/status/stream, and GET /api/stream.
+
 ## [1.197.1] - 2026-10-24
 
 ### Fixed

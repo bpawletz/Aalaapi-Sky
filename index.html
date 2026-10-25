@@ -7698,7 +7698,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.197.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.197.2</span></h1>
         </div>
       </div>
 
@@ -14219,7 +14219,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.197.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.197.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14341,6 +14341,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                   <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.197.2):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Eliminated Redundant Airspace &amp; Tile Cache REST Polling (Closes #180):</strong> Fixed an issue where keeping the ADS-B Airspace drawer open generated over 13,000 redundant HTTP requests overnight. <code>AdsbAirspaceManager</code> now operates 100% event-driven via the active SSE stream. Embedded live tile cache capacity and hit rates directly into the SSE <code>status</code> push broadcast, dropping recurring <code>GET /api/cache/tiles/stats</code> polling to zero.</li>
+              </ul>
+            </li>
+                                    <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.197.1):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li><strong>Photo Sphere Waypoint Gimbal Horizon Orientation (Closes #178):</strong> Commands and preserves discrete ring pitches (+20°, -15°, -45°, -75°, -90°) at every photo station during Photo Sphere missions, suppressing ground POI emission (<code>0.000000,0.000000,0.000000</code>) to prevent DJI Fly autopilot from locking camera pitch straight down to nadir.</li>
@@ -52133,7 +52139,18 @@ function applyCompanionStatusUI(data) {
 
   if (sLabel) sLabel.textContent = 'port 8765';
 
-  if (typeof fetchBridgeCacheStats === 'function') fetchBridgeCacheStats();
+  if (data && data.tileCache) {
+    const statsSpan = (typeof document !== 'undefined') ? document.getElementById('bridge-cache-stats-text') : null;
+    const hitrateSpan = (typeof document !== 'undefined') ? document.getElementById('bridge-cache-hitrate-text') : null;
+    if (statsSpan) {
+      statsSpan.textContent = `Cached: ${(data.tileCache.totalFiles || 0).toLocaleString()} tiles (${data.tileCache.totalSizeMb || 0} MB / ${data.tileCache.maxSizeMb || 0} MB)`;
+    }
+    if (hitrateSpan) {
+      hitrateSpan.textContent = `Hit Rate: ${data.tileCache.hitRatePercent || 0}%`;
+    }
+  } else if (typeof fetchBridgeCacheStats === 'function' && !isCompanionStatusStreaming) {
+    fetchBridgeCacheStats();
+  }
 
   if (typeof updateMcpMonitorUI === 'function') updateMcpMonitorUI(data?.mcp, true);
 
@@ -58337,7 +58354,9 @@ const AdsbAirspaceManager = {
 
       this.updateDrawerAircraftList();
 
-      this.fetchAirspaceStatus();
+      if (!this.streamConnected) {
+        this.fetchAirspaceStatus();
+      }
 
     }
 

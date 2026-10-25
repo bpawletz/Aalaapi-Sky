@@ -968,7 +968,18 @@ function applyCompanionStatusUI(data) {
 
   if (sLabel) sLabel.textContent = 'port 8765';
 
-  if (typeof fetchBridgeCacheStats === 'function') fetchBridgeCacheStats();
+  if (data && data.tileCache) {
+    const statsSpan = (typeof document !== 'undefined') ? document.getElementById('bridge-cache-stats-text') : null;
+    const hitrateSpan = (typeof document !== 'undefined') ? document.getElementById('bridge-cache-hitrate-text') : null;
+    if (statsSpan) {
+      statsSpan.textContent = `Cached: ${(data.tileCache.totalFiles || 0).toLocaleString()} tiles (${data.tileCache.totalSizeMb || 0} MB / ${data.tileCache.maxSizeMb || 0} MB)`;
+    }
+    if (hitrateSpan) {
+      hitrateSpan.textContent = `Hit Rate: ${data.tileCache.hitRatePercent || 0}%`;
+    }
+  } else if (typeof fetchBridgeCacheStats === 'function' && !isCompanionStatusStreaming) {
+    fetchBridgeCacheStats();
+  }
 
   if (typeof updateMcpMonitorUI === 'function') updateMcpMonitorUI(data?.mcp, true);
 
@@ -7172,7 +7183,9 @@ const AdsbAirspaceManager = {
 
       this.updateDrawerAircraftList();
 
-      this.fetchAirspaceStatus();
+      if (!this.streamConnected) {
+        this.fetchAirspaceStatus();
+      }
 
     }
 
