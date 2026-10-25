@@ -1175,6 +1175,57 @@ async function checkRc2AdbStatus() {
   };
 }
 
+// Common PowerShell MTP Helpers for DJI RC controllers & Android smartphones
+const PS_MTP_HELPERS = `
+function Get-SubItem($folderItem, $name) {
+    if (-not $folderItem) { return $null }
+    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
+    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
+}
+
+function Find-FlightDevice($thisPC) {
+    # 1. Prefer explicit DJI RC controllers first if connected
+    $dji = $thisPC.Items() | Where-Object { $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" } | Select-Object -First 1
+    if ($dji) {
+        $storage = Get-SubItem $dji "Internal shared storage"
+        if (-not $storage) { $storage = Get-SubItem $dji "Internal storage" }
+        return @{ Device = $dji; Storage = $storage; IsLocked = ($storage -eq $null); IsRc = $true }
+    }
+
+    # 2. Check all connected portable devices for DJI Fly installation (Android phones/tablets)
+    $candidateLocked = $null
+    foreach ($item in $thisPC.Items()) {
+        $folder = if ($item.GetFolder) { $item.GetFolder } else { $null }
+        if ($folder) {
+            $items = @($folder.Items())
+            if ($items.Count -eq 0 -and ($item.Type -eq "Mobile Phone" -or $item.Name -match "S25|Galaxy|Pixel|Android|Phone")) {
+                if (-not $candidateLocked) { $candidateLocked = $item }
+            }
+            $storage = $folder.Items() | Where-Object { $_.Name -eq "Internal storage" -or $_.Name -eq "Internal shared storage" } | Select-Object -First 1
+            if ($storage) {
+                $android = Get-SubItem $storage "Android"
+                if ($android) {
+                    $data = Get-SubItem $android "data"
+                    if ($data) {
+                        $djiApp = Get-SubItem $data "dji.go.v5"
+                        if ($djiApp) {
+                            return @{ Device = $item; Storage = $storage; IsLocked = $false; IsRc = $false }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    # 3. If a mobile phone is connected but locked, return locked candidate
+    if ($candidateLocked) {
+        return @{ Device = $candidateLocked; Storage = $null; IsLocked = $true; IsRc = $false }
+    }
+
+    return $null
+}
+`;
+
 // 1. Check DJI RC 2 Connection Status
 async function checkRc2Status() {
   if (!IS_WINDOWS) {
@@ -1185,29 +1236,33 @@ async function checkRc2Status() {
     return {
       connected: false,
       platform: process.platform,
-      error: 'DJI RC 2 not detected. On Android/Linux, connect via USB-C with USB Debugging enabled (ADB) or use Samsung My Files manual copy.'
+      error: 'Flight controller or Android phone not detected. On Android/Linux, connect via USB-C with USB Debugging enabled (ADB) or use Samsung My Files manual copy.'
     };
   }
 
   const psScript = `
+${PS_MTP_HELPERS}
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
-$dji = $thisPC.Items() | Where-Object { $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" } | Select-Object -First 1
+$devInfo = Find-FlightDevice $thisPC
 
-if (-not $dji) {
+if (-not $devInfo) {
     @{ connected = $false } | ConvertTo-Json -Compress
     exit
 }
 
-function Get-SubItem($folderItem, $name) {
-    if (-not $folderItem) { return $null }
-    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
-    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
+if ($devInfo.IsLocked) {
+    @{
+        connected = $false
+        locked = $true
+        deviceName = $devInfo.Device.Name
+        error = "Device detected ($($devInfo.Device.Name)), but storage is locked. Please unlock phone and select 'Transferring files' (MTP)."
+    } | ConvertTo-Json -Compress
+    exit
 }
 
-$storage = Get-SubItem $dji "Internal shared storage"
-if (-not $storage) { $storage = Get-SubItem $dji "Internal storage" }
-
+$dji = $devInfo.Device
+$storage = $devInfo.Storage
 $wpPath = $null
 $activeMissions = @()
 
@@ -1215,17 +1270,23 @@ if ($storage) {
     $android = Get-SubItem $storage "Android"
     $data    = Get-SubItem $android "data"
     $djiApp  = Get-SubItem $data "dji.go.v5"
-    $files   = Get-SubItem $djiApp "files"
-    $wp      = Get-SubItem $files "waypoint"
-    if ($wp) {
-        $wpPath = $wp.Path
-        $activeMissions = @($wp.GetFolder.Items() | Where-Object { $_.IsFolder -and $_.Name -match "^[A-F0-9]{8}-" } | ForEach-Object { $_.Name })
+    if ($djiApp) {
+        $files   = Get-SubItem $djiApp "files"
+        if ($files) {
+            $wp = Get-SubItem $files "waypoint"
+            if ($wp) {
+                $wpPath = $wp.Path
+                $activeMissions = @($wp.GetFolder.Items() | Where-Object { $_.IsFolder -and $_.Name -match "^[A-F0-9]{8}-" } | ForEach-Object { $_.Name })
+            }
+        }
     }
 }
 
 @{
     connected = $true
+    locked = $false
     deviceName = $dji.Name
+    isAndroid = (-not $devInfo.IsRc)
     activeMissions = $activeMissions
     waypointReady = ($wpPath -ne $null)
 } | ConvertTo-Json -Compress
@@ -1305,23 +1366,18 @@ async function transferToRc2(uuid, kmzPath) {
   }
 
   const psScript = `
+${PS_MTP_HELPERS}
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
-$dji = $thisPC.Items() | Where-Object { $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" } | Select-Object -First 1
+$devInfo = Find-FlightDevice $thisPC
 
-if (-not $dji) {
-    @{ success = $false; error = "DJI RC 2 not connected" } | ConvertTo-Json -Compress
+if (-not $devInfo -or -not $devInfo.Storage) {
+    @{ success = $false; error = "Flight controller or Android phone not connected" } | ConvertTo-Json -Compress
     exit
 }
 
-function Get-SubItem($folderItem, $name) {
-    if (-not $folderItem) { return $null }
-    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
-    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
-}
-
-$storage = Get-SubItem $dji "Internal shared storage"
-if (-not $storage) { $storage = Get-SubItem $dji "Internal storage" }
+$dji = $devInfo.Device
+$storage = $devInfo.Storage
 
 $android = Get-SubItem $storage "Android"
 $data    = Get-SubItem $android "data"
@@ -1330,7 +1386,7 @@ $files   = Get-SubItem $djiApp "files"
 $wp      = Get-SubItem $files "waypoint"
 
 if (-not $wp) {
-    @{ success = $false; error = "Waypoint directory not found on RC 2" } | ConvertTo-Json -Compress
+    @{ success = $false; error = "Waypoint directory not found on device" } | ConvertTo-Json -Compress
     exit
 }
 
@@ -1456,23 +1512,18 @@ async function pullFromRc2(requestedUuid = '') {
   }
 
   const psScript = `
+${PS_MTP_HELPERS}
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
-$dji = $thisPC.Items() | Where-Object { $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" } | Select-Object -First 1
+$devInfo = Find-FlightDevice $thisPC
 
-if (-not $dji) {
-    @{ success = $false; error = "DJI RC 2 not connected" } | ConvertTo-Json -Compress
+if (-not $devInfo -or -not $devInfo.Storage) {
+    @{ success = $false; error = "Flight controller or Android phone not connected" } | ConvertTo-Json -Compress
     exit
 }
 
-function Get-SubItem($folderItem, $name) {
-    if (-not $folderItem) { return $null }
-    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
-    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
-}
-
-$storage = Get-SubItem $dji "Internal shared storage"
-if (-not $storage) { $storage = Get-SubItem $dji "Internal storage" }
+$dji = $devInfo.Device
+$storage = $devInfo.Storage
 $android = Get-SubItem $storage "Android"
 $data    = Get-SubItem $android "data"
 $djiApp  = Get-SubItem $data "dji.go.v5"
@@ -1480,7 +1531,7 @@ $files   = Get-SubItem $djiApp "files"
 $wp      = Get-SubItem $files "waypoint"
 
 if (-not $wp) {
-    @{ success = $false; error = "Waypoint directory not found on RC 2" } | ConvertTo-Json -Compress
+    @{ success = $false; error = "Waypoint directory not found on device" } | ConvertTo-Json -Compress
     exit
 }
 
@@ -1565,17 +1616,12 @@ if ($arrived) {
 // 4. Extract Latest Flight Information
 async function extractLatestFlight() {
   const psScript = `
+${PS_MTP_HELPERS}
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
-$dji = $thisPC.Items() | Where-Object { $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" } | Select-Object -First 1
+$devInfo = Find-FlightDevice $thisPC
 
-function Get-SubItem($folderItem, $name) {
-    if (-not $folderItem) { return $null }
-    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
-    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
-}
-
-$outDir = '${LATEST_DIR}'
+$outDir = '${LATEST_DIR.replace(/\\/g, '\\\\')}'
 $latestLogName = $null
 $latestKmzName = $null
 
@@ -1583,13 +1629,13 @@ $tempMtpDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "aalaap
 if (-not (Test-Path $tempMtpDir)) { New-Item -ItemType Directory -Path $tempMtpDir -Force | Out-Null }
 Get-ChildItem -Path $tempMtpDir -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
 
-if ($dji) {
-    $storage = Get-SubItem $dji "Internal shared storage"
-    if (-not $storage) { $storage = Get-SubItem $dji "Internal storage" }
-    if ($storage) {
-        $android = Get-SubItem $storage "Android"
-        $data    = Get-SubItem $android "data"
-        $djiApp  = Get-SubItem $data "dji.go.v5"
+if ($devInfo -and $devInfo.Storage) {
+    $dji = $devInfo.Device
+    $storage = $devInfo.Storage
+    $android = Get-SubItem $storage "Android"
+    $data    = Get-SubItem $android "data"
+    $djiApp  = Get-SubItem $data "dji.go.v5"
+    if ($djiApp) {
         $files   = Get-SubItem $djiApp "files"
 
         if ($files) {
@@ -1604,19 +1650,21 @@ if ($dji) {
                     $latestLogName = $latestLog.Name
 
                     # Check if already present and non-empty in outDir to avoid unnecessary MTP copy
-                    $existing = @(Get-ChildItem -Path $outDir -Filter $latestLogName -File -ErrorAction SilentlyContinue)
-                    if ($existing.Count -eq 0 -or $existing[0].Length -eq 0) {
+                    $dstLog = Join-Path $outDir $latestLogName
+                    $finalLogPath = $dstLog
+                    $existing = Test-Path -LiteralPath $finalLogPath
+                    if (-not $existing -or (Get-Item -LiteralPath $finalLogPath).Length -eq 0) {
                         # Copy to local TEMP folder first to avoid OneDrive COM hanging
                         $tempFolder.CopyHere($latestLog, 16)
                         $swLog = [System.Diagnostics.Stopwatch]::StartNew()
                         $copied = $false
-                        while ($swLog.Elapsed.TotalSeconds -lt 12) {
+                        while ($swLog.Elapsed.TotalSeconds -lt 15) {
                             Start-Sleep -Milliseconds 300
-                            $tmpItem = @(Get-ChildItem -Path $tempMtpDir -Filter $latestLogName -File -ErrorAction SilentlyContinue)
-                            if ($tmpItem.Count -gt 0 -and $tmpItem[0].Length -gt 0) {
+                            $tmpPath = Join-Path $tempMtpDir $latestLogName
+                            if ((Test-Path -LiteralPath $tmpPath) -and (Get-Item -LiteralPath $tmpPath).Length -gt 0) {
                                 # Verify file is fully written and unlocked
                                 try {
-                                    $fs = [System.IO.File]::Open($tmpItem[0].FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
+                                    $fs = [System.IO.File]::Open($tmpPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
                                     $fs.Close()
                                     $fs.Dispose()
                                     $copied = $true
@@ -1628,13 +1676,11 @@ if ($dji) {
                         }
                         if ($copied) {
                             $srcLog = Join-Path $tempMtpDir $latestLogName
-                            $dstLog = Join-Path $outDir $latestLogName
                             [System.IO.File]::Copy($srcLog, $dstLog, $true)
                         }
                     }
 
                     # Verify final log on disk in outDir
-                    $finalLogPath = Join-Path $outDir $latestLogName
                     if (-not (Test-Path -LiteralPath $finalLogPath) -or (Get-Item -LiteralPath $finalLogPath).Length -eq 0) {
                         $latestLogName = $null
                     }
@@ -1649,17 +1695,19 @@ if ($dji) {
                     $kmz = @($latestMission.GetFolder.Items() | Where-Object { $_.Name -like "*.kmz" -and $_.Name -notlike "_old_*" }) | Select-Object -First 1
                     if ($kmz) {
                         $latestKmzName = $kmz.Name
-                        $existingKmz = @(Get-ChildItem -Path $outDir -Filter $latestKmzName -File -ErrorAction SilentlyContinue)
-                        if ($existingKmz.Count -eq 0 -or $existingKmz[0].Length -eq 0) {
+                        $dstKmz = Join-Path $outDir $latestKmzName
+                        $finalKmzPath = $dstKmz
+                        $existingKmz = Test-Path -LiteralPath $finalKmzPath
+                        if (-not $existingKmz -or (Get-Item -LiteralPath $finalKmzPath).Length -eq 0) {
                             $tempFolder.CopyHere($kmz, 16)
                             $swKmz = [System.Diagnostics.Stopwatch]::StartNew()
                             $kmzCopied = $false
-                            while ($swKmz.Elapsed.TotalSeconds -lt 6) {
+                            while ($swKmz.Elapsed.TotalSeconds -lt 10) {
                                 Start-Sleep -Milliseconds 300
-                                $tmpKmz = @(Get-ChildItem -Path $tempMtpDir -Filter $latestKmzName -File -ErrorAction SilentlyContinue)
-                                if ($tmpKmz.Count -gt 0 -and $tmpKmz[0].Length -gt 0) {
+                                $tmpKmzPath = Join-Path $tempMtpDir $latestKmzName
+                                if ((Test-Path -LiteralPath $tmpKmzPath) -and (Get-Item -LiteralPath $tmpKmzPath).Length -gt 0) {
                                     try {
-                                        $fs = [System.IO.File]::Open($tmpKmz[0].FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
+                                        $fs = [System.IO.File]::Open($tmpKmzPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
                                         $fs.Close()
                                         $fs.Dispose()
                                         $kmzCopied = $true
@@ -1669,13 +1717,11 @@ if ($dji) {
                             }
                             if ($kmzCopied) {
                                 $srcKmz = Join-Path $tempMtpDir $latestKmzName
-                                $dstKmz = Join-Path $outDir $latestKmzName
                                 [System.IO.File]::Copy($srcKmz, $dstKmz, $true)
                             }
                         }
 
                         # Verify final KMZ on disk in outDir
-                        $finalKmzPath = Join-Path $outDir $latestKmzName
                         if (-not (Test-Path -LiteralPath $finalKmzPath) -or (Get-Item -LiteralPath $finalKmzPath).Length -eq 0) {
                             $latestKmzName = $null
                         }
@@ -1745,24 +1791,19 @@ async function listRc2FlightLogs() {
   }
 
   const psScript = `
+${PS_MTP_HELPERS}
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
-$dji = $thisPC.Items() | Where-Object { $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" } | Select-Object -First 1
-
-function Get-SubItem($folderItem, $name) {
-    if (-not $folderItem) { return $null }
-    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
-    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
-}
+$devInfo = Find-FlightDevice $thisPC
 
 $logList = @()
-if ($dji) {
-    $storage = Get-SubItem $dji "Internal shared storage"
-    if (-not $storage) { $storage = Get-SubItem $dji "Internal storage" }
-    if ($storage) {
-        $android = Get-SubItem $storage "Android"
-        $data    = Get-SubItem $android "data"
-        $djiApp  = Get-SubItem $data "dji.go.v5"
+if ($devInfo -and $devInfo.Storage) {
+    $dji = $devInfo.Device
+    $storage = $devInfo.Storage
+    $android = Get-SubItem $storage "Android"
+    $data    = Get-SubItem $android "data"
+    $djiApp  = Get-SubItem $data "dji.go.v5"
+    if ($djiApp) {
         $files   = Get-SubItem $djiApp "files"
         if ($files) {
             $fl = Get-SubItem $files "FlightRecord"
@@ -1781,7 +1822,7 @@ if ($dji) {
 
 @{
     success = $true
-    connected = ($dji -ne $null)
+    connected = ($devInfo -ne $null -and -not $devInfo.IsLocked)
     totalLogs = $logList.Count
     logs = $logList
 } | ConvertTo-Json -Depth 3 -Compress
@@ -1815,15 +1856,10 @@ async function pullRc2FlightLogs(requestedFilenames = []) {
   if (fileList.length === 0) return { success: false, error: 'No filenames specified', pulled: [] };
 
   const psScript = `
+${PS_MTP_HELPERS}
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
-$dji = $thisPC.Items() | Where-Object { $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" } | Select-Object -First 1
-
-function Get-SubItem($folderItem, $name) {
-    if (-not $folderItem) { return $null }
-    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
-    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
-}
+$devInfo = Find-FlightDevice $thisPC
 
 $outDir = '${LATEST_DIR.replace(/\\/g, '\\\\')}'
 $tempMtpDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "aalaapi_mtp_temp")
@@ -1833,13 +1869,13 @@ Get-ChildItem -Path $tempMtpDir -Recurse -ErrorAction SilentlyContinue | Remove-
 $pulled = @()
 $targets = @(${fileList.map(f => `"${f.replace(/["`$]/g, '')}"`).join(', ')})
 
-if ($dji) {
-    $storage = Get-SubItem $dji "Internal shared storage"
-    if (-not $storage) { $storage = Get-SubItem $dji "Internal storage" }
-    if ($storage) {
-        $android = Get-SubItem $storage "Android"
-        $data    = Get-SubItem $android "data"
-        $djiApp  = Get-SubItem $data "dji.go.v5"
+if ($devInfo -and $devInfo.Storage) {
+    $dji = $devInfo.Device
+    $storage = $devInfo.Storage
+    $android = Get-SubItem $storage "Android"
+    $data    = Get-SubItem $android "data"
+    $djiApp  = Get-SubItem $data "dji.go.v5"
+    if ($djiApp) {
         $files   = Get-SubItem $djiApp "files"
         if ($files) {
             $fl = Get-SubItem $files "FlightRecord"
@@ -1850,17 +1886,17 @@ if ($dji) {
                     $item = $allItems | Where-Object { $_.Name -eq $targetName } | Select-Object -First 1
                     if ($item) {
                         $destPath = Join-Path $outDir $targetName
-                        $existing = @(Get-ChildItem -Path $outDir -Filter $targetName -File -ErrorAction SilentlyContinue)
-                        if ($existing.Count -eq 0 -or $existing[0].Length -eq 0) {
+                        $existing = Test-Path -LiteralPath $destPath
+                        if (-not $existing -or (Get-Item -LiteralPath $destPath).Length -eq 0) {
                             $tempFolder.CopyHere($item, 16)
                             $sw = [System.Diagnostics.Stopwatch]::StartNew()
                             $ok = $false
-                            while ($sw.Elapsed.TotalSeconds -lt 12) {
+                            while ($sw.Elapsed.TotalSeconds -lt 15) {
                                 Start-Sleep -Milliseconds 300
-                                $tmpItem = @(Get-ChildItem -Path $tempMtpDir -Filter $targetName -File -ErrorAction SilentlyContinue)
-                                if ($tmpItem.Count -gt 0 -and $tmpItem[0].Length -gt 0) {
+                                $tmpItemPath = Join-Path $tempMtpDir $targetName
+                                if ((Test-Path -LiteralPath $tmpItemPath) -and (Get-Item -LiteralPath $tmpItemPath).Length -gt 0) {
                                     try {
-                                        $fs = [System.IO.File]::Open($tmpItem[0].FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
+                                        $fs = [System.IO.File]::Open($tmpItemPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
                                         $fs.Close()
                                         $fs.Dispose()
                                         $ok = $true
@@ -1947,6 +1983,42 @@ function updateMediaPullProgress(prog) {
 }
 
 // 5. Media & Photo Ingestion Engine for Mini 4 Pro, SD Cards, & RC 2
+function classifyDroneStorageDevice({ driveLetter, volName = '', hasFc8482 = false, hasNeoDb = false, totalCount = 0, hasMisc = false }) {
+  const isMini4 = Boolean(hasFc8482);
+  const isNeo = Boolean(hasNeoDb) || /NEO/i.test(volName);
+
+  let modelPrefix = null;
+  if (isMini4) {
+    modelPrefix = 'DJI Mini 4 Pro';
+  } else if (isNeo) {
+    modelPrefix = 'DJI Neo 2';
+  } else if (totalCount > 0 || hasMisc || /DJI/i.test(volName)) {
+    modelPrefix = 'DJI Aircraft';
+  }
+
+  let storageType = 'Removable Storage';
+  if (/SD_Card/i.test(volName)) {
+    storageType = 'MicroSD Card';
+  } else if (/InternalStorage/i.test(volName)) {
+    storageType = 'Internal Storage';
+  } else if (modelPrefix) {
+    storageType = 'Storage';
+  }
+
+  const displayName = modelPrefix
+    ? `${modelPrefix} - ${storageType} (${driveLetter}:)`
+    : `${storageType} (${driveLetter}:)`;
+
+  const isDrone = Boolean(isMini4 || isNeo || /SD_Card|InternalStorage/i.test(volName) || hasMisc || totalCount > 0);
+
+  return {
+    displayName,
+    modelPrefix,
+    storageType,
+    isDrone
+  };
+}
+
 async function detectMediaDevices() {
   if (!IS_WINDOWS) {
     const adbCheck = await checkRc2AdbStatus();
@@ -2014,19 +2086,37 @@ foreach ($d in $drives) {
     $totalCount = $jpgs.Count + $dngs.Count
 
     $vol = Get-Volume -DriveLetter $d.Name -ErrorAction SilentlyContinue
-    $volName = if ($vol -and $vol.FriendlyName) { $vol.FriendlyName } else { "" }
+    $volName = if ($vol -and $vol.FileSystemLabel) { $vol.FileSystemLabel } elseif ($vol -and $vol.FriendlyName) { $vol.FriendlyName } else { "" }
 
-    $isNeo = (Test-Path (Join-Path $d.Root "MISC\\NEO2_edcf.db")) -or ($volName -match "NEO") -or (Test-Path (Join-Path $dcimPath "DJI_001"))
-    $displayName = if ($isNeo) {
-        "DJI Neo 2 - Internal Storage ($($d.Name):)"
-    } elseif ($volName -match "SD_Card") {
-        "DJI Mini 4 Pro - MicroSD Card ($($d.Name):)"
-    } elseif ($volName -match "InternalStorage") {
-        "DJI Aircraft - Internal Storage ($($d.Name):)"
-    } elseif ($totalCount -gt 0) {
-        "DJI Removable Media ($($d.Name):)"
+    # Detect Aircraft Model via camera database or volume label
+    $isMini4 = (Test-Path (Join-Path $d.Root "MISC\\FC8482.db"))
+    $isNeo = (Test-Path (Join-Path $d.Root "MISC\\NEO2_edcf.db")) -or ($volName -match "NEO")
+
+    $modelPrefix = if ($isMini4) {
+        "DJI Mini 4 Pro"
+    } elseif ($isNeo) {
+        "DJI Neo 2"
+    } elseif ($totalCount -gt 0 -or (Test-Path (Join-Path $d.Root "MISC")) -or ($volName -match "DJI")) {
+        "DJI Aircraft"
     } else {
-        "Removable Storage ($($d.Name):)"
+        $null
+    }
+
+    # Detect Storage Medium
+    $storageType = if ($volName -match "SD_Card") {
+        "MicroSD Card"
+    } elseif ($volName -match "InternalStorage") {
+        "Internal Storage"
+    } elseif ($modelPrefix) {
+        "Storage"
+    } else {
+        "Removable Storage"
+    }
+
+    $displayName = if ($modelPrefix) {
+        "$modelPrefix - $storageType ($($d.Name):)"
+    } else {
+        "$storageType ($($d.Name):)"
     }
 
     $detected += @{
@@ -2036,7 +2126,7 @@ foreach ($d in $drives) {
         rootPath = $dcimPath
         photoCount = $jpgs.Count
         rawCount = $dngs.Count
-        isDrone = ($dngs.Count -gt 0 -or $totalCount -gt 0 -or $volName -match "SD_Card|InternalStorage" -or (Test-Path (Join-Path $d.Root "MISC")))
+        isDrone = ($isMini4 -or $isNeo -or $dngs.Count -gt 0 -or $totalCount -gt 0 -or $volName -match "SD_Card|InternalStorage" -or (Test-Path (Join-Path $d.Root "MISC")))
     }
 }
 
@@ -2146,7 +2236,16 @@ function extractDjiXmpMetadata(buf) {
   const flightPitchStr = getAttr('FlightPitchDegree');
   const flightYawStr = getAttr('FlightYawDegree');
   const flightRollStr = getAttr('FlightRollDegree');
-  const modelStr = getAttr('ProductName');
+  let modelStr = getAttr('ProductName');
+  if (!modelStr) {
+    const tiffModelMatch = xmpStr.match(/tiff:Model="([^"]+)"/i) || xmpStr.match(/<tiff:Model>([^<]+)<\/tiff:Model>/i);
+    if (tiffModelMatch) {
+      const tm = tiffModelMatch[1].trim();
+      modelStr = (tm.toUpperCase() === 'FC8482' || tm.toUpperCase() === 'DJI FC8482') ? 'DJI Mini 4 Pro' : tm;
+    }
+  } else if (modelStr.toUpperCase() === 'FC8482' || modelStr.toUpperCase() === 'DJI FC8482') {
+    modelStr = 'DJI Mini 4 Pro';
+  }
   const createDateMatch = xmpStr.match(/xmp:CreateDate="([^"]+)"/i) || xmpStr.match(/<xmp:CreateDate>([^<]+)<\/xmp:CreateDate>/i)
     || xmpStr.match(/xmp:ModifyDate="([^"]+)"/i) || xmpStr.match(/<xmp:ModifyDate>([^<]+)<\/xmp:ModifyDate>/i);
 
@@ -2846,8 +2945,13 @@ if ($copied.Count -eq 0 -and $thisPC) {
   if (!detectedModel) {
     const photoWithModel = photosMetadata.find(p => p.droneModel);
     if (photoWithModel) {
-      detectedModel = photoWithModel.droneModel.startsWith('DJI') ? photoWithModel.droneModel : `DJI ${photoWithModel.droneModel}`;
-    } else if (fs.existsSync('D:\\MISC\\NEO2_edcf.db') || rawFiles.some(f => f.startsWith('DJI_') && fs.existsSync('D:\\DCIM\\DJI_001'))) {
+      const rawModel = photoWithModel.droneModel.trim();
+      if (rawModel.toUpperCase() === 'FC8482' || rawModel.toUpperCase() === 'DJI FC8482') {
+        detectedModel = 'DJI Mini 4 Pro';
+      } else {
+        detectedModel = rawModel.startsWith('DJI') ? rawModel : `DJI ${rawModel}`;
+      }
+    } else if (rawFiles.some(f => f.includes('NEO2_edcf.db')) || (options.volumeName && /NEO/i.test(options.volumeName))) {
       detectedModel = 'DJI Neo 2';
     } else {
       detectedModel = 'DJI Mini 4 Pro';
@@ -6414,6 +6518,7 @@ server.on('upgrade', (req, socket, head) => {
 
 module.exports = {
   server,
+  PS_MTP_HELPERS,
   setCorsHeaders,
   checkRc2Status,
   transferToRc2,
@@ -6421,6 +6526,7 @@ module.exports = {
   extractLatestFlight,
   listRc2FlightLogs,
   pullRc2FlightLogs,
+  classifyDroneStorageDevice,
   detectMediaDevices,
   pullMediaPhotos,
   scanPhotoFiducials,

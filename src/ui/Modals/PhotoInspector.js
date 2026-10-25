@@ -405,12 +405,18 @@ const PhotoInspector = {
 
     modal.classList.remove('hidden');
     this.setupEvents();
+    if (typeof showSinglePhotoFootprint === 'function') {
+      showSinglePhotoFootprint(this.activePhoto);
+    }
   },
 
   close() {
     if (typeof document === 'undefined') return;
     const modal = document.getElementById('photo-inspector-modal');
     if (modal) modal.classList.add('hidden');
+    if (typeof clearSinglePhotoFootprint === 'function') {
+      clearSinglePhotoFootprint();
+    }
   },
 
   updateHeaderUI() {
@@ -2794,12 +2800,38 @@ const PhotoInspector = {
   }
 };
 
+function showSinglePhotoFootprint(photo) {
+  if (!map || typeof L === 'undefined' || !photo || !photo.footprint || !Array.isArray(photo.footprint.coordinates)) return;
+  if (typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup && typeof map.hasLayer === 'function' && map.hasLayer(photoFootprintsGroup)) {
+    return; // Bulk footprints are already visible on map
+  }
+  if (!singlePhotoFootprintGroup) {
+    singlePhotoFootprintGroup = L.layerGroup().addTo(map);
+  }
+  singlePhotoFootprintGroup.clearLayers();
+  const sev = photo.severity || 'clean';
+  L.polygon(photo.footprint.coordinates, {
+    color: sev === 'critical' ? '#ef4444' : (sev === 'warning' ? '#f59e0b' : '#38bdf8'),
+    weight: 2,
+    dashArray: '4, 4',
+    fillColor: sev === 'critical' ? '#ef4444' : (sev === 'warning' ? '#f59e0b' : '#38bdf8'),
+    fillOpacity: 0.22
+  }).addTo(singlePhotoFootprintGroup);
+}
+
+function clearSinglePhotoFootprint() {
+  if (typeof singlePhotoFootprintGroup !== 'undefined' && singlePhotoFootprintGroup && typeof singlePhotoFootprintGroup.clearLayers === 'function') {
+    singlePhotoFootprintGroup.clearLayers();
+  }
+}
+
 function renderPhotoInspectionMapLayer(manifest) {
   if (!map || typeof L === 'undefined' || !photoInspectionGroup) return;
   photoInspectionGroup.clearLayers();
   if (typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup && typeof photoFootprintsGroup.clearLayers === 'function') {
     photoFootprintsGroup.clearLayers();
   }
+  clearSinglePhotoFootprint();
   if (!manifest || !Array.isArray(manifest.photos)) return;
 
   activeInspectionManifest = manifest;
@@ -2810,17 +2842,14 @@ function renderPhotoInspectionMapLayer(manifest) {
     const lon = photo.actual.lon;
     const sev = photo.severity || 'clean';
 
-    if (photo.footprint && Array.isArray(photo.footprint.coordinates)) {
-      const footprintTarget = (typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup)
-        ? photoFootprintsGroup
-        : photoInspectionGroup;
+    if (photo.footprint && Array.isArray(photo.footprint.coordinates) && typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup) {
       L.polygon(photo.footprint.coordinates, {
         color: sev === 'critical' ? '#ef4444' : (sev === 'warning' ? '#f59e0b' : '#38bdf8'),
         weight: 1.5,
         dashArray: '3, 3',
         fillColor: sev === 'critical' ? '#ef4444' : (sev === 'warning' ? '#f59e0b' : '#38bdf8'),
         fillOpacity: 0.15
-      }).addTo(footprintTarget);
+      }).addTo(photoFootprintsGroup);
     }
 
     const iconHtml = `<div class="photo-marker-icon severity-${sev}" title="${photo.filename}">📸</div>`;
@@ -2832,6 +2861,23 @@ function renderPhotoInspectionMapLayer(manifest) {
     });
 
     const marker = L.marker([lat, lon], { icon }).addTo(photoInspectionGroup);
+
+    if (typeof marker.on === 'function') {
+      marker.on('mouseover', () => {
+        showSinglePhotoFootprint(photo);
+      });
+      marker.on('mouseout', () => {
+        if (typeof marker.isPopupOpen === 'function' && !marker.isPopupOpen()) {
+          clearSinglePhotoFootprint();
+        }
+      });
+      marker.on('popupopen', () => {
+        showSinglePhotoFootprint(photo);
+      });
+      marker.on('popupclose', () => {
+        clearSinglePhotoFootprint();
+      });
+    }
     
     const popupContent = `
       <div style="font-size: 0.78rem; display: flex; flex-direction: column; gap: 6px; min-width: 180px;">
@@ -2859,6 +2905,7 @@ function clearPhotoInspectionMapLayer() {
   if (typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup && typeof photoFootprintsGroup.clearLayers === 'function') {
     photoFootprintsGroup.clearLayers();
   }
+  clearSinglePhotoFootprint();
   activeInspectionManifest = null;
 }
 

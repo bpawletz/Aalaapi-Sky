@@ -92,7 +92,26 @@ flowchart LR
 | **Windows Desktop** | Local Aalaapi Bridge (`start-bridge.bat`) | Zero-install (bundled Node daemon). Avoids Windows WPD MTP device locks. |
 | **macOS / Linux** | Aalaapi Bridge (`npm run bridge`) | Node.js v18+. |
 | **Android Tablet / DeX** | Direct WebUSB OTG (`#webusb-sync-btn`) | Zero-install! Connect USB-C OTG cable; tap "Allow" in Chrome. |
+| **Android Smartphones (S25 Ultra / Pixel)** | Auto-Discovery & Direct MTP (`tools/companion/server.js`) | Unlock phone, select **"Transferring files" (MTP)**, and grant data access. |
 | **Android Field CLI** | Termux Bridge (`tools/companion/server.js`) | Termux with `nodejs` and `android-tools`. |
+
+---
+
+## 📲 Connecting Android Smartphones (Samsung Galaxy, etc.) for Telemetry Pulling
+
+When flying aircraft like the **DJI Neo 2** or **DJI Mini series** using the DJI Fly app directly on an Android smartphone:
+
+1. **Plug in USB-C Data Cable**: Connect your phone to your PC running the Companion Bridge.
+2. **Unlock the Phone Screen**: Android enforces strict security boundaries; external USB access is completely blocked while the screen is locked. Unlock via biometric (fingerprint) or PIN.
+3. **Set USB Connection to "Transferring files" (MTP)**:
+   - Swipe down from the top edge to open Android notifications.
+   - Tap **"Charging this device via USB"** (or **USB Settings**).
+   - Under *Use USB for*, select **"Transferring files"** (or **MTP**). Do not leave in "Charging only".
+4. **Authorize Storage Access**:
+   - If prompted with *"Allow access to phone data?"*, tap **Allow**.
+5. **Instant 1-Click Telemetry Extraction**:
+   - In Aalaapi Sky, the Companion Box will illuminate `🟢 [Device Name]: Connected` (e.g., `Brian's S25 Ultra`).
+   - Click **"📥 Pull Flight Log"** to automatically pull the newest `FlightRecord_*.txt`, decrypt it via the DJI Cloud API, and replay the 3D trajectory in the Flight Diagnostics Center.
 
 ---
 
@@ -100,8 +119,11 @@ flowchart LR
 
 1. **Bridge Shows `⚪ Offline`**:
    - Ensure Node.js (v18+) is installed. Run `npm run bridge` in your terminal or check if another application is holding port 8765. Run `npm run bridge:stop` to terminate any lingering processes.
-2. **RC 2 Shows `🟡 Unplugged` while Cable is Connected**:
+2. **Device Shows `🟡 Unplugged` or `🟠 Phone Locked / Charging Only`**:
+   - Verify the USB-C cable supports data. Try another USB port.
+   - Unlock your phone screen and confirm the USB notification is set to **"Transferring files" (MTP)**, not "Charging only".
+3. **RC 2 Shows `🟡 Unplugged` while Cable is Connected**:
    - Verify the USB-C cable supports data. Try another USB port (direct motherboard port preferred over unpowered USB hubs).
    - Re-check that "File Transfer" mode is enabled on the RC 2 screen.
-3. **Mission Not Showing in DJI Fly**:
+4. **Mission Not Showing in DJI Fly**:
    - Exit to the DJI Fly home screen and re-enter **Waypoint Flight** to refresh the app's internal filesystem cache.

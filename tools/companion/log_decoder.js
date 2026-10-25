@@ -1057,6 +1057,9 @@ function calculateGroundFootprint(lat, lon, altAgl, gimbalPitch = -90, heading =
   const halfH = (hFov / 2) * (Math.PI / 180);
   const halfV = (vFov / 2) * (Math.PI / 180);
 
+  // Optical axis ground projection distance (center of frame)
+  const dCenter = alt * Math.tan(Math.min(Math.PI / 2.05, tiltFromNadir));
+
   // Near and far ground distances along camera optical axis projection
   let dNear, dFar;
   if (tiltFromNadir <= halfV) {
@@ -1066,13 +1069,20 @@ function calculateGroundFootprint(lat, lon, altAgl, gimbalPitch = -90, heading =
   } else {
     // Oblique: both near and far boundaries are in front of drone
     dNear = alt * Math.tan(tiltFromNadir - halfV);
-    dFar = alt * Math.tan(Math.min(Math.PI / 2.1, tiltFromNadir + halfV));
+    const thetaFar = tiltFromNadir + halfV;
+    // When pitch is oblique (e.g. -26 deg to 0 deg), the upper FOV points towards or above the horizon.
+    // Clamp the far ground projection so it does not diverge towards infinity or create spiderweb starbursts.
+    const maxFarDist = Math.max(25, Math.min(100, Math.max(dCenter * 2.0, alt * 3.0)));
+    if (thetaFar < (75 * Math.PI / 180)) {
+      dFar = Math.min(alt * Math.tan(thetaFar), maxFarDist);
+    } else {
+      dFar = maxFarDist;
+    }
   }
-  const dCenter = alt * Math.tan(tiltFromNadir);
 
   // Lateral half-widths at near and far ground edges
   const wNear = Math.sqrt(alt * alt + dNear * dNear) * Math.tan(halfH);
-  const wFar = Math.sqrt(alt * alt + dFar * dFar) * Math.tan(halfH);
+  const wFar = Math.min(120, Math.sqrt(alt * alt + dFar * dFar) * Math.tan(halfH));
 
   // Heading rotation (0 deg = North, 90 deg = East)
   const radH = headDeg * (Math.PI / 180);
@@ -1080,12 +1090,16 @@ function calculateGroundFootprint(lat, lon, altAgl, gimbalPitch = -90, heading =
   const sinH = Math.sin(radH);
 
   // Local meter offsets relative to drone position (x = East, y = North)
-  // Near-Left (rear-left), Near-Right (rear-right), Far-Right (front-right), Far-Left (front-left)
+  // Standard 2D rotation of camera coordinate frame:
+  // Forward = d (along optical ground axis), Right = w (lateral across optical axis)
+  // x = w * cosH + d * sinH
+  // y = -w * sinH + d * cosH
+  // Near-Left (w = -wNear), Near-Right (w = +wNear), Far-Right (w = +wFar), Far-Left (w = -wFar)
   const localCorners = [
-    { x: -wNear * cosH + dNear * sinH, y: -wNear * sinH + dNear * cosH },
-    { x: wNear * cosH + dNear * sinH, y: wNear * sinH + dNear * cosH },
-    { x: wFar * cosH + dFar * sinH, y: wFar * sinH + dFar * cosH },
-    { x: -wFar * cosH + dFar * sinH, y: -wFar * sinH + dFar * cosH }
+    { x: -wNear * cosH + dNear * sinH, y:  wNear * sinH + dNear * cosH },
+    { x:  wNear * cosH + dNear * sinH, y: -wNear * sinH + dNear * cosH },
+    { x:  wFar * cosH + dFar * sinH,   y: -wFar * sinH + dFar * cosH },
+    { x: -wFar * cosH + dFar * sinH,   y:  wFar * sinH + dFar * cosH }
   ];
 
   const mPerDegLat = 111132.954;

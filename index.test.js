@@ -36267,3 +36267,428 @@ describe('Issue #183: Gimbal Dance Elimination & Ground POI Snap Suppression (v1
     assert.ok(placemarks[2].includes('<wpml:waypointHeadingPoiIndex>1</wpml:waypointHeadingPoiIndex>'), 'towardPOI targetPoiIndex must be preserved');
   });
 });
+
+describe('Issue #184: 2D Photo Ground Coverage Footprint Bounding & Inspection Isolation', () => {
+  const { correlatePhotosWithTelemetry } = require('./tools/companion/log_decoder');
+
+  test('Version consistency: v1.197.6 across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    assert.ok(semverGte(pkg.version, '1.197.6'));
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.197.6] - 2026-10-25'));
+    const tpl = fs.readFileSync('index_template.html', 'utf8');
+    assert.ok(tpl.includes('header-version-badge') || semverGte(pkg.version, '1.197.6'));
+    assert.ok(tpl.includes('version-tag') || semverGte(pkg.version, '1.197.6'));
+    assert.ok(tpl.includes('Changelog (v1.197.6):'));
+    const html = fs.readFileSync('index.html', 'utf8');
+    assert.ok(html.includes('header-version-badge') || semverGte(pkg.version, '1.197.6'));
+    assert.ok(html.includes('version-tag') || semverGte(pkg.version, '1.197.6'));
+    assert.ok(html.includes('Changelog (v1.197.6):'));
+  });
+
+  test('calculateGroundFootprint produces bounded, non-divergent footprints for oblique gimbal pitch', () => {
+    // Oblique pitch (-26 deg, like in continuous helix / orbit around POI)
+    const photoOblique = {
+      photoId: 'photo-oblique-1',
+      lat: 41.3215,
+      lon: -88.9950,
+      altAgl: 15.0,
+      gimbalPitch: -26.0,
+      heading: 90.0
+    };
+
+    const correlated = correlatePhotosWithTelemetry([photoOblique], []);
+    assert.strictEqual(correlated.length, 1);
+    const fp = correlated[0].footprint;
+    assert.ok(fp, 'Footprint must be generated');
+    assert.strictEqual(fp.type, 'Polygon');
+    assert.ok(Array.isArray(fp.coordinates) && fp.coordinates.length > 0);
+    const ring = fp.coordinates[0];
+    assert.strictEqual(ring.length, 5, 'Ring must have 4 corners plus closing point');
+
+    // Check closing point matches first point
+    assert.deepStrictEqual(ring[0], ring[4], 'Polygon must be closed');
+
+    // Bounded dimensions: far distance must not explode across the map
+    assert.ok(fp.dimensionsMeters.length <= 100, `Footprint length (${fp.dimensionsMeters.length}m) must be capped <= 100m`);
+    assert.ok(fp.dimensionsMeters.widthFar <= 250, `Far width (${fp.dimensionsMeters.widthFar}m) must be capped <= 250m`);
+    assert.ok(fp.dimensionsMeters.centerDist > 0, 'Center distance must be positive');
+
+    // Oblique near-horizontal pitch (-10 deg)
+    const photoSteepOblique = {
+      photoId: 'photo-oblique-2',
+      lat: 41.3215,
+      lon: -88.9950,
+      altAgl: 20.0,
+      gimbalPitch: -10.0,
+      heading: 0.0
+    };
+    const corrSteep = correlatePhotosWithTelemetry([photoSteepOblique], []);
+    const fpSteep = corrSteep[0].footprint;
+    assert.ok(fpSteep.dimensionsMeters.length <= 100, 'Footprint length must remain clamped <= 100m even at -10 deg pitch');
+    assert.ok(fpSteep.dimensionsMeters.widthFar <= 250, 'Far width must remain clamped <= 250m');
+  });
+
+  test('calculateGroundFootprint accurately rotates lateral corners with aircraft heading', () => {
+    // When flying East (heading = 90 deg), drone forward is East (+lon), Right is South (-lat), Left is North (+lat)
+    const photoEast = {
+      photoId: 'photo-east',
+      lat: 41.3215,
+      lon: -88.9950,
+      altAgl: 20.0,
+      gimbalPitch: -45.0,
+      heading: 90.0
+    };
+
+    const correlated = correlatePhotosWithTelemetry([photoEast], []);
+    const ring = correlated[0].footprint.coordinates[0];
+    // ring: [Near-Left, Near-Right, Far-Right, Far-Left, Near-Left]
+    const nearLeft = ring[0];
+    const nearRight = ring[1];
+    const farRight = ring[2];
+    const farLeft = ring[3];
+
+    // Forward is East (+lon) -> far corners must have higher longitude than near corners
+    assert.ok(farRight[1] > nearRight[1], 'Far-Right longitude must be greater than Near-Right longitude when heading East');
+    assert.ok(farLeft[1] > nearLeft[1], 'Far-Left longitude must be greater than Near-Left longitude when heading East');
+
+    // Right is South (-lat) -> right corners must have lower latitude than left corners
+    assert.ok(nearRight[0] < nearLeft[0], 'Near-Right latitude must be lower than Near-Left latitude when heading East');
+    assert.ok(farRight[0] < farLeft[0], 'Far-Right latitude must be lower than Far-Left latitude when heading East');
+  });
+
+  test('renderPhotoInspectionMapLayer isolates single photo footprint on hover/open without bulk layer clutter', () => {
+    const singleFootprintsAdded = [];
+    const mockSingleGroup = {
+      layers: [],
+      clearLayers() { this.layers = []; },
+      addLayer(layer) { this.layers.push(layer); singleFootprintsAdded.push(layer); }
+    };
+    const mockBulkGroup = {
+      layers: [],
+      clearLayers() { this.layers = []; },
+      addLayer(layer) { this.layers.push(layer); }
+    };
+    const mockInspectGroup = {
+      layers: [],
+      clearLayers() { this.layers = []; },
+      addLayer(layer) { this.layers.push(layer); }
+    };
+
+    global.testMockSingleGroup = mockSingleGroup;
+    global.testMockFootprintsGroup = mockBulkGroup;
+    global.testMockInspectionGroup = mockInspectGroup;
+    global.testMockMap = { hasLayer: () => false };
+
+    const origL = global.L;
+
+    try {
+      vm.runInThisContext(`
+        singlePhotoFootprintGroup = global.testMockSingleGroup;
+        photoFootprintsGroup = global.testMockFootprintsGroup;
+        photoInspectionGroup = global.testMockInspectionGroup;
+        map = global.testMockMap;
+      `);
+
+      const markerHandlers = {};
+      global.L = {
+        polygon: (coords, opts) => ({
+          type: 'polygon',
+          coords,
+          opts,
+          addTo(group) { group.addLayer(this); return this; }
+        }),
+        divIcon: (opts) => ({ type: 'divIcon', opts }),
+        marker: (coords, opts) => ({
+          type: 'marker',
+          coords,
+          opts,
+          bindPopup: () => {},
+          addTo(group) { group.addLayer(this); return this; },
+          on: (event, handler) => { markerHandlers[event] = handler; },
+          isPopupOpen: () => false
+        })
+      };
+
+      const manifest = {
+        photos: [{
+          photoId: 'p-test',
+          filename: 'DJI_0001.JPG',
+          waypointIndex: 0,
+          actual: { lat: 41.32, lon: -88.99, altAgl: 20, gimbalPitch: -45 },
+          footprint: {
+            coordinates: [[[41.321, -88.991], [41.321, -88.989], [41.319, -88.989], [41.319, -88.991], [41.321, -88.991]]]
+          }
+        }]
+      };
+
+      renderPhotoInspectionMapLayer(manifest);
+
+      // Pins should be in photoInspectionGroup, bulk footprints in photoFootprintsGroup, single footprint empty initially
+      assert.strictEqual(mockInspectGroup.layers.length, 1);
+      assert.strictEqual(mockBulkGroup.layers.length, 1);
+      assert.strictEqual(mockSingleGroup.layers.length, 0, 'Single footprint layer must start empty');
+
+      // Trigger hover over marker
+      assert.ok(typeof markerHandlers.mouseover === 'function', 'Marker must register mouseover');
+      markerHandlers.mouseover();
+      assert.strictEqual(mockSingleGroup.layers.length, 1, 'Mouseover must show single photo footprint');
+
+      // Trigger mouseout
+      assert.ok(typeof markerHandlers.mouseout === 'function', 'Marker must register mouseout');
+      markerHandlers.mouseout();
+      assert.strictEqual(mockSingleGroup.layers.length, 0, 'Mouseout must clear single photo footprint');
+
+      // Test clearPhotoInspectionMapLayer cleans all groups
+      markerHandlers.mouseover();
+      assert.strictEqual(mockSingleGroup.layers.length, 1);
+      clearPhotoInspectionMapLayer();
+      assert.strictEqual(mockSingleGroup.layers.length, 0, 'clearPhotoInspectionMapLayer must clear single photo footprint');
+      assert.strictEqual(mockInspectGroup.layers.length, 0);
+      assert.strictEqual(mockBulkGroup.layers.length, 0);
+    } finally {
+      vm.runInThisContext(`
+        singlePhotoFootprintGroup = null;
+        photoFootprintsGroup = null;
+        photoInspectionGroup = null;
+        map = null;
+      `);
+      delete global.testMockSingleGroup;
+      delete global.testMockFootprintsGroup;
+      delete global.testMockInspectionGroup;
+      delete global.testMockMap;
+      global.L = origL;
+    }
+  });
+});
+
+describe('v1.197.7 DJI Mini 4 Pro Storage Detection & Classification Tests (Closes #185)', () => {
+  const companion = require('./tools/companion/server.js');
+
+  test('Version consistency: v1.197.7 across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    assert.ok(semverGte(pkg.version, '1.197.7'));
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.197.7] - 2026-10-25'));
+    const tpl = fs.readFileSync('index_template.html', 'utf8');
+    assert.ok(tpl.includes('header-version-badge') || semverGte(pkg.version, '1.197.7'));
+    assert.ok(tpl.includes('version-tag') || semverGte(pkg.version, '1.197.7'));
+    assert.ok(tpl.includes('Changelog (v1.197.7):'));
+    const html = fs.readFileSync('index.html', 'utf8');
+    assert.ok(html.includes('header-version-badge') || semverGte(pkg.version, '1.197.7'));
+    assert.ok(html.includes('version-tag') || semverGte(pkg.version, '1.197.7'));
+    assert.ok(html.includes('Changelog (v1.197.7):'));
+  });
+
+  test('classifyDroneStorageDevice correctly identifies DJI Mini 4 Pro MicroSD Card and Internal Storage', () => {
+    assert.strictEqual(typeof companion.classifyDroneStorageDevice, 'function', 'classifyDroneStorageDevice must be exported');
+
+    // Mini 4 Pro 256GB MicroSD Card (Drive F:)
+    const sdCardRes = companion.classifyDroneStorageDevice({
+      driveLetter: 'F',
+      volName: 'SD_Card',
+      hasFc8482: true,
+      hasNeoDb: false,
+      totalCount: 343,
+      hasMisc: true
+    });
+    assert.strictEqual(sdCardRes.displayName, 'DJI Mini 4 Pro - MicroSD Card (F:)');
+    assert.strictEqual(sdCardRes.modelPrefix, 'DJI Mini 4 Pro');
+    assert.strictEqual(sdCardRes.storageType, 'MicroSD Card');
+    assert.strictEqual(sdCardRes.isDrone, true);
+
+    // Mini 4 Pro 2GB Internal Storage (Drive E:)
+    const internalRes = companion.classifyDroneStorageDevice({
+      driveLetter: 'E',
+      volName: 'InternalStorage',
+      hasFc8482: true,
+      hasNeoDb: false,
+      totalCount: 0,
+      hasMisc: true
+    });
+    assert.strictEqual(internalRes.displayName, 'DJI Mini 4 Pro - Internal Storage (E:)');
+    assert.strictEqual(internalRes.modelPrefix, 'DJI Mini 4 Pro');
+    assert.strictEqual(internalRes.storageType, 'Internal Storage');
+    assert.strictEqual(internalRes.isDrone, true);
+  });
+
+  test('classifyDroneStorageDevice prevents false DJI Neo 2 attribution on generic DJI_001 photos', () => {
+    // Media drive with photos but no Neo database or Neo volume label
+    const normalDrive = companion.classifyDroneStorageDevice({
+      driveLetter: 'D',
+      volName: '',
+      hasFc8482: false,
+      hasNeoDb: false,
+      totalCount: 25,
+      hasMisc: false
+    });
+    assert.notStrictEqual(normalDrive.modelPrefix, 'DJI Neo 2', 'Must NOT classify generic drive as DJI Neo 2');
+    assert.strictEqual(normalDrive.modelPrefix, 'DJI Aircraft');
+    assert.strictEqual(normalDrive.displayName, 'DJI Aircraft - Storage (D:)');
+
+    // Genuine Neo 2 with NEO2_edcf.db
+    const neoDrive = companion.classifyDroneStorageDevice({
+      driveLetter: 'E',
+      volName: 'InternalStorage',
+      hasFc8482: false,
+      hasNeoDb: true,
+      totalCount: 10,
+      hasMisc: true
+    });
+    assert.strictEqual(neoDrive.displayName, 'DJI Neo 2 - Internal Storage (E:)');
+    assert.strictEqual(neoDrive.modelPrefix, 'DJI Neo 2');
+    assert.strictEqual(neoDrive.storageType, 'Internal Storage');
+  });
+
+  test('extractDjiXmpMetadata resolves FC8482 camera identifier to DJI Mini 4 Pro', () => {
+    assert.strictEqual(typeof companion.extractDjiXmpMetadata, 'function');
+
+    const sampleXmp = Buffer.from(
+      '<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>\n' +
+      '<x:xmpmeta xmlns:x="adobe:ns:meta/">\n' +
+      '  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">\n' +
+      '    <rdf:Description xmlns:drone-dji="http://www.dji.com/drone-dji/1.0/"\n' +
+      '      drone-dji:GpsLatitude="+41.3215000"\n' +
+      '      drone-dji:GpsLongitude="-88.9950000"\n' +
+      '      drone-dji:RelativeAltitude="+45.00"\n' +
+      '      drone-dji:AbsoluteAltitude="+210.50"\n' +
+      '      drone-dji:GimbalPitchDegree="-90.00"\n' +
+      '      drone-dji:GimbalYawDegree="+180.00"\n' +
+      '      drone-dji:ProductName="FC8482"/>\n' +
+      '  </rdf:RDF>\n' +
+      '</x:xmpmeta>\n' +
+      '<?xpacket end="w"?>'
+    );
+
+    const meta = companion.extractDjiXmpMetadata(sampleXmp);
+    assert.ok(meta, 'Metadata should be successfully parsed');
+    assert.strictEqual(meta.droneModel, 'DJI Mini 4 Pro', 'FC8482 ProductName must resolve to DJI Mini 4 Pro');
+    assert.strictEqual(meta.lat, 41.3215);
+    assert.strictEqual(meta.lon, -88.995);
+  });
+});
+
+
+describe('v1.198.0 Android Flight Device Auto-Discovery & Telemetry Pull Tests (Closes #186)', () => {
+  const companion = require('./tools/companion/server.js');
+
+  test('Version consistency: v1.198.0 across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    assert.strictEqual(pkg.version, '1.198.0');
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.198.0] - 2026-10-25'));
+    const tpl = fs.readFileSync('index_template.html', 'utf8');
+    assert.ok(tpl.includes('>v1.198.0</span>'));
+    assert.ok(tpl.includes('Version 1.198.0</span>'));
+    assert.ok(tpl.includes('Changelog (v1.198.0):'));
+    const html = fs.readFileSync('index.html', 'utf8');
+    assert.ok(html.includes('>v1.198.0</span>'));
+    assert.ok(html.includes('Version 1.198.0</span>'));
+    assert.ok(html.includes('Changelog (v1.198.0):'));
+  });
+
+  test('companion server exports PS_MTP_HELPERS containing Find-FlightDevice', () => {
+    assert.strictEqual(typeof companion.PS_MTP_HELPERS, 'string', 'PS_MTP_HELPERS must be an exported string');
+    assert.ok(companion.PS_MTP_HELPERS.includes('function Find-FlightDevice'), 'Must declare Find-FlightDevice');
+    assert.ok(companion.PS_MTP_HELPERS.includes('dji.go.v5'), 'Must check for dji.go.v5 app folder');
+    assert.ok(companion.PS_MTP_HELPERS.includes('Internal storage'), 'Must check Internal storage');
+    assert.ok(companion.PS_MTP_HELPERS.includes('IsLocked'), 'Must support device lock detection');
+  });
+
+  test('PS_MTP_HELPERS PowerShell syntax is valid', () => {
+    const { spawnSync } = require('child_process');
+    const testScript = `
+${companion.PS_MTP_HELPERS}
+$mockPC = @{ Items = { return @() } }
+$res = Find-FlightDevice $mockPC
+if ($res -ne $null) { exit 1 } else { exit 0 }
+`;
+    const res = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', testScript], { encoding: 'utf8' });
+    assert.strictEqual(res.status, 0, `PowerShell helper syntax error: ${res.stderr || res.stdout}`);
+  });
+
+  test('Find-FlightDevice identifies connected Android smartphone with dji.go.v5', () => {
+    const { spawnSync } = require('child_process');
+    const testScript = `
+${companion.PS_MTP_HELPERS}
+
+function New-MockFolder($name, $items = @()) {
+    $obj = New-Object -TypeName PSObject
+    $obj | Add-Member -MemberType NoteProperty -Name Name -Value $name
+    $obj | Add-Member -MemberType NoteProperty -Name subItems -Value $items
+    $folder = New-Object -TypeName PSObject
+    $folder | Add-Member -MemberType NoteProperty -Name subItems -Value $items
+    $folder | Add-Member -MemberType ScriptMethod -Name Items -Value { return $this.subItems }
+    $obj | Add-Member -MemberType ScriptMethod -Name Items -Value { return $this.subItems }
+    $obj | Add-Member -MemberType NoteProperty -Name GetFolder -Value $folder
+    return $obj
+}
+
+$files = New-MockFolder "files" @()
+$djiApp = New-MockFolder "dji.go.v5" @($files)
+$data = New-MockFolder "data" @($djiApp)
+$android = New-MockFolder "Android" @($data)
+$storage = New-MockFolder "Internal storage" @($android)
+$phone = New-MockFolder "Brian's S25 Ultra" @($storage)
+$phone | Add-Member -MemberType NoteProperty -Name Type -Value "Mobile Phone" -Force
+
+$mockPC = New-Object -TypeName PSObject
+$mockPC | Add-Member -MemberType NoteProperty -Name phone -Value $phone
+$mockPC | Add-Member -MemberType ScriptMethod -Name Items -Value { return @($this.phone) }
+
+$res = Find-FlightDevice $mockPC
+if (-not $res) { exit 1 }
+if ($res.Device.Name -ne "Brian's S25 Ultra") { exit 2 }
+if ($res.IsLocked -ne $false) { exit 3 }
+if ($res.IsRc -ne $false) { exit 4 }
+exit 0
+`;
+    const res = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', testScript], { encoding: 'utf8' });
+    assert.strictEqual(res.status, 0, `Android device resolution failed: ${res.stderr || res.stdout}`);
+  });
+
+  test('Find-FlightDevice flags locked smartphone when storage items are empty', () => {
+    const { spawnSync } = require('child_process');
+    const testScript = `
+${companion.PS_MTP_HELPERS}
+
+function New-MockFolder($name, $items = @()) {
+    $obj = New-Object -TypeName PSObject
+    $obj | Add-Member -MemberType NoteProperty -Name Name -Value $name
+    $obj | Add-Member -MemberType NoteProperty -Name subItems -Value $items
+    $folder = New-Object -TypeName PSObject
+    $folder | Add-Member -MemberType NoteProperty -Name subItems -Value $items
+    $folder | Add-Member -MemberType ScriptMethod -Name Items -Value { return $this.subItems }
+    $obj | Add-Member -MemberType ScriptMethod -Name Items -Value { return $this.subItems }
+    $obj | Add-Member -MemberType NoteProperty -Name GetFolder -Value $folder
+    return $obj
+}
+
+$phoneLocked = New-MockFolder "Brian's S25 Ultra" @()
+$phoneLocked | Add-Member -MemberType NoteProperty -Name Type -Value "Mobile Phone" -Force
+
+$mockPC = New-Object -TypeName PSObject
+$mockPC | Add-Member -MemberType NoteProperty -Name phone -Value $phoneLocked
+$mockPC | Add-Member -MemberType ScriptMethod -Name Items -Value { return @($this.phone) }
+
+$res = Find-FlightDevice $mockPC
+if (-not $res) { exit 1 }
+if ($res.IsLocked -ne $true) { exit 2 }
+if ($res.Device.Name -ne "Brian's S25 Ultra") { exit 3 }
+exit 0
+`;
+    const res = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', testScript], { encoding: 'utf8' });
+    assert.strictEqual(res.status, 0, `Locked device resolution failed: ${res.stderr || res.stdout}`);
+  });
+
+  test('Quickstart Guide Hub and Bridge documentation detail Android phone MTP connection and file transfer setting', () => {
+    const fs = require('fs');
+    const template = fs.readFileSync('index_template.html', 'utf8');
+    const bridgeGuide = fs.readFileSync('docs/RC2_COMPANION_BRIDGE_GUIDE.md', 'utf8');
+
+    assert.ok(template.includes('Method 4: Pulling Flight Logs from Android Phones (DJI Fly &amp; Neo 2)'), 'index_template.html must document Android flight log extraction');
+    assert.ok(template.includes('Transferring files'), 'index_template.html must instruct setting USB to Transferring files');
+    assert.ok(bridgeGuide.includes('Connecting Android Smartphones (Samsung Galaxy, etc.) for Telemetry Pulling'), 'RC2_COMPANION_BRIDGE_GUIDE.md must include phone connection section');
+    assert.ok(bridgeGuide.includes('"Transferring files" (MTP)'), 'RC2_COMPANION_BRIDGE_GUIDE.md must emphasize Transferring files MTP setting');
+  });
+});

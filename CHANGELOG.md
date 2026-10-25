@@ -1,3 +1,76 @@
+## [1.198.0] - 2026-10-25
+
+Enables automatic USB MTP discovery and 1-click telemetry extraction for Android smartphones running DJI Fly (such as Samsung Galaxy S25 Ultra flying the DJI Neo 2), complete with device lock detection and guided USB file transfer workflows.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Android Smartphone Auto-Discovery & Flight Log Pulling (Closes #186)**:
+  - Pilots flying aircraft like the DJI Neo 2 or Mini series using the DJI Fly app directly on an Android smartphone (e.g. Samsung Galaxy S25 Ultra, Google Pixel) can now plug their phone into their PC via USB-C and automatically pull encrypted `FlightRecord_*.txt` telemetry logs with 1 click.
+  - The Companion Box and Flight Diagnostics header dynamically display the connected phone's name (e.g. `🟢 Brian's S25 Ultra: Connected`), unlocking 1-click telemetry pull, DJI Cloud API auto-decryption, and 3D flight replay.
+- **Smart Device Lock & MTP Permission Guidance**:
+  - Automatically detects when a connected smartphone is screen-locked or in "Charging only" mode, illuminating a clear warning badge (`📱 Phone Locked / Charging Only`) and prompting the pilot to unlock their screen and select "Transferring files" (MTP).
+- **In-App & Offline Guide Hub Documentation**:
+  - Added "Method 4: Pulling Flight Logs from Android Phones (DJI Fly & Neo 2)" to the Android & Tablet QuickStart Guide (`#guide-pane-android`), providing step-by-step instructions for unlocking Android devices, toggling MTP "Transferring files", and granting data permissions.
+  - Updated `docs/RC2_COMPANION_BRIDGE_GUIDE.md` with full connection procedures for Android smartphones and DJI Neo 2 flights.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/server.js`**:
+  - Implemented and exported `PS_MTP_HELPERS` containing `Find-FlightDevice` to generalize USB MTP discovery beyond hardcoded `*DJI RC 2*` strings.
+  - Inspects connected portable devices for `Internal storage` and `Android/data/dji.go.v5/files/FlightRecord/` while preserving priority for dedicated DJI RC / RC 2 controllers.
+  - Integrated `Find-FlightDevice` into `checkRc2Status()`, `extractLatestFlight()`, `listRc2FlightLogs()`, `pullRc2FlightLogs()`, and `transferToRc2()`.
+  - Upgraded file existence and extraction checks to use `Test-Path -LiteralPath` and `Get-Item -LiteralPath`, eliminating regex/wildcard bracket corruption when copying files with square brackets (`FlightRecord_YYYY-MM-DD_[HH-MM-SS].txt`).
+- **`src/bridge/ApiClient.js`**:
+  - Updated `applyCompanionStatusUI` to handle `data.isAndroid` and `data.locked`, displaying phone-specific connection badges and locked screen guidance.
+- **`tools/extract-latest-flight.ps1`**:
+  - Updated standalone flight extraction script with `Find-FlightDevice` helper to auto-detect both DJI RC controllers and Android phones.
+- **`index.test.js`**:
+  - Added unit test suite `v1.198.0 Android Flight Device Auto-Discovery & Telemetry Pull Tests (Closes #186)` asserting `PS_MTP_HELPERS` export, PowerShell syntax validity, mock Android device resolution, lock state detection, and guide documentation synchronization.
+
+## [1.197.7] - 2026-10-25
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Accurate DJI Mini 4 Pro Storage Identification & False Neo 2 Prevention (Closes #185)**:
+  - Fixed an issue in the Photo Ingestion modal (`#media-ingest-modal`) where connecting a DJI Mini 4 Pro via USB-C misidentified its 256GB MicroSD card (`SD_Card`) as `DJI Neo 2 - Internal Storage (F:)` and its 2GB internal flash storage (`InternalStorage`) as generic `Removable Storage (E:)`.
+  - The companion bridge now correctly labels drives as `DJI Mini 4 Pro - MicroSD Card (F:)` and `DJI Mini 4 Pro - Internal Storage (E:)`.
+  - Prevents false DJI Neo 2 attribution across all connected storage volumes and photo manifests, ensuring `DJI Neo 2` is only identified when genuine Neo hardware markers (`MISC/NEO2_edcf.db` or volume label `NEO`) are present.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/server.js`**:
+  - In `detectMediaDevices`, replaced the non-existent `$vol.FriendlyName` property on PowerShell `MSFT_Volume` CIM instances with `$vol.FileSystemLabel` (with `$vol.FriendlyName` fallback), properly extracting volume labels such as `SD_Card` and `InternalStorage`.
+  - Removed the overly-broad `DCIM\DJI_001` path check from `$isNeo` detection, as all modern DJI consumer aircraft (including the Mini 4 Pro) use `DCIM\DJI_001` for photo storage.
+  - Added hardware database detection for `MISC\FC8482.db` to definitively recognize the DJI Mini 4 Pro aircraft camera.
+  - Implemented and exported `classifyDroneStorageDevice()` to modularize and deterministically classify storage medium (`MicroSD Card`, `Internal Storage`, `Storage`) and drone model prefix (`DJI Mini 4 Pro`, `DJI Neo 2`, `DJI Aircraft`).
+  - In `extractDjiXmpMetadata`, added model resolution mapping `FC8482` / `DJI FC8482` to `DJI Mini 4 Pro`.
+  - In `generatePhotoManifest`, updated fallback drone model detection to map `FC8482` to `DJI Mini 4 Pro` and prevent false Neo 2 attribution based solely on `DJI_001`.
+- **`index.test.js`**:
+  - Added test suite `v1.197.7 DJI Mini 4 Pro Storage Detection & Classification Tests (Closes #185)` asserting accurate MicroSD card and internal storage classification for the DJI Mini 4 Pro, regression prevention for `DJI_001`, and `FC8482` XMP model resolution.
+
+## [1.197.6] - 2026-10-25
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Eliminated Distorted 2D Photo Ground Coverage Starburst & Spiderweb Footprints (Closes #184)**:
+  - Fixed an issue where ingesting flight photos from the drone, SD card, or RC 2 companion bridge flooded the 2D Leaflet map with giant, distorted, overlapping blue dashed cones and trapezoids covering hundreds of meters across the screen.
+  - Automatically bounds ground footprint geometry on oblique and horizon-facing camera angles (e.g. continuous helix, facade, and orbit POI shots where the upper FOV points towards or above the horizon), capping the far ground projection to a realistic slant range (<= 100m) rather than diverging towards infinity.
+  - Corrected the mathematical coordinate rotation of trapezoid footprint corners so footprints are accurately oriented relative to aircraft heading without lateral cross-track shearing.
+  - Isolated photo pin markers (`photoInspectionGroup`) from bulk footprint polygons (`photoFootprintsGroup`). Ingesting photos displays crisp, clean camera pins (`📸`) by default. Hovering or clicking an individual photo pin dynamically reveals only that photo's footprint, while the bulk "Photo Coverage Footprints (2D)" layer remains an opt-in toggle in the Leaflet layer control.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/log_decoder.js`**:
+  - In `calculateGroundFootprint`, fixed a sign inversion in the lateral $y$-component (`-w * sinH` instead of `+w * sinH`), ensuring standard 2D rotation of camera coordinate frame.
+  - Added smart slant-range clamping when upper FOV angle $	heta_{\text{far}} \ge 75^\circ$, capping $d_{\text{far}} \le \max(25\text{m}, \min(100\text{m}, \max(2.0 \times d_{\text{center}}, 3.0 \times \text{alt})))$ and $w_{\text{far}} \le 120\text{m}$.
+- **`src/state/MissionStore.js` & `src/map/MapEngine.js`**:
+  - Initialized dedicated `singlePhotoFootprintGroup` to manage dynamic single-photo footprint previews on hover/click without mutating bulk footprint layers.
+- **`src/ui/Modals/PhotoInspector.js`**:
+  - In `renderPhotoInspectionMapLayer`, decoupled photo pins from bulk footprint polygons. Registered `mouseover`, `mouseout`, `popupopen`, and `popupclose` event listeners on photo markers to dynamically show and clear individual photo footprints.
+  - In `PhotoInspector.open` and `close`, integrated `showSinglePhotoFootprint` and `clearSinglePhotoFootprint` to keep 2D map footprints synchronized with modal photo navigation.
+- **`index.test.js`**:
+  - Added test suite `Issue #184: 2D Photo Ground Coverage Footprint Bounding & Inspection Isolation` verifying bounded oblique footprint calculations, accurate heading rotation, and isolated single-photo footprint hover/open behavior.
+
 ## [1.197.5] - 2026-10-25
 
 ### 🐛 Fixed

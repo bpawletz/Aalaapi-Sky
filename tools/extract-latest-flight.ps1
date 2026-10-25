@@ -52,29 +52,69 @@ if ($localLogs) {
     Copy-Item $localLogs.FullName -Destination "$OutputDir\local_$($localLogs.Name)" -Force
 }
 
-# 2. Connect to DJI RC 2 via MTP Shell COM
-Write-Host "`n[2/3] Connecting to DJI RC 2 Controller over USB MTP..." -ForegroundColor Yellow
+# 2. Connect to DJI RC 2 or Android Phone via MTP Shell COM
+Write-Host "`n[2/3] Connecting to DJI Controller or Android Phone over USB MTP..." -ForegroundColor Yellow
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
 
-$rc2Device = $thisPC.Items() | Where-Object { 
-    $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" 
-} | Select-Object -First 1
+function Get-MTPFolderItem($folderItem, $name) {
+    if (-not $folderItem) { return $null }
+    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
+    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
+}
 
-if (-not $rc2Device) {
-    Write-Host "  [!] DJI RC 2 controller not detected!" -ForegroundColor Red
-    Write-Host "      Ensure the controller is powered on, connected via USB-C, and in 'File Transfer' mode." -ForegroundColor Yellow
-} else {
-    Write-Host "  [V] Connected to: $($rc2Device.Name)" -ForegroundColor Green
-
-    function Get-MTPFolderItem($folderItem, $name) {
-        if (-not $folderItem) { return $null }
-        $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
-        return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
+function Find-FlightDevice($thisPC) {
+    $dji = $thisPC.Items() | Where-Object { $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" } | Select-Object -First 1
+    if ($dji) {
+        $storage = Get-MTPFolderItem $dji "Internal shared storage"
+        if (-not $storage) { $storage = Get-MTPFolderItem $dji "Internal storage" }
+        return @{ Device = $dji; Storage = $storage; IsLocked = ($storage -eq $null); IsRc = $true }
     }
 
-    $storage = Get-MTPFolderItem $rc2Device "Internal shared storage"
-    if (-not $storage) { $storage = Get-MTPFolderItem $rc2Device "Internal storage" }
+    $candidateLocked = $null
+    foreach ($item in $thisPC.Items()) {
+        $folder = if ($item.GetFolder) { $item.GetFolder } else { $null }
+        if ($folder) {
+            $items = @($folder.Items())
+            if ($items.Count -eq 0 -and ($item.Type -eq "Mobile Phone" -or $item.Name -match "S25|Galaxy|Pixel|Android|Phone")) {
+                if (-not $candidateLocked) { $candidateLocked = $item }
+            }
+            $storage = $folder.Items() | Where-Object { $_.Name -eq "Internal storage" -or $_.Name -eq "Internal shared storage" } | Select-Object -First 1
+            if ($storage) {
+                $android = Get-MTPFolderItem $storage "Android"
+                if ($android) {
+                    $data = Get-MTPFolderItem $android "data"
+                    if ($data) {
+                        $djiApp = Get-MTPFolderItem $data "dji.go.v5"
+                        if ($djiApp) {
+                            return @{ Device = $item; Storage = $storage; IsLocked = $false; IsRc = $false }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if ($candidateLocked) {
+        return @{ Device = $candidateLocked; Storage = $null; IsLocked = $true; IsRc = $false }
+    }
+
+    return $null
+}
+
+$devInfo = Find-FlightDevice $thisPC
+
+if (-not $devInfo) {
+    Write-Host "  [!] DJI RC 2 or Android phone not detected!" -ForegroundColor Red
+    Write-Host "      Ensure the device is powered on, connected via USB-C, and in 'File Transfer' mode." -ForegroundColor Yellow
+} elseif ($devInfo.IsLocked) {
+    Write-Host "  [!] Device detected ($($devInfo.Device.Name)), but storage is locked!" -ForegroundColor Yellow
+    Write-Host "      Please unlock your phone screen and select 'Transferring files' (MTP) in notifications." -ForegroundColor Yellow
+} else {
+    $rc2Device = $devInfo.Device
+    Write-Host "  [V] Connected to: $($rc2Device.Name)" -ForegroundColor Green
+
+    $storage = $devInfo.Storage
 
     if ($storage) {
         $android = Get-MTPFolderItem $storage "Android"

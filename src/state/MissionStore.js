@@ -8,6 +8,7 @@ let pitchLabelsGroup = null; // Separate layer for pitch labels — avoids ghost
 let photoMarkersGroup = null;
 let photoInspectionGroup = null;
 let photoFootprintsGroup = null;
+let singlePhotoFootprintGroup = null;
 let activeInspectionManifest = null;
 let exclusionZonesGroup = null;
 let boundaryLayersGroup = null;
