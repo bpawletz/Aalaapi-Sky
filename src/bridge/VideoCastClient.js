@@ -739,11 +739,13 @@ class VideoCastClient {
     ].filter(Boolean);
 
     recBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.toggleRecording();
-      });
+      if (typeof btn.addEventListener === 'function') {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.toggleRecording();
+        });
+      }
     });
 
     // Panel Launcher in Section 4

@@ -7698,7 +7698,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.198.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.199.0</span></h1>
         </div>
       </div>
 
@@ -14242,7 +14242,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.198.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.199.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14363,7 +14363,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                     <li style="margin-bottom: 8px;">
-                                                                                      <li style="margin-bottom: 8px;">
+                                                                                                  <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.199.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>True Connected Device Display in GUI &amp; Helper Text (Closes #187):</strong> Dynamically adapts all hardware status badges, action buttons, Diagnostics controls, and the Flight Log Manager modal to reflect the pilot's true detected device type (e.g. <code>S25 Ultra</code>, <code>Pixel</code>, <code>Android</code>, or <code>DJI RC 2</code>) rather than hardcoded RC 2 strings.</li>
+              </ul>
+            </li>
+            <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.198.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li><strong>Android Smartphone Auto-Discovery &amp; Flight Log Extraction (Closes #186):</strong> Added native USB MTP auto-discovery for connected Android smartphones (e.g. Samsung Galaxy S25 Ultra) flying aircraft like the DJI Neo 2 via DJI Fly. Includes smart screen-lock/charging-only detection, guided USB MTP setup, and 1-click telemetry extraction and decryption.</li>
@@ -51559,6 +51565,62 @@ let isRc2MtpConnected = false;
 
 let rc2MtpActiveUUID = '';
 
+let lastDetectedFlightDevice = null;
+
+function getLastDetectedFlightDevice() {
+  return lastDetectedFlightDevice;
+}
+
+function getDeviceDisplayInfo(statusData = {}) {
+  const isAndroid = !!statusData.isAndroid;
+  const rawName = (statusData.deviceName || '').trim();
+
+  let fullName = rawName;
+  let shortName = rawName;
+
+  if (rawName) {
+    const possessiveMatch = rawName.match(/^(?:.*?'s\s+)?(.+)$/i);
+    const baseName = possessiveMatch ? possessiveMatch[1].trim() : rawName;
+
+    const cleanBrandName = baseName.replace(/^(?:Google|Samsung)\s+/i, '').trim();
+
+    if (/S25\s*Ultra/i.test(rawName)) {
+      shortName = 'S25 Ultra';
+    } else if (/S25/i.test(rawName)) {
+      shortName = 'S25';
+    } else if (/S24/i.test(rawName)) {
+      shortName = 'S24';
+    } else if (/Pixel/i.test(rawName)) {
+      shortName = cleanBrandName.length <= 14 ? cleanBrandName : (baseName.length <= 14 ? baseName : 'Pixel');
+    } else if (/RC\s*2/i.test(rawName)) {
+      shortName = 'RC 2';
+      fullName = 'DJI RC 2';
+    } else if (/RC\s*Pro/i.test(rawName)) {
+      shortName = 'RC Pro';
+      fullName = 'DJI RC Pro';
+    } else if (/RC/i.test(rawName)) {
+      shortName = 'RC';
+      fullName = 'DJI RC';
+    } else {
+      shortName = baseName.length <= 14 ? baseName : (isAndroid ? 'Android' : 'Controller');
+    }
+  } else if (isAndroid) {
+    fullName = 'Android Smartphone';
+    shortName = 'Android';
+  } else {
+    fullName = 'DJI RC 2';
+    shortName = 'RC 2';
+  }
+
+  return {
+    fullName,
+    shortName,
+    isAndroid,
+    connected: !!statusData.connected,
+    locked: !!statusData.locked
+  };
+}
+
 let companionPollInterval = null;
 
 let consecutiveStatusFailures = 0;
@@ -52328,7 +52390,9 @@ function applyCompanionStatusUI(data) {
 
 
 
-  // 2. Update RC 2 USB Link status
+  // 2. Update Flight Controller / Android USB Link status
+  const devInfo = getDeviceDisplayInfo(data || {});
+  lastDetectedFlightDevice = devInfo;
 
   if (data.connected) {
 
@@ -52355,34 +52419,25 @@ function applyCompanionStatusUI(data) {
     if (uDot) uDot.style.background = '#22c55e';
 
     if (uText) {
-
       if (data.isAndroid) {
-        uText.textContent = data.deviceName ? `${data.deviceName}: Connected` : 'Android Phone (DJI Fly): Connected';
+        uText.textContent = `${devInfo.fullName}: Connected`;
       } else {
         uText.textContent = 'RC 2 USB Link: Connected';
       }
-
       uText.style.color = '#22c55e';
-
     }
 
-    if (uLabel) uLabel.textContent = data.deviceName || 'MTP Ready';
-
-
+    if (uLabel) uLabel.textContent = data.deviceName || `${devInfo.shortName} (MTP)`;
 
     // Legacy compatibility
-
     if (dot) dot.style.background = '#22c55e';
 
     if (text) {
-
-      text.textContent = data.isAndroid ? (data.deviceName || 'Android Phone Connected') : 'DJI RC 2 Connected';
-
+      text.textContent = data.isAndroid ? (data.deviceName || `${devInfo.fullName} Connected`) : 'DJI RC 2 Connected';
       text.style.color = '#22c55e';
-
     }
 
-    if (label) label.textContent = data.deviceName || 'MTP Ready';
+    if (label) label.textContent = data.deviceName || `${devInfo.shortName} (MTP)`;
 
 
 
@@ -52403,56 +52458,47 @@ function applyCompanionStatusUI(data) {
     if (container && container.classList) container.classList.add('is-offline');
 
     if (hint) {
-
       hint.style.display = 'flex';
-
       const labelSpan = (typeof hint.querySelector === 'function') ? hint.querySelector('span:first-child') : null;
-
       if (labelSpan) {
-
-        labelSpan.innerHTML = `
-
-          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-
-          RC 2 Unplugged &bull; USB Setup Guide`;
-
+        if (data && data.locked) {
+          labelSpan.innerHTML = `
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            ${typeof escapeHtml === 'function' ? escapeHtml(devInfo.shortName) : devInfo.shortName} Locked &bull; File Transfer Guide`;
+          hint.title = `${devInfo.fullName} storage is locked. Select 'Transferring files' on phone.`;
+          hint.onclick = () => { if (typeof openRC2GuideModal === 'function') openRC2GuideModal('android'); };
+        } else {
+          labelSpan.innerHTML = `
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            RC 2 / Phone Unplugged &bull; USB Setup Guide`;
+          hint.title = 'Open RC 2 & Phone USB Setup Guide';
+        }
       }
-
     }
 
-
-
-    if (uDot) uDot.style.background = '#eab308'; // Amber
+    if (uDot) uDot.style.background = (data && data.locked) ? '#f59e0b' : '#eab308';
 
     if (uText) {
-
       if (data && data.locked) {
-        uText.textContent = `${data.deviceName || 'Phone'}: Locked / Charging Only`;
+        uText.textContent = `${devInfo.fullName}: Locked / Charging Only`;
         uText.style.color = '#f59e0b';
       } else {
         uText.textContent = 'RC 2 USB Link: Unplugged';
         uText.style.color = '#eab308';
       }
-
     }
 
-    if (uLabel) uLabel.textContent = 'Plug in USB-C';
-
-
+    if (uLabel) uLabel.textContent = (data && data.locked) ? 'Unlock Phone' : 'Plug in USB-C';
 
     // Legacy compatibility
-
-    if (dot) dot.style.background = '#eab308';
+    if (dot) dot.style.background = (data && data.locked) ? '#f59e0b' : '#eab308';
 
     if (text) {
-
-      text.textContent = 'RC 2 Disconnected';
-
-      text.style.color = '#eab308';
-
+      text.textContent = (data && data.locked) ? `${devInfo.fullName} Locked` : 'RC 2 Disconnected';
+      text.style.color = (data && data.locked) ? '#f59e0b' : '#eab308';
     }
 
-    if (label) label.textContent = 'Plug in USB-C';
+    if (label) label.textContent = (data && data.locked) ? 'Unlock Phone' : 'Plug in USB-C';
 
 
 
@@ -52540,50 +52586,109 @@ function applyCompanionStatusUI(data) {
 
 
 
+  const sidebarDirectBtn = document.getElementById('sidebar-direct-rc2-sync-btn');
+  const sidebarPullBtn = document.getElementById('sidebar-direct-rc2-pull-btn');
+  const directSyncBtn = directBtn || document.getElementById('direct-rc2-sync-btn');
+  const directPullBtn = pullBtn || document.getElementById('direct-rc2-pull-btn');
+  const directPullLogBtn = document.getElementById('direct-rc2-pull-log-btn');
+  const directBrowseLogsBtn = document.getElementById('direct-rc2-browse-logs-btn');
+
   if (data.connected) {
-
     if (headerRc2Badge) {
-
-      headerRc2Badge.textContent = 'RC 2: OK';
-
+      headerRc2Badge.textContent = `${devInfo.shortName}: OK`;
       headerRc2Badge.className = 'header-rc2-badge is-connected';
-
+      headerRc2Badge.title = `${devInfo.fullName} Connected over USB MTP`;
     }
 
     if (sidebarRc2Badge) {
-
-      sidebarRc2Badge.textContent = 'RC 2: OK';
-
+      sidebarRc2Badge.textContent = `${devInfo.shortName}: OK`;
       sidebarRc2Badge.style.background = 'rgba(34, 197, 94, 0.2)';
-
       sidebarRc2Badge.style.color = '#4ade80';
-
+      sidebarRc2Badge.title = `${devInfo.fullName} Connected over USB MTP`;
     }
 
     if (sidebarQuickActions) sidebarQuickActions.style.display = 'flex';
 
-  } else {
-
+    if (sidebarDirectBtn) {
+      sidebarDirectBtn.textContent = `Send to ${devInfo.shortName}`;
+      sidebarDirectBtn.title = `Send active mission directly to connected ${devInfo.fullName}`;
+    }
+    if (sidebarPullBtn) {
+      sidebarPullBtn.title = `Pull active mission KMZ from connected ${devInfo.fullName}`;
+    }
+    if (directSyncBtn) {
+      directSyncBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        Send to ${devInfo.shortName}
+      `;
+      directSyncBtn.title = `Send active mission directly to connected ${devInfo.fullName}`;
+    }
+    if (directPullBtn) {
+      directPullBtn.title = `Pull and import active mission KMZ from connected ${devInfo.fullName}`;
+    }
+    if (directPullLogBtn) {
+      directPullLogBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        📥 Pull Flight Log from ${devInfo.shortName}
+      `;
+      directPullLogBtn.title = `Extract latest flight telemetry log from connected ${devInfo.fullName} over USB`;
+    }
+    if (directBrowseLogsBtn) {
+      directBrowseLogsBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        📋 Browse ${devInfo.shortName} Logs
+      `;
+      directBrowseLogsBtn.title = `Browse and pull any flight log from connected ${devInfo.fullName} over USB MTP`;
+    }
+    if (diagPullBtn) {
+      diagPullBtn.textContent = `📥 Pull from ${devInfo.shortName}`;
+      diagPullBtn.title = `Pull latest flight log directly from connected ${devInfo.fullName} over USB MTP`;
+    }
+    if (diagBrowseBtn) {
+      diagBrowseBtn.textContent = `📋 ${devInfo.shortName} Logs`;
+      diagBrowseBtn.title = `Browse and pull flight logs from connected ${devInfo.fullName}`;
+    }
+  } else if (data && data.locked) {
     if (headerRc2Badge) {
-
-      headerRc2Badge.textContent = 'RC 2';
-
+      headerRc2Badge.textContent = 'Phone Locked';
       headerRc2Badge.className = 'header-rc2-badge is-unplugged';
-
+      headerRc2Badge.title = `${devInfo.fullName} storage is locked or in charging mode`;
     }
 
     if (sidebarRc2Badge) {
-
-      sidebarRc2Badge.textContent = 'RC 2: Unplugged';
-
-      sidebarRc2Badge.style.background = 'rgba(234, 179, 8, 0.15)';
-
+      sidebarRc2Badge.textContent = `${devInfo.shortName}: Locked`;
+      sidebarRc2Badge.style.background = 'rgba(234, 179, 8, 0.2)';
       sidebarRc2Badge.style.color = '#fde047';
-
+      sidebarRc2Badge.title = `${devInfo.fullName} storage is locked. Select 'Transferring files'`;
     }
 
     if (sidebarQuickActions) sidebarQuickActions.style.display = 'none';
+  } else {
+    if (headerRc2Badge) {
+      headerRc2Badge.textContent = 'RC 2';
+      headerRc2Badge.className = 'header-rc2-badge is-unplugged';
+      headerRc2Badge.title = 'DJI RC 2 / Phone USB Link: Unplugged';
+    }
 
+    if (sidebarRc2Badge) {
+      sidebarRc2Badge.textContent = 'RC 2: Unplugged';
+      sidebarRc2Badge.style.background = 'rgba(234, 179, 8, 0.15)';
+      sidebarRc2Badge.style.color = '#fde047';
+      sidebarRc2Badge.title = 'DJI RC 2 / Phone USB Link: Unplugged';
+    }
+
+    if (sidebarQuickActions) sidebarQuickActions.style.display = 'none';
   }
 
 
@@ -53356,7 +53461,8 @@ async function sendDirectlyToRC2() {
 
     b.disabled = true;
 
-    b.innerHTML = `<span>⏳ Syncing to RC 2...</span>`;
+    const activeDev = getDeviceDisplayInfo(lastDetectedFlightDevice || {});
+    b.innerHTML = `<span>⏳ Syncing to ${activeDev.shortName}...</span>`;
 
   });
 
@@ -53522,7 +53628,8 @@ async function sendDirectlyToRC2() {
 
       buttonsToUpdate.forEach(b => {
 
-        b.innerHTML = `<span>✅ Synced to DJI RC 2! Re-open in DJI Fly</span>`;
+        const activeDev = getDeviceDisplayInfo(lastDetectedFlightDevice || {});
+        b.innerHTML = (activeDev.shortName === 'RC 2') ? `<span>✅ Synced to DJI RC 2! Re-open in DJI Fly</span>` : `<span>✅ Synced to ${activeDev.shortName}! Re-open in DJI Fly</span>`;
 
         b.style.background = 'rgba(34, 197, 94, 0.2)';
 
@@ -53536,7 +53643,8 @@ async function sendDirectlyToRC2() {
 
       if (typeof showToast === 'function') {
 
-        showToast(`✅ Synced to DJI RC 2 slot ${uuid}! Re-open in DJI Fly.`, 'success');
+        const activeDev = getDeviceDisplayInfo(lastDetectedFlightDevice || {});
+        showToast(`✅ Synced to ${activeDev.fullName} slot ${uuid}! Re-open in DJI Fly.`, 'success');
 
       }
 
@@ -60852,10 +60960,20 @@ if (typeof module !== 'undefined' && module.exports) {
 
     compareSemver,
 
-    applyCompanionStatusUI
-
+    applyCompanionStatusUI,
+    getDeviceDisplayInfo,
+    getLastDetectedFlightDevice
   };
+}
 
+if (typeof window !== 'undefined') {
+  window.getDeviceDisplayInfo = getDeviceDisplayInfo;
+  window.getLastDetectedFlightDevice = getLastDetectedFlightDevice;
+}
+
+if (typeof global !== 'undefined') {
+  global.getDeviceDisplayInfo = getDeviceDisplayInfo;
+  global.getLastDetectedFlightDevice = getLastDetectedFlightDevice;
 }
 
 
@@ -82193,11 +82311,37 @@ if (typeof document !== 'undefined') {
 // -------------------- src/bridge/Rc2LogExplorer.js --------------------
 let rc2LogsCache = [];
 
+function updateRc2LogModalBranding(deviceData) {
+  if (typeof document === 'undefined') return;
+  const devInfo = (typeof getDeviceDisplayInfo === 'function')
+    ? getDeviceDisplayInfo(deviceData || (typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {})
+    : { fullName: 'DJI RC 2', shortName: 'RC 2' };
+
+  const modalTitle = document.querySelector('#rc2-flight-logs-modal .modal-header h2');
+  if (modalTitle) {
+    modalTitle.innerHTML = `
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-cyan);">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
+      ${typeof escapeHtml === 'function' ? escapeHtml(devInfo.fullName) : devInfo.fullName} Flight Logs
+    `;
+  }
+
+  const modalDesc = document.querySelector('#rc2-flight-logs-modal .modal-content > p');
+  if (modalDesc) {
+    modalDesc.textContent = `Directly browse all internal flight telemetry records stored on your connected ${devInfo.fullName} over USB MTP. Select individual flights to pull and decrypt automatically with your DJI Cloud API key, or pull all logs at once.`;
+  }
+}
+
 function openRc2LogManagerModal() {
   if (typeof document === 'undefined') return;
   const modal = document.getElementById('rc2-flight-logs-modal');
   if (!modal) return;
   modal.classList.remove('hidden');
+  updateRc2LogModalBranding();
   refreshRc2LogList();
 }
 
@@ -82213,15 +82357,19 @@ async function refreshRc2LogList() {
   const refreshBtn = document.getElementById('rc2-logs-refresh-btn');
   if (!container) return;
 
+  const devInfo = (typeof getDeviceDisplayInfo === 'function')
+    ? getDeviceDisplayInfo((typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {})
+    : { fullName: 'DJI RC 2', shortName: 'RC 2' };
+
   if (refreshBtn) {
     refreshBtn.disabled = true;
-    refreshBtn.textContent = '⏳ Scanning RC 2...';
+    refreshBtn.textContent = `⏳ Scanning ${devInfo.shortName}...`;
   }
 
   container.innerHTML = `
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; color: var(--text-muted); gap: 10px;">
       <div style="width: 24px; height: 24px; border: 2px solid rgba(56, 189, 248, 0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-      <span style="font-size: 0.8rem;">Querying connected DJI RC 2 controller storage over USB MTP...</span>
+      <span style="font-size: 0.8rem;">Querying connected ${devInfo.fullName} storage over USB MTP...</span>
     </div>
   `;
 
@@ -82234,23 +82382,31 @@ async function refreshRc2LogList() {
     const res = await fetch(`${apiBase}/api/rc2/logs`, fetchOptions);
     const data = await res.json();
 
+    if (data.deviceName || data.isAndroid !== undefined) {
+      updateRc2LogModalBranding(data);
+    }
+
+    const currentDev = (typeof getDeviceDisplayInfo === 'function')
+      ? getDeviceDisplayInfo(data.deviceName ? data : ((typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {}))
+      : devInfo;
+
     if (data.success && Array.isArray(data.logs)) {
       rc2LogsCache = data.logs;
       renderRc2LogTable(rc2LogsCache);
       if (countSummary) {
         const decryptedCount = rc2LogsCache.filter(l => l.isDecrypted).length;
-        countSummary.textContent = `Found ${rc2LogsCache.length} logs on RC 2 (${decryptedCount} ready / decrypted)`;
+        countSummary.textContent = `Found ${rc2LogsCache.length} logs on ${currentDev.shortName} (${decryptedCount} ready / decrypted)`;
       }
     } else {
       rc2LogsCache = [];
-      const errMsg = (data && data.error) ? data.error : 'No flight logs found or RC 2 not connected.';
+      const errMsg = (data && data.error) ? data.error : `No flight logs found or ${currentDev.shortName} not connected.`;
       container.innerHTML = `
         <div style="padding: 24px; text-align: center; color: #f87171; font-size: 0.8rem;">
           ❌ ${typeof escapeHtml === 'function' ? escapeHtml(errMsg) : errMsg}
-          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;">Ensure RC 2 is powered on and connected via USB-C.</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;">Ensure ${currentDev.fullName} is powered on, unlocked, and connected via USB-C in Transferring files mode.</div>
         </div>
       `;
-      if (countSummary) countSummary.textContent = 'RC 2 Disconnected or No Logs';
+      if (countSummary) countSummary.textContent = `${currentDev.shortName} Disconnected or No Logs`;
     }
   } catch (err) {
     rc2LogsCache = [];
@@ -82383,7 +82539,10 @@ async function pullSpecificRc2Log(filename) {
   if (progContainer) progContainer.style.display = 'flex';
   if (progBar) progBar.style.width = '15%';
   if (progPct) progPct.textContent = '15%';
-  if (progText) progText.textContent = `Extracting ${filename} from RC 2 over USB MTP...`;
+  const devInfo = (typeof getDeviceDisplayInfo === 'function')
+    ? getDeviceDisplayInfo((typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {})
+    : { fullName: 'DJI RC 2', shortName: 'RC 2' };
+  if (progText) progText.textContent = `Extracting ${filename} from ${devInfo.shortName} over USB MTP...`;
 
   const pollTimer = setInterval(() => {
     if (currentPct < 90) {
@@ -82434,7 +82593,10 @@ async function pullAllRc2Logs() {
   if (progContainer) progContainer.style.display = 'flex';
   if (progBar) progBar.style.width = '10%';
   if (progPct) progPct.textContent = '10%';
-  if (progText) progText.textContent = 'Pulling and decrypting all flight records from RC 2...';
+  const devInfoAll = (typeof getDeviceDisplayInfo === 'function')
+    ? getDeviceDisplayInfo((typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {})
+    : { fullName: 'DJI RC 2', shortName: 'RC 2' };
+  if (progText) progText.textContent = `Pulling and decrypting all flight records from ${devInfoAll.shortName}...`;
 
   const pollTimer = setInterval(() => {
     if (currentPct < 90) {
@@ -84504,11 +84666,13 @@ class VideoCastClient {
     ].filter(Boolean);
 
     recBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.toggleRecording();
-      });
+      if (typeof btn.addEventListener === 'function') {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.toggleRecording();
+        });
+      }
     });
 
     // Panel Launcher in Section 4
