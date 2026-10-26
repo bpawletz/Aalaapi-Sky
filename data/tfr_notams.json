@@ -418,17 +418,6 @@
     "gid": null
   },
   {
-    "notam_id": "6/9922",
-    "facility": "ZHU",
-    "state": "TX",
-    "type": "SECURITY",
-    "description": "AUSTIN, TX, Wednesday, October 21, 2026 through Sunday, October 25, 2026 Local",
-    "mod_date": "10/16/2026 11:37:00",
-    "mod_abs_time": "202610161137",
-    "is_new": "N",
-    "gid": "6/9922"
-  },
-  {
     "notam_id": "6/9778",
     "facility": "ZFW",
     "state": "TX",
