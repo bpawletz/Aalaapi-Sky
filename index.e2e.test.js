@@ -10388,6 +10388,47 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.ok(result.headerHeight < 40, `Header height must remain compact (< 40px, was ${result.headerHeight})`);
       assert.ok(result.diagCollapseTopDelta < 15, `Diagnostics modal collapse button must align with close button at top right (delta was ${result.diagCollapseTopDelta})`);
     });
+
+    test('E2E: 3D HUD Controls header arrow does not overlap title text and indicators are nested in buttons (Issue #189)', async () => {
+      const result = await page.evaluate(async () => {
+        if (window.FlightDiagnostics) {
+          window.FlightDiagnostics.open('3d');
+        }
+        await new Promise(r => setTimeout(r, 600));
+
+        const header = document.getElementById('diag-hud-controls-header');
+        if (!header) return { error: '#diag-hud-controls-header not found' };
+
+        const span = header.querySelector('span');
+        const collapseBtn = header.querySelector('.panel-collapse-btn');
+        const spanRect = span.getBoundingClientRect();
+        const btnRect = collapseBtn.getBoundingClientRect();
+
+        // Check button indicator nesting and positioning
+        const body = document.getElementById('diag-hud-controls-body');
+        const indicators = Array.from(body.querySelectorAll('.diag-indicator'));
+        const indicatorsNested = indicators.every(ind => ind.parentElement && ind.parentElement.tagName === 'BUTTON');
+
+        // Check gap between title right and collapse button left
+        const gap = btnRect.left - spanRect.right;
+        const overlapping = btnRect.left < spanRect.right;
+
+        return {
+          gap,
+          overlapping,
+          spanWidth: spanRect.width,
+          btnWidth: btnRect.width,
+          indicatorsCount: indicators.length,
+          indicatorsNested
+        };
+      });
+
+      assert.strictEqual(result.error, undefined, 'Must run without errors');
+      assert.strictEqual(result.overlapping, false, `Collapse button must not overlap title span (gap: ${result.gap}px)`);
+      assert.ok(result.gap >= 10, `Collapse button must have at least 10px buffer from title (got ${result.gap}px)`);
+      assert.strictEqual(result.indicatorsNested, true, 'All status indicators must be nested inside button elements');
+      assert.ok(result.indicatorsCount >= 8, `Must find all indicators in body (found ${result.indicatorsCount})`);
+    });
   });
 
 });

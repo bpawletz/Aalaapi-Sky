@@ -1,3 +1,16 @@
+## [1.199.2] - 2026-10-25
+
+### Fixed
+
+#### Pilot & Operational Features
+- **3D Controls Layout & Indicator Alignment (Closes #189)**:
+  - Fixed header minimize arrow (`▼`) collision where `.diag-hud-controls button`'s `width: 100%` compressed the title and placed the collapse button over `Controls`.
+  - Pinned status indicators (`.diag-indicator`) inside their respective action buttons on the right edge, eliminating standalone rows of floating dots between buttons.
+
+#### Under the Hood & Technical Details
+- **[index.css]**: Scoped `.diag-hud-controls .panel-collapse-btn` to `width: auto !important; flex-shrink: 0 !important; margin-left: auto !important;` and applied `flex-shrink: 0 !important;` to HUD header title containers.
+- **[index.css / index_template.html]**: Styled `#diag-hud-controls-body button` to `justify-content: space-between` and nested `.diag-indicator` spans as direct children of the button elements.
+
 ## [1.199.1] - 2026-10-25
 
 ### Fixed

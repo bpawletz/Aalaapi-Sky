@@ -5250,6 +5250,26 @@ body.modal-drag-active {
 #three-instructions .modal-header > span {
   white-space: nowrap;
   min-width: 0;
+  flex-shrink: 0 !important;
+}
+
+.diag-hud-controls .panel-collapse-btn {
+  width: auto !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+  padding: 0 4px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#diag-hud-controls-body button,
+.diag-hud-controls-body button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  gap: 6px;
 }
 
 .diag-hud-controls {
@@ -5266,7 +5286,7 @@ body.modal-drag-active {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 8px 10px;
-  min-width: 140px;
+  min-width: 150px;
 }
 
 .diag-hud-controls button {
@@ -7727,7 +7747,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.199.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.199.2</span></h1>
         </div>
       </div>
 
@@ -14271,7 +14291,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.199.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.199.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14392,7 +14412,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                     <li style="margin-bottom: 8px;">
-                                                                                                              <li style="margin-bottom: 8px;">
+                                                                                                                          <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.199.2):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>3D Controls Layout &amp; Indicator Alignment (Closes #189):</strong> Fixed header minimize arrow overlap on Controls title and nested status indicator dots cleanly inside buttons.</li>
+              </ul>
+            </li>
+<li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.199.1):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li><strong>3D HUD Overlay Header Visibility (Closes #188):</strong> Fixed 3D Controls and Path Legend headers so that grab grips and title labels display cleanly on a single row without text wrapping or grab bar overlap, and resolved universal collapse button placement in the Flight Diagnostics header.</li>
@@ -18729,32 +18755,23 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <!-- Diagnostic HUD Controls -->
             <div class="diag-hud-controls" id="diag-hud-controls" data-draggable-modal="true" style="pointer-events: auto;">
               <div id="diag-hud-controls-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 0 4px 0; margin-bottom: 5px; cursor: grab; user-select: none;">
-                <span style="display: flex; align-items: center; gap: 4px; font-weight: 700; color: #38bdf8; font-size: 0.75rem; white-space: nowrap;">
+                <span style="display: flex; align-items: center; gap: 4px; font-weight: 700; color: #38bdf8; font-size: 0.75rem; white-space: nowrap; flex-shrink: 0;">
                   <span class="modal-drag-grip" title="Drag to reposition 3D controls">⋮⋮</span>
                   <span>🎥 Controls</span>
                 </span>
-                <button id="diag-hud-controls-toggle-btn" class="panel-collapse-btn" type="button" aria-label="Minimize 3D Controls" title="Minimize / Expand 3D Controls" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1;">▼</button>
+                <button id="diag-hud-controls-toggle-btn" class="panel-collapse-btn" type="button" aria-label="Minimize 3D Controls" title="Minimize / Expand 3D Controls" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1; margin-left: auto;">▼</button>
               </div>
               <div id="diag-hud-controls-body" style="display: flex; flex-direction: column; gap: 5px;">
-                <button id="diag-btn-autorotate" class="btn-secondary"><span>↻</span> Auto‑Rotate</button>
-                <span id="diag-indicator-autorotate" class="diag-indicator"></span>
-                <button id="diag-btn-reset" class="btn-secondary" title="Reset camera view, rewind flight to start, and reset ground footprints"><span>⟲</span> Reset</button>
-                <span id="diag-indicator-reset" class="diag-indicator"></span>
-                <button id="diag-btn-toggle-cones" class="btn-secondary"><span>⦿</span> Camera Cones</button>
-                <span id="diag-indicator-cones" class="diag-indicator"></span>
-                <button id="diag-btn-toggle-footprints" class="btn-secondary"><span>⌘</span> Footprints</button>
-                <span id="diag-indicator-footprints" class="diag-indicator"></span>
-                <button id="diag-btn-reset-footprints" class="btn-secondary" title="Clear and reset all painted ground coverage footprints"><span>🧹</span> Clear Footprints</button>
-                <button id="diag-btn-toggle-noise" class="btn-secondary active" title="Toggle 3D Ground Acoustic Footprints and Live Drone Noise Ripple"><span>🔊</span> Noise Footprints</button>
-                <span id="diag-indicator-noise" class="diag-indicator active"></span>
-                <button id="diag-btn-toggle-drones" class="btn-secondary"><span>✈</span> 3D Drones</button>
-                <span id="diag-indicator-drones" class="diag-indicator"></span>
-                <button id="diag-btn-toggle-mesh" class="btn-secondary active" title="Toggle AI 3D Reconstructed Solid Building Mesh"><span>🤖</span> AI Mesh</button>
-                <span id="diag-indicator-mesh" class="diag-indicator active"></span>
-                <button id="diag-btn-toggle-wireframe" class="btn-secondary active" title="Toggle 3D Architectural Wireframe Extrusion"><span>🏗️</span> Wireframe</button>
-                <span id="diag-indicator-wireframe" class="diag-indicator active"></span>
-                <button id="diag-btn-fpv" class="btn-secondary"><span>📡</span> FPV Mode</button>
-                <span id="diag-indicator-fpv" class="diag-indicator"></span>
+                <button id="diag-btn-autorotate" class="btn-secondary"><span><span>↻</span> Auto‑Rotate</span><span id="diag-indicator-autorotate" class="diag-indicator"></span></button>
+                <button id="diag-btn-reset" class="btn-secondary" title="Reset camera view, rewind flight to start, and reset ground footprints"><span><span>⟲</span> Reset</span><span id="diag-indicator-reset" class="diag-indicator"></span></button>
+                <button id="diag-btn-toggle-cones" class="btn-secondary"><span><span>⦿</span> Camera Cones</span><span id="diag-indicator-cones" class="diag-indicator"></span></button>
+                <button id="diag-btn-toggle-footprints" class="btn-secondary"><span><span>⌘</span> Footprints</span><span id="diag-indicator-footprints" class="diag-indicator"></span></button>
+                <button id="diag-btn-reset-footprints" class="btn-secondary" title="Clear and reset all painted ground coverage footprints"><span><span>🧹</span> Clear Footprints</span></button>
+                <button id="diag-btn-toggle-noise" class="btn-secondary active" title="Toggle 3D Ground Acoustic Footprints and Live Drone Noise Ripple"><span><span>🔊</span> Noise Footprints</span><span id="diag-indicator-noise" class="diag-indicator active"></span></button>
+                <button id="diag-btn-toggle-drones" class="btn-secondary"><span><span>✈</span> 3D Drones</span><span id="diag-indicator-drones" class="diag-indicator"></span></button>
+                <button id="diag-btn-toggle-mesh" class="btn-secondary active" title="Toggle AI 3D Reconstructed Solid Building Mesh"><span><span>🤖</span> AI Mesh</span><span id="diag-indicator-mesh" class="diag-indicator active"></span></button>
+                <button id="diag-btn-toggle-wireframe" class="btn-secondary active" title="Toggle 3D Architectural Wireframe Extrusion"><span><span>🏗️</span> Wireframe</span><span id="diag-indicator-wireframe" class="diag-indicator active"></span></button>
+                <button id="diag-btn-fpv" class="btn-secondary"><span><span>📡</span> FPV Mode</span><span id="diag-indicator-fpv" class="diag-indicator"></span></button>
               </div>
             </div>
 

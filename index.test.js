@@ -36840,7 +36840,14 @@ describe('v1.199.0 True Device Type Dynamic Display & Helper Text Tests (Closes 
 
 describe('3D HUD Overlay Header Visibility & Grab Grip Alignment Suite (v1.199.1 - Issue #188)', () => {
   test('Version consistency: v1.199.1 across package.json, changelog, index_template.html, and index.html', () => {
-    assertVersionConsistency('1.199.1');
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    assert.ok(semverGte(pkg.version, '1.199.1'), 'package.json version must be >= 1.199.1');
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.199.1] - 2026-10-25'), 'CHANGELOG.md must contain 1.199.1 header');
+    const tpl = fs.readFileSync('index_template.html', 'utf8');
+    assert.ok(tpl.includes('Changelog (v1.199.1):'), 'index_template.html must contain Changelog (v1.199.1)');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+    assert.ok(indexHtml.includes('Changelog (v1.199.1):'), 'index.html must contain Changelog (v1.199.1)');
   });
 
   test('CSS Architecture: index.css scopes compact padding and nowrap to 3D HUD overlay headers', () => {
@@ -36864,5 +36871,48 @@ describe('3D HUD Overlay Header Visibility & Grab Grip Alignment Suite (v1.199.1
     assert.ok(tmpl.includes('id="diag-path-legend-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 0 3px 0;'), 'diag-path-legend-header must specify padding: 0 0 3px 0');
     assert.ok(tmpl.includes('id="diag-hud-overlay-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 0 4px 0;'), 'diag-hud-overlay-header must specify padding: 0 0 4px 0');
     assert.ok(tmpl.includes('id="three-hud-controls-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 0 5px 0;'), 'three-hud-controls-header must specify padding: 0 0 5px 0');
+  });
+});
+
+
+describe('3D Controls Layout & Status Indicator Alignment Suite (v1.199.2 - Issue #189)', () => {
+  test('Version consistency: v1.199.2 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.199.2');
+  });
+
+  test('CSS Architecture: index.css sets width: auto and flex-shrink: 0 on .diag-hud-controls .panel-collapse-btn', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('.diag-hud-controls .panel-collapse-btn'), 'Must define rule for .diag-hud-controls .panel-collapse-btn');
+    assert.ok(css.includes('width: auto !important;'), 'Must set width: auto !important on collapse button');
+    assert.ok(css.includes('flex-shrink: 0 !important;'), 'Must prevent flex-shrink on collapse button and title span');
+    assert.ok(css.includes('#diag-hud-controls-body button'), 'Must style #diag-hud-controls-body button');
+    assert.ok(css.includes('justify-content: space-between !important;'), 'Must use space-between for HUD body buttons');
+  });
+
+  test('DOM Architecture: index_template.html nests all status indicators inside their respective button elements', () => {
+    const { JSDOM } = require('jsdom');
+    const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const dom = new JSDOM(tmpl);
+    const doc = dom.window.document;
+
+    const indicators = [
+      { btnId: 'diag-btn-autorotate', indId: 'diag-indicator-autorotate' },
+      { btnId: 'diag-btn-reset', indId: 'diag-indicator-reset' },
+      { btnId: 'diag-btn-toggle-cones', indId: 'diag-indicator-cones' },
+      { btnId: 'diag-btn-toggle-footprints', indId: 'diag-indicator-footprints' },
+      { btnId: 'diag-btn-toggle-noise', indId: 'diag-indicator-noise' },
+      { btnId: 'diag-btn-toggle-drones', indId: 'diag-indicator-drones' },
+      { btnId: 'diag-btn-toggle-mesh', indId: 'diag-indicator-mesh' },
+      { btnId: 'diag-btn-toggle-wireframe', indId: 'diag-indicator-wireframe' },
+      { btnId: 'diag-btn-fpv', indId: 'diag-indicator-fpv' }
+    ];
+
+    indicators.forEach(({ btnId, indId }) => {
+      const btn = doc.getElementById(btnId);
+      assert.ok(btn, `Button #${btnId} must exist`);
+      const ind = doc.getElementById(indId);
+      assert.ok(ind, `Indicator #${indId} must exist`);
+      assert.strictEqual(ind.parentElement, btn, `Indicator #${indId} must be a child of #${btnId}`);
+    });
   });
 });

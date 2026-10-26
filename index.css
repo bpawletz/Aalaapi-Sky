@@ -5233,6 +5233,26 @@ body.modal-drag-active {
 #three-instructions .modal-header > span {
   white-space: nowrap;
   min-width: 0;
+  flex-shrink: 0 !important;
+}
+
+.diag-hud-controls .panel-collapse-btn {
+  width: auto !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+  padding: 0 4px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#diag-hud-controls-body button,
+.diag-hud-controls-body button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  gap: 6px;
 }
 
 .diag-hud-controls {
@@ -5249,7 +5269,7 @@ body.modal-drag-active {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 8px 10px;
-  min-width: 140px;
+  min-width: 150px;
 }
 
 .diag-hud-controls button {
