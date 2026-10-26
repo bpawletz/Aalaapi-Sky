@@ -36916,3 +36916,86 @@ describe('3D Controls Layout & Status Indicator Alignment Suite (v1.199.2 - Issu
     });
   });
 });
+
+describe('Issue #190: Companion Pilot Authentication & Profile Identity (v1.200.0)', () => {
+  test('verifies pilot identity buttons and auth modal exist in index.html', () => {
+    const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    const dom = new JSDOM(html);
+    const doc = dom.window.document;
+
+    const pilotBtn = doc.getElementById('header-pilot-btn');
+    assert.ok(pilotBtn, '#header-pilot-btn must exist in topbar');
+    assert.ok(pilotBtn.classList.contains('header-pilot-btn'), '#header-pilot-btn has header-pilot-btn class');
+
+    const morePilotBtn = doc.getElementById('more-menu-pilot-btn');
+    assert.ok(morePilotBtn, '#more-menu-pilot-btn must exist in more menu');
+
+    const authModal = doc.getElementById('companion-auth-modal');
+    assert.ok(authModal, '#companion-auth-modal must exist');
+    assert.ok(authModal.classList.contains('hidden'), '#companion-auth-modal is hidden by default');
+    assert.strictEqual(authModal.getAttribute('data-draggable-modal'), 'true');
+  });
+
+  test('asserts semantic login and signup form attributes per modern-web-guidance', () => {
+    const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    const dom = new JSDOM(html);
+    const doc = dom.window.document;
+
+    // Signin form
+    const signinForm = doc.getElementById('companion-signin-form');
+    assert.ok(signinForm, '#companion-signin-form must exist');
+
+    const signinUsername = doc.getElementById('companion-signin-username');
+    assert.ok(signinUsername, '#companion-signin-username must exist');
+    assert.strictEqual(signinUsername.getAttribute('autocomplete'), 'username webauthn');
+    assert.strictEqual(signinUsername.getAttribute('autocorrect'), 'off');
+    assert.strictEqual(signinUsername.getAttribute('autocapitalize'), 'none');
+    assert.strictEqual(signinUsername.getAttribute('spellcheck'), 'false');
+
+    const signinPassword = doc.getElementById('companion-signin-password');
+    assert.ok(signinPassword, '#companion-signin-password must exist');
+    assert.strictEqual(signinPassword.getAttribute('autocomplete'), 'current-password');
+
+    // Signup form
+    const signupForm = doc.getElementById('companion-signup-form');
+    assert.ok(signupForm, '#companion-signup-form must exist');
+
+    const signupPassword = doc.getElementById('companion-signup-password');
+    assert.ok(signupPassword, '#companion-signup-password must exist');
+    assert.strictEqual(signupPassword.getAttribute('autocomplete'), 'new-password');
+
+    // Passkey and Google SSO buttons
+    const passkeyBtn = doc.getElementById('auth-passkey-login-btn');
+    assert.ok(passkeyBtn, '#auth-passkey-login-btn must exist');
+
+    const googleBtn = doc.getElementById('auth-google-login-btn');
+    assert.ok(googleBtn, '#auth-google-login-btn must exist');
+  });
+
+  test('validates CompanionAuth module methods and interface', () => {
+    const CompanionAuth = require('./src/bridge/CompanionAuth.js');
+    assert.strictEqual(typeof CompanionAuth.init, 'function');
+    assert.strictEqual(typeof CompanionAuth.openModal, 'function');
+    assert.strictEqual(typeof CompanionAuth.closeModal, 'function');
+    assert.strictEqual(typeof CompanionAuth.isAuthenticated, 'function');
+    assert.strictEqual(typeof CompanionAuth.getAuthHeaders, 'function');
+    assert.strictEqual(typeof CompanionAuth.populatePreflightModal, 'function');
+    assert.strictEqual(typeof CompanionAuth.syncPreferencesToCompanion, 'function');
+    assert.strictEqual(typeof CompanionAuth.hydratePreferencesFromCompanion, 'function');
+    assert.strictEqual(typeof CompanionAuth.signInWithPassword, 'function');
+    assert.strictEqual(typeof CompanionAuth.registerWithPassword, 'function');
+    assert.strictEqual(typeof CompanionAuth.signInWithPasskey, 'function');
+    assert.strictEqual(typeof CompanionAuth.registerPasskey, 'function');
+    assert.strictEqual(typeof CompanionAuth.signInWithGoogle, 'function');
+  });
+
+  test('verifies Google Identity Services attribution in CREDITS.md and index.html', () => {
+    const credits = fs.readFileSync(path.join(__dirname, 'CREDITS.md'), 'utf8');
+    assert.ok(credits.includes('Google Identity Services (GIS)'), 'CREDITS.md includes Google Identity Services');
+    assert.ok(credits.includes('Google Identity / OAuth 2.0'), 'CREDITS.md mentions Google Identity / OAuth 2.0 trademark');
+
+    const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(html.includes('Google Identity Services (GIS)'), 'index.html includes GIS credit card');
+    assert.ok(html.includes('accounts.google.com/gsi/client'), 'index.html includes GIS client script');
+  });
+});

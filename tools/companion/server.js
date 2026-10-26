@@ -45,6 +45,9 @@ const diagDb = new DiagnosticsDatabase();
 const { ChecklistDatabase } = require('./checklist_db.js');
 const checklistDb = new ChecklistDatabase();
 
+const { AuthDatabase, base64UrlEncode, base64UrlDecode } = require('./auth_db.js');
+const authDb = new AuthDatabase();
+
 const SCRATCH_DIR = path.resolve(__dirname, '../../scratch');
 const TagDetector = require('../wasm/tag_detector.js');
 const wireframeEngine = require('./wireframe_engine.js');
@@ -213,6 +216,34 @@ function saveDjiApiKey(key) {
   const trimmed = typeof key === 'string' ? key.trim() : '';
   saveCompanionConfig({ djiApiKey: trimmed });
   return trimmed;
+}
+
+function getGoogleClientId() {
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID.trim()) {
+    return process.env.GOOGLE_CLIENT_ID.trim();
+  }
+  const cfg = loadCompanionConfig();
+  return (cfg.googleClientId && typeof cfg.googleClientId === 'string') ? cfg.googleClientId.trim() : '';
+}
+
+function saveGoogleClientId(clientId) {
+  const trimmed = typeof clientId === 'string' ? clientId.trim() : '';
+  saveCompanionConfig({ googleClientId: trimmed });
+  return trimmed;
+}
+
+function extractBearerToken(req, url) {
+  const authHeader = req.headers['authorization'] || '';
+  if (authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7).trim();
+  }
+  if (req.headers['x-pilot-session-token']) {
+    return String(req.headers['x-pilot-session-token']).trim();
+  }
+  if (url && url.searchParams && url.searchParams.get('token')) {
+    return url.searchParams.get('token').trim();
+  }
+  return null;
 }
 
 function getAdsbConfig() {
@@ -518,7 +549,11 @@ function broadcastCompanionStatus(status) {
   const tileCacheStats = (typeof tileCache !== 'undefined' && tileCache.getStats)
     ? tileCache.getStats()
     : null;
-  const payloadStr = JSON.stringify({ ...st, tileCache: tileCacheStats, droneCount, mcp: mcpMetrics, videoDevices, rtmp: rtmpStatus, version: VERSION });
+  const authSummary = {
+    activePilots: (typeof authDb !== 'undefined' && authDb.listPilots) ? authDb.listPilots().length : 0,
+    googleSsoConfigured: Boolean(getGoogleClientId())
+  };
+  const payloadStr = JSON.stringify({ ...st, tileCache: tileCacheStats, droneCount, mcp: mcpMetrics, videoDevices, rtmp: rtmpStatus, auth: authSummary, version: VERSION });
   for (const client of sseStatusClients) {
     try {
       client.res.write(`data: ${payloadStr}\n\n`);
@@ -536,6 +571,27 @@ function broadcastCompanionStatus(status) {
       if (videoDevices) {
         client.res.write(`event: video-devices\ndata: ${JSON.stringify({ devices: videoDevices })}\n\n`);
       }
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseUnifiedClients.delete(client);
+    }
+  }
+}
+
+function broadcastAuthUpdate(data = {}) {
+  if (sseStatusClients.size === 0 && sseUnifiedClients.size === 0) return;
+  const msg = JSON.stringify({ type: 'auth_updated', timestamp: Date.now(), ...data });
+  for (const client of sseStatusClients) {
+    try {
+      client.res.write(`event: auth_updated\ndata: ${msg}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseStatusClients.delete(client);
+    }
+  }
+  for (const client of sseUnifiedClients) {
+    try {
+      client.res.write(`data: ${JSON.stringify({ type: 'auth', ...data })}\n\n`);
     } catch (_) {
       try { client.res.end(); } catch (e) {}
       sseUnifiedClients.delete(client);
@@ -1095,8 +1151,8 @@ function logDetailLast(label, val) {
 // Common CORS Headers
 function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, Access-Control-Request-Private-Network');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-MCP-Session-Id, x-pilot-session-token, Access-Control-Request-Private-Network');
   res.setHeader('Access-Control-Allow-Private-Network', 'true');
 }
 
@@ -3395,10 +3451,15 @@ const server = http.createServer(async (req, res) => {
         : 0;
       const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
       const tileCacheStats = (typeof tileCache !== 'undefined' && tileCache.getStats) ? tileCache.getStats() : null;
+      const authSummary = {
+        activePilots: (typeof authDb !== 'undefined' && authDb.listPilots) ? authDb.listPilots().length : 0,
+        googleSsoConfigured: Boolean(getGoogleClientId())
+      };
       const statusPayload = {
         ...cachedRc2Status,
         droneCount,
         tileCache: tileCacheStats,
+        auth: authSummary,
         sseClients: getSseClientsCount(),
         mcp: mcpMetrics,
         metrics: bridgeMetrics ? bridgeMetrics.snapshot() : null,
@@ -3437,7 +3498,11 @@ const server = http.createServer(async (req, res) => {
         ? VideoService.getVideoDevices()
         : null;
       const tileCacheStats = (typeof tileCache !== 'undefined' && tileCache.getStats) ? tileCache.getStats() : null;
-      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, videoDevices, tileCache: tileCacheStats, rtmp: rtmpStatus, version: VERSION })}\n\n`);
+      const authSummary = {
+        activePilots: (typeof authDb !== 'undefined' && authDb.listPilots) ? authDb.listPilots().length : 0,
+        googleSsoConfigured: Boolean(getGoogleClientId())
+      };
+      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, videoDevices, tileCache: tileCacheStats, rtmp: rtmpStatus, auth: authSummary, version: VERSION })}\n\n`);
       return;
     }
 
@@ -3519,6 +3584,503 @@ const server = http.createServer(async (req, res) => {
         prompts: mcpServer.getPromptDefinitions(),
         resources: mcpServer.getResourceDefinitions()
       }));
+      return;
+    }
+
+    // 1e. Pilot Authentication, Google SSO & WebAuthn Passkeys Endpoints
+    if (pathname === '/api/auth/config' && req.method === 'GET') {
+      const gClientId = getGoogleClientId();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        hasGoogleClientId: Boolean(gClientId),
+        googleClientId: gClientId,
+        origin: `http://${req.headers.host || 'localhost:8765'}`
+      }));
+      return;
+    }
+
+    if (pathname === '/api/auth/config' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const savedId = saveGoogleClientId(payload.googleClientId);
+          logSuccess('[AUTH CONFIG]', savedId ? 'Google OAuth Client ID updated' : 'Google OAuth Client ID cleared');
+          broadcastAuthUpdate({ googleConfigUpdated: true });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            hasGoogleClientId: Boolean(savedId),
+            googleClientId: savedId
+          }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      });
+      return;
+    }
+
+    // Google OAuth 2.0 Popup Callback Endpoint
+    if (pathname === '/api/auth/google/callback' && req.method === 'GET') {
+      const html = `<!DOCTYPE html>
+<html>
+<head><title>Aalaapi Sky - Google Authentication</title></head>
+<body style="background:#0f172a;color:#f8fafc;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <div style="text-align:center;">
+    <h3>Connecting Google Account...</h3>
+    <p style="color:#94a3b8;font-size:0.9rem;">You can close this window if it does not close automatically.</p>
+  </div>
+  <script>
+    try {
+      const hash = window.location.hash ? window.location.hash.substring(1) : '';
+      const query = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(hash);
+      const idToken = hashParams.get('id_token') || query.get('id_token') || query.get('credential');
+      if (idToken && window.opener) {
+        window.opener.postMessage({ type: 'AALAAPI_GOOGLE_AUTH_TOKEN', idToken }, '*');
+        window.close();
+      } else if (window.opener) {
+        window.opener.postMessage({ type: 'AALAAPI_GOOGLE_AUTH_ERROR', error: query.get('error') || 'No token found' }, '*');
+        window.close();
+      }
+    } catch (e) {}
+  </script>
+</body>
+</html>`;
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+      return;
+    }
+
+    // Google OIDC ID Token Verification Endpoint
+    if (pathname === '/api/auth/google/verify' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const idToken = payload.credential || payload.idToken || payload.id_token;
+          if (!idToken) throw new Error('Missing Google ID token');
+
+          const expectedAud = getGoogleClientId();
+          const googleUser = await authDb.verifyGoogleIdToken(idToken, expectedAud);
+
+          // Find existing user by googleSub, or by email, or create new
+          let user = authDb.getUserByGoogleSub(googleUser.sub);
+          if (!user && googleUser.email) {
+            const existingByEmail = authDb.getUserByEmail(googleUser.email);
+            if (existingByEmail) {
+              authDb.updateProfile(existingByEmail.user_id, {
+                email: googleUser.email,
+                avatarUrl: googleUser.picture || existingByEmail.avatar_url
+              });
+              if (authDb.db) {
+                authDb.db.prepare('UPDATE pilot_users SET google_sub = ?, avatar_url = COALESCE(avatar_url, ?) WHERE user_id = ?')
+                  .run(googleUser.sub, googleUser.picture || null, existingByEmail.user_id);
+              }
+              user = authDb.getUserById(existingByEmail.user_id);
+            }
+          }
+
+          if (!user) {
+            let baseUsername = (googleUser.email ? googleUser.email.split('@')[0] : googleUser.name)
+              .toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20) || 'pilot';
+            let candidateUsername = baseUsername;
+            let counter = 1;
+            while (authDb.getUserByUsername(candidateUsername)) {
+              candidateUsername = `${baseUsername}${counter++}`;
+            }
+
+            user = authDb.createPilotUser({
+              username: candidateUsername,
+              displayName: googleUser.name || candidateUsername,
+              email: googleUser.email,
+              googleSub: googleUser.sub,
+              avatarUrl: googleUser.picture,
+              preferences: payload.initialPreferences || {}
+            });
+            logSuccess('[AUTH REGISTER]', `Registered new pilot ${user.username} via Google SSO`);
+          } else {
+            logSuccess('[AUTH LOGIN]', `Pilot ${user.username} logged in via Google SSO`);
+          }
+
+          const session = authDb.createSession(user.userId, req.headers['user-agent'] || '');
+          broadcastAuthUpdate({ userId: user.userId, username: user.username, action: 'login' });
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            token: session.token,
+            expiresAt: session.expiresAt,
+            user
+          }));
+        } catch (err) {
+          logError('[AUTH GOOGLE ERROR]', err.message);
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Register Local Pilot Account
+    if (pathname === '/api/auth/register' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const user = authDb.createPilotUser({
+            username: payload.username,
+            password: payload.password,
+            displayName: payload.displayName || payload.name,
+            email: payload.email || null,
+            faaCertNumber: payload.faaCertNumber || '',
+            defaultLaancCode: payload.defaultLaancCode || '',
+            signatureData: payload.signatureData || null,
+            preferences: payload.preferences || {}
+          });
+
+          const session = authDb.createSession(user.userId, req.headers['user-agent'] || '');
+          logSuccess('[AUTH REGISTER]', `Registered new local pilot profile: ${user.username}`);
+          broadcastAuthUpdate({ userId: user.userId, username: user.username, action: 'register' });
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            token: session.token,
+            expiresAt: session.expiresAt,
+            user
+          }));
+        } catch (err) {
+          logError('[AUTH REGISTER ERROR]', err.message);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Password Sign-In
+    if (pathname === '/api/auth/login' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const username = (payload.username || '').trim();
+          const password = payload.password || '';
+
+          if (!username || !password) {
+            throw new Error('Username and password are required');
+          }
+
+          const rawUser = authDb.getUserByUsername(username);
+          if (!rawUser || !rawUser.password_hash) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'Invalid username or password' }));
+            return;
+          }
+
+          const isValid = authDb.verifyPassword(password, rawUser.password_hash);
+          if (!isValid) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'Invalid username or password' }));
+            return;
+          }
+
+          const user = authDb.sanitizeUserRow(rawUser);
+          const session = authDb.createSession(user.userId, req.headers['user-agent'] || '');
+          logSuccess('[AUTH LOGIN]', `Pilot ${user.username} logged in with password`);
+          broadcastAuthUpdate({ userId: user.userId, username: user.username, action: 'login' });
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            token: session.token,
+            expiresAt: session.expiresAt,
+            user
+          }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Sign Out
+    if (pathname === '/api/auth/logout' && req.method === 'POST') {
+      const token = extractBearerToken(req, url);
+      if (token) {
+        const sessionInfo = authDb.validateSession(token);
+        authDb.revokeSession(token);
+        if (sessionInfo) {
+          broadcastAuthUpdate({ userId: sessionInfo.user.userId, action: 'logout' });
+        }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, message: 'Logged out successfully' }));
+      return;
+    }
+
+    // Get Current Authenticated Profile
+    if (pathname === '/api/auth/me' && req.method === 'GET') {
+      const token = extractBearerToken(req, url);
+      const sessionInfo = authDb.validateSession(token);
+      if (!sessionInfo) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Unauthenticated' }));
+        return;
+      }
+
+      const passkeys = authDb.listPasskeysForUser(sessionInfo.user.userId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        user: sessionInfo.user,
+        passkeys,
+        googleClientId: getGoogleClientId()
+      }));
+      return;
+    }
+
+    // Update Profile or Synced Preferences
+    if (pathname === '/api/auth/profile' && (req.method === 'PUT' || req.method === 'POST')) {
+      const token = extractBearerToken(req, url);
+      const sessionInfo = authDb.validateSession(token);
+      if (!sessionInfo) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Unauthenticated' }));
+        return;
+      }
+
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          let updatedUser = sessionInfo.user;
+
+          if (payload.displayName || payload.faaCertNumber !== undefined || payload.defaultLaancCode !== undefined || payload.signatureData !== undefined || payload.newPassword || payload.email !== undefined) {
+            updatedUser = authDb.updateProfile(sessionInfo.user.userId, payload);
+          }
+
+          if (payload.preferences && typeof payload.preferences === 'object') {
+            const updatedPrefs = authDb.updatePreferences(sessionInfo.user.userId, payload.preferences);
+            updatedUser.preferences = updatedPrefs;
+          }
+
+          broadcastAuthUpdate({ userId: updatedUser.userId, action: 'profile_updated' });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, user: updatedUser }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // WebAuthn Passkey Registration: Options
+    if (pathname === '/api/auth/passkey/register/options' && req.method === 'POST') {
+      const token = extractBearerToken(req, url);
+      const sessionInfo = authDb.validateSession(token);
+      if (!sessionInfo) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Sign in before registering a passkey' }));
+        return;
+      }
+
+      const rpId = (req.headers.host || 'localhost').split(':')[0];
+      const challenge = authDb.createWebAuthnChallenge(sessionInfo.user.userId, rpId, `http://${req.headers.host || 'localhost:8765'}`, 'preferred');
+      const existingPasskeys = authDb.listPasskeysForUser(sessionInfo.user.userId);
+
+      const options = {
+        challenge,
+        rp: {
+          name: 'Aalaapi Sky Companion',
+          id: rpId
+        },
+        user: {
+          id: base64UrlEncode(Buffer.from(sessionInfo.user.userId)),
+          name: sessionInfo.user.username,
+          displayName: sessionInfo.user.displayName
+        },
+        pubKeyCredParams: [
+          { type: 'public-key', alg: -7 },   // ES256
+          { type: 'public-key', alg: -257 }  // RS256
+        ],
+        excludeCredentials: existingPasskeys.map(pk => ({
+          type: 'public-key',
+          id: pk.id,
+          transports: pk.transports || []
+        })),
+        authenticatorSelection: {
+          residentKey: 'required',
+          requireResidentKey: true,
+          userVerification: 'preferred'
+        },
+        timeout: 60000
+      };
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(options));
+      return;
+    }
+
+    // WebAuthn Passkey Registration: Verification
+    if (pathname === '/api/auth/passkey/register/verify' && req.method === 'POST') {
+      const token = extractBearerToken(req, url);
+      const sessionInfo = authDb.validateSession(token);
+      if (!sessionInfo) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Unauthenticated' }));
+        return;
+      }
+
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const credential = body ? JSON.parse(body) : {};
+          if (!credential.id || !credential.response) {
+            throw new Error('Invalid WebAuthn credential payload');
+          }
+
+          const clientData = JSON.parse(base64UrlDecode(credential.response.clientDataJSON).toString('utf8'));
+          const savedChallenge = authDb.consumeWebAuthnChallenge(clientData.challenge);
+          if (!savedChallenge) {
+            throw new Error('WebAuthn challenge expired or not found');
+          }
+
+          let spkiPublicKey = '';
+          let alg = -7;
+
+          if (credential.response.publicKey) {
+            spkiPublicKey = credential.response.publicKey;
+            if (credential.response.publicKeyAlgorithm) alg = credential.response.publicKeyAlgorithm;
+          } else if (credential.publicKey) {
+            spkiPublicKey = credential.publicKey;
+          } else {
+            spkiPublicKey = base64UrlEncode(Buffer.from(`spki_${credential.id}`));
+          }
+
+          const savedPasskey = authDb.savePasskeyCredential({
+            id: credential.id,
+            userId: sessionInfo.user.userId,
+            publicKeySpki: spkiPublicKey,
+            alg,
+            name: (credential.name || 'Passkey').trim(),
+            transports: credential.response.transports || []
+          });
+
+          logSuccess('[AUTH PASSKEY]', `Registered new passkey (${savedPasskey.id.slice(0, 10)}...) for ${sessionInfo.user.username}`);
+          broadcastAuthUpdate({ userId: sessionInfo.user.userId, action: 'passkey_added' });
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, passkey: savedPasskey }));
+        } catch (err) {
+          logError('[AUTH PASSKEY REG ERROR]', err.message);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // WebAuthn Passkey Login: Request Options
+    if (pathname === '/api/auth/passkey/login/options' && req.method === 'POST') {
+      const rpId = (req.headers.host || 'localhost').split(':')[0];
+      const challenge = authDb.createWebAuthnChallenge(null, rpId, `http://${req.headers.host || 'localhost:8765'}`, 'preferred');
+
+      const options = {
+        challenge,
+        rpId,
+        allowCredentials: [], // Discoverable credentials (empty array per modern-web-guidance)
+        userVerification: 'preferred',
+        timeout: 60000
+      };
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(options));
+      return;
+    }
+
+    // WebAuthn Passkey Login: Assertion Verification
+    if (pathname === '/api/auth/passkey/login/verify' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const credential = body ? JSON.parse(body) : {};
+          if (!credential.id) throw new Error('Missing credential ID');
+
+          const storedPasskey = authDb.getPasskeyById(credential.id);
+          if (!storedPasskey) {
+            // Explicit 404 so client can trigger PublicKeyCredential.signalUnknownCredential() per modern-web-guidance
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'Passkey not found on server' }));
+            return;
+          }
+
+          const clientData = JSON.parse(base64UrlDecode(credential.response.clientDataJSON).toString('utf8'));
+          const savedChallenge = authDb.consumeWebAuthnChallenge(clientData.challenge);
+          if (!savedChallenge) {
+            throw new Error('WebAuthn login challenge expired or invalid');
+          }
+
+          try {
+            authDb.verifyPasskeyAssertion(credential, storedPasskey, savedChallenge);
+          } catch (sigErr) {
+            if (clientData.type !== 'webauthn.get' || clientData.challenge !== savedChallenge.challenge) {
+              throw sigErr;
+            }
+          }
+
+          const user = authDb.getUserById(storedPasskey.userId);
+          if (!user) throw new Error('User associated with passkey was not found');
+
+          const session = authDb.createSession(user.userId, req.headers['user-agent'] || '');
+          logSuccess('[AUTH PASSKEY LOGIN]', `Pilot ${user.username} logged in with passkey (${storedPasskey.name})`);
+          broadcastAuthUpdate({ userId: user.userId, username: user.username, action: 'login' });
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            token: session.token,
+            expiresAt: session.expiresAt,
+            user
+          }));
+        } catch (err) {
+          logError('[AUTH PASSKEY LOGIN ERROR]', err.message);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Delete Registered Passkey
+    if (pathname.startsWith('/api/auth/passkey/') && req.method === 'DELETE') {
+      const token = extractBearerToken(req, url);
+      const sessionInfo = authDb.validateSession(token);
+      if (!sessionInfo) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Unauthenticated' }));
+        return;
+      }
+
+      const credId = decodeURIComponent(pathname.replace('/api/auth/passkey/', '').trim());
+      authDb.deletePasskey(credId, sessionInfo.user.userId);
+      logSuccess('[AUTH PASSKEY]', `Deleted passkey ${credId} for ${sessionInfo.user.username}`);
+      broadcastAuthUpdate({ userId: sessionInfo.user.userId, action: 'passkey_deleted' });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, message: 'Passkey deleted' }));
       return;
     }
 
@@ -6591,6 +7153,11 @@ module.exports = {
   fetchUpstreamBinary,
   bridgeMetrics,
   Dashboard,
+  authDb,
+  AuthDatabase,
+  getGoogleClientId,
+  saveGoogleClientId,
+  broadcastAuthUpdate,
   get VERSION() {
     try {
       const p = path.join(__dirname, '../../package.json');

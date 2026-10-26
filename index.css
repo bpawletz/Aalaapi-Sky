@@ -2369,6 +2369,7 @@ body.modal-drag-active {
   #about-btn,
   #useful-links-btn,
   #adsb-topbar-btn,
+  #header-pilot-btn,
   #header-system-status-group,
   .header-bridge-container,
   .header-ambient-buffer-container,
@@ -7661,4 +7662,84 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+
+/* ==========================================================================
+   Pilot Identity & Companion Authentication Modal (v1.200.0, Issue #190)
+   ========================================================================== */
+
+.header-pilot-btn {
+  padding: 0 8px !important;
+  font-size: 0.72rem !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 1.2 !important;
+  width: auto !important;
+  border-radius: 6px !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-pilot-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.header-pilot-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  display: inline-block;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.header-pilot-btn.is-authenticated .header-pilot-dot {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+.header-pilot-btn.is-authenticated {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.auth-error-banner {
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.15);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.auth-success-banner {
+  padding: 8px 12px;
+  background: rgba(34, 197, 94, 0.15);
+  border-bottom: 1px solid rgba(34, 197, 94, 0.3);
+  color: #86efac;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.auth-provider-btn {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.auth-provider-btn:hover {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border-color: #38bdf8 !important;
 }

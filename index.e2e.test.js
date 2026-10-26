@@ -4045,7 +4045,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
     assert.strictEqual(moreMenuOpenState.menuVisible, true, 'More menu should be visible after clicking more button');
-    assert.strictEqual(moreMenuOpenState.itemsCount, 8, 'More menu should contain 8 action items (Bridge, ADS-B, Diagnostics, Photos, Intro, About, Links, Customize Ribbon)');
+    assert.strictEqual(moreMenuOpenState.itemsCount, 9, 'More menu should contain 9 action items (Bridge, ADS-B, Diagnostics, Photos, Pilot Identity, Intro, About, Links, Customize Ribbon)');
 
     // Click About from More Menu
     await page.locator('#more-menu-about-btn').click();
@@ -10431,4 +10431,81 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
   });
 
+
+  describe('Issue #190: Companion Pilot Authentication & Profile Identity Flow (v1.200.0)', () => {
+    test('opens auth modal, navigates views, and interacts with pilot authentication controls', async () => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await page.evaluate(() => {
+        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+      });
+      await page.waitForTimeout(300);
+
+      // Verify pilot button exists in topbar
+      const pilotBtn = page.locator('#header-pilot-btn');
+      await assert.doesNotReject(pilotBtn.waitFor({ state: 'visible', timeout: 5000 }), 'Header pilot button must be visible');
+
+      // Modal initially hidden
+      const modal = page.locator('#companion-auth-modal');
+      const isHiddenInitially = await modal.evaluate(el => el.classList.contains('hidden'));
+      assert.strictEqual(isHiddenInitially, true, 'Auth modal must be hidden on launch');
+
+      // Click pilot button to open modal
+      await pilotBtn.click();
+      await page.waitForTimeout(300);
+
+      const isOpen = await modal.evaluate(el => !el.classList.contains('hidden'));
+      assert.strictEqual(isOpen, true, 'Auth modal must open when header pilot button is clicked');
+
+      // Verify Sign In view is visible
+      const signinView = page.locator('#auth-view-signin');
+      const signinVisible = await signinView.evaluate(el => !el.classList.contains('hidden'));
+      assert.strictEqual(signinVisible, true, 'Sign In view must be active by default');
+
+      // Verify Passkey & Google SSO buttons exist
+      const passkeyBtn = page.locator('#auth-passkey-login-btn');
+      assert.strictEqual(await passkeyBtn.isVisible(), true, 'Passkey login button must be visible');
+      const googleBtn = page.locator('#auth-google-login-btn');
+      assert.strictEqual(await googleBtn.isVisible(), true, 'Google SSO button must be visible');
+
+      // Switch to Sign Up view
+      const switchToSignupBtn = page.locator('#auth-switch-to-signup-btn');
+      await switchToSignupBtn.click();
+      await page.waitForTimeout(200);
+
+      const signupView = page.locator('#auth-view-signup');
+      const signupVisible = await signupView.evaluate(el => !el.classList.contains('hidden'));
+      assert.strictEqual(signupVisible, true, 'Sign Up view must become visible after clicking switch');
+
+      // Fill in registration fields
+      await page.fill('#companion-signup-name', 'Capt. Skylar Test');
+      await page.fill('#companion-signup-username', 'skylar_pilot');
+      await page.fill('#companion-signup-password', 'PasskeyTest123!');
+      await page.fill('#companion-signup-cert', '10748291');
+
+      // Switch back to Sign In view
+      const switchToSigninBtn = page.locator('#auth-switch-to-signin-btn');
+      await switchToSigninBtn.click();
+      await page.waitForTimeout(200);
+
+      const signinVisibleAgain = await signinView.evaluate(el => !el.classList.contains('hidden'));
+      assert.strictEqual(signinVisibleAgain, true, 'Sign In view must become visible again');
+
+      // Toggle Google Config Drawer
+      const googleConfigToggle = page.locator('#auth-toggle-google-config-btn');
+      await googleConfigToggle.click();
+      await page.waitForTimeout(200);
+
+      const configPanel = page.locator('#auth-google-config-panel');
+      const configPanelVisible = await configPanel.evaluate(el => !el.classList.contains('hidden'));
+      assert.strictEqual(configPanelVisible, true, 'Google OAuth config panel must open when toggled');
+
+      // Close modal
+      const closeBtn = page.locator('#companion-auth-close-btn');
+      await closeBtn.click();
+      await page.waitForTimeout(300);
+
+      const isHiddenAfterClose = await modal.evaluate(el => el.classList.contains('hidden'));
+      assert.strictEqual(isHiddenAfterClose, true, 'Auth modal must close when close button is clicked');
+    });
+  });
 });

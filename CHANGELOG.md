@@ -1,3 +1,25 @@
+## [1.200.0] - 2026-10-26
+
+Aalaapi Sky now provides comprehensive pilot authentication supporting Google SSO (OAuth 2.0 / OpenID Connect), biometric WebAuthn Passkeys (Touch ID, Face ID, Windows Hello), and local pilot profiles with automated preflight checklist auto-fill, cloud preference sync, and flight log attribution.
+
+### Added
+
+#### Pilot & Operational Features
+- **Companion Pilot Authentication & Profile Identity (Closes #190)**:
+  - Header and mobile more-menu now feature a dedicated Pilot Identity button (`#header-pilot-btn` / `#more-menu-pilot-btn`) indicating current authentication status.
+  - Optional pilot session management: unauthenticated use remains fully supported, while authenticated pilots gain automated preflight checklist signing and log attribution.
+  - Multi-provider authentication supporting Google SSO (OIDC ID token verification), WebAuthn Passkeys (FIDO2 biometrics/hardware keys), and local username/password accounts with secure `scrypt` hashing.
+  - Automated Preflight Safety Checklist auto-fill: automatically populates Pilot in Command (PIC) name, FAA Part 107 Remote Pilot Certificate number, default LAANC authorization code, and digital signature from the pilot profile.
+  - Multi-device Preference Synchronization: 1-click cloud sync of measurement units, application themes, custom drone profiles, camera palettes, and ribbon presets directly to the Companion Bridge instance.
+  - Google OAuth Client ID runtime configuration drawer allowing field operators to configure or update their Google Cloud Client ID directly from the interface.
+
+#### Under the Hood & Technical Details
+- **[tools/companion/auth_db.js]**: Implemented `AuthDatabase` leveraging Node.js native `DatabaseSync` (`node:sqlite`) and `node:crypto` (`scryptSync`, `timingSafeEqual`, `createVerify`, WebAuthn P-256 ECDSA assertion verification, and Google OIDC public key verification).
+- **[tools/companion/server.js]**: Added REST and SSE endpoints for `/api/auth/config`, `/api/auth/google/verify`, `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, `/api/auth/profile`, `/api/auth/passkey/*`, and real-time `auth_updated` SSE event broadcasts.
+- **[tools/companion/diagnostics_db.js]**: Migrated SQLite schema with `pilot_user_id`, `pilot_name`, and `pilot_cert` columns for flight diagnostic records and mission logs.
+- **[src/bridge/CompanionAuth.js]**: Created ES client auth module handling WebAuthn Conditional UI (`mediation: "conditional"`), Signal API (`signalUnknownCredential`), Google GIS popup/callback, session caching, and preflight form population.
+- **[src/bridge/ApiClient.js & src/bridge/Rc2LogExplorer.js]**: Integrated SSE `auth_updated` subscription, bearer authorization headers, and preflight checklist gate integration.
+
 ## [1.199.2] - 2026-10-25
 
 ### Fixed

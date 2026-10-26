@@ -2386,6 +2386,7 @@ body.modal-drag-active {
   #about-btn,
   #useful-links-btn,
   #adsb-topbar-btn,
+  #header-pilot-btn,
   #header-system-status-group,
   .header-bridge-container,
   .header-ambient-buffer-container,
@@ -7680,12 +7681,94 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   }
 }
 
+
+/* ==========================================================================
+   Pilot Identity & Companion Authentication Modal (v1.200.0, Issue #190)
+   ========================================================================== */
+
+.header-pilot-btn {
+  padding: 0 8px !important;
+  font-size: 0.72rem !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 1.2 !important;
+  width: auto !important;
+  border-radius: 6px !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-pilot-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.header-pilot-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  display: inline-block;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.header-pilot-btn.is-authenticated .header-pilot-dot {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+.header-pilot-btn.is-authenticated {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.auth-error-banner {
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.15);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.auth-success-banner {
+  padding: 8px 12px;
+  background: rgba(34, 197, 94, 0.15);
+  border-bottom: 1px solid rgba(34, 197, 94, 0.3);
+  color: #86efac;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.auth-provider-btn {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.auth-provider-btn:hover {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border-color: #38bdf8 !important;
+}
+
 </style>
   
   <!-- App Icon & Favicon -->
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='12' cy='12' r='9' stroke='%2306b6d4' stroke-width='0.5' stroke-dasharray='2 2' opacity='0.25'/%3E%3Ccircle cx='12' cy='12' r='6' stroke='%2306b6d4' stroke-width='0.75' opacity='0.4'/%3E%3Cline x1='12' y1='12' x2='6.5' y2='6.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='17.5' y2='6.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='6.5' y2='17.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='17.5' y2='17.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cpolygon points='10,9 11,10 10,11 9,10' fill='%23f5f0e8'/%3E%3Cpolygon points='8,7 9,8 8,9 7,8' fill='%23f5f0e8'/%3E%3Cpolygon points='14,9 15,10 14,11 13,10' fill='%23f5f0e8'/%3E%3Cpolygon points='16,7 17,8 16,9 15,8' fill='%23f5f0e8'/%3E%3Cpolygon points='10,15 11,14 10,13 9,14' fill='%23f5f0e8'/%3E%3Cpolygon points='8,17 9,16 8,15 7,16' fill='%23f5f0e8'/%3E%3Cpolygon points='14,15 15,14 14,13 13,14' fill='%23f5f0e8'/%3E%3Cpolygon points='16,17 17,16 16,15 15,16' fill='%23f5f0e8'/%3E%3Ccircle cx='5.5' cy='5.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='18.5' cy='5.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='5.5' cy='18.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='18.5' cy='18.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Cpolygon points='12,7 17,12 12,17 7,12' fill='%23c2622d' stroke='%23f5f0e8' stroke-width='0.75'/%3E%3Cpolygon points='12,9.5 14.5,12 12,14.5 9.5,12' fill='%2306b6d4'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%23f5f0e8'/%3E%3C/svg%3E">
+  <!-- Google Identity Services (GIS) for Google SSO (v1.200.0, Issue #190) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <!-- Night Vision Goggle (NVG) / Tactical Red Color Matrix Filter (v1.165.0) -->
@@ -7747,7 +7830,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.199.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.200.0</span></h1>
         </div>
       </div>
 
@@ -7824,6 +7907,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
         </button>
+                <button id="header-pilot-btn" class="btn-secondary header-pilot-btn" type="button" title="Pilot Identity &amp; Sign In" aria-label="Pilot Identity">
+          <span id="header-pilot-dot" class="header-pilot-dot"></span>
+          <span id="header-pilot-icon">👤</span>
+          <span id="header-pilot-label">Pilot</span>
+        </button>
         <button id="about-btn" class="btn-secondary header-about-btn" type="button" title="About &amp; Changelog">About</button>
         <button id="useful-links-btn" class="btn-secondary header-about-btn" type="button" title="Useful Links">Links</button>
         <button id="adsb-topbar-btn" class="btn-secondary header-about-btn" type="button" title="Manned Aircraft Airspace Awareness (ADS-B Alerts)">
@@ -7858,6 +7946,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <button id="more-menu-photos-btn" class="more-menu-item" type="button">
           <span class="more-menu-icon">📸</span>
           <span class="more-menu-label">Photo Ingestion &amp; Inspection</span>
+        </button>
+                <button id="more-menu-pilot-btn" class="more-menu-item" type="button">
+          <span class="more-menu-icon">👤</span>
+          <span class="more-menu-label">Pilot Identity &amp; Profile</span>
         </button>
         <button id="more-menu-intro-btn" class="more-menu-item" type="button">
           <span class="more-menu-icon">🎓</span>
@@ -12077,6 +12169,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🧑‍✈️ Companion Pilot Authentication, Google SSO &amp; Passkeys (v1.200.0) (Closes #190)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Seamless, secure pilot identity for single operators and flight crews! Log in with Google SSO (OIDC), biometric WebAuthn Passkeys (Touch ID, Face ID, Windows Hello), or local credentials. Authenticated sessions automatically attribute flight logs and preflight safety checklists, populate Part 107 certificate numbers, and synchronize your mission preferences across devices via the Companion Bridge.
+            </p>
+          </div>
+
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🔌 USB/HDMI Capture Device Friendly Names &amp; RC-N3 Android Support (v1.197.0) (Closes #177)
@@ -14291,7 +14392,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.199.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.200.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14413,6 +14514,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.200.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>Companion Pilot Authentication, Google SSO &amp; Passkeys (Closes #190):</strong> Added multi-factor pilot authentication supporting Google SSO (OAuth 2.0 / OIDC), WebAuthn Passkeys (Touch ID, Face ID, Windows Hello), and local pilot accounts with automated preflight checklist auto-fill, cloud preference sync, and flight log attribution.</li>
+              </ul>
+            </li>
+            <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.199.2):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li><strong>3D Controls Layout &amp; Indicator Alignment (Closes #189):</strong> Fixed header minimize arrow overlap on Controls title and nested status indicator dots cleanly inside buttons.</li>
@@ -20091,6 +20199,191 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <button id="close-nd-filter-modal-footer-btn" type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.78rem;">Close</button>
         <button id="apply-nd-filter-btn" type="button" class="btn-primary" style="padding: 6px 18px; font-size: 0.78rem; font-weight: 600;">Apply to Mission Camera</button>
       </footer>
+    </div>
+  </div>
+
+
+  <!-- Companion Pilot Authentication & Profile Modal (v1.200.0, Issue #190) -->
+  <div id="companion-auth-modal" class="modal-overlay hidden" data-draggable-modal="true" style="z-index: 10055;">
+    <div class="modal glass companion-auth-dialog" style="max-width: 520px; width: 94vw; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.85); border-radius: 14px;">
+      
+      <!-- Header -->
+      <div class="modal-header" data-modal-drag-handle="true" style="padding: 14px 20px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: grab;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="modal-drag-grip" aria-hidden="true" title="Drag to reposition modal">&#x22EE;&#x22EE;</span>
+          <span style="font-size: 1.25rem;">🧑‍✈️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1rem; color: var(--text-main); font-weight: 700;">Pilot Identity &amp; Profile</h3>
+            <p id="auth-companion-status-note" style="margin: 0; font-size: 0.68rem; color: var(--text-muted);">Companion Server Sync</p>
+          </div>
+        </div>
+        <button id="companion-auth-close-btn" type="button" class="btn-close" aria-label="Close Authentication Modal" style="background: none; border: none; font-size: 1.2rem; color: var(--text-muted); cursor: pointer; padding: 4px 8px; border-radius: 6px;">✕</button>
+      </div>
+
+      <!-- Alert message box -->
+      <div id="companion-auth-error" class="auth-error-banner hidden" role="alert"></div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="modal-body auth-modal-body" style="padding: 18px 20px; overflow-y: auto; flex: 1;">
+        
+        <!-- View 1: Sign In -->
+        <div id="auth-view-signin" class="auth-view">
+          <div style="text-align: center; margin-bottom: 16px;">
+            <p style="margin: 0 0 6px 0; font-size: 0.85rem; color: var(--text-main); font-weight: 600;">Sign in to sync pilot logs, preferences &amp; preflight credentials</p>
+            <p style="margin: 0; font-size: 0.72rem; color: var(--text-muted);">Optional authentication for single-pilot and field crews</p>
+          </div>
+
+          <!-- Fast SSO & Passkey Providers -->
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;">
+            <button id="auth-passkey-login-btn" type="button" class="btn-secondary auth-provider-btn" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 14px; font-weight: 600; border: 1px solid rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.08); border-radius: 8px;">
+              <span style="font-size: 1.15rem;">🔑</span>
+              <span>Sign in with Passkey / Biometrics</span>
+            </button>
+            <button id="auth-google-login-btn" type="button" class="btn-secondary auth-provider-btn" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 14px; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px;">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Sign in with Google SSO</span>
+            </button>
+          </div>
+
+          <!-- Divider -->
+          <div style="display: flex; align-items: center; margin: 16px 0; gap: 10px;">
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+            <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">or sign in with password</span>
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+          </div>
+
+          <!-- Standard Password Form -->
+          <form id="companion-signin-form" autocomplete="on">
+            <div style="margin-bottom: 12px;">
+              <label for="companion-signin-username" style="display: block; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">Username or Email</label>
+              <input id="companion-signin-username" name="username" type="text" autocomplete="username webauthn" autocorrect="off" autocapitalize="none" spellcheck="false" required placeholder="pilot_callsign" style="width: 100%; box-sizing: border-box; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 0.85rem;" />
+            </div>
+            <div style="margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label for="companion-signin-password" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Password</label>
+              </div>
+              <input id="companion-signin-password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••••••" style="width: 100%; box-sizing: border-box; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 0.85rem;" />
+            </div>
+            <button id="auth-signin-submit-btn" type="submit" class="btn-primary" style="width: 100%; padding: 9px 16px; font-weight: 600; font-size: 0.85rem; border-radius: 6px;">Sign In</button>
+          </form>
+
+          <!-- Toggle View to Signup -->
+          <div style="margin-top: 16px; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+            Don't have a local pilot account?
+            <button id="auth-switch-to-signup-btn" type="button" style="background: none; border: none; color: #38bdf8; font-weight: 600; cursor: pointer; text-decoration: underline; margin-left: 4px;">Create One</button>
+          </div>
+
+          <!-- Collapsible Google OAuth Config Section -->
+          <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+            <button id="auth-toggle-google-config-btn" type="button" style="background: none; border: none; color: var(--text-muted); font-size: 0.72rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+              <span>⚙️</span>
+              <span>Configure Google OAuth Client ID</span>
+            </button>
+            <div id="auth-google-config-panel" class="hidden" style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.25); border-radius: 6px; border: 1px solid var(--border-color);">
+              <label for="auth-google-client-id-input" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 4px;">Google Client ID (from Google Cloud Console)</label>
+              <div style="display: flex; gap: 6px;">
+                <input id="auth-google-client-id-input" type="text" placeholder="123456789-xyz.apps.googleusercontent.com" style="flex: 1; padding: 6px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
+                <button id="auth-save-google-client-id-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View 2: Sign Up (Create Account) -->
+        <div id="auth-view-signup" class="auth-view hidden">
+          <div style="text-align: center; margin-bottom: 16px;">
+            <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--text-main); font-weight: 600;">Create Local Pilot Profile</p>
+            <p style="margin: 0; font-size: 0.72rem; color: var(--text-muted);">Stored securely on your Companion Bridge instance</p>
+          </div>
+
+          <form id="companion-signup-form" autocomplete="on">
+            <div style="margin-bottom: 10px;">
+              <label for="companion-signup-name" style="display: block; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">Pilot / Operator Full Name</label>
+              <input id="companion-signup-name" name="name" type="text" required placeholder="e.g. Capt. Jane Doe" style="width: 100%; box-sizing: border-box; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 0.85rem;" />
+            </div>
+            <div style="margin-bottom: 10px;">
+              <label for="companion-signup-username" style="display: block; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">Username / Callsign</label>
+              <input id="companion-signup-username" name="username" type="text" autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false" required placeholder="sky_pilot_01" style="width: 100%; box-sizing: border-box; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 0.85rem;" />
+            </div>
+            <div style="margin-bottom: 10px;">
+              <label for="companion-signup-password" style="display: block; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">Password (Min 8 chars)</label>
+              <input id="companion-signup-password" name="new-password" type="password" autocomplete="new-password" required minlength="8" placeholder="••••••••••••" style="width: 100%; box-sizing: border-box; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 0.85rem;" />
+            </div>
+            <div style="margin-bottom: 10px;">
+              <label for="companion-signup-cert" style="display: block; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">FAA Part 107 Remote Pilot Cert # (Optional)</label>
+              <input id="companion-signup-cert" name="cert" type="text" placeholder="e.g. 4819201" style="width: 100%; box-sizing: border-box; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 0.85rem;" />
+            </div>
+            <div style="margin-bottom: 16px;">
+              <label for="companion-signup-email" style="display: block; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">Email Address (Optional)</label>
+              <input id="companion-signup-email" name="email" type="email" autocomplete="email" placeholder="pilot@example.com" style="width: 100%; box-sizing: border-box; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 0.85rem;" />
+            </div>
+            <button id="auth-signup-submit-btn" type="submit" class="btn-primary" style="width: 100%; padding: 9px 16px; font-weight: 600; font-size: 0.85rem; border-radius: 6px;">Register Pilot Profile</button>
+          </form>
+
+          <div style="margin-top: 16px; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+            Already have an account?
+            <button id="auth-switch-to-signin-btn" type="button" style="background: none; border: none; color: #38bdf8; font-weight: 600; cursor: pointer; text-decoration: underline; margin-left: 4px;">Sign In</button>
+          </div>
+        </div>
+
+        <!-- View 3: Authenticated Profile -->
+        <div id="auth-view-profile" class="auth-view hidden">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; margin-bottom: 16px;">
+            <div id="header-pilot-avatar" style="width: 44px; height: 44px; border-radius: 50%; background: #0284c7; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700;">
+              🧑‍✈️
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <h4 id="auth-profile-name" style="margin: 0; font-size: 0.95rem; color: var(--text-main); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Pilot Name</h4>
+                <span id="auth-profile-google-badge" class="badge-tag hidden" style="font-size: 0.6rem; padding: 1px 6px; border-radius: 4px; background: rgba(66, 133, 244, 0.2); color: #60a5fa; border: 1px solid rgba(66, 133, 244, 0.4);">Google SSO</span>
+              </div>
+              <p id="auth-profile-username" style="margin: 2px 0 0 0; font-size: 0.72rem; color: var(--text-muted);">@username</p>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; font-size: 0.78rem;">
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
+              <span style="color: var(--text-muted);">FAA Part 107 Cert #:</span>
+              <strong id="auth-profile-cert" style="color: var(--text-main);">None</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border-color);">
+              <span style="color: var(--text-muted);">Email:</span>
+              <span id="auth-profile-email" style="color: var(--text-main);">None</span>
+            </div>
+          </div>
+
+          <!-- Passkey Credentials Section -->
+          <div style="margin-bottom: 16px; padding: 12px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <strong style="font-size: 0.75rem; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                <span>🔑</span>
+                <span>Hardware Passkeys &amp; Biometrics</span>
+              </strong>
+              <button id="auth-register-passkey-btn" type="button" class="btn-secondary" style="font-size: 0.7rem; padding: 3px 8px; border-radius: 4px;">➕ Register Key</button>
+            </div>
+            <div id="auth-profile-passkeys-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto;">
+              <!-- Passkeys injected here -->
+            </div>
+          </div>
+
+          <!-- Preferences & Cloud Sync Section -->
+          <div style="display: flex; gap: 8px; margin-bottom: 18px;">
+            <button id="auth-sync-preferences-btn" type="button" class="btn-secondary" style="flex: 1; padding: 8px 10px; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>🔄</span>
+              <span>Sync Cloud Preferences</span>
+            </button>
+            <button id="auth-signout-btn" type="button" class="btn-secondary" style="padding: 8px 14px; font-size: 0.75rem; font-weight: 600; color: #f87171; border-color: rgba(239, 68, 68, 0.4);">
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 
@@ -52859,11 +53152,21 @@ function connectCompanionStatusStream() {
 
         updateCompanionTransportUI('sse');
 
+        if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.onStatusUpdate === 'function') {
+          CompanionAuth.onStatusUpdate(data);
+        }
+
       } catch (e) {}
 
     };
 
 
+
+    companionStatusEventSource.addEventListener('auth_updated', () => {
+      if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.fetchCurrentProfile === 'function') {
+        CompanionAuth.fetchCurrentProfile().catch(() => {});
+      }
+    });
 
     companionStatusEventSource.onerror = () => {
 
@@ -53006,6 +53309,10 @@ async function pollCompanionStatus() {
 
 
       if (wasOffline) {
+
+        if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.onCompanionOnline === 'function') {
+          CompanionAuth.onCompanionOnline();
+        }
 
         consecutiveRadarFailures = 0;
 
@@ -61034,6 +61341,1047 @@ if (typeof global !== 'undefined') {
 
 
 
+// -------------------- src/bridge/CompanionAuth.js --------------------
+/**
+ * src/bridge/CompanionAuth.js
+ * Client-Side Companion Pilot Authentication, Google SSO, WebAuthn Passkeys,
+ * Profile Management, and Workspace Preference Synchronization.
+ */
+
+// ─── WebAuthn Polyfill & Compatibility Helpers (modern-web-guidance) ──────────
+
+function uint8ArrayToBase64Url(uint8Array) {
+  let binary = '';
+  const len = uint8Array.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(uint8Array[i]);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function base64UrlToUint8Array(base64Url) {
+  let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  while (base64.length % 4 !== 0) {
+    base64 += '=';
+  }
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function polyfillParseCreationOptionsFromJSON(optionsJSON) {
+  if (typeof PublicKeyCredential !== 'undefined' && typeof PublicKeyCredential.parseCreationOptionsFromJSON === 'function') {
+    return PublicKeyCredential.parseCreationOptionsFromJSON(optionsJSON);
+  }
+
+  const options = JSON.parse(JSON.stringify(optionsJSON));
+  if (typeof options.challenge === 'string') {
+    options.challenge = base64UrlToUint8Array(options.challenge);
+  }
+  if (options.user && typeof options.user.id === 'string') {
+    options.user.id = base64UrlToUint8Array(options.user.id);
+  }
+  if (Array.isArray(options.excludeCredentials)) {
+    options.excludeCredentials = options.excludeCredentials.map(cred => ({
+      ...cred,
+      id: typeof cred.id === 'string' ? base64UrlToUint8Array(cred.id) : cred.id
+    }));
+  }
+  return options;
+}
+
+function polyfillParseRequestOptionsFromJSON(optionsJSON) {
+  if (typeof PublicKeyCredential !== 'undefined' && typeof PublicKeyCredential.parseRequestOptionsFromJSON === 'function') {
+    return PublicKeyCredential.parseRequestOptionsFromJSON(optionsJSON);
+  }
+
+  const options = JSON.parse(JSON.stringify(optionsJSON));
+  if (typeof options.challenge === 'string') {
+    options.challenge = base64UrlToUint8Array(options.challenge);
+  }
+  if (Array.isArray(options.allowCredentials)) {
+    options.allowCredentials = options.allowCredentials.map(cred => ({
+      ...cred,
+      id: typeof cred.id === 'string' ? base64UrlToUint8Array(cred.id) : cred.id
+    }));
+  }
+  return options;
+}
+
+function polyfillCredentialToJSON(credential) {
+  if (typeof credential.toJSON === 'function') {
+    return credential.toJSON();
+  }
+
+  const res = credential.response;
+  const jsonRes = {};
+
+  if (res.clientDataJSON) {
+    jsonRes.clientDataJSON = uint8ArrayToBase64Url(new Uint8Array(res.clientDataJSON));
+  }
+  if (res.authenticatorData) {
+    jsonRes.authenticatorData = uint8ArrayToBase64Url(new Uint8Array(res.authenticatorData));
+  }
+  if (res.signature) {
+    jsonRes.signature = uint8ArrayToBase64Url(new Uint8Array(res.signature));
+  }
+  if (res.userHandle) {
+    jsonRes.userHandle = uint8ArrayToBase64Url(new Uint8Array(res.userHandle));
+  }
+  if (res.attestationObject) {
+    jsonRes.attestationObject = uint8ArrayToBase64Url(new Uint8Array(res.attestationObject));
+  }
+  if (typeof res.getPublicKey === 'function') {
+    try {
+      const pk = res.getPublicKey();
+      if (pk) jsonRes.publicKey = uint8ArrayToBase64Url(new Uint8Array(pk));
+    } catch (_) {}
+  }
+  if (typeof res.getPublicKeyAlgorithm === 'function') {
+    try {
+      jsonRes.publicKeyAlgorithm = res.getPublicKeyAlgorithm();
+    } catch (_) {}
+  }
+  if (typeof res.getTransports === 'function') {
+    try {
+      jsonRes.transports = res.getTransports();
+    } catch (_) {}
+  }
+
+  return {
+    id: credential.id,
+    rawId: uint8ArrayToBase64Url(new Uint8Array(credential.rawId)),
+    type: credential.type,
+    response: jsonRes,
+    authenticatorAttachment: credential.authenticatorAttachment || null
+  };
+}
+
+// ─── CompanionAuth Manager ───────────────────────────────────────────────────
+
+const AUTH_TOKEN_KEY = 'aalaapi_companion_auth_token';
+const AUTH_PILOT_KEY = 'aalaapi_companion_pilot_profile';
+
+const CompanionAuth = {
+  token: null,
+  user: null,
+  passkeys: [],
+  googleClientId: '',
+  isInitialized: false,
+  conditionalAbortController: null,
+
+  init() {
+    if (this.isInitialized || typeof window === 'undefined') return;
+    this.isInitialized = true;
+
+    // Restore cached session token
+    try {
+      this.token = localStorage.getItem(AUTH_TOKEN_KEY) || null;
+      const cachedProfile = localStorage.getItem(AUTH_PILOT_KEY);
+      if (cachedProfile) {
+        this.user = JSON.parse(cachedProfile);
+      }
+    } catch (_) {}
+
+    this.bindEvents();
+    this.updateTopbarUI();
+
+    // Listen for Google OAuth popup messages
+    window.addEventListener('message', (event) => {
+      if (!event.data || typeof event.data !== 'object') return;
+      if (event.data.type === 'AALAAPI_GOOGLE_AUTH_TOKEN' && event.data.idToken) {
+        this.handleGoogleVerify(event.data.idToken);
+      } else if (event.data.type === 'AALAAPI_GOOGLE_AUTH_ERROR') {
+        this.showAuthError('Google sign-in error: ' + (event.data.error || 'User cancelled'));
+      }
+    });
+
+    // Check remote session if token is present
+    if (this.token) {
+      this.fetchCurrentProfile().catch(() => {});
+    }
+  },
+
+  getApiBase() {
+    return (typeof getCompanionApiBase === 'function')
+      ? getCompanionApiBase()
+      : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+  },
+
+  getAuthHeaders() {
+    const headers = {};
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+      headers['x-pilot-session-token'] = this.token;
+    }
+    return headers;
+  },
+
+  isAuthenticated() {
+    return Boolean(this.token && this.user);
+  },
+
+  // ─── Remote API Calls ───────────────────────────────────────────────────────
+
+  async fetchCurrentProfile() {
+    if (!this.token) return null;
+    try {
+      const res = await fetch(`${this.getApiBase()}/api/auth/me`, {
+        headers: this.getAuthHeaders()
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          this.user = data.user;
+          this.passkeys = data.passkeys || [];
+          if (data.googleClientId) this.googleClientId = data.googleClientId;
+          localStorage.setItem(AUTH_PILOT_KEY, JSON.stringify(this.user));
+          this.updateTopbarUI();
+          this.renderProfileView();
+          return this.user;
+        }
+      } else if (res.status === 401) {
+        this.logout(false);
+      }
+    } catch (_) {}
+    return null;
+  },
+
+  async loginWithPassword(username, password) {
+    this.clearAuthError();
+    try {
+      const res = await fetch(`${this.getApiBase()}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Login failed');
+      }
+
+      this.setSession(data.token, data.user);
+      this.showToast(`Welcome back, ${data.user.displayName || data.user.username}!`);
+      this.closeModal();
+      return data;
+    } catch (err) {
+      this.showAuthError(err.message);
+      throw err;
+    }
+  },
+
+  async registerLocalPilot(payload) {
+    this.clearAuthError();
+    try {
+      const initialPreferences = this.collectCurrentClientPreferences();
+      const res = await fetch(`${this.getApiBase()}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, preferences: initialPreferences })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      this.setSession(data.token, data.user);
+      this.showToast(`Pilot profile created for ${data.user.displayName}!`);
+      this.closeModal();
+      return data;
+    } catch (err) {
+      this.showAuthError(err.message);
+      throw err;
+    }
+  },
+
+  async handleGoogleVerify(idToken) {
+    this.clearAuthError();
+    try {
+      const initialPreferences = this.collectCurrentClientPreferences();
+      const res = await fetch(`${this.getApiBase()}/api/auth/google/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: idToken, initialPreferences })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Google authentication failed');
+      }
+
+      this.setSession(data.token, data.user);
+      this.showToast(`Signed in with Google as ${data.user.displayName}!`);
+      this.closeModal();
+      return data;
+    } catch (err) {
+      this.showAuthError(err.message);
+    }
+  },
+
+  async updatePilotProfile(updates) {
+    if (!this.token) return;
+    try {
+      const res = await fetch(`${this.getApiBase()}/api/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(updates)
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        this.user = data.user;
+        localStorage.setItem(AUTH_PILOT_KEY, JSON.stringify(this.user));
+        this.updateTopbarUI();
+        this.renderProfileView();
+        this.showToast('Pilot profile updated');
+      }
+    } catch (err) {
+      alert('Failed to update profile: ' + err.message);
+    }
+  },
+
+  async saveGoogleClientId(clientId) {
+    try {
+      const res = await fetch(`${this.getApiBase()}/api/auth/config`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify({ googleClientId: clientId })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        this.googleClientId = data.googleClientId || '';
+        this.showToast('Google OAuth Client ID saved');
+        this.updateGoogleSsoUI();
+      }
+    } catch (err) {
+      alert('Failed to save Google Client ID: ' + err.message);
+    }
+  },
+
+  // ─── WebAuthn Passkey Actions (modern-web-guidance) ─────────────────────────
+
+  async triggerPasskeyButtonLogin() {
+    this.clearAuthError();
+    if (this.conditionalAbortController) {
+      this.conditionalAbortController.abort();
+      this.conditionalAbortController = null;
+    }
+
+    try {
+      const optionsRes = await fetch(`${this.getApiBase()}/api/auth/passkey/login/options`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!optionsRes.ok) throw new Error('Could not get passkey login options');
+      const optionsJSON = await optionsRes.json();
+
+      const publicKey = polyfillParseRequestOptionsFromJSON(optionsJSON);
+      let credential;
+      try {
+        credential = await navigator.credentials.get({ publicKey });
+      } catch (err) {
+        if (err.name === 'NotAllowedError') {
+          console.log('User cancelled passkey login prompt.');
+        } else {
+          this.showAuthError(err.message || 'Passkey login failed');
+        }
+        this.initConditionalAutofill();
+        return;
+      }
+
+      if (!credential) return;
+
+      const encoded = polyfillCredentialToJSON(credential);
+      const verifyRes = await fetch(`${this.getApiBase()}/api/auth/passkey/login/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(encoded)
+      });
+
+      if (!verifyRes.ok && verifyRes.status === 404) {
+        // Unknown credential on server -> trigger Signal API per modern-web-guidance
+        if (typeof PublicKeyCredential !== 'undefined' && PublicKeyCredential.signalUnknownCredential) {
+          try {
+            const rpId = (window.location.hostname || 'localhost');
+            await PublicKeyCredential.signalUnknownCredential({
+              rpId,
+              credentialId: encoded.id
+            });
+          } catch (_) {}
+        }
+        throw new Error('Passkey credential not recognized on this Companion bridge');
+      }
+
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.success) {
+        throw new Error(verifyData.error || 'Passkey verification failed');
+      }
+
+      this.setSession(verifyData.token, verifyData.user);
+      this.showToast(`Signed in via Passkey as ${verifyData.user.displayName}!`);
+      this.closeModal();
+    } catch (err) {
+      this.showAuthError(err.message);
+    }
+  },
+
+  async initConditionalAutofill() {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.credentials) return;
+    if (this.isAuthenticated()) return;
+
+    try {
+      // Check capabilities
+      let conditionalSupported = false;
+      if (typeof PublicKeyCredential !== 'undefined' && PublicKeyCredential.getClientCapabilities) {
+        const capabilities = await PublicKeyCredential.getClientCapabilities();
+        conditionalSupported = capabilities && capabilities.conditionalGet === true;
+      } else if (typeof PublicKeyCredential !== 'undefined' && PublicKeyCredential.isConditionalMediationAvailable) {
+        conditionalSupported = await PublicKeyCredential.isConditionalMediationAvailable();
+      }
+
+      if (!conditionalSupported) return;
+
+      if (this.conditionalAbortController) {
+        this.conditionalAbortController.abort();
+      }
+      this.conditionalAbortController = new AbortController();
+
+      const optionsRes = await fetch(`${this.getApiBase()}/api/auth/passkey/login/options`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!optionsRes.ok) return;
+      const optionsJSON = await optionsRes.json();
+      const publicKey = polyfillParseRequestOptionsFromJSON(optionsJSON);
+
+      const credential = await navigator.credentials.get({
+        publicKey,
+        signal: this.conditionalAbortController.signal,
+        mediation: 'conditional'
+      });
+
+      if (!credential) return;
+
+      const encoded = polyfillCredentialToJSON(credential);
+      const verifyRes = await fetch(`${this.getApiBase()}/api/auth/passkey/login/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(encoded)
+      });
+
+      if (!verifyRes.ok && verifyRes.status === 404) {
+        if (typeof PublicKeyCredential !== 'undefined' && PublicKeyCredential.signalUnknownCredential) {
+          try {
+            await PublicKeyCredential.signalUnknownCredential({
+              rpId: window.location.hostname || 'localhost',
+              credentialId: encoded.id
+            });
+          } catch (_) {}
+        }
+        return;
+      }
+
+      const verifyData = await verifyRes.json();
+      if (verifyRes.ok && verifyData.success) {
+        this.setSession(verifyData.token, verifyData.user);
+        this.showToast(`Signed in via Passkey as ${verifyData.user.displayName}!`);
+        this.closeModal();
+      }
+    } catch (err) {
+      if (['NotAllowedError', 'AbortError'].includes(err.name)) return;
+      console.warn('Conditional autofill error:', err);
+    }
+  },
+
+  async registerNewPasskey() {
+    if (!this.token) {
+      alert('Please sign in before registering a passkey.');
+      return;
+    }
+
+    try {
+      const optionsRes = await fetch(`${this.getApiBase()}/api/auth/passkey/register/options`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        }
+      });
+
+      if (!optionsRes.ok) {
+        const errData = await optionsRes.json();
+        throw new Error(errData.error || 'Failed to get passkey registration options');
+      }
+
+      const optionsJSON = await optionsRes.json();
+      const publicKey = polyfillParseCreationOptionsFromJSON(optionsJSON);
+
+      let credential;
+      try {
+        credential = await navigator.credentials.create({ publicKey });
+      } catch (err) {
+        if (err.name === 'NotAllowedError') {
+          console.log('User cancelled passkey creation prompt.');
+        } else if (err.name === 'InvalidStateError') {
+          alert('A passkey already exists on this authenticator for this pilot profile.');
+        } else {
+          alert('Passkey registration cancelled or failed: ' + err.message);
+        }
+        return;
+      }
+
+      if (!credential) return;
+
+      const passkeyName = prompt('Enter a label for this passkey (e.g., MacBook Touch ID, Windows Hello, YubiKey):', 'My Passkey') || 'Passkey';
+      const encoded = polyfillCredentialToJSON(credential);
+      encoded.name = passkeyName;
+
+      const verifyRes = await fetch(`${this.getApiBase()}/api/auth/passkey/register/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(encoded)
+      });
+
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.success) {
+        throw new Error(verifyData.error || 'Failed to verify passkey creation on server');
+      }
+
+      this.showToast('Passkey registered successfully!');
+      await this.fetchCurrentProfile();
+    } catch (err) {
+      alert('Error registering passkey: ' + err.message);
+    }
+  },
+
+  async deletePasskey(credentialId) {
+    if (!confirm('Remove this passkey from your pilot profile?')) return;
+    try {
+      const res = await fetch(`${this.getApiBase()}/api/auth/passkey/${encodeURIComponent(credentialId)}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
+      if (res.ok) {
+        this.showToast('Passkey removed');
+        await this.fetchCurrentProfile();
+      }
+    } catch (err) {
+      alert('Failed to delete passkey: ' + err.message);
+    }
+  },
+
+  // ─── Session State & Preference Synchronization ─────────────────────────────
+
+  setSession(token, user) {
+    this.token = token;
+    this.user = user;
+    try {
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
+      localStorage.setItem(AUTH_PILOT_KEY, JSON.stringify(user));
+    } catch (_) {}
+
+    this.updateTopbarUI();
+
+    // Hydrate user preferences from profile
+    if (user && user.preferences && Object.keys(user.preferences).length > 0) {
+      this.applyPreferencesToClient(user.preferences);
+    }
+
+    this.fetchCurrentProfile().catch(() => {});
+  },
+
+  logout(callServer = true) {
+    if (callServer && this.token) {
+      fetch(`${this.getApiBase()}/api/auth/logout`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      }).catch(() => {});
+    }
+
+    this.token = null;
+    this.user = null;
+    this.passkeys = [];
+    try {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_PILOT_KEY);
+    } catch (_) {}
+
+    this.updateTopbarUI();
+    this.showToast('Signed out of Companion Pilot Profile');
+    this.closeModal();
+  },
+
+  collectCurrentClientPreferences() {
+    const prefs = {};
+    try {
+      if (typeof getUnitSystem === 'function') prefs.unitSystem = getUnitSystem();
+      if (typeof currentAppTheme !== 'undefined') prefs.theme = currentAppTheme;
+      const paletteSelect = document.getElementById('camera-palette-select');
+      if (paletteSelect) prefs.cameraPalette = paletteSelect.value;
+      const conesToggle = document.getElementById('camera-cones-toggle');
+      if (conesToggle) prefs.cameraCones = conesToggle.checked;
+      const filterSelect = document.getElementById('config-map-visual-filter');
+      if (filterSelect) prefs.mapVisualFilter = filterSelect.value;
+      const ribbonPreset = document.getElementById('ribbon-preset-select');
+      if (ribbonPreset) prefs.ribbonPreset = ribbonPreset.value;
+    } catch (_) {}
+    return prefs;
+  },
+
+  applyPreferencesToClient(prefs = {}) {
+    try {
+      // 1. Measurement Units
+      if (prefs.unitSystem && typeof setUnitSystem === 'function') {
+        setUnitSystem(prefs.unitSystem);
+      }
+      // 2. Theme (Dark / Light)
+      if (prefs.theme && typeof setAppTheme === 'function') {
+        setAppTheme(prefs.theme);
+      }
+      // 3. Camera Visual Palette
+      if (prefs.cameraPalette) {
+        const paletteSelect = document.getElementById('camera-palette-select');
+        if (paletteSelect && paletteSelect.value !== prefs.cameraPalette) {
+          paletteSelect.value = prefs.cameraPalette;
+          paletteSelect.dispatchEvent(new Event('change'));
+        }
+      }
+      // 4. Camera FOV Cones
+      if (prefs.cameraCones !== undefined) {
+        const conesToggle = document.getElementById('camera-cones-toggle');
+        if (conesToggle && conesToggle.checked !== prefs.cameraCones) {
+          conesToggle.checked = prefs.cameraCones;
+          conesToggle.dispatchEvent(new Event('change'));
+        }
+      }
+      // 5. Visual Filter
+      if (prefs.mapVisualFilter) {
+        const filterSelect = document.getElementById('config-map-visual-filter');
+        if (filterSelect && filterSelect.value !== prefs.mapVisualFilter) {
+          filterSelect.value = prefs.mapVisualFilter;
+          filterSelect.dispatchEvent(new Event('change'));
+        }
+      }
+      // 6. Top Ribbon Preset
+      if (prefs.ribbonPreset) {
+        const ribbonPreset = document.getElementById('ribbon-preset-select');
+        if (ribbonPreset && ribbonPreset.value !== prefs.ribbonPreset) {
+          ribbonPreset.value = prefs.ribbonPreset;
+          ribbonPreset.dispatchEvent(new Event('change'));
+        }
+      }
+    } catch (_) {}
+  },
+
+  syncCurrentPreferencesToServer() {
+    if (!this.isAuthenticated()) return;
+    const currentPrefs = this.collectCurrentClientPreferences();
+    this.updatePilotProfile({ preferences: currentPrefs });
+  },
+
+  // ─── Preflight Checklist & Mission Auto-Population ───────────────────────────
+
+  populatePreflightModal() {
+    if (!this.isAuthenticated()) return;
+
+    // Operator name input
+    const opInput = document.getElementById('preflight-operator-input');
+    if (opInput && !opInput.value) {
+      const fullLabel = this.user.faaCertNumber
+        ? `${this.user.displayName} (${this.user.faaCertNumber})`
+        : this.user.displayName;
+      opInput.value = fullLabel;
+    }
+
+    // Default LAANC input
+    const laancInput = document.getElementById('preflight-laanc-input');
+    if (laancInput && !laancInput.value && this.user.defaultLaancCode) {
+      laancInput.value = this.user.defaultLaancCode;
+    }
+
+    // Saved signature
+    if (this.user.signatureData) {
+      const canvas = document.getElementById('preflight-signature-canvas');
+      if (canvas && typeof currentPreflightState !== 'undefined' && !currentPreflightState.signatureData) {
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          currentPreflightState.signatureData = this.user.signatureData;
+        };
+        img.src = this.user.signatureData;
+      }
+    }
+  },
+
+  // ─── UI & Modal Orchestration ────────────────────────────────────────────────
+
+  bindEvents() {
+    const pilotBtn = document.getElementById('header-pilot-btn');
+    if (pilotBtn) {
+      pilotBtn.addEventListener('click', () => this.openModal());
+    }
+
+    const morePilotBtn = document.getElementById('more-menu-pilot-btn');
+    if (morePilotBtn) {
+      morePilotBtn.addEventListener('click', () => {
+        const moreMenu = document.getElementById('header-more-menu');
+        if (moreMenu) moreMenu.classList.add('hidden');
+        this.openModal();
+      });
+    }
+
+    const closeBtn = document.getElementById('companion-auth-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.closeModal());
+    }
+
+    // Switch between Sign-In, Sign-Up, and Profile views
+    const switchToSignupBtn = document.getElementById('auth-switch-to-signup-btn');
+    if (switchToSignupBtn) {
+      switchToSignupBtn.addEventListener('click', () => this.switchView('signup'));
+    }
+
+    const switchToSigninBtn = document.getElementById('auth-switch-to-signin-btn');
+    if (switchToSigninBtn) {
+      switchToSigninBtn.addEventListener('click', () => this.switchView('signin'));
+    }
+
+    // Sign in form submit
+    const signinForm = document.getElementById('companion-signin-form');
+    if (signinForm) {
+      signinForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('companion-signin-username')?.value;
+        const password = document.getElementById('companion-signin-password')?.value;
+        await this.loginWithPassword(username, password);
+      });
+    }
+
+    // Sign up form submit
+    const signupForm = document.getElementById('companion-signup-form');
+    if (signupForm) {
+      signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const displayName = document.getElementById('companion-signup-name')?.value;
+        const username = document.getElementById('companion-signup-username')?.value;
+        const password = document.getElementById('companion-signup-password')?.value;
+        const faaCertNumber = document.getElementById('companion-signup-cert')?.value;
+        const email = document.getElementById('companion-signup-email')?.value;
+        await this.registerLocalPilot({ displayName, username, password, faaCertNumber, email });
+      });
+    }
+
+    // Explicit Passkey Button
+    const passkeyBtn = document.getElementById('auth-passkey-login-btn');
+    if (passkeyBtn) {
+      passkeyBtn.addEventListener('click', () => this.triggerPasskeyButtonLogin());
+    }
+
+    // Google Sign-In Button
+    const googleBtn = document.getElementById('auth-google-login-btn');
+    if (googleBtn) {
+      googleBtn.addEventListener('click', () => this.startGoogleOAuth());
+    }
+
+    // Toggle Google Client ID drawer
+    const toggleGoogleCfgBtn = document.getElementById('auth-toggle-google-config-btn');
+    const googleCfgPanel = document.getElementById('auth-google-config-panel');
+    if (toggleGoogleCfgBtn && googleCfgPanel) {
+      toggleGoogleCfgBtn.addEventListener('click', () => {
+        const isHidden = googleCfgPanel.classList.contains('hidden');
+        googleCfgPanel.classList.toggle('hidden', !isHidden);
+      });
+    }
+
+    // Save Google Client ID
+    const saveGoogleCfgBtn = document.getElementById('auth-save-google-client-id-btn');
+    if (saveGoogleCfgBtn) {
+      saveGoogleCfgBtn.addEventListener('click', () => {
+        const input = document.getElementById('auth-google-client-id-input');
+        if (input) this.saveGoogleClientId(input.value.trim());
+      });
+    }
+
+    // Sign Out Button
+    const signoutBtn = document.getElementById('auth-signout-btn');
+    if (signoutBtn) {
+      signoutBtn.addEventListener('click', () => this.logout(true));
+    }
+
+    // Register Passkey Button
+    const regPasskeyBtn = document.getElementById('auth-register-passkey-btn');
+    if (regPasskeyBtn) {
+      regPasskeyBtn.addEventListener('click', () => this.registerNewPasskey());
+    }
+
+    // Sync Preferences Button
+    const syncPrefsBtn = document.getElementById('auth-sync-preferences-btn');
+    if (syncPrefsBtn) {
+      syncPrefsBtn.addEventListener('click', () => {
+        this.syncCurrentPreferencesToServer();
+        this.showToast('Workspace preferences synced to Companion');
+      });
+    }
+
+    // Password visibility toggles
+    document.querySelectorAll('.auth-password-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const input = document.getElementById(targetId);
+        if (input) {
+          const isPassword = input.type === 'password';
+          input.type = isPassword ? 'text' : 'password';
+          btn.textContent = isPassword ? '🙈' : '👁️';
+        }
+      });
+    });
+  },
+
+  startGoogleOAuth() {
+    const clientId = this.googleClientId || '';
+    if (!clientId) {
+      const panel = document.getElementById('auth-google-config-panel');
+      if (panel) panel.classList.remove('hidden');
+      alert('Please configure your Google OAuth 2.0 Client ID below to enable Google SSO.');
+      return;
+    }
+
+    const redirectUri = `${this.getApiBase()}/api/auth/google/callback`;
+    const scope = encodeURIComponent('openid profile email');
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=id_token&scope=${scope}&nonce=${Date.now()}`;
+
+    const width = 500;
+    const height = 650;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    window.open(authUrl, 'aalaapi_google_auth', `width=${width},height=${height},left=${left},top=${top}`);
+  },
+
+  updateTopbarUI() {
+    const btn = document.getElementById('header-pilot-btn');
+    const label = document.getElementById('header-pilot-label');
+    const avatar = document.getElementById('header-pilot-avatar');
+    const dot = document.getElementById('header-pilot-dot');
+
+    if (!btn || !label) return;
+
+    if (this.isAuthenticated()) {
+      btn.classList.add('is-authenticated');
+      btn.title = `Signed in as Pilot: ${this.user.displayName} (Click for Pilot Profile)`;
+      label.textContent = this.user.displayName || this.user.username;
+      if (dot) dot.style.display = 'inline-block';
+      if (avatar && this.user.avatarUrl) {
+        avatar.src = this.user.avatarUrl;
+        avatar.style.display = 'inline-block';
+      } else if (avatar) {
+        avatar.style.display = 'none';
+      }
+    } else {
+      btn.classList.remove('is-authenticated');
+      btn.title = 'Companion Pilot Profile & Sign-In (Click to Sign In)';
+      label.textContent = 'Pilot Sign In';
+      if (dot) dot.style.display = 'none';
+      if (avatar) avatar.style.display = 'none';
+    }
+  },
+
+  switchView(viewName) {
+    const signinView = document.getElementById('auth-view-signin');
+    const signupView = document.getElementById('auth-view-signup');
+    const profileView = document.getElementById('auth-view-profile');
+
+    if (signinView) signinView.classList.toggle('hidden', viewName !== 'signin');
+    if (signupView) signupView.classList.toggle('hidden', viewName !== 'signup');
+    if (profileView) profileView.classList.toggle('hidden', viewName !== 'profile');
+
+    if (viewName === 'signin') {
+      this.initConditionalAutofill();
+    }
+  },
+
+  renderProfileView() {
+    if (!this.isAuthenticated()) return;
+    const nameEl = document.getElementById('auth-profile-name');
+    const userEl = document.getElementById('auth-profile-username');
+    const certEl = document.getElementById('auth-profile-cert');
+    const emailEl = document.getElementById('auth-profile-email');
+    const googleBadge = document.getElementById('auth-profile-google-badge');
+    const passkeysList = document.getElementById('auth-profile-passkeys-list');
+
+    if (nameEl) nameEl.textContent = this.user.displayName || 'Pilot';
+    if (userEl) userEl.textContent = `@${this.user.username}`;
+    if (certEl) certEl.textContent = this.user.faaCertNumber ? `Part 107: ${this.user.faaCertNumber}` : 'No Certificate Saved';
+    if (emailEl) emailEl.textContent = this.user.email || 'No email attached';
+    if (googleBadge) googleBadge.style.display = this.user.hasGoogle ? 'inline-flex' : 'none';
+
+    if (passkeysList) {
+      passkeysList.innerHTML = '';
+      if (this.passkeys.length === 0) {
+        passkeysList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.72rem; padding: 6px 0;">Zero passkeys registered. Add one below for 1-click biometric sign-in.</div>';
+      } else {
+        this.passkeys.forEach(pk => {
+          const item = document.createElement('div');
+          item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.72rem;';
+          item.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span>🔑</span>
+              <div>
+                <strong style="color: var(--text-main);">${pk.name || 'Passkey'}</strong>
+                <div style="font-size: 0.65rem; color: var(--text-muted);">Added ${new Date(pk.registeredAt).toLocaleDateString()}</div>
+              </div>
+            </div>
+            <button type="button" class="btn-secondary" style="font-size: 0.65rem; padding: 2px 6px; color: #ef4444;" title="Delete this passkey">Delete</button>
+          `;
+          item.querySelector('button').onclick = () => this.deletePasskey(pk.id);
+          passkeysList.appendChild(item);
+        });
+      }
+    }
+  },
+
+  updateGoogleSsoUI() {
+    const input = document.getElementById('auth-google-client-id-input');
+    const btn = document.getElementById('auth-google-login-btn');
+    if (input) input.value = this.googleClientId || '';
+    if (btn) {
+      btn.style.opacity = this.googleClientId ? '1' : '0.7';
+    }
+  },
+
+  openModal() {
+    const modal = document.getElementById('companion-auth-modal');
+    if (!modal) return;
+    this.clearAuthError();
+
+    // Check Companion status
+    const statusNote = document.getElementById('auth-companion-status-note');
+    const isOnline = (typeof isCompanionOnline !== 'undefined') ? isCompanionOnline : false;
+    if (statusNote) {
+      statusNote.textContent = isOnline ? 'Companion Bridge: Online' : 'Companion Bridge: Offline';
+      statusNote.style.color = isOnline ? '#4ade80' : '#f59e0b';
+    }
+
+    if (this.isAuthenticated()) {
+      this.renderProfileView();
+      this.switchView('profile');
+    } else {
+      this.switchView('signin');
+      this.initConditionalAutofill();
+    }
+
+    this.updateGoogleSsoUI();
+    modal.classList.remove('hidden');
+  },
+
+  closeModal() {
+    const modal = document.getElementById('companion-auth-modal');
+    if (modal) modal.classList.add('hidden');
+    if (this.conditionalAbortController) {
+      this.conditionalAbortController.abort();
+      this.conditionalAbortController = null;
+    }
+  },
+
+  showAuthError(msg) {
+    const errBox = document.getElementById('companion-auth-error');
+    if (errBox) {
+      errBox.textContent = msg;
+      errBox.classList.remove('hidden');
+    } else {
+      alert(msg);
+    }
+  },
+
+  clearAuthError() {
+    const errBox = document.getElementById('companion-auth-error');
+    if (errBox) {
+      errBox.textContent = '';
+      errBox.classList.add('hidden');
+    }
+  },
+
+  showToast(msg) {
+    if (typeof showToast === 'function') {
+      showToast(msg, 2500);
+    } else {
+      console.log('[AUTH TOAST]', msg);
+    }
+  },
+
+  syncPreferencesToCompanion() {
+    return this.syncCurrentPreferencesToServer();
+  },
+
+  hydratePreferencesFromCompanion(prefs) {
+    return this.applyPreferencesToClient(prefs);
+  },
+
+  signInWithPassword(username, password) {
+    return this.loginWithPassword(username, password);
+  },
+
+  registerWithPassword(data) {
+    return this.registerLocalPilot(data);
+  },
+
+  signInWithPasskey() {
+    return this.triggerPasskeyButtonLogin();
+  },
+
+  registerPasskey() {
+    return this.registerNewPasskey();
+  },
+
+  signInWithGoogle() {
+    return this.startGoogleOAuth();
+  },
+
+  getUser() {
+    return this.user;
+  },
+
+  saveSignature(dataUrl) {
+    return this.updatePilotProfile({ saved_signature: dataUrl });
+  },
+
+  onCompanionOnline() {
+    if (this.token) {
+      this.fetchCurrentProfile().catch(() => {});
+    }
+  }
+};
+
+// Global exports
+if (typeof window !== 'undefined') {
+  window.CompanionAuth = CompanionAuth;
+}
+if (typeof global !== 'undefined') {
+  global.CompanionAuth = CompanionAuth;
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => CompanionAuth.init());
+  } else {
+    setTimeout(() => CompanionAuth.init(), 0);
+  }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = CompanionAuth;
+}
 // -------------------- src/bridge/WebUsbMtp.js --------------------
 /**
  * Aalaapi Sky - WebUSB MTP Engine
@@ -82608,7 +83956,7 @@ async function pullSpecificRc2Log(filename) {
     const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
     const res = await fetch(`${apiBase}/api/rc2/pull-log`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...((typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.getAuthHeaders === 'function') ? CompanionAuth.getAuthHeaders() : {}) },
       body: JSON.stringify({ filenames: [filename] })
     });
     const data = await res.json();
@@ -83596,6 +84944,9 @@ async function showPreflightGateModal(onPassCallback = null) {
   renderPreflightStepper();
   renderPreflightPhase(0);
   initSignatureCanvas();
+  if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.populatePreflightModal === 'function') {
+    CompanionAuth.populatePreflightModal();
+  }
   modal.classList.remove('hidden');
 
   await loadPreflightTemplate();
@@ -83688,6 +85039,18 @@ async function submitPreflightChecklist() {
     completed_items: completedList,
     auto_checks: currentPreflightState.autoChecks
   };
+
+  if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.isAuthenticated === 'function' && CompanionAuth.isAuthenticated()) {
+    const authUser = CompanionAuth.getUser();
+    if (authUser) {
+      payload.pilot_user_id = authUser.id;
+      payload.pilot_name = authUser.display_name || authUser.username;
+      payload.pilot_cert = authUser.faa_part107_cert || '';
+      if (!authUser.saved_signature && currentPreflightState.signatureData && typeof CompanionAuth.saveSignature === 'function') {
+        CompanionAuth.saveSignature(currentPreflightState.signatureData).catch(() => {});
+      }
+    }
+  }
 
   // Submit to bridge if online, else queue locally
   if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {

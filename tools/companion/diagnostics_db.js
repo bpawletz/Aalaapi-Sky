@@ -258,7 +258,10 @@ class DiagnosticsDatabase {
           ['wpml_xml', 'TEXT'],
           ['template_xml', 'TEXT'],
           ['execution_status', "TEXT DEFAULT 'pending'"],
-          ['execution_error', 'TEXT']
+          ['execution_error', 'TEXT'],
+          ['pilot_user_id', 'TEXT'],
+          ['pilot_name', 'TEXT'],
+          ['pilot_cert', 'TEXT']
         ];
         for (const [col, colType] of colsToAdd) {
           if (!existingCols.has(col)) {
@@ -357,6 +360,9 @@ class DiagnosticsDatabase {
       const templateXml = payload.templateXml || payload.template_xml || payload.rawTemplate || '';
       const executionStatus = payload.executionStatus || payload.execution_status || (isValid === 0 ? 'invalid' : 'pending');
       const executionError = payload.executionError || payload.execution_error || (validationErrors.length > 0 ? validationErrors.join('; ') : '');
+      const pilotUserId = payload.pilotUserId || payload.pilot_user_id || payload.pilot?.userId || null;
+      const pilotName = payload.pilotName || payload.pilot_name || payload.pilot?.displayName || payload.pilot?.name || null;
+      const pilotCert = payload.pilotCert || payload.pilot_cert || payload.pilot?.faaCertNumber || null;
 
       const stmt = this.db.prepare(`
         INSERT INTO mission_diagnostics (
@@ -366,7 +372,8 @@ class DiagnosticsDatabase {
           plan_json, diag_json,
           is_valid, validation_rules_passed, validation_errors_count,
           validation_errors_json, validation_warnings_json, validation_report_json,
-          wpml_xml, template_xml, execution_status, execution_error
+          wpml_xml, template_xml, execution_status, execution_error,
+          pilot_user_id, pilot_name, pilot_cert
         ) VALUES (
           ?, ?, ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?,
@@ -374,7 +381,8 @@ class DiagnosticsDatabase {
           ?, ?,
           ?, ?, ?,
           ?, ?, ?,
-          ?, ?, ?, ?
+          ?, ?, ?, ?,
+          ?, ?, ?
         )
         ON CONFLICT(archive_id) DO UPDATE SET
           uuid = excluded.uuid,
@@ -402,7 +410,10 @@ class DiagnosticsDatabase {
           wpml_xml = excluded.wpml_xml,
           template_xml = excluded.template_xml,
           execution_status = excluded.execution_status,
-          execution_error = excluded.execution_error;
+          execution_error = excluded.execution_error,
+          pilot_user_id = COALESCE(excluded.pilot_user_id, mission_diagnostics.pilot_user_id),
+          pilot_name = COALESCE(excluded.pilot_name, mission_diagnostics.pilot_name),
+          pilot_cert = COALESCE(excluded.pilot_cert, mission_diagnostics.pilot_cert);
       `);
 
       stmt.run(
@@ -412,7 +423,8 @@ class DiagnosticsDatabase {
         planJson, diagJson,
         isValid, validationRulesPassed, validationErrorsCount,
         validationErrorsJson, validationWarningsJson, validationReportJson,
-        wpmlXml, templateXml, executionStatus, executionError
+        wpmlXml, templateXml, executionStatus, executionError,
+        pilotUserId, pilotName, pilotCert
       );
 
       return { success: true, uuid, archiveId };
