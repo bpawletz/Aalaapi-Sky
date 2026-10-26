@@ -36705,18 +36705,13 @@ describe('v1.199.0 True Device Type Dynamic Display & Helper Text Tests (Closes 
 
   test('Version consistency: v1.199.0 across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    assert.ok(semverGte(pkg.version, '1.199.0'), 'package.json version must be >= 1.199.0');
     const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
-    const tpl = fs.readFileSync('index_template.html', 'utf8');
-    const indexHtml = fs.readFileSync('index.html', 'utf8');
-
-    assert.strictEqual(pkg.version, '1.199.0', 'package.json version must be 1.199.0');
     assert.ok(changelog.includes('## [1.199.0] - 2026-10-25'), 'CHANGELOG.md must contain 1.199.0 header');
-    assert.ok(tpl.includes('>Version 1.199.0</span>'), 'index_template.html must contain Version 1.199.0 tag');
+    const tpl = fs.readFileSync('index_template.html', 'utf8');
     assert.ok(tpl.includes('Changelog (v1.199.0):'), 'index_template.html must contain Changelog (v1.199.0)');
-    assert.ok(tpl.includes('>v1.199.0</span>'), 'index_template.html line 84 badge must be v1.199.0');
-    assert.ok(indexHtml.includes('>Version 1.199.0</span>'), 'index.html must contain Version 1.199.0 tag');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
     assert.ok(indexHtml.includes('Changelog (v1.199.0):'), 'index.html must contain Changelog (v1.199.0)');
-    assert.ok(indexHtml.includes('>v1.199.0</span>'), 'index.html header badge must be v1.199.0');
   });
 
   test('getDeviceDisplayInfo normalizes Samsung Galaxy S25 Ultra, Pixel, and DJI controllers', () => {
@@ -36840,5 +36835,34 @@ describe('v1.199.0 True Device Type Dynamic Display & Helper Text Tests (Closes 
       global.document = origDoc;
       global.window = origWin;
     }
+  });
+});
+
+describe('3D HUD Overlay Header Visibility & Grab Grip Alignment Suite (v1.199.1 - Issue #188)', () => {
+  test('Version consistency: v1.199.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.199.1');
+  });
+
+  test('CSS Architecture: index.css scopes compact padding and nowrap to 3D HUD overlay headers', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('.diag-hud-controls .modal-header'), 'Must define compact rule for .diag-hud-controls .modal-header');
+    assert.ok(css.includes('.diag-path-legend .modal-header'), 'Must define compact rule for .diag-path-legend .modal-header');
+    assert.ok(css.includes('.diag-hud-overlay .modal-header'), 'Must define compact rule for .diag-hud-overlay .modal-header');
+    assert.ok(css.includes('padding: 0 0 4px 0 !important;'), 'Must override 24px default padding with padding: 0 0 4px 0 !important;');
+    assert.ok(css.includes('white-space: nowrap;'), 'Must set white-space: nowrap on HUD header spans');
+  });
+
+  test('CSS Architecture: index.css aligns .diag-modal-header .modal-collapse-btn inside close grid area', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('.diag-modal-header .modal-collapse-btn'), 'Must define .diag-modal-header .modal-collapse-btn');
+    assert.ok(css.includes('grid-area: close;'), 'Must position collapse button within close grid area');
+  });
+
+  test('DOM Architecture: index_template.html defines inline compact padding and nowrap on HUD overlay headers', () => {
+    const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tmpl.includes('id="diag-hud-controls-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 0 4px 0;'), 'diag-hud-controls-header must specify padding: 0 0 4px 0');
+    assert.ok(tmpl.includes('id="diag-path-legend-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 0 3px 0;'), 'diag-path-legend-header must specify padding: 0 0 3px 0');
+    assert.ok(tmpl.includes('id="diag-hud-overlay-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 0 4px 0;'), 'diag-hud-overlay-header must specify padding: 0 0 4px 0');
+    assert.ok(tmpl.includes('id="three-hud-controls-header" class="modal-header" data-modal-drag-handle="true" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 0 5px 0;'), 'three-hud-controls-header must specify padding: 0 0 5px 0');
   });
 });

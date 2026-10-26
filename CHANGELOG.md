@@ -1,3 +1,17 @@
+## [1.199.1] - 2026-10-25
+
+### Fixed
+
+#### Pilot & Operational Features
+- **3D HUD Overlay Header Visibility (Closes #188)**:
+  - Fixed 3D Controls (`#diag-hud-controls`) and Path Legend (`#diag-path-legend`) headers in the Flight Diagnostics Center and 3D preview views so that grab grips and titles display cleanly on a single row without text wrapping, grab bar overlap, or title truncation.
+  - Minimized Path Legend pills now correctly retain title visibility when collapsed.
+
+#### Under the Hood & Technical Details
+- **[index.css / index_template.html]**: Overrode `.modal-header`'s 24px default padding (`padding: 0 0 4px 0 !important;`) on `.diag-hud-controls`, `.diag-path-legend`, `.diag-hud-overlay`, `.diag-wireframe-panel`, `.hud-controls`, and `#three-instructions`.
+- **[index.css / index_template.html]**: Applied `white-space: nowrap;` across HUD modal header title containers to prevent line wrapping between emojis and labels.
+- **[index.css]**: Added `grid-area: close; justify-self: end; margin-right: 28px;` for `.diag-modal-header .modal-collapse-btn` to prevent universal collapse button auto-placement into row 3 beneath the Flight selector dropdown.
+
 ## [1.199.0] - 2026-10-25
 
 Aalaapi Sky now dynamically adapts all hardware status badges, action buttons, popovers, Diagnostics tools, and the Flight Log Manager modal to display the true detected device type (e.g., S25 Ultra, Pixel, Android Smartphone, or DJI RC 2) instead of hardcoded RC 2 labels.

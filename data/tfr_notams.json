@@ -1,5 +1,49 @@
 [
   {
+    "notam_id": "6/2214",
+    "facility": "ZJX",
+    "state": "SC",
+    "type": "HAZARDS",
+    "description": "5NM E BONNEAU, SC, Monday, October 26, 2026 through Tuesday, October 27, 2026 UTC",
+    "mod_date": "10/26/2026 00:28:00",
+    "mod_abs_time": "202610260028",
+    "is_new": "Y",
+    "gid": "6/2214"
+  },
+  {
+    "notam_id": "6/2213",
+    "facility": "ZSE",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "MOUNT SHASTA, CA, Monday, October 26, 2026 through Wednesday, October 28, 2026 UTC",
+    "mod_date": "10/25/2026 22:58:00",
+    "mod_abs_time": "202610252258",
+    "is_new": "Y",
+    "gid": "6/2213"
+  },
+  {
+    "notam_id": "6/2204",
+    "facility": "ZAB",
+    "state": "AZ",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Glendale, AZ, Sunday, November 1, 2026 through Monday, November 2, 2026 UTC",
+    "mod_date": "10/25/2026 20:14:00",
+    "mod_abs_time": "202610252014",
+    "is_new": "Y",
+    "gid": "6/2204"
+  },
+  {
+    "notam_id": "6/2203",
+    "facility": "ZTL",
+    "state": "GA",
+    "type": "HAZARDS",
+    "description": "9NM NE GRAY, GA, Monday, October 26, 2026 UTC",
+    "mod_date": "10/25/2026 19:09:00",
+    "mod_abs_time": "202610251909",
+    "is_new": "Y",
+    "gid": "6/2203"
+  },
+  {
     "notam_id": "6/2171",
     "facility": "ZOB",
     "state": "PA",
@@ -73,7 +117,7 @@
     "description": "WEST HOLLYWOOD, CA, Saturday, October 31, 2026 through Sunday, November 1, 2026 Local",
     "mod_date": "10/25/2026 00:04:00",
     "mod_abs_time": "202610250004",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2103"
   },
   {
@@ -84,7 +128,7 @@
     "description": "ATLANTA, GA, Saturday, October 31, 2026 through Saturday, October 31, 2026 Local",
     "mod_date": "10/24/2026 23:31:00",
     "mod_abs_time": "202610242331",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2102"
   },
   {
@@ -95,7 +139,7 @@
     "description": "ATLANTA, GA, Friday, October 30, 2026 through Saturday, October 31, 2026 Local",
     "mod_date": "10/24/2026 22:52:00",
     "mod_abs_time": "202610242252",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2101"
   },
   {
@@ -106,7 +150,7 @@
     "description": "Lexington, KY, Friday, October 30, 2026 through Saturday, October 31, 2026 Local",
     "mod_date": "10/24/2026 21:56:00",
     "mod_abs_time": "202610242156",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2096"
   },
   {
@@ -117,41 +161,8 @@
     "description": "HUNTSVILLE, AL, Tuesday, October 27, 2026 through Thursday, October 29, 2026 Local",
     "mod_date": "10/24/2026 21:14:00",
     "mod_abs_time": "202610242114",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2076"
-  },
-  {
-    "notam_id": "6/2074",
-    "facility": "ZOB",
-    "state": "MI",
-    "type": "SECURITY",
-    "description": "SELFRIDGE ANGB, MI, Sunday, October 25, 2026 Local",
-    "mod_date": "10/24/2026 20:46:00",
-    "mod_abs_time": "202610242046",
-    "is_new": "Y",
-    "gid": "6/2074"
-  },
-  {
-    "notam_id": "6/2072",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "E FARMINGTON, CO, Saturday, October 24, 2026 through Sunday, October 25, 2026 UTC",
-    "mod_date": "10/24/2026 19:28:00",
-    "mod_abs_time": "202610241928",
-    "is_new": "Y",
-    "gid": "6/2072"
-  },
-  {
-    "notam_id": "6/2071",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "NE FARMINGTON, CO, Saturday, October 24, 2026 through Sunday, October 25, 2026 UTC",
-    "mod_date": "10/24/2026 19:28:00",
-    "mod_abs_time": "202610241928",
-    "is_new": "Y",
-    "gid": "6/2071"
   },
   {
     "notam_id": "6/2070",
@@ -161,7 +172,7 @@
     "description": "Corpus Christi, TX, Tuesday, October 27, 2026 Local",
     "mod_date": "10/24/2026 18:17:00",
     "mod_abs_time": "202610241817",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2070"
   },
   {
@@ -207,17 +218,6 @@
     "mod_abs_time": "202610241414",
     "is_new": "N",
     "gid": "6/2060"
-  },
-  {
-    "notam_id": "6/2058",
-    "facility": "ZDC",
-    "state": "VA",
-    "type": "VIP",
-    "description": "Middleburg, VA, Saturday, October 24, 2026 through Sunday, October 25, 2026 Local",
-    "mod_date": "10/24/2026 13:06:00",
-    "mod_abs_time": "202610241306",
-    "is_new": "N",
-    "gid": "6/2058"
   },
   {
     "notam_id": "6/2017",
@@ -297,17 +297,6 @@
     "gid": "6/1910"
   },
   {
-    "notam_id": "6/1753",
-    "facility": "ZAB",
-    "state": "TX",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "El Paso, TX, Friday, October 23, 2026 through Sunday, October 25, 2026 UTC",
-    "mod_date": "10/22/2026 20:39:00",
-    "mod_abs_time": "202610222039",
-    "is_new": "N",
-    "gid": "6/1753"
-  },
-  {
     "notam_id": "6/1700",
     "facility": "ZHU",
     "state": "TX",
@@ -350,28 +339,6 @@
     "mod_abs_time": "202610221432",
     "is_new": "N",
     "gid": "6/1666"
-  },
-  {
-    "notam_id": "6/1664",
-    "facility": "ZOB",
-    "state": "MI",
-    "type": "VIP",
-    "description": "SELFRIDGE ANGB-MARYSVILLE, MI, Sunday, October 25, 2026 Local",
-    "mod_date": "10/22/2026 14:29:00",
-    "mod_abs_time": "202610221429",
-    "is_new": "N",
-    "gid": "6/1664"
-  },
-  {
-    "notam_id": "6/1654",
-    "facility": "ZAB",
-    "state": "TX",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "El Paso, TX, Friday, October 23, 2026 through Sunday, October 25, 2026 UTC",
-    "mod_date": "10/22/2026 13:30:00",
-    "mod_abs_time": "202610221330",
-    "is_new": "N",
-    "gid": "6/1654"
   },
   {
     "notam_id": "6/1568",
@@ -460,17 +427,6 @@
     "mod_abs_time": "202610161137",
     "is_new": "N",
     "gid": "6/9922"
-  },
-  {
-    "notam_id": "6/9885",
-    "facility": "ZKC",
-    "state": "KS",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "Wichita, KS, Thursday, October 22, 2026 through Sunday, October 25, 2026 UTC",
-    "mod_date": "10/15/2026 22:56:00",
-    "mod_abs_time": "202610152256",
-    "is_new": "N",
-    "gid": "6/9885"
   },
   {
     "notam_id": "6/9778",

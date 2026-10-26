@@ -5151,6 +5151,13 @@ body.modal-drag-active {
   align-self: center;
 }
 
+.diag-modal-header .modal-collapse-btn {
+  grid-area: close;
+  justify-self: end;
+  margin-right: 28px;
+  align-self: center;
+}
+
 .diag-close-btn:hover {
   color: var(--accent-red);
 }
@@ -5204,6 +5211,28 @@ body.modal-drag-active {
   z-index: 10;
   color: #f8fafc;
   font-family: monospace;
+}
+
+/* Compact HUD Overlay & Draggable Card Headers in 3D Views (Issue #188) */
+.diag-hud-controls .modal-header,
+.diag-hud-overlay .modal-header,
+.diag-path-legend .modal-header,
+.diag-wireframe-panel .modal-header,
+.hud-controls .modal-header,
+#three-instructions .modal-header {
+  padding: 0 0 4px 0 !important;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.diag-hud-controls .modal-header > span,
+.diag-hud-overlay .modal-header > span,
+.diag-path-legend .modal-header > span,
+.diag-wireframe-panel .modal-header > span,
+.hud-controls .modal-header > span,
+#three-instructions .modal-header > span {
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .diag-hud-controls {
