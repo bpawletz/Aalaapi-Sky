@@ -1458,11 +1458,21 @@ function connectCompanionStatusStream() {
 
         updateCompanionTransportUI('sse');
 
+        if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.onStatusUpdate === 'function') {
+          CompanionAuth.onStatusUpdate(data);
+        }
+
       } catch (e) {}
 
     };
 
 
+
+    companionStatusEventSource.addEventListener('auth_updated', () => {
+      if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.fetchCurrentProfile === 'function') {
+        CompanionAuth.fetchCurrentProfile().catch(() => {});
+      }
+    });
 
     companionStatusEventSource.onerror = () => {
 
@@ -1605,6 +1615,10 @@ async function pollCompanionStatus() {
 
 
       if (wasOffline) {
+
+        if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.onCompanionOnline === 'function') {
+          CompanionAuth.onCompanionOnline();
+        }
 
         consecutiveRadarFailures = 0;
 

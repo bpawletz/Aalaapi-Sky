@@ -110,6 +110,13 @@ The following third-party software libraries and components are utilized in Aala
   all copies or substantial portions of the Software.
   ```
 
+
+### Google Identity Services (GIS)
+* **Project**: [Google Identity Services](https://developers.google.com/identity/gsi/web)
+* **Authors**: Google LLC
+* **License**: Apache 2.0 / Google APIs Terms of Service
+* **Usage**: Client-side library for Google Single Sign-On (SSO) and OpenID Connect (OIDC) ID token acquisition for pilot authentication and session management.
+
 ### Web Fonts: Outfit & Plus Jakarta Sans
 * **Outfit**: Designed by On caps and Rodrigo Fuenzalida. Licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/).
 * **Plus Jakarta Sans**: Designed by Tokotype and Gumpita Rahayu. Licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/).
@@ -206,7 +213,7 @@ The product names, registered trademarks, service marks, and trade names referen
    * **Legal Disclaimer**: Aalaapi Sky is an independent, open-source third-party flight planning software project. Aalaapi Sky is **not affiliated with, authorized by, sponsored by, endorsed by, or certified by SZ DJI Technology Co., Ltd.** Any reference to DJI hardware, firmware, remotes, or file structures is made solely for descriptive compatibility, flight-planning interoperability, and educational purposes.
 
 2. **Google**:
-   * **Trademarks**: **Google®**, **Google Earth™**, **Google Maps™**, **KML™**, **GPano™**, **Android™**, and **Chrome™** are trademarks or registered trademarks of **Google LLC**.
+   * **Trademarks**: **Google®**, **Google Earth™**, **Google Maps™**, **Google Identity / OAuth 2.0™**, **KML™**, **GPano™**, **Android™**, and **Chrome™** are trademarks or registered trademarks of **Google LLC**.
    * **Legal Disclaimer**: Mention of Google Earth or KML specifications is for data exchange and 3D preview compatibility.
 
 3. **Esri**:

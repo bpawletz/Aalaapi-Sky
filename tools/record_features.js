@@ -2896,6 +2896,57 @@ const scenarios = [
     }
   },
   {
+    id: 'feature_pilot_auth',
+    name: 'Companion Pilot Authentication, Google SSO & Passkeys',
+    description: 'Demonstrates opening the pilot identity modal, exploring Google SSO and WebAuthn Passkey options, toggling account creation, and opening Google Client ID configuration (Issue #190, v1.200.0).',
+    issueRef: 'Issue #190 / v1.200.0',
+    run: async (page) => {
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+
+      // 1. Open Pilot Identity Modal via topbar button
+      const pilotBtn = page.locator('#header-pilot-btn');
+      if (await pilotBtn.isVisible()) {
+        await pilotBtn.click();
+        await page.waitForTimeout(1200);
+      }
+
+      // 2. Switch to Sign Up View
+      const switchToSignupBtn = page.locator('#auth-switch-to-signup-btn');
+      if (await switchToSignupBtn.isVisible()) {
+        await switchToSignupBtn.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 3. Fill in demo pilot details
+      await page.fill('#companion-signup-name', 'Capt. Skylar Cole');
+      await page.fill('#companion-signup-username', 'skylar_pilot');
+      await page.fill('#companion-signup-cert', '10748921');
+      await page.waitForTimeout(1200);
+
+      // 4. Switch back to Sign In
+      const switchToSigninBtn = page.locator('#auth-switch-to-signin-btn');
+      if (await switchToSigninBtn.isVisible()) {
+        await switchToSigninBtn.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 5. Expand Google OAuth Configuration Panel
+      const googleConfigToggle = page.locator('#auth-toggle-google-config-btn');
+      if (await googleConfigToggle.isVisible()) {
+        await googleConfigToggle.click();
+        await page.waitForTimeout(1200);
+      }
+
+      // 6. Close Modal
+      const closeBtn = page.locator('#companion-auth-close-btn');
+      if (await closeBtn.isVisible()) {
+        await closeBtn.click();
+        await page.waitForTimeout(800);
+      }
+    }
+  },
+  {
     id: 'feature_sidebar_minimize_alignment',
     name: 'Map Zoom & Layer Button Alignment with Sidebar Minimized',
     description: 'Demonstrates Leaflet zoom and layer control buttons maintaining identical 10px border buffer when toggling sidebar minimized (Issue #171, v1.193.3).',

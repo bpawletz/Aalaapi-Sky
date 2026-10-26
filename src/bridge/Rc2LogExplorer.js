@@ -245,7 +245,7 @@ async function pullSpecificRc2Log(filename) {
     const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
     const res = await fetch(`${apiBase}/api/rc2/pull-log`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...((typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.getAuthHeaders === 'function') ? CompanionAuth.getAuthHeaders() : {}) },
       body: JSON.stringify({ filenames: [filename] })
     });
     const data = await res.json();
@@ -1233,6 +1233,9 @@ async function showPreflightGateModal(onPassCallback = null) {
   renderPreflightStepper();
   renderPreflightPhase(0);
   initSignatureCanvas();
+  if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.populatePreflightModal === 'function') {
+    CompanionAuth.populatePreflightModal();
+  }
   modal.classList.remove('hidden');
 
   await loadPreflightTemplate();
@@ -1325,6 +1328,18 @@ async function submitPreflightChecklist() {
     completed_items: completedList,
     auto_checks: currentPreflightState.autoChecks
   };
+
+  if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.isAuthenticated === 'function' && CompanionAuth.isAuthenticated()) {
+    const authUser = CompanionAuth.getUser();
+    if (authUser) {
+      payload.pilot_user_id = authUser.id;
+      payload.pilot_name = authUser.display_name || authUser.username;
+      payload.pilot_cert = authUser.faa_part107_cert || '';
+      if (!authUser.saved_signature && currentPreflightState.signatureData && typeof CompanionAuth.saveSignature === 'function') {
+        CompanionAuth.saveSignature(currentPreflightState.signatureData).catch(() => {});
+      }
+    }
+  }
 
   // Submit to bridge if online, else queue locally
   if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {

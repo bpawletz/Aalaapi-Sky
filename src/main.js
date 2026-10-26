@@ -26,6 +26,7 @@ import './export/DroneProfiles.js';
 import './export/WpmlCompiler.js';
 import './export/Packager.js';
 import './bridge/ApiClient.js';
+import './bridge/CompanionAuth.js';
 import './bridge/WebUsbMtp.js';
 import './bridge/DjiLogDecryptor.js';
 import './3d/DigitalTwin.js';
