@@ -10330,6 +10330,64 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(result.drawerValid, true, `Elevation drawer must be clamped inside viewport: ${JSON.stringify(result.drawerBox)}`);
       assert.strictEqual(result.replayValid, true, `Replay 2D bar must be clamped inside viewport: ${JSON.stringify(result.replayBox)}`);
     });
+
+    test('E2E: 3D HUD overlay header title and grab grip maintain single horizontal baseline without wrapping or overlap (Issue #188)', async () => {
+      const result = await page.evaluate(async () => {
+        // Open diagnostics modal to 3D tab
+        if (window.FlightDiagnostics) {
+          window.FlightDiagnostics.open('3d');
+        } else {
+          const btn = document.getElementById('action-diagnostics-btn');
+          if (btn) btn.click();
+          const tab = document.getElementById('diag-nav-3d-btn');
+          if (tab) tab.click();
+        }
+        await new Promise(r => setTimeout(r, 600));
+
+        const header = document.getElementById('diag-hud-controls-header');
+        if (!header) return { error: '#diag-hud-controls-header not found' };
+
+        const span = header.querySelector('span');
+        const grip = span ? span.querySelector('.modal-drag-grip') : null;
+        const titleSpan = span ? span.children[1] : null;
+        const collapseBtn = header.querySelector('.panel-collapse-btn');
+
+        const headerRect = header.getBoundingClientRect();
+        const gripRect = grip ? grip.getBoundingClientRect() : null;
+        const titleRect = titleSpan ? titleSpan.getBoundingClientRect() : null;
+        const collapseRect = collapseBtn ? collapseBtn.getBoundingClientRect() : null;
+
+        // Path legend check
+        const legend = document.getElementById('diag-path-legend');
+        const legendHeader = document.getElementById('diag-path-legend-header');
+        const legendRect = legend ? legend.getBoundingClientRect() : null;
+        const legendHeaderRect = legendHeader ? legendHeader.getBoundingClientRect() : null;
+
+        // Diagnostics modal header collapse button positioning
+        const diagCollapseBtn = document.querySelector('.diag-modal-header .modal-collapse-btn');
+        const diagCloseBtn = document.getElementById('diag-close-btn');
+        const diagCollapseRect = diagCollapseBtn ? diagCollapseBtn.getBoundingClientRect() : null;
+        const diagCloseRect = diagCloseBtn ? diagCloseBtn.getBoundingClientRect() : null;
+
+        return {
+          headerPadding: window.getComputedStyle(header).padding,
+          headerHeight: headerRect.height,
+          gripTop: gripRect ? gripRect.top : 0,
+          titleTop: titleRect ? titleRect.top : 0,
+          deltaY: gripRect && titleRect ? Math.abs(gripRect.top - titleRect.top) : 999,
+          titleWrapped: titleRect ? titleRect.height > 22 : false,
+          legendHeaderHeight: legendHeaderRect ? legendHeaderRect.height : 0,
+          legendHeaderPadding: legendHeader ? window.getComputedStyle(legendHeader).padding : '',
+          diagCollapseTopDelta: diagCollapseRect && diagCloseRect ? Math.abs(diagCollapseRect.top - diagCloseRect.top) : 999
+        };
+      });
+
+      assert.strictEqual(result.error, undefined, 'Must run without errors');
+      assert.strictEqual(result.titleWrapped, false, 'Title span must not wrap onto second row');
+      assert.ok(result.deltaY < 8, `Grip and title must be on the same horizontal baseline (deltaY was ${result.deltaY})`);
+      assert.ok(result.headerHeight < 40, `Header height must remain compact (< 40px, was ${result.headerHeight})`);
+      assert.ok(result.diagCollapseTopDelta < 15, `Diagnostics modal collapse button must align with close button at top right (delta was ${result.diagCollapseTopDelta})`);
+    });
   });
 
 });
