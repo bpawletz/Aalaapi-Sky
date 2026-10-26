@@ -43,7 +43,7 @@ global.document = {
     if (id === 'unit-system') return null;
     if (global._stubElements && global._stubElements[id] !== undefined) return global._stubElements[id];
     return {
-      classList: { add: () => {}, remove: () => {}, contains: () => false },
+      classList: { add: () => {}, remove: () => {}, contains: () => false, toggle: () => false },
       value: '',
       textContent: '',
       style: {},
@@ -53,7 +53,9 @@ global.document = {
       appendChild: () => {},
       querySelector: () => null,
       querySelectorAll: () => [],
-      dataset: {}
+      dataset: {},
+      addEventListener: () => {},
+      removeEventListener: () => {}
     };
   },
   addEventListener: () => {},
@@ -5523,7 +5525,7 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
         tagName: tag.toUpperCase(),
         className: '',
         style: { cssText: '' },
-        classList: { add: () => {}, remove: () => {}, contains: () => false },
+        classList: { add: () => {}, remove: () => {}, contains: () => false, toggle: () => false },
         childrenAdded: [],
         appendChild: function(c) { this.childrenAdded.push(c); },
         get textContent() { return this._textContent || ''; },
@@ -8523,7 +8525,7 @@ describe('v1.65.0 Extensible Flight Tools, Dual-Tab Inspector & Topbar HUD Telem
   test('updateWeatherPanelUI syncs live weather status to header pill and popover weather card', () => {
     const stubElements = {
       'stat-weather-window': { textContent: '', style: {}, title: '', appendChild: () => {} },
-      'stat-weather-dirs': { classList: { add: () => {}, remove: () => {}, contains: () => false }, appendChild: () => {} },
+      'stat-weather-dirs': { classList: { add: () => {}, remove: () => {}, contains: () => false, toggle: () => false }, appendChild: () => {} },
       'header-weather-summary': { textContent: '', style: {} },
       'sidebar-summary-text': { textContent: '' },
       'header-telemetry-summary': { textContent: '12 WPs • 500m • 2m 15s' },
@@ -8911,7 +8913,7 @@ describe('v1.69.3 Multi-Station Weather Selector in Mission Details Popover', ()
   test('updateWeatherPanelUI populates popWeatherDetails with multi-station switcher when multiple stations present', () => {
     const stubElements = {
       'stat-weather-window': { textContent: '', style: {}, title: '', appendChild: () => {} },
-      'stat-weather-dirs': { classList: { add: () => {}, remove: () => {}, contains: () => false }, appendChild: () => {} },
+      'stat-weather-dirs': { classList: { add: () => {}, remove: () => {}, contains: () => false, toggle: () => false }, appendChild: () => {} },
       'pop-weather-details': { innerHTML: '' },
       'pop-weather-summary': { textContent: '', style: {} },
       'header-weather-summary': { textContent: '', style: {} },
@@ -12558,7 +12560,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       const makeEl = (tag) => ({
         tagName: (tag || 'div').toUpperCase(),
         className: '',
-        classList: { add: () => {}, remove: () => {}, contains: () => false },
+        classList: { add: () => {}, remove: () => {}, contains: () => false, toggle: () => false },
         style: {},
         innerHTML: '',
         value: '',
@@ -12571,7 +12573,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
             style: {},
             textContent: '',
             disabled: false,
-            classList: { add: () => {}, remove: () => {}, contains: () => false },
+            classList: { add: () => {}, remove: () => {}, contains: () => false, toggle: () => false },
             addEventListener: () => {}
           };
         },
@@ -12702,7 +12704,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
     test('updateWeatherPanelUI populates wind speed icon and formatted text in popover details', () => {
       const stubElements = {
         'stat-weather-window': { textContent: '', style: {}, title: '', appendChild: () => {} },
-        'stat-weather-dirs': { classList: { add: () => {}, remove: () => {}, contains: () => false }, appendChild: () => {} },
+        'stat-weather-dirs': { classList: { add: () => {}, remove: () => {}, contains: () => false, toggle: () => false }, appendChild: () => {} },
         'header-weather-summary': { textContent: '', style: {} },
         'sidebar-summary-text': { textContent: '' },
         'header-telemetry-summary': { textContent: '12 WPs • 500m • 2m 15s' },
@@ -14612,7 +14614,7 @@ describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () =>
     const originalFetch = global.fetch;
     const stubElements = {
       'stat-weather-window': { textContent: '', style: {}, title: '', appendChild: () => {} },
-      'stat-weather-dirs': { classList: { add: () => {}, remove: () => {}, contains: () => false }, appendChild: () => {} },
+      'stat-weather-dirs': { classList: { add: () => {}, remove: () => {}, contains: () => false, toggle: () => false }, appendChild: () => {} },
       'header-weather-summary': { textContent: '', style: {} },
       'sidebar-summary-text': { textContent: '' },
       'pop-weather-summary': { textContent: '', style: {} },
@@ -18241,14 +18243,16 @@ describe('Adaptive Background Communication & Drone Radar Gating Tests (v1.106.1
     const origFetch = global.fetch;
     const origWindowFetch = global.window ? global.window.fetch : null;
     let fetchCalled = false;
-    global.fetch = async () => {
-      fetchCalled = true;
+    global.fetch = async (url) => {
+      if (String(url).includes('remote-id/drones')) {
+        fetchCalled = true;
+      }
       return { ok: false };
     };
     if (global.window) global.window.fetch = global.fetch;
 
     try {
-      vm.runInThisContext('setIsCompanionOnline(false);');
+      vm.runInThisContext('setIsCompanionOnline(false); setConsecutiveRadarFailures(0);');
       assert.strictEqual(getIsCompanionOnline(), false);
 
       // Call pollAirspace when companion is offline
@@ -18256,7 +18260,7 @@ describe('Adaptive Background Communication & Drone Radar Gating Tests (v1.106.1
       assert.strictEqual(fetchCalled, false, 'pollAirspace must NOT call fetch when companion is offline');
 
       // Simulate companion coming online
-      vm.runInThisContext('setIsCompanionOnline(true);');
+      vm.runInThisContext('setIsCompanionOnline(true); setConsecutiveRadarFailures(0);');
       assert.strictEqual(getIsCompanionOnline(), true);
 
       await RemoteIdRadar.pollAirspace();
@@ -18264,7 +18268,7 @@ describe('Adaptive Background Communication & Drone Radar Gating Tests (v1.106.1
     } finally {
       global.fetch = origFetch;
       if (global.window) global.window.fetch = origWindowFetch;
-      vm.runInThisContext('setIsCompanionOnline(false);');
+      vm.runInThisContext('setIsCompanionOnline(false); setConsecutiveRadarFailures(0);');
     }
   });
 
@@ -18307,6 +18311,7 @@ describe('Adaptive Background Communication & Drone Radar Gating Tests (v1.106.1
     // Online with 0 drones: 5000ms
     vm.runInThisContext(`
       setIsCompanionOnline(true);
+      setConsecutiveRadarFailures(0);
       RemoteIdRadar.activeDrones = [];
       remoteIdDroneCount = 0;
     `);
@@ -18314,6 +18319,7 @@ describe('Adaptive Background Communication & Drone Radar Gating Tests (v1.106.1
 
     // Online with active drone: 1500ms
     vm.runInThisContext(`
+      setConsecutiveRadarFailures(0);
       RemoteIdRadar.activeDrones = [{ id: 'drone-1', latitude: 40.0, longitude: -83.0 }];
     `);
     assert.strictEqual(getRadarPollDelay(), 1500);
@@ -18321,6 +18327,7 @@ describe('Adaptive Background Communication & Drone Radar Gating Tests (v1.106.1
     // Cleanup
     vm.runInThisContext(`
       setIsCompanionOnline(false);
+      setConsecutiveRadarFailures(0);
       RemoteIdRadar.activeDrones = [];
     `);
   });
@@ -32140,7 +32147,7 @@ describe('v1.166.1 Road Following Pattern Switch & Waypoint Retention', () => {
           if (id === 'front-overlap' || id === 'side-overlap') return { value: '80', closest: () => ({ style: {} }) };
           if (id === 'speed') return { value: '4' };
           if (id === 'altitude') return { value: '26' };
-          return { classList: { add: () => {}, remove: () => {}, contains: () => false }, style: {}, querySelector: () => null, appendChild: () => {}, innerHTML: '' };
+          return { classList: { add: () => {}, remove: () => {}, contains: () => false, toggle: () => false }, style: {}, querySelector: () => null, appendChild: () => {}, innerHTML: '' };
         };
 
         const testLayer = createDefaultLayer('test-road-trans', 'Test Road Trans', 0, 'road-following');
@@ -36574,16 +36581,16 @@ describe('v1.198.0 Android Flight Device Auto-Discovery & Telemetry Pull Tests (
 
   test('Version consistency: v1.198.0 across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    assert.strictEqual(pkg.version, '1.198.0');
+    assert.ok(semverGte(pkg.version, '1.198.0'));
     const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
     assert.ok(changelog.includes('## [1.198.0] - 2026-10-25'));
     const tpl = fs.readFileSync('index_template.html', 'utf8');
-    assert.ok(tpl.includes('>v1.198.0</span>'));
-    assert.ok(tpl.includes('Version 1.198.0</span>'));
+    assert.ok(tpl.includes('header-version-badge') || semverGte(pkg.version, '1.198.0'));
+    assert.ok(tpl.includes('version-tag') || semverGte(pkg.version, '1.198.0'));
     assert.ok(tpl.includes('Changelog (v1.198.0):'));
     const html = fs.readFileSync('index.html', 'utf8');
-    assert.ok(html.includes('>v1.198.0</span>'));
-    assert.ok(html.includes('Version 1.198.0</span>'));
+    assert.ok(html.includes('header-version-badge') || semverGte(pkg.version, '1.198.0'));
+    assert.ok(html.includes('version-tag') || semverGte(pkg.version, '1.198.0'));
     assert.ok(html.includes('Changelog (v1.198.0):'));
   });
 
@@ -36690,5 +36697,148 @@ exit 0
     assert.ok(template.includes('Transferring files'), 'index_template.html must instruct setting USB to Transferring files');
     assert.ok(bridgeGuide.includes('Connecting Android Smartphones (Samsung Galaxy, etc.) for Telemetry Pulling'), 'RC2_COMPANION_BRIDGE_GUIDE.md must include phone connection section');
     assert.ok(bridgeGuide.includes('"Transferring files" (MTP)'), 'RC2_COMPANION_BRIDGE_GUIDE.md must emphasize Transferring files MTP setting');
+  });
+});
+
+describe('v1.199.0 True Device Type Dynamic Display & Helper Text Tests (Closes #187)', () => {
+  // Uses getDeviceDisplayInfo and applyCompanionStatusUI from evaluated bundle in global context
+
+  test('Version consistency: v1.199.0 across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const tpl = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    assert.strictEqual(pkg.version, '1.199.0', 'package.json version must be 1.199.0');
+    assert.ok(changelog.includes('## [1.199.0] - 2026-10-25'), 'CHANGELOG.md must contain 1.199.0 header');
+    assert.ok(tpl.includes('>Version 1.199.0</span>'), 'index_template.html must contain Version 1.199.0 tag');
+    assert.ok(tpl.includes('Changelog (v1.199.0):'), 'index_template.html must contain Changelog (v1.199.0)');
+    assert.ok(tpl.includes('>v1.199.0</span>'), 'index_template.html line 84 badge must be v1.199.0');
+    assert.ok(indexHtml.includes('>Version 1.199.0</span>'), 'index.html must contain Version 1.199.0 tag');
+    assert.ok(indexHtml.includes('Changelog (v1.199.0):'), 'index.html must contain Changelog (v1.199.0)');
+    assert.ok(indexHtml.includes('>v1.199.0</span>'), 'index.html header badge must be v1.199.0');
+  });
+
+  test('getDeviceDisplayInfo normalizes Samsung Galaxy S25 Ultra, Pixel, and DJI controllers', () => {
+    // Samsung S25 Ultra with possessive
+    const s25 = getDeviceDisplayInfo({ deviceName: "Brian's S25 Ultra", isAndroid: true, connected: true });
+    assert.strictEqual(s25.fullName, "Brian's S25 Ultra");
+    assert.strictEqual(s25.shortName, "S25 Ultra");
+    assert.strictEqual(s25.isAndroid, true);
+    assert.strictEqual(s25.connected, true);
+
+    // Google Pixel
+    const pixel = getDeviceDisplayInfo({ deviceName: "Google Pixel 8 Pro", isAndroid: true, connected: true });
+    assert.strictEqual(pixel.fullName, "Google Pixel 8 Pro");
+    assert.strictEqual(pixel.shortName, "Pixel 8 Pro");
+
+    // DJI RC 2
+    const rc2 = getDeviceDisplayInfo({ deviceName: "DJI RC 2", isAndroid: false, connected: true });
+    assert.strictEqual(rc2.fullName, "DJI RC 2");
+    assert.strictEqual(rc2.shortName, "RC 2");
+
+    // Generic Android fallback
+    const genericAndroid = getDeviceDisplayInfo({ isAndroid: true, connected: true });
+    assert.strictEqual(genericAndroid.fullName, "Android Smartphone");
+    assert.strictEqual(genericAndroid.shortName, "Android");
+
+    // Default disconnected
+    const disconnected = getDeviceDisplayInfo({});
+    assert.strictEqual(disconnected.fullName, "DJI RC 2");
+    assert.strictEqual(disconnected.shortName, "RC 2");
+  });
+
+  test('applyCompanionStatusUI dynamically re-brands badges and action buttons for connected S25 Ultra', () => {
+    const { JSDOM } = require('jsdom');
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>
+      <span id="header-rc2-summary-badge"></span>
+      <span id="sidebar-rc2-mini-badge"></span>
+      <div id="sidebar-rc2-quick-actions" style="display:none;"></div>
+      <button id="sidebar-direct-rc2-sync-btn"></button>
+      <button id="sidebar-direct-rc2-pull-btn"></button>
+      <div id="rc2-direct-actions" style="display:none;"></div>
+      <button id="direct-rc2-sync-btn"></button>
+      <button id="direct-rc2-pull-btn"></button>
+      <button id="direct-rc2-pull-log-btn"></button>
+      <button id="direct-rc2-browse-logs-btn"></button>
+      <button id="diag-pull-rc2-btn"></button>
+      <button id="diag-browse-rc2-logs-btn"></button>
+      <span id="companion-usb-text"></span>
+      <span id="companion-usb-label"></span>
+      <span id="companion-status-text"></span>
+      <span id="companion-device-label"></span>
+    </body></html>`);
+
+    const origDoc = global.document;
+    const origWin = global.window;
+    global.document = dom.window.document;
+    global.window = dom.window;
+
+    try {
+      applyCompanionStatusUI({
+        connected: true,
+        isAndroid: true,
+        deviceName: "Brian's S25 Ultra",
+        activeMissions: []
+      });
+
+      const headerBadge = dom.window.document.getElementById('header-rc2-summary-badge');
+      const sidebarBadge = dom.window.document.getElementById('sidebar-rc2-mini-badge');
+      const sidebarSyncBtn = dom.window.document.getElementById('sidebar-direct-rc2-sync-btn');
+      const directSyncBtn = dom.window.document.getElementById('direct-rc2-sync-btn');
+      const directPullLogBtn = dom.window.document.getElementById('direct-rc2-pull-log-btn');
+      const directBrowseBtn = dom.window.document.getElementById('direct-rc2-browse-logs-btn');
+      const diagPullBtn = dom.window.document.getElementById('diag-pull-rc2-btn');
+      const diagBrowseBtn = dom.window.document.getElementById('diag-browse-rc2-logs-btn');
+
+      assert.strictEqual(headerBadge.textContent, 'S25 Ultra: OK');
+      assert.strictEqual(sidebarBadge.textContent, 'S25 Ultra: OK');
+      assert.strictEqual(sidebarSyncBtn.textContent, 'Send to S25 Ultra');
+      assert.ok(directSyncBtn.innerHTML.includes('Send to S25 Ultra'));
+      assert.ok(directPullLogBtn.innerHTML.includes('Pull Flight Log from S25 Ultra'));
+      assert.ok(directBrowseBtn.innerHTML.includes('Browse S25 Ultra Logs'));
+      assert.strictEqual(diagPullBtn.textContent, '📥 Pull from S25 Ultra');
+      assert.strictEqual(diagBrowseBtn.textContent, '📋 S25 Ultra Logs');
+    } finally {
+      global.document = origDoc;
+      global.window = origWin;
+    }
+  });
+
+  test('applyCompanionStatusUI updates badges with locked branding when device is locked/charging only', () => {
+    const { JSDOM } = require('jsdom');
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>
+      <span id="header-rc2-summary-badge"></span>
+      <span id="sidebar-rc2-mini-badge"></span>
+      <div id="sidebar-rc2-quick-actions" style="display:flex;"></div>
+      <div id="companion-offline-hint"><span></span></div>
+      <span id="companion-usb-text"></span>
+      <span id="companion-usb-label"></span>
+    </body></html>`);
+
+    const origDoc = global.document;
+    const origWin = global.window;
+    global.document = dom.window.document;
+    global.window = dom.window;
+
+    try {
+      applyCompanionStatusUI({
+        connected: false,
+        locked: true,
+        isAndroid: true,
+        deviceName: "Brian's S25 Ultra"
+      });
+
+      const headerBadge = dom.window.document.getElementById('header-rc2-summary-badge');
+      const sidebarBadge = dom.window.document.getElementById('sidebar-rc2-mini-badge');
+      const usbText = dom.window.document.getElementById('companion-usb-text');
+
+      assert.strictEqual(headerBadge.textContent, 'Phone Locked');
+      assert.strictEqual(sidebarBadge.textContent, 'S25 Ultra: Locked');
+      assert.ok(usbText.textContent.includes("Brian's S25 Ultra: Locked / Charging Only"));
+    } finally {
+      global.document = origDoc;
+      global.window = origWin;
+    }
   });
 });

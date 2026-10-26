@@ -1,10 +1,36 @@
 let rc2LogsCache = [];
 
+function updateRc2LogModalBranding(deviceData) {
+  if (typeof document === 'undefined') return;
+  const devInfo = (typeof getDeviceDisplayInfo === 'function')
+    ? getDeviceDisplayInfo(deviceData || (typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {})
+    : { fullName: 'DJI RC 2', shortName: 'RC 2' };
+
+  const modalTitle = document.querySelector('#rc2-flight-logs-modal .modal-header h2');
+  if (modalTitle) {
+    modalTitle.innerHTML = `
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-cyan);">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
+      ${typeof escapeHtml === 'function' ? escapeHtml(devInfo.fullName) : devInfo.fullName} Flight Logs
+    `;
+  }
+
+  const modalDesc = document.querySelector('#rc2-flight-logs-modal .modal-content > p');
+  if (modalDesc) {
+    modalDesc.textContent = `Directly browse all internal flight telemetry records stored on your connected ${devInfo.fullName} over USB MTP. Select individual flights to pull and decrypt automatically with your DJI Cloud API key, or pull all logs at once.`;
+  }
+}
+
 function openRc2LogManagerModal() {
   if (typeof document === 'undefined') return;
   const modal = document.getElementById('rc2-flight-logs-modal');
   if (!modal) return;
   modal.classList.remove('hidden');
+  updateRc2LogModalBranding();
   refreshRc2LogList();
 }
 
@@ -20,15 +46,19 @@ async function refreshRc2LogList() {
   const refreshBtn = document.getElementById('rc2-logs-refresh-btn');
   if (!container) return;
 
+  const devInfo = (typeof getDeviceDisplayInfo === 'function')
+    ? getDeviceDisplayInfo((typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {})
+    : { fullName: 'DJI RC 2', shortName: 'RC 2' };
+
   if (refreshBtn) {
     refreshBtn.disabled = true;
-    refreshBtn.textContent = '⏳ Scanning RC 2...';
+    refreshBtn.textContent = `⏳ Scanning ${devInfo.shortName}...`;
   }
 
   container.innerHTML = `
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; color: var(--text-muted); gap: 10px;">
       <div style="width: 24px; height: 24px; border: 2px solid rgba(56, 189, 248, 0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-      <span style="font-size: 0.8rem;">Querying connected DJI RC 2 controller storage over USB MTP...</span>
+      <span style="font-size: 0.8rem;">Querying connected ${devInfo.fullName} storage over USB MTP...</span>
     </div>
   `;
 
@@ -41,23 +71,31 @@ async function refreshRc2LogList() {
     const res = await fetch(`${apiBase}/api/rc2/logs`, fetchOptions);
     const data = await res.json();
 
+    if (data.deviceName || data.isAndroid !== undefined) {
+      updateRc2LogModalBranding(data);
+    }
+
+    const currentDev = (typeof getDeviceDisplayInfo === 'function')
+      ? getDeviceDisplayInfo(data.deviceName ? data : ((typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {}))
+      : devInfo;
+
     if (data.success && Array.isArray(data.logs)) {
       rc2LogsCache = data.logs;
       renderRc2LogTable(rc2LogsCache);
       if (countSummary) {
         const decryptedCount = rc2LogsCache.filter(l => l.isDecrypted).length;
-        countSummary.textContent = `Found ${rc2LogsCache.length} logs on RC 2 (${decryptedCount} ready / decrypted)`;
+        countSummary.textContent = `Found ${rc2LogsCache.length} logs on ${currentDev.shortName} (${decryptedCount} ready / decrypted)`;
       }
     } else {
       rc2LogsCache = [];
-      const errMsg = (data && data.error) ? data.error : 'No flight logs found or RC 2 not connected.';
+      const errMsg = (data && data.error) ? data.error : `No flight logs found or ${currentDev.shortName} not connected.`;
       container.innerHTML = `
         <div style="padding: 24px; text-align: center; color: #f87171; font-size: 0.8rem;">
           ❌ ${typeof escapeHtml === 'function' ? escapeHtml(errMsg) : errMsg}
-          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;">Ensure RC 2 is powered on and connected via USB-C.</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;">Ensure ${currentDev.fullName} is powered on, unlocked, and connected via USB-C in Transferring files mode.</div>
         </div>
       `;
-      if (countSummary) countSummary.textContent = 'RC 2 Disconnected or No Logs';
+      if (countSummary) countSummary.textContent = `${currentDev.shortName} Disconnected or No Logs`;
     }
   } catch (err) {
     rc2LogsCache = [];
@@ -190,7 +228,10 @@ async function pullSpecificRc2Log(filename) {
   if (progContainer) progContainer.style.display = 'flex';
   if (progBar) progBar.style.width = '15%';
   if (progPct) progPct.textContent = '15%';
-  if (progText) progText.textContent = `Extracting ${filename} from RC 2 over USB MTP...`;
+  const devInfo = (typeof getDeviceDisplayInfo === 'function')
+    ? getDeviceDisplayInfo((typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {})
+    : { fullName: 'DJI RC 2', shortName: 'RC 2' };
+  if (progText) progText.textContent = `Extracting ${filename} from ${devInfo.shortName} over USB MTP...`;
 
   const pollTimer = setInterval(() => {
     if (currentPct < 90) {
@@ -241,7 +282,10 @@ async function pullAllRc2Logs() {
   if (progContainer) progContainer.style.display = 'flex';
   if (progBar) progBar.style.width = '10%';
   if (progPct) progPct.textContent = '10%';
-  if (progText) progText.textContent = 'Pulling and decrypting all flight records from RC 2...';
+  const devInfoAll = (typeof getDeviceDisplayInfo === 'function')
+    ? getDeviceDisplayInfo((typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {})
+    : { fullName: 'DJI RC 2', shortName: 'RC 2' };
+  if (progText) progText.textContent = `Pulling and decrypting all flight records from ${devInfoAll.shortName}...`;
 
   const pollTimer = setInterval(() => {
     if (currentPct < 90) {

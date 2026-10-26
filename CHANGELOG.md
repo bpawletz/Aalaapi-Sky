@@ -1,3 +1,20 @@
+## [1.199.0] - 2026-10-25
+
+Aalaapi Sky now dynamically adapts all hardware status badges, action buttons, popovers, Diagnostics tools, and the Flight Log Manager modal to display the true detected device type (e.g., S25 Ultra, Pixel, Android Smartphone, or DJI RC 2) instead of hardcoded RC 2 labels.
+
+### Added
+
+#### Pilot & Operational Features
+- **True Connected Device Type Display in GUI & Helper Text (Closes #187)**:
+  - Header summary badge and sidebar status bar now dynamically show the active device name (`S25 Ultra: OK`, `Android: OK`, or `RC 2: OK`).
+  - Action buttons automatically re-brand to the detected device (`Send to S25 Ultra`, `Pull Flight Log from S25 Ultra`, `Browse S25 Ultra Logs`).
+  - Top Diagnostics bar buttons adapt dynamically (`📥 Pull from S25 Ultra`, `📋 S25 Ultra Logs`).
+  - Flight Log Manager modal dynamically adjusts its header title (`Brian's S25 Ultra Flight Logs`), modal description, search placeholder, and scanning feedback.
+  - Screen-locked or charging-only detection updates status badges (`S25 Ultra: Locked`) and provides 1-click navigation to the Android File Transfer guide.
+
+#### Under the Hood & Technical Details
+- **[ApiClient.js / Rc2LogExplorer.js / server.js]**: Implemented `getDeviceDisplayInfo()` helper to normalize device names, strip possessives for compact badges, and extract device family; wired metadata into `applyCompanionStatusUI`, `openRc2LogManagerModal`, `refreshRc2LogList`, `/api/rc2/logs`, and `/api/rc2/pull-log`.
+
 ## [1.198.0] - 2026-10-25
 
 Enables automatic USB MTP discovery and 1-click telemetry extraction for Android smartphones running DJI Fly (such as Samsung Galaxy S25 Ultra flying the DJI Neo 2), complete with device lock detection and guided USB file transfer workflows.

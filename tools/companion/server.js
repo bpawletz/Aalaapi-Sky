@@ -1738,6 +1738,8 @@ Get-ChildItem -Path $tempMtpDir -Recurse -ErrorAction SilentlyContinue | Remove-
     success = ($latestLogName -ne $null -or $latestKmzName -ne $null)
     latestLog = $latestLogName
     latestKmz = $latestKmzName
+    deviceName = if ($devInfo) { $devInfo.Device.Name } else { $null }
+    isAndroid = if ($devInfo) { (-not $devInfo.IsRc) } else { $false }
     outputDir = $outDir
 } | ConvertTo-Json -Compress
 `;
@@ -1823,6 +1825,8 @@ if ($devInfo -and $devInfo.Storage) {
 @{
     success = $true
     connected = ($devInfo -ne $null -and -not $devInfo.IsLocked)
+    deviceName = if ($devInfo) { $devInfo.Device.Name } else { $null }
+    isAndroid = if ($devInfo) { (-not $devInfo.IsRc) } else { $false }
     totalLogs = $logList.Count
     logs = $logList
 } | ConvertTo-Json -Depth 3 -Compress
@@ -1845,7 +1849,14 @@ if ($devInfo -and $devInfo.Storage) {
         isDecrypted: fs.existsSync(localCsv)
       };
     });
-    return { success: true, connected: !!res.data.connected, totalLogs: logs.length, logs };
+    return {
+      success: true,
+      connected: !!res.data.connected,
+      deviceName: res.data.deviceName || null,
+      isAndroid: !!res.data.isAndroid,
+      totalLogs: logs.length,
+      logs
+    };
   }
   return { success: false, connected: false, totalLogs: 0, logs: [], error: res?.error || 'Failed to query RC 2' };
 }
@@ -1925,6 +1936,8 @@ Get-ChildItem -Path $tempMtpDir -Recurse -ErrorAction SilentlyContinue | Remove-
     success = $true
     pulled = $pulled
     totalPulled = $pulled.Count
+    deviceName = if ($devInfo) { $devInfo.Device.Name } else { $null }
+    isAndroid = if ($devInfo) { (-not $devInfo.IsRc) } else { $false }
 } | ConvertTo-Json -Depth 3 -Compress
 `;
 
