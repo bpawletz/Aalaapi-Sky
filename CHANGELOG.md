@@ -1,3 +1,22 @@
+## [1.201.0] - 2026-10-27
+
+Temporal schedule engine, real-time countdowns, and de-escalated conflict awareness for FAA Temporary Flight Restrictions.
+
+### Added
+
+#### Pilot & Operational Features
+- **TFR Active Time Windows & Real-Time Countdown (Closes #191)**:
+  - Display exact scheduled active windows and live countdown timers across all TFRs (e.g., `Starts in 2h 15m`, `Starts in 3 days (Oct 30)`, `Active Now (Expires in 4h 30m)`, `Standby (Event ±1h window)`).
+  - Differentiated 2D Map Airspace Overlay styling: Upcoming TFR boundaries render with high-visibility amber dashed outlines (`#f59e0b`) and translucent amber fill, clearly distinguishing scheduled restrictions from active crimson red zones.
+  - De-Escalated Upcoming TFR Conflict Notices: Waypoints intersecting upcoming TFR boundaries are flagged with informational notices in the telemetry HUD (`⏱️ Upcoming TFR Notice`) rather than false-alarm emergency violations (`🚨 IN TFR`), preserving critical alarms strictly for restrictions active during the mission window.
+  - TFR Briefing Modal Schedule Banner: Display status pill (`ACTIVE`, `UPCOMING`, `EXPIRED`, `STANDBY`), effective schedule range in UTC and Local time, and live timing countdowns directly in NOTAM briefing dialogs.
+
+#### Under the Hood & Technical Details
+- **[src/airspace/TfrNotam.js]**: Implemented `parseTfrSchedule` and `resolveTfrTemporalStatus` supporting single date, range dates, exact NOTAM body timestamps (`EFFECTIVE YYMMDDHHMM ... UNTIL YYMMDDHHMM`), and permanent/standing airspace classifications.
+- **[src/map/MapEngine.js]**: Augmented `tfrAirspaceLayer` style and popup functions to dynamically reflect temporal status and relative countdowns.
+- **[src/ui/TelemetryHud.js]**: Partitioned waypoint conflict detection into `intersectingActiveTfrs` and `intersectingUpcomingTfrs`.
+- **[src/core/MissionClock.js]**: Synchronized temporal TFR evaluation with `MissionClock.getEffectiveTime()` during simulated flights and planned mission scrubbers.
+
 ## [1.200.0] - 2026-10-26
 
 Aalaapi Sky now provides comprehensive pilot authentication supporting Google SSO (OAuth 2.0 / OpenID Connect), biometric WebAuthn Passkeys (Touch ID, Face ID, Windows Hello), and local pilot profiles with automated preflight checklist auto-fill, cloud preference sync, and flight log attribution.

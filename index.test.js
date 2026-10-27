@@ -36999,3 +36999,211 @@ describe('Issue #190: Companion Pilot Authentication & Profile Identity (v1.200.
     assert.ok(html.includes('accounts.google.com/gsi/client'), 'index.html includes GIS client script');
   });
 });
+
+describe('Issue #191: TFR Active Time Windows, Real-Time Countdown & Temporal Conflict Awareness (v1.201.0)', () => {
+  test('Version consistency: v1.201.0 across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.201.0');
+  });
+
+  test('parseTfrSchedule accurately extracts date ranges, timezones, and single-day bounds', () => {
+    // Range with Local timezone
+    const r1 = parseTfrSchedule('Beale AFB, CA, Sunday, November 1, 2026 through Sunday, March 14, 2027 Local');
+    assert.ok(r1.start instanceof Date, 'r1 start must be Date');
+    assert.ok(r1.end instanceof Date, 'r1 end must be Date');
+    assert.strictEqual(r1.isUtc, false, 'r1 should be local');
+    assert.ok(r1.rawRange.includes('November 1, 2026 – March 14, 2027'), 'rawRange must format properly');
+
+    // Single date with UTC timezone
+    const r2 = parseTfrSchedule('8NM SE MONTICELLO, GA, Tuesday, October 27, 2026 UTC');
+    assert.ok(r2.start instanceof Date, 'r2 start must be Date');
+    assert.ok(r2.end instanceof Date, 'r2 end must be Date');
+    assert.strictEqual(r2.isUtc, true, 'r2 should be UTC');
+    assert.ok(r2.rawRange.includes('October 27, 2026 (UTC)'));
+
+    // Standing permanent airspace without dates
+    const r3 = parseTfrSchedule('DISNEY WORLD THEME PARK, ORLANDO, FL');
+    assert.strictEqual(r3.isStanding, true, 'Permanent airspace should flag isStanding');
+    assert.strictEqual(r3.start, null);
+    assert.strictEqual(r3.end, null);
+
+    // Null or undefined inputs
+    const r4 = parseTfrSchedule(null);
+    assert.strictEqual(r4.isStanding, true, 'Null input gracefully defaults to standing');
+  });
+
+  test('parseTfrSchedule extracts exact timestamps from NOTAM text body when provided', () => {
+    const text = 'AIRSPACE RESTRICTION EFFECTIVE 2610271400 UTC UNTIL 2610272200 UTC FOR VIP MOVEMENT';
+    const parsed = parseTfrSchedule('VIP Movement, GA', text);
+    assert.strictEqual(parsed.isUtc, true, 'Must parse as UTC');
+    assert.strictEqual(parsed.start.getUTCFullYear(), 2026);
+    assert.strictEqual(parsed.start.getUTCMonth(), 9); // October (0-indexed 9)
+    assert.strictEqual(parsed.start.getUTCDate(), 27);
+    assert.strictEqual(parsed.start.getUTCHours(), 14);
+    assert.strictEqual(parsed.start.getUTCMinutes(), 0);
+
+    assert.strictEqual(parsed.end.getUTCHours(), 22);
+    assert.strictEqual(parsed.end.getUTCMinutes(), 0); assert.strictEqual(parsed.end.getUTCSeconds(), 59);
+    assert.ok(parsed.rawRange.includes('14:00 UTC –'), 'rawRange must show timestamp');
+  });
+
+  test('resolveTfrTemporalStatus accurately computes UPCOMING status and countdown', () => {
+    const sched = {
+      start: new Date('2026-10-30T10:00:00Z'),
+      end: new Date('2026-10-30T18:00:00Z'),
+      isUtc: true,
+      rawRange: 'Oct 30, 2026 10:00 UTC - 18:00 UTC'
+    };
+
+    // Reference time: 2 hours before start
+    const ref2h = new Date('2026-10-30T08:00:00Z');
+    const res2h = resolveTfrTemporalStatus(sched, ref2h);
+    assert.strictEqual(res2h.temporalStatus, 'UPCOMING');
+    assert.strictEqual(res2h.isActiveNow, false);
+    assert.strictEqual(res2h.isUpcoming, true);
+    assert.strictEqual(res2h.isExpired, false);
+    assert.strictEqual(res2h.countdownText, 'Activates in 2h 0m');
+
+    // Reference time: 3 days before start
+    const ref3d = new Date('2026-10-27T06:00:00Z');
+    const res3d = resolveTfrTemporalStatus(sched, ref3d);
+    assert.strictEqual(res3d.temporalStatus, 'UPCOMING');
+    assert.ok(res3d.countdownText.startsWith('Starts in 3d 4h'));
+  });
+
+  test('resolveTfrTemporalStatus accurately computes ACTIVE status and expiration countdown', () => {
+    const sched = {
+      start: new Date('2026-10-27T10:00:00Z'),
+      end: new Date('2026-10-27T18:00:00Z'),
+      isUtc: true,
+      rawRange: 'Oct 27, 2026 10:00 UTC - 18:00 UTC'
+    };
+
+    // Reference time: inside active window with 3 hours remaining
+    const refActive = new Date('2026-10-27T15:00:00Z');
+    const res = resolveTfrTemporalStatus(sched, refActive);
+    assert.strictEqual(res.temporalStatus, 'ACTIVE');
+    assert.strictEqual(res.isActiveNow, true);
+    assert.strictEqual(res.isUpcoming, false);
+    assert.strictEqual(res.countdownText, 'Active Now (Expires in 3h 0m)');
+  });
+
+  test('resolveTfrTemporalStatus accurately computes EXPIRED status', () => {
+    const sched = {
+      start: new Date('2026-10-25T10:00:00Z'),
+      end: new Date('2026-10-25T18:00:00Z'),
+      isUtc: true,
+      rawRange: 'Oct 25, 2026'
+    };
+
+    // Reference time: 4 hours after expiration
+    const refExpired = new Date('2026-10-25T22:00:00Z');
+    const res = resolveTfrTemporalStatus(sched, refExpired);
+    assert.strictEqual(res.temporalStatus, 'EXPIRED');
+    assert.strictEqual(res.isActiveNow, false);
+    assert.strictEqual(res.isExpired, true);
+    assert.strictEqual(res.countdownText, 'Expired 4h 0m ago');
+  });
+
+  test('resolveTfrTemporalStatus handles Standby Stadiums and Standing Airspace', () => {
+    const stadium = resolveTfrTemporalStatus({ isStadium: true });
+    assert.strictEqual(stadium.temporalStatus, 'STANDBY');
+    assert.strictEqual(stadium.isActiveNow, false);
+    assert.strictEqual(stadium.countdownText, 'Standby (Event ±1h window)');
+
+    const standing = resolveTfrTemporalStatus({ isStanding: true, rawRange: 'Permanent Restriction' });
+    assert.strictEqual(standing.temporalStatus, 'ACTIVE');
+    assert.strictEqual(standing.isActiveNow, true);
+    assert.strictEqual(standing.countdownText, 'Active (Standing Airspace)');
+  });
+
+  test('processTfrData enriches features with temporal status and countdown fields', () => {
+    const mockGeoJson = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          id: 'V_TFR_LOC.6/2521',
+          properties: {
+            NOTAM_KEY: '6/2521',
+            TITLE: 'ATLANTA, GA, Friday, October 30, 2026 through Friday, October 30, 2026 Local',
+            STATE: 'GA'
+          },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[-84.4, 33.7], [-84.3, 33.7], [-84.3, 33.8], [-84.4, 33.8], [-84.4, 33.7]]]
+          }
+        }
+      ]
+    };
+    const mockNotams = [
+      {
+        notam_id: '6/2521',
+        description: 'ATLANTA, GA, Friday, October 30, 2026 through Friday, October 30, 2026 Local'
+      }
+    ];
+
+    const processed = processTfrData(mockGeoJson, mockNotams, 33.75, -84.35);
+    assert.ok(processed.length > 0);
+    const item = processed[0];
+    assert.ok(item.schedule, 'item must have schedule object');
+    assert.ok(item.countdownText, 'item must have countdownText');
+    assert.ok(item.scheduleText, 'item must have scheduleText');
+    assert.ok(item.feature.properties.countdownText, 'feature properties must contain countdownText');
+  });
+
+  test('TelemetryHud distinguishes active TFR conflicts from upcoming TFR notices', () => {
+    const origFeatures = (typeof tfrActiveFeatures !== 'undefined') ? tfrActiveFeatures : global.tfrActiveFeatures;
+    try {
+      // 1. Flight path intersecting an UPCOMING TFR (should NOT be an active conflict)
+      const mockUpcomingFeats = [
+        {
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]]
+          },
+          properties: {
+            NOTAM_KEY: '6/9991',
+            TITLE: 'Scheduled Airshow',
+            temporalStatus: 'UPCOMING',
+            isActiveNow: false,
+            isUpcoming: true,
+            countdownText: 'Starts in 4h 30m'
+          }
+        }
+      ];
+
+      tfrActiveFeatures = mockUpcomingFeats;
+      global.tfrActiveFeatures = mockUpcomingFeats;
+      const wps = [{ lat: 1.0, lon: 1.0 }, { lat: 1.1, lon: 1.1 }];
+      const statsUpcoming = calculateStats(wps, 15, 20, 5, 'straight', 0);
+      assert.strictEqual(statsUpcoming.intersectingActiveTfrs.length, 0, 'Must have 0 active conflicts for upcoming TFR');
+      assert.strictEqual(statsUpcoming.intersectingUpcomingTfrs.length, 1, 'Must register 1 upcoming advisory');
+
+      // 2. Flight path intersecting an ACTIVE TFR (should trigger active conflict)
+      const mockActiveFeats = [
+        {
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]]
+          },
+          properties: {
+            NOTAM_KEY: '6/9992',
+            TITLE: 'VIP Emergency TFR',
+            temporalStatus: 'ACTIVE',
+            isActiveNow: true,
+            isUpcoming: false,
+            countdownText: 'Active Now (Expires in 1h 15m)'
+          }
+        }
+      ];
+
+      tfrActiveFeatures = mockActiveFeats;
+      global.tfrActiveFeatures = mockActiveFeats;
+      const statsActive = calculateStats(wps, 15, 20, 5, 'straight', 0);
+      assert.strictEqual(statsActive.intersectingActiveTfrs.length, 1, 'Must register 1 active conflict');
+      assert.strictEqual(statsActive.intersectingUpcomingTfrs.length, 0, 'Must have 0 upcoming advisories');
+    } finally {
+      tfrActiveFeatures = origFeatures; global.tfrActiveFeatures = origFeatures;
+    }
+  });
+});

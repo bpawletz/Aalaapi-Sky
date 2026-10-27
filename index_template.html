@@ -83,7 +83,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.200.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.201.0</span></h1>
         </div>
       </div>
 
@@ -4424,6 +4424,15 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ⏱️ TFR Active Time Windows &amp; Real-Time Countdown (v1.201.0) (Closes #191)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Know precisely when Temporary Flight Restrictions take effect before takeoff! Aalaapi Sky parses FAA NOTAM schedules into live countdown timers (e.g. <code>Starts in 2h 15m</code>, <code>Active Now (Expires in 4h 30m)</code>, <code>Standby (Event ±1h window)</code>). Upcoming TFRs display distinct high-visibility amber dashed outlines on the 2D map, and telemetry HUD collision checks automatically de-escalate future scheduled restrictions so pilots never encounter false-alarm emergency alerts during safe pre-activation flight windows.
+            </p>
+          </div>
+
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🧑‍✈️ Companion Pilot Authentication, Google SSO &amp; Passkeys (v1.200.0) (Closes #190)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -6645,7 +6654,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.200.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.201.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6768,6 +6777,12 @@
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.201.0):</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
+                <li><strong>TFR Active Time Windows, Countdown &amp; Temporal Conflict Awareness (Closes #191):</strong> Added real-time countdown timers to TFR cards, map popups, and briefing modals; introduced differentiated amber dashed polygon styling for upcoming TFRs; de-escalated HUD alerts so future scheduled restrictions display informative notices rather than false emergency alarms.</li>
+              </ul>
+            </li>
+            <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.200.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li><strong>Companion Pilot Authentication, Google SSO &amp; Passkeys (Closes #190):</strong> Added multi-factor pilot authentication supporting Google SSO (OAuth 2.0 / OIDC), WebAuthn Passkeys (Touch ID, Face ID, Windows Hello), and local pilot accounts with automated preflight checklist auto-fill, cloud preference sync, and flight log attribution.</li>

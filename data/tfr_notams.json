@@ -1,5 +1,93 @@
 [
   {
+    "notam_id": "6/2679",
+    "facility": "ZFW",
+    "state": "TX",
+    "type": "VIP",
+    "description": "Weatherford, TX, Thursday, October 29, 2026 Local",
+    "mod_date": "10/27/2026 14:14:00",
+    "mod_abs_time": "202610271414",
+    "is_new": "Y",
+    "gid": "6/2679"
+  },
+  {
+    "notam_id": "6/2670",
+    "facility": "ZSU",
+    "state": "PR",
+    "type": "SECURITY",
+    "description": "CEIBA, PR, Saturday, October 31, 2026 through Saturday, March 13, 2027 Local",
+    "mod_date": "10/27/2026 14:08:00",
+    "mod_abs_time": "202610271408",
+    "is_new": "Y",
+    "gid": "6/2670"
+  },
+  {
+    "notam_id": "6/2667",
+    "facility": "ZLC",
+    "state": "NV",
+    "type": "SPACE OPERATIONS",
+    "description": "67 ZLC AIRSPACE BLACK ROCK, NV, Friday, October 30, 2026 through Saturday, October 31, 2026 UTC",
+    "mod_date": "10/27/2026 13:25:00",
+    "mod_abs_time": "202610271325",
+    "is_new": "Y",
+    "gid": "6/2667"
+  },
+  {
+    "notam_id": "6/2666",
+    "facility": "ZLC",
+    "state": "NV",
+    "type": "SPACE OPERATIONS",
+    "description": "66 ZLC AIRSPACE BLACK ROCK, NV, Saturday, October 31, 2026 through Sunday, November 1, 2026 UTC",
+    "mod_date": "10/27/2026 13:23:00",
+    "mod_abs_time": "202610271323",
+    "is_new": "Y",
+    "gid": "6/2666"
+  },
+  {
+    "notam_id": "6/2664",
+    "facility": "ZBW",
+    "state": "MA",
+    "type": "HAZARDS",
+    "description": "WILLIAMSTOWN, MA, Tuesday, October 27, 2026 UTC",
+    "mod_date": "10/27/2026 13:19:00",
+    "mod_abs_time": "202610271319",
+    "is_new": "Y",
+    "gid": "6/2664"
+  },
+  {
+    "notam_id": "6/2588",
+    "facility": "ZDC",
+    "state": "NC",
+    "type": "VIP",
+    "description": "Kinston, NC, Wednesday, October 28, 2026 Local",
+    "mod_date": "10/27/2026 01:18:00",
+    "mod_abs_time": "202610270118",
+    "is_new": "Y",
+    "gid": "6/2588"
+  },
+  {
+    "notam_id": "6/2586",
+    "facility": "ZSE",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "34NM E OF YREKA, CA, Tuesday, October 27, 2026 through Thursday, October 29, 2026 UTC",
+    "mod_date": "10/27/2026 01:12:00",
+    "mod_abs_time": "202610270112",
+    "is_new": "Y",
+    "gid": "6/2586"
+  },
+  {
+    "notam_id": "6/2585",
+    "facility": "ZID",
+    "state": "OH",
+    "type": "SECURITY",
+    "description": "Columbus, OH, Wednesday, October 28, 2026 through Wednesday, October 28, 2026 Local",
+    "mod_date": "10/27/2026 01:11:00",
+    "mod_abs_time": "202610270111",
+    "is_new": "Y",
+    "gid": "6/2585"
+  },
+  {
     "notam_id": "6/2547",
     "facility": "ZOA",
     "state": "CA",
@@ -9,17 +97,6 @@
     "mod_abs_time": "202610262138",
     "is_new": "Y",
     "gid": "6/2547"
-  },
-  {
-    "notam_id": "6/2545",
-    "facility": "ZTL",
-    "state": "GA",
-    "type": "HAZARDS",
-    "description": "8NM SE MONTICELLO, GA, Tuesday, October 27, 2026 UTC",
-    "mod_date": "10/26/2026 21:15:00",
-    "mod_abs_time": "202610262115",
-    "is_new": "Y",
-    "gid": "6/2545"
   },
   {
     "notam_id": "6/2530",
@@ -53,17 +130,6 @@
     "mod_abs_time": "202610261809",
     "is_new": "Y",
     "gid": "6/2517"
-  },
-  {
-    "notam_id": "6/2516",
-    "facility": "ZSE",
-    "state": "CA",
-    "type": "HAZARDS",
-    "description": "34NM E OF YREKA, CA, Tuesday, October 27, 2026 through Thursday, October 29, 2026 UTC",
-    "mod_date": "10/26/2026 18:01:00",
-    "mod_abs_time": "202610261801",
-    "is_new": "Y",
-    "gid": "6/2516"
   },
   {
     "notam_id": "6/2481",
@@ -110,17 +176,6 @@
     "gid": "6/2477"
   },
   {
-    "notam_id": "6/2457",
-    "facility": "ZHU",
-    "state": "MS",
-    "type": "HAZARDS",
-    "description": "POPLARVILLE, MS, Monday, October 26, 2026 through Tuesday, October 27, 2026 UTC",
-    "mod_date": "10/26/2026 16:06:00",
-    "mod_abs_time": "202610261606",
-    "is_new": "Y",
-    "gid": "6/2457"
-  },
-  {
     "notam_id": "6/2324",
     "facility": "ZID",
     "state": "KY",
@@ -128,7 +183,7 @@
     "description": "Lexington, KY, Friday, October 30, 2026 through Saturday, October 31, 2026 Local",
     "mod_date": "10/26/2026 14:40:00",
     "mod_abs_time": "202610261440",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2324"
   },
   {
@@ -139,7 +194,7 @@
     "description": "COLUMBUS-CHILLICOTHE, OH, Wednesday, October 28, 2026 through Wednesday, October 28, 2026 Local",
     "mod_date": "10/26/2026 10:37:00",
     "mod_abs_time": "202610261037",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2268"
   },
   {
@@ -150,7 +205,7 @@
     "description": "Foxborough, MA, Sunday, November 1, 2026 through Monday, November 2, 2026 UTC",
     "mod_date": "10/26/2026 10:27:00",
     "mod_abs_time": "202610261027",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2266"
   },
   {
@@ -161,7 +216,7 @@
     "description": "Raleigh, NC, Saturday, October 31, 2026 UTC",
     "mod_date": "10/26/2026 10:27:00",
     "mod_abs_time": "202610261027",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/2265"
   },
   {
@@ -297,39 +352,6 @@
     "gid": "6/2070"
   },
   {
-    "notam_id": "6/2069",
-    "facility": "ZKC",
-    "state": "KS",
-    "type": "VIP",
-    "description": "Topeka, KS, Monday, October 26, 2026 through Monday, October 26, 2026 Local",
-    "mod_date": "10/24/2026 16:53:00",
-    "mod_abs_time": "202610241653",
-    "is_new": "N",
-    "gid": "6/2069"
-  },
-  {
-    "notam_id": "6/2066",
-    "facility": "ZME",
-    "state": "TN",
-    "type": "VIP",
-    "description": "Memphis, TN, Monday, October 26, 2026 through Monday, October 26, 2026 Local",
-    "mod_date": "10/24/2026 15:39:00",
-    "mod_abs_time": "202610241539",
-    "is_new": "N",
-    "gid": "6/2066"
-  },
-  {
-    "notam_id": "6/2061",
-    "facility": "ZME",
-    "state": "TN",
-    "type": "SECURITY",
-    "description": "Memphis, TN, Monday, October 26, 2026 through Monday, October 26, 2026 Local",
-    "mod_date": "10/24/2026 14:22:00",
-    "mod_abs_time": "202610241422",
-    "is_new": "N",
-    "gid": "6/2061"
-  },
-  {
     "notam_id": "6/2017",
     "facility": "ZHU",
     "state": "MS",
@@ -438,17 +460,6 @@
     "mod_abs_time": "202610221032",
     "is_new": "N",
     "gid": "6/1568"
-  },
-  {
-    "notam_id": "6/0818",
-    "facility": "ZFW",
-    "state": "NM",
-    "type": "HAZARDS",
-    "description": "50NM SE CARLSBAD, NM, Tuesday, October 20, 2026 through Tuesday, October 27, 2026 UTC",
-    "mod_date": "10/20/2026 15:33:00",
-    "mod_abs_time": "202610201533",
-    "is_new": "N",
-    "gid": "6/0818"
   },
   {
     "notam_id": "6/0100",
