@@ -49,6 +49,186 @@ function getGeoJsonCentroid(geometry) {
   return { lon: avgLon, lng: avgLon, lat: avgLat };
 }
 
+const TFR_MONTH_MAP = {
+  january: 0, jan: 0, february: 1, feb: 1, march: 2, mar: 2, april: 3, apr: 3,
+  may: 4, june: 5, jun: 5, july: 6, jul: 6, august: 7, aug: 7, september: 8,
+  sep: 8, sept: 8, october: 9, oct: 9, november: 10, nov: 10, december: 11, dec: 11
+};
+
+function formatTfrDateShort(d, isUtc = false) {
+  if (!d || isNaN(d.getTime())) return '';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  if (isUtc) {
+    return `${months[d.getUTCMonth()]} ${d.getUTCDate()}`;
+  }
+  return `${months[d.getMonth()]} ${d.getDate()}`;
+}
+
+function parseTfrSchedule(description, notamText, fallbackProps) {
+  let isUtc = false;
+  let start = null;
+  let end = null;
+  let rawRange = '';
+  let isStanding = false;
+
+  const desc = (typeof description === 'string') ? description : '';
+
+  // 1. Date range pattern: e.g. "Sunday, November 1, 2026 through Sunday, March 14, 2027 Local"
+  const rangeRegex = /(?:([A-Za-z]+),\s+)?([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s+through\s+(?:([A-Za-z]+),\s+)?([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})(?:\s+(Local|UTC))?/i;
+  const mRange = desc.match(rangeRegex);
+  if (mRange) {
+    isUtc = (mRange[9] || '').toUpperCase() === 'UTC';
+    const sMonth = TFR_MONTH_MAP[mRange[2].toLowerCase()];
+    const sDay = parseInt(mRange[3], 10);
+    const sYear = parseInt(mRange[4], 10);
+    const eMonth = TFR_MONTH_MAP[mRange[6].toLowerCase()];
+    const eDay = parseInt(mRange[7], 10);
+    const eYear = parseInt(mRange[8], 10);
+
+    if (sMonth !== undefined && eMonth !== undefined && !isNaN(sDay) && !isNaN(sYear) && !isNaN(eDay) && !isNaN(eYear)) {
+      if (isUtc) {
+        start = new Date(Date.UTC(sYear, sMonth, sDay, 0, 0, 0));
+        end = new Date(Date.UTC(eYear, eMonth, eDay, 23, 59, 59, 999));
+      } else {
+        start = new Date(sYear, sMonth, sDay, 0, 0, 0);
+        end = new Date(eYear, eMonth, eDay, 23, 59, 59, 999);
+      }
+      rawRange = `${mRange[2]} ${sDay}, ${sYear} – ${mRange[6]} ${eDay}, ${eYear} (${isUtc ? 'UTC' : 'Local'})`;
+    }
+  }
+
+  // 2. Single date pattern: e.g. "Tuesday, October 27, 2026 UTC"
+  if (!start) {
+    const singleRegex = /(?:([A-Za-z]+),\s+)?([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})(?:\s+(Local|UTC))?/i;
+    const mSingle = desc.match(singleRegex);
+    if (mSingle) {
+      isUtc = (mSingle[5] || '').toUpperCase() === 'UTC';
+      const month = TFR_MONTH_MAP[mSingle[2].toLowerCase()];
+      const day = parseInt(mSingle[3], 10);
+      const year = parseInt(mSingle[4], 10);
+
+      if (month !== undefined && !isNaN(day) && !isNaN(year)) {
+        if (isUtc) {
+          start = new Date(Date.UTC(year, month, day, 0, 0, 0));
+          end = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+        } else {
+          start = new Date(year, month, day, 0, 0, 0);
+          end = new Date(year, month, day, 23, 59, 59, 999);
+        }
+        rawRange = `${mSingle[2]} ${day}, ${year} (${isUtc ? 'UTC' : 'Local'})`;
+      }
+    }
+  }
+
+  // 3. Exact timestamps from notamText if available (e.g. EFFECTIVE 2610271400 ... UNTIL 2610272200)
+  if (notamText && typeof notamText === 'string') {
+    const effMatch = notamText.match(/(?:EFFECTIVE|FROM)\s+(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*(UTC)?/i);
+    const untMatch = notamText.match(/UNTIL\s+(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*(UTC)?/i);
+    if (effMatch) {
+      const yr = 2000 + parseInt(effMatch[1], 10);
+      const mo = parseInt(effMatch[2], 10) - 1;
+      const dy = parseInt(effMatch[3], 10);
+      const hr = parseInt(effMatch[4], 10);
+      const mn = parseInt(effMatch[5], 10);
+      start = new Date(Date.UTC(yr, mo, dy, hr, mn, 0));
+      isUtc = true;
+    }
+    if (untMatch) {
+      const yr = 2000 + parseInt(untMatch[1], 10);
+      const mo = parseInt(untMatch[2], 10) - 1;
+      const dy = parseInt(untMatch[3], 10);
+      const hr = parseInt(untMatch[4], 10);
+      const mn = parseInt(untMatch[5], 10);
+      end = new Date(Date.UTC(yr, mo, dy, hr, mn, 59));
+      isUtc = true;
+    }
+    if (effMatch && untMatch && start && end) {
+      rawRange = `${formatTfrDateShort(start, true)} ${String(effMatch[4]).padStart(2, '0')}:${String(effMatch[5]).padStart(2, '0')} UTC – ${formatTfrDateShort(end, true)} ${String(untMatch[4]).padStart(2, '0')}:${String(untMatch[5]).padStart(2, '0')} UTC`;
+    }
+  }
+
+  // 4. Fallback check for standing / permanent airspace
+  if (!start && !end) {
+    isStanding = true;
+    rawRange = 'Permanent / Standing Flight Restriction';
+  }
+
+  return { start, end, isUtc, isStanding, rawRange };
+}
+
+function resolveTfrTemporalStatus(schedule, refTime) {
+  const now = (refTime instanceof Date && !isNaN(refTime.getTime()))
+    ? refTime
+    : ((typeof MissionClock !== 'undefined' && MissionClock && typeof MissionClock.getEffectiveTime === 'function')
+        ? MissionClock.getEffectiveTime()
+        : new Date());
+
+  if (!schedule) {
+    return { temporalStatus: 'ACTIVE', countdownText: 'Active Now', scheduleText: 'Schedule Unavailable', isActiveNow: true, isUpcoming: false, isExpired: false };
+  }
+  if (schedule.isStadium) {
+    return { temporalStatus: 'STANDBY', countdownText: 'Standby (Event ±1h window)', scheduleText: '14 CFR § 99.7 (Major Events)', isActiveNow: false, isUpcoming: false, isExpired: false };
+  }
+  if (schedule.isStanding) {
+    return { temporalStatus: 'ACTIVE', countdownText: 'Active (Standing Airspace)', scheduleText: schedule.rawRange || 'Permanent Restriction', isActiveNow: true, isUpcoming: false, isExpired: false };
+  }
+
+  const { start, end, isUtc, rawRange } = schedule;
+
+  if (start && now.getTime() < start.getTime()) {
+    const diffMs = start.getTime() - now.getTime();
+    let countdownText;
+    if (diffMs < 60000) {
+      countdownText = 'Activates in <1m';
+    } else if (diffMs < 3600000) {
+      countdownText = `Activates in ${Math.round(diffMs / 60000)}m`;
+    } else if (diffMs < 86400000) {
+      const h = Math.floor(diffMs / 3600000);
+      const m = Math.floor((diffMs % 3600000) / 60000);
+      countdownText = `Activates in ${h}h ${m}m`;
+    } else if (diffMs < 7 * 86400000) {
+      const d = Math.floor(diffMs / 86400000);
+      const h = Math.floor((diffMs % 86400000) / 3600000);
+      countdownText = `Starts in ${d}d ${h}h (${formatTfrDateShort(start, isUtc)})`;
+    } else {
+      const d = Math.round(diffMs / 86400000);
+      countdownText = `Starts in ${d} days (${formatTfrDateShort(start, isUtc)})`;
+    }
+    return { temporalStatus: 'UPCOMING', countdownText, scheduleText: rawRange, isActiveNow: false, isUpcoming: true, isExpired: false };
+  }
+
+  if (end && now.getTime() > end.getTime()) {
+    const diffMs = now.getTime() - end.getTime();
+    let countdownText;
+    if (diffMs < 86400000) {
+      const h = Math.floor(diffMs / 3600000);
+      const m = Math.floor((diffMs % 3600000) / 60000);
+      countdownText = `Expired ${h}h ${m}m ago`;
+    } else {
+      countdownText = `Expired (${formatTfrDateShort(end, isUtc)})`;
+    }
+    return { temporalStatus: 'EXPIRED', countdownText, scheduleText: rawRange, isActiveNow: false, isUpcoming: false, isExpired: true };
+  }
+
+  // Active Now
+  let countdownText;
+  if (end) {
+    const diffMs = end.getTime() - now.getTime();
+    if (diffMs < 86400000) {
+      const h = Math.floor(diffMs / 3600000);
+      const m = Math.floor((diffMs % 3600000) / 60000);
+      countdownText = `Active Now (Expires in ${h}h ${m}m)`;
+    } else {
+      const d = Math.floor(diffMs / 86400000);
+      countdownText = `Active Now (Expires in ${d}d / ${formatTfrDateShort(end, isUtc)})`;
+    }
+  } else {
+    countdownText = 'Active Now (Until Notice)';
+  }
+
+  return { temporalStatus: 'ACTIVE', countdownText, scheduleText: rawRange, isActiveNow: true, isUpcoming: false, isExpired: false };
+}
+
 function formatTfrDistance(distKm, isInside = false, compassDir = '') {
   if (isInside) return '⚠️ INSIDE TFR';
   if (distKm === null || distKm === undefined || isNaN(distKm)) return '-';
@@ -264,6 +444,14 @@ function processTfrData(geojson, notamList, centerLat, centerLon) {
       }
     }
 
+    // Temporal schedule and active countdown resolution
+    const descForSchedule = matchedNotam.description || props.TITLE || props.title || props.NAME || '';
+    const schedule = parseTfrSchedule(descForSchedule, null, props);
+    if (isStandbyStadium) {
+      schedule.isStadium = true;
+    }
+    const temporal = resolveTfrTemporalStatus(schedule);
+
     // Augment feature properties for Leaflet popup
     feat.properties = {
       ...props,
@@ -280,7 +468,14 @@ function processTfrData(geojson, notamList, centerLat, centerLon) {
       distanceNM: distNM,
       bearing: bearing,
       compassDir: compassDir,
-      isInside: isInside
+      isInside: isInside,
+      schedule: schedule,
+      temporalStatus: temporal.temporalStatus,
+      countdownText: temporal.countdownText,
+      scheduleText: temporal.scheduleText,
+      isActiveNow: temporal.isActiveNow,
+      isUpcoming: temporal.isUpcoming,
+      isExpired: temporal.isExpired
     };
 
     processed.push({
@@ -300,7 +495,14 @@ function processTfrData(geojson, notamList, centerLat, centerLon) {
       bearing: bearing,
       compassDir: compassDir,
       isInside: isInside,
-      feature: feat
+      feature: feat,
+      schedule: schedule,
+      temporalStatus: temporal.temporalStatus,
+      countdownText: temporal.countdownText,
+      scheduleText: temporal.scheduleText,
+      isActiveNow: temporal.isActiveNow,
+      isUpcoming: temporal.isUpcoming,
+      isExpired: temporal.isExpired
     });
   }
 
@@ -309,6 +511,8 @@ function processTfrData(geojson, notamList, centerLat, centerLon) {
     for (const n of notamList) {
       const nid = String(n.notam_id || n.gid || '').trim();
       if (nid && !processed.some(p => p.notamId === nid)) {
+        const orphanSched = parseTfrSchedule(n.description || '', null, n);
+        const orphanTemp = resolveTfrTemporalStatus(orphanSched);
         processed.push({
           notamId: nid,
           title: n.description || `TFR ${n.type || 'Notice'}`,
@@ -326,7 +530,14 @@ function processTfrData(geojson, notamList, centerLat, centerLon) {
           bearing: null,
           compassDir: '',
           isInside: false,
-          feature: null
+          feature: null,
+          schedule: orphanSched,
+          temporalStatus: orphanTemp.temporalStatus,
+          countdownText: orphanTemp.countdownText,
+          scheduleText: orphanTemp.scheduleText,
+          isActiveNow: orphanTemp.isActiveNow,
+          isUpcoming: orphanTemp.isUpcoming,
+          isExpired: orphanTemp.isExpired
         });
       }
     }
@@ -421,21 +632,30 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
 
   const items = Array.isArray(tfrList) ? tfrList : [];
   const radius = tfrFilterRadiusNM >= 9999 ? 'US' : `${tfrFilterRadiusNM} NM`;
-  const activeTfrs = items.filter(t => t.isActiveTfr !== false);
-  const stadiumAdvisories = items.filter(t => t.isActiveTfr === false && t.isStadium);
-  const insideAnyActive = activeTfrs.some(t => t.isInside);
-  const nearbyActiveCount = activeTfrs.length;
+  const activeNowTfrs = items.filter(t => t.isActiveTfr !== false && (t.temporalStatus === 'ACTIVE' || (!t.temporalStatus && t.isActiveNow !== false)));
+  const upcomingTfrs = items.filter(t => t.isActiveTfr !== false && (t.temporalStatus === 'UPCOMING' || t.isUpcoming === true));
+  const stadiumAdvisories = items.filter(t => (t.isActiveTfr === false || t.temporalStatus === 'STANDBY') && t.isStadium);
+  
+  const insideAnyActiveNow = activeNowTfrs.some(t => t.isInside);
+  const insideAnyUpcoming = upcomingTfrs.some(t => t.isInside);
+  const activeNowCount = activeNowTfrs.length;
+  const upcomingCount = upcomingTfrs.length;
 
   // Header Warning & Health Status Badge on Topbar Telemetry Pill
   if (headerWarningBadge) {
-    if (insideAnyActive || activeTfrs.some(t => t.distanceNM <= 5)) {
+    if (insideAnyActiveNow || activeNowTfrs.some(t => t.distanceNM <= 5)) {
       headerWarningBadge.className = 'header-tfr-badge is-critical';
-      headerWarningBadge.textContent = insideAnyActive ? '🚨 IN TFR' : '⚠️ TFR';
-      headerWarningBadge.title = insideAnyActive ? 'CRITICAL: Location is inside an active TFR!' : 'Warning: Active TFR within 5 NM of location!';
-    } else if (activeTfrs.some(t => t.distanceNM <= 15)) {
+      headerWarningBadge.textContent = insideAnyActiveNow ? '🚨 IN TFR' : '⚠️ TFR';
+      headerWarningBadge.title = insideAnyActiveNow ? 'CRITICAL: Location is inside an active TFR!' : 'Warning: Active TFR within 5 NM of location!';
+    } else if (activeNowTfrs.some(t => t.distanceNM <= 15)) {
       headerWarningBadge.className = 'header-tfr-badge is-warning';
       headerWarningBadge.textContent = '⚠️ TFR';
       headerWarningBadge.title = 'Warning: Active TFR within 15 NM of location';
+    } else if (insideAnyUpcoming) {
+      headerWarningBadge.className = 'header-tfr-badge is-upcoming';
+      headerWarningBadge.textContent = '⏱️ TFR Soon';
+      const up = upcomingTfrs.find(t => t.isInside);
+      headerWarningBadge.title = `Notice: Inside boundary of upcoming TFR ${up?.notamId || ''} (${up?.countdownText || ''})`;
     } else if (statusText && (statusText.toLowerCase().includes('failed') || statusText.toLowerCase().includes('error') || statusText.toLowerCase().includes('offline') || statusText.toLowerCase().includes('unable'))) {
       headerWarningBadge.className = 'header-tfr-badge is-offline';
       headerWarningBadge.textContent = '⚪ TFR Off';
@@ -443,7 +663,10 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
     } else {
       headerWarningBadge.className = 'header-tfr-badge is-operational';
       headerWarningBadge.textContent = '🛡️ TFR';
-      if (stadiumAdvisories.length > 0 && activeTfrs.length === 0) {
+      if (upcomingCount > 0 && activeNowCount === 0) {
+        const closestUp = upcomingTfrs[0];
+        headerWarningBadge.title = `FAA TFR Service: Operational (Airspace clear now; upcoming ${closestUp.notamId} ${closestUp.countdownText || ''})`;
+      } else if (stadiumAdvisories.length > 0 && activeNowCount === 0) {
         headerWarningBadge.title = `FAA TFR Service: Operational (Airspace clear; ${stadiumAdvisories.length} standby stadium advisory nearby)`;
       } else {
         headerWarningBadge.title = `FAA TFR Service: Operational (${items.length === 0 ? 'No active TFRs in range' : 'Airspace clear within 15 NM'})`;
@@ -452,28 +675,51 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
   }
 
   // Popover TFR Status Badge & Summary
-  if (insideAnyActive) {
+  if (insideAnyActiveNow) {
     if (badgeEl) {
       badgeEl.textContent = 'CRITICAL ALERT';
       badgeEl.style.background = 'rgba(239, 68, 68, 0.3)';
       badgeEl.style.color = '#ef4444';
     }
     if (summaryEl) {
-      const active = activeTfrs.find(t => t.isInside);
-      summaryEl.textContent = `🚨 LOCATION INSIDE TFR: ${active.notamId || ''} (${active.type || 'RESTRICTION'})`;
+      const active = activeNowTfrs.find(t => t.isInside);
+      summaryEl.textContent = `🚨 LOCATION INSIDE ACTIVE TFR: ${active.notamId || ''} (${active.type || 'RESTRICTION'})`;
       summaryEl.style.color = '#ef4444';
     }
-  } else if (nearbyActiveCount > 0) {
+  } else if (insideAnyUpcoming) {
     if (badgeEl) {
-      badgeEl.textContent = `${nearbyActiveCount} ACTIVE`;
+      badgeEl.textContent = 'UPCOMING TFR';
+      badgeEl.style.background = 'rgba(6, 182, 212, 0.25)';
+      badgeEl.style.color = '#38bdf8';
+    }
+    if (summaryEl) {
+      const up = upcomingTfrs.find(t => t.isInside);
+      summaryEl.textContent = `⏱️ In Upcoming TFR Boundary: ${up.notamId || ''} (${up.countdownText || ''})`;
+      summaryEl.style.color = '#38bdf8';
+    }
+  } else if (activeNowCount > 0) {
+    if (badgeEl) {
+      badgeEl.textContent = `${activeNowCount} ACTIVE`;
       badgeEl.style.background = 'rgba(245, 158, 11, 0.25)';
       badgeEl.style.color = '#f59e0b';
     }
     if (summaryEl) {
-      const closest = activeTfrs[0];
+      const closest = activeNowTfrs[0];
       const distStr = formatTfrDistance(closest.distanceKm, false, closest.compassDir);
-      summaryEl.textContent = `⚠️ Closest: ${closest.notamId} • ${distStr} (${closest.type || 'TFR'})`;
+      summaryEl.textContent = `⚠️ Closest: ${closest.notamId} • ${distStr} (${closest.countdownText || closest.type || 'TFR'})`;
       summaryEl.style.color = '#f59e0b';
+    }
+  } else if (upcomingCount > 0) {
+    if (badgeEl) {
+      badgeEl.textContent = `${upcomingCount} UPCOMING`;
+      badgeEl.style.background = 'rgba(6, 182, 212, 0.25)';
+      badgeEl.style.color = '#38bdf8';
+    }
+    if (summaryEl) {
+      const closest = upcomingTfrs[0];
+      const distStr = formatTfrDistance(closest.distanceKm, false, closest.compassDir);
+      summaryEl.textContent = `⏱️ Upcoming: ${closest.notamId} • ${closest.countdownText || 'Scheduled'} (${distStr})`;
+      summaryEl.style.color = '#38bdf8';
     }
   } else if (stadiumAdvisories.length > 0) {
     if (badgeEl) {
@@ -513,8 +759,12 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
 
     items.forEach((item, idx) => {
       const isStandbyStadium = item.isStadium && item.isActiveTfr === false;
+      const isUpcoming = item.temporalStatus === 'UPCOMING' || item.isUpcoming === true;
+      const isExpired = item.temporalStatus === 'EXPIRED';
+      const isCritical = item.isInside && (item.temporalStatus === 'ACTIVE' || (!item.temporalStatus && item.isActiveNow !== false));
+
       const card = document.createElement('div');
-      card.className = `tfr-item-card ${item.isInside ? 'is-critical' : ''} ${isStandbyStadium ? 'is-stadium' : ''}`;
+      card.className = `tfr-item-card ${isCritical ? 'is-critical' : ''} ${isStandbyStadium ? 'is-stadium' : ''} ${isUpcoming ? 'is-upcoming' : ''}`;
 
       const infoDiv = document.createElement('div');
       infoDiv.className = 'tfr-item-info';
@@ -526,9 +776,15 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
       if (isStandbyStadium) {
         typeBadge.style.cssText = 'font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; font-weight: 700; background: rgba(139, 92, 246, 0.25); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4);';
         typeBadge.textContent = 'STADIUM';
+      } else if (isUpcoming) {
+        typeBadge.style.cssText = 'font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; font-weight: 700; background: rgba(6, 182, 212, 0.2); color: #38bdf8; border: 1px solid rgba(6, 182, 212, 0.4);';
+        typeBadge.textContent = 'UPCOMING';
+      } else if (isExpired) {
+        typeBadge.style.cssText = 'font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; font-weight: 700; background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.35);';
+        typeBadge.textContent = 'EXPIRED';
       } else {
         typeBadge.style.cssText = `font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; font-weight: 700; ${
-          item.isInside ? 'background: #ef4444; color: #fff;' : 'background: rgba(245,158,11,0.25); color: #f59e0b;'
+          isCritical ? 'background: #ef4444; color: #fff;' : 'background: rgba(245,158,11,0.25); color: #f59e0b;'
         }`;
         typeBadge.textContent = item.type || 'TFR';
       }
@@ -557,6 +813,17 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
         descDiv.textContent = item.title;
       }
       infoDiv.appendChild(descDiv);
+
+      const scheduleDiv = document.createElement('div');
+      scheduleDiv.className = 'tfr-item-schedule';
+      if (isStandbyStadium) {
+        scheduleDiv.innerHTML = `⏱️ <b>Standby</b> • <span style="color:var(--text-muted);">Active during major events ±1h</span>`;
+      } else if (item.countdownText) {
+        const timeColor = isUpcoming ? '#38bdf8' : (isExpired ? '#94a3b8' : '#f59e0b');
+        const schedStr = item.scheduleText ? ` • <span style="color:var(--text-muted);">${item.scheduleText}</span>` : '';
+        scheduleDiv.innerHTML = `⏱️ <b style="color:${timeColor};">${item.countdownText}</b>${schedStr}`;
+      }
+      infoDiv.appendChild(scheduleDiv);
 
       card.appendChild(infoDiv);
 

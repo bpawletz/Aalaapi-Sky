@@ -193,6 +193,17 @@ const MissionClock = {
     if (typeof update3DSunPosition === 'function') {
       update3DSunPosition();
     }
+
+    // 4. Update TFR Temporal Status & Countdown if available
+    if (typeof filterAndUpdateTfrUI === 'function') {
+      let lat = 41.3215, lon = -88.9950;
+      if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+        const ll = centerMarker.getLatLng();
+        lat = ll.lat;
+        lon = ll.lng;
+      }
+      filterAndUpdateTfrUI(lat, lon);
+    }
   },
 
   /**

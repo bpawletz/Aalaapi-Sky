@@ -160,8 +160,15 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
 
   // TFR intersection check
   const intersectingTfrs = [];
-  if (typeof tfrActiveFeatures !== 'undefined' && Array.isArray(tfrActiveFeatures) && tfrActiveFeatures.length > 0) {
-    for (const feat of tfrActiveFeatures) {
+  const intersectingActiveTfrs = [];
+  const intersectingUpcomingTfrs = [];
+  const activeTfrFeats = (typeof tfrActiveFeatures !== 'undefined' && Array.isArray(tfrActiveFeatures) && tfrActiveFeatures.length > 0)
+    ? tfrActiveFeatures
+    : ((typeof global !== 'undefined' && Array.isArray(global.tfrActiveFeatures) && global.tfrActiveFeatures.length > 0)
+        ? global.tfrActiveFeatures
+        : ((typeof window !== 'undefined' && Array.isArray(window.tfrActiveFeatures)) ? window.tfrActiveFeatures : []));
+  if (activeTfrFeats && activeTfrFeats.length > 0) {
+    for (const feat of activeTfrFeats) {
       if (!feat.geometry) continue;
       const hit = waypoints.some(wp => {
         if (!wp) return false;
@@ -171,10 +178,17 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
         return (typeof isPointInGeoJsonPolygon === 'function') && isPointInGeoJsonPolygon(lat, lon, feat.geometry);
       });
       if (hit) {
-        intersectingTfrs.push({
-          notamId: feat.properties?.NOTAM_KEY || feat.properties?.notam_id || feat.id || 'Active TFR',
-          name: feat.properties?.TITLE || feat.properties?.NAME || 'TFR'
-        });
+        const notamId = feat.properties?.NOTAM_KEY || feat.properties?.notam_id || feat.id || 'Active TFR';
+        const name = feat.properties?.TITLE || feat.properties?.NAME || 'TFR';
+        const status = feat.properties?.temporalStatus || (feat.properties?.isActiveNow ? 'ACTIVE' : (feat.properties?.isUpcoming ? 'UPCOMING' : 'ACTIVE'));
+        const countdown = feat.properties?.countdownText || '';
+        const itemObj = { notamId, name, status, countdown };
+        intersectingTfrs.push(itemObj);
+        if (status === 'UPCOMING') {
+          intersectingUpcomingTfrs.push(itemObj);
+        } else if (status === 'ACTIVE' || (status !== 'EXPIRED' && status !== 'STANDBY')) {
+          intersectingActiveTfrs.push(itemObj);
+        }
       }
     }
   }
@@ -191,7 +205,9 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
     hasIsolatedWaypoint: hasIsolatedWaypoint,
     isFarFromTakeoff: isFarFromTakeoff,
     userDistanceToTakeoff: userDistanceToTakeoff,
-    intersectingTfrs: intersectingTfrs
+    intersectingTfrs: intersectingTfrs,
+    intersectingActiveTfrs: intersectingActiveTfrs,
+    intersectingUpcomingTfrs: intersectingUpcomingTfrs
   };
 }
 
@@ -365,7 +381,29 @@ function updateStatsPanel(stats) {
     }
 
     // Check TFR intersections
-    if (stats.intersectingTfrs && stats.intersectingTfrs.length > 0) {
+    if (stats.intersectingActiveTfrs && stats.intersectingActiveTfrs.length > 0) {
+      const div = document.createElement('div');
+      div.style.marginTop = '4px';
+      const strong = document.createElement('strong');
+      strong.textContent = 'Active TFR Conflict:';
+      div.appendChild(document.createTextNode('🚫 '));
+      div.appendChild(strong);
+      const names = stats.intersectingActiveTfrs.map(t => `${t.notamId}`).slice(0, 3).join(', ');
+      div.appendChild(document.createTextNode(` Flight path intersects active FAA Temporary Flight Restriction (${names})!`));
+      warningsEl.appendChild(div);
+      hasWarnings = true;
+    } else if (stats.intersectingUpcomingTfrs && stats.intersectingUpcomingTfrs.length > 0) {
+      const div = document.createElement('div');
+      div.style.marginTop = '4px';
+      const strong = document.createElement('strong');
+      strong.textContent = 'Upcoming TFR Notice:';
+      div.appendChild(document.createTextNode('⏱️ '));
+      div.appendChild(strong);
+      const details = stats.intersectingUpcomingTfrs.map(t => `${t.notamId} (${t.countdown || 'upcoming'})`).slice(0, 3).join(', ');
+      div.appendChild(document.createTextNode(` Flight path intersects scheduled TFR (${details}). Verify flight concludes before restriction activates.`));
+      warningsEl.appendChild(div);
+      hasWarnings = true;
+    } else if (stats.intersectingTfrs && stats.intersectingTfrs.length > 0) {
       const div = document.createElement('div');
       div.style.marginTop = '4px';
       const strong = document.createElement('strong');

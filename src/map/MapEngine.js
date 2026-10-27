@@ -512,6 +512,25 @@ function initMap() {
           fillOpacity: 0.12
         };
       }
+      const status = props.temporalStatus || (props.isActiveTfr === false ? 'STANDBY' : 'ACTIVE');
+      if (status === 'UPCOMING') {
+        return {
+          color: '#f59e0b',
+          weight: 2.0,
+          dashArray: '8, 5',
+          fillColor: '#f59e0b',
+          fillOpacity: 0.08
+        };
+      }
+      if (status === 'EXPIRED') {
+        return {
+          color: '#64748b',
+          weight: 1.5,
+          dashArray: '3, 4',
+          fillColor: '#64748b',
+          fillOpacity: 0.04
+        };
+      }
       return {
         color: '#dc2626',
         weight: 2.2,
@@ -534,6 +553,16 @@ function initMap() {
           fillOpacity: 0.12
         });
       }
+      const status = props.temporalStatus || (props.isActiveTfr === false ? 'STANDBY' : 'ACTIVE');
+      if (status === 'UPCOMING') {
+        return L.circleMarker(latlng, {
+          radius: 6,
+          color: '#ffffff',
+          weight: 1.5,
+          fillColor: '#f59e0b',
+          fillOpacity: 0.9
+        });
+      }
       return L.circleMarker(latlng, {
         radius: 6,
         color: '#ffffff',
@@ -547,9 +576,12 @@ function initMap() {
       const notamId = props.notam_id || props.NOTAM_KEY || feature.id || 'FAA TFR';
       const title = props.title || props.TITLE || props.NAME || props.TxtName || 'Temporary Flight Restriction';
       const isStandbyStadium = (props.isStadium || props.TYPE === 'STADIUM' || props.type === 'STADIUM' || (props.NAME && (props.CITY || props.OBJECTID))) && props.isActiveTfr === false;
+      const status = props.temporalStatus || (isStandbyStadium ? 'STANDBY' : (props.isActiveNow ? 'ACTIVE' : (props.isUpcoming ? 'UPCOMING' : 'ACTIVE')));
       const type = isStandbyStadium ? 'STADIUM' : (props.type || props.LEGAL || props.TYPE_CODE || 'RESTRICTION');
       const state = props.state || props.STATE || '';
       const cDist = props.distanceKm != null ? formatTfrDistance(props.distanceKm, props.isInside, props.compassDir) : '';
+      const schedule = props.scheduleText || props.effectiveTime || '';
+      const countdown = props.countdownText || '';
       
       let popupHtml = `<div style="font-size:0.78rem; line-height:1.4; min-width:210px;">`;
       if (isStandbyStadium) {
@@ -560,10 +592,22 @@ function initMap() {
         popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Rule: <b>14 CFR § 99.7 (3 NM • 3,000 ft AGL)</b></div>`;
         popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Window: <b>Event start -1h to end +1h (30k+ seats)</b></div>`;
       } else {
-        popupHtml += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><span style="background:#ef4444; color:#fff; font-size:0.65rem; font-weight:700; padding:1px 5px; border-radius:4px;">TFR NOTAM</span><strong style="color:var(--text-main); font-size:0.85rem;">${notamId}</strong></div>`;
+        const statusBadgeStyle = status === 'UPCOMING'
+          ? 'background:rgba(6,182,212,0.2); color:#38bdf8; border:1px solid rgba(6,182,212,0.4);'
+          : (status === 'EXPIRED'
+            ? 'background:rgba(100,116,139,0.2); color:#94a3b8; border:1px solid rgba(100,116,139,0.4);'
+            : 'background:#ef4444; color:#fff;');
+        popupHtml += `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">` +
+          `<div style="display:flex; align-items:center; gap:6px;"><span style="background:rgba(255,255,255,0.08); color:var(--text-main); font-size:0.65rem; font-weight:700; padding:1px 5px; border-radius:4px; border:1px solid var(--border-color);">TFR NOTAM</span><strong style="color:var(--text-main); font-size:0.85rem;">${notamId}</strong></div>` +
+          `<span style="${statusBadgeStyle} font-size:0.62rem; font-weight:700; padding:1px 5px; border-radius:4px;">${status}</span>` +
+          `</div>`;
         popupHtml += `<div style="font-weight:600; color:#38bdf8; margin-bottom:4px;">${title}</div>`;
         if (type) popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Type: <b>${type}</b> ${state ? `(${state})` : ''}</div>`;
-        if (props.effectiveTime) popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Schedule: <b>${props.effectiveTime}</b></div>`;
+        if (countdown) {
+          const cColor = status === 'UPCOMING' ? 'var(--accent-cyan)' : (status === 'ACTIVE' ? '#f59e0b' : 'var(--text-muted)');
+          popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Timing: <b style="color:${cColor};">⏱️ ${countdown}</b></div>`;
+        }
+        if (schedule) popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Schedule: <b>${schedule}</b></div>`;
         if (props.altitude) popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Altitudes: <b>${props.altitude}</b></div>`;
       }
       if (cDist) popupHtml += `<div style="color:${props.isInside ? '#ef4444' : '#34d399'}; font-weight:700; font-size:0.74rem; margin-top:4px;">Proximity: ${cDist}</div>`;

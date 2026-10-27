@@ -4919,6 +4919,52 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(badgeState.title.includes('Operational') || badgeState.title.includes('Clear') || badgeState.title.includes('TFR'), 'Badge title must describe operational status');
   });
 
+  test('E2E: TFR popover renders upcoming TFR card with countdown timer and schedule row (v1.201.0 - Issue #191)', async () => {
+    await page.evaluate(() => {
+      const mockUpcoming = {
+        notamId: '6/2521',
+        title: 'ATLANTA VIP EVENT',
+        type: 'VIP',
+        state: 'GA',
+        city: 'Atlanta',
+        isStadium: false,
+        isActiveTfr: true,
+        temporalStatus: 'UPCOMING',
+        countdownText: 'Starts in 2d 13h (Oct 30)',
+        scheduleText: 'October 30, 2026 (Local)',
+        isActiveNow: false,
+        isUpcoming: true,
+        isExpired: false,
+        distanceKm: 25.0,
+        distanceNM: 13.5,
+        compassDir: 'SE',
+        centroid: { lat: 33.7, lon: -84.3 },
+        geometry: { type: 'Polygon', coordinates: [[[-84.4, 33.7], [-84.3, 33.7], [-84.3, 33.8], [-84.4, 33.8], [-84.4, 33.7]]] },
+        isInside: false
+      };
+      if (typeof window.updateTfrPanelUI === 'function') {
+        window.updateTfrPanelUI([mockUpcoming], null, false);
+      }
+    });
+    await page.waitForTimeout(100);
+
+    const cardState = await page.evaluate(() => {
+      const badge = document.getElementById('pop-tfr-badge');
+      const list = document.getElementById('pop-tfr-list');
+      const card = list ? list.querySelector('.tfr-item-card.is-upcoming') : null;
+      const sched = list ? list.querySelector('.tfr-item-schedule') : null;
+      return {
+        badgeText: badge ? badge.textContent.trim() : '',
+        cardFound: !!card,
+        schedText: sched ? sched.textContent.trim() : ''
+      };
+    });
+
+    assert.ok(cardState.badgeText.includes('UPCOMING'), 'Summary badge should show UPCOMING');
+    assert.strictEqual(cardState.cardFound, true, '.tfr-item-card.is-upcoming must render');
+    assert.ok(cardState.schedText.includes('Starts in 2d 13h'), 'Schedule line must include countdown timer');
+  });
+
   test('E2E: Tower and Road Following controls are restored and accessible in Section 2 Layer Properties (v1.95.3)', async () => {
     // 1. Test Tower Pattern Controls
     const towerResult = await page.evaluate(() => {

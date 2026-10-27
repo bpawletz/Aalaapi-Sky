@@ -2976,6 +2976,116 @@ const scenarios = [
         await page.waitForTimeout(1500);
       }
     }
+  },
+  {
+    id: 'feature_tfr_temporal',
+    name: 'TFR Active Time Windows, Real-Time Countdown & Temporal Conflict Awareness',
+    description: 'Demonstrates TFR schedule parsing, dynamic countdown timers (Upcoming vs Active), amber dashed map overlay styling, and briefing modal schedule banner (Issue #191, v1.201.0).',
+    issueRef: 'Issue #191 / v1.201.0',
+    run: async (page) => {
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 1. Inject realistic upcoming and active TFRs into page state
+      await page.evaluate(() => {
+        const upcomingItem = {
+          notamId: '6/2521',
+          title: 'ATLANTA VIP EVENT',
+          type: 'VIP',
+          state: 'GA',
+          city: 'Atlanta',
+          isStadium: false,
+          isActiveTfr: true,
+          temporalStatus: 'UPCOMING',
+          countdownText: 'Starts in 2d 13h (Oct 30)',
+          scheduleText: 'October 30, 2026 (Local)',
+          isActiveNow: false,
+          isUpcoming: true,
+          isExpired: false,
+          distanceKm: 25.0,
+          distanceNM: 13.5,
+          compassDir: 'SE',
+          centroid: { lat: 41.3215, lon: -88.9950 },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[
+              [-89.015, 41.310],
+              [-88.975, 41.310],
+              [-88.975, 41.335],
+              [-89.015, 41.335],
+              [-89.015, 41.310]
+            ]]
+          },
+          isInside: false
+        };
+
+        const activeItem = {
+          notamId: '6/2545',
+          title: 'HAZARDS RECOVERY ZONE',
+          type: 'HAZARDS',
+          state: 'IL',
+          city: 'Utica',
+          isStadium: false,
+          isActiveTfr: true,
+          temporalStatus: 'ACTIVE',
+          countdownText: 'Active Now (Expires in 5h 20m)',
+          scheduleText: 'October 27, 2026 (UTC)',
+          isActiveNow: true,
+          isUpcoming: false,
+          isExpired: false,
+          distanceKm: 42.0,
+          distanceNM: 22.7,
+          compassDir: 'NE',
+          centroid: { lat: 41.38, lon: -88.92 },
+          isInside: false
+        };
+
+        window.tfrActiveNotams = [upcomingItem, activeItem];
+        if (typeof window.updateTfrPanelUI === 'function') {
+          window.updateTfrPanelUI([upcomingItem, activeItem], null, false);
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 2. Open Weather & TFR Status Popover from header pill
+      const tfrBadge = await page.locator('#header-tfr-warning-badge');
+      if (await tfrBadge.isVisible()) {
+        await tfrBadge.click();
+        await page.waitForTimeout(2000);
+      }
+
+      // 3. Highlight TFR item card and countdown row
+      await page.evaluate(() => {
+        const firstCard = document.querySelector('.tfr-item-card.is-upcoming');
+        if (firstCard) {
+          firstCard.style.outline = '2px solid #06b6d4';
+        }
+      });
+      await page.waitForTimeout(1800);
+
+      // 4. Open TFR Briefing Modal to inspect schedule banner
+      await page.evaluate(async () => {
+        if (typeof window.openTfrBriefingModal === 'function') {
+          await window.openTfrBriefingModal('6/2521');
+        }
+      });
+      await page.waitForTimeout(2200);
+
+      // 5. Close Briefing Modal
+      const closeBtn = await page.locator('#close-tfr-modal-footer-btn');
+      if (await closeBtn.isVisible()) {
+        await closeBtn.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 6. Close Popover
+      const weatherPopover = await page.locator('#telemetry-weather-popover');
+      if (await weatherPopover.isVisible()) {
+        const popClose = await page.locator('#telemetry-weather-popover .popover-header button');
+        if (await popClose.isVisible()) await popClose.click();
+      }
+      await page.waitForTimeout(1000);
+    }
   }
 ];
 

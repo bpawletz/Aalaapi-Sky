@@ -548,6 +548,12 @@ html, body {
   animation: pulseTfrBadge 1.8s infinite ease-in-out;
 }
 
+.header-tfr-badge.is-upcoming {
+  background: rgba(6, 182, 212, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(6, 182, 212, 0.4);
+}
+
 .header-tfr-badge.is-warning {
   background: #f59e0b;
   color: #ffffff;
@@ -5711,6 +5717,24 @@ body.modal-drag-active {
 .tfr-item-card.is-stadium {
   border-color: rgba(139, 92, 246, 0.35);
   background: rgba(139, 92, 246, 0.05);
+}
+
+.tfr-item-card.is-upcoming {
+  border-color: rgba(6, 182, 212, 0.4);
+  background: rgba(6, 182, 212, 0.05);
+}
+
+.tfr-item-card.is-upcoming:hover {
+  background: rgba(6, 182, 212, 0.1);
+}
+
+.tfr-item-schedule {
+  font-size: 0.65rem;
+  color: var(--accent-cyan);
+  line-height: 1.25;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .tfr-item-card.is-stadium:hover {
