@@ -70,35 +70,165 @@ function parseTfrSchedule(description, notamText, fallbackProps) {
   let end = null;
   let rawRange = '';
   let isStanding = false;
+  let isExactTime = false;
 
   const desc = (typeof description === 'string') ? description : '';
+  const fallback = (typeof fallbackProps === 'object' && fallbackProps !== null) ? fallbackProps : {};
 
-  // 1. Date range pattern: e.g. "Sunday, November 1, 2026 through Sunday, March 14, 2027 Local"
-  const rangeRegex = /(?:([A-Za-z]+),\s+)?([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s+through\s+(?:([A-Za-z]+),\s+)?([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})(?:\s+(Local|UTC))?/i;
-  const mRange = desc.match(rangeRegex);
-  if (mRange) {
-    isUtc = (mRange[9] || '').toUpperCase() === 'UTC';
-    const sMonth = TFR_MONTH_MAP[mRange[2].toLowerCase()];
-    const sDay = parseInt(mRange[3], 10);
-    const sYear = parseInt(mRange[4], 10);
-    const eMonth = TFR_MONTH_MAP[mRange[6].toLowerCase()];
-    const eDay = parseInt(mRange[7], 10);
-    const eYear = parseInt(mRange[8], 10);
-
-    if (sMonth !== undefined && eMonth !== undefined && !isNaN(sDay) && !isNaN(sYear) && !isNaN(eDay) && !isNaN(eYear)) {
-      if (isUtc) {
-        start = new Date(Date.UTC(sYear, sMonth, sDay, 0, 0, 0));
-        end = new Date(Date.UTC(eYear, eMonth, eDay, 23, 59, 59, 999));
-      } else {
-        start = new Date(sYear, sMonth, sDay, 0, 0, 0);
-        end = new Date(eYear, eMonth, eDay, 23, 59, 59, 999);
-      }
-      rawRange = `${mRange[2]} ${sDay}, ${sYear} – ${mRange[6]} ${eDay}, ${eYear} (${isUtc ? 'UTC' : 'Local'})`;
+  // 1. Direct pre-enriched timestamps from fallbackProps / cached NOTAMs
+  if (fallback.start_utc || fallback.startUtc) {
+    const s = new Date(fallback.start_utc || fallback.startUtc);
+    if (!isNaN(s.getTime())) {
+      start = s;
+      isUtc = true;
+      isExactTime = true;
+    }
+  }
+  if (fallback.end_utc || fallback.endUtc) {
+    const e = new Date(fallback.end_utc || fallback.endUtc);
+    if (!isNaN(e.getTime())) {
+      end = e;
+      isUtc = true;
+      isExactTime = true;
     }
   }
 
-  // 2. Single date pattern: e.g. "Tuesday, October 27, 2026 UTC"
+  // 2. Exact timestamps from notamText if available
+  if (notamText && typeof notamText === 'string') {
+    const cleanText = notamText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+
+    // 2a. FAA official detail table headers:
+    // e.g. "Beginning Date and Time : October 28, 2026 at 2030 UTC"
+    // e.g. "Ending Date and Time : October 29, 2026 at 0245 UTC"
+    const begRegex = /Beginning Date and Time\s*:\s*([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s+at\s+(\d{2})(\d{2})\s*UTC/i;
+    const endRegex = /Ending Date and Time\s*:\s*([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s+at\s+(\d{2})(\d{2})\s*UTC/i;
+    const mBeg = cleanText.match(begRegex);
+    const mEnd = cleanText.match(endRegex);
+
+    if (mBeg) {
+      const mo = TFR_MONTH_MAP[mBeg[1].toLowerCase()];
+      const dy = parseInt(mBeg[2], 10);
+      const yr = parseInt(mBeg[3], 10);
+      const hr = parseInt(mBeg[4], 10);
+      const mn = parseInt(mBeg[5], 10);
+      if (mo !== undefined && !isNaN(dy) && !isNaN(yr) && !isNaN(hr) && !isNaN(mn)) {
+        start = new Date(Date.UTC(yr, mo, dy, hr, mn, 0));
+        isUtc = true;
+        isExactTime = true;
+      }
+    }
+
+    if (mEnd) {
+      const mo = TFR_MONTH_MAP[mEnd[1].toLowerCase()];
+      const dy = parseInt(mEnd[2], 10);
+      const yr = parseInt(mEnd[3], 10);
+      const hr = parseInt(mEnd[4], 10);
+      const mn = parseInt(mEnd[5], 10);
+      if (mo !== undefined && !isNaN(dy) && !isNaN(yr) && !isNaN(hr) && !isNaN(mn)) {
+        end = new Date(Date.UTC(yr, mo, dy, hr, mn, 59));
+        isUtc = true;
+        isExactTime = true;
+      }
+    }
+
+    // 2b. Alternative table format: "Effective Date(s): From October 28, 2026 at 2030 UTC ... To October 29, 2026 at 0245 UTC"
+    if (!start) {
+      const effFromMatch = cleanText.match(/Effective Date\(s\):\s*From\s+([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s+at\s+(\d{2})(\d{2})\s*UTC/i);
+      if (effFromMatch) {
+        const mo = TFR_MONTH_MAP[effFromMatch[1].toLowerCase()];
+        const dy = parseInt(effFromMatch[2], 10);
+        const yr = parseInt(effFromMatch[3], 10);
+        const hr = parseInt(effFromMatch[4], 10);
+        const mn = parseInt(effFromMatch[5], 10);
+        if (mo !== undefined && !isNaN(dy) && !isNaN(yr)) {
+          start = new Date(Date.UTC(yr, mo, dy, hr, mn, 0));
+          isUtc = true;
+          isExactTime = true;
+        }
+      }
+    }
+    if (!end) {
+      const effToMatch = cleanText.match(/To\s+([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s+at\s+(\d{2})(\d{2})\s*UTC/i);
+      if (effToMatch) {
+        const mo = TFR_MONTH_MAP[effToMatch[1].toLowerCase()];
+        const dy = parseInt(effToMatch[2], 10);
+        const yr = parseInt(effToMatch[3], 10);
+        const hr = parseInt(effToMatch[4], 10);
+        const mn = parseInt(effToMatch[5], 10);
+        if (mo !== undefined && !isNaN(dy) && !isNaN(yr)) {
+          end = new Date(Date.UTC(yr, mo, dy, hr, mn, 59));
+          isUtc = true;
+          isExactTime = true;
+        }
+      }
+    }
+
+    // 2c. Compact military / ICAO format (e.g. EFFECTIVE 2610271400 ... UNTIL 2610272200)
+    if (!start) {
+      const effMatch = cleanText.match(/(?:EFFECTIVE|FROM)\s+(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*(UTC)?/i);
+      if (effMatch) {
+        const yr = 2000 + parseInt(effMatch[1], 10);
+        const mo = parseInt(effMatch[2], 10) - 1;
+        const dy = parseInt(effMatch[3], 10);
+        const hr = parseInt(effMatch[4], 10);
+        const mn = parseInt(effMatch[5], 10);
+        start = new Date(Date.UTC(yr, mo, dy, hr, mn, 0));
+        isUtc = true;
+        isExactTime = true;
+      }
+    }
+    if (!end) {
+      const untMatch = cleanText.match(/UNTIL\s+(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*(UTC)?/i);
+      if (untMatch) {
+        const yr = 2000 + parseInt(untMatch[1], 10);
+        const mo = parseInt(untMatch[2], 10) - 1;
+        const dy = parseInt(untMatch[3], 10);
+        const hr = parseInt(untMatch[4], 10);
+        const mn = parseInt(untMatch[5], 10);
+        end = new Date(Date.UTC(yr, mo, dy, hr, mn, 59));
+        isUtc = true;
+        isExactTime = true;
+      }
+    }
+  }
+
+  // Format exact range string if exact start and end are known
+  if (isExactTime && start && end) {
+    const sTime = `${String(start.getUTCHours()).padStart(2, '0')}:${String(start.getUTCMinutes()).padStart(2, '0')}`;
+    const eTime = `${String(end.getUTCHours()).padStart(2, '0')}:${String(end.getUTCMinutes()).padStart(2, '0')}`;
+    rawRange = `${formatTfrDateShort(start, true)} at ${sTime} UTC – ${formatTfrDateShort(end, true)} at ${eTime} UTC`;
+  }
+
+  // 3. Fallback to description regex if start is not yet known (Date-Only)
   if (!start) {
+    // 3a. Date range pattern
+    const rangeRegex = /(?:([A-Za-z]+),\s+)?([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s+through\s+(?:([A-Za-z]+),\s+)?([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})(?:\s+(Local|UTC))?/i;
+    const mRange = desc.match(rangeRegex);
+    if (mRange) {
+      isUtc = (mRange[9] || '').toUpperCase() === 'UTC';
+      const sMonth = TFR_MONTH_MAP[mRange[2].toLowerCase()];
+      const sDay = parseInt(mRange[3], 10);
+      const sYear = parseInt(mRange[4], 10);
+      const eMonth = TFR_MONTH_MAP[mRange[6].toLowerCase()];
+      const eDay = parseInt(mRange[7], 10);
+      const eYear = parseInt(mRange[8], 10);
+
+      if (sMonth !== undefined && eMonth !== undefined && !isNaN(sDay) && !isNaN(sYear) && !isNaN(eDay) && !isNaN(eYear)) {
+        if (isUtc) {
+          start = new Date(Date.UTC(sYear, sMonth, sDay, 0, 0, 0));
+          end = new Date(Date.UTC(eYear, eMonth, eDay, 23, 59, 59, 999));
+        } else {
+          start = new Date(sYear, sMonth, sDay, 0, 0, 0);
+          end = new Date(eYear, eMonth, eDay, 23, 59, 59, 999);
+        }
+        rawRange = `${mRange[2]} ${sDay}, ${sYear} – ${mRange[6]} ${eDay}, ${eYear} (${isUtc ? 'UTC' : 'Local'})`;
+        isExactTime = false;
+      }
+    }
+  }
+
+  if (!start) {
+    // 3b. Single date pattern
     const singleRegex = /(?:([A-Za-z]+),\s+)?([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})(?:\s+(Local|UTC))?/i;
     const mSingle = desc.match(singleRegex);
     if (mSingle) {
@@ -116,44 +246,19 @@ function parseTfrSchedule(description, notamText, fallbackProps) {
           end = new Date(year, month, day, 23, 59, 59, 999);
         }
         rawRange = `${mSingle[2]} ${day}, ${year} (${isUtc ? 'UTC' : 'Local'})`;
+        isExactTime = false;
       }
     }
   }
 
-  // 3. Exact timestamps from notamText if available (e.g. EFFECTIVE 2610271400 ... UNTIL 2610272200)
-  if (notamText && typeof notamText === 'string') {
-    const effMatch = notamText.match(/(?:EFFECTIVE|FROM)\s+(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*(UTC)?/i);
-    const untMatch = notamText.match(/UNTIL\s+(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*(UTC)?/i);
-    if (effMatch) {
-      const yr = 2000 + parseInt(effMatch[1], 10);
-      const mo = parseInt(effMatch[2], 10) - 1;
-      const dy = parseInt(effMatch[3], 10);
-      const hr = parseInt(effMatch[4], 10);
-      const mn = parseInt(effMatch[5], 10);
-      start = new Date(Date.UTC(yr, mo, dy, hr, mn, 0));
-      isUtc = true;
-    }
-    if (untMatch) {
-      const yr = 2000 + parseInt(untMatch[1], 10);
-      const mo = parseInt(untMatch[2], 10) - 1;
-      const dy = parseInt(untMatch[3], 10);
-      const hr = parseInt(untMatch[4], 10);
-      const mn = parseInt(untMatch[5], 10);
-      end = new Date(Date.UTC(yr, mo, dy, hr, mn, 59));
-      isUtc = true;
-    }
-    if (effMatch && untMatch && start && end) {
-      rawRange = `${formatTfrDateShort(start, true)} ${String(effMatch[4]).padStart(2, '0')}:${String(effMatch[5]).padStart(2, '0')} UTC – ${formatTfrDateShort(end, true)} ${String(untMatch[4]).padStart(2, '0')}:${String(untMatch[5]).padStart(2, '0')} UTC`;
-    }
-  }
-
-  // 4. Fallback check for standing / permanent airspace
+  // 4. Standing / permanent airspace check
   if (!start && !end) {
     isStanding = true;
+    isExactTime = true;
     rawRange = 'Permanent / Standing Flight Restriction';
   }
 
-  return { start, end, isUtc, isStanding, rawRange };
+  return { start, end, isUtc, isStanding, isExactTime, rawRange };
 }
 
 function resolveTfrTemporalStatus(schedule, refTime) {
@@ -164,17 +269,49 @@ function resolveTfrTemporalStatus(schedule, refTime) {
         : new Date());
 
   if (!schedule) {
-    return { temporalStatus: 'ACTIVE', countdownText: 'Active Now', scheduleText: 'Schedule Unavailable', isActiveNow: true, isUpcoming: false, isExpired: false };
+    return { temporalStatus: 'ACTIVE', countdownText: 'Active Now', scheduleText: 'Schedule Unavailable', isActiveNow: true, isUpcoming: false, isExpired: false, isExactTime: false };
   }
   if (schedule.isStadium) {
-    return { temporalStatus: 'STANDBY', countdownText: 'Standby (Event ±1h window)', scheduleText: '14 CFR § 99.7 (Major Events)', isActiveNow: false, isUpcoming: false, isExpired: false };
+    return { temporalStatus: 'STANDBY', countdownText: 'Standby (Event ±1h window)', scheduleText: '14 CFR § 99.7 (Major Events)', isActiveNow: false, isUpcoming: false, isExpired: false, isExactTime: false };
   }
   if (schedule.isStanding) {
-    return { temporalStatus: 'ACTIVE', countdownText: 'Active (Standing Airspace)', scheduleText: schedule.rawRange || 'Permanent Restriction', isActiveNow: true, isUpcoming: false, isExpired: false };
+    return { temporalStatus: 'ACTIVE', countdownText: 'Active (Standing Airspace)', scheduleText: schedule.rawRange || 'Permanent Restriction', isActiveNow: true, isUpcoming: false, isExpired: false, isExactTime: true };
   }
 
-  const { start, end, isUtc, rawRange } = schedule;
+  const { start, end, isUtc, isExactTime, rawRange } = schedule;
 
+  // Handle Date-Only Schedules (Exact Hours/Minutes Unknown)
+  if (isExactTime === false && start) {
+    const nowYear = isUtc ? now.getUTCFullYear() : now.getFullYear();
+    const nowMonth = isUtc ? now.getUTCMonth() : now.getMonth();
+    const nowDate = isUtc ? now.getUTCDate() : now.getDate();
+    const todayMidnight = isUtc ? new Date(Date.UTC(nowYear, nowMonth, nowDate, 0, 0, 0)) : new Date(nowYear, nowMonth, nowDate, 0, 0, 0);
+
+    const startYear = isUtc ? start.getUTCFullYear() : start.getFullYear();
+    const startMonth = isUtc ? start.getUTCMonth() : start.getMonth();
+    const startDate = isUtc ? start.getUTCDate() : start.getDate();
+    const startMidnight = isUtc ? new Date(Date.UTC(startYear, startMonth, startDate, 0, 0, 0)) : new Date(startYear, startMonth, startDate, 0, 0, 0);
+
+    const diffCalendarDays = Math.round((startMidnight.getTime() - todayMidnight.getTime()) / 86400000);
+
+    if (diffCalendarDays > 0) {
+      let countdownText;
+      if (diffCalendarDays === 1) {
+        countdownText = `Starts Tomorrow (${formatTfrDateShort(start, isUtc)}, Time TBD)`;
+      } else {
+        countdownText = `Starts in ${diffCalendarDays} days (${formatTfrDateShort(start, isUtc)})`;
+      }
+      return { temporalStatus: 'UPCOMING', countdownText, scheduleText: rawRange, isActiveNow: false, isUpcoming: true, isExpired: false, isExactTime: false };
+    }
+
+    if (end && now.getTime() > end.getTime()) {
+      return { temporalStatus: 'EXPIRED', countdownText: `Expired (${formatTfrDateShort(end, isUtc)})`, scheduleText: rawRange, isActiveNow: false, isUpcoming: false, isExpired: true, isExactTime: false };
+    }
+
+    return { temporalStatus: 'ACTIVE', countdownText: `Active Today (${formatTfrDateShort(start, isUtc)})`, scheduleText: rawRange, isActiveNow: true, isUpcoming: false, isExpired: false, isExactTime: false };
+  }
+
+  // Handle Exact-Time Schedules (Exact Hours/Minutes Known)
   if (start && now.getTime() < start.getTime()) {
     const diffMs = start.getTime() - now.getTime();
     let countdownText;
@@ -194,7 +331,7 @@ function resolveTfrTemporalStatus(schedule, refTime) {
       const d = Math.round(diffMs / 86400000);
       countdownText = `Starts in ${d} days (${formatTfrDateShort(start, isUtc)})`;
     }
-    return { temporalStatus: 'UPCOMING', countdownText, scheduleText: rawRange, isActiveNow: false, isUpcoming: true, isExpired: false };
+    return { temporalStatus: 'UPCOMING', countdownText, scheduleText: rawRange, isActiveNow: false, isUpcoming: true, isExpired: false, isExactTime: true };
   }
 
   if (end && now.getTime() > end.getTime()) {
@@ -207,10 +344,10 @@ function resolveTfrTemporalStatus(schedule, refTime) {
     } else {
       countdownText = `Expired (${formatTfrDateShort(end, isUtc)})`;
     }
-    return { temporalStatus: 'EXPIRED', countdownText, scheduleText: rawRange, isActiveNow: false, isUpcoming: false, isExpired: true };
+    return { temporalStatus: 'EXPIRED', countdownText, scheduleText: rawRange, isActiveNow: false, isUpcoming: false, isExpired: true, isExactTime: true };
   }
 
-  // Active Now
+  // Active Now with exact expiration
   let countdownText;
   if (end) {
     const diffMs = end.getTime() - now.getTime();
@@ -223,10 +360,10 @@ function resolveTfrTemporalStatus(schedule, refTime) {
       countdownText = `Active Now (Expires in ${d}d / ${formatTfrDateShort(end, isUtc)})`;
     }
   } else {
-    countdownText = 'Active Now (Until Notice)';
+    countdownText = 'Active Now';
   }
 
-  return { temporalStatus: 'ACTIVE', countdownText, scheduleText: rawRange, isActiveNow: true, isUpcoming: false, isExpired: false };
+  return { temporalStatus: 'ACTIVE', countdownText, scheduleText: rawRange, isActiveNow: true, isUpcoming: false, isExpired: false, isExactTime: true };
 }
 
 function formatTfrDistance(distKm, isInside = false, compassDir = '') {
@@ -446,7 +583,7 @@ function processTfrData(geojson, notamList, centerLat, centerLon) {
 
     // Temporal schedule and active countdown resolution
     const descForSchedule = matchedNotam.description || props.TITLE || props.title || props.NAME || '';
-    const schedule = parseTfrSchedule(descForSchedule, null, props);
+    const schedule = parseTfrSchedule(descForSchedule, matchedNotam.body || matchedNotam.text || null, { ...props, ...matchedNotam });
     if (isStandbyStadium) {
       schedule.isStadium = true;
     }
@@ -1005,6 +1142,45 @@ async function openTfrBriefingModal(notamId) {
       <div style="color: ${localItem.isInside ? '#ef4444' : '#34d399'}; font-weight: 700;">Distance from Pilot: ${formatTfrDistance(localItem.distanceKm, localItem.isInside, localItem.compassDir)}</div>
     `;
     contentEl.appendChild(metaCard);
+  }
+
+  if (localItem && notamText) {
+    const freshSchedule = parseTfrSchedule(localItem.title || localItem.description, notamText, localItem);
+    if (freshSchedule && freshSchedule.isExactTime) {
+      localItem.schedule = freshSchedule;
+      const freshTemporal = resolveTfrTemporalStatus(freshSchedule);
+      localItem.temporalStatus = freshTemporal.temporalStatus;
+      localItem.countdownText = freshTemporal.countdownText;
+      localItem.scheduleText = freshTemporal.scheduleText;
+      localItem.isActiveNow = freshTemporal.isActiveNow;
+      localItem.isUpcoming = freshTemporal.isUpcoming;
+      localItem.isExpired = freshTemporal.isExpired;
+    }
+  }
+
+  if (localItem && localItem.countdownText) {
+    const isUpcoming = localItem.temporalStatus === 'UPCOMING' || localItem.isUpcoming === true;
+    const isExpired = localItem.temporalStatus === 'EXPIRED';
+    const bannerColor = isUpcoming ? '#38bdf8' : (isExpired ? '#94a3b8' : '#ef4444');
+    const bannerBg = isUpcoming ? 'rgba(6, 182, 212, 0.12)' : (isExpired ? 'rgba(100, 116, 139, 0.15)' : 'rgba(239, 68, 68, 0.12)');
+    const bannerBorder = isUpcoming ? 'rgba(6, 182, 212, 0.35)' : (isExpired ? 'rgba(100, 116, 139, 0.3)' : 'rgba(239, 68, 68, 0.35)');
+
+    const scheduleBanner = document.createElement('div');
+    scheduleBanner.className = 'tfr-modal-schedule-banner';
+    scheduleBanner.style.cssText = `background: ${bannerBg}; border: 1px solid ${bannerBorder}; border-radius: 8px; padding: 10px 14px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem;`;
+    scheduleBanner.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:1.1rem;">⏱️</span>
+        <div>
+          <div style="font-weight:700; color:${bannerColor};">${localItem.countdownText}</div>
+          <div style="color:var(--text-muted); font-size:0.73rem;">Schedule: <b>${localItem.scheduleText || 'Active Window'}</b></div>
+        </div>
+      </div>
+      <span style="background:${bannerBg}; color:${bannerColor}; font-weight:700; font-size:0.68rem; padding:3px 8px; border-radius:4px; border:1px solid ${bannerBorder};">
+        ${localItem.temporalStatus || (isUpcoming ? 'UPCOMING' : 'ACTIVE')}
+      </span>
+    `;
+    contentEl.appendChild(scheduleBanner);
   }
 
   if (notamText) {

@@ -83,7 +83,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; display: none;">v1.201.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.201.1</span></h1>
         </div>
       </div>
 
@@ -6777,7 +6777,12 @@
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
-              <strong style="color: var(--text-main);">Changelog (v1.201.0):</strong>
+              <strong style="color: var(--text-main);">Changelog (v1.201.1):</strong>
+                    <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                        <li><strong>TFR Schedule Accuracy:</strong> Fixed premature 12-hour countdown bug by parsing exact FAA Beginning/Ending UTC times and eliminating date-only midnight assumptions. (Issue #192)</li>
+                    </ul>
+                    <br>
+                    <strong style="color: var(--text-main);">Changelog (v1.201.0):</strong>
               <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc;">
                 <li><strong>TFR Active Time Windows, Countdown &amp; Temporal Conflict Awareness (Closes #191):</strong> Added real-time countdown timers to TFR cards, map popups, and briefing modals; introduced differentiated amber dashed polygon styling for upcoming TFRs; de-escalated HUD alerts so future scheduled restrictions display informative notices rather than false emergency alarms.</li>
               </ul>
