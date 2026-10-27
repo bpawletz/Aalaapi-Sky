@@ -6084,6 +6084,25 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const list = await fetchHttpsJson('https://tfr.faa.gov/tfrapi/getTfrList');
+        if (Array.isArray(list)) {
+          try {
+            const diskPath = path.join(__dirname, '../../data/tfr_notams.json');
+            if (fs.existsSync(diskPath)) {
+              const diskData = JSON.parse(fs.readFileSync(diskPath, 'utf8'));
+              const diskMap = new Map();
+              diskData.forEach(d => { if (d.notam_id) diskMap.set(String(d.notam_id).trim(), d); });
+              list.forEach(item => {
+                const id = String(item.notam_id || item.gid || '').trim();
+                const m = diskMap.get(id);
+                if (m && m.start_utc) {
+                  item.start_utc = m.start_utc;
+                  item.end_utc = m.end_utc;
+                  item.exact_time = m.exact_time;
+                }
+              });
+            }
+          } catch (_) {}
+        }
         tfrCache.list = list;
         tfrCache.listTimestamp = now;
         res.writeHead(200, { 'Content-Type': 'application/json' });

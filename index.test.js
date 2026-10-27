@@ -37207,3 +37207,73 @@ describe('Issue #191: TFR Active Time Windows, Real-Time Countdown & Temporal Co
     }
   });
 });
+
+
+describe('Issue #192: TFR Schedule Accuracy & Exact Beginning/Ending UTC Parsing (v1.201.1)', () => {
+  test('Version consistency: v1.201.1 across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.201.1');
+  });
+
+  test('parseTfrSchedule parses official FAA detail table Beginning Date and Time and Ending Date and Time', () => {
+    const notamText = `
+      <TR><TD>Beginning Date and Time :</TD><TD>October 28, 2026 at 2030 UTC</TD></TR>
+      <TR><TD>Ending Date and Time :</TD><TD>October 29, 2026 at 0245 UTC</TD></TR>
+    `;
+    const res = parseTfrSchedule('COLUMBUS-CHILLICOTHE, OH, Wednesday, October 28, 2026 Local', notamText);
+    assert.strictEqual(res.isExactTime, true);
+    assert.strictEqual(res.isUtc, true);
+    assert.strictEqual(res.start.toISOString(), '2026-10-28T20:30:00.000Z');
+    assert.strictEqual(res.end.toISOString(), '2026-10-29T02:45:59.000Z');
+    assert.ok(res.rawRange.includes('Oct 28 at 20:30 UTC – Oct 29 at 02:45 UTC'));
+  });
+
+  test('parseTfrSchedule supports pre-enriched start_utc and end_utc in fallbackProps', () => {
+    const props = {
+      start_utc: '2026-10-28T20:30:00.000Z',
+      end_utc: '2026-10-29T02:45:59.000Z',
+      exact_time: true
+    };
+    const res = parseTfrSchedule('COLUMBUS-CHILLICOTHE, OH, Wednesday, October 28, 2026 Local', null, props);
+    assert.strictEqual(res.isExactTime, true);
+    assert.strictEqual(res.start.toISOString(), '2026-10-28T20:30:00.000Z');
+    assert.strictEqual(res.end.toISOString(), '2026-10-29T02:45:59.000Z');
+  });
+
+  test('resolveTfrTemporalStatus computes exact ~29h countdown for Oct 28 2030 UTC from Oct 27 15:30 UTC', () => {
+    const sched = {
+      start: new Date('2026-10-28T20:30:00.000Z'),
+      end: new Date('2026-10-29T02:45:59.000Z'),
+      isUtc: true,
+      isExactTime: true,
+      rawRange: 'Oct 28 at 20:30 UTC – Oct 29 at 02:45 UTC'
+    };
+    const now = new Date('2026-10-27T15:30:00.000Z'); // 11:30 AM EDT Oct 27
+    const status = resolveTfrTemporalStatus(sched, now);
+
+    assert.strictEqual(status.temporalStatus, 'UPCOMING');
+    assert.strictEqual(status.isUpcoming, true);
+    assert.strictEqual(status.countdownText, 'Starts in 1d 5h (Oct 28)');
+    // Crucial regression assert: must NOT say 'Starts in 12h' or 'Starts in 12h 30m'
+    assert.notStrictEqual(status.countdownText, 'Starts in 12h');
+    assert.notStrictEqual(status.countdownText, 'Starts in 12h 30m');
+    assert.notStrictEqual(status.countdownText, 'Starts in 13h');
+  });
+
+  test('Date-only schedule fallback prevents false midnight hour countdowns', () => {
+    // When only date is known and no exact hours exist
+    const sched = {
+      start: new Date(2026, 9, 28, 0, 0, 0), // Local midnight Oct 28
+      end: new Date(2026, 9, 28, 23, 59, 59, 999),
+      isUtc: false,
+      isExactTime: false,
+      rawRange: 'October 28, 2026 (Local)'
+    };
+    const now = new Date(2026, 9, 27, 11, 30, 0); // 11:30 AM Oct 27 (12.5h to midnight)
+    const status = resolveTfrTemporalStatus(sched, now);
+
+    assert.strictEqual(status.temporalStatus, 'UPCOMING');
+    assert.strictEqual(status.isUpcoming, true);
+    // Must NOT say 'Starts in 12h' or 'Starts in 12h 30m'
+    assert.strictEqual(status.countdownText, 'Starts Tomorrow (Oct 28, Time TBD)');
+  });
+});

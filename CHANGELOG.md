@@ -1,3 +1,19 @@
+## [1.201.1] - 2026-10-27
+
+### Fixed
+
+#### Pilot & Operational Features
+- **TFR Schedule Accuracy & Countdown Precision**: Fixed premature countdown calculations for scheduled flight restrictions where the app previously defaulted to midnight and reported restrictions starting in 12 hours instead of their true activation window (e.g. 29 hours).
+  - Support official FAA detail table formats for `Beginning Date and Time` and `Ending Date and Time` with exact hour/minute UTC resolution.
+  - Upfront data enrichment embeds exact `start_utc` and `end_utc` timestamps directly into cached NOTAM feeds (`data/tfr_notams.json`) and the Companion Bridge.
+  - Added schedule banner to the Full NOTAM Briefing modal and dynamic re-synchronization when live briefing details load.
+  - Guarded date-only summaries against midnight guesswork, cleanly reporting `Starts Tomorrow (Time TBD)` instead of artificial hourly countdowns.
+
+#### Under the Hood & Technical Details
+- **[src/airspace/TfrNotam.js]**: Enhanced `parseTfrSchedule()` to parse `Beginning Date and Time : [Month] [DD], [YYYY] at [HHMM] UTC` and `Ending Date and Time : ...` tables, as well as `fallbackProps.start_utc`/`fallbackProps.end_utc`. Introduced `isExactTime: boolean` flag.
+- **[src/airspace/TfrNotam.js]**: Added date-only calendar day comparison preventing misleading sub-day hourly countdowns when hours/minutes are unknown; formatted exact `Starts in Xd Yh` when `isExactTime: true`.
+- **[tools/fetch_tfr_data.js & tools/companion/server.js]**: Added `enrichNotamsWithSchedules()` to batch-query FAA `getWebText` and attach `start_utc`/`end_utc` directly to `data/tfr_notams.json` and `/api/tfr/notams`. (Closes #192)
+
 ## [1.201.0] - 2026-10-27
 
 Temporal schedule engine, real-time countdowns, and de-escalated conflict awareness for FAA Temporary Flight Restrictions.
