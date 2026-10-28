@@ -2,7 +2,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-green.svg)](https://nodejs.org)
 [![Aalaapi Bridge](https://img.shields.io/badge/Aalaapi_Bridge-v1.159.0-blue.svg)](https://github.com/bpawletz/Aalaapi-Sky)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 Dedicated **Node-RED** node module providing real-time hardware sync, ASTM F3411 Remote ID radar, automated photo ingestion watching, and 3D Gaussian Splatting / COLMAP manifest preparation for **Aalaapi Sky Bridge** (port `8765`).
 

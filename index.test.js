@@ -37277,3 +37277,62 @@ describe('Issue #192: TFR Schedule Accuracy & Exact Beginning/Ending UTC Parsing
     assert.strictEqual(status.countdownText, 'Starts Tomorrow (Oct 28, Time TBD)');
   });
 });
+
+describe('GNU AGPLv3 Software License, Worldwide Aviation Liability Shield & First-Party Trademark Protection (v1.202.0 - Issue #193)', () => {
+  test('Version consistency: v1.202.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.202.0');
+  });
+
+  test('LICENSE file contains full GNU Affero General Public License v3.0 and all four Section 7 legal/aviation/trademark shields', () => {
+    const licenseText = fs.readFileSync('LICENSE', 'utf8');
+    assert.ok(licenseText.includes('GNU AFFERO GENERAL PUBLIC LICENSE'), 'LICENSE must be GNU Affero General Public License');
+    assert.ok(licenseText.includes('Version 3, 19 November 2007'), 'LICENSE must specify Version 3, 19 November 2007');
+    assert.ok(!licenseText.includes('Permission is hereby granted, free of charge, to any person obtaining a copy'), 'LICENSE must not contain old MIT grant text');
+    assert.ok(licenseText.includes('13. Remote Network Interaction; Use with the GNU General Public License.'), 'LICENSE must include Section 13 network copyleft');
+    assert.ok(licenseText.includes('15. Disclaimer of Warranty.'), 'LICENSE must include Section 15 Disclaimer of Warranty');
+    assert.ok(licenseText.includes('16. Limitation of Liability.'), 'LICENSE must include Section 16 Limitation of Liability');
+    assert.ok(licenseText.includes('17. Interpretation of Sections 15 and 16.'), 'LICENSE must include Section 17 international local-law liability reform');
+
+    // Section 7 Additional Terms (7(b), 7(c), 7(e), 7(f))
+    assert.ok(licenseText.includes('COPYRIGHT & ADDITIONAL TERMS PURSUANT TO GNU AGPLv3 SECTION 7'), 'LICENSE must include Section 7 Additional Terms header');
+    assert.ok(licenseText.includes('AGPLv3 Section 7(b)'), 'LICENSE must include Section 7(b) preservation of aviation/hardware disclaimers');
+    assert.ok(licenseText.includes('FAA (United States), EASA (European'), 'LICENSE must explicitly cite international aviation authorities (FAA, EASA, UK CAA, Transport Canada, CASA, JCAB, ICAO)');
+    assert.ok(licenseText.includes('UK CAA (United Kingdom), Transport Canada (CARs), CASA'), 'LICENSE must cite UK CAA, Transport Canada, and CASA');
+    assert.ok(licenseText.includes('gratuitously'), 'LICENSE must declare gratuitous (free of charge) provision for civil-law donor immunity');
+    assert.ok(licenseText.includes('AGPLv3 Section 7(c)'), 'LICENSE must include Section 7(c) anti-misrepresentation and modification marking');
+    assert.ok(licenseText.includes('AGPLv3 Section 7(e)'), 'LICENSE must include Section 7(e) trademark exclusion');
+    assert.ok(licenseText.includes('AGPLv3 Section 7(f)'), 'LICENSE must include Section 7(f) mandatory indemnification by distributors and network operators');
+    assert.ok(licenseText.includes('Operational Mission Outputs (Pilot Clarification)'), 'LICENSE must clarify that pilot mission outputs (.kmz/.wpml) are unrestricted user data');
+  });
+
+  test('package.json and tools/node-red-contrib-aalaapi/package.json declare AGPL-3.0-only license', () => {
+    const rootPkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const nodeRedPkg = JSON.parse(fs.readFileSync('tools/node-red-contrib-aalaapi/package.json', 'utf8'));
+    assert.strictEqual(rootPkg.license, 'AGPL-3.0-only');
+    assert.strictEqual(nodeRedPkg.license, 'AGPL-3.0-only');
+  });
+
+  test('CREDITS.md, README.md, and in-app #about-modal document GNU AGPLv3, international aviation immunity, and first-party trademark protection', () => {
+    const credits = fs.readFileSync('CREDITS.md', 'utf8');
+    const readme = fs.readFileSync('README.md', 'utf8');
+    const template = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    assert.ok(credits.includes('0. Aalaapi Sky Software License, International Liability Shield & First-Party Trademark Policy'), 'CREDITS.md must include Section 0');
+    assert.ok(credits.includes('AGPL-3.0-only'), 'CREDITS.md must cite AGPL-3.0-only');
+    assert.ok(credits.includes('EASA (European Union)'), 'CREDITS.md must cite EASA');
+    assert.ok(credits.includes('Aalaapi Sky (First-Party Marks'), 'CREDITS.md Section 4 must include first-party Aalaapi Sky marks');
+
+    assert.ok(readme.includes('Software License, International Liability Shield & Trademark Policy'), 'README.md must include Software License section');
+    assert.ok(readme.includes('AGPL-3.0-only'), 'README.md must cite AGPL-3.0-only');
+    assert.ok(readme.includes('EASA (European Union)'), 'README.md must cite EASA');
+    assert.ok(readme.includes('Transport Canada'), 'README.md must cite Transport Canada');
+
+    for (const [name, html] of [['index_template.html', template], ['index.html', indexHtml]]) {
+      assert.ok(html.includes('id="about-license-section"'), `${name} must contain #about-license-section`);
+      assert.ok(html.includes('GNU Affero General Public License v3.0 (AGPL-3.0-only)'), `${name} must display GNU AGPLv3 in #about-license-section`);
+      assert.ok(html.includes('FAA, EASA, UK CAA, Transport Canada, CASA, JCAB, or ICAO'), `${name} must list international aviation authorities in #about-license-section`);
+      assert.ok(html.includes('Aalaapi Sky (First-Party Marks &mdash; AGPLv3 Section 7(e))'), `${name} must display first-party trademark notice in #about-trademarks-section`);
+    }
+  });
+});
