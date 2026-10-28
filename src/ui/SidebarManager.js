@@ -249,6 +249,13 @@ function initMobileNav() {
       });
     }
 
+    const moreCoffeeBtn = document.getElementById('more-menu-coffee-btn');
+    if (moreCoffeeBtn && typeof moreCoffeeBtn.addEventListener === 'function') {
+      moreCoffeeBtn.addEventListener('click', () => {
+        moreMenu.classList.add('hidden');
+      });
+    }
+
     const moreCustomizeBtn = document.getElementById('more-menu-customize-ribbon-btn');
     if (moreCustomizeBtn && typeof moreCustomizeBtn.addEventListener === 'function') {
       moreCustomizeBtn.addEventListener('click', (e) => {
@@ -301,7 +308,8 @@ const DEFAULT_RIBBON_ITEMS = [
   { id: 'adsb', label: 'ADS-B Airspace Alerts', selector: '#adsb-topbar-btn', defaultVisible: true },
   { id: 'intro', label: 'Intro Guide Tour', selector: '#intro-tour-btn', defaultVisible: true },
   { id: 'about', label: 'About & Changelog', selector: '#about-btn', defaultVisible: true },
-  { id: 'links', label: 'Useful Aviation Links', selector: '#useful-links-btn', defaultVisible: true }
+  { id: 'links', label: 'Useful Aviation Links', selector: '#useful-links-btn', defaultVisible: true },
+  { id: 'coffee', label: 'Buy Me a Coffee (☕)', selector: '#buy-coffee-topbar-btn', defaultVisible: true }
 ];
 
 function getDefaultRibbonConfig() {
@@ -358,7 +366,7 @@ function applyTopbarRibbonConfig(cfg) {
     const isVisible = itemCfg ? itemCfg.visible : def.defaultVisible;
     if (isVisible) {
       el.classList.remove('ribbon-hidden');
-      if (['intro', 'about', 'links'].includes(def.id) && config.preset === 'studio') {
+      if (['intro', 'about', 'links', 'coffee'].includes(def.id) && config.preset === 'studio') {
         el.classList.add('ribbon-force-show');
       } else {
         el.classList.remove('ribbon-force-show');
@@ -495,7 +503,7 @@ function initTopbarRibbon() {
       if (val === 'compact') {
         current.preset = 'compact';
         DEFAULT_RIBBON_ITEMS.forEach(it => {
-          if (['units', 'theme', 'intro', 'about', 'links'].includes(it.id)) {
+          if (['units', 'theme', 'intro', 'about', 'links', 'coffee'].includes(it.id)) {
             current.items[it.id].visible = false;
           } else {
             current.items[it.id].visible = true;

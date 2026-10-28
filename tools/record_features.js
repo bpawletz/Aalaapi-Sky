@@ -3086,6 +3086,37 @@ const scenarios = [
       }
       await page.waitForTimeout(1000);
     }
+  },
+  {
+    id: 'buy-me-a-coffee',
+    name: 'Buy Me a Coffee Integration (About Modal, Useful Links & More Menu)',
+    issueRef: 'Issue #194',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 1. Open About Modal to show #about-coffee-card and #about-footer-coffee-btn
+      await page.evaluate(() => {
+        const btn = document.getElementById('about-btn');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(1400);
+
+      // 2. Close About Modal
+      await page.click('#close-about-btn');
+      await page.waitForTimeout(600);
+
+      // 3. Open Useful Links Modal to show #useful-links-coffee-link
+      await page.evaluate(() => {
+        const btn = document.getElementById('useful-links-btn');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(1400);
+
+      // 4. Close Useful Links Modal
+      await page.click('#close-links-btn');
+      await page.waitForTimeout(600);
+    }
   }
 ];
 

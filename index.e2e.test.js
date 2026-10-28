@@ -4045,7 +4045,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
     assert.strictEqual(moreMenuOpenState.menuVisible, true, 'More menu should be visible after clicking more button');
-    assert.strictEqual(moreMenuOpenState.itemsCount, 9, 'More menu should contain 9 action items (Bridge, ADS-B, Diagnostics, Photos, Pilot Identity, Intro, About, Links, Customize Ribbon)');
+    assert.strictEqual(moreMenuOpenState.itemsCount, 10, 'More menu should contain 10 action items (Bridge, ADS-B, Diagnostics, Photos, Pilot Identity, Intro, About, Links, Buy Me a Coffee, Customize Ribbon)');
 
     // Click About from More Menu
     await page.locator('#more-menu-about-btn').click();
@@ -10552,6 +10552,56 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       const isHiddenAfterClose = await modal.evaluate(el => el.classList.contains('hidden'));
       assert.strictEqual(isHiddenAfterClose, true, 'Auth modal must close when close button is clicked');
+    });
+  });
+
+  describe('Buy Me a Coffee UI Integration E2E Suite (v1.203.0 - Issue #194)', () => {
+    test('Top Ribbon, More menu, About Modal, and Useful Links Modal expose Buy Me a Coffee (buymeacoffee.com/romah74) without implying software support', async () => {
+      // 1. Check Topbar & More menu links in DOM
+      const topbarHref = await page.getAttribute('#buy-coffee-topbar-btn', 'href');
+      assert.strictEqual(topbarHref, 'https://buymeacoffee.com/romah74');
+      const moreHref = await page.getAttribute('#more-menu-coffee-btn', 'href');
+      assert.strictEqual(moreHref, 'https://buymeacoffee.com/romah74');
+
+      // 2. Open About Modal and verify #about-coffee-card, #about-coffee-btn, and #about-footer-coffee-btn
+      await page.evaluate(() => {
+        const aboutBtn = document.getElementById('about-btn');
+        if (aboutBtn) aboutBtn.click();
+      });
+      await page.waitForTimeout(200);
+
+      const aboutModalVisible = await page.locator('#about-modal').evaluate(el => !el.classList.contains('hidden'));
+      assert.strictEqual(aboutModalVisible, true, 'About modal must open');
+
+      const aboutCardVisible = await page.locator('#about-coffee-card').isVisible();
+      assert.strictEqual(aboutCardVisible, true, '#about-coffee-card must be visible in About modal');
+
+      const aboutBtnHref = await page.getAttribute('#about-coffee-btn', 'href');
+      assert.strictEqual(aboutBtnHref, 'https://buymeacoffee.com/romah74');
+
+      const aboutFooterBtnHref = await page.getAttribute('#about-footer-coffee-btn', 'href');
+      assert.strictEqual(aboutFooterBtnHref, 'https://buymeacoffee.com/romah74');
+
+      await page.click('#close-about-btn');
+      await page.waitForTimeout(200);
+
+      // 3. Open Useful Links Modal and verify #useful-links-coffee-link
+      await page.evaluate(() => {
+        const linksBtn = document.getElementById('useful-links-btn');
+        if (linksBtn) linksBtn.click();
+      });
+      await page.waitForTimeout(200);
+
+      const linksModalVisible = await page.locator('#links-modal').evaluate(el => !el.classList.contains('hidden'));
+      assert.strictEqual(linksModalVisible, true, 'Useful Links modal must open');
+
+      const coffeeLinkVisible = await page.locator('#useful-links-coffee-link').isVisible();
+      assert.strictEqual(coffeeLinkVisible, true, '#useful-links-coffee-link must be visible in Useful Links modal');
+      const coffeeLinkHref = await page.getAttribute('#useful-links-coffee-link', 'href');
+      assert.strictEqual(coffeeLinkHref, 'https://buymeacoffee.com/romah74');
+
+      await page.click('#close-links-btn');
+      await page.waitForTimeout(200);
     });
   });
 });
