@@ -1,3 +1,19 @@
+## [1.203.0] - 2026-10-28
+
+Added **Buy Me a Coffee (`buymeacoffee.com/romah74`)** links across the application UI (Top Ribbon, More menu, About modal, and Useful Links modal) and repository metadata (`README.md` and `.github/FUNDING.yml`), explicitly framed as a voluntary coffee tip with no implied technical software support or warranty.
+
+### Added
+
+#### Pilot & Operational Features
+- **Buy Me a Coffee Integration (`buymeacoffee.com/romah74`) (Closes #194)**:
+  - **Top Ribbon & More Menu**: Added a quick-access `☕ Coffee` button (`#buy-coffee-topbar-btn`) in the top navigation bar and a `☕ Buy Me a Coffee` item (`#more-menu-coffee-btn`) in the overflow More menu, integrated with the Top Ribbon Customizer.
+  - **About Modal (`#about-modal`)**: Added a dedicated `#about-coffee-card` banner with a `☕ Buy Me a Coffee` button (`#about-coffee-btn`) and a footer button (`#about-footer-coffee-btn`), clearly stating that tips are strictly voluntary gifts with no software support or warranty implied.
+  - **Useful Links Modal (`#links-modal`)**: Added a `☕ Buy Me a Coffee` entry (`#useful-links-coffee-link`) linking directly to `https://buymeacoffee.com/romah74`.
+  - **Repository Metadata**: Added `.github/FUNDING.yml` (`buy_me_a_coffee: romah74`) and a `☕ Buy Me a Coffee` badge and section in `README.md`.
+
+#### Under the Hood & Technical Details
+- **[index_template.html, index.css & src/ui/SidebarManager.js]**: Added `#buy-coffee-topbar-btn`, `#more-menu-coffee-btn`, `#about-coffee-card`, `#about-coffee-btn`, `#about-footer-coffee-btn`, and `#useful-links-coffee-link`; registered `{ id: 'coffee', label: 'Buy Me a Coffee (☕)', selector: '#buy-coffee-topbar-btn', defaultVisible: true }` in `DEFAULT_RIBBON_ITEMS` with responsive desktop collapse rules at `<= 1500px`.
+
 ## [1.202.0] - 2026-10-28
 
 Transitioned software licensing to the **GNU Affero General Public License v3.0 (`AGPL-3.0-only`)** reinforced with **AGPLv3 Section 7 (`7(b)`, `7(c)`, `7(e)`, `7(f)`) Worldwide Aviation Liability Shields, Mandatory Distributor Indemnification, and First-Party Trademark Protections**.

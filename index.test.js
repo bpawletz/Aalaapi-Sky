@@ -37336,3 +37336,62 @@ describe('GNU AGPLv3 Software License, Worldwide Aviation Liability Shield & Fir
     }
   });
 });
+
+describe('Buy Me a Coffee Integration (v1.203.0 - Issue #194)', () => {
+  test('Version consistency: v1.203.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.203.0');
+  });
+
+  test('.github/FUNDING.yml and README.md include Buy Me a Coffee (buymeacoffee.com/romah74) without implying software support', () => {
+    const funding = fs.readFileSync(path.join(__dirname, '.github', 'FUNDING.yml'), 'utf8');
+    assert.ok(funding.includes('buy_me_a_coffee: romah74'), '.github/FUNDING.yml must configure buy_me_a_coffee: romah74');
+
+    const readme = fs.readFileSync(path.join(__dirname, 'README.md'), 'utf8');
+    assert.ok(readme.includes('https://buymeacoffee.com/romah74'), 'README.md must link to https://buymeacoffee.com/romah74');
+    assert.ok(readme.includes('## ☕ Buy Me a Coffee'), 'README.md must have ## ☕ Buy Me a Coffee section heading');
+    assert.ok(!readme.includes('## ☕ Support'), 'README.md must not use Support in the Buy Me a Coffee heading');
+  });
+
+  test('DOM & Top Ribbon Customizer: #buy-coffee-topbar-btn, #more-menu-coffee-btn, #about-coffee-card, #about-coffee-btn, #about-footer-coffee-btn, and #useful-links-coffee-link exist and never label the link as Support', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    for (const [name, html] of [['index_template.html', template], ['index.html', indexHtml]]) {
+      const dom = new JSDOM(html);
+      const doc = dom.window.document;
+
+      const coffeeElements = [
+        { id: 'buy-coffee-topbar-btn', expectedLabel: 'Coffee' },
+        { id: 'more-menu-coffee-btn', expectedLabel: 'Buy Me a Coffee' },
+        { id: 'about-coffee-btn', expectedLabel: 'Buy Me a Coffee' },
+        { id: 'about-footer-coffee-btn', expectedLabel: 'Buy Me a Coffee' },
+        { id: 'useful-links-coffee-link', expectedLabel: 'Buy Me a Coffee' }
+      ];
+
+      for (const item of coffeeElements) {
+        const el = doc.getElementById(item.id);
+        assert.ok(el, `${name} must contain #${item.id}`);
+        assert.strictEqual(el.getAttribute('href'), 'https://buymeacoffee.com/romah74', `#${item.id} href must be https://buymeacoffee.com/romah74`);
+        assert.strictEqual(el.getAttribute('target'), '_blank', `#${item.id} must open in _blank`);
+        assert.strictEqual(el.getAttribute('rel'), 'noopener noreferrer', `#${item.id} must set rel="noopener noreferrer"`);
+        assert.ok(el.textContent.includes(item.expectedLabel), `#${item.id} text must include "${item.expectedLabel}"`);
+      }
+
+      // Explicitly ensure button labels do not call it "Support"
+      assert.ok(!doc.getElementById('buy-coffee-topbar-btn').textContent.toLowerCase().includes('support'), '#buy-coffee-topbar-btn must not say Support');
+      assert.ok(!doc.getElementById('more-menu-coffee-btn').textContent.toLowerCase().includes('support'), '#more-menu-coffee-btn must not say Support');
+      assert.ok(!doc.getElementById('about-coffee-btn').textContent.toLowerCase().includes('support'), '#about-coffee-btn must not say Support');
+      assert.ok(!doc.getElementById('about-footer-coffee-btn').textContent.toLowerCase().includes('support'), '#about-footer-coffee-btn must not say Support');
+
+      const aboutCard = doc.getElementById('about-coffee-card');
+      assert.ok(aboutCard, `${name} must contain #about-coffee-card in #about-modal`);
+      assert.ok(aboutCard.textContent.includes('no software support or warranty is provided'), '#about-coffee-card must explicitly state that no software support or warranty is provided');
+    }
+
+    assert.ok(Array.isArray(DEFAULT_RIBBON_ITEMS), 'DEFAULT_RIBBON_ITEMS must be an array');
+    const coffeeRibbonItem = DEFAULT_RIBBON_ITEMS.find(it => it.id === 'coffee');
+    assert.ok(coffeeRibbonItem, 'DEFAULT_RIBBON_ITEMS must include coffee item');
+    assert.strictEqual(coffeeRibbonItem.selector, '#buy-coffee-topbar-btn');
+    assert.ok(!coffeeRibbonItem.label.toLowerCase().includes('support'), 'Ribbon item label must not say Support');
+  });
+});

@@ -350,6 +350,33 @@ html, body {
   gap: 4px !important;
 }
 
+.btn-coffee-pill {
+  text-decoration: none !important;
+  color: #fbbf24 !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+
+.btn-coffee-pill:hover {
+  background: rgba(245, 158, 11, 0.22) !important;
+  border-color: rgba(245, 158, 11, 0.55) !important;
+  color: #fde68a !important;
+}
+
+.btn-coffee {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  color: #0f172a;
+  border: 1px solid rgba(251, 191, 36, 0.6);
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25);
+  transition: var(--transition-smooth);
+}
+
+.btn-coffee:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.38);
+}
+
 #adsb-topbar-btn,
 #adsb-topbar-label {
   white-space: nowrap !important;
@@ -2308,7 +2335,8 @@ body.modal-drag-active {
 @media (max-width: 1500px) {
   #intro-tour-btn:not(.ribbon-force-show),
   #about-btn:not(.ribbon-force-show),
-  #useful-links-btn:not(.ribbon-force-show) {
+  #useful-links-btn:not(.ribbon-force-show),
+  #buy-coffee-topbar-btn:not(.ribbon-force-show) {
     display: none !important;
   }
   .header-more-btn {
@@ -7854,7 +7882,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.202.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.203.0</span></h1>
         </div>
       </div>
 
@@ -7938,6 +7966,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </button>
         <button id="about-btn" class="btn-secondary header-about-btn" type="button" title="About &amp; Changelog">About</button>
         <button id="useful-links-btn" class="btn-secondary header-about-btn" type="button" title="Useful Links">Links</button>
+        <a id="buy-coffee-topbar-btn" href="https://buymeacoffee.com/romah74" target="_blank" rel="noopener noreferrer" class="btn-secondary header-about-btn btn-coffee-pill" title="Buy Me a Coffee (buymeacoffee.com/romah74)" aria-label="Buy Me a Coffee"><span>☕</span><span>Coffee</span></a>
         <button id="adsb-topbar-btn" class="btn-secondary header-about-btn" type="button" title="Manned Aircraft Airspace Awareness (ADS-B Alerts)">
           <span id="adsb-topbar-icon">✈️</span>
           <span id="adsb-topbar-label">ADS-B</span>
@@ -7987,6 +8016,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <span class="more-menu-icon">🔗</span>
           <span class="more-menu-label">Useful Aviation Links</span>
         </button>
+        <a id="more-menu-coffee-btn" href="https://buymeacoffee.com/romah74" target="_blank" rel="noopener noreferrer" class="more-menu-item" style="text-decoration: none; color: #fcd34d;">
+          <span class="more-menu-icon">☕</span>
+          <span class="more-menu-label">Buy Me a Coffee</span>
+        </a>
         <button id="more-menu-customize-ribbon-btn" class="more-menu-item" type="button" style="border-top: 1px solid var(--border-color); margin-top: 4px; padding-top: 8px;">
           <span class="more-menu-icon">🎛️</span>
           <span class="more-menu-label">Customize Top Ribbon...</span>
@@ -12193,6 +12226,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ☕ Buy Me a Coffee Links &amp; GitHub Funding Metadata (v1.203.0) (Closes #194)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Added voluntary <strong>Buy Me a Coffee</strong> links (<a href="https://buymeacoffee.com/romah74" target="_blank" rel="noopener noreferrer" style="color: #fbbf24; text-decoration: underline;">buymeacoffee.com/romah74</a>) across the Top Ribbon, More menu, About modal, Useful Links dialog, <code>README.md</code>, and <code>.github/FUNDING.yml</code>. Explicitly framed as a voluntary tip/gift with no software support or warranty implied.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ⚖️ GNU AGPLv3 Licensing, Worldwide Aviation Shield &amp; Trademark Protection (v1.202.0) (Closes #193)
@@ -14360,6 +14401,16 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;"><span>NOTAM</span><span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Notices to Air Missions regarding temporary hazards.</span></div>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         </a>
+        <a id="useful-links-coffee-link" href="https://buymeacoffee.com/romah74" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.35);">
+          <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
+            <span style="display: flex; align-items: center; gap: 6px; color: #fbbf24; font-weight: 700;">
+              ☕ Buy Me a Coffee
+              <span style="font-size: 0.65rem; background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 4px; padding: 1px 5px; font-weight: 600;">romah74</span>
+            </span>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Leave a voluntary coffee tip for the creator at buymeacoffee.com/romah74 (no software support or warranty implied).</span>
+          </div>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
       </div>
       <footer class="modal-footer" style="padding-top: 16px; display: flex; gap: 12px; justify-content: flex-end;">
         <button id="close-links-footer-btn" class="btn-primary" type="button" style="margin-top: 0;">Close</button>
@@ -14433,7 +14484,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.202.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.203.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14450,6 +14501,22 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <p style="margin: 0; color: var(--text-main); font-weight: 500;">
           Aalaapi Sky gives drone pilots comprehensive flight-planning capabilities directly in your web browser.
         </p>
+
+        <!-- Buy Me a Coffee Card (v1.203.0, Issue #194) -->
+        <div id="about-coffee-card" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+          <div style="display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 220px;">
+            <strong style="color: #fbbf24; font-size: 0.84rem; display: flex; align-items: center; gap: 6px;">
+              <span>☕</span> Buy Me a Coffee
+            </strong>
+            <span style="font-size: 0.74rem; line-height: 1.4; color: var(--text-muted);">
+              Enjoying Aalaapi Sky? If this flight planner saves you time in the field, you can buy the developer a coffee. <em>Voluntary tip only &mdash; no software support or warranty is provided.</em>
+            </span>
+          </div>
+          <a id="about-coffee-btn" href="https://buymeacoffee.com/romah74" target="_blank" rel="noopener noreferrer" class="btn-coffee" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; white-space: nowrap; flex-shrink: 0;">
+            <span>☕</span>
+            <span>Buy Me a Coffee</span>
+          </a>
+        </div>
 
         <h4 style="margin: 4px 0 0 0; color: var(--accent-cyan); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Key Capabilities</h4>
         <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.45;">
@@ -14575,6 +14642,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.203.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Buy Me a Coffee Integration (Closes #194):</strong> Added voluntary <code>Buy Me a Coffee</code> links (<code>buymeacoffee.com/romah74</code>) across the Top Ribbon, More menu, About modal, Useful Links modal, <code>README.md</code>, and <code>.github/FUNDING.yml</code>, explicitly framed as a voluntary tip with no implied technical software support or warranty.</li>
+              </ul>
+              <br>
               <strong style="color: var(--text-main);">Changelog (v1.202.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>GNU AGPLv3 Software License, Worldwide Aviation Liability Shield &amp; Trademark Protection (Closes #193):</strong> Transitioned repository license to <code>AGPL-3.0-only</code> with Section 7 (<code>7(b)</code>, <code>7(c)</code>, <code>7(e)</code>, <code>7(f)</code>) international aviation disclaimers (FAA, EASA, UK CAA, Transport Canada, CASA, ICAO), gratuitous civil-law immunity, mandatory third-party distributor indemnification, and first-party Aalaapi Sky trademark protection while preserving unrestricted pilot ownership of generated mission files.</li>
@@ -18009,7 +18081,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           </div>
         </div>
       </div>
-      <footer class="modal-footer">
+      <footer class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        <a id="about-footer-coffee-btn" href="https://buymeacoffee.com/romah74" target="_blank" rel="noopener noreferrer" class="btn-coffee" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700;">
+          <span>☕</span>
+          <span>Buy Me a Coffee</span>
+        </a>
         <button id="close-about-footer-btn" class="btn-primary" type="button">Close</button>
       </footer>
     </div>
@@ -35818,6 +35894,13 @@ function initMobileNav() {
       });
     }
 
+    const moreCoffeeBtn = document.getElementById('more-menu-coffee-btn');
+    if (moreCoffeeBtn && typeof moreCoffeeBtn.addEventListener === 'function') {
+      moreCoffeeBtn.addEventListener('click', () => {
+        moreMenu.classList.add('hidden');
+      });
+    }
+
     const moreCustomizeBtn = document.getElementById('more-menu-customize-ribbon-btn');
     if (moreCustomizeBtn && typeof moreCustomizeBtn.addEventListener === 'function') {
       moreCustomizeBtn.addEventListener('click', (e) => {
@@ -35870,7 +35953,8 @@ const DEFAULT_RIBBON_ITEMS = [
   { id: 'adsb', label: 'ADS-B Airspace Alerts', selector: '#adsb-topbar-btn', defaultVisible: true },
   { id: 'intro', label: 'Intro Guide Tour', selector: '#intro-tour-btn', defaultVisible: true },
   { id: 'about', label: 'About & Changelog', selector: '#about-btn', defaultVisible: true },
-  { id: 'links', label: 'Useful Aviation Links', selector: '#useful-links-btn', defaultVisible: true }
+  { id: 'links', label: 'Useful Aviation Links', selector: '#useful-links-btn', defaultVisible: true },
+  { id: 'coffee', label: 'Buy Me a Coffee (☕)', selector: '#buy-coffee-topbar-btn', defaultVisible: true }
 ];
 
 function getDefaultRibbonConfig() {
@@ -35927,7 +36011,7 @@ function applyTopbarRibbonConfig(cfg) {
     const isVisible = itemCfg ? itemCfg.visible : def.defaultVisible;
     if (isVisible) {
       el.classList.remove('ribbon-hidden');
-      if (['intro', 'about', 'links'].includes(def.id) && config.preset === 'studio') {
+      if (['intro', 'about', 'links', 'coffee'].includes(def.id) && config.preset === 'studio') {
         el.classList.add('ribbon-force-show');
       } else {
         el.classList.remove('ribbon-force-show');
@@ -36064,7 +36148,7 @@ function initTopbarRibbon() {
       if (val === 'compact') {
         current.preset = 'compact';
         DEFAULT_RIBBON_ITEMS.forEach(it => {
-          if (['units', 'theme', 'intro', 'about', 'links'].includes(it.id)) {
+          if (['units', 'theme', 'intro', 'about', 'links', 'coffee'].includes(it.id)) {
             current.items[it.id].visible = false;
           } else {
             current.items[it.id].visible = true;
