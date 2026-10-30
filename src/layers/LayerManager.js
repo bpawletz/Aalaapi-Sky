@@ -40,7 +40,12 @@ function getPatternDisplayName(pattern) {
     'vertical-facade': '🏢 Vertical Facade Grid',
     'continuous-helix': '🌀 Continuous Helix / Spiral',
     'star-pass': '⭐ Star Pass (Cross-Hatch)',
-    'corridor': '🛣️ Multi-Pass Corridor'
+    'corridor': '🛣️ Multi-Pass Corridor',
+    'dome-shell': '🌐 Hemispherical Dome',
+    'polygon-grid': '📐 Polygon Area Grid',
+    'sar-search': '🛟 Search & Rescue',
+    'perimeter-patrol': '🛡️ Perimeter Patrol',
+    'cinematic-reveal': '🎬 Cinematic Reveal'
   };
   return map[pattern] || pattern || 'Double Grid';
 }
@@ -201,6 +206,36 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     photoSphereShotsPerRing: 12,
     photoSphereSettlingTime: 2.0,
     photoSphereAebEnabled: false,
+    domeRadius: 40,
+    domeBaseAlt: 10,
+    domeTiers: 4,
+    domeMinAngle: 20,
+    domeMaxAngle: 80,
+    domeAltitudeOrder: 'max-to-min',
+    domeZenithCap: true,
+    polygonGridPass: 'single',
+    polygonGridMargin: 0,
+    polygonGridAngle: 'auto',
+    sarMode: 'expanding-square',
+    sarTrackSpacing: 30,
+    sarMaxLegs: 12,
+    sarRadius: 60,
+    sarSectors: 3,
+    sarBearing: 0,
+    sarGimbalPitch: -45,
+    perimeterOffset: 0,
+    perimeterHeadingLock: 'inward',
+    perimeterDirection: 'cw',
+    perimeterLaps: 1,
+    perimeterCornerSmoothing: 'miter',
+    cinematicMode: 'dronie',
+    cinematicAzimuth: 180,
+    cinematicStartDist: 5,
+    cinematicEndDist: 50,
+    cinematicStartAlt: 10,
+    cinematicEndAlt: 40,
+    cinematicPoiAlt: 2,
+    cinematicEccentricity: 0.5,
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -230,6 +265,23 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     layer.captureMode = 'continuous';
     layer.hoverTime = 0;
     layer.autoSettlingEnabled = false;
+  } else if (pattern === 'cinematic-reveal') {
+    layer.speed = 3.0;
+    layer.captureMode = 'continuous';
+    layer.pathMode = 'curved';
+    layer.headingMode = 'towardCenter';
+  } else if (pattern === 'dome-shell') {
+    layer.headingMode = 'towardCenter';
+    layer.gimbalPitch = -45;
+  } else if (pattern === 'sar-search') {
+    layer.gimbalPitch = -45;
+    layer.headingMode = 'followWayline';
+  } else if (pattern === 'perimeter-patrol') {
+    layer.pathMode = 'curved';
+    layer.gimbalPitch = -60;
+  } else if (pattern === 'polygon-grid') {
+    layer.gimbalPitch = -90;
+    layer.headingMode = 'followWayline';
   }
 
   return layer;
@@ -2612,7 +2664,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     sLine = (gridType === 'tower' || gridType === 'vertical-facade') ? lFoot * (1.0 - overlapFront) : wFoot * (1.0 - overlapSide);
     sPhoto = (gridType === 'tower' || gridType === 'vertical-facade') ? wFoot * (1.0 - overlapSide) : lFoot * (1.0 - overlapFront);
 
-    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower' || gridType === 'photo-sphere' || gridType === 'continuous-helix' || gridType === 'corridor') ? 0 : rotation;
+    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower' || gridType === 'photo-sphere' || gridType === 'continuous-helix' || gridType === 'corridor' || gridType === 'dome-shell' || gridType === 'sar-search' || gridType === 'cinematic-reveal') ? 0 : rotation;
 
     let gridData;
     if (gridType === 'light-art') {
@@ -2693,6 +2745,16 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       gridData = generateGridMultiOrbitComboCoordinates(gridWidth, actualRotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'target-splat') {
       gridData = generateTargetSplatCoordinates(gridWidth, gridHeight, actualRotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch, layer);
+    } else if (gridType === 'dome-shell') {
+      gridData = generateDomeShellCoordinates(layer, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'polygon-grid') {
+      gridData = generatePolygonGridCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch, speed);
+    } else if (gridType === 'sar-search') {
+      gridData = generateSarSearchCoordinates(layer, sPhoto, altitude, defaultGimbalPitch, speed);
+    } else if (gridType === 'perimeter-patrol') {
+      gridData = generatePerimeterPatrolCoordinates(layer, sPhoto, altitude, defaultGimbalPitch, speed);
+    } else if (gridType === 'cinematic-reveal') {
+      gridData = generateCinematicRevealCoordinates(layer, sPhoto, altitude, defaultGimbalPitch, speed);
     } else {
       gridData = generateGridCoordinates(gridWidth, gridHeight, actualRotation, gridType, captureMode, sLine, sPhoto, layer.turnaroundOvershoot || 0);
     }
