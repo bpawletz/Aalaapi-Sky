@@ -38536,16 +38536,11 @@ describe('Flight Diagnostics In-App IRL Verification Button & 6-Phase Scorecard 
   const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
   test('Version consistency: v1.210.0 across package.json, changelog, index_template.html, and index.html', () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.210.0');
+    assertVersionConsistency('1.210.0');
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.210.0] - 2026-10-30'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.210.0'));
-    assert.ok(template.includes('Version 1.210.0'));
     assert.ok(template.includes('Changelog (v1.210.0):'));
-    assert.ok(htmlText.includes('v1.210.0'));
-    assert.ok(htmlText.includes('Version 1.210.0'));
     assert.ok(htmlText.includes('Changelog (v1.210.0):'));
   });
 
@@ -38715,3 +38710,34 @@ describe('Flight Diagnostics In-App IRL Verification Button & 6-Phase Scorecard 
   });
 });
 
+
+
+describe('Flight Telemetry Intelligent Mission Resolver & IRL Field Verification of Single Pattern (v1.210.1, Issue #204)', () => {
+  const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+  test('Version consistency: v1.210.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.210.1');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.210.1] - 2026-10-30'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.210.1'));
+    assert.ok(template.includes('Version 1.210.1'));
+    assert.ok(template.includes('Changelog (v1.210.1):'));
+    assert.ok(htmlText.includes('v1.210.1'));
+    assert.ok(htmlText.includes('Version 1.210.1'));
+    assert.ok(htmlText.includes('Changelog (v1.210.1):'));
+  });
+
+  test('DigitalTwin.js includes flightPattern in /api/flight-telemetry payload and query', () => {
+    const dtSource = fs.readFileSync(path.join(__dirname, 'src/3d/DigitalTwin.js'), 'utf8');
+    assert.ok(dtSource.includes('flightPattern: currentPattern'));
+    assert.ok(dtSource.includes('&pattern='));
+  });
+
+  test('tools/companion/server.js uses multi-factor geometric and pattern matching for flight telemetry resolution', () => {
+    const serverSource = fs.readFileSync(path.join(__dirname, 'tools/companion/server.js'), 'utf8');
+    assert.ok(serverSource.includes('meanWpDist'));
+    assert.ok(serverSource.includes('requestedPattern'));
+    assert.ok(serverSource.includes('cand.flight_pattern === requestedPattern'));
+  });
+});

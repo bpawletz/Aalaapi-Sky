@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-10-30T16:24:54.824Z",
-  "currentAppVersion": "1.210.0",
+  "lastUpdated": "2026-10-30T20:48:30.069Z",
+  "currentAppVersion": "1.210.1",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "f01cb90862e5",
@@ -15,15 +15,15 @@
         "generateGridCoordinates"
       ],
       "codeHash": "2060d0169374",
-      "verifiedCodeHash": null,
-      "status": "UNTESTED",
+      "verifiedCodeHash": "2060d0169374",
+      "status": "VERIFIED",
       "lastModifiedVersion": "1.209.0",
-      "lastTestedVersion": null,
-      "lastTestedDate": null,
-      "testedBy": null,
-      "droneModel": null,
-      "firmware": null,
-      "notes": "",
+      "lastTestedVersion": "1.210.0",
+      "lastTestedDate": "2026-10-30T20:40:20.063Z",
+      "testedBy": "RPIC Field QA",
+      "droneModel": "DJI Mini 4 Pro",
+      "firmware": "RC 2 / DJI Fly",
+      "notes": "IRL Field flight verification (FlightRecord_2026-10-30_[16-27-06].txt): 100% WPs (24/24), RMS XTE=0.05m, Max XTE=0.10m, AltErr=0.07m, 47 photos",
       "testParams": {
         "centerCoords": [
           41.3215,
@@ -43,15 +43,71 @@
         "turnaroundOvershootM": 10
       },
       "checklist": {
-        "kmz_import": false,
-        "entry_altitude": false,
-        "geometry_path": false,
-        "heading_gimbal": false,
-        "capture_trigger": false,
-        "exit_rth": false
+        "kmz_import": true,
+        "entry_altitude": true,
+        "geometry_path": true,
+        "heading_gimbal": true,
+        "capture_trigger": true,
+        "exit_rth": true
       },
-      "lastTelemetryMetrics": null,
-      "history": []
+      "lastTelemetryMetrics": {
+        "plannedWaypoints": 24,
+        "visitedWaypoints": 24,
+        "waypointCompletionPct": 100,
+        "entryHorizontalErrorM": 0.08,
+        "entryAltitudeErrorM": 0,
+        "rmsXteM": 0.05,
+        "maxXteM": 0.1,
+        "rmsAltitudeErrorM": 0.07,
+        "meanPitchErrorDeg": 3.8,
+        "meanYawErrorDeg": 0.3,
+        "expectedPhotos": 24,
+        "actualPhotos": 47,
+        "medianShutterSpeedMps": 0,
+        "finalWaypointErrorM": 0.03,
+        "batteryEndPct": 66,
+        "droneModel": "DJI Mini 4 Pro",
+        "durationFormatted": "05:08"
+      },
+      "history": [
+        {
+          "timestamp": "2026-10-30T20:40:20.063Z",
+          "version": "1.210.0",
+          "status": "VERIFIED",
+          "codeHash": "2060d0169374",
+          "testedBy": "RPIC Field QA",
+          "droneModel": "DJI Mini 4 Pro",
+          "firmware": "RC 2 / DJI Fly",
+          "notes": "IRL Field flight verification (FlightRecord_2026-10-30_[16-27-06].txt): 100% WPs (24/24), RMS XTE=0.05m, Max XTE=0.10m, AltErr=0.07m, 47 photos",
+          "checklist": {
+            "kmz_import": true,
+            "entry_altitude": true,
+            "geometry_path": true,
+            "heading_gimbal": true,
+            "capture_trigger": true,
+            "exit_rth": true
+          },
+          "telemetryMetrics": {
+            "plannedWaypoints": 24,
+            "visitedWaypoints": 24,
+            "waypointCompletionPct": 100,
+            "entryHorizontalErrorM": 0.08,
+            "entryAltitudeErrorM": 0,
+            "rmsXteM": 0.05,
+            "maxXteM": 0.1,
+            "rmsAltitudeErrorM": 0.07,
+            "meanPitchErrorDeg": 3.8,
+            "meanYawErrorDeg": 0.3,
+            "expectedPhotos": 24,
+            "actualPhotos": 47,
+            "medianShutterSpeedMps": 0,
+            "finalWaypointErrorM": 0.03,
+            "batteryEndPct": 66,
+            "droneModel": "DJI Mini 4 Pro",
+            "durationFormatted": "05:08"
+          }
+        }
+      ]
     },
     "double": {
       "id": "double",

@@ -4559,7 +4559,7 @@ const server = http.createServer(async (req, res) => {
 
     // 5. Flight Telemetry & 3D Replay Solver
     if (pathname === '/api/flight-telemetry' && (req.method === 'GET' || req.method === 'POST')) {
-      const { generateTelemetryFromWaypoints, computeFlightComparison, parseCsvTelemetry } = require('./log_decoder.js');
+      const { generateTelemetryFromWaypoints, computeFlightComparison, parseCsvTelemetry, haversineDistance } = require('./log_decoder.js');
       let body = '';
       req.on('data', chunk => { body += chunk; });
       req.on('end', async () => {
@@ -4568,6 +4568,7 @@ const server = http.createServer(async (req, res) => {
           const waypoints = payload.waypoints || [];
           const flightId = payload.flightId || url.searchParams.get('file') || '';
           const options = Object.assign({}, payload.options || {}, { flightId });
+          const requestedPattern = payload.flightPattern || payload.pattern || payload.options?.flightPattern || options.flightPattern || options.pattern || url.searchParams.get('pattern') || null;
 
           let telemetry = null;
           let comparison = null;
@@ -4632,8 +4633,83 @@ const server = http.createServer(async (req, res) => {
                 const candidates = stmt.all(dateStr + '%');
                 if (candidates && candidates.length > 0) {
                   let matchedRow = null;
-                  if (telemetry && telemetry.homePoint && typeof telemetry.homePoint.lat === 'number') {
-                    let bestDist = Infinity;
+                  let bestScore = Infinity;
+
+                  // First check if an existing row has actual_flight_file = flightId AND matches requestedPattern (if requested)
+                  const explicitlyLinked = candidates.find(c => c.actual_flight_file === flightId && (!requestedPattern || c.flight_pattern === requestedPattern));
+                  if (explicitlyLinked) {
+                    matchedRow = explicitlyLinked;
+                  } else if (telemetry && Array.isArray(telemetry.points) && telemetry.points.length > 0) {
+                    // Multi-factor intelligent matching:
+                    // 1. Geometric path fit: average distance from candidate waypoints to flown telemetry points
+                    // 2. Pattern match bonus: prioritizes the selected flight pattern
+                    // 3. Temporal proximity: favors missions planned closest prior to takeoff
+                    const pts = telemetry.points;
+                    const step = Math.max(1, Math.floor(pts.length / 50));
+                    const flightTimeMs = pts[0]?.timestamp ? new Date(pts[0].timestamp).getTime() : null;
+
+                    for (const cand of candidates) {
+                      let planWps = [];
+                      try {
+                        const p = JSON.parse(cand.plan_json);
+                        planWps = p.waypoints || [];
+                      } catch (_) {}
+
+                      let meanWpDist = Infinity;
+                      if (planWps.length > 0) {
+                        let totalDist = 0;
+                        for (const wp of planWps) {
+                          let minDist = Infinity;
+                          for (let i = 0; i < pts.length; i += step) {
+                            const d = haversineDistance(wp.lat, wp.lon, pts[i].lat, pts[i].lon);
+                            if (d < minDist) minDist = d;
+                          }
+                          totalDist += minDist;
+                        }
+                        meanWpDist = totalDist / planWps.length;
+                      } else if (telemetry.homePoint && typeof telemetry.homePoint.lat === 'number') {
+                        let cLat = cand.center_lat;
+                        let cLon = cand.center_lon;
+                        if (cLat === undefined && cand.plan_json) {
+                          try {
+                            const p = JSON.parse(cand.plan_json);
+                            cLat = p.mission?.center?.lat || (p.waypoints && p.waypoints[0]?.lat);
+                            cLon = p.mission?.center?.lon || (p.waypoints && p.waypoints[0]?.lon);
+                          } catch (_) {}
+                        }
+                        if (typeof cLat === 'number' && typeof cLon === 'number') {
+                          meanWpDist = haversineDistance(cLat, cLon, telemetry.homePoint.lat, telemetry.homePoint.lon);
+                        }
+                      }
+
+                      let score = meanWpDist;
+                      // Strong bonus if candidate pattern matches the user's requested / active pattern
+                      if (requestedPattern && cand.flight_pattern === requestedPattern) {
+                        score -= 20.0;
+                      }
+
+                      // Temporal proximity bonus
+                      if (flightTimeMs && cand.created_at) {
+                        const candTimeMs = new Date(cand.created_at).getTime();
+                        const diffHours = (flightTimeMs - candTimeMs) / (1000 * 3600);
+                        // Favor plans created 0 to 4 hours before the flight
+                        if (diffHours >= 0 && diffHours <= 4) {
+                          score -= 5.0;
+                        } else if (diffHours < 0) {
+                          // Created after flight started
+                          score += 15.0;
+                        } else {
+                          // Created many hours earlier
+                          score += Math.min(diffHours * 0.5, 20.0);
+                        }
+                      }
+
+                      if (score < bestScore) {
+                        bestScore = score;
+                        matchedRow = cand;
+                      }
+                    }
+                  } else if (telemetry && telemetry.homePoint && typeof telemetry.homePoint.lat === 'number') {
                     for (const cand of candidates) {
                       let cLat = cand.center_lat;
                       let cLon = cand.center_lon;
@@ -4645,9 +4721,11 @@ const server = http.createServer(async (req, res) => {
                         } catch (_) {}
                       }
                       if (typeof cLat === 'number' && typeof cLon === 'number') {
-                        const dist = Math.hypot(cLat - telemetry.homePoint.lat, cLon - telemetry.homePoint.lon);
-                        if (dist < bestDist) {
-                          bestDist = dist;
+                        const dist = haversineDistance(cLat, cLon, telemetry.homePoint.lat, telemetry.homePoint.lon);
+                        let score = dist;
+                        if (requestedPattern && cand.flight_pattern === requestedPattern) score -= 20.0;
+                        if (score < bestScore) {
+                          bestScore = score;
                           matchedRow = cand;
                         }
                       }
@@ -4697,8 +4775,9 @@ const server = http.createServer(async (req, res) => {
                         }
                       }
 
-                      // Link in SQLite if not yet linked
+                      // Link in SQLite if not yet linked, clearing any stale association
                       try {
+                        diagDb.db.prepare("UPDATE mission_diagnostics SET actual_flight_file = NULL, has_actual_flight = 0 WHERE actual_flight_file = ? AND id != ?").run(flightId, matchedRow.id);
                         diagDb.db.prepare("UPDATE mission_diagnostics SET has_actual_flight = 1, actual_flight_file = ? WHERE id = ?").run(flightId, matchedRow.id);
                       } catch (_) {}
 
