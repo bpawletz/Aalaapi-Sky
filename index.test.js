@@ -38720,11 +38720,7 @@ describe('Flight Telemetry Intelligent Mission Resolver & IRL Field Verification
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.210.1] - 2026-10-30'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.210.1'));
-    assert.ok(template.includes('Version 1.210.1'));
     assert.ok(template.includes('Changelog (v1.210.1):'));
-    assert.ok(htmlText.includes('v1.210.1'));
-    assert.ok(htmlText.includes('Version 1.210.1'));
     assert.ok(htmlText.includes('Changelog (v1.210.1):'));
   });
 
@@ -38739,5 +38735,99 @@ describe('Flight Telemetry Intelligent Mission Resolver & IRL Field Verification
     assert.ok(serverSource.includes('meanWpDist'));
     assert.ok(serverSource.includes('requestedPattern'));
     assert.ok(serverSource.includes('cand.flight_pattern === requestedPattern'));
+  });
+});
+
+
+describe('Terminal Waypoint Survey Gimbal Pitch Preservation (v1.210.2, Issue #205)', () => {
+  const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+  test('Version consistency: v1.210.2 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.210.2');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.210.2] - 2026-10-30'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.210.2'));
+    assert.ok(template.includes('Version 1.210.2'));
+    assert.ok(template.includes('Changelog (v1.210.2):'));
+    assert.ok(htmlText.includes('v1.210.2'));
+    assert.ok(htmlText.includes('Version 1.210.2'));
+    assert.ok(htmlText.includes('Changelog (v1.210.2):'));
+  });
+
+  test('buildWaylinesWpml preserves -90 nadir pitch at terminal waypoint of multi-waypoint survey grid (no gimbalRotate 0)', () => {
+    const wps = [
+      { lat: 41.3215, lon: -88.9950, alt: 31, pitch: -90 },
+      { lat: 41.3216, lon: -88.9950, alt: 31, pitch: -90 },
+      { lat: 41.3217, lon: -88.9950, alt: 31, pitch: -90 }
+    ];
+
+    const wpml = buildWaylinesWpml(wps, 31, 2.6, 'smoothTransition', 'goHome', -90, 'stopAndShoot', 'curved', {
+      flightPattern: 'single',
+      gridType: 'single',
+      isConsumer: true,
+      waypoints: wps
+    });
+    assert.ok(wpml, 'WPML must be generated');
+
+    const placemarks = wpml.split('<Placemark>').slice(1);
+    assert.strictEqual(placemarks.length, 3, 'Must have 3 placemarks');
+    const lastPm = placemarks[2];
+
+    assert.ok(lastPm.includes('<wpml:waypointGimbalPitchAngle>-90</wpml:waypointGimbalPitchAngle>'), 'Last placemark must have pitch -90');
+    assert.ok(lastPm.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'), 'Last placemark must contain takePhoto');
+    assert.ok(!lastPm.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'), 'Last survey waypoint MUST NOT contain gimbalRotate to 0');
+  });
+
+  test('validateAndFixWpml does not inject terminal gimbalRotate 0 into multi-waypoint survey missions', () => {
+    const wps = [
+      { lat: 41.3215, lon: -88.9950, alt: 31, pitch: -90 },
+      { lat: 41.3216, lon: -88.9950, alt: 31, pitch: -90 },
+      { lat: 41.3217, lon: -88.9950, alt: 31, pitch: -90 }
+    ];
+
+    const rawWpml = buildWaylinesWpml(wps, 31, 2.6, 'smoothTransition', 'goHome', -90, 'stopAndShoot', 'curved', {
+      flightPattern: 'single',
+      gridType: 'single',
+      isConsumer: true,
+      waypoints: wps
+    });
+
+    const res = validateAndFixWpml(rawWpml, '', {
+      gridType: 'single',
+      flightPattern: 'single',
+      waypoints: wps,
+      isConsumer: true
+    });
+
+    assert.ok(res.wpmlXml, 'Repaired WPML must be generated');
+    const placemarks = res.wpmlXml.split('<Placemark>').slice(1);
+    const lastPm = placemarks[placemarks.length - 1];
+    assert.ok(!lastPm.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'), 'Audit must NOT inject gimbalRotate 0 into multi-waypoint survey');
+  });
+
+  test('Photo Sphere workflows still retain terminal horizon restoration (pitch 0 and hover)', () => {
+    const actions = [
+      { yaw: 0, pitch: -15, hoverTime: 2.0 },
+      { yaw: 0, pitch: -90, hoverTime: 2.0 }
+    ];
+    const wps = [{
+      lat: 41.3215,
+      lon: -88.9950,
+      alt: 16,
+      gridType: 'photo-sphere',
+      isPhotoSphere: true,
+      isPhotoSphereActionGroup: true,
+      photoSphereActions: actions
+    }];
+
+    const wpml = buildWaylinesWpml(wps, 16, 4.0, 'followWayline', 'goHome', -60, 'stopAndShoot', 'curved', {
+      flightPattern: 'photo-sphere',
+      gridType: 'photo-sphere',
+      isConsumer: true,
+      waypoints: wps
+    });
+    assert.ok(wpml, 'WPML must be generated');
+    assert.ok(wpml.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'), 'Photo Sphere must still restore gimbal to 0');
   });
 });

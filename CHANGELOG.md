@@ -1,3 +1,20 @@
+## [1.210.2] - 2026-10-30
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Terminal Waypoint Survey Gimbal Pitch Preservation (Closes #205)**:
+  - Fixed a critical flight telemetry issue where 2D Nadir Grid mapping missions captured the final two survey photos (Photos #46 and #47 at WP 23) with the camera gimbal pitched at horizon (`0.0°`) instead of nadir (`-90.0°`).
+  - Restricted terminal horizon restoration strictly to 360° Photo Sphere workflows and single-node stationary inspections, ensuring multi-waypoint mapping surveys (`single`, `crosshatch`, `corridor`, `facade`, etc.) preserve their true survey pitch through the final waypoint without triggering in-flight approach interpolation.
+
+#### Under the Hood & Technical Details
+- **`src/export/WpmlCompiler.js`**:
+  - In `buildWaylinesWpml`, guarded terminal `gimbalRotate(0°)` injection with `requiresTerminalRestoration` (checking `isPhotoSphereMission || options.terminalHorizonRestoration`), preventing horizon restoration actions from contaminating active mapping photo waypoints.
+  - In `validateAndFixWpml`, guarded the terminal horizon restoration audit to exclude multi-waypoint survey missions (`!isMultiWpSurvey`), preventing post-compile injection of `Action 9991` on grid flights.
+  - In `validateAndFixWpml`, scoped the placemark `gimbalPitchRotateAngle` replacement regex to ignore terminal restoration actions (`Action 9991`), preventing placemark regex collisions from mutating pitch angles.
+- **`index.test.js`**:
+  - Added regression test suite asserting that multi-waypoint survey grids retain target pitch on the final waypoint without injecting `gimbalRotate 0`, while preserving horizon restoration on Photo Spheres.
+
 ## [1.210.1] - 2026-10-30
 
 ### 🐛 Fixed
