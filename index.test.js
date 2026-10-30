@@ -38122,3 +38122,165 @@ describe('Layer Properties & Dynamics Undo/Redo System (v1.207.0) (Closes #198)'
     assert.strictEqual(getActiveLayer().pattern, 'orbit', 'Pattern must revert to orbit after redo');
   });
 });
+
+describe('Layer Dynamics & Modes Discrete Controls Undo/Redo System (v1.207.1) (Closes #199)', () => {
+  const prevStubs = global._stubElements;
+
+  beforeEach(() => {
+    importedWaypoints = null;
+    importedPhotos = null;
+    importedFileName = '';
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+    const mockEl = (val) => ({
+      value: val,
+      _undoBaselineValue: val,
+      disabled: false,
+      closest: () => ({ style: {} }),
+      classList: { add: () => {}, remove: () => {}, contains: () => false },
+      style: {}
+    });
+    global._stubElements = {
+      'grid-type': mockEl('double'),
+      'grid-width': mockEl('100'),
+      'grid-height': mockEl('100'),
+      'grid-rotation': mockEl('0'),
+      'front-overlap': mockEl('80'),
+      'side-overlap': mockEl('75'),
+      'altitude': mockEl('50'),
+      'speed': mockEl('4'),
+      'gimbal-pitch': mockEl('-60'),
+      'heading-mode': mockEl('followWayline'),
+      'capture-mode': mockEl('stopAndShoot'),
+      'path-mode': mockEl('smoothTransition'),
+      'global-hover-time': mockEl('0'),
+      'finish-action': mockEl('goHome'),
+      'global-max-altitude': mockEl('120'),
+      'global-rth-altitude': mockEl('60'),
+      'layer-capture-mode': mockEl('inherit'),
+      'layer-path-mode': mockEl('inherit'),
+      'layer-heading-mode': mockEl('inherit'),
+      'layer-custom-heading': mockEl('0'),
+      'layer-turnaround-overshoot': mockEl('0'),
+      'layer-turnaround-speed': mockEl('inherit'),
+      'layer-corner-damping': mockEl('0'),
+      'layer-hover-time-mode': mockEl('inherit'),
+      'layer-hover-time-slider': mockEl('0'),
+      'layer-auto-settling-toggle': { checked: true },
+      'layer-base-settling-slider': mockEl('2.0'),
+      'layer-major-turn-settling-slider': mockEl('5.0'),
+      'layer-mod-turn-settling-slider': mockEl('4.0'),
+      'layer-pitch-settling-slider': mockEl('3.0'),
+      'layer-terrain-follow': mockEl('inherit'),
+      'layer-terrain-source': mockEl('global'),
+      'layer-target-agl': mockEl('inherit'),
+      'layer-max-slope-angle': mockEl('30'),
+      'camera-zoom': mockEl('1.0'),
+      'road-offset': mockEl('15'),
+      'road-snap': { checked: true }
+    };
+    flightLayers = [createDefaultLayer('layer-1', 'Layer 1: 3D Double Grid', 0, 'double')];
+    activeLayerId = flightLayers[0].id;
+    let mLat = 41.3215;
+    let mLon = -88.9950;
+    centerMarker = {
+      getLatLng: () => ({ lat: mLat, lng: mLon }),
+      setLatLng: (ll) => {
+        mLat = Array.isArray(ll) ? ll[0] : (ll.lat !== undefined ? ll.lat : mLat);
+        mLon = Array.isArray(ll) ? ll[1] : (ll.lng !== undefined ? ll.lng : mLon);
+      },
+      openPopup: () => {},
+      on: () => {},
+      addTo: () => centerMarker
+    };
+  });
+
+  after(() => {
+    global._stubElements = prevStubs;
+  });
+
+  test('Version consistency for v1.207.1 across package.json, CHANGELOG.md, index_template.html and index.html', () => {
+    assertVersionConsistency('1.207.1');
+  });
+
+  test('hasPendingPropertySnapshot helper tracks pending snapshot lifecycle', () => {
+    assert.strictEqual(typeof hasPendingPropertySnapshot, 'function');
+    assert.strictEqual(hasPendingPropertySnapshot(), false);
+
+    preparePendingPropertySnapshot('Change Altitude', 'altitude');
+    assert.strictEqual(hasPendingPropertySnapshot(), true);
+
+    cancelPendingPropertySnapshot();
+    assert.strictEqual(hasPendingPropertySnapshot(), false);
+
+    preparePendingPropertySnapshot('Change Altitude', 'altitude');
+    global._stubElements['altitude'].value = '65';
+    getActiveLayer().altitude = 65;
+    commitPendingPropertySnapshot('Change Altitude', 'altitude');
+    assert.strictEqual(hasPendingPropertySnapshot(), false);
+  });
+
+  test('Discrete Layer Dynamics: Dropdown selection changes capture undo baseline and are undoable/redoable', () => {
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+    const layer = getActiveLayer();
+
+    assert.strictEqual(layer.captureMode, 'inherit');
+    assert.strictEqual(layer.pathMode, 'inherit');
+    assert.strictEqual(layer.headingMode, 'inherit');
+
+    // Simulate dropdown change on layer-capture-mode without pointerdown staging
+    const captureEl = global._stubElements['layer-capture-mode'];
+    assert.strictEqual(hasPendingPropertySnapshot(), false);
+
+    // The baseline fallback logic
+    const oldVal = captureEl._undoBaselineValue;
+    const newVal = 'stopAndShoot';
+    captureEl.value = oldVal;
+    pushUndoSnapshot('Change Layer Capture Mode');
+    captureEl.value = newVal;
+    captureEl._undoBaselineValue = newVal;
+    layer.captureMode = newVal;
+
+    assert.strictEqual(undoHistoryStack.length, 1);
+    assert.strictEqual(undoHistoryStack[0].flightLayers[0].captureMode, 'inherit');
+    assert.strictEqual(getActiveLayer().captureMode, 'stopAndShoot');
+
+    // Undo reverts to 'inherit'
+    assert.strictEqual(undoLastAction(), true);
+    assert.strictEqual(getActiveLayer().captureMode, 'inherit');
+
+    // Redo restores to 'stopAndShoot'
+    assert.strictEqual(redoLastAction(), true);
+    assert.strictEqual(getActiveLayer().captureMode, 'stopAndShoot');
+  });
+
+  test('Custom Heading & Directional Chips: Clicking heading chips pushes undo snapshots and restores heading', () => {
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+    const layer = getActiveLayer();
+    layer.customHeading = 0;
+    global._stubElements['layer-custom-heading'].value = '0';
+
+    // Simulate clicking East (90 deg) chip
+    const angleE = 90;
+    if (layer.customHeading !== angleE) {
+      pushUndoSnapshot('Change Custom Heading Angle');
+      global._stubElements['layer-custom-heading'].value = String(angleE);
+      global._stubElements['layer-custom-heading']._undoBaselineValue = angleE;
+      layer.customHeading = angleE;
+    }
+
+    assert.strictEqual(undoHistoryStack.length, 1);
+    assert.strictEqual(undoHistoryStack[0].flightLayers[0].customHeading, 0);
+    assert.strictEqual(getActiveLayer().customHeading, 90);
+
+    // Undo returns heading to 0
+    assert.strictEqual(undoLastAction(), true);
+    assert.strictEqual(getActiveLayer().customHeading, 0);
+
+    // Redo restores heading to 90
+    assert.strictEqual(redoLastAction(), true);
+    assert.strictEqual(getActiveLayer().customHeading, 90);
+  });
+});

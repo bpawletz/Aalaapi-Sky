@@ -10813,5 +10813,93 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       layerCount = await page.evaluate(() => flightLayers.length);
       assert.strictEqual(layerCount, 2, "There must be 2 layers after redoing Add Layer");
     });
+    test("Layer Dynamics & Modes Discrete Controls Undo/Redo: dropdown change and custom heading chips increment undo and restore (Closes #199)", async () => {
+      // 1. Initial state at rural Utica coords
+      await page.evaluate(() => {
+        undoHistoryStack.length = 0;
+        redoHistoryStack.length = 0;
+        setGridCenter(41.3215, -88.9950);
+        const sec = document.getElementById("grid-geometry-section");
+        if (sec) sec.classList.remove("collapsed");
+      });
+      await page.waitForTimeout(200);
+
+      const initUndoCount = await page.evaluate(() => undoHistoryStack.length);
+
+      // 2. Change layer-capture-mode dropdown directly (simulates native select dropdown)
+      await page.evaluate(() => {
+        const el = document.getElementById("layer-capture-mode");
+        el.value = "stopAndShoot";
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await page.waitForTimeout(200);
+
+      const undoCountAfterCapture = await page.evaluate(() => undoHistoryStack.length);
+      assert.strictEqual(undoCountAfterCapture, initUndoCount + 1, "Changing layer-capture-mode must increment undo count");
+      const activeCaptureMode = await page.evaluate(() => getActiveLayer().captureMode);
+      assert.strictEqual(activeCaptureMode, "stopAndShoot");
+
+      // 3. Change layer-path-mode dropdown
+      await page.evaluate(() => {
+        const el = document.getElementById("layer-path-mode");
+        el.value = "curved";
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await page.waitForTimeout(200);
+
+      const undoCountAfterPath = await page.evaluate(() => undoHistoryStack.length);
+      assert.strictEqual(undoCountAfterPath, undoCountAfterCapture + 1, "Changing layer-path-mode must increment undo count");
+      const activePathMode = await page.evaluate(() => getActiveLayer().pathMode);
+      assert.strictEqual(activePathMode, "curved");
+
+      // 4. Set heading mode to custom so the chips container is visible
+      await page.evaluate(() => {
+        const el = document.getElementById("layer-heading-mode");
+        el.value = "custom";
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await page.waitForTimeout(200);
+      const undoCountAfterHeading = await page.evaluate(() => undoHistoryStack.length);
+      assert.strictEqual(undoCountAfterHeading, undoCountAfterPath + 1, "Changing layer-heading-mode must increment undo count");
+
+      // 5. Click East (90 deg) chip button
+      await page.click('.layer-head-chip[data-angle="90"]');
+      await page.waitForTimeout(200);
+
+      const undoCountAfterChip = await page.evaluate(() => undoHistoryStack.length);
+      assert.strictEqual(undoCountAfterChip, undoCountAfterHeading + 1, "Clicking heading chip must increment undo count");
+      const activeHeading = await page.evaluate(() => getActiveLayer().customHeading);
+      assert.strictEqual(activeHeading, 90, "Active layer customHeading must be 90");
+
+      // 6. Undo chip click via floating map button
+      await page.click("#map-undo-btn");
+      await page.waitForTimeout(300);
+      const headingAfterUndo = await page.evaluate(() => getActiveLayer().customHeading);
+      assert.strictEqual(headingAfterUndo, 0, "Undoing chip click must restore customHeading to 0");
+
+      // 7. Undo heading mode change
+      await page.click("#map-undo-btn");
+      await page.waitForTimeout(300);
+      const headingModeAfterUndo = await page.evaluate(() => getActiveLayer().headingMode);
+      assert.strictEqual(headingModeAfterUndo, "inherit", "Undoing heading mode must restore to inherit");
+
+      // 8. Undo path mode change
+      await page.click("#map-undo-btn");
+      await page.waitForTimeout(300);
+      const pathAfterUndo = await page.evaluate(() => getActiveLayer().pathMode);
+      assert.strictEqual(pathAfterUndo, "inherit", "Undoing path mode must restore to inherit");
+
+      // 9. Undo capture mode change
+      await page.click("#map-undo-btn");
+      await page.waitForTimeout(300);
+      const captureAfterUndo = await page.evaluate(() => getActiveLayer().captureMode);
+      assert.strictEqual(captureAfterUndo, "inherit", "Undoing capture mode must restore to inherit");
+
+      // 10. Redo restores capture mode
+      await page.click("#map-redo-btn");
+      await page.waitForTimeout(300);
+      const captureAfterRedo = await page.evaluate(() => getActiveLayer().captureMode);
+      assert.strictEqual(captureAfterRedo, "stopAndShoot", "Redoing must restore capture mode to stopAndShoot");
+    });
   });
 });
