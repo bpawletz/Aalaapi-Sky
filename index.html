@@ -7979,7 +7979,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.210.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.211.0</span></h1>
         </div>
       </div>
 
@@ -12608,6 +12608,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎯 Planned Flight Plan Selection &amp; Single-Point Max Error Protection (v1.211.0) (Closes #206)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Full control and single-point error protection in IRL flight verification! Flight Diagnostics now features a <strong>Planned Flight Plan Selector</strong> (<code>#diag-irl-plan-select</code>) with 1-click plan imports, letting pilots evaluate flight records against auto-matched missions, active workspaces, SQLite archives, or external KMZ/WPML plans. Upgraded Phase 3, 4, and 5 to enforce a strict <strong>Two-Tier Tolerance Suite</strong> (Max Pitch Error &le; 15.0&deg;, Max Yaw Error &le; 25.0&deg;, Max XTE &le; 5.0m, Max Alt Error &le; 5.0m, and Max Stop-and-Shoot Speed &le; 1.0 m/s), immediately flagging single-waypoint anomalies with specific waypoint index citations.
+            </p>
+          </div>
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🧪 Flight Diagnostics IRL Test Plan Verification Button &amp; 6-Phase Scorecard (v1.210.0) (Closes #203)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -14982,7 +14990,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.210.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.211.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15142,6 +15150,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.211.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Planned Flight Plan Selection &amp; Single-Point Max Error Protection (Closes #206):</strong> Added an interactive Planned Flight Plan selector (<code>#diag-irl-plan-select</code>) and import button inside the IRL Verification Scorecard modal, allowing pilots to evaluate flight logs against auto-matched missions, active editor workspaces, SQLite archive flights, or imported KMZ/WPML files. Established strict two-tier tolerance checks enforcing single-point maximum limits alongside continuous mean tracking: Max Pitch Error (&le; 15.0&deg;), Max Heading/Yaw Error (&le; 25.0&deg;), Max Cross-Track Error (&le; 5.0m), Max Altitude Error (&le; 5.0m), and Max Stop-and-Shoot Speed (&le; 1.0 m/s), identifying the specific waypoint where maximum discrepancies occurred.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.210.2):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -20039,6 +20053,22 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       <!-- Modal Body -->
       <div class="modal-content" style="padding: 16px 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; flex: 1;">
         
+        <!-- Planned Flight Plan Selection & File Import Row -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 280px;">
+            <label for="diag-irl-plan-select" style="color: var(--text-muted); font-weight: 600; white-space: nowrap;">Planned Flight Plan:</label>
+            <select id="diag-irl-plan-select" class="settings-select" style="flex: 1; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 0.76rem; padding: 4px 8px;">
+              <!-- Populated dynamically: Auto-Matched DB Mission, Active Workspace, Saved SQLite Archives, File Import -->
+            </select>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="diag-irl-load-plan-btn" type="button" class="btn-secondary" style="padding: 3px 8px; font-size: 0.72rem; height: 26px; display: inline-flex; align-items: center; gap: 4px;" title="Import planned KMZ, WPML or JSON flight plan">
+              <span>📁</span> Import Plan
+            </button>
+            <input type="file" id="diag-irl-plan-file-input" accept=".kmz,.wpml,.kml,.json" style="display: none;" />
+          </div>
+        </div>
+
         <!-- Pattern Selection & Context Row -->
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -66277,6 +66307,9 @@ if (typeof module !== 'undefined' && module.exports) {
  * In-App Flight Diagnostics In-Real-Life (IRL) Test Plan Verification Engine.
  * Evaluates flown drone telemetry against planned mission waypoints across all 6 IRL phases
  * directly in the browser with 100% offline capability.
+ * 
+ * v1.211.0: Added Planned Flight Plan Selection and Two-Tier Single-Point Max Error Protection
+ * (enforcing Max Pitch <= 15°, Max Yaw <= 25°, Max XTE <= 8.0m, Max Alt <= 5.0m, Max Shutter Speed <= 1.0 m/s).
  */
 
 function haversineDistance(lat1, lon1, lat2, lon2) {
@@ -66319,10 +66352,11 @@ const IrlVerifier = {
   currentFlightId: null,
   currentPlannedWaypoints: null,
   currentTelemetryData: null,
+  planCandidates: [],
 
   /**
    * Evaluates planned waypoints against actual flown telemetry points.
-   * Matches algorithms in tools/qa/irl_tracker.js.
+   * Enforces two-tier tolerances: continuous mean/RMS tracking and single-point max limits.
    */
   verifyFlightPlanAgainstLog(plannedWaypoints, actualTelemetry, options = {}) {
     const wps = Array.isArray(plannedWaypoints) ? plannedWaypoints : (plannedWaypoints && Array.isArray(plannedWaypoints.waypoints) ? plannedWaypoints.waypoints : []);
@@ -66330,9 +66364,14 @@ const IrlVerifier = {
 
     const pathMode = options.pathMode || 'straight';
     const horizontalToleranceM = options.horizontalToleranceM || (pathMode === 'curved' ? 8.0 : 4.5);
+    const maxXteToleranceM = options.maxXteToleranceM || (pathMode === 'curved' ? 12.0 : 8.0);
     const altitudeToleranceM = options.altitudeToleranceM || 2.0;
+    const maxAltToleranceM = options.maxAltToleranceM || 5.0;
     const pitchToleranceDeg = options.pitchToleranceDeg || 6.0;
+    const maxPitchToleranceDeg = options.maxPitchToleranceDeg || 15.0;
     const yawToleranceDeg = options.yawToleranceDeg || 15.0;
+    const maxYawToleranceDeg = options.maxYawToleranceDeg || 25.0;
+    const maxCaptureSpeedMps = options.maxCaptureSpeedMps || 1.0;
 
     // Phase 1: KMZ Import & Parsing
     const kmzImportPassed = wps.length >= 2 && pts.length >= 5;
@@ -66427,34 +66466,55 @@ const IrlVerifier = {
     const wp0 = wpApproaches[0];
     const entryAltitudePassed = wp0.dH <= Math.max(4.0, horizontalToleranceM) && wp0.dZ <= altitudeToleranceM;
 
-    // Phase 3: 3D Geometry & Path Following
+    // Phase 3: 3D Geometry & Path Following (RMS + Max Tolerances)
     const visitedCount = wpApproaches.filter(a => a.visited).length;
     const completionRatio = visitedCount / wpApproaches.length;
     const rmsXte = Math.sqrt(wpApproaches.reduce((acc, a) => acc + a.dH * a.dH, 0) / wpApproaches.length);
     const rmsAltError = Math.sqrt(wpApproaches.reduce((acc, a) => acc + a.dZ * a.dZ, 0) / wpApproaches.length);
-    const maxXte = Math.max(...wpApproaches.map(a => a.dH));
-    const geometryPathPassed = completionRatio >= 0.90 && rmsXte <= horizontalToleranceM && rmsAltError <= altitudeToleranceM;
+    const maxXteWp = wpApproaches.reduce((max, a) => (a.dH > (max ? max.dH : -1) ? a : max), wpApproaches[0]);
+    const maxXte = maxXteWp ? maxXteWp.dH : 0;
+    const maxAltWp = wpApproaches.reduce((max, a) => (a.dZ > (max ? max.dZ : -1) ? a : max), wpApproaches[0]);
+    const maxAltError = maxAltWp ? maxAltWp.dZ : 0;
+    const geometryPathPassed = completionRatio >= 0.90 &&
+                               rmsXte <= horizontalToleranceM &&
+                               rmsAltError <= altitudeToleranceM &&
+                               maxXte <= maxXteToleranceM &&
+                               maxAltError <= maxAltToleranceM;
 
-    // Phase 4: Heading & Gimbal Pitch Lock
-    const pitchSamples = wpApproaches.filter(a => a.visited && a.dPitch !== null).map(a => a.dPitch);
-    const yawSamples = wpApproaches.filter(a => a.visited && a.dYaw !== null).map(a => a.dYaw);
-    const meanPitchError = pitchSamples.length > 0 ? (pitchSamples.reduce((s, v) => s + v, 0) / pitchSamples.length) : 0;
-    const meanYawError = yawSamples.length > 0 ? (yawSamples.reduce((s, v) => s + v, 0) / yawSamples.length) : 0;
-    const headingGimbalPassed = meanPitchError <= pitchToleranceDeg && meanYawError <= yawToleranceDeg;
+    // Phase 4: Heading & Gimbal Pitch Lock (Mean + Max Tolerances)
+    const pitchSamples = wpApproaches.filter(a => a.visited && a.dPitch !== null);
+    const yawSamples = wpApproaches.filter(a => a.visited && a.dYaw !== null);
+    const meanPitchError = pitchSamples.length > 0 ? (pitchSamples.reduce((s, v) => s + v.dPitch, 0) / pitchSamples.length) : 0;
+    const maxPitchWp = pitchSamples.length > 0 ? pitchSamples.reduce((max, a) => (a.dPitch > (max ? max.dPitch : -1) ? a : max), pitchSamples[0]) : null;
+    const maxPitchError = maxPitchWp ? maxPitchWp.dPitch : 0;
 
-    // Phase 5: Camera Shutter & Capture Dynamics
+    const meanYawError = yawSamples.length > 0 ? (yawSamples.reduce((s, v) => s + v.dYaw, 0) / yawSamples.length) : 0;
+    const maxYawWp = yawSamples.length > 0 ? yawSamples.reduce((max, a) => (a.dYaw > (max ? max.dYaw : -1) ? a : max), yawSamples[0]) : null;
+    const maxYawError = maxYawWp ? maxYawWp.dYaw : 0;
+
+    const headingGimbalPassed = meanPitchError <= pitchToleranceDeg &&
+                                maxPitchError <= maxPitchToleranceDeg &&
+                                meanYawError <= yawToleranceDeg &&
+                                maxYawError <= maxYawToleranceDeg;
+
+    // Phase 5: Camera Shutter & Capture Dynamics (Ratio + Max Shutter Speed)
     const plannedPhotos = wps.filter(w => !w.skipPhoto && !w.isTurnaroundPoint && !w.isExclusionDetour).length;
     const actualPhotos = pts.filter(p => p.isPhoto).length;
     const photoRatio = plannedPhotos > 0 ? (actualPhotos / plannedPhotos) : (actualPhotos === 0 ? 1.0 : 0.8);
     const photoRatioTolerance = options.photoRatioTolerance || 0.85;
 
     let shutterSettlingPassed = true;
+    let maxShutterSpeedMps = 0;
+    let medianShutterSpeedMps = 0;
     if (options.captureMode === 'hover' || options.captureMode === 'stopAndShoot') {
       const photoPts = pts.filter(p => p.isPhoto && p.speed !== undefined);
       if (photoPts.length > 0) {
         const speeds = photoPts.map(p => parseFloat(p.speed) || 0).sort((a, b) => a - b);
-        const medianSpeed = speeds[Math.floor(speeds.length / 2)];
-        if (medianSpeed > 1.2) shutterSettlingPassed = false;
+        medianShutterSpeedMps = speeds[Math.floor(speeds.length / 2)];
+        maxShutterSpeedMps = speeds[speeds.length - 1];
+        if (medianShutterSpeedMps > 1.0 || maxShutterSpeedMps > maxCaptureSpeedMps) {
+          shutterSettlingPassed = false;
+        }
       }
     }
     const captureTriggerPassed = photoRatio >= photoRatioTolerance && shutterSettlingPassed;
@@ -66484,12 +66544,21 @@ const IrlVerifier = {
       waypointCompletionPct: Math.round(completionRatio * 100),
       rmsXteM: Math.round(rmsXte * 100) / 100,
       maxXteM: Math.round(maxXte * 100) / 100,
+      maxXteWpIndex: maxXteWp ? maxXteWp.index : 0,
       rmsAltitudeErrorM: Math.round(rmsAltError * 100) / 100,
+      maxAltitudeErrorM: Math.round(maxAltError * 100) / 100,
+      maxAltWpIndex: maxAltWp ? maxAltWp.index : 0,
       meanGimbalPitchErrorDeg: Math.round(meanPitchError * 10) / 10,
+      maxPitchErrorDeg: Math.round(maxPitchError * 10) / 10,
+      maxPitchWpIndex: maxPitchWp ? maxPitchWp.index : null,
       meanYawErrorDeg: Math.round(meanYawError * 10) / 10,
+      maxYawErrorDeg: Math.round(maxYawError * 10) / 10,
+      maxYawWpIndex: maxYawWp ? maxYawWp.index : null,
       photoCountPlanned: plannedPhotos,
       photoCountActual: actualPhotos,
       photoCaptureRatioPct: Math.round(photoRatio * 100),
+      medianShutterSpeedMps: Math.round(medianShutterSpeedMps * 10) / 10,
+      maxShutterSpeedMps: Math.round(maxShutterSpeedMps * 10) / 10,
       batteryStartPct: Math.round(startBat),
       batteryEndPct: Math.round(endBat),
       batteryUsedPct: Math.round(startBat - endBat),
@@ -66516,9 +66585,51 @@ const IrlVerifier = {
     this.currentFlightId = flightId || 'FlightRecord.txt';
     this.currentPlannedWaypoints = plannedWaypoints || [];
     this.currentTelemetryData = telemetryData || { points: [] };
+    this.planCandidates = options.planCandidates || [];
 
     const flightNameEl = document.getElementById('diag-irl-flight-name');
     if (flightNameEl) flightNameEl.textContent = this.currentFlightId;
+
+    // Populate plan select (#diag-irl-plan-select)
+    const planSelect = document.getElementById('diag-irl-plan-select');
+    if (planSelect) {
+      planSelect.innerHTML = '';
+
+      if (!this.planCandidates || this.planCandidates.length === 0) {
+        this.planCandidates = [];
+        if (this.currentPlannedWaypoints && this.currentPlannedWaypoints.length > 0) {
+          this.planCandidates.push({
+            id: 'auto-matched',
+            label: `\uD83C\uDFAF Matched Mission Plan (${this.currentPlannedWaypoints.length} WPs)`,
+            waypoints: this.currentPlannedWaypoints,
+            pattern: options.patternId || null
+          });
+        }
+        if (typeof getActiveMissionWaypoints === 'function') {
+          const activeWps = getActiveMissionWaypoints();
+          if (activeWps && activeWps.length > 0 && activeWps !== this.currentPlannedWaypoints) {
+            const activePat = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || 'single';
+            this.planCandidates.push({
+              id: 'active-workspace',
+              label: `\uD83D\uDDFA\uFE0F Active Workspace (${activeWps.length} WPs • ${activePat})`,
+              waypoints: activeWps,
+              pattern: activePat
+            });
+          }
+        }
+      }
+
+      this.planCandidates.forEach(cand => {
+        const opt = document.createElement('option');
+        opt.value = cand.id;
+        opt.textContent = cand.label;
+        planSelect.appendChild(opt);
+      });
+
+      if (planSelect.options.length > 0) {
+        planSelect.selectedIndex = 0;
+      }
+    }
 
     // Populate pattern select if empty
     const patSelect = document.getElementById('diag-irl-pattern-select');
@@ -66547,14 +66658,14 @@ const IrlVerifier = {
   },
 
   /**
-   * Re-runs verification with current pattern and renders phase cards + metrics table.
+   * Re-runs verification with current plan and pattern and renders phase cards + metrics table.
    */
   runVerificationAndRender() {
     const patSelect = document.getElementById('diag-irl-pattern-select');
     const selectedPattern = patSelect ? patSelect.value : 'double';
     const patternNameEl = document.getElementById('diag-irl-pattern-name');
     if (patternNameEl && patSelect) {
-      const selectedOption = patSelect.options[patSelect.selectedIndex];
+      const selectedOption = patSelect.options && patSelect.selectedIndex >= 0 ? patSelect.options[patSelect.selectedIndex] : null;
       patternNameEl.textContent = selectedOption ? selectedOption.textContent : selectedPattern;
     }
 
@@ -66572,19 +66683,19 @@ const IrlVerifier = {
     const outcomeBadge = document.getElementById('diag-irl-outcome-badge');
     if (outcomeBadge) {
       if (result.passedAll) {
-        outcomeBadge.textContent = '✅ ALL 6 PHASES PASSED';
+        outcomeBadge.textContent = '\u2705 ALL 6 PHASES PASSED';
         outcomeBadge.style.background = 'rgba(16, 185, 129, 0.2)';
         outcomeBadge.style.color = '#34d399';
         outcomeBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
       } else {
-        outcomeBadge.textContent = '⚠️ VARIANCE DETECTED';
+        outcomeBadge.textContent = '\u26A0\uFE0F VARIANCE DETECTED';
         outcomeBadge.style.background = 'rgba(245, 158, 11, 0.2)';
         outcomeBadge.style.color = '#fbbf24';
         outcomeBadge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
       }
     }
 
-    // Render 6 Phases
+    // Render 6 Phases with Single-Point Details
     const phasesContainer = document.getElementById('diag-irl-phases-container');
     if (phasesContainer) {
       phasesContainer.innerHTML = '';
@@ -66600,10 +66711,26 @@ const IrlVerifier = {
         card.style.flexDirection = 'column';
         card.style.gap = '4px';
 
+        let extraDetail = '';
+        if (key === 'heading_gimbal' && result.metrics.maxPitchErrorDeg !== undefined) {
+          if (result.metrics.maxPitchErrorDeg > 15.0) {
+            extraDetail = `<div style="margin-top: 4px; color: #fbbf24; font-size: 0.68rem; font-weight: 600;">\u26A0\uFE0F Pitch variance at WP[${result.metrics.maxPitchWpIndex}]: ${result.metrics.maxPitchErrorDeg}° error (Tol: ≤ 15.0°). Mean: ${result.metrics.meanGimbalPitchErrorDeg}°.</div>`;
+          } else if (result.metrics.maxYawErrorDeg > 25.0) {
+            extraDetail = `<div style="margin-top: 4px; color: #fbbf24; font-size: 0.68rem; font-weight: 600;">\u26A0\uFE0F Yaw variance at WP[${result.metrics.maxYawWpIndex}]: ${result.metrics.maxYawErrorDeg}° error (Tol: ≤ 25.0°). Mean: ${result.metrics.meanYawErrorDeg}°.</div>`;
+          }
+        }
+        if (key === 'geometry_path' && (result.metrics.maxXteM > 8.0 || result.metrics.maxAltitudeErrorM > 5.0)) {
+          if (result.metrics.maxXteM > 8.0) {
+            extraDetail = `<div style="margin-top: 4px; color: #fbbf24; font-size: 0.68rem; font-weight: 600;">\u26A0\uFE0F Max XTE drift at WP[${result.metrics.maxXteWpIndex}]: ${result.metrics.maxXteM}m (Tol: ≤ 8.0m). RMS: ${result.metrics.rmsXteM}m.</div>`;
+          } else if (result.metrics.maxAltitudeErrorM > 5.0) {
+            extraDetail = `<div style="margin-top: 4px; color: #fbbf24; font-size: 0.68rem; font-weight: 600;">\u26A0\uFE0F Max Alt variance at WP[${result.metrics.maxAltWpIndex}]: ${result.metrics.maxAltitudeErrorM}m (Tol: ≤ 5.0m). RMS: ${result.metrics.rmsAltitudeErrorM}m.</div>`;
+          }
+        }
+
         card.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <strong style="color: ${passed ? '#34d399' : '#fbbf24'}; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
-              <span>${passed ? '✓' : '⚠'}</span>
+              <span>${passed ? '\u2713' : '\u26A0'}</span>
               <span>${PHASE_LABELS[key]}</span>
             </strong>
             <span class="badge" style="font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: ${passed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}; color: ${passed ? '#34d399' : '#fbbf24'};">
@@ -66613,6 +66740,7 @@ const IrlVerifier = {
           <div style="font-size: 0.7rem; color: var(--text-muted); line-height: 1.35;">
             ${PHASE_DESCRIPTIONS[key]}
           </div>
+          ${extraDetail}
         `;
         phasesContainer.appendChild(card);
       });
@@ -66629,10 +66757,13 @@ const IrlVerifier = {
       const items = [
         { label: 'Waypoints Reached', val: `${result.metrics.visitedCount} / ${result.metrics.waypointCount} (${result.metrics.waypointCompletionPct}%)`, tol: '≥ 90%' },
         { label: 'RMS Cross-Track Error', val: `${result.metrics.rmsXteM} m`, tol: '≤ 4.5 m' },
-        { label: 'Max Proximity Drift', val: `${result.metrics.maxXteM} m`, tol: '≤ 8.0 m' },
+        { label: 'Max Cross-Track Error', val: `${result.metrics.maxXteM} m (WP ${result.metrics.maxXteWpIndex})`, tol: '≤ 8.0 m' },
         { label: 'RMS Altitude Variance', val: `${result.metrics.rmsAltitudeErrorM} m`, tol: '≤ 2.0 m' },
+        { label: 'Max Altitude Variance', val: `${result.metrics.maxAltitudeErrorM} m (WP ${result.metrics.maxAltWpIndex})`, tol: '≤ 5.0 m' },
         { label: 'Mean Gimbal Pitch Error', val: `${result.metrics.meanGimbalPitchErrorDeg}°`, tol: '≤ 6.0°' },
+        { label: 'Max Gimbal Pitch Error', val: `${result.metrics.maxPitchErrorDeg}° (WP ${result.metrics.maxPitchWpIndex !== null ? result.metrics.maxPitchWpIndex : '-'})`, tol: '≤ 15.0°' },
         { label: 'Mean Yaw Tracking Error', val: `${result.metrics.meanYawErrorDeg}°`, tol: '≤ 15.0°' },
+        { label: 'Max Yaw Tracking Error', val: `${result.metrics.maxYawErrorDeg}° (WP ${result.metrics.maxYawWpIndex !== null ? result.metrics.maxYawWpIndex : '-'})`, tol: '≤ 25.0°' },
         { label: 'Photo Shutter Triggers', val: `${result.metrics.photoCountActual} / ${result.metrics.photoCountPlanned} (${result.metrics.photoCaptureRatioPct}%)`, tol: '≥ 85%' },
         { label: 'Entry Drift (WP[0])', val: `H: ${result.metrics.entryDistH}m • Z: ${result.metrics.entryDistZ}m`, tol: 'H ≤ 4m, Z ≤ 2m' },
         { label: 'Battery Consumption', val: `${result.metrics.batteryStartPct}% → ${result.metrics.batteryEndPct}% (Used: ${result.metrics.batteryUsedPct}%)`, tol: 'End ≥ 15%' }
@@ -66675,19 +66806,19 @@ const IrlVerifier = {
       ? patSelect.options[patSelect.selectedIndex].textContent
       : patternId;
 
-    return `### 🚁 IRL Field Flight Verification Report: \`${patternId}\` (${patternName})
+    return `### \uD83D\uDE81 IRL Field Flight Verification Report: \`${patternId}\` (${patternName})
 
 > [!CAUTION]
 > **Non-Guarantee & Variation Notice:** Passing these field checks verifies nominal reference behavior on the tested hardware/firmware only and **does not guarantee** future flight performance under varying wind, GNSS, geomagnetic, terrain, or OEM firmware conditions. The RPIC retains sole responsibility for VLOS and flight safety.
 
 **Flight Log:** \`${this.currentFlightId}\`
-**Overall Outcome:** ${r.passedAll ? '✅ `VERIFIED` (All 6 Phases Passed)' : '⚠️ `VARIANCE DETECTED` (Review Needed)'}
+**Overall Outcome:** ${r.passedAll ? '\u2705 `VERIFIED` (All 6 Phases Passed)' : '\u26A0\uFE0F `VARIANCE DETECTED` (Review Needed)'}
 
 #### Six-Phase Verification Checklist
 - [${r.phases.kmz_import ? 'x' : ' '}] **Phase 1: KMZ Import & Action Parsing** (${r.metrics.waypointCount} WPs, ${this.currentTelemetryData?.points?.length || 0} samples)
 - [${r.phases.entry_altitude ? 'x' : ' '}] **Phase 2: Safe Entry & Target AGL** (WP[0] ΔH=${r.metrics.entryDistH}m, ΔZ=${r.metrics.entryDistZ}m)
-- [${r.phases.geometry_path ? 'x' : ' '}] **Phase 3: 3D Geometry & Path Following** (${r.metrics.waypointCompletionPct}% WPs reached, RMS XTE=${r.metrics.rmsXteM}m, Max XTE=${r.metrics.maxXteM}m, AltErr=${r.metrics.rmsAltitudeErrorM}m)
-- [${r.phases.heading_gimbal ? 'x' : ' '}] **Phase 4: Heading & Gimbal Pitch Lock** (Pitch Err=${r.metrics.meanGimbalPitchErrorDeg}°, Yaw Err=${r.metrics.meanYawErrorDeg}°)
+- [${r.phases.geometry_path ? 'x' : ' '}] **Phase 3: 3D Geometry & Path Following** (${r.metrics.waypointCompletionPct}% WPs reached, RMS XTE=${r.metrics.rmsXteM}m, Max XTE=${r.metrics.maxXteM}m [WP ${r.metrics.maxXteWpIndex}], AltErr=${r.metrics.rmsAltitudeErrorM}m [Max ${r.metrics.maxAltitudeErrorM}m at WP ${r.metrics.maxAltWpIndex}])
+- [${r.phases.heading_gimbal ? 'x' : ' '}] **Phase 4: Heading & Gimbal Pitch Lock** (Pitch: Mean=${r.metrics.meanGimbalPitchErrorDeg}°, Max=${r.metrics.maxPitchErrorDeg}° [WP ${r.metrics.maxPitchWpIndex !== null ? r.metrics.maxPitchWpIndex : '-'}], Yaw: Mean=${r.metrics.meanYawErrorDeg}°, Max=${r.metrics.maxYawErrorDeg}° [WP ${r.metrics.maxYawWpIndex !== null ? r.metrics.maxYawWpIndex : '-'}])
 - [${r.phases.capture_trigger ? 'x' : ' '}] **Phase 5: Camera Shutter & Settling** (${r.metrics.photoCountActual}/${r.metrics.photoCountPlanned} photos, ${r.metrics.photoCaptureRatioPct}%)
 - [${r.phases.exit_rth ? 'x' : ' '}] **Phase 6: Safe Exit, Landing & RTH** (Exit ΔH=${r.metrics.exitDistH}m, Batt End=${r.metrics.batteryEndPct}%)
 
@@ -66696,13 +66827,17 @@ const IrlVerifier = {
 | :--- | :--- | :--- | :--- |
 | **Waypoint Completion** | ${r.metrics.visitedCount} / ${r.metrics.waypointCount} (${r.metrics.waypointCompletionPct}%) | $\\ge 90\\%$ | ${r.metrics.waypointCompletionPct >= 90 ? 'PASS' : 'VARIANCE'} |
 | **RMS Cross-Track Error (XTE)** | ${r.metrics.rmsXteM} m | $\\le 4.5\\text{ m}$ | ${r.metrics.rmsXteM <= 4.5 ? 'PASS' : 'VARIANCE'} |
+| **Max Cross-Track Error** | ${r.metrics.maxXteM} m (WP ${r.metrics.maxXteWpIndex}) | $\\le 8.0\\text{ m}$ | ${r.metrics.maxXteM <= 8.0 ? 'PASS' : 'VARIANCE'} |
 | **RMS Altitude Variance** | ${r.metrics.rmsAltitudeErrorM} m | $\\le 2.0\\text{ m}$ | ${r.metrics.rmsAltitudeErrorM <= 2.0 ? 'PASS' : 'VARIANCE'} |
-| **Gimbal Pitch Alignment** | ${r.metrics.meanGimbalPitchErrorDeg}° | $\\le 6.0^\\circ$ | ${r.metrics.meanGimbalPitchErrorDeg <= 6.0 ? 'PASS' : 'VARIANCE'} |
-| **Yaw Alignment** | ${r.metrics.meanYawErrorDeg}° | $\\le 15.0^\\circ$ | ${r.metrics.meanYawErrorDeg <= 15.0 ? 'PASS' : 'VARIANCE'} |
+| **Max Altitude Variance** | ${r.metrics.maxAltitudeErrorM} m (WP ${r.metrics.maxAltWpIndex}) | $\\le 5.0\\text{ m}$ | ${r.metrics.maxAltitudeErrorM <= 5.0 ? 'PASS' : 'VARIANCE'} |
+| **Mean Gimbal Pitch Error** | ${r.metrics.meanGimbalPitchErrorDeg}° | $\\le 6.0^\\circ$ | ${r.metrics.meanGimbalPitchErrorDeg <= 6.0 ? 'PASS' : 'VARIANCE'} |
+| **Max Gimbal Pitch Error** | ${r.metrics.maxPitchErrorDeg}° (WP ${r.metrics.maxPitchWpIndex !== null ? r.metrics.maxPitchWpIndex : '-'}) | $\\le 15.0^\\circ$ | ${r.metrics.maxPitchErrorDeg <= 15.0 ? 'PASS' : 'VARIANCE'} |
+| **Mean Yaw Tracking Error** | ${r.metrics.meanYawErrorDeg}° | $\\le 15.0^\\circ$ | ${r.metrics.meanYawErrorDeg <= 15.0 ? 'PASS' : 'VARIANCE'} |
+| **Max Yaw Tracking Error** | ${r.metrics.maxYawErrorDeg}° (WP ${r.metrics.maxYawWpIndex !== null ? r.metrics.maxYawWpIndex : '-'}) | $\\le 25.0^\\circ$ | ${r.metrics.maxYawErrorDeg <= 25.0 ? 'PASS' : 'VARIANCE'} |
 | **Photo Shutter Ratio** | ${r.metrics.photoCountActual} / ${r.metrics.photoCountPlanned} (${r.metrics.photoCaptureRatioPct}%) | $\\ge 85\\%$ | ${r.metrics.photoCaptureRatioPct >= 85 ? 'PASS' : 'VARIANCE'} |
 | **Ending Battery Reserve** | ${r.metrics.batteryEndPct}% | $\\ge 15\\%$ | ${r.metrics.batteryEndPct >= 15 ? 'PASS' : 'VARIANCE'} |
 
-*Generated by Aalaapi Sky Flight Diagnostics (v1.210.0).*
+*Generated by Aalaapi Sky Flight Diagnostics (v1.211.0).*
 `;
   },
 
@@ -66716,7 +66851,7 @@ const IrlVerifier = {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(md).then(() => {
         if (typeof showToast === 'function') {
-          showToast('📋 Copied IRL Field Verification Report to clipboard! Ready to paste into Issue #202.', 4000);
+          showToast('\uD83D\uDCCB Copied IRL Field Verification Report to clipboard! Ready to paste into Issue #202.', 4000);
         }
       }).catch(() => {
         this.fallbackCopy(md);
@@ -66736,7 +66871,7 @@ const IrlVerifier = {
     try {
       document.execCommand('copy');
       if (typeof showToast === 'function') {
-        showToast('📋 Copied IRL Field Verification Report to clipboard!', 4000);
+        showToast('\uD83D\uDCCB Copied IRL Field Verification Report to clipboard!', 4000);
       }
     } finally {
       document.body.removeChild(ta);
@@ -66767,7 +66902,7 @@ const IrlVerifier = {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     if (typeof showToast === 'function') {
-      showToast('💾 Exported IRL Verification Record JSON', 3000);
+      showToast('\uD83D\uDCBE Exported IRL Verification Record JSON', 3000);
     }
   },
 
@@ -66794,22 +66929,22 @@ const IrlVerifier = {
       if (res.ok) {
         const data = await res.json();
         if (typeof showToast === 'function') {
-          showToast(`⚡ Recorded IRL verification for pattern "${patternId}" to local tracker!`, 4000);
+          showToast(`\u26A1 Recorded IRL verification for pattern "${patternId}" to local tracker!`, 4000);
         }
         if (typeof updateActiveLayerIrlBadge === 'function') {
           if (window.AALAAPI_IRL_STATUS) {
-            window.AALAAPI_IRL_STATUS[patternId] = { s: data.status || (this.currentResult.passedAll ? 'V' : 'F'), v: '1.210.0' };
+            window.AALAAPI_IRL_STATUS[patternId] = { s: data.status || (this.currentResult.passedAll ? 'V' : 'F'), v: '1.211.0' };
           }
           updateActiveLayerIrlBadge(patternId);
         }
       } else {
         if (typeof showToast === 'function') {
-          showToast('⚠️ Bridge returned an error recording IRL status.', 4000);
+          showToast('\u26A0\uFE0F Bridge returned an error recording IRL status.', 4000);
         }
       }
     } catch (e) {
       if (typeof showToast === 'function') {
-        showToast(`⚠️ Could not reach Companion Bridge: ${e.message}`, 4000);
+        showToast(`\u26A0\uFE0F Could not reach Companion Bridge: ${e.message}`, 4000);
       }
     }
   },
@@ -66822,6 +66957,100 @@ const IrlVerifier = {
     const closeFooterBtn = document.getElementById('diag-irl-close-footer-btn');
     if (closeBtn) closeBtn.onclick = () => this.closeIrlVerificationModal();
     if (closeFooterBtn) closeFooterBtn.onclick = () => this.closeIrlVerificationModal();
+
+    // Plan selection dropdown
+    const planSelect = document.getElementById('diag-irl-plan-select');
+    if (planSelect) {
+      planSelect.onchange = () => {
+        const selVal = planSelect.value;
+        const matched = this.planCandidates.find(c => c.id === selVal);
+        if (matched && Array.isArray(matched.waypoints)) {
+          this.currentPlannedWaypoints = matched.waypoints;
+          if (matched.pattern) {
+            const patSelect = document.getElementById('diag-irl-pattern-select');
+            if (patSelect) patSelect.value = matched.pattern;
+          }
+          this.runVerificationAndRender();
+        }
+      };
+    }
+
+    // Import Plan File Button & File Input
+    const loadPlanBtn = document.getElementById('diag-irl-load-plan-btn');
+    const planFileInput = document.getElementById('diag-irl-plan-file-input');
+    if (loadPlanBtn && planFileInput) {
+      loadPlanBtn.onclick = () => planFileInput.click();
+      planFileInput.onchange = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (readEvt) => {
+          try {
+            const text = readEvt.target.result;
+            let importedWps = [];
+            let detectedPattern = null;
+
+            if (file.name.endsWith('.json')) {
+              const parsed = JSON.parse(text);
+              importedWps = Array.isArray(parsed) ? parsed : (parsed.waypoints || []);
+              detectedPattern = parsed.pattern || parsed.flightPattern || null;
+            } else if (typeof parseKmlOrWpmlTelemetry === 'function') {
+              const parsed = parseKmlOrWpmlTelemetry(text, file.name);
+              if (parsed && Array.isArray(parsed.points)) {
+                importedWps = parsed.points.map(p => ({
+                  lat: p.lat,
+                  lon: p.lon,
+                  alt: p.alt,
+                  altitude: p.alt,
+                  speed: p.speed,
+                  heading: p.heading || p.yaw,
+                  gimbalPitch: p.gimbalPitch !== undefined ? p.gimbalPitch : p.pitch
+                }));
+              }
+            }
+
+            if (importedWps.length >= 2) {
+              const candId = `imported-${Date.now()}`;
+              const newCand = {
+                id: candId,
+                label: `\uD83D\uDCC1 Imported: ${file.name} (${importedWps.length} WPs)`,
+                waypoints: importedWps,
+                pattern: detectedPattern
+              };
+              this.planCandidates.unshift(newCand);
+
+              if (planSelect) {
+                const opt = document.createElement('option');
+                opt.value = candId;
+                opt.textContent = newCand.label;
+                planSelect.insertBefore(opt, planSelect.firstChild);
+                planSelect.selectedIndex = 0;
+              }
+
+              this.currentPlannedWaypoints = importedWps;
+              if (detectedPattern) {
+                const patSelect = document.getElementById('diag-irl-pattern-select');
+                if (patSelect) patSelect.value = detectedPattern;
+              }
+              this.runVerificationAndRender();
+              if (typeof showToast === 'function') {
+                showToast(`\uD83D\uDCC1 Loaded planned mission "${file.name}" (${importedWps.length} waypoints)`, 3000);
+              }
+            } else {
+              if (typeof showToast === 'function') {
+                showToast('\u26A0\uFE0F Could not extract at least 2 waypoints from imported file.', 4000);
+              }
+            }
+          } catch (parseErr) {
+            if (typeof showToast === 'function') {
+              showToast(`\u26A0\uFE0F Error reading flight plan file: ${parseErr.message}`, 4000);
+            }
+          }
+        };
+        reader.readAsText(file);
+      };
+    }
 
     const patSelect = document.getElementById('diag-irl-pattern-select');
     if (patSelect) {
@@ -68571,8 +68800,66 @@ const FlightDiagnostics = {
       return;
     }
     const planned = this.plannedWaypoints || (typeof getActiveMissionWaypoints === 'function' ? getActiveMissionWaypoints() : []);
+    const activePattern = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || 'single';
+
+    const planCandidates = [];
+
+    // 1. Matched / Correlated Mission Plan
+    if (this.currentLoadedMission && this.currentLoadedMission.plan && Array.isArray(this.currentLoadedMission.plan.waypoints)) {
+      const missionWps = this.currentLoadedMission.plan.waypoints;
+      const mPattern = this.currentLoadedMission.flight_pattern || activePattern;
+      planCandidates.push({
+        id: 'matched-mission',
+        label: '\uD83C\uDFAF Matched DB Mission (' + missionWps.length + ' WPs \u2022 ' + mPattern + ')',
+        waypoints: missionWps,
+        pattern: mPattern
+      });
+    } else if (this.plannedWaypoints && Array.isArray(this.plannedWaypoints) && this.plannedWaypoints.length > 0) {
+      planCandidates.push({
+        id: 'loaded-planned',
+        label: '\uD83C\uDFAF Loaded Planned Plan (' + this.plannedWaypoints.length + ' WPs \u2022 ' + activePattern + ')',
+        waypoints: this.plannedWaypoints,
+        pattern: activePattern
+      });
+    }
+
+    // 2. Active Planning Workspace
+    if (typeof getActiveMissionWaypoints === 'function') {
+      const activeWps = getActiveMissionWaypoints();
+      if (activeWps && activeWps.length > 0) {
+        planCandidates.push({
+          id: 'active-workspace',
+          label: '\uD83D\uDDFA\uFE0F Active Workspace (' + activeWps.length + ' WPs \u2022 ' + activePattern + ')',
+          waypoints: activeWps,
+          pattern: activePattern
+        });
+      }
+    }
+
+    // 3. Stored missions from cache
+    if (Array.isArray(this._savedMissionsCache)) {
+      this._savedMissionsCache.slice(0, 10).forEach(m => {
+        const mWaypoints = (m.plan && Array.isArray(m.plan.waypoints)) ? m.plan.waypoints : (Array.isArray(m.waypoints) ? m.waypoints : null);
+        if (mWaypoints && mWaypoints.length > 0) {
+          const mKey = 'db:' + (m.archive_id || m.id || m.uuid);
+          if (!planCandidates.some(c => c.id === mKey)) {
+            const mDate = (m.created_at || '').replace('T', ' ').replace(/\..+/, '');
+            planCandidates.push({
+              id: mKey,
+              label: '\uD83D\uDCBE ' + (m.name || m.filename || m.uuid || 'Mission') + ' (' + mWaypoints.length + ' WPs \u2022 ' + (m.flight_pattern || 'Grid') + ' \u2022 ' + mDate + ')',
+              waypoints: mWaypoints,
+              pattern: m.flight_pattern || 'single'
+            });
+          }
+        }
+      });
+    }
+
     if (typeof IrlVerifier !== 'undefined' && typeof IrlVerifier.openIrlVerificationModal === 'function') {
-      IrlVerifier.openIrlVerificationModal(this.selectedFlightId, planned, this.telemetryData);
+      IrlVerifier.openIrlVerificationModal(this.selectedFlightId, planned, this.telemetryData, {
+        planCandidates,
+        patternId: activePattern
+      });
     }
   },
 
@@ -68606,6 +68893,7 @@ const FlightDiagnostics = {
           const dataDiag = await resDiag.json();
           if (dataDiag.success && Array.isArray(dataDiag.missions)) {
             savedMissions = dataDiag.missions;
+            this._savedMissionsCache = savedMissions;
           }
         }
       } catch (e) {}

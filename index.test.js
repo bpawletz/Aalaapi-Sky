@@ -38747,11 +38747,7 @@ describe('Terminal Waypoint Survey Gimbal Pitch Preservation (v1.210.2, Issue #2
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.210.2] - 2026-10-30'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.210.2'));
-    assert.ok(template.includes('Version 1.210.2'));
     assert.ok(template.includes('Changelog (v1.210.2):'));
-    assert.ok(htmlText.includes('v1.210.2'));
-    assert.ok(htmlText.includes('Version 1.210.2'));
     assert.ok(htmlText.includes('Changelog (v1.210.2):'));
   });
 
@@ -38829,5 +38825,167 @@ describe('Terminal Waypoint Survey Gimbal Pitch Preservation (v1.210.2, Issue #2
     });
     assert.ok(wpml, 'WPML must be generated');
     assert.ok(wpml.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'), 'Photo Sphere must still restore gimbal to 0');
+  });
+});
+
+
+describe('Planned Flight Plan Selection & Single-Point Max Error Verification in IRL Scorecard (v1.211.0, Issue #206)', () => {
+  const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+  test('Version consistency: v1.211.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.211.0');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.211.0] - 2026-10-30'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.211.0'));
+    assert.ok(template.includes('Version 1.211.0'));
+    assert.ok(template.includes('Changelog (v1.211.0):'));
+    assert.ok(htmlText.includes('v1.211.0'));
+    assert.ok(htmlText.includes('Version 1.211.0'));
+    assert.ok(htmlText.includes('Changelog (v1.211.0):'));
+  });
+
+  test('IrlVerifier enforces two-tier max error tolerances (max pitch <= 15 deg, max yaw <= 25 deg, max XTE <= 8.0m, max alt <= 5.0m)', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+    assert.ok(IrlVerifier, 'IrlVerifier module must be exported');
+
+    // 4 planned waypoints at nadir pitch -90
+    const plannedWps = [
+      { lat: 41.3215, lon: -88.9950, altitude: 50, speed: 4.0, gimbalPitch: -90, heading: 0 },
+      { lat: 41.3220, lon: -88.9950, altitude: 50, speed: 4.0, gimbalPitch: -90, heading: 0 },
+      { lat: 41.3220, lon: -88.9944, altitude: 50, speed: 4.0, gimbalPitch: -90, heading: 90 },
+      { lat: 41.3215, lon: -88.9944, altitude: 50, speed: 4.0, gimbalPitch: -90, heading: 180 }
+    ];
+
+    // Simulated nominal telemetry exactly matching waypoints
+    const telemetry = {
+      points: [
+        { lat: 41.3215, lon: -88.9950, alt: 50, pitch: -90, yaw: 0, isPhoto: true, speed: 0.1, battery: 95 },
+        { lat: 41.3220, lon: -88.9950, alt: 50, pitch: -90, yaw: 0, isPhoto: true, speed: 0.1, battery: 85 },
+        { lat: 41.3220, lon: -88.9944, alt: 50, pitch: -90, yaw: 90, isPhoto: true, speed: 0.1, battery: 75 },
+        { lat: 41.3215, lon: -88.9944, alt: 50, pitch: -90, yaw: 180, isPhoto: true, speed: 0.1, battery: 65 },
+        { lat: 41.3215, lon: -88.9944, alt: 50, pitch: -90, yaw: 180, isPhoto: false, speed: 0.0, battery: 60 }
+      ]
+    };
+
+    const passRes = IrlVerifier.verifyFlightPlanAgainstLog(plannedWps, telemetry, { captureMode: 'hover' });
+    assert.strictEqual(passRes.passedAll, true, 'Nominal telemetry should pass all 6 phases');
+    assert.strictEqual(passRes.phases.heading_gimbal, true);
+    assert.strictEqual(passRes.phases.geometry_path, true);
+    assert.strictEqual(passRes.metrics.maxPitchErrorDeg, 0);
+    assert.strictEqual(passRes.metrics.maxYawErrorDeg, 0);
+  });
+
+  test('IrlVerifier catches single-waypoint gimbal pitch drop (Flight 34 WP 23 pattern) and marks Phase 4 variance', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+
+    // 24 waypoints all planned at -90 deg
+    const plannedWps = Array.from({ length: 24 }, (_, i) => ({
+      index: i,
+      lat: 41.3215 + i * 0.0001,
+      lon: -88.9950,
+      altitude: 31,
+      speed: 2.6,
+      gimbalPitch: -90,
+      heading: 0
+    }));
+
+    // 24 telemetry points: waypoints 0-22 have 0 pitch error, but WP 23 has pitch = 0 (90 deg error)
+    const telemetry = {
+      points: Array.from({ length: 24 }, (_, i) => ({
+        lat: 41.3215 + i * 0.0001,
+        lon: -88.9950,
+        alt: 31,
+        pitch: i === 23 ? 0 : -90, // WP 23 pitch drop!
+        yaw: 0,
+        isPhoto: true,
+        speed: 0.2,
+        battery: 90 - i
+      }))
+    };
+
+    const res = IrlVerifier.verifyFlightPlanAgainstLog(plannedWps, telemetry, {
+      maxPitchToleranceDeg: 15.0,
+      pitchToleranceDeg: 6.0
+    });
+
+    // The mean pitch error is 90 / 24 = 3.75 deg (which would pass a 6.0 deg mean check),
+    // but the single-point max pitch check must fail Phase 4!
+    assert.strictEqual(res.metrics.meanGimbalPitchErrorDeg, 3.8);
+    assert.strictEqual(res.metrics.maxPitchErrorDeg, 90.0);
+    assert.strictEqual(res.metrics.maxPitchWpIndex, 23, 'Must flag WP 23 as the max pitch error waypoint');
+    assert.strictEqual(res.phases.heading_gimbal, false, 'Phase 4 must fail on 90 deg pitch drop at WP 23');
+    assert.strictEqual(res.passedAll, false);
+  });
+
+  test('IrlVerifier openIrlVerificationModal manages planCandidates and enables switching planned missions', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+
+    const plan1 = [
+      { lat: 41.3215, lon: -88.9950, alt: 30, gimbalPitch: -90 },
+      { lat: 41.3218, lon: -88.9950, alt: 30, gimbalPitch: -90 }
+    ];
+    const plan2 = [
+      { lat: 41.3215, lon: -88.9950, alt: 50, gimbalPitch: -60 },
+      { lat: 41.3225, lon: -88.9950, alt: 50, gimbalPitch: -60 },
+      { lat: 41.3225, lon: -88.9940, alt: 50, gimbalPitch: -60 }
+    ];
+
+    const telemetry = {
+      points: [
+        { lat: 41.3215, lon: -88.9950, alt: 30, pitch: -90, yaw: 0, isPhoto: true, battery: 90 },
+        { lat: 41.3218, lon: -88.9950, alt: 30, pitch: -90, yaw: 0, isPhoto: true, battery: 80 },
+        { lat: 41.3218, lon: -88.9950, alt: 30, pitch: -90, yaw: 0, isPhoto: false, battery: 75 }
+      ]
+    };
+
+    const candidates = [
+      { id: 'plan-1', label: 'Plan 1 (2 WPs • 30m)', waypoints: plan1, pattern: 'single' },
+      { id: 'plan-2', label: 'Plan 2 (3 WPs • 50m)', waypoints: plan2, pattern: 'double' }
+    ];
+
+    // Mock DOM elements
+    global.document = {
+      getElementById: (id) => {
+        if (id === 'diag-irl-modal') return { classList: { remove: () => {}, add: () => {} } };
+        if (id === 'diag-irl-flight-name') return { textContent: '' };
+        if (id === 'diag-irl-pattern-name') return { textContent: '' };
+        if (id === 'diag-irl-outcome-badge') return { textContent: '', style: {} };
+        if (id === 'diag-irl-samples-badge') return { textContent: '' };
+        if (id === 'diag-irl-phases-container') return { innerHTML: '', appendChild: () => {} };
+        if (id === 'diag-irl-metrics-table-body') return { innerHTML: '' };
+        if (id === 'diag-irl-plan-select') return {
+          innerHTML: '',
+          appendChild: () => {},
+          options: [{ value: 'plan-1', textContent: 'Plan 1' }, { value: 'plan-2', textContent: 'Plan 2' }],
+          selectedIndex: 0,
+          value: 'plan-1'
+        };
+        if (id === 'diag-irl-pattern-select') return {
+          innerHTML: '',
+          appendChild: () => {},
+          options: [{ value: 'single', textContent: '2D Grid' }, { value: 'double', textContent: '3D Double' }],
+          selectedIndex: 0,
+          value: 'single'
+        };
+        return null;
+      },
+      createElement: () => ({ style: {}, appendChild: () => {} })
+    };
+
+    IrlVerifier.openIrlVerificationModal('TestFlight.txt', plan1, telemetry, {
+      planCandidates: candidates,
+      patternId: 'single'
+    });
+
+    assert.strictEqual(IrlVerifier.currentFlightId, 'TestFlight.txt');
+    assert.strictEqual(IrlVerifier.planCandidates.length, 2);
+    assert.strictEqual(IrlVerifier.currentPlannedWaypoints.length, 2);
+    assert.strictEqual(IrlVerifier.currentResult.metrics.waypointCount, 2);
+
+    // Switch to plan 2
+    IrlVerifier.currentPlannedWaypoints = plan2;
+    IrlVerifier.runVerificationAndRender();
+    assert.strictEqual(IrlVerifier.currentResult.metrics.waypointCount, 3);
   });
 });

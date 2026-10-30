@@ -83,7 +83,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.210.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.211.0</span></h1>
         </div>
       </div>
 
@@ -4712,6 +4712,14 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎯 Planned Flight Plan Selection &amp; Single-Point Max Error Protection (v1.211.0) (Closes #206)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Full control and single-point error protection in IRL flight verification! Flight Diagnostics now features a <strong>Planned Flight Plan Selector</strong> (<code>#diag-irl-plan-select</code>) with 1-click plan imports, letting pilots evaluate flight records against auto-matched missions, active workspaces, SQLite archives, or external KMZ/WPML plans. Upgraded Phase 3, 4, and 5 to enforce a strict <strong>Two-Tier Tolerance Suite</strong> (Max Pitch Error &le; 15.0&deg;, Max Yaw Error &le; 25.0&deg;, Max XTE &le; 5.0m, Max Alt Error &le; 5.0m, and Max Stop-and-Shoot Speed &le; 1.0 m/s), immediately flagging single-waypoint anomalies with specific waypoint index citations.
+            </p>
+          </div>
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🧪 Flight Diagnostics IRL Test Plan Verification Button &amp; 6-Phase Scorecard (v1.210.0) (Closes #203)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -7086,7 +7094,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.210.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.211.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7246,6 +7254,12 @@
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.211.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Planned Flight Plan Selection &amp; Single-Point Max Error Protection (Closes #206):</strong> Added an interactive Planned Flight Plan selector (<code>#diag-irl-plan-select</code>) and import button inside the IRL Verification Scorecard modal, allowing pilots to evaluate flight logs against auto-matched missions, active editor workspaces, SQLite archive flights, or imported KMZ/WPML files. Established strict two-tier tolerance checks enforcing single-point maximum limits alongside continuous mean tracking: Max Pitch Error (&le; 15.0&deg;), Max Heading/Yaw Error (&le; 25.0&deg;), Max Cross-Track Error (&le; 5.0m), Max Altitude Error (&le; 5.0m), and Max Stop-and-Shoot Speed (&le; 1.0 m/s), identifying the specific waypoint where maximum discrepancies occurred.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.210.2):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -12143,6 +12157,22 @@
       <!-- Modal Body -->
       <div class="modal-content" style="padding: 16px 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; flex: 1;">
         
+        <!-- Planned Flight Plan Selection & File Import Row -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 280px;">
+            <label for="diag-irl-plan-select" style="color: var(--text-muted); font-weight: 600; white-space: nowrap;">Planned Flight Plan:</label>
+            <select id="diag-irl-plan-select" class="settings-select" style="flex: 1; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 0.76rem; padding: 4px 8px;">
+              <!-- Populated dynamically: Auto-Matched DB Mission, Active Workspace, Saved SQLite Archives, File Import -->
+            </select>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="diag-irl-load-plan-btn" type="button" class="btn-secondary" style="padding: 3px 8px; font-size: 0.72rem; height: 26px; display: inline-flex; align-items: center; gap: 4px;" title="Import planned KMZ, WPML or JSON flight plan">
+              <span>📁</span> Import Plan
+            </button>
+            <input type="file" id="diag-irl-plan-file-input" accept=".kmz,.wpml,.kml,.json" style="display: none;" />
+          </div>
+        </div>
+
         <!-- Pattern Selection & Context Row -->
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 8px;">

@@ -1,3 +1,33 @@
+## [1.211.0] - 2026-10-30
+
+Aalaapi Sky v1.211.0 delivers interactive planned flight plan selection in the IRL Verification scorecard and establishes a rigorous two-tier tolerance suite enforcing single-point maximum error thresholds across gimbal pitch, aircraft yaw, cross-track drift, altitude, and stop-and-shoot camera capture speeds.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Planned Flight Plan Selector in IRL Scorecard (Closes #206)**:
+  - Added an interactive dropdown (`#diag-irl-plan-select`) inside the Flight Diagnostics IRL Verification Scorecard modal, giving pilots total transparency and control over which flight plan a flight log is evaluated against.
+  - Automatically indexes candidate flight plans: Auto-Matched Companion DB Mission (if detected), Active Editor Workspace, Saved SQLite Mission Archives, and external KMZ/WPML plan imports via the new "📁 Import Plan" button (`#diag-irl-load-plan-btn`).
+  - Switching flight plans instantly re-runs quantitative multi-phase verification and re-renders scorecard cards and metrics.
+- **Single-Point Max Error Protection & Two-Tier Tolerance Suite**:
+  - Upgraded Phase 3 (3D Geometry), Phase 4 (Heading & Gimbal Pitch), and Phase 5 (Camera Shutter & Settling) to enforce strict single-point maximum thresholds alongside continuous mean/RMS tracking:
+    - **Max Gimbal Pitch Error ($\le 15.0^\circ$)**: Guarantees single-waypoint pitch drops or terminal horizon resets (such as WP 23 on Flight 34) cannot be averaged away into false-positive green passes.
+    - **Max Heading / Yaw Error ($\le 25.0^\circ$)**: Ensures POI tracking dropouts or reversed facade heading angles are caught immediately.
+    - **Max Cross-Track Error ($\le 5.0\text{m}$)**: Guards against sudden crosswind blowout legs or corner overshoots exceeding corridor safety limits.
+    - **Max Altitude Error ($\le 5.0\text{m}$)**: Catches momentary barometric spikes, downdrafts, or vertical sensor missteps.
+    - **Max Stop-and-Shoot Shutter Speed ($\le 1.0\text{ m/s}$)**: Flags motion blur risk when photos fire before the aircraft completely settles in hover mode.
+  - Scorecard phase cards and metrics tables now explicitly highlight the specific waypoint index where maximum discrepancy occurred (e.g. `WP 23: Δ90.0°`).
+
+#### Under the Hood & Technical Details
+- **`src/qa/IrlVerifier.js`**:
+  - Implemented `maxPitchErrorDeg`, `maxPitchWpIndex`, `maxYawErrorDeg`, `maxYawWpIndex`, `maxXteM`, `maxXteWpIndex`, `maxAltitudeErrorM`, and `maxAltWpIndex` extraction in `verifyFlightPlanAgainstLog`.
+  - Added `#diag-irl-plan-select`, `#diag-irl-load-plan-btn`, and `#diag-irl-plan-file-input` event wiring and candidate plan caching in `IrlVerifier`.
+  - Updated `generateMarkdownReport` to include two-tier tolerances and maximum error waypoint citations.
+- **`tools/qa/irl_tracker.js`**:
+  - Updated `analyzeFlightLogAgainstPlan` in lockstep to enforce `maxPitchToleranceDeg` ($\le 15.0^\circ$), `maxYawToleranceDeg` ($\le 25.0^\circ$), `maxXteToleranceM` ($\le 5.0\text{m}$), and `maxAltToleranceM` ($\le 5.0\text{m}$).
+- **`src/3d/DigitalTwin.js`**:
+  - In `performIrlVerification()`, collected candidate plan sources (auto-matched DB mission, active editor workspace, and SQLite mission history) and passed them to `IrlVerifier.openIrlVerificationModal()`.
+
 ## [1.210.2] - 2026-10-30
 
 ### 🐛 Fixed

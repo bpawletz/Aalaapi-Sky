@@ -1716,8 +1716,66 @@ const FlightDiagnostics = {
       return;
     }
     const planned = this.plannedWaypoints || (typeof getActiveMissionWaypoints === 'function' ? getActiveMissionWaypoints() : []);
+    const activePattern = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || 'single';
+
+    const planCandidates = [];
+
+    // 1. Matched / Correlated Mission Plan
+    if (this.currentLoadedMission && this.currentLoadedMission.plan && Array.isArray(this.currentLoadedMission.plan.waypoints)) {
+      const missionWps = this.currentLoadedMission.plan.waypoints;
+      const mPattern = this.currentLoadedMission.flight_pattern || activePattern;
+      planCandidates.push({
+        id: 'matched-mission',
+        label: '\uD83C\uDFAF Matched DB Mission (' + missionWps.length + ' WPs \u2022 ' + mPattern + ')',
+        waypoints: missionWps,
+        pattern: mPattern
+      });
+    } else if (this.plannedWaypoints && Array.isArray(this.plannedWaypoints) && this.plannedWaypoints.length > 0) {
+      planCandidates.push({
+        id: 'loaded-planned',
+        label: '\uD83C\uDFAF Loaded Planned Plan (' + this.plannedWaypoints.length + ' WPs \u2022 ' + activePattern + ')',
+        waypoints: this.plannedWaypoints,
+        pattern: activePattern
+      });
+    }
+
+    // 2. Active Planning Workspace
+    if (typeof getActiveMissionWaypoints === 'function') {
+      const activeWps = getActiveMissionWaypoints();
+      if (activeWps && activeWps.length > 0) {
+        planCandidates.push({
+          id: 'active-workspace',
+          label: '\uD83D\uDDFA\uFE0F Active Workspace (' + activeWps.length + ' WPs \u2022 ' + activePattern + ')',
+          waypoints: activeWps,
+          pattern: activePattern
+        });
+      }
+    }
+
+    // 3. Stored missions from cache
+    if (Array.isArray(this._savedMissionsCache)) {
+      this._savedMissionsCache.slice(0, 10).forEach(m => {
+        const mWaypoints = (m.plan && Array.isArray(m.plan.waypoints)) ? m.plan.waypoints : (Array.isArray(m.waypoints) ? m.waypoints : null);
+        if (mWaypoints && mWaypoints.length > 0) {
+          const mKey = 'db:' + (m.archive_id || m.id || m.uuid);
+          if (!planCandidates.some(c => c.id === mKey)) {
+            const mDate = (m.created_at || '').replace('T', ' ').replace(/\..+/, '');
+            planCandidates.push({
+              id: mKey,
+              label: '\uD83D\uDCBE ' + (m.name || m.filename || m.uuid || 'Mission') + ' (' + mWaypoints.length + ' WPs \u2022 ' + (m.flight_pattern || 'Grid') + ' \u2022 ' + mDate + ')',
+              waypoints: mWaypoints,
+              pattern: m.flight_pattern || 'single'
+            });
+          }
+        }
+      });
+    }
+
     if (typeof IrlVerifier !== 'undefined' && typeof IrlVerifier.openIrlVerificationModal === 'function') {
-      IrlVerifier.openIrlVerificationModal(this.selectedFlightId, planned, this.telemetryData);
+      IrlVerifier.openIrlVerificationModal(this.selectedFlightId, planned, this.telemetryData, {
+        planCandidates,
+        patternId: activePattern
+      });
     }
   },
 
@@ -1751,6 +1809,7 @@ const FlightDiagnostics = {
           const dataDiag = await resDiag.json();
           if (dataDiag.success && Array.isArray(dataDiag.missions)) {
             savedMissions = dataDiag.missions;
+            this._savedMissionsCache = savedMissions;
           }
         }
       } catch (e) {}

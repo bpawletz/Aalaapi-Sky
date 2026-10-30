@@ -1,5 +1,44 @@
 [
   {
+    "notam_id": "6/4117",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "PAGOSA SPRINGS, CO, Friday, October 30, 2026 through Thursday, November 5, 2026 UTC",
+    "mod_date": "10/30/2026 22:12:00",
+    "mod_abs_time": "202610302212",
+    "is_new": "Y",
+    "gid": "6/4117",
+    "start_utc": "2026-10-30T22:11:00.000Z",
+    "end_utc": "2026-11-05T01:00:59.000Z",
+    "exact_time": true
+  },
+  {
+    "notam_id": "6/4116",
+    "facility": "ZMP",
+    "state": "ND",
+    "type": "SECURITY",
+    "description": "GRAND FORKS AFB, ND, Sunday, November 1, 2026 through Sunday, March 14, 2027 Local",
+    "mod_date": "10/30/2026 22:07:00",
+    "mod_abs_time": "202610302207",
+    "is_new": "Y",
+    "gid": "6/4116",
+    "start_utc": "2026-11-01T07:00:00.000Z",
+    "end_utc": "2027-03-14T06:59:59.000Z",
+    "exact_time": true
+  },
+  {
+    "notam_id": "6/4115",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "29NM NW FORT COLLINS, CO, Saturday, October 31, 2026 through Monday, November 2, 2026 UTC",
+    "mod_date": "10/30/2026 22:05:00",
+    "mod_abs_time": "202610302205",
+    "is_new": "Y",
+    "gid": "6/4115"
+  },
+  {
     "notam_id": "6/4099",
     "facility": "ZID",
     "state": "KY",
@@ -12,17 +51,6 @@
     "start_utc": "2026-11-06T19:00:00.000Z",
     "end_utc": "2026-11-07T20:30:59.000Z",
     "exact_time": true
-  },
-  {
-    "notam_id": "6/4085",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "29 NM NW FORT COLLINS, CO, Saturday, October 31, 2026 through Monday, November 2, 2026 UTC",
-    "mod_date": "10/30/2026 18:17:00",
-    "mod_abs_time": "202610301817",
-    "is_new": "Y",
-    "gid": "6/4085"
   },
   {
     "notam_id": "6/4084",
@@ -141,24 +169,10 @@
     "description": "YUBA CITY, CA, Sunday, November 1, 2026 through Sunday, November 1, 2026 Local",
     "mod_date": "10/29/2026 22:00:00",
     "mod_abs_time": "202610292200",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/3959",
     "start_utc": "2026-11-01T18:00:00.000Z",
     "end_utc": "2026-11-02T01:00:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/3915",
-    "facility": "ZAU",
-    "state": "WI",
-    "type": "SECURITY",
-    "description": "MILWAUKEE, WI, Friday, October 30, 2026 Local",
-    "mod_date": "10/29/2026 21:34:00",
-    "mod_abs_time": "202610292134",
-    "is_new": "Y",
-    "gid": "6/3915",
-    "start_utc": "2026-10-30T13:00:00.000Z",
-    "end_utc": "2026-10-30T21:00:59.000Z",
     "exact_time": true
   },
   {
@@ -252,17 +266,6 @@
     "start_utc": "2026-10-30T21:00:00.000Z",
     "end_utc": "2026-10-31T03:00:59.000Z",
     "exact_time": true
-  },
-  {
-    "notam_id": "6/3090",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "PAGOSA SPRINGS, CO, Wednesday, October 28, 2026 through Thursday, November 5, 2026 UTC",
-    "mod_date": "10/28/2026 01:20:00",
-    "mod_abs_time": "202610280120",
-    "is_new": "N",
-    "gid": "6/3090"
   },
   {
     "notam_id": "6/2959",
@@ -424,10 +427,7 @@
     "mod_date": "10/26/2026 10:27:00",
     "mod_abs_time": "202610261027",
     "is_new": "N",
-    "gid": "6/2265",
-    "start_utc": "2026-10-31T11:00:00.000Z",
-    "end_utc": "2026-10-31T15:00:59.000Z",
-    "exact_time": true
+    "gid": "6/2265"
   },
   {
     "notam_id": "6/2204",
@@ -456,17 +456,6 @@
     "start_utc": "2026-10-31T12:00:00.000Z",
     "end_utc": "2026-11-01T04:00:59.000Z",
     "exact_time": true
-  },
-  {
-    "notam_id": "6/2117",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "PAGOSA SPRINGS, CO, Sunday, October 25, 2026 through Sunday, November 1, 2026 UTC",
-    "mod_date": "10/25/2026 02:46:00",
-    "mod_abs_time": "202610250246",
-    "is_new": "N",
-    "gid": "6/2117"
   },
   {
     "notam_id": "6/2103",

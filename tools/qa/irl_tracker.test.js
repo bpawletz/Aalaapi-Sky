@@ -227,7 +227,7 @@ describe('IRL Test Plan Tracker & Post-Flight Log Analyzer Tests', () => {
     }
   });
 
-  test('IRL field flight verification: single pattern 24-waypoint nadir grid passes all 6 phases', () => {
+  test('IRL field flight verification: single pattern 24-waypoint nadir grid catches terminal gimbal pitch variance', () => {
     const csvPath = path.resolve(__dirname, '../../scratch/latest_flight/FlightRecord_2026-10-30_[16-27-06]_decrypted.csv');
     if (!fs.existsSync(csvPath)) return; // skip if flight file not in local workspace
 
@@ -251,18 +251,30 @@ describe('IRL Test Plan Tracker & Post-Flight Log Analyzer Tests', () => {
       captureMode: 'continuous'
     });
 
-    assert.strictEqual(result.passedAll, true, 'All 6 phases must pass for single pattern');
+    // Validates that Phase 1, 2, 3, 5, 6 pass, but Phase 4 catches the 90 deg terminal pitch drop at WP 23
     assert.strictEqual(result.phases.kmz_import, true);
     assert.strictEqual(result.phases.entry_altitude, true);
     assert.strictEqual(result.phases.geometry_path, true);
-    assert.strictEqual(result.phases.heading_gimbal, true);
+    assert.strictEqual(result.phases.heading_gimbal, false, 'Phase 4 must catch single-waypoint 90 deg gimbal pitch variance at WP 23');
     assert.strictEqual(result.phases.capture_trigger, true);
     assert.strictEqual(result.phases.exit_rth, true);
 
     assert.strictEqual(result.metrics.waypointCompletionPct, 100);
+    assert.strictEqual(result.metrics.maxPitchErrorDeg, 90.0, 'Must record 90.0 deg max pitch error');
+    assert.strictEqual(result.metrics.maxPitchWpIndex, 23, 'Must identify WP 23 as the max pitch error waypoint');
     assert.ok(result.metrics.rmsXteM <= 0.10, `RMS XTE must be <= 0.10m, got ${result.metrics.rmsXteM}m`);
     assert.ok(result.metrics.actualPhotos >= 24, `Must have logged photos, got ${result.metrics.actualPhotos}`);
     assert.ok(result.metrics.batteryEndPct >= 15);
+
+    // Assert that if waypoints 0-22 are evaluated, Phase 4 passes with maxPitchError < 15.0 deg
+    const surveyOnlyWps = plan.waypoints.slice(0, 23);
+    const surveyResult = analyzeFlightLogAgainstPlan(surveyOnlyWps, telemetry, {
+      patternId: 'single',
+      pathMode: 'straight',
+      captureMode: 'continuous'
+    });
+    assert.strictEqual(surveyResult.phases.heading_gimbal, true, 'Survey legs without terminal landing WP should pass Phase 4');
+    assert.strictEqual(surveyResult.passedAll, true);
   });
 
   test('Issue #204: candidate scoring prioritizes geometric path fit and pattern over misleading 7cm center distance', () => {

@@ -1190,9 +1190,14 @@ function analyzeFlightLogAgainstPlan(plannedWaypoints, actualTelemetry, options 
   const pathMode = options.pathMode || 'straight';
   const captureMode = options.captureMode || 'continuous';
   const horizontalToleranceM = options.horizontalToleranceM || (pathMode === 'curved' ? 8.0 : 4.5);
+  const maxXteToleranceM = options.maxXteToleranceM || (pathMode === 'curved' ? 12.0 : 8.0);
   const altitudeToleranceM = options.altitudeToleranceM || 2.0;
+  const maxAltToleranceM = options.maxAltToleranceM || 5.0;
   const pitchToleranceDeg = options.pitchToleranceDeg || 6.0;
+  const maxPitchToleranceDeg = options.maxPitchToleranceDeg || 15.0;
   const yawToleranceDeg = options.yawToleranceDeg || 15.0;
+  const maxYawToleranceDeg = options.maxYawToleranceDeg || 25.0;
+  const maxCaptureSpeedMps = options.maxCaptureSpeedMps || 1.0;
 
   // Phase 1: KMZ & Execution Init
   const kmzImportPassed = wps.length >= 2 && pts.length >= 5;
@@ -1289,19 +1294,39 @@ function analyzeFlightLogAgainstPlan(plannedWaypoints, actualTelemetry, options 
   const completionRatio = visitedCount / wpApproaches.length;
   const rmsXte = Math.sqrt(wpApproaches.reduce((acc, a) => acc + a.dH * a.dH, 0) / wpApproaches.length);
   const rmsAltError = Math.sqrt(wpApproaches.reduce((acc, a) => acc + a.dZ * a.dZ, 0) / wpApproaches.length);
-  const maxXte = Math.max(...wpApproaches.map(a => a.dH));
-  const geometryPathPassed = completionRatio >= 0.90 && rmsXte <= horizontalToleranceM && rmsAltError <= altitudeToleranceM;
+  const maxXteWp = wpApproaches.reduce((max, a) => (a.dH > (max ? max.dH : -1) ? a : max), wpApproaches[0]);
+  const maxXte = maxXteWp ? maxXteWp.dH : 0;
+  const maxAltWp = wpApproaches.reduce((max, a) => (a.dZ > (max ? max.dZ : -1) ? a : max), wpApproaches[0]);
+  const maxAltError = maxAltWp ? maxAltWp.dZ : 0;
+  const geometryPathPassed = completionRatio >= 0.90 &&
+                             rmsXte <= horizontalToleranceM &&
+                             rmsAltError <= altitudeToleranceM &&
+                             maxXte <= maxXteToleranceM &&
+                             maxAltError <= maxAltToleranceM;
 
   // Phase 4: Heading & Gimbal Lock
-  const pitchSamples = wpApproaches.filter(a => a.visited && a.dPitch !== null).map(a => a.dPitch);
-  const yawSamples = wpApproaches.filter(a => a.visited && a.dYaw !== null).map(a => a.dYaw);
+  const pitchSamples = wpApproaches.filter(a => a.visited && a.dPitch !== null);
+  const yawSamples = wpApproaches.filter(a => a.visited && a.dYaw !== null);
   const meanPitchError = pitchSamples.length > 0
-    ? pitchSamples.reduce((s, v) => s + v, 0) / pitchSamples.length
+    ? pitchSamples.reduce((s, v) => s + v.dPitch, 0) / pitchSamples.length
     : 0;
+  const maxPitchWp = pitchSamples.length > 0
+    ? pitchSamples.reduce((max, a) => (a.dPitch > (max ? max.dPitch : -1) ? a : max), pitchSamples[0])
+    : null;
+  const maxPitchError = maxPitchWp ? maxPitchWp.dPitch : 0;
+
   const meanYawError = yawSamples.length > 0
-    ? yawSamples.reduce((s, v) => s + v, 0) / yawSamples.length
+    ? yawSamples.reduce((s, v) => s + v.dYaw, 0) / yawSamples.length
     : 0;
-  const headingGimbalPassed = meanPitchError <= pitchToleranceDeg && meanYawError <= yawToleranceDeg;
+  const maxYawWp = yawSamples.length > 0
+    ? yawSamples.reduce((max, a) => (a.dYaw > (max ? max.dYaw : -1) ? a : max), yawSamples[0])
+    : null;
+  const maxYawError = maxYawWp ? maxYawWp.dYaw : 0;
+
+  const headingGimbalPassed = meanPitchError <= pitchToleranceDeg &&
+                             maxPitchError <= maxPitchToleranceDeg &&
+                             meanYawError <= yawToleranceDeg &&
+                             maxYawError <= maxYawToleranceDeg;
 
   // Phase 5: Camera Capture Trigger
   const plannedPhotoWps = wps.filter(w => !w.skipPhoto && !w.isTurnaroundPoint && !w.isExclusionDetour).length;
@@ -1313,11 +1338,15 @@ function analyzeFlightLogAgainstPlan(plannedWaypoints, actualTelemetry, options 
 
   let stopAndShootSettled = true;
   let medianShutterSpeedMps = 0;
+  let maxShutterSpeedMps = 0;
   if (photoPts.length > 0) {
     const speeds = photoPts.map(p => parseFloat(p.speed || 0)).sort((a, b) => a - b);
     medianShutterSpeedMps = speeds[Math.floor(speeds.length / 2)];
-    if (captureMode === 'stopAndShoot' && medianShutterSpeedMps > 1.0) {
-      stopAndShootSettled = false;
+    maxShutterSpeedMps = speeds[speeds.length - 1];
+    if (captureMode === 'stopAndShoot' || captureMode === 'hover') {
+      if (medianShutterSpeedMps > 1.0 || maxShutterSpeedMps > maxCaptureSpeedMps) {
+        stopAndShootSettled = false;
+      }
     }
   }
   const photoRatio = expectedPhotos > 0 ? (actualPhotos / expectedPhotos) : 1.0;
@@ -1349,12 +1378,20 @@ function analyzeFlightLogAgainstPlan(plannedWaypoints, actualTelemetry, options 
     entryAltitudeErrorM: wp0.dZ,
     rmsXteM: Math.round(rmsXte * 100) / 100,
     maxXteM: Math.round(maxXte * 100) / 100,
+    maxXteWpIndex: maxXteWp ? maxXteWp.index : 0,
     rmsAltitudeErrorM: Math.round(rmsAltError * 100) / 100,
+    maxAltitudeErrorM: Math.round(maxAltError * 100) / 100,
+    maxAltWpIndex: maxAltWp ? maxAltWp.index : 0,
     meanPitchErrorDeg: Math.round(meanPitchError * 10) / 10,
+    maxPitchErrorDeg: Math.round(maxPitchError * 10) / 10,
+    maxPitchWpIndex: maxPitchWp ? maxPitchWp.index : null,
     meanYawErrorDeg: Math.round(meanYawError * 10) / 10,
+    maxYawErrorDeg: Math.round(maxYawError * 10) / 10,
+    maxYawWpIndex: maxYawWp ? maxYawWp.index : null,
     expectedPhotos,
     actualPhotos,
     medianShutterSpeedMps: Math.round(medianShutterSpeedMps * 100) / 100,
+    maxShutterSpeedMps: Math.round(maxShutterSpeedMps * 100) / 100,
     finalWaypointErrorM: lastWp.dH,
     batteryEndPct: Math.round(batteryEnd * 10) / 10,
     droneModel: (actualTelemetry && actualTelemetry.droneModel) || 'DJI Mini 4 Pro',
@@ -1372,9 +1409,9 @@ function analyzeFlightLogAgainstPlan(plannedWaypoints, actualTelemetry, options 
     `| :--- | :--- | :--- | :--- | :---: |`,
     `| **1. KMZ & Init** | \`kmz_import\` | ${wps.length} planned WPs, ${pts.length} telemetry samples | $\\ge 2$ WPs, $\\ge 5$ samples | ${phases.kmz_import ? '✅ PASS' : '❌ FAIL'} |`,
     `| **2. Entry & AGL** | \`entry_altitude\` | $\\Delta H_0 = ${metrics.entryHorizontalErrorM}\\text{ m}$, $\\Delta Z_0 = ${metrics.entryAltitudeErrorM}\\text{ m}$ | $\\Delta H_0 \\le 4.0\\text{ m}, \\Delta Z_0 \\le ${altitudeToleranceM}\\text{ m}$ | ${phases.entry_altitude ? '✅ PASS' : '❌ FAIL'} |`,
-    `| **3. 3D Geometry** | \`geometry_path\` | ${metrics.waypointCompletionPct}% WPs visited, $\\text{XTE}_{\\text{rms}} = ${metrics.rmsXteM}\\text{ m}$, $\\Delta Z_{\\text{rms}} = ${metrics.rmsAltitudeErrorM}\\text{ m}$ | $\\ge 90\\%$ WPs, $\\text{XTE}_{\\text{rms}} \\le ${horizontalToleranceM}\\text{ m}$ | ${phases.geometry_path ? '✅ PASS' : '❌ FAIL'} |`,
-    `| **4. Yaw & Gimbal** | \`heading_gimbal\` | Mean Pitch Err $= ${metrics.meanPitchErrorDeg}^\\circ$, Mean Yaw Err $= ${metrics.meanYawErrorDeg}^\\circ$ | Pitch $\\le ${pitchToleranceDeg}^\\circ$, Yaw $\\le ${yawToleranceDeg}^\\circ$ | ${phases.heading_gimbal ? '✅ PASS' : '❌ FAIL'} |`,
-    `| **5. Shutter** | \`capture_trigger\` | ${metrics.actualPhotos} / ${metrics.expectedPhotos} photos (median shutter spd ${metrics.medianShutterSpeedMps} m/s) | $\\ge 85\\%$ photos${captureMode === 'stopAndShoot' ? ', spd $\\le 1.0$ m/s' : ''} | ${phases.capture_trigger ? '✅ PASS' : '❌ FAIL'} |`,
+    `| **3. 3D Geometry** | \`geometry_path\` | ${metrics.waypointCompletionPct}% WPs visited, $\\text{XTE}_{\\text{rms}} = ${metrics.rmsXteM}\\text{ m}$ (Max $= ${metrics.maxXteM}\\text{ m}$ at WP ${metrics.maxXteWpIndex}), $\\Delta Z_{\\text{rms}} = ${metrics.rmsAltitudeErrorM}\\text{ m}$ (Max $= ${metrics.maxAltitudeErrorM}\\text{ m}$) | $\\text{XTE} \\le ${horizontalToleranceM} / ${maxXteToleranceM}\\text{ m}$, $\\Delta Z \\le ${altitudeToleranceM} / ${maxAltToleranceM}\\text{ m}$ | ${phases.geometry_path ? '✅ PASS' : '❌ FAIL'} |`,
+    `| **4. Yaw & Gimbal** | \`heading_gimbal\` | Pitch: Mean $= ${metrics.meanPitchErrorDeg}^\\circ$, Max $= ${metrics.maxPitchErrorDeg}^\\circ$ (WP ${metrics.maxPitchWpIndex !== null ? metrics.maxPitchWpIndex : '-'}), Yaw: Mean $= ${metrics.meanYawErrorDeg}^\\circ$, Max $= ${metrics.maxYawErrorDeg}^\\circ$ | Pitch $\\le ${pitchToleranceDeg}^\\circ / ${maxPitchToleranceDeg}^\\circ$, Yaw $\\le ${yawToleranceDeg}^\\circ / ${maxYawToleranceDeg}^\\circ$ | ${phases.heading_gimbal ? '✅ PASS' : '❌ FAIL'} |`,
+    `| **5. Shutter** | \`capture_trigger\` | ${metrics.actualPhotos} / ${metrics.expectedPhotos} photos (shutter spd: med ${metrics.medianShutterSpeedMps} m/s, max ${metrics.maxShutterSpeedMps} m/s) | $\\ge 85\\%$ photos${captureMode === 'stopAndShoot' ? `, max spd $\\le ${maxCaptureSpeedMps}$ m/s` : ''} | ${phases.capture_trigger ? '✅ PASS' : '❌ FAIL'} |`,
     `| **6. Exit & RTH** | \`exit_rth\` | Final WP $\\Delta H = ${metrics.finalWaypointErrorM}\\text{ m}$, Ending Battery $= ${metrics.batteryEndPct}\\%$ | Final $\\Delta H \\le 5.0\\text{ m}$, Batt $\\ge 15\\%$ | ${phases.exit_rth ? '✅ PASS' : '❌ FAIL'} |`
   ].join('\n');
 
