@@ -24338,7 +24338,8 @@ describe('v1.132.0 Automated Feature Video Recording Suite & Agent Guidelines', 
     const agentsDoc = fs.readFileSync('AGENTS.md', 'utf8');
     assert.ok(agentsDoc.includes('## 10. Issue Tracking & Auto-Closure Policy'), 'AGENTS.md must contain Section 10');
     assert.ok(agentsDoc.includes('Auto-Closing Commit Syntax'), 'AGENTS.md must mandate auto-closing commit syntax');
-    assert.ok(agentsDoc.includes('Direct Issue Status Updates & Resolution Summary'), 'AGENTS.md must mandate issue status updates');
+    assert.ok(/Direct Issue Status Updates(,| &) Resolution Summary/.test(agentsDoc), 'AGENTS.md must mandate issue status updates');
+    assert.ok(agentsDoc.includes('Post-Update IRL Field Test Plan'), 'AGENTS.md Section 10 must require a Post-Update IRL Field Test Plan in resolution comments (v1.209.0)');
     assert.ok(agentsDoc.includes('update_issue'), 'AGENTS.md must reference update_issue tool');
     assert.ok(agentsDoc.includes('Changelog & Documentation Cross-Referencing'), 'AGENTS.md must mandate changelog cross-referencing');
   });
