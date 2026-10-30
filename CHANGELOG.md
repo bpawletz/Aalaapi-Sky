@@ -1,3 +1,25 @@
+## [1.205.0] - 2026-10-30
+
+Aalaapi Sky introduces a robust multi-step Mission & Waypoint Undo System, allowing pilots to instantly restore mission centers, layer parameters, and customized waypoint positions after accidental map clicks or repositioning.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Mission & Waypoint Undo History**: Added multi-step undo history stack (up to 30 snapshots) that protects carefully customized flight plans against accidental map clicks, center displacements, or unintentional waypoint nudges (Closes #196).
+  - Floating Map Undo Button (`#map-undo-btn`): Convenient 1-click recovery positioned directly on the 2D map viewport with live snapshot count badge (`#map-undo-badge`) and action tooltip.
+  - Sidebar Mission Actions Undo Button (`#undo-mission-btn`): Added to Section 4 alongside Import KMZ and Clear Mission.
+  - Keyboard Shortcut: Supported via `Ctrl+Z` / `Cmd+Z` across desktop workflows, intelligently bypassed when typing inside form text inputs or textareas.
+  - Preserves Custom Waypoint Modifications: Accidental map clicks that move the mission center or clear custom modifications can be completely undone, restoring both original mission coordinates and individually dragged/nudged waypoints (`isModified: true`, `hasCustomWaypoints: true`).
+  - Sleek Toast Feedback (`#undo-feedback-toast`): Floating non-intrusive notification displaying the exact restored action label (e.g. `↩️ Undid: Move Mission Center`).
+
+#### Under the Hood & Technical Details
+- **`src/state/MissionStore.js`**: Implemented `undoHistoryStack`, `MAX_UNDO_HISTORY`, `isRestoringUndoState`, `cloneWaypointData`, `cloneLayerData`, `pushUndoSnapshot`, `undoLastAction`, `updateUndoUiState`, and `showUndoToast`.
+- **`src/map/MapInteraction.js`**: Hooked `pushUndoSnapshot` into `setGridCenter`, `centerMarker` dragstart, and POI modifications.
+- **`src/geo/MathUtils.js`**: Hooked `pushUndoSnapshot` into waypoint dragstart, road/corridor node dragstart, and point additions (`addFreeformWaypoint`, `addRoadWaypoint`, `addCorridorPoint`, `addTargetPolygonPoint`).
+- **`src/import/KmzImporter.js`**: Hooked `pushUndoSnapshot` into `clearMap`, `deleteFlightWaypoint`, and D-Pad `nudge`.
+- **`src/ui/EventBindings.js`**: Added click handlers for `#undo-mission-btn` and `#map-undo-btn`, as well as global `Ctrl+Z` / `Cmd+Z` keydown listener.
+- **`index.css`**: Styled `.map-floating-undo-control`, `.map-undo-button`, `.map-undo-badge`, and `.undo-feedback-toast` across dark and light daylight field modes.
+
 ## [1.204.0] - 2026-10-30
 
 Aalaapi Sky expands its flight planning suite with 5 next-generation operational patterns across 3D Gaussian Splatting, polygon cadastral survey, IAMSAR search and rescue, perimeter security patrol, and automated cinematic camera reveals.

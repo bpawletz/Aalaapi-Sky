@@ -366,6 +366,7 @@ function drawExclusionZones(globalCenterLat, globalCenterLon) {
 }
 
 function addTargetPolygonPoint(lat, lng) {
+  if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Add Target Corner');
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   if (!activeLayer) return;
   if (!activeLayer.targetPoly) activeLayer.targetPoly = [];
@@ -767,6 +768,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
             if (isActive) {
               marker.on('dragstart', () => {
+                if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Move Road Node');
                 if (typeof map !== 'undefined' && map && map.closePopup) map.closePopup();
                 // Record originals on first drag so Revert works correctly
                 if (wp.origLat === undefined || wp.origLat === null) {
@@ -870,6 +872,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
               });
 
               marker.on('dragstart', (e) => {
+                if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Move Corridor Node');
                 if (e && e.originalEvent && e.originalEvent.stopPropagation) {
                   e.originalEvent.stopPropagation();
                 }
@@ -973,6 +976,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       droneMarker.addTo(waypointMarkersGroup);
 
       droneMarker.on('dragstart', () => {
+        if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Move Waypoint');
         bringMarkerToFront(droneMarker, idx);
         if (typeof map !== 'undefined' && map && map.closePopup) {
           map.closePopup();
@@ -1070,6 +1074,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
       if (isDraggable) {
         marker.on('dragstart', () => {
+          if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Move Waypoint');
           bringMarkerToFront(marker, idx);
           if (typeof map !== 'undefined' && map && map.closePopup) {
             map.closePopup();
@@ -2021,6 +2026,7 @@ function recalculateSplitStarts() {
 }
 
 function addFreeformWaypoint(lat, lng) {
+  if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Add Freeform Waypoint');
   if (!centerMarker) {
     setGridCenter(lat, lng);
   }
@@ -2200,6 +2206,7 @@ function removeBacktrackingSpurs(wps) {
 
 
 function addRoadWaypoint(lat, lng) {
+  if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Add Road Waypoint');
   if (!centerMarker) {
     setGridCenter(lat, lng);
     return;
@@ -2371,6 +2378,7 @@ function addRoadWaypoint(lat, lng) {
 }
 
 function addCorridorPoint(lat, lng) {
+  if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Add Corridor Node');
   if (typeof centerMarker === 'undefined' || !centerMarker) {
     if (typeof setGridCenter === 'function') setGridCenter(lat, lng);
     return;

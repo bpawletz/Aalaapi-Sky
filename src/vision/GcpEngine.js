@@ -89,6 +89,9 @@ const APRILTAG_16H5_BIT_Y = [1,1,1,2,1,2,3,2,4,4,4,3,4,3,2,3];
  * Adds a new fiducial marker / GCP to the active layer.
  */
 function addFiducialMarkerPoint(lat, lng, layerOrOptions = {}, maybeOptions = {}) {
+  if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Add Fiducial Marker');
+  }
   let targetLayer = null;
   let options = {};
   if (layerOrOptions && typeof layerOrOptions === 'object' && ('fiducialMarkers' in layerOrOptions || 'isDrawingLayer' in layerOrOptions || 'id' in layerOrOptions)) {

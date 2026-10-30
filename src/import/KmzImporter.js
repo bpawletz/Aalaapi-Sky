@@ -307,7 +307,7 @@ function toggleUIControlsState(disable) {
     const el = document.getElementById(id);
     if (el) {
       el.disabled = disable;
-      const container = el.closest('.control-group');
+      const container = (typeof el.closest === 'function') ? el.closest('.control-group') : null;
       if (container) {
         container.style.opacity = disable ? '0.5' : '1';
         container.style.pointerEvents = disable ? 'none' : 'auto';
@@ -332,6 +332,9 @@ function clearImportedMission() {
 
 function clearMap() {
   if (confirm("Are you sure you want to clear the current flight plan and center location?")) {
+    if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function' && (centerMarker || (generatedWaypoints && generatedWaypoints.length) || (importedWaypoints && importedWaypoints.length))) {
+      pushUndoSnapshot('Clear Mission');
+    }
     if (centerMarker) {
       map.removeLayer(centerMarker);
       centerMarker = null;
@@ -848,6 +851,9 @@ function showHeadingHelpPopover(anchorEl) {
 
 function deleteFlightWaypoint(wp, idx) {
   if (!wp && (idx === undefined || idx === null)) return;
+  if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Delete Waypoint');
+  }
   const gridType = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-type'))
     ? document.getElementById('grid-type').value
     : '';
@@ -2100,6 +2106,10 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     const latVal = parseFloat(latInput.value);
     const lonVal = parseFloat(lonInput.value);
     if (isNaN(latVal) || isNaN(lonVal)) return;
+
+    if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+      pushUndoSnapshot('Nudge Waypoint');
+    }
 
     const dist = steps[currentStepIndex];
     const dLatMeters = dLatDir * dist;

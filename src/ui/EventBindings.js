@@ -3134,6 +3134,45 @@ function initUIEventListeners() {
     clearMissionBtn.addEventListener('click', clearMap);
   }
 
+  const undoMissionBtn = document.getElementById('undo-mission-btn');
+  if (undoMissionBtn) {
+    undoMissionBtn.addEventListener('click', () => {
+      if (typeof undoLastAction === 'function') {
+        undoLastAction();
+      }
+    });
+  }
+
+  const mapUndoBtn = document.getElementById('map-undo-btn');
+  if (mapUndoBtn) {
+    mapUndoBtn.addEventListener('click', () => {
+      if (typeof undoLastAction === 'function') {
+        undoLastAction();
+      }
+    });
+  }
+
+  // Ctrl+Z / Cmd+Z Keyboard Shortcut for Map & Mission Undo
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+      const activeEl = document.activeElement;
+      if (activeEl) {
+        const tag = activeEl.tagName ? activeEl.tagName.toLowerCase() : '';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select' || activeEl.isContentEditable) {
+          return;
+        }
+      }
+      e.preventDefault();
+      if (typeof undoLastAction === 'function') {
+        undoLastAction();
+      }
+    }
+  });
+
+  if (typeof updateUndoUiState === 'function') {
+    updateUndoUiState();
+  }
+
   // Collapsible Stats Panel handler
   const statsPanel = document.getElementById('stats-panel');
   const statsToggleBtn = document.getElementById('stats-toggle-btn');

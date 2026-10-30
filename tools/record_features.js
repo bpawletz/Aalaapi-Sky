@@ -3117,6 +3117,56 @@ const scenarios = [
       await page.click('#close-links-btn');
       await page.waitForTimeout(600);
     }
+  },
+  {
+    id: 'feature_undo_system',
+    name: 'Mission & Waypoint Undo System for Accidental Map Clicks',
+    issueRef: 'Issue #196',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 1. Place mission center at rural Utica coords
+      await page.evaluate(() => {
+        setGridCenter(41.3215, -88.9950);
+      });
+      await page.waitForTimeout(1000);
+
+      // 2. Custom drag waypoint #2
+      await page.evaluate(() => {
+        if (generatedWaypoints && generatedWaypoints.length > 2) {
+          generatedWaypoints[1].lat += 0.0015;
+          generatedWaypoints[1].lon += 0.0015;
+          generatedWaypoints[1].isModified = true;
+          const l = getActiveLayer();
+          if (l) {
+            l.hasCustomWaypoints = true;
+            l.waypoints = generatedWaypoints.map(wp => ({ ...wp }));
+          }
+          redrawCurrentMission();
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Accidental map click relocates center
+      await page.evaluate(() => {
+        setGridCenter(41.3320, -88.9820);
+      });
+      await page.waitForTimeout(1200);
+
+      // 4. Click the floating Map Undo button (#map-undo-btn)
+      await page.click('#map-undo-btn');
+      await page.waitForTimeout(1500);
+
+      // 5. Test sidebar Undo button after another move
+      await page.evaluate(() => {
+        setGridCenter(41.3350, -88.9850);
+      });
+      await page.waitForTimeout(1000);
+
+      await page.click('#undo-mission-btn');
+      await page.waitForTimeout(1500);
+    }
   }
 ];
 

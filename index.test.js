@@ -37467,19 +37467,7 @@ describe('Road-Following & Layer Video Capture Mode KMZ Export (v1.203.1 - Issue
 
 describe('Next-Generation Flight Patterns Suite (v1.204.0 - Issues #159, #160, #161, #162, #163)', () => {
   test('Version consistency: v1.204.0 across package.json, changelog, index_template.html, and index.html', () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.204.0', 'package.json must be 1.204.0');
-
-    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.204.0]'), 'CHANGELOG.md must contain ## [1.204.0]');
-
-    const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(tmpl.includes('Version 1.204.0'), 'index_template.html must contain Version 1.204.0');
-    assert.ok(tmpl.includes('v1.204.0'), 'index_template.html header badge must contain v1.204.0');
-
-    const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(html.includes('Version 1.204.0'), 'index.html must contain Version 1.204.0');
-    assert.ok(html.includes('v1.204.0'), 'index.html header badge must contain v1.204.0');
+    assertVersionConsistency('1.204.0');
   });
 
   test('Issue #159: Hemispherical Dome (dome-shell) generates concentric tiers, radial standoff, and zenith cap', () => {
@@ -37679,5 +37667,133 @@ describe('Next-Generation Flight Patterns Suite (v1.204.0 - Issues #159, #160, #
         assert.strictEqual(wp.layerPattern, pat, 'Waypoint must record its layerPattern');
       });
     });
+  });
+});
+
+
+describe('Mission & Waypoint Undo System (v1.205.0) (Closes #196)', () => {
+  const prevStubs = global._stubElements;
+
+  beforeEach(() => {
+    importedWaypoints = null;
+    importedPhotos = null;
+    importedFileName = '';
+    undoHistoryStack.length = 0;
+    const mockEl = (val) => ({
+      value: val,
+      disabled: false,
+      closest: () => ({ style: {} }),
+      classList: { add: () => {}, remove: () => {}, contains: () => false },
+      style: {}
+    });
+    global._stubElements = {
+      'grid-type': mockEl('double'),
+      'grid-width': mockEl('100'),
+      'grid-height': mockEl('100'),
+      'grid-rotation': mockEl('0'),
+      'front-overlap': mockEl('80'),
+      'side-overlap': mockEl('75'),
+      'altitude': mockEl('50'),
+      'speed': mockEl('4'),
+      'gimbal-pitch': mockEl('-60')
+    };
+    flightLayers = [createDefaultLayer('layer-1', 'Layer 1: 3D Double Grid', 0, 'double')];
+    activeLayerId = flightLayers[0].id;
+    let mLat = 41.3215;
+    let mLon = -88.9950;
+    centerMarker = {
+      getLatLng: () => ({ lat: mLat, lng: mLon }),
+      setLatLng: (ll) => {
+        mLat = Array.isArray(ll) ? ll[0] : (ll.lat !== undefined ? ll.lat : mLat);
+        mLon = Array.isArray(ll) ? ll[1] : (ll.lng !== undefined ? ll.lng : mLon);
+      },
+      openPopup: () => {},
+      on: () => {},
+      addTo: () => centerMarker
+    };
+  });
+
+  after(() => {
+    global._stubElements = prevStubs;
+  });
+
+  test('Version consistency for v1.205.0 across package.json, CHANGELOG.md, index_template.html and index.html', () => {
+    assertVersionConsistency('1.205.0');
+  });
+
+  test('UndoManager: pushUndoSnapshot, undoLastAction, and undoHistoryStack management', () => {
+    undoHistoryStack.length = 0;
+    assert.strictEqual(undoHistoryStack.length, 0);
+
+    const lat1 = 41.3215;
+    const lon1 = -88.9950;
+    setGridCenter(lat1, lon1);
+    assert.ok(undoHistoryStack.length >= 1, 'Initial setGridCenter should push snapshot');
+    const countAfterFirst = undoHistoryStack.length;
+
+    const lat2 = 41.3300;
+    const lon2 = -88.9800;
+    setGridCenter(lat2, lon2);
+    assert.strictEqual(centerMarker.getLatLng().lat, lat2);
+    assert.strictEqual(centerMarker.getLatLng().lng, lon2);
+    assert.strictEqual(undoHistoryStack.length, countAfterFirst + 1);
+
+    const success = undoLastAction();
+    assert.strictEqual(success, true, 'undoLastAction should return true on success');
+    assert.strictEqual(centerMarker.getLatLng().lat, lat1, 'Center latitude must be restored to previous coordinate');
+    assert.strictEqual(centerMarker.getLatLng().lng, lon1, 'Center longitude must be restored to previous coordinate');
+  });
+
+  test('UndoManager: Accidental map click preserves custom modified waypoints after undo', () => {
+    undoHistoryStack.length = 0;
+    const lat1 = 41.3215;
+    const lon1 = -88.9950;
+    setGridCenter(lat1, lon1);
+
+    const activeLayer = getActiveLayer();
+    const res = generateLayerWaypoints(activeLayer, lat1, lon1);
+    generatedWaypoints = res.waypoints;
+    generatedPhotos = res.photos;
+    activeLayer.waypoints = generatedWaypoints;
+    activeLayer.photos = generatedPhotos;
+
+    assert.ok(generatedWaypoints && generatedWaypoints.length > 2, 'Mission should have generated waypoints');
+    const originalWp1Lat = generatedWaypoints[1].lat;
+    const originalWp1Lon = generatedWaypoints[1].lon;
+
+    // Simulate user custom drag
+    generatedWaypoints[1].lat = originalWp1Lat + 0.001;
+    generatedWaypoints[1].lon = originalWp1Lon + 0.001;
+    generatedWaypoints[1].isModified = true;
+    activeLayer.hasCustomWaypoints = true;
+    activeLayer.waypoints = generatedWaypoints.map(wp => ({ ...wp }));
+
+    // User now accidentally clicks another point on the map
+    const accidentalLat = 41.3500;
+    const accidentalLon = -88.9600;
+    setGridCenter(accidentalLat, accidentalLon);
+
+    assert.strictEqual(centerMarker.getLatLng().lat, accidentalLat);
+
+    // Execute undo
+    const undone = undoLastAction();
+    assert.strictEqual(undone, true);
+
+    assert.strictEqual(centerMarker.getLatLng().lat, lat1);
+    assert.strictEqual(centerMarker.getLatLng().lng, lon1);
+    assert.ok(generatedWaypoints && generatedWaypoints.length > 2);
+    assert.strictEqual(generatedWaypoints[1].isModified, true, 'Custom isModified flag must be preserved after undo');
+    assert.strictEqual(generatedWaypoints[1].lat, originalWp1Lat + 0.001, 'Custom waypoint latitude must be preserved after undo');
+    assert.strictEqual(generatedWaypoints[1].lon, originalWp1Lon + 0.001, 'Custom waypoint longitude must be preserved after undo');
+  });
+
+  test('UndoManager: Max stack size bound (MAX_UNDO_HISTORY)', () => {
+    undoHistoryStack.length = 0;
+    for (let i = 0; i < 40; i++) {
+      pushUndoSnapshot('Test Action ' + i);
+    }
+    assert.strictEqual(undoHistoryStack.length, 30, 'Stack must not exceed MAX_UNDO_HISTORY (30)');
+    assert.strictEqual(undoHistoryStack[undoHistoryStack.length - 1].actionLabel, 'Test Action 39');
+    assert.strictEqual(undoHistoryStack[0].actionLabel, 'Test Action 10');
   });
 });
