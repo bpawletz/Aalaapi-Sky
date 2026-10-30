@@ -10603,5 +10603,84 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       await page.click('#close-links-btn');
       await page.waitForTimeout(200);
     });
+
+    test('Mission & Waypoint Undo System: floating map button, sidebar button, and Ctrl+Z recovery after accidental click (Closes #196)', async () => {
+      // 1. Initial state: Reset and verify Undo buttons disabled
+      await page.evaluate(() => {
+        undoHistoryStack.length = 0;
+        updateUndoUiState();
+      });
+      await page.waitForTimeout(100);
+
+      const isMapUndoDisabled = await page.locator('#map-undo-btn').isDisabled();
+      const isSidebarUndoDisabled = await page.locator('#undo-mission-btn').isDisabled();
+      assert.strictEqual(isMapUndoDisabled, true, '#map-undo-btn must be disabled initially');
+      assert.strictEqual(isSidebarUndoDisabled, true, '#undo-mission-btn must be disabled initially');
+
+      // 2. Place mission center at rural Utica coords
+      await page.evaluate(() => {
+        setGridCenter(41.3215, -88.9950);
+      });
+      await page.waitForTimeout(200);
+
+      // Buttons should now be enabled
+      assert.strictEqual(await page.locator('#map-undo-btn').isDisabled(), false, '#map-undo-btn should be enabled');
+      assert.strictEqual(await page.locator('#undo-mission-btn').isDisabled(), false, '#undo-mission-btn should be enabled');
+
+      // 3. User modifies a waypoint (drag simulation)
+      await page.evaluate(() => {
+        if (generatedWaypoints && generatedWaypoints.length > 2) {
+          generatedWaypoints[1].lat += 0.002;
+          generatedWaypoints[1].lon += 0.002;
+          generatedWaypoints[1].isModified = true;
+          const l = getActiveLayer();
+          if (l) {
+            l.hasCustomWaypoints = true;
+            l.waypoints = generatedWaypoints.map(wp => ({ ...wp }));
+          }
+        }
+      });
+      await page.waitForTimeout(100);
+
+      // 4. Accidental map click relocates center to a new point
+      await page.evaluate(() => {
+        setGridCenter(41.3400, -88.9700);
+      });
+      await page.waitForTimeout(200);
+
+      const centerAfterAccident = await page.evaluate(() => ({
+        lat: centerMarker.getLatLng().lat,
+        lon: centerMarker.getLatLng().lng
+      }));
+      assert.strictEqual(centerAfterAccident.lat, 41.3400);
+
+      // 5. Click the floating Map Undo button (#map-undo-btn)
+      await page.click('#map-undo-btn');
+      await page.waitForTimeout(300);
+
+      const centerRestored = await page.evaluate(() => ({
+        lat: centerMarker.getLatLng().lat,
+        lon: centerMarker.getLatLng().lng,
+        wp1Modified: generatedWaypoints[1].isModified
+      }));
+
+      assert.strictEqual(centerRestored.lat, 41.3215, 'Center latitude must be restored to original 41.3215');
+      assert.strictEqual(centerRestored.lon, -88.9950, 'Center longitude must be restored to original -88.9950');
+      assert.strictEqual(centerRestored.wp1Modified, true, 'Custom modified waypoint position must be preserved after undo');
+
+      // 6. Test keyboard shortcut Ctrl+Z
+      // Make another move
+      await page.evaluate(() => {
+        setGridCenter(41.3350, -88.9850);
+      });
+      await page.waitForTimeout(200);
+
+      // Press Ctrl+Z
+      await page.keyboard.press('Control+z');
+      await page.waitForTimeout(300);
+
+      const centerAfterShortcut = await page.evaluate(() => centerMarker.getLatLng().lat);
+      assert.strictEqual(centerAfterShortcut, 41.3215, 'Ctrl+Z must restore mission center');
+    });
   });
 });

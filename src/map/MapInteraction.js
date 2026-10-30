@@ -253,6 +253,9 @@ function clearWaypointCustomModifications() {
 
 // Position the grid center marker
 function setGridCenter(lat, lng) {
+  if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot(centerMarker ? 'Move Mission Center' : 'Set Mission Center');
+  }
   clearWaypointCustomModifications();
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   if (activeLayer) {
@@ -297,6 +300,9 @@ function setGridCenter(lat, lng) {
 
     // Recalculate grid when center is dragged
     centerMarker.on('dragstart', () => {
+      if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+        pushUndoSnapshot('Move Mission Center');
+      }
       clearWaypointCustomModifications();
     });
     centerMarker.on('drag', () => {
@@ -383,6 +389,9 @@ function updatePoiMarkerPopup(poi, idx) {
 }
 
 function addPoi(lat, lon, name = null, alt = 0) {
+  if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Add POI');
+  }
   const idx = pois.length;
   const poiId = `poi-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const poiName = name || (idx === 0 ? "Layer 1 Target" : `POI ${idx}`);
@@ -434,6 +443,9 @@ function addPoi(lat, lon, name = null, alt = 0) {
 
 function deletePoi(idx) {
   if (idx === 0) return; // Cannot delete POI 0 (Center)
+  if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Delete POI');
+  }
   const poi = pois[idx];
   if (poi) {
     if (poi.marker) {

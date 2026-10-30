@@ -198,6 +198,9 @@ function setLayerBoundaryEditMode(active) {
 }
 
 function addLayerBoundaryPoint(lat, lon) {
+  if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Add Boundary Vertex');
+  }
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   if (!activeLayer) return;
   if (!Array.isArray(activeLayer.boundaryPolygon)) {
@@ -286,6 +289,9 @@ function calculateGeodeticPolygonMetrics(coordinates) {
 }
 
 function addBoundaryPolygonPoint(lat, lng) {
+  if (!isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Add Boundary Vertex');
+  }
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   if (!activeLayer) return;
 
@@ -429,10 +435,356 @@ function drawBoundaryLayers(globalCenterLat, globalCenterLon) {
 }
 
 // ============================================================================
-// 🎯 Fiducial Markers & Ground Control Points (GCPs) Engine (v1.104.0)
+// ↩️ Mission & Waypoint Undo History Engine (v1.205.0)
 // ============================================================================
 
-/**
- * Predefined dictionary data for ArUco 4x4 (first 50 markers from OpenCV DICT_4X4_1000_BYTES)
- * Each pair represents 2 bytes (16 bits, 4x4 grid in row-major order).
- */
+let undoHistoryStack = [];
+const MAX_UNDO_HISTORY = 30;
+let isRestoringUndoState = false;
+
+function cloneWaypointData(wp) {
+  if (!wp || typeof wp !== 'object') return wp;
+  const copy = {};
+  for (const key of Object.keys(wp)) {
+    if (key === 'mapMarker' || key === 'marker' || key === 'roadMarker' || key === 'corridorMarker' || key === 'droneMarker' || key === 'polyMarker' || key === 'fiducialMarker') {
+      continue;
+    }
+    const val = wp[key];
+    if (val === null || val === undefined) {
+      copy[key] = val;
+    } else if (Array.isArray(val)) {
+      copy[key] = val.map(item => (typeof item === 'object' && item !== null ? cloneWaypointData(item) : item));
+    } else if (val instanceof Set) {
+      copy[key] = new Set(val);
+    } else if (typeof val === 'object') {
+      try {
+        copy[key] = JSON.parse(JSON.stringify(val));
+      } catch (e) {
+        copy[key] = val;
+      }
+    } else {
+      copy[key] = val;
+    }
+  }
+  return copy;
+}
+
+function cloneLayerData(layer) {
+  if (!layer || typeof layer !== 'object') return layer;
+  const copy = {};
+  for (const key of Object.keys(layer)) {
+    if (key === 'mapMarker' || key === 'marker') continue;
+    const val = layer[key];
+    if (Array.isArray(val)) {
+      copy[key] = val.map(cloneWaypointData);
+    } else if (val !== null && typeof val === 'object') {
+      try {
+        copy[key] = JSON.parse(JSON.stringify(val));
+      } catch (e) {
+        copy[key] = val;
+      }
+    } else {
+      copy[key] = val;
+    }
+  }
+  return copy;
+}
+
+function pushUndoSnapshot(actionLabel = 'Map Action') {
+  if (isRestoringUndoState) return;
+
+  // Persist current active layer UI inputs before taking snapshot
+  if (typeof saveActiveLayerFromUi === 'function') {
+    try {
+      saveActiveLayerFromUi();
+    } catch (e) {}
+  }
+
+  const hasCenter = Boolean(centerMarker && typeof centerMarker.getLatLng === 'function');
+  const centerLL = hasCenter ? centerMarker.getLatLng() : null;
+
+  const snapshot = {
+    actionLabel: actionLabel,
+    timestamp: Date.now(),
+    hasCenterMarker: hasCenter,
+    centerLat: centerLL ? centerLL.lat : null,
+    centerLon: centerLL ? centerLL.lng : null,
+    activeLayerId: (typeof activeLayerId !== 'undefined') ? activeLayerId : null,
+    flightLayers: (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers))
+      ? flightLayers.map(cloneLayerData)
+      : [],
+    generatedWaypoints: (typeof generatedWaypoints !== 'undefined' && Array.isArray(generatedWaypoints))
+      ? generatedWaypoints.map(cloneWaypointData)
+      : null,
+    generatedPhotos: (typeof generatedPhotos !== 'undefined' && Array.isArray(generatedPhotos))
+      ? generatedPhotos.map(cloneWaypointData)
+      : null,
+    roadWaypoints: (typeof roadWaypoints !== 'undefined' && Array.isArray(roadWaypoints))
+      ? roadWaypoints.map(cloneWaypointData)
+      : [],
+    corridorCenterline: (typeof corridorCenterline !== 'undefined' && Array.isArray(corridorCenterline))
+      ? corridorCenterline.map(cloneWaypointData)
+      : [],
+    importedWaypoints: (typeof importedWaypoints !== 'undefined' && Array.isArray(importedWaypoints))
+      ? importedWaypoints.map(cloneWaypointData)
+      : null,
+    importedPhotos: (typeof importedPhotos !== 'undefined' && Array.isArray(importedPhotos))
+      ? importedPhotos.map(cloneWaypointData)
+      : null,
+    importedFileName: (typeof importedFileName !== 'undefined') ? importedFileName : '',
+    activeSplitStartIndices: (typeof activeSplitStartIndices !== 'undefined' && activeSplitStartIndices instanceof Set)
+      ? Array.from(activeSplitStartIndices)
+      : [],
+    pois: (typeof pois !== 'undefined' && Array.isArray(pois))
+      ? pois.map(p => ({
+          id: p.id,
+          lat: p.lat,
+          lon: p.lon,
+          alt: p.alt,
+          name: p.name,
+          isHome: p.isHome
+        }))
+      : []
+  };
+
+  undoHistoryStack.push(snapshot);
+  if (undoHistoryStack.length > MAX_UNDO_HISTORY) {
+    undoHistoryStack.shift();
+  }
+
+  updateUndoUiState();
+}
+
+function updateUndoUiState() {
+  if (typeof document === 'undefined') return;
+  const count = (typeof undoHistoryStack !== 'undefined' && Array.isArray(undoHistoryStack)) ? undoHistoryStack.length : 0;
+  const lastAction = count > 0 ? undoHistoryStack[count - 1].actionLabel : '';
+
+  const mapBtn = document.getElementById('map-undo-btn');
+  const mapBadge = document.getElementById('map-undo-badge');
+  const sidebarBtn = document.getElementById('undo-mission-btn');
+  const sidebarBadge = document.getElementById('undo-stack-badge');
+
+  const titleText = count > 0 ? `Undo: ${lastAction} (Ctrl+Z)` : 'Undo Last Map Action (Ctrl+Z)';
+
+  if (mapBtn) {
+    mapBtn.disabled = (count === 0);
+    mapBtn.title = titleText;
+  }
+  if (mapBadge) {
+    if (count > 0) {
+      mapBadge.textContent = count;
+      mapBadge.style.display = 'inline-block';
+    } else {
+      mapBadge.style.display = 'none';
+    }
+  }
+
+  if (sidebarBtn) {
+    sidebarBtn.disabled = (count === 0);
+    sidebarBtn.title = titleText;
+    sidebarBtn.style.opacity = (count === 0) ? '0.45' : '1';
+    sidebarBtn.style.cursor = (count === 0) ? 'not-allowed' : 'pointer';
+  }
+  if (sidebarBadge) {
+    if (count > 0) {
+      sidebarBadge.textContent = count;
+      sidebarBadge.style.display = 'inline-block';
+    } else {
+      sidebarBadge.style.display = 'none';
+    }
+  }
+}
+
+function showUndoToast(msg) {
+  if (typeof document === 'undefined') return;
+  const toast = document.getElementById('undo-feedback-toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.style.display = 'block';
+  toast.style.opacity = '1';
+  if (typeof window !== 'undefined') {
+    if (window._undoToastTimer) clearTimeout(window._undoToastTimer);
+    window._undoToastTimer = setTimeout(() => {
+      if (toast) {
+        toast.style.opacity = '0';
+        const t2 = setTimeout(() => {
+          if (toast) toast.style.display = 'none';
+        }, 250);
+        if (t2 && typeof t2.unref === 'function') t2.unref();
+      }
+    }, 2500);
+    if (window._undoToastTimer && typeof window._undoToastTimer.unref === 'function') {
+      window._undoToastTimer.unref();
+    }
+  }
+}
+
+function undoLastAction() {
+  if (!undoHistoryStack || undoHistoryStack.length === 0) {
+    return false;
+  }
+  const snapshot = undoHistoryStack.pop();
+  if (!snapshot) return false;
+
+  isRestoringUndoState = true;
+  try {
+    if (typeof map !== 'undefined' && map && typeof map.closePopup === 'function') {
+      try { map.closePopup(); } catch (e) {}
+    }
+
+    // 1. Restore Center Marker
+    if (!snapshot.hasCenterMarker) {
+      if (centerMarker) {
+        if (typeof map !== 'undefined' && map && map.hasLayer(centerMarker)) {
+          map.removeLayer(centerMarker);
+        }
+        centerMarker = null;
+      }
+    } else {
+      const lat = snapshot.centerLat;
+      const lon = snapshot.centerLon;
+      if (centerMarker) {
+        if (typeof centerMarker.setLatLng === 'function') {
+          centerMarker.setLatLng([lat, lon]);
+        }
+      } else if (typeof map !== 'undefined' && map && typeof L !== 'undefined') {
+        const centerIcon = L.divIcon({
+          className: 'custom-center-marker',
+          html: `<div style="background-color: #06b6d4; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #f8fafc; box-shadow: 0 0 10px rgba(6,182,212,0.8);"></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+
+        centerMarker = L.marker([lat, lon], { draggable: true, icon: centerIcon }).addTo(map);
+
+        centerMarker.on('dragstart', () => {
+          if (typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Move Mission Center');
+          if (typeof clearWaypointCustomModifications === 'function') clearWaypointCustomModifications();
+        });
+        centerMarker.on('drag', () => {
+          const curLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+          const latlng = centerMarker.getLatLng();
+          if (curLayer) {
+            curLayer.centerLat = latlng.lat;
+            curLayer.centerLon = latlng.lng;
+          }
+          if (pois && pois[0]) {
+            pois[0].lat = latlng.lat;
+            pois[0].lon = latlng.lng;
+          }
+          if (typeof weatherStationLine !== 'undefined' && weatherStationLine && typeof weatherStationMarker !== 'undefined' && weatherStationMarker && typeof weatherStationLine.setLatLngs === 'function') {
+            weatherStationLine.setLatLngs([centerMarker.getLatLng(), weatherStationMarker.getLatLng()]);
+          }
+          if (typeof updateGrid === 'function') updateGrid();
+        });
+        centerMarker.on('dragend', () => {
+          centerMarker.openPopup();
+          if (typeof renderCorridorNodeTable === 'function') {
+            renderCorridorNodeTable();
+          }
+        });
+        centerMarker.on('click', (e) => {
+          if (typeof L !== 'undefined' && L.DomEvent) L.DomEvent.stopPropagation(e);
+          if (typeof getOverlappingItemsAt === 'function' && typeof currentlySelectedMarker !== 'undefined') {
+            const items = getOverlappingItemsAt(centerMarker.getLatLng());
+            if (items.length > 1 && currentlySelectedMarker !== centerMarker) {
+              if (typeof openDisambiguationPopup === 'function') openDisambiguationPopup(centerMarker.getLatLng(), items);
+            } else {
+              if (typeof bringMarkerToFront === 'function') bringMarkerToFront(centerMarker);
+              centerMarker.openPopup();
+            }
+          }
+        });
+      }
+    }
+
+    // 2. Restore flightLayers and activeLayerId
+    if (snapshot.flightLayers && Array.isArray(snapshot.flightLayers)) {
+      flightLayers = snapshot.flightLayers.map(cloneLayerData);
+    }
+    if (snapshot.activeLayerId && typeof activeLayerId !== 'undefined') {
+      activeLayerId = snapshot.activeLayerId;
+    }
+
+    // 3. Restore waypoints and photos
+    generatedWaypoints = snapshot.generatedWaypoints ? snapshot.generatedWaypoints.map(cloneWaypointData) : null;
+    generatedPhotos = snapshot.generatedPhotos ? snapshot.generatedPhotos.map(cloneWaypointData) : null;
+    roadWaypoints = snapshot.roadWaypoints ? snapshot.roadWaypoints.map(cloneWaypointData) : [];
+    corridorCenterline = snapshot.corridorCenterline ? snapshot.corridorCenterline.map(cloneWaypointData) : [];
+    importedWaypoints = snapshot.importedWaypoints ? snapshot.importedWaypoints.map(cloneWaypointData) : null;
+    importedPhotos = snapshot.importedPhotos ? snapshot.importedPhotos.map(cloneWaypointData) : null;
+    importedFileName = snapshot.importedFileName || '';
+    if (snapshot.activeSplitStartIndices) {
+      activeSplitStartIndices = new Set(snapshot.activeSplitStartIndices);
+    }
+
+    // 4. Restore POIs
+    if (snapshot.pois && Array.isArray(snapshot.pois)) {
+      if (typeof clearAllPois === 'function') {
+        clearAllPois();
+      }
+      pois = snapshot.pois.map(p => ({ ...p }));
+      if (centerMarker && pois[0]) {
+        pois[0].marker = centerMarker;
+        if (typeof updatePoiMarkerPopup === 'function') {
+          updatePoiMarkerPopup(pois[0], 0);
+        }
+      }
+    }
+
+    // 5. Sync UI states
+    if (typeof toggleUIControlsState === 'function') {
+      toggleUIControlsState(importedWaypoints !== null);
+    }
+    if (typeof syncUiWithActiveLayer === 'function') {
+      syncUiWithActiveLayer();
+    }
+    if (typeof renderLayersList === 'function') {
+      renderLayersList();
+    }
+    if (typeof updatePoiListUI === 'function') {
+      updatePoiListUI();
+    }
+    if (typeof renderCorridorNodeTable === 'function') {
+      renderCorridorNodeTable();
+    }
+
+    // 6. Redraw Mission / Map
+    if (centerMarker) {
+      const activeL = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeL && activeL.pattern === 'road-following') {
+        if (typeof updateGrid === 'function') updateGrid();
+      } else {
+        if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+      }
+    } else {
+      if (flightPathPolyline && typeof flightPathPolyline.clearLayers === 'function') flightPathPolyline.clearLayers();
+      if (roadPathGroup && typeof roadPathGroup.clearLayers === 'function') roadPathGroup.clearLayers();
+      if (targetPolygonGroup && typeof targetPolygonGroup.clearLayers === 'function') targetPolygonGroup.clearLayers();
+      if (gridBoundsPolygon && map && map.hasLayer(gridBoundsPolygon)) {
+        map.removeLayer(gridBoundsPolygon);
+        gridBoundsPolygon = null;
+      }
+      if (waypointMarkersGroup && typeof waypointMarkersGroup.clearLayers === 'function') waypointMarkersGroup.clearLayers();
+      if (pitchLabelsGroup && typeof pitchLabelsGroup.clearLayers === 'function') pitchLabelsGroup.clearLayers();
+      if (photoMarkersGroup && typeof photoMarkersGroup.clearLayers === 'function') photoMarkersGroup.clearLayers();
+      if (typeof updateStatsPanel === 'function') updateStatsPanel(null);
+    }
+
+    // 7. Update UI controls and display feedback toast
+    updateUndoUiState();
+    showUndoToast(`↩️ Undid: ${snapshot.actionLabel || 'Action'}`);
+
+    return true;
+  } finally {
+    isRestoringUndoState = false;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.undoLastAction = undoLastAction;
+  window.pushUndoSnapshot = pushUndoSnapshot;
+  window.updateUndoUiState = updateUndoUiState;
+  window.undoHistoryStack = undoHistoryStack;
+}

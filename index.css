@@ -7795,3 +7795,98 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   background: rgba(56, 189, 248, 0.15) !important;
   border-color: #38bdf8 !important;
 }
+
+/* ==========================================================================
+   ↩️ Floating Map Undo Control & Toast (v1.205.0)
+   ========================================================================== */
+.map-floating-undo-control {
+  position: absolute;
+  top: 12px;
+  left: 54px;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.map-undo-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #c4b5fd;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.map-undo-button:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: #a78bfa;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.map-undo-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.map-undo-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.map-undo-badge {
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(167, 139, 250, 0.3);
+  color: #e9d5ff;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.undo-feedback-toast {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #c4b5fd;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+[data-theme="light"] .map-undo-button {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(139, 92, 246, 0.45);
+  color: #6d28d9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .map-undo-button:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: #7c3aed;
+  color: #5b21b6;
+}
+
+[data-theme="light"] .undo-feedback-toast {
+  background: rgba(255, 255, 255, 0.96);
+  color: #6d28d9;
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
