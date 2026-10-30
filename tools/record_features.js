@@ -3372,6 +3372,123 @@ const scenarios = [
       });
       await page.waitForTimeout(1000);
     }
+  },
+  {
+    id: 'feature_irl_max_error_plan_select',
+    name: 'Planned Flight Plan Selector & Two-Tier Single-Point Max Error Tolerances in IRL Scorecard',
+    description: 'Demonstrates in-app IRL Flight Verification with the Planned Flight Plan Selector (#diag-irl-plan-select), flagging single-point maximum variances (e.g. terminal gimbal pitch drop), and dynamically switching candidate plans.',
+    issueRef: 'Issue #206',
+    run: async (page) => {
+      // 1. Center map at rural Utica reference coordinates
+      await page.evaluate(() => {
+        setGridCenter(41.3215, -88.9950);
+      });
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 2. Open Flight Diagnostics
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.open === 'function') {
+          FlightDiagnostics.open();
+        } else {
+          const btn = document.getElementById('topbar-diagnostics-btn');
+          if (btn) btn.click();
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Populate flown flight record with 24 waypoints where terminal WP has gimbal pitch drop
+      await page.evaluate(() => {
+        FlightDiagnostics.isActualFlown = true;
+        FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-10-30_[16-27-06].txt';
+
+        const planAllNadir = Array.from({ length: 24 }, (_, i) => ({
+          lat: 41.3215 + i * 0.00005,
+          lon: -88.9950,
+          alt: 31,
+          pitch: -90,
+          heading: 0
+        }));
+
+        const planTerminalLevel = Array.from({ length: 24 }, (_, i) => ({
+          lat: 41.3215 + i * 0.00005,
+          lon: -88.9950,
+          alt: 31,
+          pitch: i === 23 ? 0 : -90,
+          heading: 0
+        }));
+
+        FlightDiagnostics.telemetryData = {
+          points: Array.from({ length: 24 }, (_, i) => ({
+            lat: 41.3215 + i * 0.00005,
+            lon: -88.9950,
+            alt: 31.0,
+            pitch: i === 23 ? 0.0 : -90.0,
+            yaw: 0.0,
+            isPhoto: true,
+            speed: 0.1,
+            battery: 95 - i
+          }))
+        };
+
+        FlightDiagnostics.plannedWaypoints = planAllNadir;
+        FlightDiagnostics._savedMissionsCache = [
+          { id: 'survey-nadir-31m', name: '2D Survey 31m Nadir', plan: { waypoints: planAllNadir }, flight_pattern: 'single' },
+          { id: 'survey-landing-level', name: '2D Survey (Level at Landing)', plan: { waypoints: planTerminalLevel }, flight_pattern: 'single' }
+        ];
+
+        document.getElementById('diag-btn-irl-verify').click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 4. Highlight the plan selector and single-point max pitch error
+      await page.evaluate(() => {
+        const sel = document.getElementById('diag-irl-plan-select');
+        if (sel) {
+          sel.style.boxShadow = '0 0 12px var(--accent-cyan)';
+          sel.style.borderColor = 'var(--accent-cyan)';
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 5. Scroll through metrics table to view the Max Gimbal Pitch Error row citing WP 23
+      await page.evaluate(() => {
+        const modalContent = document.querySelector('#diag-irl-modal .modal-content');
+        if (modalContent) {
+          modalContent.scrollTo({ top: 320, behavior: 'smooth' });
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 6. Switch Planned Flight Plan to 'survey-landing-level'
+      await page.evaluate(() => {
+        const sel = document.getElementById('diag-irl-plan-select');
+        if (sel) {
+          const opt = Array.from(sel.options).find(o => o.value.includes('survey-landing-level'));
+          if (opt) {
+            sel.value = opt.value;
+            sel.dispatchEvent(new Event('change'));
+          }
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 7. Scroll up to observe the Outcome badge flipping to ALL 6 PHASES PASSED
+      await page.evaluate(() => {
+        const modalContent = document.querySelector('#diag-irl-modal .modal-content');
+        if (modalContent) {
+          modalContent.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 8. Copy field report
+      await page.evaluate(() => {
+        const copyBtn = document.getElementById('diag-irl-copy-markdown-btn');
+        if (copyBtn) copyBtn.click();
+      });
+      await page.waitForTimeout(800);
+    }
   }
 ];
 

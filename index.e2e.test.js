@@ -11081,6 +11081,109 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       });
       await page.waitForTimeout(300);
     });
+
+    test("IRL Scorecard provides Planned Flight Plan Selector (#diag-irl-plan-select) and reflects single-point max error tolerances (v1.211.0, Issue #206)", async () => {
+      // 1. Open Flight Diagnostics
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.open === 'function') {
+          FlightDiagnostics.open();
+        } else {
+          const btn = document.getElementById('topbar-diagnostics-btn');
+          if (btn) btn.click();
+        }
+      });
+      await page.waitForTimeout(400);
+
+      // 2. Setup flown record and candidate plans
+      await page.evaluate(() => {
+        FlightDiagnostics.isActualFlown = true;
+        FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-10-30_[16-27-06].txt';
+        FlightDiagnostics.telemetryData = {
+          points: [
+            { lat: 41.3215, lon: -88.9950, alt: 31.0, pitch: -90, yaw: 0, isPhoto: true, speed: 0.1, battery: 95 },
+            { lat: 41.32155, lon: -88.9950, alt: 31.0, pitch: -90, yaw: 0, isPhoto: false, speed: 2.0, battery: 93 },
+            { lat: 41.3216, lon: -88.9950, alt: 31.0, pitch: -90, yaw: 0, isPhoto: true, speed: 0.1, battery: 90 },
+            { lat: 41.32165, lon: -88.9950, alt: 31.0, pitch: -90, yaw: 0, isPhoto: false, speed: 2.0, battery: 88 },
+            { lat: 41.3217, lon: -88.9950, alt: 31.0, pitch: 0.0, yaw: 0, isPhoto: true, speed: 0.1, battery: 85 },
+            { lat: 41.3217, lon: -88.9950, alt: 31.0, pitch: 0.0, yaw: 0, isPhoto: false, speed: 0.0, battery: 82 }
+          ]
+        };
+        // Candidate 1: Plan expecting all -90 pitch
+        const planAllNadir = [
+          { lat: 41.3215, lon: -88.9950, alt: 31, pitch: -90, heading: 0 },
+          { lat: 41.3216, lon: -88.9950, alt: 31, pitch: -90, heading: 0 },
+          { lat: 41.3217, lon: -88.9950, alt: 31, pitch: -90, heading: 0 }
+        ];
+        // Candidate 2: Plan expecting WP 2 to be pitch 0
+        const planWithPitchZero = [
+          { lat: 41.3215, lon: -88.9950, alt: 31, pitch: -90, heading: 0 },
+          { lat: 41.3216, lon: -88.9950, alt: 31, pitch: -90, heading: 0 },
+          { lat: 41.3217, lon: -88.9950, alt: 31, pitch: 0, heading: 0 }
+        ];
+
+        FlightDiagnostics.plannedWaypoints = planAllNadir;
+        FlightDiagnostics._savedMissionsCache = [
+          { id: 'mission-nadir', name: 'Nadir Survey 31m', waypoints: planAllNadir },
+          { id: 'mission-level-end', name: 'Landing Level Pitch', waypoints: planWithPitchZero }
+        ];
+
+        document.getElementById('diag-btn-irl-verify').click();
+      });
+      await page.waitForTimeout(500);
+
+      // 3. Verify Selector and Load button exist and are populated
+      const planSelectExists = await page.evaluate(() => Boolean(document.getElementById('diag-irl-plan-select')));
+      const loadBtnExists = await page.evaluate(() => Boolean(document.getElementById('diag-irl-load-plan-btn')));
+      const fileInputExists = await page.evaluate(() => Boolean(document.getElementById('diag-irl-plan-file-input')));
+      assert.strictEqual(planSelectExists, true, '#diag-irl-plan-select must exist');
+      assert.strictEqual(loadBtnExists, true, '#diag-irl-load-plan-btn must exist');
+      assert.strictEqual(fileInputExists, true, '#diag-irl-plan-file-input must exist');
+
+      const selectOptions = await page.evaluate(() => {
+        const select = document.getElementById('diag-irl-plan-select');
+        return Array.from(select.options).map(opt => ({ value: opt.value, text: opt.textContent }));
+      });
+      assert.ok(selectOptions.length >= 2, 'Plan selector should contain multiple candidate plans');
+
+      // 4. Initial evaluation with all-nadir plan should flag the 90 deg pitch variance on WP 2
+      const outcomeBefore = await page.evaluate(() => {
+        return document.getElementById('diag-irl-outcome-badge')?.textContent || '';
+      });
+      assert.ok(outcomeBefore.includes('VARIANCE'), 'Should flag variance due to 90 deg pitch error at terminal waypoint');
+
+      // Check max pitch row in metrics table
+      const metricsText = await page.evaluate(() => {
+        return document.getElementById('diag-irl-metrics-table-body')?.textContent || '';
+      });
+      assert.ok(metricsText.includes('Max Gimbal Pitch Error'), 'Should include Max Gimbal Pitch Error');
+      assert.ok(metricsText.includes('WP 2'), 'Should cite WP 2');
+
+      // 5. Switch to candidate 2 (mission-level-end) where WP 2 is planned at 0 deg pitch
+      await page.evaluate(() => {
+        const select = document.getElementById('diag-irl-plan-select');
+        const levelOpt = Array.from(select.options).find(o => o.value.includes('mission-level-end'));
+        if (levelOpt) {
+          select.value = levelOpt.value;
+          select.dispatchEvent(new Event('change'));
+        }
+      });
+      await page.waitForTimeout(500);
+
+      // Outcome should now pass Phase 4 Gimbal pitch because WP 2 expects 0 deg!
+      const outcomeAfter = await page.evaluate(() => {
+        return document.getElementById('diag-irl-outcome-badge')?.textContent || '';
+      });
+      assert.ok(outcomeAfter.includes('PASSED'), 'Outcome should pass when matching plan with pitch 0 at landing');
+
+      // Cleanup
+      await page.evaluate(() => {
+        document.getElementById('diag-irl-close-btn').click();
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.close === 'function') {
+          FlightDiagnostics.close();
+        }
+      });
+      await page.waitForTimeout(300);
+    });
   });
 
 });
