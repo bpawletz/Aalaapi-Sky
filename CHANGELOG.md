@@ -1,3 +1,23 @@
+## [1.206.0] - 2026-10-30
+
+Aalaapi Sky complements its flight undo capability with a comprehensive Mission & Waypoint Redo System, providing bidirectional editing control via on-map buttons, sidebar actions, and standard keyboard shortcuts (Ctrl+Y / Ctrl+Shift+Z).
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Mission & Waypoint Redo System**: Added multi-step redo history stack (up to 30 snapshots) allowing pilots to redo previously undone mission and waypoint changes (Closes #197).
+  - Floating Map Redo Button (`#map-redo-btn`): Paired with `#map-undo-btn` on the floating map toolbar with dynamic badge counter (`#map-redo-badge`) and contextual tooltip.
+  - Sidebar Mission Actions Redo Button (`#redo-mission-btn`): Positioned beside `#undo-mission-btn` in Section 4 with live stack badge (`#redo-stack-badge`).
+  - Dual Keyboard Shortcuts: Trigger redo via Windows/Linux standard `Ctrl+Y` or cross-platform `Ctrl+Shift+Z` / `Cmd+Shift+Z`, automatically bypassed when typing in text fields or textareas.
+  - Interactive Visual Feedback: Displays non-blocking floating toast alerts on redo (`↪️ Redid: <actionLabel>`).
+  - Symmetrical State Management: Taking any new map action automatically resets the redo stack, preserving standard document undo/redo semantics.
+
+#### Under the Hood & Technical Details
+- **`src/state/MissionStore.js`**: Refactored snapshot logic into `createMissionSnapshot` and `restoreMissionSnapshot`; implemented `redoHistoryStack`, `redoLastAction()`, and updated `pushUndoSnapshot`, `undoLastAction()`, and `updateUndoUiState()` to manage both undo and redo stacks and buttons.
+- **`src/ui/EventBindings.js`**: Added event listeners for `#redo-mission-btn` and `#map-redo-btn`; expanded global keydown handler to catch `Ctrl+Y` and `Ctrl+Shift+Z` / `Cmd+Shift+Z`.
+- **`index.css`**: Updated `.map-floating-undo-control` to flex layout with 4px gap for clean side-by-side button placement.
+- **`index_template.html`**: Bumped header badge to `v1.206.0`, added Redo buttons in Section 4 and on the map toolbar, updated Intro Guide Features pane, and updated About modal changelog.
+
 ## [1.205.0] - 2026-10-30
 
 Aalaapi Sky introduces a robust multi-step Mission & Waypoint Undo System, allowing pilots to instantly restore mission centers, layer parameters, and customized waypoint positions after accidental map clicks or repositioning.

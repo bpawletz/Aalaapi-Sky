@@ -10682,5 +10682,77 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const centerAfterShortcut = await page.evaluate(() => centerMarker.getLatLng().lat);
       assert.strictEqual(centerAfterShortcut, 41.3215, 'Ctrl+Z must restore mission center');
     });
+
+    test("Mission & Waypoint Redo System: floating map button, sidebar button, and Ctrl+Y / Ctrl+Shift+Z recovery (Closes #197)", async () => {
+      // 1. Initial state: Reset stacks and verify buttons
+      await page.evaluate(() => {
+        undoHistoryStack.length = 0;
+        redoHistoryStack.length = 0;
+        updateUndoUiState();
+      });
+      await page.waitForTimeout(100);
+
+      const isMapRedoDisabled = await page.locator("#map-redo-btn").isDisabled();
+      const isSidebarRedoDisabled = await page.locator("#redo-mission-btn").isDisabled();
+      assert.strictEqual(isMapRedoDisabled, true, "#map-redo-btn must be disabled initially");
+      assert.strictEqual(isSidebarRedoDisabled, true, "#redo-mission-btn must be disabled initially");
+
+      // 2. Place mission center at rural Utica coords
+      await page.evaluate(() => {
+        setGridCenter(41.3215, -88.9950);
+      });
+      await page.waitForTimeout(200);
+
+      // Move center to second location
+      await page.evaluate(() => {
+        setGridCenter(41.3400, -88.9700);
+      });
+      await page.waitForTimeout(200);
+
+      // 3. Undo the move via #map-undo-btn
+      await page.click("#map-undo-btn");
+      await page.waitForTimeout(300);
+
+      let curLat = await page.evaluate(() => centerMarker.getLatLng().lat);
+      assert.strictEqual(curLat, 41.3215, "Latitude should be undone to 41.3215");
+
+      // Redo buttons should now be enabled
+      assert.strictEqual(await page.locator("#map-redo-btn").isDisabled(), false, "#map-redo-btn should be enabled after undo");
+      assert.strictEqual(await page.locator("#redo-mission-btn").isDisabled(), false, "#redo-mission-btn should be enabled after undo");
+
+      // 4. Click the floating Map Redo button (#map-redo-btn)
+      await page.click("#map-redo-btn");
+      await page.waitForTimeout(300);
+
+      curLat = await page.evaluate(() => centerMarker.getLatLng().lat);
+      assert.strictEqual(curLat, 41.3400, "Latitude should be redone to 41.3400");
+      assert.strictEqual(await page.locator("#map-redo-btn").isDisabled(), true, "#map-redo-btn should be disabled after redo");
+
+      // 5. Undo again via sidebar button (#undo-mission-btn)
+      await page.click("#undo-mission-btn");
+      await page.waitForTimeout(300);
+
+      curLat = await page.evaluate(() => centerMarker.getLatLng().lat);
+      assert.strictEqual(curLat, 41.3215, "Latitude should be undone to 41.3215");
+      assert.strictEqual(await page.locator("#redo-mission-btn").isDisabled(), false, "#redo-mission-btn should be enabled");
+
+      // 6. Test Ctrl+Y keyboard shortcut
+      await page.keyboard.press("Control+y");
+      await page.waitForTimeout(300);
+
+      curLat = await page.evaluate(() => centerMarker.getLatLng().lat);
+      assert.strictEqual(curLat, 41.3400, "Control+y should trigger redo and restore 41.3400");
+
+      // 7. Undo with Ctrl+Z and Redo with Ctrl+Shift+Z
+      await page.keyboard.press("Control+z");
+      await page.waitForTimeout(300);
+      curLat = await page.evaluate(() => centerMarker.getLatLng().lat);
+      assert.strictEqual(curLat, 41.3215, "Control+z should trigger undo");
+
+      await page.keyboard.press("Control+Shift+z");
+      await page.waitForTimeout(300);
+      curLat = await page.evaluate(() => centerMarker.getLatLng().lat);
+      assert.strictEqual(curLat, 41.3400, "Control+Shift+z should trigger redo");
+    });
   });
 });

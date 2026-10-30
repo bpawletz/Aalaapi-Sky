@@ -7797,7 +7797,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 }
 
 /* ==========================================================================
-   ↩️ Floating Map Undo Control & Toast (v1.205.0)
+   ↩️ Floating Map Undo & Redo Controls & Toast (v1.206.0)
    ========================================================================== */
 .map-floating-undo-control {
   position: absolute;
@@ -7805,6 +7805,8 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   left: 54px;
   z-index: 1000;
   pointer-events: auto;
+  display: flex;
+  gap: 4px;
 }
 
 .map-undo-button {
