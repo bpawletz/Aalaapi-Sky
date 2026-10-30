@@ -610,6 +610,10 @@ function togglePatternParameters() {
       if (activeLayer.gimbalPitch === 'auto' && gridType !== 'road-following') {
         activeLayer.gimbalPitch = (gridType === 'single') ? -90 : ((gridType === 'double') ? -60 : -45);
       }
+      const layerNameMatch = activeLayer.name ? activeLayer.name.match(/^Layer\s+(\d+):\s+/) : null;
+      if (layerNameMatch && typeof getPatternDisplayName === 'function') {
+        activeLayer.name = `Layer ${layerNameMatch[1]}: ${getPatternDisplayName(gridType)}`;
+      }
     }
     activeLayer.pattern = gridType;
     if (gridType !== 'road-following') {

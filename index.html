@@ -7882,7 +7882,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.203.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.203.1</span></h1>
         </div>
       </div>
 
@@ -14484,7 +14484,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.203.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.203.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -14642,6 +14642,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.203.1):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Road-Following &amp; Layer Video Capture Mode KMZ Export (Closes #195):</strong> Fixed an issue where setting a Road Following or single-layer mission to Video Recording (<code>video</code>) exported <code>takePhoto</code> actions instead of <code>startRecord</code> / <code>stopRecord</code> when syncing to RC 2 / WebUSB or auditing in KMZ Inspector; preserved auto-calculated road-focus gimbal pitch (<code>-70&deg;</code>) against flat layer pitch overrides; and updated default layer naming and stats panel video indicators.</li>
+              </ul>
+              <br>
               <strong style="color: var(--text-main);">Changelog (v1.203.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>Buy Me a Coffee Integration (Closes #194):</strong> Added voluntary <code>Buy Me a Coffee</code> links (<code>buymeacoffee.com/romah74</code>) across the Top Ribbon, More menu, About modal, Useful Links modal, <code>README.md</code>, and <code>.github/FUNDING.yml</code>, explicitly framed as a voluntary tip with no implied technical software support or warranty.</li>
@@ -36255,6 +36260,10 @@ function togglePatternParameters() {
       if (activeLayer.gimbalPitch === 'auto' && gridType !== 'road-following') {
         activeLayer.gimbalPitch = (gridType === 'single') ? -90 : ((gridType === 'double') ? -60 : -45);
       }
+      const layerNameMatch = activeLayer.name ? activeLayer.name.match(/^Layer\s+(\d+):\s+/) : null;
+      if (layerNameMatch && typeof getPatternDisplayName === 'function') {
+        activeLayer.name = `Layer ${layerNameMatch[1]}: ${getPatternDisplayName(gridType)}`;
+      }
     }
     activeLayer.pattern = gridType;
     if (gridType !== 'road-following') {
@@ -39930,7 +39939,11 @@ function updateGrid() {
   drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWidth, gridHeight, actualRotation);
 
   // 5. Update Stats Panel
-  const stats = calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, captureMode);
+  const activeLayerForStats = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const effectiveStatsCaptureMode = (typeof getEffectiveLayerCaptureMode === 'function' && activeLayerForStats)
+    ? getEffectiveLayerCaptureMode(activeLayerForStats)
+    : captureMode;
+  const stats = calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, effectiveStatsCaptureMode);
   updateStatsPanel(stats);
 
   // 6. Update Layers List UI
@@ -39978,7 +39991,11 @@ function redrawCurrentMission() {
 
   drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWidth, gridHeight, actualRotation);
 
-  const stats = calculateStats(waypoints, photoLocations, speed, null, null, captureMode);
+  const activeLayerForRedraw = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const effectiveRedrawCaptureMode = (typeof getEffectiveLayerCaptureMode === 'function' && activeLayerForRedraw)
+    ? getEffectiveLayerCaptureMode(activeLayerForRedraw)
+    : captureMode;
+  const stats = calculateStats(waypoints, photoLocations, speed, null, null, effectiveRedrawCaptureMode);
   updateStatsPanel(stats);
 
   // Update 3D Preview if active
@@ -48418,7 +48435,10 @@ function updateStatsPanel(stats) {
   if (statWps) statWps.textContent = stats.waypointsCount;
   const activeWps = (typeof waypoints !== 'undefined' && Array.isArray(waypoints)) ? waypoints : ((typeof generatedWaypoints !== 'undefined' && Array.isArray(generatedWaypoints)) ? generatedWaypoints : []);
   const isHyperlapseActive = (typeof getActiveLayer === 'function' && getActiveLayer()?.pattern === 'hyperlapse') || activeWps.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse'));
-  const captureModeVal = (typeof document !== 'undefined' && document.getElementById('capture-mode')) ? document.getElementById('capture-mode').value : 'stopAndShoot';
+  const activeLayerForCap = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const captureModeVal = (typeof getEffectiveLayerCaptureMode === 'function' && activeLayerForCap)
+    ? getEffectiveLayerCaptureMode(activeLayerForCap)
+    : ((typeof document !== 'undefined' && document.getElementById('capture-mode')) ? document.getElementById('capture-mode').value : 'stopAndShoot');
   const photoText = (captureModeVal === 'video') ? "Video (Record)" : (isHyperlapseActive ? `${stats.photoCount} frames` : stats.photoCount);
   if (statPhotos) statPhotos.textContent = photoText;
 
@@ -49168,7 +49188,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     if (!wpLayer && layersList && typeof wp.layerIndex === 'number' && layersList[wp.layerIndex]) {
       wpLayer = layersList[wp.layerIndex];
     }
-    if (!wpLayer && layersList && layersList.length === 1 && (layersList[0].pattern === 'hyperlapse' || (opts.flightLayers && opts.flightLayers.length === 1))) {
+    if (!wpLayer && layersList && layersList.length === 1 && (layersList[0].pattern === 'hyperlapse' || layersList[0].pattern === 'road-following' || wp.isRoadDroneWaypoint || (opts.flightLayers && opts.flightLayers.length === 1))) {
       wpLayer = layersList[0];
     }
     // Only infer layer by accumulation in multi-layer missions where waypoints have layer metadata or stack has > 1 layer
@@ -49266,20 +49286,25 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch;
 
     const isContinuousHelix = (gridType === 'continuous-helix') || (wp.isContinuousHelix) || (wp.gridType === 'continuous-helix') || (wp.layerPattern === 'continuous-helix') || (wpLayer && wpLayer.pattern === 'continuous-helix');
+    const isRoadAutoPitch = (isRoadFollowing || wp.isRoadDroneWaypoint || wp.layerPattern === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following')) &&
+      ((wp.roadFocusMode || (wpLayer && wpLayer.roadFocusMode) || 'focusRoad') !== 'custom') &&
+      ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'));
 
     const rawWpPitch = isWpPitchOverridden
       ? wp.pitch
       : (isHyperlapseSweep && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit'
         ? wp.pitch
-        : (isContinuousHelix && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+        : (isRoadAutoPitch
           ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-          : (isPhotoSphere && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+          : (isContinuousHelix && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
             ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-            : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
-              ? wp.layerGimbalPitch
-              : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
-                ? wpLayer.gimbalPitch
-                : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch)))))));
+            : (isPhotoSphere && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+              ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
+              : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
+                ? wp.layerGimbalPitch
+                : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
+                  ? wpLayer.gimbalPitch
+                  : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch))))))));
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
       const effectiveAltForPitch = (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit')
         ? wp.alt
@@ -49445,6 +49470,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       let nLayer = (neighborWp.layerId && layersList) ? layersList.find(l => l.id === neighborWp.layerId) : null;
       if (!nLayer && layersList && typeof neighborWp.layerIndex === 'number' && layersList[neighborWp.layerIndex]) {
         nLayer = layersList[neighborWp.layerIndex];
+      }
+      if (!nLayer && layersList && layersList.length === 1 && (layersList[0].pattern === 'hyperlapse' || layersList[0].pattern === 'road-following' || neighborWp.isRoadDroneWaypoint || (opts.flightLayers && opts.flightLayers.length === 1))) {
+        nLayer = layersList[0];
       }
       if (!nLayer && layersList && layersList.length > 1 && (neighborWp.layerId || neighborWp.layerCaptureMode || neighborWp.layerAltitude || neighborWp.layerPattern)) {
         let acc = 0;
@@ -50305,6 +50333,9 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
         if (!wpLayer && layersList && typeof wpObj.layerIndex === 'number' && layersList[wpObj.layerIndex]) {
           wpLayer = layersList[wpObj.layerIndex];
         }
+        if (!wpLayer && layersList && layersList.length === 1 && (layersList[0].pattern === 'road-following' || wpObj.isRoadDroneWaypoint || (options && options.flightLayers && options.flightLayers.length === 1))) {
+          wpLayer = layersList[0];
+        }
         const targetAlt = (wpObj.layerAltitude !== undefined && wpObj.layerAltitude !== null && wpObj.layerAltitude !== 'inherit')
           ? wpObj.layerAltitude
           : (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit'
@@ -50325,6 +50356,7 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           (wpObj.isMultiOrbit || wpObj.isPhotoSphere || wpObj.isContinuousHelix || wpObj.isStarPass || wpObj.gridType === 'photo-sphere' || wpObj.gridType === 'continuous-helix' || wpObj.gridType === 'star-pass' || (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
         const hasHlSweep = (wpLayer && wpLayer.pattern === 'hyperlapse' && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined && wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch) ||
           (wpLayer && wpLayer.pattern === 'continuous-helix' && wpLayer.helixPitchStart !== undefined && wpLayer.helixPitchEnd !== undefined && wpLayer.helixPitchStart !== wpLayer.helixPitchEnd);
+        const hasRoadAutoPitch = Boolean(wpObj && (wpObj.isRoadDroneWaypoint || wpObj.layerPattern === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following')) && ((wpObj.roadFocusMode || (wpLayer && wpLayer.roadFocusMode) || 'focusRoad') !== 'custom') && wpObj.pitch !== undefined && wpObj.pitch !== null);
 
         const targetPitch = (wpObj.layerGimbalPitch !== undefined && wpObj.layerGimbalPitch !== null && wpObj.layerGimbalPitch !== 'inherit' && wpObj.layerGimbalPitch !== 'auto')
           ? wpObj.layerGimbalPitch
@@ -50332,7 +50364,7 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
             ? wpLayer.gimbalPitch
             : (options && options.gimbalPitch !== undefined && options.gimbalPitch !== null && options.gimbalPitch !== 'auto' ? options.gimbalPitch : null));
 
-        if (targetPitch !== null && !isNaN(targetPitch) && !isMultiRing && !hasHlSweep) {
+        if (targetPitch !== null && !isNaN(targetPitch) && !isMultiRing && !hasHlSweep && !hasRoadAutoPitch) {
           const parsedPitch = Math.round(parseGimbalPitch(targetPitch, -60));
           pms[i] = pms[i].replace(
             /(<wpml:gimbalPitchRotateAngle>)[^<]+(<\/wpml:gimbalPitchRotateAngle>)/g,
@@ -50427,6 +50459,9 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
       let capLayer = (wpObj && wpObj.layerId && layersListForCap) ? layersListForCap.find(l => l.id === wpObj.layerId) : null;
       if (!capLayer && layersListForCap && wpObj && typeof wpObj.layerIndex === 'number' && layersListForCap[wpObj.layerIndex]) {
         capLayer = layersListForCap[wpObj.layerIndex];
+      }
+      if (!capLayer && layersListForCap && layersListForCap.length === 1 && (layersListForCap[0].pattern === 'road-following' || (wpObj && wpObj.isRoadDroneWaypoint) || (options && options.flightLayers && options.flightLayers.length === 1))) {
+        capLayer = layersListForCap[0];
       }
       if (!capLayer && layersListForCap && layersListForCap.length > 1 && wpObj && (wpObj.layerId || wpObj.layerCaptureMode || wpObj.layerAltitude || wpObj.layerPattern)) {
         let acc = 0;
@@ -50820,6 +50855,10 @@ function exportKMZ() {
   const gimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
   const captureMode = document.getElementById('capture-mode').value;
   const pathMode = document.getElementById('path-mode').value;
+
+  if (typeof importedWaypoints === 'undefined' || !importedWaypoints) {
+    if (typeof saveActiveLayerFromUi === 'function') saveActiveLayerFromUi();
+  }
 
   let waypoints = [];
   const currentWps = getCurrentWaypoints();
@@ -51741,10 +51780,30 @@ function exportFlightDiagnosticsJSON(customWps = null, options = {}) {
 
 // Generate KMZ Blob in-memory
 function generateKMZBlob(wps = null) {
+  if ((typeof importedWaypoints === 'undefined' || !importedWaypoints) && typeof saveActiveLayerFromUi === 'function') {
+    saveActiveLayerFromUi();
+  }
   let effectiveWps = wps;
   if (!effectiveWps) {
     const current = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null;
     effectiveWps = current || (typeof waypoints !== 'undefined' && waypoints ? waypoints : []);
+  }
+  const layersList = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null;
+  const activeLayerRef = typeof getActiveLayer === 'function' ? getActiveLayer() : (layersList && layersList.length === 1 ? layersList[0] : null);
+  if (Array.isArray(effectiveWps) && layersList && layersList.length > 0) {
+    effectiveWps = effectiveWps.map(wp => {
+      if (!wp) return wp;
+      const wpLayer = (wp.layerId ? layersList.find(l => l.id === wp.layerId) : null) || (layersList.length === 1 ? layersList[0] : activeLayerRef);
+      if (wpLayer) {
+        return {
+          ...wp,
+          layerId: wp.layerId || wpLayer.id,
+          layerCaptureMode: wpLayer.captureMode || wp.layerCaptureMode || 'inherit',
+          layerPattern: wp.layerPattern || wpLayer.pattern
+        };
+      }
+      return wp;
+    });
   }
   const finishAction = document.getElementById('finish-action')?.value || 'goHome';
   const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
@@ -51755,14 +51814,17 @@ function generateKMZBlob(wps = null) {
   const pathMode = document.getElementById('path-mode')?.value || 'normal';
 
   const templateKml = buildTemplateKml(finishAction, speed);
-  const waylinesWpml = buildWaylinesWpml(effectiveWps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
+  const waylinesWpml = buildWaylinesWpml(effectiveWps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode, {
+    flightLayers: layersList || undefined
+  });
 
   const currentGridType = document.getElementById('grid-type')?.value || 'single';
   // Auto-audit and fix subtle firmware incompatibilities
   const fixed = validateAndFixWpml(waylinesWpml, templateKml, {
     waypoints: effectiveWps,
     gridType: currentGridType,
-    flightLayers: (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null
+    captureMode: captureMode,
+    flightLayers: layersList
   });
   const finalWpml = fixed.wpmlXml;
   const finalTemplate = fixed.templateXml;
@@ -54108,6 +54170,8 @@ async function sendDirectlyToRC2() {
 
     const waypoints = rawWps.map(wp => ({
 
+      ...wp,
+
       lat: wp.lat,
 
       lon: wp.lon,
@@ -54116,7 +54180,7 @@ async function sendDirectlyToRC2() {
 
       pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
 
-      speed: speed,
+      speed: wp.speed !== undefined && wp.speed !== null ? wp.speed : speed,
 
       heading: wp.heading,
 
@@ -54484,6 +54548,8 @@ async function sendDirectlyViaWebUsb() {
 
     const waypoints = rawWps.map(wp => ({
 
+      ...wp,
+
       lat: wp.lat,
 
       lon: wp.lon,
@@ -54492,7 +54558,7 @@ async function sendDirectlyViaWebUsb() {
 
       pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
 
-      speed: speed,
+      speed: wp.speed !== undefined && wp.speed !== null ? wp.speed : speed,
 
       heading: wp.heading,
 
@@ -67906,8 +67972,16 @@ const KMZInspector = {
 
   runCurrentWorkspaceAudit() {
     try {
+      if ((typeof importedWaypoints === 'undefined' || !importedWaypoints) && typeof saveActiveLayerFromUi === 'function') {
+        saveActiveLayerFromUi();
+      }
       const activeWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || (typeof generatedWaypoints !== 'undefined' ? generatedWaypoints : null) || [];
-      const wps = Array.isArray(activeWps) ? activeWps : [];
+      const layersList = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null;
+      const wps = Array.isArray(activeWps) ? activeWps.map(wp => {
+        if (!wp || !layersList || layersList.length === 0) return wp;
+        const wpLayer = (wp.layerId ? layersList.find(l => l.id === wp.layerId) : null) || (layersList.length === 1 ? layersList[0] : null);
+        return wpLayer ? { ...wp, layerId: wp.layerId || wpLayer.id, layerCaptureMode: wpLayer.captureMode || wp.layerCaptureMode || 'inherit', layerPattern: wp.layerPattern || wpLayer.pattern } : wp;
+      }) : [];
       const finishAction = document.getElementById('finish-action')?.value || 'goHome';
       const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
       const speed = parseFloat(document.getElementById('speed')?.value) || 4;
@@ -67917,9 +67991,11 @@ const KMZInspector = {
       const pathMode = document.getElementById('path-mode')?.value || 'normal';
 
       const tmpl = buildTemplateKml(finishAction, speed);
-      const wpml = buildWaylinesWpml(wps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
+      const wpml = buildWaylinesWpml(wps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode, {
+        flightLayers: layersList || undefined
+      });
       const currentGridType = document.getElementById('grid-type')?.value || 'single';
-      const report = validateWpmlMission(wpml, tmpl, { waypoints: wps, gridType: currentGridType });
+      const report = validateWpmlMission(wpml, tmpl, { waypoints: wps, gridType: currentGridType, flightLayers: layersList });
       this.activeReport = report;
       this.activeWpmlXml = wpml;
       this.activeTemplateXml = tmpl;
@@ -68285,7 +68361,7 @@ const KMZInspector = {
       prompt += `\n**Points of Interest (POIs):**\n`;
       allPois.forEach((p, idx) => {
         const c = formatCoord(p.lat, p.lon ?? p.lng);
-        prompt += `- **POI ${idx + 1} (${p.name || 'Target ' + (idx + 1)}):** id=\`${p.id || 'poi-' + idx}\`, coords=${JSON.stringify(c)}, alt=${p.alt || 0}m, role=${p.role || p.marker || 'standard'}\n`;
+        prompt += `- **POI ${idx + 1} (${p.name || 'Target ' + (idx + 1)}):** id=\`${p.id || 'poi-' + idx}\`, coords=${JSON.stringify(c)}, alt=${p.alt || 0}m, role=${typeof p.role === 'string' ? p.role : 'standard'}\n`;
       });
     }
 
@@ -69996,7 +70072,11 @@ function updatePathLinesAndStats(waypoints, photoLocations, centerLat, centerLon
 
   drawFlightPathLines(waypoints, gridType);
 
-  const stats = calculateStats(waypoints, photoLocations, speed, null, null, captureMode);
+  const activeLayerForPath = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const effectivePathCaptureMode = (typeof getEffectiveLayerCaptureMode === 'function' && activeLayerForPath)
+    ? getEffectiveLayerCaptureMode(activeLayerForPath)
+    : captureMode;
+  const stats = calculateStats(waypoints, photoLocations, speed, null, null, effectivePathCaptureMode);
   updateStatsPanel(stats);
 }
 

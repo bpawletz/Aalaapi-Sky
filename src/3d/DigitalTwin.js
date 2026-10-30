@@ -4665,8 +4665,16 @@ const KMZInspector = {
 
   runCurrentWorkspaceAudit() {
     try {
+      if ((typeof importedWaypoints === 'undefined' || !importedWaypoints) && typeof saveActiveLayerFromUi === 'function') {
+        saveActiveLayerFromUi();
+      }
       const activeWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || (typeof generatedWaypoints !== 'undefined' ? generatedWaypoints : null) || [];
-      const wps = Array.isArray(activeWps) ? activeWps : [];
+      const layersList = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null;
+      const wps = Array.isArray(activeWps) ? activeWps.map(wp => {
+        if (!wp || !layersList || layersList.length === 0) return wp;
+        const wpLayer = (wp.layerId ? layersList.find(l => l.id === wp.layerId) : null) || (layersList.length === 1 ? layersList[0] : null);
+        return wpLayer ? { ...wp, layerId: wp.layerId || wpLayer.id, layerCaptureMode: wpLayer.captureMode || wp.layerCaptureMode || 'inherit', layerPattern: wp.layerPattern || wpLayer.pattern } : wp;
+      }) : [];
       const finishAction = document.getElementById('finish-action')?.value || 'goHome';
       const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
       const speed = parseFloat(document.getElementById('speed')?.value) || 4;
@@ -4676,9 +4684,11 @@ const KMZInspector = {
       const pathMode = document.getElementById('path-mode')?.value || 'normal';
 
       const tmpl = buildTemplateKml(finishAction, speed);
-      const wpml = buildWaylinesWpml(wps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
+      const wpml = buildWaylinesWpml(wps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode, {
+        flightLayers: layersList || undefined
+      });
       const currentGridType = document.getElementById('grid-type')?.value || 'single';
-      const report = validateWpmlMission(wpml, tmpl, { waypoints: wps, gridType: currentGridType });
+      const report = validateWpmlMission(wpml, tmpl, { waypoints: wps, gridType: currentGridType, flightLayers: layersList });
       this.activeReport = report;
       this.activeWpmlXml = wpml;
       this.activeTemplateXml = tmpl;
@@ -5044,7 +5054,7 @@ const KMZInspector = {
       prompt += `\n**Points of Interest (POIs):**\n`;
       allPois.forEach((p, idx) => {
         const c = formatCoord(p.lat, p.lon ?? p.lng);
-        prompt += `- **POI ${idx + 1} (${p.name || 'Target ' + (idx + 1)}):** id=\`${p.id || 'poi-' + idx}\`, coords=${JSON.stringify(c)}, alt=${p.alt || 0}m, role=${p.role || p.marker || 'standard'}\n`;
+        prompt += `- **POI ${idx + 1} (${p.name || 'Target ' + (idx + 1)}):** id=\`${p.id || 'poi-' + idx}\`, coords=${JSON.stringify(c)}, alt=${p.alt || 0}m, role=${typeof p.role === 'string' ? p.role : 'standard'}\n`;
       });
     }
 

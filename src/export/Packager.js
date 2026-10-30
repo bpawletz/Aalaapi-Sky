@@ -23,6 +23,10 @@ function exportKMZ() {
   const captureMode = document.getElementById('capture-mode').value;
   const pathMode = document.getElementById('path-mode').value;
 
+  if (typeof importedWaypoints === 'undefined' || !importedWaypoints) {
+    if (typeof saveActiveLayerFromUi === 'function') saveActiveLayerFromUi();
+  }
+
   let waypoints = [];
   const currentWps = getCurrentWaypoints();
 
@@ -943,10 +947,30 @@ function exportFlightDiagnosticsJSON(customWps = null, options = {}) {
 
 // Generate KMZ Blob in-memory
 function generateKMZBlob(wps = null) {
+  if ((typeof importedWaypoints === 'undefined' || !importedWaypoints) && typeof saveActiveLayerFromUi === 'function') {
+    saveActiveLayerFromUi();
+  }
   let effectiveWps = wps;
   if (!effectiveWps) {
     const current = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null;
     effectiveWps = current || (typeof waypoints !== 'undefined' && waypoints ? waypoints : []);
+  }
+  const layersList = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null;
+  const activeLayerRef = typeof getActiveLayer === 'function' ? getActiveLayer() : (layersList && layersList.length === 1 ? layersList[0] : null);
+  if (Array.isArray(effectiveWps) && layersList && layersList.length > 0) {
+    effectiveWps = effectiveWps.map(wp => {
+      if (!wp) return wp;
+      const wpLayer = (wp.layerId ? layersList.find(l => l.id === wp.layerId) : null) || (layersList.length === 1 ? layersList[0] : activeLayerRef);
+      if (wpLayer) {
+        return {
+          ...wp,
+          layerId: wp.layerId || wpLayer.id,
+          layerCaptureMode: wpLayer.captureMode || wp.layerCaptureMode || 'inherit',
+          layerPattern: wp.layerPattern || wpLayer.pattern
+        };
+      }
+      return wp;
+    });
   }
   const finishAction = document.getElementById('finish-action')?.value || 'goHome';
   const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
@@ -957,14 +981,17 @@ function generateKMZBlob(wps = null) {
   const pathMode = document.getElementById('path-mode')?.value || 'normal';
 
   const templateKml = buildTemplateKml(finishAction, speed);
-  const waylinesWpml = buildWaylinesWpml(effectiveWps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
+  const waylinesWpml = buildWaylinesWpml(effectiveWps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode, {
+    flightLayers: layersList || undefined
+  });
 
   const currentGridType = document.getElementById('grid-type')?.value || 'single';
   // Auto-audit and fix subtle firmware incompatibilities
   const fixed = validateAndFixWpml(waylinesWpml, templateKml, {
     waypoints: effectiveWps,
     gridType: currentGridType,
-    flightLayers: (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null
+    captureMode: captureMode,
+    flightLayers: layersList
   });
   const finalWpml = fixed.wpmlXml;
   const finalTemplate = fixed.templateXml;

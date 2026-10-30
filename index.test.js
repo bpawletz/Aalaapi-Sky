@@ -37338,8 +37338,8 @@ describe('GNU AGPLv3 Software License, Worldwide Aviation Liability Shield & Fir
 });
 
 describe('Buy Me a Coffee Integration (v1.203.0 - Issue #194)', () => {
-  test('Version consistency: v1.203.0 across package.json, changelog, index_template.html, and index.html', () => {
-    assertVersionConsistency('1.203.0');
+  test('Version consistency: v1.203.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.203.1');
   });
 
   test('.github/FUNDING.yml and README.md include Buy Me a Coffee (buymeacoffee.com/romah74) without implying software support', () => {
@@ -37393,5 +37393,73 @@ describe('Buy Me a Coffee Integration (v1.203.0 - Issue #194)', () => {
     assert.ok(coffeeRibbonItem, 'DEFAULT_RIBBON_ITEMS must include coffee item');
     assert.strictEqual(coffeeRibbonItem.selector, '#buy-coffee-topbar-btn');
     assert.ok(!coffeeRibbonItem.label.toLowerCase().includes('support'), 'Ribbon item label must not say Support');
+  });
+});
+
+describe('Road-Following & Layer Video Capture Mode KMZ Export (v1.203.1 - Issue #195)', () => {
+  test('Road-following layer set to video capture mode exports startRecord and stopRecord instead of takePhoto and preserves road-focus auto gimbal pitch (-70°)', () => {
+    const roadLayer = {
+      id: 'layer-1',
+      name: 'Layer 1: Road Following',
+      pattern: 'road-following',
+      enabled: true,
+      altitude: 31,
+      speed: 1.8,
+      gimbalPitch: -50,
+      headingMode: 'inherit',
+      pathMode: 'inherit',
+      captureMode: 'video',
+      cameraZoom: 1,
+      hoverTime: 'inherit',
+      roadOffset: -11,
+      roadSnap: true,
+      roadFocusMode: 'focusRoad'
+    };
+
+    // Simulate stripped waypoints as previously passed by sendDirectlyToRC2 / sendDirectlyViaWebUsb
+    const strippedWps = [
+      { lat: 41.3217511, lon: -88.9954733, alt: 31, pitch: -70, speed: 1.8, heading: 353.4, isRoadDroneWaypoint: true, roadFocusMode: 'focusRoad' },
+      { lat: 41.3216973, lon: -88.9960888, alt: 31, pitch: -70, speed: 1.8, heading: 0.5, isRoadDroneWaypoint: true, roadFocusMode: 'focusRoad' },
+      { lat: 41.3218243, lon: -88.9963379, alt: 31, pitch: -70, speed: 1.8, heading: 72.3, isRoadDroneWaypoint: true, roadFocusMode: 'focusRoad' },
+      { lat: 41.3221827, lon: -88.9963812, alt: 31, pitch: -70, speed: 1.8, heading: 85.1, isRoadDroneWaypoint: true, roadFocusMode: 'focusRoad' }
+    ];
+
+    const prevLayers = global.flightLayers;
+    try {
+      global.flightLayers = [roadLayer];
+      const tmpl = buildTemplateKml('goHome', 1.8);
+      // Pass global captureMode = 'stopAndShoot' to verify layer 'video' overrides global default
+      const rawWpml = buildWaylinesWpml(strippedWps, 31, 1.8, 'followWayline', 'goHome', -50, 'stopAndShoot', 'normal', {
+        flightLayers: [roadLayer]
+      });
+      const fixed = validateAndFixWpml(rawWpml, tmpl, {
+        waypoints: strippedWps,
+        gridType: 'road-following',
+        captureMode: 'stopAndShoot',
+        flightLayers: [roadLayer]
+      });
+
+      const xml = fixed.wpmlXml;
+      assert.ok(xml.includes('<wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>'), 'WPML must include startRecord action when road-following layer captureMode is video');
+      assert.ok(xml.includes('<wpml:actionActuatorFunc>stopRecord</wpml:actionActuatorFunc>'), 'WPML must include stopRecord action at the end of the video layer');
+      assert.ok(!xml.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'), 'WPML must NOT include takePhoto when layer captureMode is video');
+      assert.ok(xml.includes('<wpml:gimbalPitchRotateAngle>-70</wpml:gimbalPitchRotateAngle>'), 'validateAndFixWpml must preserve road-following focusRoad auto-calculated gimbal pitch (-70°) rather than overwriting with flat layer pitch (-50°)');
+    } finally {
+      global.flightLayers = prevLayers;
+    }
+  });
+
+  test('sendDirectlyToRC2 and sendDirectlyViaWebUsb preserve full waypoint properties (...wp) and KMZInspector serializes POI role as string', () => {
+    const apiClientSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
+    const spreadMatches = apiClientSrc.match(/const waypoints = rawWps\.map\(wp => \(\{\s*\.\.\.wp,/g) || [];
+    assert.ok(spreadMatches.length >= 2, 'Both sendDirectlyToRC2 and sendDirectlyViaWebUsb must spread ...wp to preserve layerId and layerCaptureMode');
+
+    const promptStr = KMZInspector.generateAntigravityPrompt(
+      { valid: true, rulesPassed: 10, errors: [], warnings: [], placemarkCount: 4 },
+      '',
+      '',
+      { hideLocation: true }
+    );
+    assert.ok(!promptStr.includes('role=[object Object]'), 'KMZInspector.generateAntigravityPrompt must never output role=[object Object]');
   });
 });

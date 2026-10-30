@@ -234,7 +234,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     if (!wpLayer && layersList && typeof wp.layerIndex === 'number' && layersList[wp.layerIndex]) {
       wpLayer = layersList[wp.layerIndex];
     }
-    if (!wpLayer && layersList && layersList.length === 1 && (layersList[0].pattern === 'hyperlapse' || (opts.flightLayers && opts.flightLayers.length === 1))) {
+    if (!wpLayer && layersList && layersList.length === 1 && (layersList[0].pattern === 'hyperlapse' || layersList[0].pattern === 'road-following' || wp.isRoadDroneWaypoint || (opts.flightLayers && opts.flightLayers.length === 1))) {
       wpLayer = layersList[0];
     }
     // Only infer layer by accumulation in multi-layer missions where waypoints have layer metadata or stack has > 1 layer
@@ -332,20 +332,25 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch;
 
     const isContinuousHelix = (gridType === 'continuous-helix') || (wp.isContinuousHelix) || (wp.gridType === 'continuous-helix') || (wp.layerPattern === 'continuous-helix') || (wpLayer && wpLayer.pattern === 'continuous-helix');
+    const isRoadAutoPitch = (isRoadFollowing || wp.isRoadDroneWaypoint || wp.layerPattern === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following')) &&
+      ((wp.roadFocusMode || (wpLayer && wpLayer.roadFocusMode) || 'focusRoad') !== 'custom') &&
+      ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'));
 
     const rawWpPitch = isWpPitchOverridden
       ? wp.pitch
       : (isHyperlapseSweep && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit'
         ? wp.pitch
-        : (isContinuousHelix && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+        : (isRoadAutoPitch
           ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-          : (isPhotoSphere && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+          : (isContinuousHelix && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
             ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-            : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
-              ? wp.layerGimbalPitch
-              : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
-                ? wpLayer.gimbalPitch
-                : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch)))))));
+            : (isPhotoSphere && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+              ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
+              : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
+                ? wp.layerGimbalPitch
+                : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
+                  ? wpLayer.gimbalPitch
+                  : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch))))))));
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
       const effectiveAltForPitch = (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit')
         ? wp.alt
@@ -511,6 +516,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       let nLayer = (neighborWp.layerId && layersList) ? layersList.find(l => l.id === neighborWp.layerId) : null;
       if (!nLayer && layersList && typeof neighborWp.layerIndex === 'number' && layersList[neighborWp.layerIndex]) {
         nLayer = layersList[neighborWp.layerIndex];
+      }
+      if (!nLayer && layersList && layersList.length === 1 && (layersList[0].pattern === 'hyperlapse' || layersList[0].pattern === 'road-following' || neighborWp.isRoadDroneWaypoint || (opts.flightLayers && opts.flightLayers.length === 1))) {
+        nLayer = layersList[0];
       }
       if (!nLayer && layersList && layersList.length > 1 && (neighborWp.layerId || neighborWp.layerCaptureMode || neighborWp.layerAltitude || neighborWp.layerPattern)) {
         let acc = 0;
@@ -1371,6 +1379,9 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
         if (!wpLayer && layersList && typeof wpObj.layerIndex === 'number' && layersList[wpObj.layerIndex]) {
           wpLayer = layersList[wpObj.layerIndex];
         }
+        if (!wpLayer && layersList && layersList.length === 1 && (layersList[0].pattern === 'road-following' || wpObj.isRoadDroneWaypoint || (options && options.flightLayers && options.flightLayers.length === 1))) {
+          wpLayer = layersList[0];
+        }
         const targetAlt = (wpObj.layerAltitude !== undefined && wpObj.layerAltitude !== null && wpObj.layerAltitude !== 'inherit')
           ? wpObj.layerAltitude
           : (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit'
@@ -1391,6 +1402,7 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           (wpObj.isMultiOrbit || wpObj.isPhotoSphere || wpObj.isContinuousHelix || wpObj.isStarPass || wpObj.gridType === 'photo-sphere' || wpObj.gridType === 'continuous-helix' || wpObj.gridType === 'star-pass' || (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
         const hasHlSweep = (wpLayer && wpLayer.pattern === 'hyperlapse' && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined && wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch) ||
           (wpLayer && wpLayer.pattern === 'continuous-helix' && wpLayer.helixPitchStart !== undefined && wpLayer.helixPitchEnd !== undefined && wpLayer.helixPitchStart !== wpLayer.helixPitchEnd);
+        const hasRoadAutoPitch = Boolean(wpObj && (wpObj.isRoadDroneWaypoint || wpObj.layerPattern === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following')) && ((wpObj.roadFocusMode || (wpLayer && wpLayer.roadFocusMode) || 'focusRoad') !== 'custom') && wpObj.pitch !== undefined && wpObj.pitch !== null);
 
         const targetPitch = (wpObj.layerGimbalPitch !== undefined && wpObj.layerGimbalPitch !== null && wpObj.layerGimbalPitch !== 'inherit' && wpObj.layerGimbalPitch !== 'auto')
           ? wpObj.layerGimbalPitch
@@ -1398,7 +1410,7 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
             ? wpLayer.gimbalPitch
             : (options && options.gimbalPitch !== undefined && options.gimbalPitch !== null && options.gimbalPitch !== 'auto' ? options.gimbalPitch : null));
 
-        if (targetPitch !== null && !isNaN(targetPitch) && !isMultiRing && !hasHlSweep) {
+        if (targetPitch !== null && !isNaN(targetPitch) && !isMultiRing && !hasHlSweep && !hasRoadAutoPitch) {
           const parsedPitch = Math.round(parseGimbalPitch(targetPitch, -60));
           pms[i] = pms[i].replace(
             /(<wpml:gimbalPitchRotateAngle>)[^<]+(<\/wpml:gimbalPitchRotateAngle>)/g,
@@ -1493,6 +1505,9 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
       let capLayer = (wpObj && wpObj.layerId && layersListForCap) ? layersListForCap.find(l => l.id === wpObj.layerId) : null;
       if (!capLayer && layersListForCap && wpObj && typeof wpObj.layerIndex === 'number' && layersListForCap[wpObj.layerIndex]) {
         capLayer = layersListForCap[wpObj.layerIndex];
+      }
+      if (!capLayer && layersListForCap && layersListForCap.length === 1 && (layersListForCap[0].pattern === 'road-following' || (wpObj && wpObj.isRoadDroneWaypoint) || (options && options.flightLayers && options.flightLayers.length === 1))) {
+        capLayer = layersListForCap[0];
       }
       if (!capLayer && layersListForCap && layersListForCap.length > 1 && wpObj && (wpObj.layerId || wpObj.layerCaptureMode || wpObj.layerAltitude || wpObj.layerPattern)) {
         let acc = 0;

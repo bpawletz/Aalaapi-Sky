@@ -400,7 +400,11 @@ function updatePathLinesAndStats(waypoints, photoLocations, centerLat, centerLon
 
   drawFlightPathLines(waypoints, gridType);
 
-  const stats = calculateStats(waypoints, photoLocations, speed, null, null, captureMode);
+  const activeLayerForPath = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const effectivePathCaptureMode = (typeof getEffectiveLayerCaptureMode === 'function' && activeLayerForPath)
+    ? getEffectiveLayerCaptureMode(activeLayerForPath)
+    : captureMode;
+  const stats = calculateStats(waypoints, photoLocations, speed, null, null, effectivePathCaptureMode);
   updateStatsPanel(stats);
 }
 

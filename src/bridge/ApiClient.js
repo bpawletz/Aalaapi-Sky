@@ -2161,6 +2161,8 @@ async function sendDirectlyToRC2() {
 
     const waypoints = rawWps.map(wp => ({
 
+      ...wp,
+
       lat: wp.lat,
 
       lon: wp.lon,
@@ -2169,7 +2171,7 @@ async function sendDirectlyToRC2() {
 
       pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
 
-      speed: speed,
+      speed: wp.speed !== undefined && wp.speed !== null ? wp.speed : speed,
 
       heading: wp.heading,
 
@@ -2537,6 +2539,8 @@ async function sendDirectlyViaWebUsb() {
 
     const waypoints = rawWps.map(wp => ({
 
+      ...wp,
+
       lat: wp.lat,
 
       lon: wp.lon,
@@ -2545,7 +2549,7 @@ async function sendDirectlyViaWebUsb() {
 
       pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
 
-      speed: speed,
+      speed: wp.speed !== undefined && wp.speed !== null ? wp.speed : speed,
 
       heading: wp.heading,
 
