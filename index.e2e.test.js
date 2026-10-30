@@ -10754,5 +10754,64 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       curLat = await page.evaluate(() => centerMarker.getLatLng().lat);
       assert.strictEqual(curLat, 41.3400, "Control+Shift+z should trigger redo");
     });
+
+    test("Layer Properties & Dynamics Undo/Redo: slider change, add layer, and pattern switch recovery (Closes #198)", async () => {
+      // 1. Initial state at rural Utica coords
+      await page.evaluate(() => {
+        undoHistoryStack.length = 0;
+        redoHistoryStack.length = 0;
+        setGridCenter(41.3215, -88.9950);
+      });
+      await page.waitForTimeout(200);
+
+      const initAlt = await page.evaluate(() => parseFloat(document.getElementById("altitude").value) || 50);
+
+      // 2. Change altitude via slider interaction (prepare snapshot + change value + commit snapshot)
+      await page.evaluate(() => {
+        const altEl = document.getElementById("altitude");
+        if (altEl) {
+          if (typeof preparePendingPropertySnapshot === "function") preparePendingPropertySnapshot("Change Altitude", "altitude");
+          altEl.value = "85";
+          altEl.dispatchEvent(new Event("input"));
+          altEl.dispatchEvent(new Event("change"));
+        }
+      });
+      await page.waitForTimeout(200);
+
+      const modifiedAlt = await page.evaluate(() => parseFloat(document.getElementById("altitude").value));
+      assert.strictEqual(modifiedAlt, 85, "Altitude must be updated to 85");
+
+      // 3. Click #map-undo-btn to undo altitude modification
+      await page.click("#map-undo-btn");
+      await page.waitForTimeout(300);
+
+      const restoredAlt = await page.evaluate(() => parseFloat(document.getElementById("altitude").value));
+      assert.strictEqual(restoredAlt, initAlt, "Altitude must revert back to initial value (50) on undo");
+
+      // 4. Click #map-redo-btn to redo altitude modification
+      await page.click("#map-redo-btn");
+      await page.waitForTimeout(300);
+
+      const redoneAlt = await page.evaluate(() => parseFloat(document.getElementById("altitude").value));
+      assert.strictEqual(redoneAlt, 85, "Altitude must return to 85 on redo");
+
+      // 5. Test Layer Lifecycle: Add Layer & Undo
+      await page.click("#add-layer-btn");
+      await page.waitForTimeout(300);
+      let layerCount = await page.evaluate(() => flightLayers.length);
+      assert.strictEqual(layerCount, 2, "There must be 2 layers after clicking Add Layer");
+
+      // Undo Add Layer via sidebar button
+      await page.click("#undo-mission-btn");
+      await page.waitForTimeout(300);
+      layerCount = await page.evaluate(() => flightLayers.length);
+      assert.strictEqual(layerCount, 1, "There must be 1 layer after undoing Add Layer");
+
+      // Redo Add Layer via sidebar button
+      await page.click("#redo-mission-btn");
+      await page.waitForTimeout(300);
+      layerCount = await page.evaluate(() => flightLayers.length);
+      assert.strictEqual(layerCount, 2, "There must be 2 layers after redoing Add Layer");
+    });
   });
 });

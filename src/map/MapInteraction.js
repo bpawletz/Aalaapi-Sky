@@ -638,6 +638,11 @@ function clearAllPois() {
     updatePoiMarkerPopup(pois[0], 0);
   }
 
+  // During undo/redo restoration, preserve restored layer and waypoint POI associations
+  if (typeof isRestoringUndoState !== 'undefined' && isRestoringUndoState) {
+    return;
+  }
+
   const defaultPoiId = (pois[0] && pois[0].id) || null;
   const wps = getCurrentWaypoints();
   if (wps) {

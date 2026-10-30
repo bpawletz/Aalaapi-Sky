@@ -442,6 +442,8 @@ let undoHistoryStack = [];
 let redoHistoryStack = [];
 const MAX_UNDO_HISTORY = 30;
 let isRestoringUndoState = false;
+let pendingPropertySnapshot = null;
+let pendingPropertySourceId = null;
 
 function cloneWaypointData(wp) {
   if (!wp || typeof wp !== 'object') return wp;
@@ -543,8 +545,98 @@ function createMissionSnapshot(actionLabel = 'Map Action') {
           name: p.name,
           isHome: p.isHome
         }))
-      : []
+      : [],
+    globalSettings: (typeof document !== 'undefined') ? {
+      headingMode: document.getElementById('heading-mode')?.value || null,
+      captureMode: document.getElementById('capture-mode')?.value || null,
+      pathMode: document.getElementById('path-mode')?.value || null,
+      hoverTime: document.getElementById('global-hover-time')?.value || null,
+      finishAction: document.getElementById('finish-action')?.value || null,
+      maxAltitude: document.getElementById('global-max-altitude')?.value || null,
+      rthAltitude: document.getElementById('global-rth-altitude')?.value || null,
+      detourMode: (typeof globalExclusionDetourMode !== 'undefined') ? globalExclusionDetourMode : 'perimeter',
+      clearanceBuffer: (typeof globalExclusionClearanceBuffer !== 'undefined') ? globalExclusionClearanceBuffer : 5
+    } : null
   };
+}
+
+function preparePendingPropertySnapshot(actionLabel = 'Change Layer Setting', sourceId = null) {
+  if (isRestoringUndoState) return;
+  // If a pending snapshot is already open for this interaction sequence, retain the original baseline
+  if (pendingPropertySnapshot) return;
+
+  pendingPropertySnapshot = createMissionSnapshot(actionLabel);
+  pendingPropertySourceId = sourceId;
+}
+
+function hasLayerPropertiesChanged(snapshot) {
+  if (!snapshot || !snapshot.flightLayers) return true;
+  if (typeof saveActiveLayerFromUi === 'function') {
+    try { saveActiveLayerFromUi(); } catch (e) {}
+  }
+  const curLayers = (typeof flightLayers !== 'undefined') ? flightLayers : [];
+  if (snapshot.flightLayers.length !== curLayers.length) return true;
+  if (snapshot.activeLayerId !== (typeof activeLayerId !== 'undefined' ? activeLayerId : null)) return true;
+
+  try {
+    const snapStr = JSON.stringify(snapshot.flightLayers);
+    const curStr = JSON.stringify(curLayers.map(cloneLayerData));
+    if (snapStr !== curStr) return true;
+  } catch (e) {
+    return true;
+  }
+
+  // Also check global settings if present
+  if (snapshot.globalSettings && typeof document !== 'undefined') {
+    const gs = snapshot.globalSettings;
+    if (gs.headingMode && document.getElementById('heading-mode')?.value !== gs.headingMode) return true;
+    if (gs.captureMode && document.getElementById('capture-mode')?.value !== gs.captureMode) return true;
+    if (gs.pathMode && document.getElementById('path-mode')?.value !== gs.pathMode) return true;
+    if (gs.hoverTime && document.getElementById('global-hover-time')?.value !== gs.hoverTime) return true;
+    if (gs.maxAltitude && document.getElementById('global-max-altitude')?.value !== gs.maxAltitude) return true;
+    if (gs.rthAltitude && document.getElementById('global-rth-altitude')?.value !== gs.rthAltitude) return true;
+  }
+
+  return false;
+}
+
+function commitPendingPropertySnapshot(actionLabel = null, sourceId = null) {
+  if (isRestoringUndoState || !pendingPropertySnapshot) {
+    pendingPropertySnapshot = null;
+    pendingPropertySourceId = null;
+    return false;
+  }
+
+  if (sourceId && pendingPropertySourceId && sourceId !== pendingPropertySourceId) {
+    return false;
+  }
+
+  const snapshot = pendingPropertySnapshot;
+  pendingPropertySnapshot = null;
+  pendingPropertySourceId = null;
+
+  // Discard redundant snapshot if properties did not actually change
+  if (!hasLayerPropertiesChanged(snapshot)) {
+    return false;
+  }
+
+  if (actionLabel) {
+    snapshot.actionLabel = actionLabel;
+  }
+
+  undoHistoryStack.push(snapshot);
+  if (undoHistoryStack.length > MAX_UNDO_HISTORY) {
+    undoHistoryStack.shift();
+  }
+
+  redoHistoryStack.length = 0;
+  updateUndoUiState();
+  return true;
+}
+
+function cancelPendingPropertySnapshot() {
+  pendingPropertySnapshot = null;
+  pendingPropertySourceId = null;
 }
 
 function pushUndoSnapshot(actionLabel = 'Map Action') {
@@ -770,12 +862,39 @@ function restoreMissionSnapshot(snapshot) {
     }
   }
 
+  // 4b. Restore Global Failsafes & Defaults
+  if (snapshot.globalSettings && typeof document !== 'undefined') {
+    const gs = snapshot.globalSettings;
+    const setIfVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val !== null && val !== undefined) el.value = val;
+    };
+    setIfVal('heading-mode', gs.headingMode);
+    setIfVal('capture-mode', gs.captureMode);
+    setIfVal('path-mode', gs.pathMode);
+    setIfVal('global-hover-time', gs.hoverTime);
+    setIfVal('finish-action', gs.finishAction);
+    setIfVal('global-max-altitude', gs.maxAltitude);
+    setIfVal('global-rth-altitude', gs.rthAltitude);
+    if (gs.detourMode && typeof globalExclusionDetourMode !== 'undefined') {
+      globalExclusionDetourMode = gs.detourMode;
+      setIfVal('global-exclusion-detour-mode', gs.detourMode);
+    }
+    if (gs.clearanceBuffer !== undefined && typeof globalExclusionClearanceBuffer !== 'undefined') {
+      globalExclusionClearanceBuffer = gs.clearanceBuffer;
+      setIfVal('global-exclusion-clearance-buffer', gs.clearanceBuffer);
+    }
+  }
+
   // 5. Sync UI states
   if (typeof toggleUIControlsState === 'function') {
     toggleUIControlsState(importedWaypoints !== null);
   }
   if (typeof syncUiWithActiveLayer === 'function') {
     syncUiWithActiveLayer();
+  }
+  if (typeof togglePatternParameters === 'function') {
+    togglePatternParameters();
   }
   if (typeof renderLayersList === 'function') {
     renderLayersList();
@@ -864,6 +983,9 @@ if (typeof window !== 'undefined') {
   window.undoLastAction = undoLastAction;
   window.redoLastAction = redoLastAction;
   window.pushUndoSnapshot = pushUndoSnapshot;
+  window.preparePendingPropertySnapshot = preparePendingPropertySnapshot;
+  window.commitPendingPropertySnapshot = commitPendingPropertySnapshot;
+  window.cancelPendingPropertySnapshot = cancelPendingPropertySnapshot;
   window.updateUndoUiState = updateUndoUiState;
   window.undoHistoryStack = undoHistoryStack;
   window.redoHistoryStack = redoHistoryStack;

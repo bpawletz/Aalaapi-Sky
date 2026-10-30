@@ -7979,7 +7979,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.206.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.207.0</span></h1>
         </div>
       </div>
 
@@ -12601,6 +12601,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(167, 139, 250, 0.08); border: 1px solid rgba(167, 139, 250, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #c4b5fd; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎛️ Layer Properties &amp; Dynamics Undo/Redo (v1.207.0) (Closes #198)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Flight planning flexibility expanded! Aalaapi Sky now includes full Undo and Redo tracking for all <strong>Layer Properties &amp; Dynamics</strong> (altitude, speed, gimbal pitch, grid dimensions, overlap, heading mode, turnaround dynamics, terrain-follow, settling times, and camera zoom). Sliders update the map live while debouncing history snapshots, and layer operations (Add, Duplicate, Delete, Reorder, or Switching Patterns) are now completely reversible.
+            </p>
+          </div>
+          <div style="background: rgba(167, 139, 250, 0.08); border: 1px solid rgba(167, 139, 250, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #c4b5fd; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ↪️ Mission &amp; Waypoint Redo System (v1.206.0) (Closes #197)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -14943,7 +14951,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.206.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.207.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15101,6 +15109,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.207.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Layer Properties &amp; Dynamics Undo/Redo (Closes #198):</strong> Integrated full undo and redo tracking for flight parameters in Section 2 (altitude, speed, gimbal pitch, grid dimensions, overlap, heading mode, capture mode, turnaround dynamics, settling times, terrain-follow, and camera zoom) and layer operations (Add Layer, Duplicate Layer, Delete Layer, Reorder Layers, and Pattern Switches) with smooth slider drag debouncing.</li>
+              </ul>
+              <br>
               <strong style="color: var(--text-main);">Changelog (v1.206.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>Mission &amp; Waypoint Redo System (Closes #197):</strong> Added multi-step redo history stack (up to 30 snapshots) allowing pilots to redo previously undone mission and waypoint changes. Accessible via on-map floating Redo button (<code>#map-redo-btn</code>), sidebar Mission Actions Redo button (<code>#redo-mission-btn</code>), or standard keyboard shortcuts (<code>Ctrl+Y</code> and <code>Ctrl+Shift+Z</code> / <code>Cmd+Shift+Z</code>). Includes dynamic badge counts, contextual tooltips, and non-blocking toast alerts (<code>↪️ Redid: ...</code>).</li>
@@ -21672,6 +21685,8 @@ let undoHistoryStack = [];
 let redoHistoryStack = [];
 const MAX_UNDO_HISTORY = 30;
 let isRestoringUndoState = false;
+let pendingPropertySnapshot = null;
+let pendingPropertySourceId = null;
 
 function cloneWaypointData(wp) {
   if (!wp || typeof wp !== 'object') return wp;
@@ -21773,8 +21788,98 @@ function createMissionSnapshot(actionLabel = 'Map Action') {
           name: p.name,
           isHome: p.isHome
         }))
-      : []
+      : [],
+    globalSettings: (typeof document !== 'undefined') ? {
+      headingMode: document.getElementById('heading-mode')?.value || null,
+      captureMode: document.getElementById('capture-mode')?.value || null,
+      pathMode: document.getElementById('path-mode')?.value || null,
+      hoverTime: document.getElementById('global-hover-time')?.value || null,
+      finishAction: document.getElementById('finish-action')?.value || null,
+      maxAltitude: document.getElementById('global-max-altitude')?.value || null,
+      rthAltitude: document.getElementById('global-rth-altitude')?.value || null,
+      detourMode: (typeof globalExclusionDetourMode !== 'undefined') ? globalExclusionDetourMode : 'perimeter',
+      clearanceBuffer: (typeof globalExclusionClearanceBuffer !== 'undefined') ? globalExclusionClearanceBuffer : 5
+    } : null
   };
+}
+
+function preparePendingPropertySnapshot(actionLabel = 'Change Layer Setting', sourceId = null) {
+  if (isRestoringUndoState) return;
+  // If a pending snapshot is already open for this interaction sequence, retain the original baseline
+  if (pendingPropertySnapshot) return;
+
+  pendingPropertySnapshot = createMissionSnapshot(actionLabel);
+  pendingPropertySourceId = sourceId;
+}
+
+function hasLayerPropertiesChanged(snapshot) {
+  if (!snapshot || !snapshot.flightLayers) return true;
+  if (typeof saveActiveLayerFromUi === 'function') {
+    try { saveActiveLayerFromUi(); } catch (e) {}
+  }
+  const curLayers = (typeof flightLayers !== 'undefined') ? flightLayers : [];
+  if (snapshot.flightLayers.length !== curLayers.length) return true;
+  if (snapshot.activeLayerId !== (typeof activeLayerId !== 'undefined' ? activeLayerId : null)) return true;
+
+  try {
+    const snapStr = JSON.stringify(snapshot.flightLayers);
+    const curStr = JSON.stringify(curLayers.map(cloneLayerData));
+    if (snapStr !== curStr) return true;
+  } catch (e) {
+    return true;
+  }
+
+  // Also check global settings if present
+  if (snapshot.globalSettings && typeof document !== 'undefined') {
+    const gs = snapshot.globalSettings;
+    if (gs.headingMode && document.getElementById('heading-mode')?.value !== gs.headingMode) return true;
+    if (gs.captureMode && document.getElementById('capture-mode')?.value !== gs.captureMode) return true;
+    if (gs.pathMode && document.getElementById('path-mode')?.value !== gs.pathMode) return true;
+    if (gs.hoverTime && document.getElementById('global-hover-time')?.value !== gs.hoverTime) return true;
+    if (gs.maxAltitude && document.getElementById('global-max-altitude')?.value !== gs.maxAltitude) return true;
+    if (gs.rthAltitude && document.getElementById('global-rth-altitude')?.value !== gs.rthAltitude) return true;
+  }
+
+  return false;
+}
+
+function commitPendingPropertySnapshot(actionLabel = null, sourceId = null) {
+  if (isRestoringUndoState || !pendingPropertySnapshot) {
+    pendingPropertySnapshot = null;
+    pendingPropertySourceId = null;
+    return false;
+  }
+
+  if (sourceId && pendingPropertySourceId && sourceId !== pendingPropertySourceId) {
+    return false;
+  }
+
+  const snapshot = pendingPropertySnapshot;
+  pendingPropertySnapshot = null;
+  pendingPropertySourceId = null;
+
+  // Discard redundant snapshot if properties did not actually change
+  if (!hasLayerPropertiesChanged(snapshot)) {
+    return false;
+  }
+
+  if (actionLabel) {
+    snapshot.actionLabel = actionLabel;
+  }
+
+  undoHistoryStack.push(snapshot);
+  if (undoHistoryStack.length > MAX_UNDO_HISTORY) {
+    undoHistoryStack.shift();
+  }
+
+  redoHistoryStack.length = 0;
+  updateUndoUiState();
+  return true;
+}
+
+function cancelPendingPropertySnapshot() {
+  pendingPropertySnapshot = null;
+  pendingPropertySourceId = null;
 }
 
 function pushUndoSnapshot(actionLabel = 'Map Action') {
@@ -22000,12 +22105,39 @@ function restoreMissionSnapshot(snapshot) {
     }
   }
 
+  // 4b. Restore Global Failsafes & Defaults
+  if (snapshot.globalSettings && typeof document !== 'undefined') {
+    const gs = snapshot.globalSettings;
+    const setIfVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val !== null && val !== undefined) el.value = val;
+    };
+    setIfVal('heading-mode', gs.headingMode);
+    setIfVal('capture-mode', gs.captureMode);
+    setIfVal('path-mode', gs.pathMode);
+    setIfVal('global-hover-time', gs.hoverTime);
+    setIfVal('finish-action', gs.finishAction);
+    setIfVal('global-max-altitude', gs.maxAltitude);
+    setIfVal('global-rth-altitude', gs.rthAltitude);
+    if (gs.detourMode && typeof globalExclusionDetourMode !== 'undefined') {
+      globalExclusionDetourMode = gs.detourMode;
+      setIfVal('global-exclusion-detour-mode', gs.detourMode);
+    }
+    if (gs.clearanceBuffer !== undefined && typeof globalExclusionClearanceBuffer !== 'undefined') {
+      globalExclusionClearanceBuffer = gs.clearanceBuffer;
+      setIfVal('global-exclusion-clearance-buffer', gs.clearanceBuffer);
+    }
+  }
+
   // 5. Sync UI states
   if (typeof toggleUIControlsState === 'function') {
     toggleUIControlsState(importedWaypoints !== null);
   }
   if (typeof syncUiWithActiveLayer === 'function') {
     syncUiWithActiveLayer();
+  }
+  if (typeof togglePatternParameters === 'function') {
+    togglePatternParameters();
   }
   if (typeof renderLayersList === 'function') {
     renderLayersList();
@@ -22094,6 +22226,9 @@ if (typeof window !== 'undefined') {
   window.undoLastAction = undoLastAction;
   window.redoLastAction = redoLastAction;
   window.pushUndoSnapshot = pushUndoSnapshot;
+  window.preparePendingPropertySnapshot = preparePendingPropertySnapshot;
+  window.commitPendingPropertySnapshot = commitPendingPropertySnapshot;
+  window.cancelPendingPropertySnapshot = cancelPendingPropertySnapshot;
   window.updateUndoUiState = updateUndoUiState;
   window.undoHistoryStack = undoHistoryStack;
   window.redoHistoryStack = redoHistoryStack;
@@ -27494,6 +27629,7 @@ function updateLayerPoiSelectOptions() {
 }
 
 function saveActiveLayerFromUi(targetLayer) {
+  if (typeof isRestoringUndoState !== 'undefined' && isRestoringUndoState) return;
   const layer = targetLayer || getActiveLayer();
   if (!layer) return;
 
@@ -28347,6 +28483,9 @@ function setActiveLayer(layerId) {
 }
 
 function addFlightLayer(pattern = 'double') {
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Add Layer');
+  }
   saveActiveLayerFromUi();
   const newIndex = flightLayers.length;
 
@@ -28370,11 +28509,17 @@ function addFlightLayer(pattern = 'double') {
     initCenterLon
   );
 
-  // Automatically create dedicated POI for this new layer
+  // Automatically create dedicated POI for this new layer (suppress duplicate undo snapshot)
   if (initCenterLat !== null && initCenterLon !== null) {
-    const layerPoi = addPoi(initCenterLat, initCenterLon, `Layer ${newIndex + 1} Target`);
-    if (layerPoi) {
-      newLayer.targetPoiId = layerPoi.id;
+    const prevRestoring = (typeof isRestoringUndoState !== 'undefined') ? isRestoringUndoState : false;
+    if (typeof isRestoringUndoState !== 'undefined') isRestoringUndoState = true;
+    try {
+      const layerPoi = addPoi(initCenterLat, initCenterLon, `Layer ${newIndex + 1} Target`);
+      if (layerPoi) {
+        newLayer.targetPoiId = layerPoi.id;
+      }
+    } finally {
+      if (typeof isRestoringUndoState !== 'undefined') isRestoringUndoState = prevRestoring;
     }
   }
 
@@ -28393,6 +28538,9 @@ function addFlightLayer(pattern = 'double') {
 }
 
 function duplicateFlightLayer(layerId) {
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Duplicate Layer');
+  }
   saveActiveLayerFromUi();
   const idx = flightLayers.findIndex(l => l.id === layerId);
   if (idx === -1) return;
@@ -28413,6 +28561,10 @@ function duplicateFlightLayer(layerId) {
 function deleteFlightLayer(layerId) {
   const idx = flightLayers.findIndex(l => l.id === layerId);
   if (idx === -1) return;
+
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Delete Layer');
+  }
 
   if (flightLayers.length <= 1) {
     // Single layer deletion: clear its waypoints & disable it so all waypoints are removed from map
@@ -28473,6 +28625,9 @@ function cleanUnusedLayerPois() {
 
 function reorderFlightLayers(fromIndex, toIndex) {
   if (fromIndex < 0 || fromIndex >= flightLayers.length || toIndex < 0 || toIndex >= flightLayers.length) return;
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Reorder Layers');
+  }
   const item = flightLayers.splice(fromIndex, 1)[0];
   flightLayers.splice(toIndex, 0, item);
   if (typeof updateGrid === 'function') updateGrid();
@@ -28482,6 +28637,9 @@ function reorderFlightLayers(fromIndex, toIndex) {
 function toggleFlightLayerVisibility(layerId) {
   const layer = flightLayers.find(l => l.id === layerId);
   if (!layer) return;
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Toggle Layer Visibility');
+  }
   layer.enabled = !layer.enabled;
   if (typeof updateGrid === 'function') updateGrid();
   renderLayersList();
@@ -32697,6 +32855,74 @@ function exitInteractiveUITour() {
 function initUIEventListeners() {
   initLayerManager();
 
+  function getControlPropertyLabel(id) {
+    const map = {
+      'grid-width': 'Grid Width',
+      'grid-height': 'Grid Height',
+      'grid-rotation': 'Grid Rotation',
+      'front-overlap': 'Front Overlap',
+      'side-overlap': 'Side Overlap',
+      'altitude': 'Altitude',
+      'speed': 'Flight Speed',
+      'gimbal-pitch': 'Gimbal Pitch',
+      'camera-zoom': 'Camera Zoom',
+      'camera-aspect-ratio': 'Camera Aspect Ratio',
+      'road-offset': 'Road Offset',
+      'road-snap': 'Road Snap',
+      'road-focus-mode': 'Road Focus Mode',
+      'layer-capture-mode': 'Capture Mode',
+      'layer-path-mode': 'Path Mode',
+      'layer-heading-mode': 'Heading Mode',
+      'layer-poi-select': 'Layer POI',
+      'layer-turnaround-overshoot': 'Turnaround Overshoot',
+      'layer-turnaround-speed': 'Turnaround Speed',
+      'layer-corner-damping': 'Corner Damping',
+      'layer-hover-time-mode': 'Hover Time Mode',
+      'layer-hover-time-slider': 'Hover Time',
+      'layer-auto-settling-toggle': 'Auto-Settling',
+      'layer-base-settling-slider': 'Base Settling Time',
+      'layer-major-turn-settling-slider': 'Major Turn Settling',
+      'layer-mod-turn-settling-slider': 'Moderate Turn Settling',
+      'layer-pitch-settling-slider': 'Pitch Settling Time',
+      'layer-terrain-follow': 'Terrain Follow',
+      'layer-target-agl': 'Target AGL',
+      'layer-name-input': 'Layer Name',
+      'boundary-stroke-color': 'Boundary Stroke Color',
+      'boundary-line-style': 'Boundary Line Style',
+      'boundary-fill-opacity': 'Boundary Fill Opacity',
+      'boundary-elevation': 'Boundary Elevation',
+      'fiducial-default-type': 'Fiducial Type',
+      'fiducial-default-role': 'Fiducial Role',
+      'fiducial-default-size': 'Fiducial Size',
+      'fiducial-marker-color': 'Fiducial Color',
+      'heading-mode': 'Global Heading Mode',
+      'capture-mode': 'Global Capture Mode',
+      'path-mode': 'Global Path Mode',
+      'global-hover-time': 'Global Hover Time',
+      'finish-action': 'Finish Action',
+      'global-max-altitude': 'Global Max Altitude',
+      'global-rth-altitude': 'Safe RTH Altitude'
+    };
+    return map[id] || id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  function wireUndoPropertyTracking(el, label, id) {
+    if (!el || typeof el.addEventListener !== 'function') return;
+    const onStart = () => {
+      if (typeof preparePendingPropertySnapshot === 'function') {
+        preparePendingPropertySnapshot(`Change ${label}`, id);
+      }
+    };
+    el.addEventListener('pointerdown', onStart);
+    el.addEventListener('focusin', onStart);
+    el.addEventListener('keydown', onStart);
+    el.addEventListener('change', () => {
+      if (typeof commitPendingPropertySnapshot === 'function') {
+        commitPendingPropertySnapshot(`Change ${label}`, id);
+      }
+    });
+  }
+
   // Get all controls
   const controls = [...CONTROLS_LIST];
 
@@ -32704,6 +32930,8 @@ function initUIEventListeners() {
     const el = document.getElementById(id);
     if (!el) return;
     if (id === 'grid-type') return;
+
+    wireUndoPropertyTracking(el, getControlPropertyLabel(id), id);
     
     // Listen to changes to trigger redrawing of the grid
     el.addEventListener('input', () => {
@@ -32772,6 +33000,22 @@ function initUIEventListeners() {
       updateGrid();
       saveAllSettingsToLocalStorage();
     });
+  });
+
+  const additionalLayerControls = [
+    'layer-capture-mode', 'layer-path-mode', 'layer-heading-mode', 'layer-poi-select',
+    'layer-turnaround-overshoot', 'layer-turnaround-speed', 'layer-corner-damping',
+    'layer-hover-time-mode', 'layer-hover-time-slider', 'layer-auto-settling-toggle',
+    'layer-base-settling-slider', 'layer-major-turn-settling-slider', 'layer-mod-turn-settling-slider',
+    'layer-pitch-settling-slider', 'layer-terrain-follow', 'layer-target-agl',
+    'layer-name-input', 'road-snap', 'road-focus-mode',
+    'boundary-stroke-color', 'boundary-line-style', 'boundary-fill-opacity', 'boundary-elevation',
+    'fiducial-default-type', 'fiducial-default-role', 'fiducial-default-size', 'fiducial-marker-color',
+    'global-max-altitude', 'global-rth-altitude'
+  ];
+  additionalLayerControls.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) wireUndoPropertyTracking(el, getControlPropertyLabel(id), id);
   });
 
   const roadSnapEl = document.getElementById('road-snap');
@@ -37538,6 +37782,12 @@ function togglePatternParameters() {
 
   if (activeLayer) {
     if (isPatternChanging) {
+      if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+        const patternName = (typeof getPatternDisplayName === 'function') ? getPatternDisplayName(gridType) : gridType;
+        if (gridTypeEl) gridTypeEl.value = previousPattern;
+        pushUndoSnapshot(`Change Pattern: ${patternName}`);
+        if (gridTypeEl) gridTypeEl.value = gridType;
+      }
       if (previousPattern === 'road-following') {
         activeLayer.roadWaypoints = [];
         roadWaypoints = [];
@@ -38730,6 +38980,11 @@ function togglePatternParameters() {
     } else {
       headingModeContainer.style.display = 'block';
     }
+  }
+
+  if (typeof isRestoringUndoState !== 'undefined' && isRestoringUndoState) {
+    if (typeof updateLayerHierarchyBadge === 'function') updateLayerHierarchyBadge();
+    return;
   }
 
   const isProcedural = (gridType !== 'freeform' && gridType !== 'road-following' && gridType !== 'hyperlapse');
@@ -40998,6 +41253,11 @@ function clearAllPois() {
       name: "POI 0 (Center)"
     };
     updatePoiMarkerPopup(pois[0], 0);
+  }
+
+  // During undo/redo restoration, preserve restored layer and waypoint POI associations
+  if (typeof isRestoringUndoState !== 'undefined' && isRestoringUndoState) {
+    return;
   }
 
   const defaultPoiId = (pois[0] && pois[0].id) || null;
