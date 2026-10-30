@@ -83,7 +83,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.210.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.210.2</span></h1>
         </div>
       </div>
 
@@ -7086,7 +7086,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.210.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.210.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7246,6 +7246,12 @@
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.210.2):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Terminal Waypoint Survey Gimbal Pitch Preservation (Closes #205):</strong> Fixed an issue where 2D Nadir Grid mapping missions captured the final two survey photos (Photos #46 and #47 at WP 23) with the camera gimbal pitched at horizon (<code>0.0°</code>) instead of nadir (<code>-90.0°</code>). Restricted terminal horizon restoration to 360° Photo Sphere workflows and single-node stationary inspections, ensuring multi-waypoint mapping surveys (<code>single</code>, <code>crosshatch</code>, <code>corridor</code>, <code>facade</code>, etc.) preserve their true survey pitch without triggering in-flight approach interpolation.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.210.1):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">

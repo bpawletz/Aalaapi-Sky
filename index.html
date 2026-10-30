@@ -7979,7 +7979,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.210.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.210.2</span></h1>
         </div>
       </div>
 
@@ -14982,7 +14982,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.210.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.210.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15142,6 +15142,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.210.2):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Terminal Waypoint Survey Gimbal Pitch Preservation (Closes #205):</strong> Fixed an issue where 2D Nadir Grid mapping missions captured the final two survey photos (Photos #46 and #47 at WP 23) with the camera gimbal pitched at horizon (<code>0.0°</code>) instead of nadir (<code>-90.0°</code>). Restricted terminal horizon restoration to 360° Photo Sphere workflows and single-node stationary inspections, ensuring multi-waypoint mapping surveys (<code>single</code>, <code>crosshatch</code>, <code>corridor</code>, <code>facade</code>, etc.) preserve their true survey pitch without triggering in-flight approach interpolation.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.210.1):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -52515,14 +52521,16 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // Terminal Waypoint Gimbal Horizon Restoration:
-    // When finishing the final waypoint of a mission, if the camera gimbal is pitched steeply downwards (<= -45° or Photo Sphere nadir),
-    // restore gimbal pitch to 0.0° (horizon) and dwell briefly (2.0s).
-    // This ensures DJI Fly APAS omnidirectional obstacle avoidance sensors and forward vision sensors have clear line of sight,
-    // preventing false "Obstacle Detected" aborts into GPSAtti when transitioning to finishAction (goHome, autoLand, etc.).
+    // Only apply terminal horizon restoration to Photo Sphere workflows (where 360° panos end at nadir in a stationary cluster)
+    // or when explicitly requested. NEVER apply to multi-waypoint mapping surveys (single/double grid, corridor, facade, etc.)
+    // because injecting gimbalRotate(0°) into an active survey photo waypoint causes DJI Fly to interpolate pitch to 0°
+    // during the approach leg, ruining the final survey photo (Issue #205).
     const isLastMissionWaypoint = (idx === waypoints.length - 1);
-    const isSteepDownwardPitch = (effectivePitch <= -45) || isPhotoSphere || (wp && (wp.isPhotoSpherePoint || wp.gridType === 'photo-sphere' || wp.layerPattern === 'photo-sphere'));
+    const isPhotoSphereMission = isPhotoSphere || Boolean(wp && (wp.isPhotoSpherePoint || wp.gridType === 'photo-sphere' || wp.layerPattern === 'photo-sphere' || wp.isPhotoSphereActionGroup)) ||
+      Boolean(opts && (opts.gridType === 'photo-sphere' || opts.pattern === 'photo-sphere' || opts.flightPattern === 'photo-sphere' || opts.isPhotoSphere));
+    const requiresTerminalRestoration = isPhotoSphereMission || Boolean(opts && opts.terminalHorizonRestoration === true);
     const hasPhotoOrCaptureAction = waypointActions.some(act => act.includes('takePhoto') || act.includes('stopRecord') || act.includes('startRecord'));
-    if (isLastMissionWaypoint && isSteepDownwardPitch && hasPhotoOrCaptureAction) {
+    if (isLastMissionWaypoint && requiresTerminalRestoration && hasPhotoOrCaptureAction) {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
@@ -53311,8 +53319,9 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
 
         if (targetPitch !== null && !isNaN(targetPitch) && !isMultiRing && !hasHlSweep && !hasRoadAutoPitch) {
           const parsedPitch = Math.round(parseGimbalPitch(targetPitch, -60));
+          // Only update waypoint-level pitch setpoints, never mutate terminal horizon restoration actions (Action 9991, pitch 0)
           pms[i] = pms[i].replace(
-            /(<wpml:gimbalPitchRotateAngle>)[^<]+(<\/wpml:gimbalPitchRotateAngle>)/g,
+            /(<wpml:actionId>(?!9991)\d+<\/wpml:actionId>[\s\S]*?<wpml:gimbalPitchRotateAngle>)[^<]+(<\/wpml:gimbalPitchRotateAngle>)/g,
             `$1${parsedPitch}$2`
           );
         }
@@ -53639,17 +53648,28 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
   }
 
   // Terminal Gimbal Horizon Restoration Audit:
-  // When finishing the final waypoint of a mission, if the camera gimbal is pitched steeply downwards (<= -45° or Photo Sphere nadir),
+  // When finishing the final waypoint of a Photo Sphere or single-node inspection mission, if the camera gimbal is pitched steeply downwards (<= -45° or Photo Sphere nadir),
   // ensure gimbal pitch is restored to 0.0° (horizon) before finishAction (goHome, autoLand, etc.).
+  // IMPORTANT: For multi-waypoint mapping surveys (single/double grid, corridor, crosshatch, etc.),
+  // do NOT inject gimbalRotate(0°) into active survey photo waypoints, as DJI Fly interpolates the gimbal pitch
+  // from target pitch (e.g. -90°) to 0° across the preceding approach leg, causing the final survey photo to be captured at horizon (Issue #205).
   const lastPlacemarkIndex = fixedWpml.lastIndexOf('<Placemark>');
   if (lastPlacemarkIndex !== -1) {
-    const lastPlacemark = fixedWpml.substring(lastPlacemarkIndex);
-    const hasLastPhoto = lastPlacemark.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
-    const pitchMatch = lastPlacemark.match(/<wpml:waypointGimbalPitchAngle>([^<]+)<\/wpml:waypointGimbalPitchAngle>/);
-    const terminalPitch = pitchMatch ? parseFloat(pitchMatch[1]) : 0;
-    const hasTerminalRestoration = /(<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>[\s\S]*?<wpml:actionActuatorFunc>gimbalRotate<\/wpml:actionActuatorFunc>[\s\S]*?<wpml:gimbalPitchRotateAngle>0(?:\.0+)?<\/wpml:gimbalPitchRotateAngle>)/.test(lastPlacemark);
+    const isMultiWpSurvey = (options && (options.gridType === 'single' || options.gridType === 'double' || options.gridType === 'crosshatch' || options.gridType === 'corridor' || options.gridType === 'facade' || options.flightPattern === 'single' || options.flightPattern === 'double' || options.flightPattern === 'crosshatch' || options.flightPattern === 'corridor')) ||
+      (options && Array.isArray(options.waypoints) && options.waypoints.length > 1 && !options.waypoints.some(w => w && (w.isPhotoSpherePoint || w.gridType === 'photo-sphere' || w.layerPattern === 'photo-sphere')));
+    const isPhotoSphereMission = (options && (options.gridType === 'photo-sphere' || options.pattern === 'photo-sphere' || options.flightPattern === 'photo-sphere' || options.isPhotoSphere)) ||
+      (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'photo-sphere' || w.isPhotoSphere || w.isPhotoSpherePoint || w.layerPattern === 'photo-sphere')));
+    const isSingleNodeInspection = (fixedWpml.split('<Placemark>').length === 2); // exactly 1 placemark
+    const allowRestoration = (isPhotoSphereMission || isSingleNodeInspection || (options && options.terminalHorizonRestoration === true)) && !isMultiWpSurvey;
 
-    if (hasLastPhoto && terminalPitch <= -45 && !hasTerminalRestoration && lastPlacemark.includes('</wpml:actionGroup>')) {
+    if (allowRestoration) {
+      const lastPlacemark = fixedWpml.substring(lastPlacemarkIndex);
+      const hasLastPhoto = lastPlacemark.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
+      const pitchMatch = lastPlacemark.match(/<wpml:waypointGimbalPitchAngle>([^<]+)<\/wpml:waypointGimbalPitchAngle>/);
+      const terminalPitch = pitchMatch ? parseFloat(pitchMatch[1]) : 0;
+      const hasTerminalRestoration = /(<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>[\s\S]*?<wpml:actionActuatorFunc>gimbalRotate<\/wpml:actionActuatorFunc>[\s\S]*?<wpml:gimbalPitchRotateAngle>0(?:\.0+)?<\/wpml:gimbalPitchRotateAngle>)/.test(lastPlacemark);
+
+      if (hasLastPhoto && terminalPitch <= -45 && !hasTerminalRestoration && lastPlacemark.includes('</wpml:actionGroup>')) {
       const restoreBlock = `          <wpml:action>
             <wpml:actionId>9991</wpml:actionId>
             <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
@@ -53676,6 +53696,7 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           </wpml:action>\n`;
       const updatedLastPlacemark = lastPlacemark.replace('</wpml:actionGroup>', `${restoreBlock}        </wpml:actionGroup>`);
       fixedWpml = fixedWpml.substring(0, lastPlacemarkIndex) + updatedLastPlacemark;
+    }
     }
   }
 
