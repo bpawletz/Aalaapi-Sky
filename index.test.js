@@ -37797,3 +37797,140 @@ describe('Mission & Waypoint Undo System (v1.205.0) (Closes #196)', () => {
     assert.strictEqual(undoHistoryStack[0].actionLabel, 'Test Action 10');
   });
 });
+
+
+describe('Mission & Waypoint Redo System (v1.206.0) (Closes #197)', () => {
+  const prevStubs = global._stubElements;
+
+  beforeEach(() => {
+    importedWaypoints = null;
+    importedPhotos = null;
+    importedFileName = '';
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+    const mockEl = (val) => ({
+      value: val,
+      disabled: false,
+      closest: () => ({ style: {} }),
+      classList: { add: () => {}, remove: () => {}, contains: () => false },
+      style: {}
+    });
+    global._stubElements = {
+      'grid-type': mockEl('double'),
+      'grid-width': mockEl('100'),
+      'grid-height': mockEl('100'),
+      'grid-rotation': mockEl('0'),
+      'front-overlap': mockEl('80'),
+      'side-overlap': mockEl('75'),
+      'altitude': mockEl('50'),
+      'speed': mockEl('4'),
+      'gimbal-pitch': mockEl('-60')
+    };
+    flightLayers = [createDefaultLayer('layer-1', 'Layer 1: 3D Double Grid', 0, 'double')];
+    activeLayerId = flightLayers[0].id;
+    let mLat = 41.3215;
+    let mLon = -88.9950;
+    centerMarker = {
+      getLatLng: () => ({ lat: mLat, lng: mLon }),
+      setLatLng: (ll) => {
+        mLat = Array.isArray(ll) ? ll[0] : (ll.lat !== undefined ? ll.lat : mLat);
+        mLon = Array.isArray(ll) ? ll[1] : (ll.lng !== undefined ? ll.lng : mLon);
+      },
+      openPopup: () => {},
+      on: () => {},
+      addTo: () => centerMarker
+    };
+  });
+
+  after(() => {
+    global._stubElements = prevStubs;
+  });
+
+  test('Version consistency for v1.206.0 across package.json, CHANGELOG.md, index_template.html and index.html', () => {
+    assertVersionConsistency('1.206.0');
+  });
+
+  test('RedoManager: redoLastAction, redoHistoryStack management, and bidirectional undo-redo cycle', () => {
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+    assert.strictEqual(redoHistoryStack.length, 0);
+
+    const lat1 = 41.3215;
+    const lon1 = -88.9950;
+    setGridCenter(lat1, lon1);
+    const countAfterFirst = undoHistoryStack.length;
+
+    const lat2 = 41.3300;
+    const lon2 = -88.9800;
+    setGridCenter(lat2, lon2);
+    assert.strictEqual(centerMarker.getLatLng().lat, lat2);
+    assert.strictEqual(centerMarker.getLatLng().lng, lon2);
+    assert.strictEqual(undoHistoryStack.length, countAfterFirst + 1);
+
+    // Initial Redo with empty redoHistoryStack should return false
+    assert.strictEqual(redoLastAction(), false);
+
+    // Undo step
+    const undone = undoLastAction();
+    assert.strictEqual(undone, true);
+    assert.strictEqual(centerMarker.getLatLng().lat, lat1, 'Latitude restored to lat1');
+    assert.strictEqual(centerMarker.getLatLng().lng, lon1, 'Longitude restored to lon1');
+    assert.strictEqual(redoHistoryStack.length, 1, 'redoHistoryStack should contain 1 item after undo');
+
+    // Redo step
+    const redone = redoLastAction();
+    assert.strictEqual(redone, true);
+    assert.strictEqual(centerMarker.getLatLng().lat, lat2, 'Latitude restored to lat2 on redo');
+    assert.strictEqual(centerMarker.getLatLng().lng, lon2, 'Longitude restored to lon2 on redo');
+    assert.strictEqual(redoHistoryStack.length, 0, 'redoHistoryStack should be empty after redo');
+
+    // Subsequent Undo step returns to lat1
+    const undoneAgain = undoLastAction();
+    assert.strictEqual(undoneAgain, true);
+    assert.strictEqual(centerMarker.getLatLng().lat, lat1);
+    assert.strictEqual(redoHistoryStack.length, 1);
+  });
+
+  test('RedoManager: New mutating action clears redoHistoryStack', () => {
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+
+    const lat1 = 41.3215;
+    const lon1 = -88.9950;
+    setGridCenter(lat1, lon1);
+
+    const lat2 = 41.3300;
+    const lon2 = -88.9800;
+    setGridCenter(lat2, lon2);
+
+    // Undo -> creates redo snapshot
+    assert.strictEqual(undoLastAction(), true);
+    assert.strictEqual(redoHistoryStack.length, 1);
+
+    // Now perform a new mutating action (e.g. setGridCenter to lat3)
+    const lat3 = 41.3400;
+    const lon3 = -88.9700;
+    setGridCenter(lat3, lon3);
+
+    // Verify redo history stack was cleared
+    assert.strictEqual(redoHistoryStack.length, 0, 'New action must clear redoHistoryStack');
+    assert.strictEqual(redoLastAction(), false, 'Redo after new action must fail');
+  });
+
+  test('RedoManager: Max redo stack size bound (MAX_UNDO_HISTORY)', () => {
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+
+    // Populate undo stack with 35 items
+    for (let i = 0; i < 35; i++) {
+      pushUndoSnapshot('Step ' + i);
+    }
+    assert.strictEqual(undoHistoryStack.length, 30);
+
+    // Perform 30 undos -> should populate redoHistoryStack
+    for (let i = 0; i < 30; i++) {
+      undoLastAction();
+    }
+    assert.strictEqual(redoHistoryStack.length, 30, 'redoHistoryStack must cap at MAX_UNDO_HISTORY (30)');
+  });
+});

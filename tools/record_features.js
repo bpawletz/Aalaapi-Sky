@@ -3167,6 +3167,49 @@ const scenarios = [
       await page.click('#undo-mission-btn');
       await page.waitForTimeout(1500);
     }
+  },
+  {
+    id: 'feature_redo_system',
+    name: 'Mission & Waypoint Redo System (Ctrl+Y / Ctrl+Shift+Z)',
+    issueRef: 'Issue #197',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 1. Place mission center at rural Utica coords
+      await page.evaluate(() => {
+        setGridCenter(41.3215, -88.9950);
+      });
+      await page.waitForTimeout(1000);
+
+      // 2. Relocate center to second position
+      await page.evaluate(() => {
+        setGridCenter(41.3320, -88.9820);
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Click the floating Map Undo button (#map-undo-btn)
+      await page.click('#map-undo-btn');
+      await page.waitForTimeout(1200);
+
+      // 4. Click the floating Map Redo button (#map-redo-btn)
+      await page.click('#map-redo-btn');
+      await page.waitForTimeout(1500);
+
+      // 5. Test sidebar Undo and Redo buttons
+      await page.click('#undo-mission-btn');
+      await page.waitForTimeout(1000);
+
+      await page.click('#redo-mission-btn');
+      await page.waitForTimeout(1500);
+
+      // 6. Test Ctrl+Y keyboard shortcut
+      await page.keyboard.press('Control+z');
+      await page.waitForTimeout(1000);
+
+      await page.keyboard.press('Control+y');
+      await page.waitForTimeout(1500);
+    }
   }
 ];
 

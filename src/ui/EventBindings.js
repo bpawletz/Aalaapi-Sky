@@ -3143,6 +3143,15 @@ function initUIEventListeners() {
     });
   }
 
+  const redoMissionBtn = document.getElementById('redo-mission-btn');
+  if (redoMissionBtn) {
+    redoMissionBtn.addEventListener('click', () => {
+      if (typeof redoLastAction === 'function') {
+        redoLastAction();
+      }
+    });
+  }
+
   const mapUndoBtn = document.getElementById('map-undo-btn');
   if (mapUndoBtn) {
     mapUndoBtn.addEventListener('click', () => {
@@ -3152,9 +3161,24 @@ function initUIEventListeners() {
     });
   }
 
-  // Ctrl+Z / Cmd+Z Keyboard Shortcut for Map & Mission Undo
+  const mapRedoBtn = document.getElementById('map-redo-btn');
+  if (mapRedoBtn) {
+    mapRedoBtn.addEventListener('click', () => {
+      if (typeof redoLastAction === 'function') {
+        redoLastAction();
+      }
+    });
+  }
+
+  // Ctrl+Z / Cmd+Z (Undo) and Ctrl+Y / Ctrl+Shift+Z / Cmd+Shift+Z (Redo) Shortcuts
   document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+    if (!e.ctrlKey && !e.metaKey) return;
+
+    const isUndo = (e.key === 'z' || e.key === 'Z') && !e.shiftKey;
+    const isRedo = ((e.key === 'y' || e.key === 'Y') && !e.shiftKey) ||
+                   ((e.key === 'z' || e.key === 'Z') && e.shiftKey);
+
+    if (isUndo || isRedo) {
       const activeEl = document.activeElement;
       if (activeEl) {
         const tag = activeEl.tagName ? activeEl.tagName.toLowerCase() : '';
@@ -3163,8 +3187,10 @@ function initUIEventListeners() {
         }
       }
       e.preventDefault();
-      if (typeof undoLastAction === 'function') {
+      if (isUndo && typeof undoLastAction === 'function') {
         undoLastAction();
+      } else if (isRedo && typeof redoLastAction === 'function') {
+        redoLastAction();
       }
     }
   });
