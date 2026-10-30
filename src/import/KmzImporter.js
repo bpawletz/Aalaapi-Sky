@@ -2253,6 +2253,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
 
   if (saveBtn) {
     saveBtn.addEventListener('click', () => {
+      if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+        pushUndoSnapshot('Save Waypoint Override');
+      }
       unbindRevert();
       
       const altVal = parseFloat(altSlider.value);
@@ -2377,6 +2380,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
 
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
+      if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+        pushUndoSnapshot('Reset Waypoint to Origin');
+      }
       isSaved = true;
       isReverted = true;
       unbindRevert();

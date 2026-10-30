@@ -47,7 +47,104 @@ function initUIEventListeners() {
       'global-hover-time': 'Global Hover Time',
       'finish-action': 'Finish Action',
       'global-max-altitude': 'Global Max Altitude',
-      'global-rth-altitude': 'Safe RTH Altitude'
+      'global-rth-altitude': 'Safe RTH Altitude',
+      'global-custom-heading': 'Global Custom Heading',
+      'global-terrain-follow': 'Global Terrain Follow',
+      'global-target-agl': 'Global Target AGL',
+      'global-max-slope-angle': 'Global Max Slope Angle',
+      'global-terrain-source': 'Global Terrain Source',
+      'target-splat-framing-mode': 'Splat Framing Mode',
+      'target-perimeter-pass': 'Perimeter Orbit Pass',
+      'target-perimeter-standoff': 'Perimeter Standoff',
+      'target-perimeter-alt': 'Perimeter Altitude',
+      'target-perimeter-pitch': 'Perimeter Pitch',
+      'photo-sphere-ring-zenith': 'Photo Sphere Zenith Ring',
+      'photo-sphere-ring-1': 'Photo Sphere Ring 1 (+30°)',
+      'photo-sphere-ring-2': 'Photo Sphere Ring 2 (0°)',
+      'photo-sphere-ring-3': 'Photo Sphere Ring 3 (-30°)',
+      'photo-sphere-ring-nadir': 'Photo Sphere Nadir Ring',
+      'photo-sphere-mode': 'Photo Sphere Mode',
+      'photo-sphere-shots-per-ring': 'Photo Sphere Shots Per Ring',
+      'photo-sphere-settling-time': 'Photo Sphere Settling Time',
+      'photo-sphere-aeb-mode': 'Photo Sphere AEB Mode',
+      'photo-sphere-aeb': 'Photo Sphere AEB',
+      'hyperlapse-waypoint-mode': 'Hyperlapse Waypoint Mode',
+      'hyperlapse-interval': 'Hyperlapse Interval',
+      'hyperlapse-start-pitch': 'Hyperlapse Start Pitch',
+      'hyperlapse-end-pitch': 'Hyperlapse End Pitch',
+      'hyperlapse-heading-mode': 'Hyperlapse Heading Mode',
+      'hyperlapse-start-heading': 'Hyperlapse Start Heading',
+      'hyperlapse-end-heading': 'Hyperlapse End Heading',
+      'light-art-preset': 'Light Art Preset',
+      'light-art-orientation': 'Light Art Orientation',
+      'light-art-tilt': 'Light Art Tilt',
+      'light-art-size-mode': 'Light Art Size Mode',
+      'light-art-target-duration': 'Light Art Target Duration',
+      'light-art-radius': 'Light Art Radius',
+      'light-art-turns': 'Light Art Turns',
+      'light-art-climb': 'Light Art Climb',
+      'light-art-points': 'Light Art Points',
+      'light-art-star-ratio': 'Light Art Star Ratio',
+      'light-art-camera-azimuth': 'Light Art Camera Azimuth',
+      'light-art-min-clearance': 'Light Art Min Clearance',
+      'light-art-enforce-clearance': 'Light Art Enforce Clearance',
+      'facade-width': 'Facade Width',
+      'facade-min-alt': 'Facade Min Altitude',
+      'facade-max-alt': 'Facade Max Altitude',
+      'facade-standoff': 'Facade Standoff Distance',
+      'facade-scan-mode': 'Facade Scan Mode',
+      'facade-heading-mode': 'Facade Heading Mode',
+      'helix-radius-start': 'Helix Radius Start',
+      'helix-radius-end': 'Helix Radius End',
+      'helix-alt-start': 'Helix Altitude Start',
+      'helix-alt-end': 'Helix Altitude End',
+      'helix-revolutions': 'Helix Revolutions',
+      'helix-direction': 'Helix Direction',
+      'helix-climb-direction': 'Helix Climb Direction',
+      'helix-pitch-start': 'Helix Pitch Start',
+      'helix-pitch-end': 'Helix Pitch End',
+      'helix-heading-mode': 'Helix Heading Mode',
+      'star-pass-spokes': 'Star Pass Spokes',
+      'star-pass-radius': 'Star Pass Radius',
+      'star-pass-heading-mode': 'Star Pass Heading Mode',
+      'star-pass-transit-mode': 'Star Pass Transit Mode',
+      'star-pass-apex-nadir': 'Star Pass Apex Nadir',
+      'corridor-width': 'Corridor Width',
+      'corridor-passes': 'Corridor Passes',
+      'corridor-overshoot': 'Corridor Overshoot',
+      'corridor-side-overlap': 'Corridor Side Overlap',
+      'corridor-turn-type': 'Corridor Turn Type',
+      'corridor-heading-mode': 'Corridor Heading Mode',
+      'dome-radius': 'Dome Radius',
+      'dome-base-alt': 'Dome Base Altitude',
+      'dome-tiers': 'Dome Tiers',
+      'dome-alt-order': 'Dome Altitude Order',
+      'dome-min-angle': 'Dome Min Pitch Angle',
+      'dome-max-angle': 'Dome Max Pitch Angle',
+      'dome-zenith-cap': 'Dome Zenith Cap',
+      'polygon-grid-pass': 'Polygon Grid Pass',
+      'polygon-grid-angle': 'Polygon Grid Sweep Angle',
+      'sar-mode': 'SAR Search Geometry',
+      'sar-track-spacing': 'SAR Track Spacing',
+      'sar-max-legs': 'SAR Max Search Legs',
+      'sar-bearing': 'SAR Search Bearing',
+      'perimeter-offset': 'Perimeter Standoff Offset',
+      'perimeter-heading-lock': 'Perimeter Heading Lock',
+      'perimeter-direction': 'Perimeter Direction',
+      'perimeter-laps': 'Perimeter Laps',
+      'cinematic-mode': 'Cinematic Shot',
+      'cinematic-azimuth': 'Cinematic Azimuth',
+      'cinematic-start-dist': 'Cinematic Start Distance',
+      'cinematic-end-dist': 'Cinematic End Distance',
+      'cinematic-start-alt': 'Cinematic Start Altitude',
+      'cinematic-end-alt': 'Cinematic End Altitude',
+      'exclusion-all-altitudes': 'Exclusion All Altitudes',
+      'exclusion-min-alt': 'Exclusion Min Altitude',
+      'exclusion-max-alt': 'Exclusion Max Altitude',
+      'exclusion-detour-mode': 'Exclusion Detour Mode',
+      'boundary-layer-name': 'Boundary Layer Name',
+      'fiducial-layer-name': 'Fiducial Layer Name',
+      'fiducial-show-range-rings': 'Fiducial Range Rings'
     };
     return map[id] || id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
@@ -173,6 +270,7 @@ function initUIEventListeners() {
   });
 
   const additionalLayerControls = [
+    // General Layer Dynamics & Modes
     'layer-capture-mode', 'layer-path-mode', 'layer-heading-mode', 'layer-custom-heading', 'layer-poi-select',
     'layer-turnaround-overshoot', 'layer-turnaround-speed', 'layer-corner-damping',
     'layer-hover-time-mode', 'layer-hover-time-slider', 'layer-auto-settling-toggle',
@@ -180,9 +278,63 @@ function initUIEventListeners() {
     'layer-pitch-settling-slider', 'layer-terrain-follow', 'layer-target-agl',
     'layer-terrain-source', 'layer-max-slope-angle',
     'layer-name-input', 'road-snap', 'road-focus-mode',
-    'boundary-stroke-color', 'boundary-line-style', 'boundary-fill-opacity', 'boundary-elevation',
-    'fiducial-default-type', 'fiducial-default-role', 'fiducial-default-size', 'fiducial-marker-color',
-    'global-max-altitude', 'global-rth-altitude'
+
+    // Target Splat Advanced Controls
+    'target-splat-framing-mode', 'target-perimeter-pass', 'target-perimeter-standoff', 'target-perimeter-alt', 'target-perimeter-pitch',
+
+    // 360 Photo Sphere Controls
+    'photo-sphere-ring-zenith', 'photo-sphere-ring-1', 'photo-sphere-ring-2', 'photo-sphere-ring-3', 'photo-sphere-ring-nadir',
+    'photo-sphere-mode', 'photo-sphere-shots-per-ring', 'photo-sphere-settling-time', 'photo-sphere-aeb-mode', 'photo-sphere-aeb',
+
+    // Hyperlapse Controls
+    'hyperlapse-waypoint-mode', 'hyperlapse-interval', 'hyperlapse-start-pitch', 'hyperlapse-end-pitch',
+    'hyperlapse-heading-mode', 'hyperlapse-start-heading', 'hyperlapse-end-heading',
+
+    // Light Art Controls
+    'light-art-preset', 'light-art-orientation', 'light-art-tilt', 'light-art-size-mode', 'light-art-target-duration',
+    'light-art-radius', 'light-art-turns', 'light-art-climb', 'light-art-points', 'light-art-star-ratio',
+    'light-art-camera-azimuth', 'light-art-min-clearance', 'light-art-enforce-clearance',
+
+    // Vertical Facade Controls
+    'facade-width', 'facade-min-alt', 'facade-max-alt', 'facade-standoff', 'facade-scan-mode', 'facade-heading-mode',
+
+    // Continuous Helix Controls
+    'helix-radius-start', 'helix-radius-end', 'helix-alt-start', 'helix-alt-end', 'helix-revolutions',
+    'helix-direction', 'helix-climb-direction', 'helix-pitch-start', 'helix-pitch-end', 'helix-heading-mode',
+
+    // Star Pass Controls
+    'star-pass-spokes', 'star-pass-radius', 'star-pass-heading-mode', 'star-pass-transit-mode', 'star-pass-apex-nadir',
+
+    // Corridor Mapping Controls
+    'corridor-width', 'corridor-passes', 'corridor-overshoot', 'corridor-side-overlap', 'corridor-turn-type', 'corridor-heading-mode',
+
+    // Hemispherical Dome Controls (v1.204.0)
+    'dome-radius', 'dome-base-alt', 'dome-tiers', 'dome-alt-order', 'dome-min-angle', 'dome-max-angle', 'dome-zenith-cap',
+
+    // Polygon Area Grid Controls (v1.204.0)
+    'polygon-grid-pass', 'polygon-grid-angle',
+
+    // Search & Rescue (SAR) Controls (v1.204.0)
+    'sar-mode', 'sar-track-spacing', 'sar-max-legs', 'sar-bearing',
+
+    // Perimeter Patrol Controls (v1.204.0)
+    'perimeter-offset', 'perimeter-heading-lock', 'perimeter-direction', 'perimeter-laps',
+
+    // Cinematic Reveal Controls (v1.204.0)
+    'cinematic-mode', 'cinematic-azimuth', 'cinematic-start-dist', 'cinematic-end-dist', 'cinematic-start-alt', 'cinematic-end-alt',
+
+    // 3D Exclusion Zones
+    'exclusion-all-altitudes', 'exclusion-min-alt', 'exclusion-max-alt', 'exclusion-detour-mode',
+
+    // Drawing / Survey Layers
+    'boundary-layer-name', 'boundary-stroke-color', 'boundary-line-style', 'boundary-fill-opacity', 'boundary-elevation',
+    'fiducial-layer-name', 'fiducial-default-type', 'fiducial-default-role', 'fiducial-default-size', 'fiducial-marker-color', 'fiducial-show-range-rings',
+
+    // Section 3 Global Failsafes & Defaults
+    'global-custom-heading', 'global-terrain-follow', 'global-target-agl', 'global-max-slope-angle', 'global-terrain-source',
+    'global-max-altitude', 'global-rth-altitude', 'rc2-uuid',
+    'acoustic-ambient-preset', 'acoustic-contour-display-mode', 'acoustic-map-overlay-toggle', 'acoustic-3d-overlay-toggle',
+    'sun-sky-condition-select'
   ];
   additionalLayerControls.forEach(id => {
     const el = document.getElementById(id);
@@ -1771,6 +1923,9 @@ function initUIEventListeners() {
         if (!activeLayer) return;
         const bLayer = (typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.pattern === 'boundary-polygon' && (l.boundaryPolygon?.length >= 3 || l.polygonVertices?.length >= 3)) : null;
         if (bLayer) {
+          if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+            pushUndoSnapshot('Sync Boundary Polygon');
+          }
           const pts = (bLayer.boundaryPolygon && bLayer.boundaryPolygon.length >= 3) ? bLayer.boundaryPolygon : bLayer.polygonVertices;
           activeLayer.polygonVertices = JSON.parse(JSON.stringify(pts));
           updateGrid();
@@ -1870,6 +2025,9 @@ function initUIEventListeners() {
         if (!activeLayer) return;
         const bLayer = (typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.pattern === 'boundary-polygon' && (l.boundaryPolygon?.length >= 3 || l.polygonVertices?.length >= 3)) : null;
         if (bLayer) {
+          if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+            pushUndoSnapshot('Sync Boundary Polygon');
+          }
           const pts = (bLayer.boundaryPolygon && bLayer.boundaryPolygon.length >= 3) ? bLayer.boundaryPolygon : bLayer.polygonVertices;
           activeLayer.polygonVertices = JSON.parse(JSON.stringify(pts));
           updateGrid();

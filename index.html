@@ -7979,7 +7979,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.207.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.209.0</span></h1>
         </div>
       </div>
 
@@ -8528,6 +8528,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <span>2. Layer Properties</span>
             <div style="display: flex; align-items: center; gap: 4px;">
               <span id="layer-hierarchy-status-badge" class="badge" style="display: none; font-size: 0.65rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600;" title="Three-Tier Hierarchy Status"></span>
+              <a id="active-layer-irl-badge" href="https://github.com/bpawletz/Aalaapi-Sky/issues/202" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="badge" data-irl-status="U" style="font-size: 0.65rem; background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; text-decoration: none; cursor: pointer;" title="Pending IRL Field Test. Historical baseline check only — NOT a guarantee of flight safety across varying wind, GNSS, terrain, or firmware conditions. RPIC retains sole responsibility.">🧪 IRL</a>
               <span id="active-layer-pattern-badge" class="badge" style="font-size: 0.7rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; margin-right: 6px;">3D Double Grid</span>
             </div>
           </h3>
@@ -12484,6 +12485,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <span style="color: #34d399; font-weight: 700; font-size: 0.72rem;">Multi-Battery Flights &amp; Native Breakpoint Resume</span>
             <span style="color: #34d399;">For long missions exceeding a single battery, rely on DJI Fly's native Breakpoint Resume. When battery runs low, allow Return-to-Home, swap the battery, and tap &quot;Resume from Breakpoint&quot; on the RC 2 to continue.</span>
           </div>
+
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; grid-column: span 2;">
+            <span style="font-size: 1.15rem; line-height: 1;">🧪</span>
+            <span style="color: #fbbf24; font-weight: 700; font-size: 0.72rem;">IRL Verification Status Is Not a Guarantee</span>
+            <span style="color: #fcd34d;">Any &quot;IRL Verified&quot; badge or post-flight log check reflects a single historical baseline test under specific conditions only and <strong>DOES NOT guarantee safe flight</strong> across varying wind, weather, GNSS multipath, geomagnetic drift, terrain/DEM inaccuracies, obstacles, or OEM firmware updates. The Remote Pilot in Command (RPIC) retains 100% sole responsibility for preflight verification and VLOS safety.</span>
+          </div>
         </div>
 
         <p style="font-style: italic; border-top: 1px solid var(--border-color); padding-top: 10px; margin: 0; color: var(--text-muted); font-size: 0.76rem;">
@@ -12599,6 +12606,22 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🚁 IRL Field Test Plan Suite, Post-Flight Log Verifier &amp; Section 2 Status Badge (v1.209.0) (Closes #201)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Bridge the gap between simulation and real-world flight! Aalaapi Sky now pairs every pattern update with a structured 6-phase <strong>In-Real-Life (IRL) Field Flight Test Plan</strong> across all 26 flight patterns (<code>docs/IRL_TEST_PLAN.md</code>), tracked via SHA-256 generator code hashes that automatically flag modified patterns as <code>NEEDS_RETEST</code>. Includes an automated <strong>Post-Flight Telemetry Log Analyzer</strong> (<code>npm run irl:analyze</code>) that cross-checks actual flight logs against planned KMZ waypoints, plus a zero-bloat <strong>Section 2 IRL Status Pill</strong> (<code>#active-layer-irl-badge</code>) linking directly to the Master GitHub Verification Matrix (<a href="https://github.com/bpawletz/Aalaapi-Sky/issues/202" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: underline;">Issue #202</a>) with explicit environmental variation &amp; non-guarantee legal notices.
+            </p>
+          </div>
+          <div style="background: rgba(167, 139, 250, 0.08); border: 1px solid rgba(167, 139, 250, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #c4b5fd; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🔄 Comprehensive Pattern &amp; Layer Controls Undo/Redo (v1.208.0) (Closes #200)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Every flight parameter is now undoable! Extended undo and redo tracking across all 145 Section 2 flight pattern controls (including Dome Shell, Polygon Grid, SAR Search, Perimeter Patrol, and Cinematic Reveal), inter-layer transition rules, next-gen generator parameters, and 2D/3D waypoint overrides. Real-time slider adjustments debounce snapshots cleanly, and all next-gen generator settings persist across layer switches.
+            </p>
+          </div>
           <div style="background: rgba(167, 139, 250, 0.08); border: 1px solid rgba(167, 139, 250, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #c4b5fd; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎛️ Layer Properties &amp; Dynamics Undo/Redo (v1.207.0) (Closes #198)
@@ -14951,7 +14974,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.207.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.209.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15099,8 +15122,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <p style="margin: 0 0 6px 0; font-size: 0.73rem; line-height: 1.4; color: var(--text-muted);">
             <strong>DJI:</strong> <em>DJI, DJI Fly, DJI Pilot, DJI RC, DJI RC 2, DJI RC Pro, Mini 4 Pro, Air 3, Mavic, Inspire, Matrice, and WPML (Waypoint Markup Language)</em> are trademarks or registered trademarks of <strong>SZ DJI Technology Co., Ltd.</strong> Aalaapi Sky is an independent third-party flight planning tool and is <strong>NOT affiliated with, authorized by, sponsored by, or endorsed by SZ DJI Technology Co., Ltd.</strong>
           </p>
-          <p style="margin: 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-muted);">
+          <p style="margin: 0 0 6px 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-muted);">
             <strong>Other Marks:</strong> <em>Google, Google Earth, Google Maps, KML, GPano, Android</em> (Google LLC); <em>Esri, ArcGIS, ArcGIS Online</em> (Environmental Systems Research Institute, Inc.); <em>OpenStreetMap</em> (OpenStreetMap Foundation); <em>Apple, iPad, iPhone, macOS</em> (Apple Inc.); <em>Node-RED</em> (OpenJS Foundation); <em>WebGL</em> (Khronos Group Inc.). All other trademarks belong to their respective holders and are used strictly for compatibility identification.
+          </p>
+          <p style="margin: 0; font-size: 0.72rem; line-height: 1.4; color: #fcd34d; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); padding: 6px 8px; border-radius: 6px;">
+            <strong>IRL Field Verification Non-Guarantee &amp; Variations Disclaimer:</strong> An <code>IRL Verified</code> badge, field test matrix status, or automated post-flight log analysis PASS represents a single historical baseline observation under specific conditions only and <strong>DOES NOT constitute a guarantee, certification, or warranty of safe flight</strong>. Real-world autonomous flight is subject to atmospheric variations (wind gusts, density altitude, precipitation), RF/GNSS multipath and KP geomagnetic interference, barometric/DEM elevation errors, physical obstacles, aircraft mechanical state, and unannounced OEM firmware or SDK behavioral changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, obstacle clearance, and immediate manual override.
           </p>
         </div>
 
@@ -15108,6 +15134,18 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.209.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>IRL Field Test Plan Suite, Post-Flight Log Verifier &amp; Section 2 Status Badge (Closes #201):</strong> Established a comprehensive 6-phase In-Real-Life (IRL) Field Flight Test Plan across all 26 flight patterns (<code>docs/IRL_TEST_PLAN.md</code>), SHA-256 generator hash tracking with automatic <code>NEEDS_RETEST</code> invalidation (<code>tools/qa/irl_tracker.js</code>), automated post-flight telemetry log verification (<code>npm run irl:analyze</code>), a compact Section 2 IRL verification status badge (<code>#active-layer-irl-badge</code>) linked to Master Matrix Issue #202, and explicit legal disclaimers for real-world environmental &amp; firmware variations.</li>
+              </ul>
+              <br>
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.208.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Comprehensive Pattern &amp; Layer Controls Undo/Redo (Closes #200):</strong> Extended undo and redo tracking across all 145 Section 2 flight pattern controls (including Dome Shell, Polygon Grid, SAR Search, Perimeter Patrol, and Cinematic Reveal), inter-layer transition rules, next-gen generator parameters, and 2D/3D waypoint overrides. Real-time slider adjustments debounce snapshots cleanly, and next-gen generator settings persist across layer switches.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.207.1):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -21051,6 +21089,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
   <!-- Custom Javascript -->
   <script>
+if (typeof window !== "undefined") { window.AALAAPI_IRL_STATUS = {"_issue":"https://github.com/bpawletz/Aalaapi-Sky/issues/202","single":{"s":"U","v":null},"double":{"s":"U","v":null},"target-splat":{"s":"U","v":null},"orbit":{"s":"U","v":null},"multi-orbit":{"s":"U","v":null},"tower":{"s":"U","v":null},"vertical-facade":{"s":"U","v":null},"continuous-helix":{"s":"U","v":null},"star-pass":{"s":"U","v":null},"photo-sphere":{"s":"U","v":null},"hyperlapse":{"s":"U","v":null},"light-art":{"s":"U","v":null},"grid-orbit-combo":{"s":"U","v":null},"grid-multi-orbit-combo":{"s":"U","v":null},"freeform":{"s":"U","v":null},"road-following":{"s":"U","v":null},"corridor":{"s":"U","v":null},"exclusion-box":{"s":"U","v":null},"exclusion-freeform":{"s":"U","v":null},"boundary-polygon":{"s":"U","v":null},"fiducial-markers":{"s":"U","v":null},"dome-shell":{"s":"U","v":null},"polygon-grid":{"s":"U","v":null},"sar-search":{"s":"U","v":null},"perimeter-patrol":{"s":"U","v":null},"cinematic-reveal":{"s":"U","v":null}}; }
 // -------------------- src/core/Logger.js --------------------
 // Centralized Logging Utility
 const Logger = {
@@ -28008,6 +28047,70 @@ function saveActiveLayerFromUi(targetLayer) {
   if (hPEnd) layer.helixPitchEnd = parseFloat(hPEnd.value) || -65;
   if (hHeadMode && hHeadMode.value) layer.helixHeadingMode = hHeadMode.value;
 
+  // Hemispherical Dome controls (Issue #159)
+  const dRad = document.getElementById('dome-radius');
+  const dBase = document.getElementById('dome-base-alt');
+  const dTiers = document.getElementById('dome-tiers');
+  const dAltOrder = document.getElementById('dome-alt-order');
+  const dMinAng = document.getElementById('dome-min-angle');
+  const dMaxAng = document.getElementById('dome-max-angle');
+  const dCap = document.getElementById('dome-zenith-cap');
+  if (dRad) layer.domeRadius = parseFloat(dRad.value) || 40;
+  if (dBase) layer.domeBaseAlt = parseFloat(dBase.value) || 10;
+  if (dTiers) layer.domeTiers = parseInt(dTiers.value, 10) || 4;
+  if (dAltOrder && dAltOrder.value) layer.domeAltitudeOrder = dAltOrder.value;
+  if (dMinAng) layer.domeMinAngle = parseFloat(dMinAng.value) || 20;
+  if (dMaxAng) layer.domeMaxAngle = parseFloat(dMaxAng.value) || 80;
+  if (dCap) layer.domeZenithCap = !!dCap.checked;
+
+  // Polygon Grid controls (Issue #160)
+  const pPass = document.getElementById('polygon-grid-pass');
+  const pAngle = document.getElementById('polygon-grid-angle');
+  if (pPass && pPass.value) layer.polygonGridPass = pPass.value;
+  if (pAngle && pAngle.value) layer.polygonGridAngle = pAngle.value;
+
+  // Search & Rescue (SAR) controls (Issue #161)
+  const sarModeEl = document.getElementById('sar-mode');
+  const sarTrackEl = document.getElementById('sar-track-spacing');
+  const sarLegsEl = document.getElementById('sar-max-legs');
+  const sarBearingEl = document.getElementById('sar-bearing');
+  if (sarModeEl && sarModeEl.value) layer.sarMode = sarModeEl.value;
+  if (sarTrackEl) layer.sarTrackSpacing = parseFloat(sarTrackEl.value) || 30;
+  if (sarLegsEl) layer.sarMaxLegs = parseInt(sarLegsEl.value, 10) || 12;
+  if (sarBearingEl) layer.sarBearing = parseFloat(sarBearingEl.value) || 0;
+
+  // Perimeter Patrol controls (Issue #162)
+  const perimOffsetEl = document.getElementById('perimeter-offset');
+  const perimHeadingLockEl = document.getElementById('perimeter-heading-lock');
+  const perimDirEl = document.getElementById('perimeter-direction');
+  const perimLapsEl = document.getElementById('perimeter-laps');
+  if (perimOffsetEl) layer.perimeterOffset = parseFloat(perimOffsetEl.value) || 0;
+  if (perimHeadingLockEl && perimHeadingLockEl.value) layer.perimeterHeadingLock = perimHeadingLockEl.value;
+  if (perimDirEl && perimDirEl.value) layer.perimeterDirection = perimDirEl.value;
+  if (perimLapsEl) layer.perimeterLaps = parseInt(perimLapsEl.value, 10) || 1;
+
+  // Cinematic Reveal controls (Issue #163)
+  const cineModeEl = document.getElementById('cinematic-mode');
+  const cineAzEl = document.getElementById('cinematic-azimuth');
+  const cineStartDistEl = document.getElementById('cinematic-start-dist');
+  const cineEndDistEl = document.getElementById('cinematic-end-dist');
+  const cineStartAltEl = document.getElementById('cinematic-start-alt');
+  const cineEndAltEl = document.getElementById('cinematic-end-alt');
+  if (cineModeEl && cineModeEl.value) layer.cinematicMode = cineModeEl.value;
+  if (cineAzEl) layer.cinematicAzimuth = parseFloat(cineAzEl.value) || 180;
+  if (cineStartDistEl) layer.cinematicStartDist = parseFloat(cineStartDistEl.value) || 5;
+  if (cineEndDistEl) layer.cinematicEndDist = parseFloat(cineEndDistEl.value) || 50;
+  if (cineStartAltEl) layer.cinematicStartAlt = parseFloat(cineStartAltEl.value) || 10;
+  if (cineEndAltEl) layer.cinematicEndAlt = parseFloat(cineEndAltEl.value) || 40;
+
+  // Boundary & Fiducial Layer names
+  const boundaryNameEl = document.getElementById('boundary-layer-name');
+  if (boundaryNameEl && boundaryNameEl.value) layer.name = boundaryNameEl.value;
+  const fiducialNameEl = document.getElementById('fiducial-layer-name');
+  if (fiducialNameEl && fiducialNameEl.value) layer.name = fiducialNameEl.value;
+  const fiducialRingsEl = document.getElementById('fiducial-show-range-rings');
+  if (fiducialRingsEl) layer.showRangeRings = !!fiducialRingsEl.checked;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -28451,6 +28554,84 @@ function syncUiWithActiveLayer() {
   if (corrSideOverlap) corrSideOverlap.value = layer.corridorSideOverlap !== undefined ? layer.corridorSideOverlap : 65;
   if (corrSideOverlapVal) corrSideOverlapVal.textContent = `${layer.corridorSideOverlap !== undefined ? layer.corridorSideOverlap : 65}%`;
 
+  // Sync Hemispherical Dome Controls (Issue #159)
+  setVal('dome-radius', layer.domeRadius !== undefined ? layer.domeRadius : 40);
+  const dRadVal = document.getElementById('dome-radius-val');
+  if (dRadVal) dRadVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.domeRadius !== undefined ? layer.domeRadius : 40) : `${layer.domeRadius !== undefined ? layer.domeRadius : 40}m`;
+  setVal('dome-base-alt', layer.domeBaseAlt !== undefined ? layer.domeBaseAlt : 10);
+  const dBaseVal = document.getElementById('dome-base-alt-val');
+  if (dBaseVal) dBaseVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.domeBaseAlt !== undefined ? layer.domeBaseAlt : 10) : `${layer.domeBaseAlt !== undefined ? layer.domeBaseAlt : 10}m`;
+  setVal('dome-tiers', layer.domeTiers !== undefined ? layer.domeTiers : 4);
+  const dTiersVal = document.getElementById('dome-tiers-val');
+  if (dTiersVal) dTiersVal.textContent = `${layer.domeTiers !== undefined ? layer.domeTiers : 4}`;
+  setVal('dome-alt-order', layer.domeAltitudeOrder || 'max-to-min');
+  setVal('dome-min-angle', layer.domeMinAngle !== undefined ? layer.domeMinAngle : 20);
+  const dMinAngVal = document.getElementById('dome-min-angle-val');
+  if (dMinAngVal) dMinAngVal.textContent = `${layer.domeMinAngle !== undefined ? layer.domeMinAngle : 20}°`;
+  setVal('dome-max-angle', layer.domeMaxAngle !== undefined ? layer.domeMaxAngle : 80);
+  const dMaxAngVal = document.getElementById('dome-max-angle-val');
+  if (dMaxAngVal) dMaxAngVal.textContent = `${layer.domeMaxAngle !== undefined ? layer.domeMaxAngle : 80}°`;
+  const dCapEl = document.getElementById('dome-zenith-cap');
+  if (dCapEl) {
+    dCapEl.checked = layer.domeZenithCap !== false;
+    dCapEl._undoBaselineValue = dCapEl.checked;
+  }
+
+  // Sync Polygon Grid Controls (Issue #160)
+  setVal('polygon-grid-pass', layer.polygonGridPass || 'single');
+  setVal('polygon-grid-angle', layer.polygonGridAngle || 'auto');
+
+  // Sync SAR Controls (Issue #161)
+  setVal('sar-mode', layer.sarMode || 'expanding-square');
+  setVal('sar-track-spacing', layer.sarTrackSpacing !== undefined ? layer.sarTrackSpacing : 30);
+  const sTrackVal = document.getElementById('sar-track-spacing-val');
+  if (sTrackVal) sTrackVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.sarTrackSpacing !== undefined ? layer.sarTrackSpacing : 30) : `${layer.sarTrackSpacing !== undefined ? layer.sarTrackSpacing : 30}m`;
+  setVal('sar-max-legs', layer.sarMaxLegs !== undefined ? layer.sarMaxLegs : 12);
+  const sLegsVal = document.getElementById('sar-max-legs-val');
+  if (sLegsVal) sLegsVal.textContent = `${layer.sarMaxLegs !== undefined ? layer.sarMaxLegs : 12}`;
+  setVal('sar-bearing', layer.sarBearing !== undefined ? layer.sarBearing : 0);
+  const sBearingVal = document.getElementById('sar-bearing-val');
+  if (sBearingVal) sBearingVal.textContent = `${layer.sarBearing !== undefined ? layer.sarBearing : 0}°`;
+
+  // Sync Perimeter Patrol Controls (Issue #162)
+  setVal('perimeter-offset', layer.perimeterOffset !== undefined ? layer.perimeterOffset : 0);
+  const pOffVal = document.getElementById('perimeter-offset-val');
+  if (pOffVal) pOffVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.perimeterOffset !== undefined ? layer.perimeterOffset : 0) : `${layer.perimeterOffset !== undefined ? layer.perimeterOffset : 0}m`;
+  setVal('perimeter-heading-lock', layer.perimeterHeadingLock || 'inward');
+  setVal('perimeter-direction', layer.perimeterDirection || 'cw');
+  setVal('perimeter-laps', layer.perimeterLaps !== undefined ? layer.perimeterLaps : 1);
+  const pLapsVal = document.getElementById('perimeter-laps-val');
+  if (pLapsVal) pLapsVal.textContent = `${layer.perimeterLaps !== undefined ? layer.perimeterLaps : 1}`;
+
+  // Sync Cinematic Reveal Controls (Issue #163)
+  setVal('cinematic-mode', layer.cinematicMode || 'dronie');
+  setVal('cinematic-azimuth', layer.cinematicAzimuth !== undefined ? layer.cinematicAzimuth : 180);
+  const cAzVal = document.getElementById('cinematic-azimuth-val');
+  if (cAzVal) cAzVal.textContent = `${layer.cinematicAzimuth !== undefined ? layer.cinematicAzimuth : 180}°`;
+  setVal('cinematic-start-dist', layer.cinematicStartDist !== undefined ? layer.cinematicStartDist : 5);
+  const cSDistVal = document.getElementById('cinematic-start-dist-val');
+  if (cSDistVal) cSDistVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.cinematicStartDist !== undefined ? layer.cinematicStartDist : 5) : `${layer.cinematicStartDist !== undefined ? layer.cinematicStartDist : 5}m`;
+  setVal('cinematic-end-dist', layer.cinematicEndDist !== undefined ? layer.cinematicEndDist : 50);
+  const cEDistVal = document.getElementById('cinematic-end-dist-val');
+  if (cEDistVal) cEDistVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.cinematicEndDist !== undefined ? layer.cinematicEndDist : 50) : `${layer.cinematicEndDist !== undefined ? layer.cinematicEndDist : 50}m`;
+  setVal('cinematic-start-alt', layer.cinematicStartAlt !== undefined ? layer.cinematicStartAlt : 10);
+  const cSAltVal = document.getElementById('cinematic-start-alt-val');
+  if (cSAltVal) cSAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.cinematicStartAlt !== undefined ? layer.cinematicStartAlt : 10) : `${layer.cinematicStartAlt !== undefined ? layer.cinematicStartAlt : 10}m`;
+  setVal('cinematic-end-alt', layer.cinematicEndAlt !== undefined ? layer.cinematicEndAlt : 40);
+  const cEAltVal = document.getElementById('cinematic-end-alt-val');
+  if (cEAltVal) cEAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.cinematicEndAlt !== undefined ? layer.cinematicEndAlt : 40) : `${layer.cinematicEndAlt !== undefined ? layer.cinematicEndAlt : 40}m`;
+
+  if (layer.pattern === 'boundary-polygon') {
+    setVal('boundary-layer-name', layer.name || '');
+  } else if (layer.pattern === 'fiducial-markers') {
+    setVal('fiducial-layer-name', layer.name || '');
+    const fidRingsEl = document.getElementById('fiducial-show-range-rings');
+    if (fidRingsEl) {
+      fidRingsEl.checked = layer.showRangeRings !== false;
+      fidRingsEl._undoBaselineValue = fidRingsEl.checked;
+    }
+  }
+
   if (typeof syncDisplayValues === 'function') {
     try { syncDisplayValues(); } catch (e) {}
   }
@@ -28661,6 +28842,9 @@ function toggleFlightLayerVisibility(layerId) {
 function updateLayerTransition(fromLayerId, transitionSettings) {
   const layer = flightLayers.find(l => l.id === fromLayerId);
   if (!layer) return;
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Update Layer Transition');
+  }
   layer.transition = {
     ...layer.transition,
     ...transitionSettings
@@ -32914,7 +33098,104 @@ function initUIEventListeners() {
       'global-hover-time': 'Global Hover Time',
       'finish-action': 'Finish Action',
       'global-max-altitude': 'Global Max Altitude',
-      'global-rth-altitude': 'Safe RTH Altitude'
+      'global-rth-altitude': 'Safe RTH Altitude',
+      'global-custom-heading': 'Global Custom Heading',
+      'global-terrain-follow': 'Global Terrain Follow',
+      'global-target-agl': 'Global Target AGL',
+      'global-max-slope-angle': 'Global Max Slope Angle',
+      'global-terrain-source': 'Global Terrain Source',
+      'target-splat-framing-mode': 'Splat Framing Mode',
+      'target-perimeter-pass': 'Perimeter Orbit Pass',
+      'target-perimeter-standoff': 'Perimeter Standoff',
+      'target-perimeter-alt': 'Perimeter Altitude',
+      'target-perimeter-pitch': 'Perimeter Pitch',
+      'photo-sphere-ring-zenith': 'Photo Sphere Zenith Ring',
+      'photo-sphere-ring-1': 'Photo Sphere Ring 1 (+30°)',
+      'photo-sphere-ring-2': 'Photo Sphere Ring 2 (0°)',
+      'photo-sphere-ring-3': 'Photo Sphere Ring 3 (-30°)',
+      'photo-sphere-ring-nadir': 'Photo Sphere Nadir Ring',
+      'photo-sphere-mode': 'Photo Sphere Mode',
+      'photo-sphere-shots-per-ring': 'Photo Sphere Shots Per Ring',
+      'photo-sphere-settling-time': 'Photo Sphere Settling Time',
+      'photo-sphere-aeb-mode': 'Photo Sphere AEB Mode',
+      'photo-sphere-aeb': 'Photo Sphere AEB',
+      'hyperlapse-waypoint-mode': 'Hyperlapse Waypoint Mode',
+      'hyperlapse-interval': 'Hyperlapse Interval',
+      'hyperlapse-start-pitch': 'Hyperlapse Start Pitch',
+      'hyperlapse-end-pitch': 'Hyperlapse End Pitch',
+      'hyperlapse-heading-mode': 'Hyperlapse Heading Mode',
+      'hyperlapse-start-heading': 'Hyperlapse Start Heading',
+      'hyperlapse-end-heading': 'Hyperlapse End Heading',
+      'light-art-preset': 'Light Art Preset',
+      'light-art-orientation': 'Light Art Orientation',
+      'light-art-tilt': 'Light Art Tilt',
+      'light-art-size-mode': 'Light Art Size Mode',
+      'light-art-target-duration': 'Light Art Target Duration',
+      'light-art-radius': 'Light Art Radius',
+      'light-art-turns': 'Light Art Turns',
+      'light-art-climb': 'Light Art Climb',
+      'light-art-points': 'Light Art Points',
+      'light-art-star-ratio': 'Light Art Star Ratio',
+      'light-art-camera-azimuth': 'Light Art Camera Azimuth',
+      'light-art-min-clearance': 'Light Art Min Clearance',
+      'light-art-enforce-clearance': 'Light Art Enforce Clearance',
+      'facade-width': 'Facade Width',
+      'facade-min-alt': 'Facade Min Altitude',
+      'facade-max-alt': 'Facade Max Altitude',
+      'facade-standoff': 'Facade Standoff Distance',
+      'facade-scan-mode': 'Facade Scan Mode',
+      'facade-heading-mode': 'Facade Heading Mode',
+      'helix-radius-start': 'Helix Radius Start',
+      'helix-radius-end': 'Helix Radius End',
+      'helix-alt-start': 'Helix Altitude Start',
+      'helix-alt-end': 'Helix Altitude End',
+      'helix-revolutions': 'Helix Revolutions',
+      'helix-direction': 'Helix Direction',
+      'helix-climb-direction': 'Helix Climb Direction',
+      'helix-pitch-start': 'Helix Pitch Start',
+      'helix-pitch-end': 'Helix Pitch End',
+      'helix-heading-mode': 'Helix Heading Mode',
+      'star-pass-spokes': 'Star Pass Spokes',
+      'star-pass-radius': 'Star Pass Radius',
+      'star-pass-heading-mode': 'Star Pass Heading Mode',
+      'star-pass-transit-mode': 'Star Pass Transit Mode',
+      'star-pass-apex-nadir': 'Star Pass Apex Nadir',
+      'corridor-width': 'Corridor Width',
+      'corridor-passes': 'Corridor Passes',
+      'corridor-overshoot': 'Corridor Overshoot',
+      'corridor-side-overlap': 'Corridor Side Overlap',
+      'corridor-turn-type': 'Corridor Turn Type',
+      'corridor-heading-mode': 'Corridor Heading Mode',
+      'dome-radius': 'Dome Radius',
+      'dome-base-alt': 'Dome Base Altitude',
+      'dome-tiers': 'Dome Tiers',
+      'dome-alt-order': 'Dome Altitude Order',
+      'dome-min-angle': 'Dome Min Pitch Angle',
+      'dome-max-angle': 'Dome Max Pitch Angle',
+      'dome-zenith-cap': 'Dome Zenith Cap',
+      'polygon-grid-pass': 'Polygon Grid Pass',
+      'polygon-grid-angle': 'Polygon Grid Sweep Angle',
+      'sar-mode': 'SAR Search Geometry',
+      'sar-track-spacing': 'SAR Track Spacing',
+      'sar-max-legs': 'SAR Max Search Legs',
+      'sar-bearing': 'SAR Search Bearing',
+      'perimeter-offset': 'Perimeter Standoff Offset',
+      'perimeter-heading-lock': 'Perimeter Heading Lock',
+      'perimeter-direction': 'Perimeter Direction',
+      'perimeter-laps': 'Perimeter Laps',
+      'cinematic-mode': 'Cinematic Shot',
+      'cinematic-azimuth': 'Cinematic Azimuth',
+      'cinematic-start-dist': 'Cinematic Start Distance',
+      'cinematic-end-dist': 'Cinematic End Distance',
+      'cinematic-start-alt': 'Cinematic Start Altitude',
+      'cinematic-end-alt': 'Cinematic End Altitude',
+      'exclusion-all-altitudes': 'Exclusion All Altitudes',
+      'exclusion-min-alt': 'Exclusion Min Altitude',
+      'exclusion-max-alt': 'Exclusion Max Altitude',
+      'exclusion-detour-mode': 'Exclusion Detour Mode',
+      'boundary-layer-name': 'Boundary Layer Name',
+      'fiducial-layer-name': 'Fiducial Layer Name',
+      'fiducial-show-range-rings': 'Fiducial Range Rings'
     };
     return map[id] || id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
@@ -33040,6 +33321,7 @@ function initUIEventListeners() {
   });
 
   const additionalLayerControls = [
+    // General Layer Dynamics & Modes
     'layer-capture-mode', 'layer-path-mode', 'layer-heading-mode', 'layer-custom-heading', 'layer-poi-select',
     'layer-turnaround-overshoot', 'layer-turnaround-speed', 'layer-corner-damping',
     'layer-hover-time-mode', 'layer-hover-time-slider', 'layer-auto-settling-toggle',
@@ -33047,9 +33329,63 @@ function initUIEventListeners() {
     'layer-pitch-settling-slider', 'layer-terrain-follow', 'layer-target-agl',
     'layer-terrain-source', 'layer-max-slope-angle',
     'layer-name-input', 'road-snap', 'road-focus-mode',
-    'boundary-stroke-color', 'boundary-line-style', 'boundary-fill-opacity', 'boundary-elevation',
-    'fiducial-default-type', 'fiducial-default-role', 'fiducial-default-size', 'fiducial-marker-color',
-    'global-max-altitude', 'global-rth-altitude'
+
+    // Target Splat Advanced Controls
+    'target-splat-framing-mode', 'target-perimeter-pass', 'target-perimeter-standoff', 'target-perimeter-alt', 'target-perimeter-pitch',
+
+    // 360 Photo Sphere Controls
+    'photo-sphere-ring-zenith', 'photo-sphere-ring-1', 'photo-sphere-ring-2', 'photo-sphere-ring-3', 'photo-sphere-ring-nadir',
+    'photo-sphere-mode', 'photo-sphere-shots-per-ring', 'photo-sphere-settling-time', 'photo-sphere-aeb-mode', 'photo-sphere-aeb',
+
+    // Hyperlapse Controls
+    'hyperlapse-waypoint-mode', 'hyperlapse-interval', 'hyperlapse-start-pitch', 'hyperlapse-end-pitch',
+    'hyperlapse-heading-mode', 'hyperlapse-start-heading', 'hyperlapse-end-heading',
+
+    // Light Art Controls
+    'light-art-preset', 'light-art-orientation', 'light-art-tilt', 'light-art-size-mode', 'light-art-target-duration',
+    'light-art-radius', 'light-art-turns', 'light-art-climb', 'light-art-points', 'light-art-star-ratio',
+    'light-art-camera-azimuth', 'light-art-min-clearance', 'light-art-enforce-clearance',
+
+    // Vertical Facade Controls
+    'facade-width', 'facade-min-alt', 'facade-max-alt', 'facade-standoff', 'facade-scan-mode', 'facade-heading-mode',
+
+    // Continuous Helix Controls
+    'helix-radius-start', 'helix-radius-end', 'helix-alt-start', 'helix-alt-end', 'helix-revolutions',
+    'helix-direction', 'helix-climb-direction', 'helix-pitch-start', 'helix-pitch-end', 'helix-heading-mode',
+
+    // Star Pass Controls
+    'star-pass-spokes', 'star-pass-radius', 'star-pass-heading-mode', 'star-pass-transit-mode', 'star-pass-apex-nadir',
+
+    // Corridor Mapping Controls
+    'corridor-width', 'corridor-passes', 'corridor-overshoot', 'corridor-side-overlap', 'corridor-turn-type', 'corridor-heading-mode',
+
+    // Hemispherical Dome Controls (v1.204.0)
+    'dome-radius', 'dome-base-alt', 'dome-tiers', 'dome-alt-order', 'dome-min-angle', 'dome-max-angle', 'dome-zenith-cap',
+
+    // Polygon Area Grid Controls (v1.204.0)
+    'polygon-grid-pass', 'polygon-grid-angle',
+
+    // Search & Rescue (SAR) Controls (v1.204.0)
+    'sar-mode', 'sar-track-spacing', 'sar-max-legs', 'sar-bearing',
+
+    // Perimeter Patrol Controls (v1.204.0)
+    'perimeter-offset', 'perimeter-heading-lock', 'perimeter-direction', 'perimeter-laps',
+
+    // Cinematic Reveal Controls (v1.204.0)
+    'cinematic-mode', 'cinematic-azimuth', 'cinematic-start-dist', 'cinematic-end-dist', 'cinematic-start-alt', 'cinematic-end-alt',
+
+    // 3D Exclusion Zones
+    'exclusion-all-altitudes', 'exclusion-min-alt', 'exclusion-max-alt', 'exclusion-detour-mode',
+
+    // Drawing / Survey Layers
+    'boundary-layer-name', 'boundary-stroke-color', 'boundary-line-style', 'boundary-fill-opacity', 'boundary-elevation',
+    'fiducial-layer-name', 'fiducial-default-type', 'fiducial-default-role', 'fiducial-default-size', 'fiducial-marker-color', 'fiducial-show-range-rings',
+
+    // Section 3 Global Failsafes & Defaults
+    'global-custom-heading', 'global-terrain-follow', 'global-target-agl', 'global-max-slope-angle', 'global-terrain-source',
+    'global-max-altitude', 'global-rth-altitude', 'rc2-uuid',
+    'acoustic-ambient-preset', 'acoustic-contour-display-mode', 'acoustic-map-overlay-toggle', 'acoustic-3d-overlay-toggle',
+    'sun-sky-condition-select'
   ];
   additionalLayerControls.forEach(id => {
     const el = document.getElementById(id);
@@ -34638,6 +34974,9 @@ function initUIEventListeners() {
         if (!activeLayer) return;
         const bLayer = (typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.pattern === 'boundary-polygon' && (l.boundaryPolygon?.length >= 3 || l.polygonVertices?.length >= 3)) : null;
         if (bLayer) {
+          if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+            pushUndoSnapshot('Sync Boundary Polygon');
+          }
           const pts = (bLayer.boundaryPolygon && bLayer.boundaryPolygon.length >= 3) ? bLayer.boundaryPolygon : bLayer.polygonVertices;
           activeLayer.polygonVertices = JSON.parse(JSON.stringify(pts));
           updateGrid();
@@ -34737,6 +35076,9 @@ function initUIEventListeners() {
         if (!activeLayer) return;
         const bLayer = (typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.pattern === 'boundary-polygon' && (l.boundaryPolygon?.length >= 3 || l.polygonVertices?.length >= 3)) : null;
         if (bLayer) {
+          if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+            pushUndoSnapshot('Sync Boundary Polygon');
+          }
           const pts = (bLayer.boundaryPolygon && bLayer.boundaryPolygon.length >= 3) ? bLayer.boundaryPolygon : bLayer.polygonVertices;
           activeLayer.polygonVertices = JSON.parse(JSON.stringify(pts));
           updateGrid();
@@ -38065,6 +38407,7 @@ function togglePatternParameters() {
   if (activePatternBadge) {
     activePatternBadge.textContent = patternLabels[gridType] || 'Layer Settings';
   }
+  updateActiveLayerIrlBadge(gridType);
 
   if (gridGeometryTitle) {
     if (typeof gridGeometryTitle.querySelector === 'function') {
@@ -39046,6 +39389,45 @@ function togglePatternParameters() {
 }
 
 // Helper to get descriptive flight purpose and styling for a gimbal pitch angle
+function updateActiveLayerIrlBadge(gridType) {
+  if (typeof document === 'undefined' || !document.getElementById) return;
+  const irlBadge = document.getElementById('active-layer-irl-badge');
+  if (!irlBadge || !irlBadge.style || typeof irlBadge.setAttribute !== 'function') return;
+  const statusMap = (typeof window !== 'undefined' && window.AALAAPI_IRL_STATUS) ? window.AALAAPI_IRL_STATUS : null;
+  const rawEntry = (statusMap && statusMap[gridType]) ? statusMap[gridType] : null;
+  const entry = (typeof rawEntry === 'string') ? { s: rawEntry, v: null } : (rawEntry || { s: 'U', v: null });
+  const issueUrl = (statusMap && statusMap._issue) ? statusMap._issue : 'https://github.com/bpawletz/Aalaapi-Sky/issues/202';
+  const legalNotice = 'Historical baseline check only — NOT a guarantee of flight safety across varying wind, GNSS, terrain, or firmware conditions. RPIC retains sole responsibility.';
+
+  irlBadge.href = issueUrl;
+  if (typeof irlBadge.setAttribute === 'function') irlBadge.setAttribute('data-irl-status', entry.s || 'U');
+  if (entry.s === 'V') {
+    irlBadge.textContent = '✅ IRL';
+    irlBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+    irlBadge.style.color = '#34d399';
+    irlBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+    irlBadge.title = `IRL Field Tested${entry.v ? ` (v${entry.v})` : ''}. ${legalNotice} Click to view IRL Test Plan & Matrix.`;
+  } else if (entry.s === 'R') {
+    irlBadge.textContent = '🧪 Re-Test';
+    irlBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+    irlBadge.style.color = '#fbbf24';
+    irlBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+    irlBadge.title = `Needs IRL Re-Test: Pattern code modified since last field verification. ${legalNotice} Click to view IRL Test Plan.`;
+  } else if (entry.s === 'F') {
+    irlBadge.textContent = '❌ IRL';
+    irlBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+    irlBadge.style.color = '#f87171';
+    irlBadge.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+    irlBadge.title = `IRL Field Test Variance/Failure Recorded. ${legalNotice} Click to view IRL Test Plan.`;
+  } else {
+    irlBadge.textContent = '🧪 IRL';
+    irlBadge.style.background = 'rgba(148, 163, 184, 0.12)';
+    irlBadge.style.color = '#94a3b8';
+    irlBadge.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+    irlBadge.title = `Pending IRL Field Test. ${legalNotice} Click to view IRL Test Plan & Matrix.`;
+  }
+}
+
 function getGimbalPitchDescription(pitch) {
   const isAuto = (pitch === 'auto' || (typeof pitch === 'string' && pitch.toLowerCase() === 'auto'));
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -74379,6 +74761,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
 
   if (saveBtn) {
     saveBtn.addEventListener('click', () => {
+      if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+        pushUndoSnapshot('Save Waypoint Override');
+      }
       unbindRevert();
       
       const altVal = parseFloat(altSlider.value);
@@ -74503,6 +74888,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
 
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
+      if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+        pushUndoSnapshot('Reset Waypoint to Origin');
+      }
       isSaved = true;
       isReverted = true;
       unbindRevert();
@@ -77019,6 +77407,9 @@ function fpvDeleteWaypoint() {
 function fpvInsertWaypoint() {
   const waypoints = getCurrentWaypoints();
   if (!waypoints || waypoints.length === 0) return;
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Insert Waypoint');
+  }
 
   const currentWp = waypoints[fpvProgressIndex];
   const nextWp = waypoints[fpvProgressIndex + 1];
@@ -77773,6 +78164,9 @@ function setupFPVListeners() {
   if (fpvSaveBtn) {
     fpvSaveBtn.addEventListener('click', (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+        pushUndoSnapshot('Save 3D Waypoint Override');
+      }
       const waypoints = getCurrentWaypoints();
       if (!waypoints || !waypoints[fpvProgressIndex]) return;
       const wp = waypoints[fpvProgressIndex];
@@ -77855,6 +78249,9 @@ function setupFPVListeners() {
   if (fpvResetBtn) {
     fpvResetBtn.addEventListener('click', (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+        pushUndoSnapshot('Reset 3D Waypoint to Origin');
+      }
       const waypoints = getCurrentWaypoints();
       if (!waypoints || !waypoints[fpvProgressIndex]) return;
       const wp = waypoints[fpvProgressIndex];

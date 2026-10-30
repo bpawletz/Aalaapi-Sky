@@ -1,6 +1,7 @@
 import re
 import os
 import sys
+import json
 
 IMPORT_HEADER_RE = re.compile(
     rb"\A(?:\s*(?://[^\n]*\n|/\*.*?\*/\s*)*"
@@ -53,6 +54,25 @@ def bundle(src_dir, banners=True):
         raise ValueError(f"Orphaned modules found in src/ not listed in main.js: {orphans}")
 
     parts = []
+    if banners:
+        project_dir = os.path.dirname(src_dir)
+        irl_status_path = os.path.join(project_dir, 'docs', 'irl_test_status.json')
+        if os.path.exists(irl_status_path):
+            try:
+                with open(irl_status_path, 'r', encoding='utf-8') as jf:
+                    irl_data = json.load(jf)
+                code_map = {'VERIFIED': 'V', 'NEEDS_RETEST': 'R', 'FAILED': 'F', 'UNTESTED': 'U'}
+                compact_map = {'_issue': irl_data.get('masterIssueUrl', 'https://github.com/bpawletz/Aalaapi-Sky/issues/202')}
+                for pid, pinfo in irl_data.get('patterns', {}).items():
+                    compact_map[pid] = {
+                        's': code_map.get(pinfo.get('status', 'UNTESTED'), 'U'),
+                        'v': pinfo.get('lastTestedVersion')
+                    }
+                compact_json = json.dumps(compact_map, separators=(',', ':')).encode('utf-8')
+                parts.append(b'if (typeof window !== "undefined") { window.AALAAPI_IRL_STATUS = ' + compact_json + b'; }\n')
+            except Exception as e:
+                print(f"Warning: Could not embed IRL status map: {e}")
+
     for rel in order:
         mod_path = os.path.normpath(os.path.join(src_dir, rel))
         with open(mod_path, 'rb') as f:

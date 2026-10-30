@@ -1096,6 +1096,70 @@ function saveActiveLayerFromUi(targetLayer) {
   if (hPEnd) layer.helixPitchEnd = parseFloat(hPEnd.value) || -65;
   if (hHeadMode && hHeadMode.value) layer.helixHeadingMode = hHeadMode.value;
 
+  // Hemispherical Dome controls (Issue #159)
+  const dRad = document.getElementById('dome-radius');
+  const dBase = document.getElementById('dome-base-alt');
+  const dTiers = document.getElementById('dome-tiers');
+  const dAltOrder = document.getElementById('dome-alt-order');
+  const dMinAng = document.getElementById('dome-min-angle');
+  const dMaxAng = document.getElementById('dome-max-angle');
+  const dCap = document.getElementById('dome-zenith-cap');
+  if (dRad) layer.domeRadius = parseFloat(dRad.value) || 40;
+  if (dBase) layer.domeBaseAlt = parseFloat(dBase.value) || 10;
+  if (dTiers) layer.domeTiers = parseInt(dTiers.value, 10) || 4;
+  if (dAltOrder && dAltOrder.value) layer.domeAltitudeOrder = dAltOrder.value;
+  if (dMinAng) layer.domeMinAngle = parseFloat(dMinAng.value) || 20;
+  if (dMaxAng) layer.domeMaxAngle = parseFloat(dMaxAng.value) || 80;
+  if (dCap) layer.domeZenithCap = !!dCap.checked;
+
+  // Polygon Grid controls (Issue #160)
+  const pPass = document.getElementById('polygon-grid-pass');
+  const pAngle = document.getElementById('polygon-grid-angle');
+  if (pPass && pPass.value) layer.polygonGridPass = pPass.value;
+  if (pAngle && pAngle.value) layer.polygonGridAngle = pAngle.value;
+
+  // Search & Rescue (SAR) controls (Issue #161)
+  const sarModeEl = document.getElementById('sar-mode');
+  const sarTrackEl = document.getElementById('sar-track-spacing');
+  const sarLegsEl = document.getElementById('sar-max-legs');
+  const sarBearingEl = document.getElementById('sar-bearing');
+  if (sarModeEl && sarModeEl.value) layer.sarMode = sarModeEl.value;
+  if (sarTrackEl) layer.sarTrackSpacing = parseFloat(sarTrackEl.value) || 30;
+  if (sarLegsEl) layer.sarMaxLegs = parseInt(sarLegsEl.value, 10) || 12;
+  if (sarBearingEl) layer.sarBearing = parseFloat(sarBearingEl.value) || 0;
+
+  // Perimeter Patrol controls (Issue #162)
+  const perimOffsetEl = document.getElementById('perimeter-offset');
+  const perimHeadingLockEl = document.getElementById('perimeter-heading-lock');
+  const perimDirEl = document.getElementById('perimeter-direction');
+  const perimLapsEl = document.getElementById('perimeter-laps');
+  if (perimOffsetEl) layer.perimeterOffset = parseFloat(perimOffsetEl.value) || 0;
+  if (perimHeadingLockEl && perimHeadingLockEl.value) layer.perimeterHeadingLock = perimHeadingLockEl.value;
+  if (perimDirEl && perimDirEl.value) layer.perimeterDirection = perimDirEl.value;
+  if (perimLapsEl) layer.perimeterLaps = parseInt(perimLapsEl.value, 10) || 1;
+
+  // Cinematic Reveal controls (Issue #163)
+  const cineModeEl = document.getElementById('cinematic-mode');
+  const cineAzEl = document.getElementById('cinematic-azimuth');
+  const cineStartDistEl = document.getElementById('cinematic-start-dist');
+  const cineEndDistEl = document.getElementById('cinematic-end-dist');
+  const cineStartAltEl = document.getElementById('cinematic-start-alt');
+  const cineEndAltEl = document.getElementById('cinematic-end-alt');
+  if (cineModeEl && cineModeEl.value) layer.cinematicMode = cineModeEl.value;
+  if (cineAzEl) layer.cinematicAzimuth = parseFloat(cineAzEl.value) || 180;
+  if (cineStartDistEl) layer.cinematicStartDist = parseFloat(cineStartDistEl.value) || 5;
+  if (cineEndDistEl) layer.cinematicEndDist = parseFloat(cineEndDistEl.value) || 50;
+  if (cineStartAltEl) layer.cinematicStartAlt = parseFloat(cineStartAltEl.value) || 10;
+  if (cineEndAltEl) layer.cinematicEndAlt = parseFloat(cineEndAltEl.value) || 40;
+
+  // Boundary & Fiducial Layer names
+  const boundaryNameEl = document.getElementById('boundary-layer-name');
+  if (boundaryNameEl && boundaryNameEl.value) layer.name = boundaryNameEl.value;
+  const fiducialNameEl = document.getElementById('fiducial-layer-name');
+  if (fiducialNameEl && fiducialNameEl.value) layer.name = fiducialNameEl.value;
+  const fiducialRingsEl = document.getElementById('fiducial-show-range-rings');
+  if (fiducialRingsEl) layer.showRangeRings = !!fiducialRingsEl.checked;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -1539,6 +1603,84 @@ function syncUiWithActiveLayer() {
   if (corrSideOverlap) corrSideOverlap.value = layer.corridorSideOverlap !== undefined ? layer.corridorSideOverlap : 65;
   if (corrSideOverlapVal) corrSideOverlapVal.textContent = `${layer.corridorSideOverlap !== undefined ? layer.corridorSideOverlap : 65}%`;
 
+  // Sync Hemispherical Dome Controls (Issue #159)
+  setVal('dome-radius', layer.domeRadius !== undefined ? layer.domeRadius : 40);
+  const dRadVal = document.getElementById('dome-radius-val');
+  if (dRadVal) dRadVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.domeRadius !== undefined ? layer.domeRadius : 40) : `${layer.domeRadius !== undefined ? layer.domeRadius : 40}m`;
+  setVal('dome-base-alt', layer.domeBaseAlt !== undefined ? layer.domeBaseAlt : 10);
+  const dBaseVal = document.getElementById('dome-base-alt-val');
+  if (dBaseVal) dBaseVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.domeBaseAlt !== undefined ? layer.domeBaseAlt : 10) : `${layer.domeBaseAlt !== undefined ? layer.domeBaseAlt : 10}m`;
+  setVal('dome-tiers', layer.domeTiers !== undefined ? layer.domeTiers : 4);
+  const dTiersVal = document.getElementById('dome-tiers-val');
+  if (dTiersVal) dTiersVal.textContent = `${layer.domeTiers !== undefined ? layer.domeTiers : 4}`;
+  setVal('dome-alt-order', layer.domeAltitudeOrder || 'max-to-min');
+  setVal('dome-min-angle', layer.domeMinAngle !== undefined ? layer.domeMinAngle : 20);
+  const dMinAngVal = document.getElementById('dome-min-angle-val');
+  if (dMinAngVal) dMinAngVal.textContent = `${layer.domeMinAngle !== undefined ? layer.domeMinAngle : 20}°`;
+  setVal('dome-max-angle', layer.domeMaxAngle !== undefined ? layer.domeMaxAngle : 80);
+  const dMaxAngVal = document.getElementById('dome-max-angle-val');
+  if (dMaxAngVal) dMaxAngVal.textContent = `${layer.domeMaxAngle !== undefined ? layer.domeMaxAngle : 80}°`;
+  const dCapEl = document.getElementById('dome-zenith-cap');
+  if (dCapEl) {
+    dCapEl.checked = layer.domeZenithCap !== false;
+    dCapEl._undoBaselineValue = dCapEl.checked;
+  }
+
+  // Sync Polygon Grid Controls (Issue #160)
+  setVal('polygon-grid-pass', layer.polygonGridPass || 'single');
+  setVal('polygon-grid-angle', layer.polygonGridAngle || 'auto');
+
+  // Sync SAR Controls (Issue #161)
+  setVal('sar-mode', layer.sarMode || 'expanding-square');
+  setVal('sar-track-spacing', layer.sarTrackSpacing !== undefined ? layer.sarTrackSpacing : 30);
+  const sTrackVal = document.getElementById('sar-track-spacing-val');
+  if (sTrackVal) sTrackVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.sarTrackSpacing !== undefined ? layer.sarTrackSpacing : 30) : `${layer.sarTrackSpacing !== undefined ? layer.sarTrackSpacing : 30}m`;
+  setVal('sar-max-legs', layer.sarMaxLegs !== undefined ? layer.sarMaxLegs : 12);
+  const sLegsVal = document.getElementById('sar-max-legs-val');
+  if (sLegsVal) sLegsVal.textContent = `${layer.sarMaxLegs !== undefined ? layer.sarMaxLegs : 12}`;
+  setVal('sar-bearing', layer.sarBearing !== undefined ? layer.sarBearing : 0);
+  const sBearingVal = document.getElementById('sar-bearing-val');
+  if (sBearingVal) sBearingVal.textContent = `${layer.sarBearing !== undefined ? layer.sarBearing : 0}°`;
+
+  // Sync Perimeter Patrol Controls (Issue #162)
+  setVal('perimeter-offset', layer.perimeterOffset !== undefined ? layer.perimeterOffset : 0);
+  const pOffVal = document.getElementById('perimeter-offset-val');
+  if (pOffVal) pOffVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.perimeterOffset !== undefined ? layer.perimeterOffset : 0) : `${layer.perimeterOffset !== undefined ? layer.perimeterOffset : 0}m`;
+  setVal('perimeter-heading-lock', layer.perimeterHeadingLock || 'inward');
+  setVal('perimeter-direction', layer.perimeterDirection || 'cw');
+  setVal('perimeter-laps', layer.perimeterLaps !== undefined ? layer.perimeterLaps : 1);
+  const pLapsVal = document.getElementById('perimeter-laps-val');
+  if (pLapsVal) pLapsVal.textContent = `${layer.perimeterLaps !== undefined ? layer.perimeterLaps : 1}`;
+
+  // Sync Cinematic Reveal Controls (Issue #163)
+  setVal('cinematic-mode', layer.cinematicMode || 'dronie');
+  setVal('cinematic-azimuth', layer.cinematicAzimuth !== undefined ? layer.cinematicAzimuth : 180);
+  const cAzVal = document.getElementById('cinematic-azimuth-val');
+  if (cAzVal) cAzVal.textContent = `${layer.cinematicAzimuth !== undefined ? layer.cinematicAzimuth : 180}°`;
+  setVal('cinematic-start-dist', layer.cinematicStartDist !== undefined ? layer.cinematicStartDist : 5);
+  const cSDistVal = document.getElementById('cinematic-start-dist-val');
+  if (cSDistVal) cSDistVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.cinematicStartDist !== undefined ? layer.cinematicStartDist : 5) : `${layer.cinematicStartDist !== undefined ? layer.cinematicStartDist : 5}m`;
+  setVal('cinematic-end-dist', layer.cinematicEndDist !== undefined ? layer.cinematicEndDist : 50);
+  const cEDistVal = document.getElementById('cinematic-end-dist-val');
+  if (cEDistVal) cEDistVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.cinematicEndDist !== undefined ? layer.cinematicEndDist : 50) : `${layer.cinematicEndDist !== undefined ? layer.cinematicEndDist : 50}m`;
+  setVal('cinematic-start-alt', layer.cinematicStartAlt !== undefined ? layer.cinematicStartAlt : 10);
+  const cSAltVal = document.getElementById('cinematic-start-alt-val');
+  if (cSAltVal) cSAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.cinematicStartAlt !== undefined ? layer.cinematicStartAlt : 10) : `${layer.cinematicStartAlt !== undefined ? layer.cinematicStartAlt : 10}m`;
+  setVal('cinematic-end-alt', layer.cinematicEndAlt !== undefined ? layer.cinematicEndAlt : 40);
+  const cEAltVal = document.getElementById('cinematic-end-alt-val');
+  if (cEAltVal) cEAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.cinematicEndAlt !== undefined ? layer.cinematicEndAlt : 40) : `${layer.cinematicEndAlt !== undefined ? layer.cinematicEndAlt : 40}m`;
+
+  if (layer.pattern === 'boundary-polygon') {
+    setVal('boundary-layer-name', layer.name || '');
+  } else if (layer.pattern === 'fiducial-markers') {
+    setVal('fiducial-layer-name', layer.name || '');
+    const fidRingsEl = document.getElementById('fiducial-show-range-rings');
+    if (fidRingsEl) {
+      fidRingsEl.checked = layer.showRangeRings !== false;
+      fidRingsEl._undoBaselineValue = fidRingsEl.checked;
+    }
+  }
+
   if (typeof syncDisplayValues === 'function') {
     try { syncDisplayValues(); } catch (e) {}
   }
@@ -1749,6 +1891,9 @@ function toggleFlightLayerVisibility(layerId) {
 function updateLayerTransition(fromLayerId, transitionSettings) {
   const layer = flightLayers.find(l => l.id === fromLayerId);
   if (!layer) return;
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Update Layer Transition');
+  }
   layer.transition = {
     ...layer.transition,
     ...transitionSettings

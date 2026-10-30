@@ -11,11 +11,12 @@ Fixes # (issue)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] This change requires a documentation update
 
-## How Has This Been Tested?
-<!-- Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce. Please also list any relevant details for your test configuration -->
+## 🚁 Post-Update IRL Field Test Plan
+<!-- Describe the In-Real-Life (IRL) field verification steps for this update. Note: IRL verification is a historical reference check only and does NOT guarantee flight safety across varying wind, GNSS, terrain, or OEM firmware conditions. -->
 
-- [ ] Test A
-- [ ] Test B
+- [ ] `npm run irl:sync` executed to update pattern generator code hashes and `docs/IRL_TEST_PLAN.md`
+- [ ] Exported test KMZ at synthetic rural coordinates (`[41.3215, -88.9950]`) and verified WPML schema
+- [ ] Post-flight telemetry log analysis (`npm run irl:analyze`) or field checklist steps documented
 
 ## Checklist:
 

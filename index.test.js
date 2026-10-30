@@ -38284,3 +38284,173 @@ describe('Layer Dynamics & Modes Discrete Controls Undo/Redo System (v1.207.1) (
     assert.strictEqual(getActiveLayer().customHeading, 90);
   });
 });
+
+describe('Comprehensive Layer Controls & Pattern Settings Undo/Redo System (v1.208.0) (Closes #200)', () => {
+  const prevStubs = global._stubElements;
+
+  beforeEach(() => {
+    importedWaypoints = null;
+    importedPhotos = null;
+    importedFileName = '';
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+    const mockEl = (val) => ({
+      value: val,
+      _undoBaselineValue: val,
+      disabled: false,
+      closest: () => ({ style: {} }),
+      classList: { add: () => {}, remove: () => {}, contains: () => false },
+      style: {},
+      setAttribute: () => {},
+      getAttribute: () => null
+    });
+    global._stubElements = {
+      'grid-type': mockEl('corridor'),
+      'corridor-width': mockEl('60'),
+      'dome-radius': mockEl('50'),
+      'dome-tiers': mockEl('4'),
+      'polygon-grid-pass': mockEl('single'),
+      'polygon-grid-angle': mockEl('auto'),
+      'sar-mode': mockEl('expanding-square'),
+      'sar-track-spacing': mockEl('35'),
+      'perimeter-offset': mockEl('0'),
+      'cinematic-azimuth': mockEl('180'),
+      'altitude': mockEl('50'),
+      'speed': mockEl('4'),
+      'gimbal-pitch': mockEl('-60'),
+      'heading-mode': mockEl('followWayline'),
+      'capture-mode': mockEl('stopAndShoot'),
+      'path-mode': mockEl('smoothTransition'),
+      'global-hover-time': mockEl('0'),
+      'finish-action': mockEl('goHome'),
+      'global-max-altitude': mockEl('120'),
+      'global-rth-altitude': mockEl('60'),
+      'layer-capture-mode': mockEl('inherit'),
+      'layer-path-mode': mockEl('inherit'),
+      'layer-heading-mode': mockEl('inherit'),
+      'layer-custom-heading': mockEl('0'),
+      'camera-zoom': mockEl('1.0'),
+      'active-layer-irl-badge': { style: {}, setAttribute: () => {}, getAttribute: () => null, textContent: '', title: '', href: '' }
+    };
+    flightLayers = [
+      createDefaultLayer('layer-1', 'Layer 1: Corridor', 0, 'corridor'),
+      createDefaultLayer('layer-2', 'Layer 2: Dome Shell', 1, 'dome-shell')
+    ];
+    activeLayerId = flightLayers[0].id;
+    if (typeof updateGrid !== 'undefined') {
+      global.updateGrid = () => {};
+    }
+    let mLat = 41.3215;
+    let mLon = -88.9950;
+    centerMarker = {
+      getLatLng: () => ({ lat: mLat, lng: mLon }),
+      setLatLng: (ll) => {
+        mLat = Array.isArray(ll) ? ll[0] : (ll.lat !== undefined ? ll.lat : mLat);
+        mLon = Array.isArray(ll) ? ll[1] : (ll.lng !== undefined ? ll.lng : mLon);
+      },
+      openPopup: () => {},
+      on: () => {},
+      addTo: () => centerMarker
+    };
+  });
+
+  after(() => {
+    global._stubElements = prevStubs;
+  });
+
+  test('Version consistency for v1.208.0 across package.json, CHANGELOG.md, index_template.html and index.html', () => {
+    assertVersionConsistency('1.208.0');
+  });
+
+  test('Next-Gen Pattern Persistence: saveActiveLayerFromUi and syncUiWithActiveLayer round-trip 23 generator parameters', () => {
+    const layer = flightLayers[1]; // dome-shell
+    activeLayerId = layer.id;
+
+    // Provide values on stub inputs
+    global._stubElements['dome-radius'].value = '85';
+    global._stubElements['dome-tiers'].value = '6';
+    global._stubElements['polygon-grid-pass'].value = 'crosshatch';
+    global._stubElements['sar-track-spacing'].value = '45';
+    global._stubElements['perimeter-offset'].value = '12';
+    global._stubElements['cinematic-azimuth'].value = '120';
+
+    saveActiveLayerFromUi();
+
+    assert.strictEqual(layer.domeRadius, 85);
+    assert.strictEqual(layer.domeTiers, 6);
+    assert.strictEqual(layer.polygonGridPass, 'crosshatch');
+    assert.strictEqual(layer.sarTrackSpacing, 45);
+    assert.strictEqual(layer.perimeterOffset, 12);
+    assert.strictEqual(layer.cinematicAzimuth, 120);
+
+    // Mutate UI inputs to garbage
+    global._stubElements['dome-radius'].value = '10';
+    global._stubElements['dome-radius']._undoBaselineValue = '10';
+
+    // Hydrate back
+    syncUiWithActiveLayer(layer);
+
+    assert.strictEqual(Number(global._stubElements['dome-radius'].value), 85);
+    assert.strictEqual(Number(global._stubElements['dome-radius']._undoBaselineValue), 85);
+  });
+
+  test('Pattern Sliders: Universal tracking captures pre-change baseline and is fully undoable/redoable', () => {
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+    const layer = flightLayers[0]; // corridor
+    activeLayerId = layer.id;
+    layer.corridorWidth = 60;
+
+    const el = global._stubElements['corridor-width'];
+    el.value = '60';
+    el._undoBaselineValue = '60';
+
+    // Simulate slider drag starting with preparePendingPropertySnapshot
+    preparePendingPropertySnapshot('Change Corridor Width', 'corridor-width');
+    assert.strictEqual(hasPendingPropertySnapshot(), true);
+
+    // Value modified
+    el.value = '120';
+    layer.corridorWidth = 120;
+
+    // Pointerup / change commits snapshot
+    commitPendingPropertySnapshot('Change Corridor Width', 'corridor-width');
+    assert.strictEqual(hasPendingPropertySnapshot(), false);
+    assert.strictEqual(undoHistoryStack.length, 1);
+    assert.strictEqual(undoHistoryStack[0].flightLayers[0].corridorWidth, 60);
+    assert.strictEqual(getActiveLayer().corridorWidth, 120);
+
+    // Undo reverts to 60
+    assert.strictEqual(undoLastAction(), true);
+    assert.strictEqual(getActiveLayer().corridorWidth, 60);
+
+    // Redo restores to 120
+    assert.strictEqual(redoLastAction(), true);
+    assert.strictEqual(getActiveLayer().corridorWidth, 120);
+  });
+
+  test('Inter-Layer Transitions: updateLayerTransition pushes an undo snapshot and reverts on undo', () => {
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+
+    const layer = flightLayers[0];
+    layer.transition = { type: 'direct' };
+
+    updateLayerTransition(layer.id, { type: 'safeAltitude', safeAltitude: 80 });
+
+    assert.strictEqual(undoHistoryStack.length, 1);
+    assert.strictEqual(undoHistoryStack[0].actionLabel, 'Update Layer Transition');
+    assert.strictEqual(layer.transition.type, 'safeAltitude');
+    assert.strictEqual(layer.transition.safeAltitude, 80);
+
+    // Undo reverts transition
+    assert.strictEqual(undoLastAction(), true);
+    assert.strictEqual(flightLayers[0].transition.type, 'direct');
+
+    // Redo restores transition
+    assert.strictEqual(redoLastAction(), true);
+    assert.strictEqual(flightLayers[0].transition.type, 'safeAltitude');
+    assert.strictEqual(flightLayers[0].transition.safeAltitude, 80);
+  });
+});
+

@@ -1,0 +1,1183 @@
+{
+  "schemaVersion": 1,
+  "lastUpdated": "2026-10-30T14:21:25.996Z",
+  "currentAppVersion": "1.209.0",
+  "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
+  "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
+  "wpmlCompilerHash": "f01cb90862e5",
+  "patterns": {
+    "single": {
+      "id": "single",
+      "name": "2D Map (Nadir Grid)",
+      "category": "Mapping & 3D",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateGridCoordinates"
+      ],
+      "codeHash": "2060d0169374",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 50,
+        "widthM": 80,
+        "heightM": 80,
+        "rotationDeg": 0,
+        "speedMps": 6,
+        "gimbalPitchDeg": -90,
+        "captureMode": "continuous",
+        "headingMode": "followWayline",
+        "pathMode": "straight",
+        "frontOverlapPct": 75,
+        "sideOverlapPct": 70,
+        "turnaroundOvershootM": 10
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "double": {
+      "id": "double",
+      "name": "3D Splat (Double Grid)",
+      "category": "Mapping & 3D",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateGridCoordinates"
+      ],
+      "codeHash": "dd5cae736203",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 50,
+        "widthM": 70,
+        "heightM": 70,
+        "rotationDeg": 0,
+        "speedMps": 5,
+        "gimbalPitchDeg": -60,
+        "captureMode": "continuous",
+        "headingMode": "followWayline",
+        "pathMode": "straight",
+        "frontOverlapPct": 75,
+        "sideOverlapPct": 70,
+        "turnaroundOvershootM": 10
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "target-splat": {
+      "id": "target-splat",
+      "name": "Target Splat (Frustum Grid)",
+      "category": "Mapping & 3D",
+      "sourceFile": "src/3d/GeometryBuilder.js",
+      "generatorFunctions": [
+        "generateTargetSplatCoordinates"
+      ],
+      "codeHash": "0ec37c04a3ff",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 45,
+        "widthM": 80,
+        "heightM": 80,
+        "targetRadiusM": 20,
+        "targetHeightM": 8,
+        "speedMps": 4.5,
+        "gimbalPitchDeg": -45,
+        "captureMode": "continuous",
+        "headingMode": "followWayline",
+        "pathMode": "straight",
+        "framingMode": "balanced"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "orbit": {
+      "id": "orbit",
+      "name": "3D Object (Circular Orbit)",
+      "category": "Orbit & Structure",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateOrbitCoordinates"
+      ],
+      "codeHash": "64011bf49858",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 40,
+        "radiusM": 30,
+        "speedMps": 4,
+        "gimbalPitchDeg": -45,
+        "captureMode": "continuous",
+        "headingMode": "towardCenter",
+        "pathMode": "curved",
+        "frontOverlapPct": 75
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "multi-orbit": {
+      "id": "multi-orbit",
+      "name": "3D Object (Multi-Tiered Orbit)",
+      "category": "Orbit & Structure",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateMultiOrbitCoordinates"
+      ],
+      "codeHash": "0d54cef3c772",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "minAltitudeM": 25,
+        "maxAltitudeM": 55,
+        "tiers": 3,
+        "descentOrder": "max-to-min",
+        "radiusM": 30,
+        "speedMps": 4,
+        "gimbalPitchDeg": -45,
+        "captureMode": "continuous",
+        "headingMode": "towardCenter",
+        "pathMode": "curved"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "tower": {
+      "id": "tower",
+      "name": "3D Structure (Tower Audit)",
+      "category": "Orbit & Structure",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateTowerCoordinates"
+      ],
+      "codeHash": "691c76eb56a7",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "towerRadiusM": 15,
+        "guyWireBufferM": 10,
+        "minHeightM": 20,
+        "maxHeightM": 60,
+        "tiers": 3,
+        "direction": "horizontal",
+        "speedMps": 2.5,
+        "gimbalPitchDeg": -15,
+        "captureMode": "stopAndShoot",
+        "headingMode": "towardCenter",
+        "pathMode": "straight"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "vertical-facade": {
+      "id": "vertical-facade",
+      "name": "Vertical Facade (Planar Infrastructure)",
+      "category": "Orbit & Structure",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateVerticalFacadeCoordinates"
+      ],
+      "codeHash": "d8232774e98a",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "facadeWidthM": 40,
+        "minAltM": 15,
+        "maxAltM": 40,
+        "standoffM": 15,
+        "rotationDeg": 0,
+        "rasterOrder": "horizontal",
+        "speedMps": 2.5,
+        "gimbalPitchDeg": 0,
+        "captureMode": "stopAndShoot",
+        "headingMode": "fixed",
+        "pathMode": "straight"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "continuous-helix": {
+      "id": "continuous-helix",
+      "name": "Continuous Helix (Corkscrew Orbit)",
+      "category": "Orbit & Structure",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateHelixCoordinates"
+      ],
+      "codeHash": "29e3be3b2fcb",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "startRadiusM": 30,
+        "endRadiusM": 20,
+        "startAltM": 55,
+        "endAltM": 20,
+        "loops": 2,
+        "direction": "cw",
+        "speedMps": 3.5,
+        "gimbalPitchDeg": -40,
+        "captureMode": "continuous",
+        "headingMode": "towardCenter",
+        "pathMode": "curved"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "star-pass": {
+      "id": "star-pass",
+      "name": "Star Pass (Cross-Hatch POI Inspection)",
+      "category": "Orbit & Structure",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateStarPassCoordinates"
+      ],
+      "codeHash": "2a4cf7306d93",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 45,
+        "radiusM": 35,
+        "spokes": 4,
+        "speedMps": 4.5,
+        "gimbalPitchDeg": -60,
+        "captureMode": "continuous",
+        "headingMode": "followWayline",
+        "pathMode": "straight"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "photo-sphere": {
+      "id": "photo-sphere",
+      "name": "360° Pano (Photo Sphere)",
+      "category": "Creative & Pano",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generatePhotoSphereCoordinates",
+        "calculatePhotoSphereOverlap"
+      ],
+      "codeHash": "e0584da7f38d",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 45,
+        "speedMps": 3,
+        "shotsPerRing": 8,
+        "settlingTimeSec": 2,
+        "captureMode": "stopAndShoot",
+        "pathMode": "straight"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "hyperlapse": {
+      "id": "hyperlapse",
+      "name": "Hyperlapse (Interval Time-Lapse)",
+      "category": "Creative & Pano",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateHyperlapseWaypoints"
+      ],
+      "codeHash": "61f3eadcbc2c",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 40,
+        "speedMps": 1.5,
+        "intervalSec": 3,
+        "startPitchDeg": -20,
+        "endPitchDeg": -45,
+        "captureMode": "continuous",
+        "headingMode": "smoothTransition",
+        "pathMode": "curved"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "light-art": {
+      "id": "light-art",
+      "name": "Light Art (Sky Painting / Long Exposure)",
+      "category": "Creative & Pano",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateLightArtCoordinates",
+        "calculateLightArtRadiusForDuration"
+      ],
+      "codeHash": "d918cec9dfee",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 35,
+        "safetyDeckFloorM": 15,
+        "radiusM": 25,
+        "tiltDeg": 45,
+        "speedMps": 3,
+        "captureMode": "continuous",
+        "headingMode": "followWayline",
+        "pathMode": "curved"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "grid-orbit-combo": {
+      "id": "grid-orbit-combo",
+      "name": "2D + 3D Hybrid (Grid + Orbit Combo)",
+      "category": "Mapping & 3D",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateGridOrbitComboCoordinates",
+        "generateCircularGridCoordinates"
+      ],
+      "codeHash": "ee49e925a455",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 50,
+        "radiusM": 35,
+        "rotationDeg": 0,
+        "speedMps": 5,
+        "gimbalPitchDeg": -55,
+        "captureMode": "continuous",
+        "pathMode": "curved",
+        "frontOverlapPct": 75,
+        "sideOverlapPct": 70
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "grid-multi-orbit-combo": {
+      "id": "grid-multi-orbit-combo",
+      "name": "2D + 3D Hybrid (Grid + Multi-Orbit)",
+      "category": "Mapping & 3D",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateGridMultiOrbitComboCoordinates",
+        "generateCircularGridCoordinates"
+      ],
+      "codeHash": "5d8e10e013e4",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "minAltitudeM": 25,
+        "maxAltitudeM": 55,
+        "tiers": 2,
+        "radiusM": 35,
+        "rotationDeg": 0,
+        "speedMps": 5,
+        "gimbalPitchDeg": -55,
+        "captureMode": "continuous",
+        "pathMode": "curved"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "freeform": {
+      "id": "freeform",
+      "name": "Freeform Flight Plan (Manual Waypoints)",
+      "category": "Linear & Route",
+      "sourceFile": "src/layers/LayerManager.js",
+      "generatorFunctions": [
+        "compileMissionGeometry"
+      ],
+      "codeHash": "1af7e6adb578",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 45,
+        "speedMps": 5,
+        "gimbalPitchDeg": -45,
+        "captureMode": "stopAndShoot",
+        "headingMode": "followWayline",
+        "pathMode": "straight"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "road-following": {
+      "id": "road-following",
+      "name": "Road Following (Offset Path)",
+      "category": "Linear & Route",
+      "sourceFile": "src/layers/LayerManager.js",
+      "generatorFunctions": [
+        "generateRoadFlightWaypoints"
+      ],
+      "codeHash": "e20683d1d303",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 45,
+        "roadOffsetM": 15,
+        "speedMps": 5.5,
+        "gimbalPitchDeg": "auto",
+        "captureMode": "continuous",
+        "headingMode": "followWayline",
+        "pathMode": "curved"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "corridor": {
+      "id": "corridor",
+      "name": "Corridor Mapping (Multi-Pass Polyline)",
+      "category": "Linear & Route",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateCorridorCoordinates"
+      ],
+      "codeHash": "4ff8bc9f909e",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 60,
+        "corridorWidthM": 60,
+        "passes": 3,
+        "overshootM": 15,
+        "turnType": "bulb",
+        "speedMps": 6.5,
+        "gimbalPitchDeg": -90,
+        "captureMode": "continuous",
+        "headingMode": "followWayline",
+        "pathMode": "curved"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "exclusion-box": {
+      "id": "exclusion-box",
+      "name": "Exclusion Zone (Rectangular Box)",
+      "category": "Safety & GCP",
+      "sourceFile": "src/layers/LayerManager.js",
+      "generatorFunctions": [
+        "filterWaypointsByExclusionZones"
+      ],
+      "codeHash": "912ee3191092",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "boxWidthM": 35,
+        "boxHeightM": 35,
+        "minAltM": 0,
+        "maxAltM": 65,
+        "clearanceBufferM": 5
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "exclusion-freeform": {
+      "id": "exclusion-freeform",
+      "name": "Exclusion Zone (Freeform Polygon)",
+      "category": "Safety & GCP",
+      "sourceFile": "src/layers/LayerManager.js",
+      "generatorFunctions": [
+        "filterWaypointsByExclusionZones"
+      ],
+      "codeHash": "3950f2668594",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "verticesCount": 5,
+        "minAltM": 0,
+        "maxAltM": 70,
+        "clearanceBufferM": 5
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "boundary-polygon": {
+      "id": "boundary-polygon",
+      "name": "Boundary / Parcel (Drawing Layer)",
+      "category": "Safety & GCP",
+      "sourceFile": "src/layers/LayerManager.js",
+      "generatorFunctions": [
+        "compileMissionGeometry"
+      ],
+      "codeHash": "49ed96c0dfa0",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "verticesCount": 4,
+        "elevationOffsetM": 0
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "fiducial-markers": {
+      "id": "fiducial-markers",
+      "name": "Fiducial / GCPs (ArUco / AprilTag Survey)",
+      "category": "Safety & GCP",
+      "sourceFile": "src/vision/GcpEngine.js",
+      "generatorFunctions": [
+        "generateFiducialPrintableHtml",
+        "exportFiducialCoordinatesCsv"
+      ],
+      "codeHash": "66a0acd7ab2e",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "dictionary": "APRILTAG_36h11",
+        "markerSizeCm": 60,
+        "markersCount": 4
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "dome-shell": {
+      "id": "dome-shell",
+      "name": "Hemispherical Dome (3D Geodesic Shell)",
+      "category": "Orbit & Structure",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateDomeShellCoordinates"
+      ],
+      "codeHash": "1a6a09ce38be",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "baseAltitudeM": 10,
+        "standoffRadiusM": 30,
+        "elevationTiers": 3,
+        "zenithCap": true,
+        "descentOrder": "max-to-min",
+        "speedMps": 4,
+        "captureMode": "continuous",
+        "headingMode": "towardCenter",
+        "pathMode": "curved"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "polygon-grid": {
+      "id": "polygon-grid",
+      "name": "Polygon Area Grid (Custom Survey)",
+      "category": "Mapping & 3D",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generatePolygonGridCoordinates",
+        "computeOptimalPolygonSweepAngle"
+      ],
+      "codeHash": "867bcbae0dc0",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 50,
+        "verticesCount": 5,
+        "autoSweepAngle": true,
+        "gridPassMode": "single",
+        "speedMps": 6,
+        "gimbalPitchDeg": -90,
+        "captureMode": "continuous",
+        "headingMode": "followWayline",
+        "pathMode": "straight",
+        "frontOverlapPct": 75,
+        "sideOverlapPct": 70
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "sar-search": {
+      "id": "sar-search",
+      "name": "Search & Rescue (Expanding Square / Sector)",
+      "category": "Safety & GCP",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateSarSearchCoordinates"
+      ],
+      "codeHash": "2d1771fe8427",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 45,
+        "sarMode": "expanding-square",
+        "trackSpacingM": 25,
+        "maxLegs": 8,
+        "bearingDeg": 0,
+        "speedMps": 5.5,
+        "gimbalPitchDeg": -45,
+        "captureMode": "continuous",
+        "headingMode": "followWayline",
+        "pathMode": "straight"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "perimeter-patrol": {
+      "id": "perimeter-patrol",
+      "name": "Perimeter Patrol (Closed Boundary Loop)",
+      "category": "Linear & Route",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generatePerimeterPatrolCoordinates"
+      ],
+      "codeHash": "0b8ae872cd00",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "altitudeM": 35,
+        "standoffOffsetM": 10,
+        "headingLock": "inward",
+        "direction": "cw",
+        "laps": 1,
+        "speedMps": 4.5,
+        "gimbalPitchDeg": -45,
+        "captureMode": "continuous",
+        "pathMode": "curved"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    },
+    "cinematic-reveal": {
+      "id": "cinematic-reveal",
+      "name": "Cinematic Reveal (Dronie / Boomerang)",
+      "category": "Creative & Pano",
+      "sourceFile": "src/patterns/PatternGenerators.js",
+      "generatorFunctions": [
+        "generateCinematicRevealCoordinates"
+      ],
+      "codeHash": "952ac2e23166",
+      "verifiedCodeHash": null,
+      "status": "UNTESTED",
+      "lastModifiedVersion": "1.209.0",
+      "lastTestedVersion": null,
+      "lastTestedDate": null,
+      "testedBy": null,
+      "droneModel": null,
+      "firmware": null,
+      "notes": "",
+      "testParams": {
+        "centerCoords": [
+          41.3215,
+          -88.995
+        ],
+        "cinematicMode": "dronie",
+        "azimuthDeg": 180,
+        "startDistM": 8,
+        "endDistM": 45,
+        "startAltM": 12,
+        "endAltM": 40,
+        "poiAltM": 2,
+        "speedMps": 3,
+        "captureMode": "continuous",
+        "headingMode": "towardCenter",
+        "pathMode": "curved"
+      },
+      "checklist": {
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
+      },
+      "lastTelemetryMetrics": null,
+      "history": []
+    }
+  },
+  "releasePlans": [
+    {
+      "id": "rel-1.209.0-201",
+      "version": "1.209.0",
+      "issueNumber": 201,
+      "title": "Post-Update IRL Field Test Plan Policy, Tracking Framework, Automated Post-Flight Log Verifier & 26-Pattern Suite",
+      "date": "2026-10-30",
+      "affectedPatterns": [
+        "single",
+        "double",
+        "orbit",
+        "dome-shell",
+        "polygon-grid",
+        "sar-search"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Export test mission KMZ/WPML at synthetic rural coordinates `[41.3215, -88.9950]` and verify clean import into DJI Fly / RC 2.",
+          "checked": false
+        },
+        {
+          "label": "Verify takeoff, climb to target AGL, and Waypoint 1 entry transition accuracy (±2.0m).",
+          "checked": false
+        },
+        {
+          "label": "Verify modified flight pattern / feature behavior matches expected 3D trajectory, heading, and gimbal pitch.",
+          "checked": false
+        },
+        {
+          "label": "Run post-flight telemetry log analysis (`npm run irl:analyze`) and confirm all 6 phases pass within tolerance.",
+          "checked": false
+        }
+      ]
+    }
+  ]
+}

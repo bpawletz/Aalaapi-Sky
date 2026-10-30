@@ -10901,5 +10901,74 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const captureAfterRedo = await page.evaluate(() => getActiveLayer().captureMode);
       assert.strictEqual(captureAfterRedo, "stopAndShoot", "Redoing must restore capture mode to stopAndShoot");
     });
+
+    test("Comprehensive Pattern & Transition Controls Undo/Redo: corridor width slider and inter-layer transition (Closes #200)", async () => {
+      // 1. Initial state at rural Utica coords
+      await page.evaluate(() => {
+        undoHistoryStack.length = 0;
+        redoHistoryStack.length = 0;
+        setGridCenter(41.3215, -88.9950);
+        const sec = document.getElementById("grid-geometry-section");
+        if (sec) sec.classList.remove("collapsed");
+      });
+      await page.waitForTimeout(200);
+
+      // Switch pattern to Corridor
+      await page.evaluate(() => {
+        const gridType = document.getElementById("grid-type");
+        gridType.value = "corridor";
+        gridType.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await page.waitForTimeout(300);
+
+      const undoCountAfterPattern = await page.evaluate(() => undoHistoryStack.length);
+
+      // 2. Adjust corridor-width slider
+      await page.evaluate(() => {
+        const el = document.getElementById("corridor-width");
+        el.dispatchEvent(new Event("focusin", { bubbles: true }));
+        el.value = "120";
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await page.waitForTimeout(300);
+
+      const undoCountAfterSlider = await page.evaluate(() => undoHistoryStack.length);
+      assert.strictEqual(undoCountAfterSlider, undoCountAfterPattern + 1, "Changing corridor-width must push an undo snapshot");
+      const activeWidth = await page.evaluate(() => getActiveLayer().corridorWidth);
+      assert.strictEqual(activeWidth, 120, "Active layer corridorWidth must be 120");
+
+      // 3. Test Inter-layer Transition update
+      await page.evaluate(() => {
+        if (typeof updateLayerTransition === "function") {
+          // Real signature: updateLayerTransition(fromLayerId, transitionSettings)
+          updateLayerTransition(flightLayers[0].id, { type: "safeAltitude", safeAltitude: 80 });
+        }
+      });
+      await page.waitForTimeout(300);
+
+      const undoCountAfterTransition = await page.evaluate(() => undoHistoryStack.length);
+      assert.strictEqual(undoCountAfterTransition, undoCountAfterSlider + 1, "Updating layer transition must push an undo snapshot");
+      const activeTransition = await page.evaluate(() => flightLayers[0].transition && flightLayers[0].transition.type);
+      assert.strictEqual(activeTransition, "safeAltitude", "Layer transition type must be safeAltitude");
+
+      // 4. Undo transition update
+      await page.evaluate(() => document.getElementById("map-undo-btn").click()); // banner-safe DOM click
+      await page.waitForTimeout(300);
+      const transitionAfterUndo = await page.evaluate(() => (flightLayers[0].transition && flightLayers[0].transition.type) || "direct");
+      assert.strictEqual(transitionAfterUndo, "direct", "Undoing transition must revert to direct");
+
+      // 5. Undo corridor width change
+      await page.evaluate(() => document.getElementById("map-undo-btn").click()); // banner-safe DOM click
+      await page.waitForTimeout(300);
+      const widthAfterUndo = await page.evaluate(() => getActiveLayer().corridorWidth);
+      assert.notEqual(widthAfterUndo, 120, "Undoing corridor width must revert from 120");
+
+      // 6. Redo restores corridor width
+      await page.evaluate(() => document.getElementById("map-redo-btn").click()); // banner-safe DOM click
+      await page.waitForTimeout(300);
+      const widthAfterRedo = await page.evaluate(() => getActiveLayer().corridorWidth);
+      assert.strictEqual(widthAfterRedo, 120, "Redoing corridor width must restore 120");
+    });
   });
 });

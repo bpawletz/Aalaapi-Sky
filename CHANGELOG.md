@@ -1,3 +1,43 @@
+## [1.209.0] - 2026-10-30
+
+Aalaapi Sky introduces a formal In-Real-Life (IRL) Field Flight Test Plan & QA Verification Framework covering all 26 flight patterns, an automated Post-Flight Telemetry Log Analyzer (`npm run irl:analyze`), a zero-bloat Section 2 IRL verification status badge linked to GitHub Issue #202, and explicit legal disclaimers for environmental and firmware variations.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **26-Pattern IRL Field Flight Test Plan Suite**: Published a standardized 6-phase real-world field verification protocol (`docs/IRL_TEST_PLAN.md`) covering every flight pattern in `#grid-type` using safe rural test parameters (`[41.3215, -88.9950]`) (Closes #201).
+  - Six Verification Phases: Structured field sign-off for Phase 1 (KMZ Import & Controller Parsing), Phase 2 (Safe Entry & Altitude Verification), Phase 3 (Geometry & Turn Dynamics), Phase 4 (Heading & Gimbal Pitch Interpolation), Phase 5 (Camera Action & Shutter Triggering), and Phase 6 (Safe Exit, Transition & Return-to-Home).
+  - Master GitHub Verification Matrix & Mobile Issue Form: Linked directly to the interactive Master IRL Verification Matrix (Issue #202) and `.github/ISSUE_TEMPLATE/irl_flight_test.yml` for mobile field reporting from smartphones or tablets.
+- **Automated Post-Flight Telemetry Log Verifier**: Added quantitative post-flight log verification (`npm run irl:analyze`) that compares actual drone flight logs (`.csv`, `.txt`, `.geojson`, `.gpx`, `.wpml`) against planned mission waypoints to automatically score all 6 IRL test phases.
+  - Quantitative Pass/Fail Metrics: Evaluates horizontal cross-track error (`<= 2.5m` pass), altitude hold accuracy (`<= 3.0m` pass), heading/yaw alignment (`<= 12 deg` pass), gimbal pitch tracking (`<= 8 deg` pass), shutter/action count ratio (`>= 90%` pass), and battery/RTH completion margins.
+- **Section 2 IRL Verification Status Badge (`#active-layer-irl-badge`)**: Added a compact, zero-bloat status pill in the Section 2 Layer Properties header displaying live pattern verification status (`✅ IRL`, `🧪 Re-Test`, `❌ IRL`, or `🧪 IRL`) with a direct link to Issue #202.
+- **IRL Verification Non-Guarantee & Variations Legal Disclaimers**: Expanded "The Legalize" across `CREDITS.md`, `README.md`, `#disclaimer-modal`, `#about-trademarks-section`, and `docs/IRL_TEST_PLAN.md` to explicitly clarify that an `"IRL Verified"` status reflects a single historical baseline test only and does NOT guarantee safe flight across real-world variations (wind, weather, GNSS multipath, geomagnetic drift, DEM/terrain errors, obstacles, or OEM firmware updates).
+
+#### Under the Hood & Technical Details
+- **`tools/qa/irl_tracker.js` & `docs/irl_test_status.json`**: Implemented the external QA CLI (`status`, `sync`, `check`, `analyze`, `add-update`) computing 12-character SHA-256 hashes of pattern generator functions (`src/patterns/PatternGenerators.js`, `src/3d/GeometryBuilder.js`, `src/layers/LayerManager.js`, `src/vision/GcpEngine.js`, `src/export/WpmlCompiler.js`) and automatically transitioning `VERIFIED` patterns to `NEEDS_RETEST` whenever generator code changes.
+- **`scratch/build.py` & `src/ui/SidebarManager.js`**: Injected a lightweight (~350-byte) read-only `window.AALAAPI_IRL_STATUS` dictionary at build time and wired `updateActiveLayerIrlBadge(gridType)` into `togglePatternParameters()`.
+- **`AGENTS.md`**: Added Section 15 ("Post-Update IRL Field Test Plan Generation, Tracking & Non-Guarantee Policy") and updated Sections 10 and 12 to enforce post-update IRL test plan generation, SHA-256 status synchronization, and non-guarantee legal disclaimers.
+- **`tools/qa/irl_tracker.test.js`**: Added unit test suite covering 26-pattern completeness, SHA-256 drift invalidation (`VERIFIED` -> `NEEDS_RETEST`), post-flight log analysis pass/fail detection, and legal disclaimer enforcement.
+
+## [1.208.0] - 2026-10-30
+
+Aalaapi Sky brings full undo and redo tracking across all 145 Section 2 flight pattern controls, inter-layer transition rules, next-gen generator parameters, and 2D/3D waypoint overrides, ensuring every operational setting can be reverted with zero state loss.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Comprehensive Pattern & Layer Controls Undo/Redo**: Extended undo and redo tracking to every flight pattern slider, dropdown, number input, and checkbox across all pattern modes (Closes #200).
+  - Next-Gen Pattern Dynamics: Full undo and layer persistence for Dome Shell (radius, levels, cameras, bottom ring), Polygon Grid (step-in margin, camera orientation, sync boundary), SAR Search (search type, sweep width, track spacing, expansion rate), Perimeter Patrol (patrol passes, offset distance, corner lead-in, loop closure), and Cinematic Reveal (reveal type, focal distance, reveal pitch, sweep angle).
+  - Inter-Layer Transition Rules: Modifying inter-layer transition types (Direct Fly, RTH, Hover & Wait, Spiral Climb, Surface Clearance) or transition speed now automatically pushes an undo snapshot.
+  - Waypoint Overrides & Splitting: Saving or resetting waypoint overrides in the 2D popup or 3D FPV HUD and inserting waypoints now cleanly record reversible undo snapshots.
+  - Descriptive Control Feedback: Control changes generate intuitive undo toasts specifying the exact parameter modified (e.g. `↩️ Undid: Change Corridor Width`, `↩️ Undid: Change Dome Radius`, `↩️ Undid: Update Layer Transition`).
+
+#### Under the Hood & Technical Details
+- **`src/layers/LayerManager.js`**: Persisted and hydrated all 23 next-gen pattern parameters in `saveActiveLayerFromUi` and `syncUiWithActiveLayer`, assigned `_undoBaselineValue` across all pattern inputs during layer synchronization, and hooked `pushUndoSnapshot('Update Layer Transition')` into `updateLayerTransition`.
+- **`src/ui/EventBindings.js`**: Registered all 94 previously unwired pattern controls in `additionalLayerControls`, added parameter-to-label resolution in `getControlPropertyLabel`, and wired `#polygon-grid-sync-boundary-btn` into snapshot tracking.
+- **`src/import/KmzImporter.js` & `src/3d/FpvHud.js`**: Hooked `pushUndoSnapshot` into 2D and 3D waypoint override saves, resets, and insertions (`#save-wp-btn`, `#reset-wp-btn`, `fpvInsertWaypoint`, `#fpv-btn-save-wp`, `#fpv-btn-reset-wp`).
+- **`AGENTS.md`**: Added Section 14 ("Comprehensive Undo & Redo Integration Policy") codifying the universal control tracking contract, layer state persistence requirements, discrete action snapshotting, and mandatory regression tests.
+
 ## [1.207.1] - 2026-10-30
 
 ### 🐛 Fixed

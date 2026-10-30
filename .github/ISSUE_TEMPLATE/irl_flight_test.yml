@@ -1,0 +1,118 @@
+name: "🚁 IRL Field Flight Test Report"
+description: "Log an In-Real-Life (IRL) field verification flight or post-flight telemetry log analysis for an Aalaapi Sky flight pattern or software update."
+title: "[IRL Test] <Pattern / Feature> on <Drone Model> (v1.209.0)"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **⚠️ Legal & Operational Non-Guarantee Notice ("The Legalize"):**
+        > Submitting or passing an IRL Field Test Report records historical reference performance on a specific aircraft/firmware build under the specific conditions of that flight. **It DOES NOT constitute a guarantee, warranty, or certification of safe flight** across different wind/weather, GNSS multipath, geomagnetic, DEM/terrain, obstacle, or OEM firmware conditions. The Remote Pilot in Command (RPIC) retains 100% sole responsibility for VLOS and flight safety.
+
+  - type: dropdown
+    id: pattern
+    attributes:
+      label: "Flight Pattern / Feature Tested"
+      description: "Select the flight pattern (or feature update) verified during this field test."
+      options:
+        - "single — 2D Map (Nadir Grid)"
+        - "double — 3D Splat (Double Grid)"
+        - "target-splat — Target Splat (Frustum Grid)"
+        - "orbit — 3D Object (Circular Orbit)"
+        - "multi-orbit — 3D Object (Multi-Tiered Orbit)"
+        - "tower — 3D Structure (Tower Audit)"
+        - "vertical-facade — Vertical Facade (Planar Infrastructure)"
+        - "continuous-helix — Continuous Helix (Corkscrew Orbit)"
+        - "star-pass — Star Pass (Cross-Hatch POI Inspection)"
+        - "photo-sphere — 360° Pano (Photo Sphere)"
+        - "hyperlapse — Hyperlapse (Interval Time-Lapse)"
+        - "light-art — Light Art (Sky Painting / Long Exposure)"
+        - "grid-orbit-combo — 2D + 3D Hybrid (Grid + Orbit Combo)"
+        - "grid-multi-orbit-combo — 2D + 3D Hybrid (Grid + Multi-Orbit)"
+        - "freeform — Freeform Flight Plan (Manual Waypoints)"
+        - "road-following — Road Following (Offset Path)"
+        - "corridor — Corridor Mapping (Multi-Pass Polyline)"
+        - "exclusion-box — Exclusion Zone (Rectangular Box)"
+        - "exclusion-freeform — Exclusion Zone (Freeform Polygon)"
+        - "boundary-polygon — Boundary / Parcel (Drawing Layer)"
+        - "fiducial-markers — Fiducial / GCPs (ArUco / AprilTag Survey)"
+        - "dome-shell — Hemispherical Dome (3D Geodesic Shell)"
+        - "polygon-grid — Polygon Area Grid (Custom Survey)"
+        - "sar-search — Search & Rescue (Expanding Square / Sector)"
+        - "perimeter-patrol — Perimeter Patrol (Closed Boundary Loop)"
+        - "cinematic-reveal — Cinematic Reveal (Dronie / Boomerang)"
+        - "Other / Post-Update Feature Verification"
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: "Aalaapi Sky Version"
+      placeholder: "v1.209.0"
+      value: "v1.209.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: drone_model
+    attributes:
+      label: "Aircraft Model"
+      options:
+        - "DJI Mini 4 Pro"
+        - "DJI Air 3"
+        - "DJI Mavic 3 Enterprise (M3E / M3T)"
+        - "DJI Mavic 3 Pro / Classic"
+        - "DJI Mini 3 Pro"
+        - "DJI Matrice 30 / 350 RTK"
+        - "Other Aircraft"
+    validations:
+      required: true
+
+  - type: input
+    id: firmware_env
+    attributes:
+      label: "Controller / Firmware & Weather Conditions"
+      description: "Specify RC 2 / DJI Fly version and wind/visibility conditions (do NOT include private client coordinates or PII)."
+      placeholder: "DJI RC 2 FW 01.00.0600, DJI Fly 1.13.x | Wind 4 mph, Clear VFR, Rural open field"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: phases
+    attributes:
+      label: "6-Phase Field Verification Checklist"
+      description: "Check off each phase verified during the flight or via `npm run irl:analyze`."
+      options:
+        - label: "Phase 1 (kmz_import): KMZ/WPML loaded cleanly onto RC 2 / DJI Fly with valid waypoint count & preview."
+        - label: "Phase 2 (entry_altitude): Takeoff, climb, and Waypoint 1 entry stabilized within ±2.0m of target AGL."
+        - label: "Phase 3 (geometry_path): 3D track geometry, turn mode (straight/curved), and cruise speed matched plan (≥90% WPs within tolerance)."
+        - label: "Phase 4 (heading_gimbal): Aircraft yaw lock and gimbal pitch tracked smoothly within ±6° pitch / ±15° yaw."
+        - label: "Phase 5 (capture_trigger): Camera shutter / interval / action groups fired accurately (and settled on stopAndShoot)."
+        - label: "Phase 6 (exit_rth): Final waypoint completed, RC pause/override responsive, and safe RTH executed (≥15% battery)."
+
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: "Overall Test Outcome"
+      options:
+        - "✅ PASS — All 6 IRL Phases Verified"
+        - "⚠️ PARTIAL — Minor Variance Noted"
+        - "❌ FAIL — Regression / Flight Anomaly Found"
+    validations:
+      required: true
+
+  - type: textarea
+    id: telemetry_report
+    attributes:
+      label: "Post-Flight Telemetry Scorecard & Field Notes"
+      description: "Paste the output of `npm run irl:analyze` or describe any observed variances (use synthetic coordinates `[41.3215, -88.9950]` only)."
+      placeholder: "Paste `npm run irl:analyze` Markdown scorecard or field observations here..."
+
+  - type: checkboxes
+    id: legal_ack
+    attributes:
+      label: "RPIC Non-Guarantee & Data Privacy Acknowledgment"
+      options:
+        - label: "I confirm this report contains no sensitive real-world client coordinates or PII, and I acknowledge that IRL verification is a historical baseline check only and does NOT guarantee future flight safety across varying environmental, hardware, or firmware conditions."
+          required: true

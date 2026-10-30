@@ -1,5 +1,47 @@
 [
   {
+    "notam_id": "6/4077",
+    "facility": "ZMA",
+    "state": "FL",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Titusville, FL, Friday, November 6, 2026 through Sunday, November 8, 2026 UTC",
+    "mod_date": "10/30/2026 15:20:00",
+    "mod_abs_time": "202610301520",
+    "is_new": "Y",
+    "gid": "6/4077",
+    "start_utc": "2026-11-06T15:00:00.000Z",
+    "end_utc": "2026-11-08T22:00:59.000Z",
+    "exact_time": true
+  },
+  {
+    "notam_id": "6/4031",
+    "facility": "ZKC",
+    "state": "MO",
+    "type": "HAZARDS",
+    "description": "SEDALIA, MO, Monday, November 2, 2026 UTC",
+    "mod_date": "10/30/2026 14:04:00",
+    "mod_abs_time": "202610301404",
+    "is_new": "Y",
+    "gid": "6/4031",
+    "start_utc": "2026-11-02T14:00:00.000Z",
+    "end_utc": "2026-11-02T23:00:59.000Z",
+    "exact_time": true
+  },
+  {
+    "notam_id": "6/4028",
+    "facility": "ZJX",
+    "state": "FL",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Pensacola, FL, Thursday, November 5, 2026 through Saturday, November 7, 2026 UTC",
+    "mod_date": "10/30/2026 13:01:00",
+    "mod_abs_time": "202610301301",
+    "is_new": "Y",
+    "gid": "6/4028",
+    "start_utc": "2026-11-05T14:30:00.000Z",
+    "end_utc": "2026-11-07T22:00:59.000Z",
+    "exact_time": true
+  },
+  {
     "notam_id": "6/3963",
     "facility": "ZMA",
     "state": "FL",
@@ -91,7 +133,7 @@
     "description": "12 NM W MILLEDGEVILLE, GA, Friday, October 30, 2026 UTC",
     "mod_date": "10/29/2026 15:11:00",
     "mod_abs_time": "202610291511",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/3743",
     "start_utc": "2026-10-30T13:00:00.000Z",
     "end_utc": "2026-10-30T23:00:59.000Z",
@@ -105,7 +147,7 @@
     "description": "5NM NW BUCK HALL, SC, Friday, October 30, 2026 through Saturday, October 31, 2026 UTC",
     "mod_date": "10/29/2026 13:55:00",
     "mod_abs_time": "202610291355",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/3657"
   },
   {

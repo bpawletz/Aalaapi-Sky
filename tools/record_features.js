@@ -3260,6 +3260,47 @@ const scenarios = [
       await page.click('#map-redo-btn');
       await page.waitForTimeout(1500);
     }
+  },
+  {
+    id: 'feature_irl_test_badge_v1_209_0',
+    name: 'Section 2 IRL Verification Status Badge & Non-Guarantee Legal Disclaimers',
+    description: 'Demonstrates the Section 2 IRL verification status badge (#active-layer-irl-badge) across status states (Pending, Verified, Needs Re-Test) and opens the About Modal showing the IRL Non-Guarantee & Variations Disclaimer.',
+    issueRef: 'Issue #201',
+    run: async (page) => {
+      await page.evaluate(() => {
+        const sec2 = document.getElementById('grid-geometry-section');
+        if (sec2) sec2.classList.remove('collapsed');
+        setGridCenter(41.3215, -88.9950);
+      });
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(900);
+
+      // Show Verified state on 2D Nadir Grid
+      await page.evaluate(() => {
+        window.AALAAPI_IRL_STATUS = {
+          ...(window.AALAAPI_IRL_STATUS || {}),
+          'single': { s: 'V', v: '1.209.0' },
+          'double': { s: 'R', v: '1.200.0' }
+        };
+      });
+      await selectPattern(page, 'single');
+      await page.waitForTimeout(1100);
+
+      // Show Needs Re-Test state on 3D Double Grid
+      await selectPattern(page, 'double');
+      await page.waitForTimeout(1100);
+
+      // Open About modal to display the IRL Field Verification Non-Guarantee & Variations Disclaimer
+      await page.evaluate(() => {
+        const aboutBtn = document.getElementById('about-btn');
+        if (aboutBtn) aboutBtn.click();
+        const tm = document.getElementById('about-trademarks-section');
+        if (tm && typeof tm.scrollIntoView === 'function') {
+          tm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+      await page.waitForTimeout(1500);
+    }
   }
 ];
 
