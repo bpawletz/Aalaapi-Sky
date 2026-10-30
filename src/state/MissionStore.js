@@ -560,6 +560,10 @@ function createMissionSnapshot(actionLabel = 'Map Action') {
   };
 }
 
+function hasPendingPropertySnapshot() {
+  return Boolean(pendingPropertySnapshot);
+}
+
 function preparePendingPropertySnapshot(actionLabel = 'Change Layer Setting', sourceId = null) {
   if (isRestoringUndoState) return;
   // If a pending snapshot is already open for this interaction sequence, retain the original baseline
@@ -983,6 +987,7 @@ if (typeof window !== 'undefined') {
   window.undoLastAction = undoLastAction;
   window.redoLastAction = redoLastAction;
   window.pushUndoSnapshot = pushUndoSnapshot;
+  window.hasPendingPropertySnapshot = hasPendingPropertySnapshot;
   window.preparePendingPropertySnapshot = preparePendingPropertySnapshot;
   window.commitPendingPropertySnapshot = commitPendingPropertySnapshot;
   window.cancelPendingPropertySnapshot = cancelPendingPropertySnapshot;

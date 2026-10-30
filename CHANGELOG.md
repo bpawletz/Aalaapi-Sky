@@ -1,3 +1,16 @@
+## [1.207.1] - 2026-10-30
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Layer Dynamics & Modes Undo/Redo**: Fixed an issue where changing discrete layer settings (such as Capture Mode, Path Mode, Heading Mode, Turnaround Overshoot, Turnaround Speed, Corner Damping, Hover Time Mode, and Terrain Source) via dropdown selects, quick clicks, or mouse wheel scrolling did not increment the undo count (Closes #199).
+  - Ensured custom heading slider and quick heading chips (N, E, S, W) correctly increment the undo count and restore prior heading values on undo.
+
+#### Under the Hood & Technical Details
+- **`src/state/MissionStore.js`**: Exported `hasPendingPropertySnapshot` helper to allow event listeners to inspect whether a property snapshot is actively staged.
+- **`src/layers/LayerManager.js`**: Maintained `_undoBaselineValue` on form controls during `syncUiWithActiveLayer` to preserve correct pre-change values during layer switching.
+- **`src/ui/EventBindings.js`**: Added an active element baseline fallback in `wireUndoPropertyTracking` to capture snapshots on discrete `change` events when `pointerdown` / `focusin` is bypassed; registered `layer-custom-heading`, `layer-terrain-source`, and `layer-max-slope-angle` controls; wired `.layer-head-chip` buttons to push undo snapshots before applying directional angles.
+
 ## [1.207.0] - 2026-10-30
 
 Aalaapi Sky expands its Undo & Redo system to include all flight layer properties, flight dynamics, and layer lifecycle actions, giving pilots full bidirectional control over parameters and multi-layer missions.

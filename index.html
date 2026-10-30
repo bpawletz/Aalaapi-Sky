@@ -7979,7 +7979,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.207.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.207.1</span></h1>
         </div>
       </div>
 
@@ -14951,7 +14951,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.207.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.207.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15109,6 +15109,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.207.1):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Layer Dynamics &amp; Modes Undo/Redo (Closes #199):</strong> Ensured discrete dropdown selects, quick clicks, and mouse wheel adjustments for Section 2 controls (Capture Mode, Path Mode, Heading Mode, Turnaround Overshoot, Turnaround Speed, Corner Damping, Hover Time Mode, and Terrain Source) increment the undo count, and wired custom heading sliders and directional chip buttons into the undo history stack.</li>
+              </ul>
+              <br>
               <strong style="color: var(--text-main);">Changelog (v1.207.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>Layer Properties &amp; Dynamics Undo/Redo (Closes #198):</strong> Integrated full undo and redo tracking for flight parameters in Section 2 (altitude, speed, gimbal pitch, grid dimensions, overlap, heading mode, capture mode, turnaround dynamics, settling times, terrain-follow, and camera zoom) and layer operations (Add Layer, Duplicate Layer, Delete Layer, Reorder Layers, and Pattern Switches) with smooth slider drag debouncing.</li>
@@ -21803,6 +21808,10 @@ function createMissionSnapshot(actionLabel = 'Map Action') {
   };
 }
 
+function hasPendingPropertySnapshot() {
+  return Boolean(pendingPropertySnapshot);
+}
+
 function preparePendingPropertySnapshot(actionLabel = 'Change Layer Setting', sourceId = null) {
   if (isRestoringUndoState) return;
   // If a pending snapshot is already open for this interaction sequence, retain the original baseline
@@ -22226,6 +22235,7 @@ if (typeof window !== 'undefined') {
   window.undoLastAction = undoLastAction;
   window.redoLastAction = redoLastAction;
   window.pushUndoSnapshot = pushUndoSnapshot;
+  window.hasPendingPropertySnapshot = hasPendingPropertySnapshot;
   window.preparePendingPropertySnapshot = preparePendingPropertySnapshot;
   window.commitPendingPropertySnapshot = commitPendingPropertySnapshot;
   window.cancelPendingPropertySnapshot = cancelPendingPropertySnapshot;
@@ -28015,7 +28025,10 @@ function syncUiWithActiveLayer() {
 
   const setVal = (id, val) => {
     const el = document.getElementById(id);
-    if (el && val !== undefined && val !== null) el.value = val;
+    if (el && val !== undefined && val !== null) {
+      el.value = val;
+      el._undoBaselineValue = val;
+    }
   };
 
   updateInheritOptionLabels();
@@ -32908,7 +32921,13 @@ function initUIEventListeners() {
 
   function wireUndoPropertyTracking(el, label, id) {
     if (!el || typeof el.addEventListener !== 'function') return;
+    const isCheckbox = (el.type === 'checkbox');
+    if (el._undoBaselineValue === undefined) {
+      el._undoBaselineValue = isCheckbox ? el.checked : el.value;
+    }
+
     const onStart = () => {
+      el._undoBaselineValue = isCheckbox ? el.checked : el.value;
       if (typeof preparePendingPropertySnapshot === 'function') {
         preparePendingPropertySnapshot(`Change ${label}`, id);
       }
@@ -32917,8 +32936,26 @@ function initUIEventListeners() {
     el.addEventListener('focusin', onStart);
     el.addEventListener('keydown', onStart);
     el.addEventListener('change', () => {
-      if (typeof commitPendingPropertySnapshot === 'function') {
-        commitPendingPropertySnapshot(`Change ${label}`, id);
+      if (typeof hasPendingPropertySnapshot === 'function' && hasPendingPropertySnapshot()) {
+        if (typeof commitPendingPropertySnapshot === 'function') {
+          commitPendingPropertySnapshot(`Change ${label}`, id);
+        }
+        el._undoBaselineValue = isCheckbox ? el.checked : el.value;
+        return;
+      }
+
+      // Discrete change fallback for dropdown selects, mouse wheel, or fast clicks
+      const currentVal = isCheckbox ? el.checked : el.value;
+      const lastVal = el._undoBaselineValue;
+      if (lastVal !== undefined && lastVal !== currentVal && typeof pushUndoSnapshot === 'function') {
+        if (isCheckbox) el.checked = lastVal;
+        else el.value = lastVal;
+
+        pushUndoSnapshot(`Change ${label}`);
+
+        if (isCheckbox) el.checked = currentVal;
+        else el.value = currentVal;
+        el._undoBaselineValue = currentVal;
       }
     });
   }
@@ -33003,11 +33040,12 @@ function initUIEventListeners() {
   });
 
   const additionalLayerControls = [
-    'layer-capture-mode', 'layer-path-mode', 'layer-heading-mode', 'layer-poi-select',
+    'layer-capture-mode', 'layer-path-mode', 'layer-heading-mode', 'layer-custom-heading', 'layer-poi-select',
     'layer-turnaround-overshoot', 'layer-turnaround-speed', 'layer-corner-damping',
     'layer-hover-time-mode', 'layer-hover-time-slider', 'layer-auto-settling-toggle',
     'layer-base-settling-slider', 'layer-major-turn-settling-slider', 'layer-mod-turn-settling-slider',
     'layer-pitch-settling-slider', 'layer-terrain-follow', 'layer-target-agl',
+    'layer-terrain-source', 'layer-max-slope-angle',
     'layer-name-input', 'road-snap', 'road-focus-mode',
     'boundary-stroke-color', 'boundary-line-style', 'boundary-fill-opacity', 'boundary-elevation',
     'fiducial-default-type', 'fiducial-default-role', 'fiducial-default-size', 'fiducial-marker-color',
@@ -35014,9 +35052,17 @@ function initUIEventListeners() {
   document.querySelectorAll('.layer-head-chip').forEach(btn => {
     btn.addEventListener('click', () => {
       const angle = parseInt(btn.dataset.angle, 10) || 0;
-      if (layerCustomHeadingEl) layerCustomHeadingEl.value = angle;
-      if (layerCustomHeadingVal) layerCustomHeadingVal.textContent = angle;
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer && activeLayer.customHeading !== angle) {
+        if (typeof pushUndoSnapshot === 'function') {
+          pushUndoSnapshot('Change Custom Heading Angle');
+        }
+      }
+      if (layerCustomHeadingEl) {
+        layerCustomHeadingEl.value = angle;
+        layerCustomHeadingEl._undoBaselineValue = angle;
+      }
+      if (layerCustomHeadingVal) layerCustomHeadingVal.textContent = angle;
       if (activeLayer) {
         activeLayer.customHeading = angle;
       }

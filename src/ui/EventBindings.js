@@ -54,7 +54,13 @@ function initUIEventListeners() {
 
   function wireUndoPropertyTracking(el, label, id) {
     if (!el || typeof el.addEventListener !== 'function') return;
+    const isCheckbox = (el.type === 'checkbox');
+    if (el._undoBaselineValue === undefined) {
+      el._undoBaselineValue = isCheckbox ? el.checked : el.value;
+    }
+
     const onStart = () => {
+      el._undoBaselineValue = isCheckbox ? el.checked : el.value;
       if (typeof preparePendingPropertySnapshot === 'function') {
         preparePendingPropertySnapshot(`Change ${label}`, id);
       }
@@ -63,8 +69,26 @@ function initUIEventListeners() {
     el.addEventListener('focusin', onStart);
     el.addEventListener('keydown', onStart);
     el.addEventListener('change', () => {
-      if (typeof commitPendingPropertySnapshot === 'function') {
-        commitPendingPropertySnapshot(`Change ${label}`, id);
+      if (typeof hasPendingPropertySnapshot === 'function' && hasPendingPropertySnapshot()) {
+        if (typeof commitPendingPropertySnapshot === 'function') {
+          commitPendingPropertySnapshot(`Change ${label}`, id);
+        }
+        el._undoBaselineValue = isCheckbox ? el.checked : el.value;
+        return;
+      }
+
+      // Discrete change fallback for dropdown selects, mouse wheel, or fast clicks
+      const currentVal = isCheckbox ? el.checked : el.value;
+      const lastVal = el._undoBaselineValue;
+      if (lastVal !== undefined && lastVal !== currentVal && typeof pushUndoSnapshot === 'function') {
+        if (isCheckbox) el.checked = lastVal;
+        else el.value = lastVal;
+
+        pushUndoSnapshot(`Change ${label}`);
+
+        if (isCheckbox) el.checked = currentVal;
+        else el.value = currentVal;
+        el._undoBaselineValue = currentVal;
       }
     });
   }
@@ -149,11 +173,12 @@ function initUIEventListeners() {
   });
 
   const additionalLayerControls = [
-    'layer-capture-mode', 'layer-path-mode', 'layer-heading-mode', 'layer-poi-select',
+    'layer-capture-mode', 'layer-path-mode', 'layer-heading-mode', 'layer-custom-heading', 'layer-poi-select',
     'layer-turnaround-overshoot', 'layer-turnaround-speed', 'layer-corner-damping',
     'layer-hover-time-mode', 'layer-hover-time-slider', 'layer-auto-settling-toggle',
     'layer-base-settling-slider', 'layer-major-turn-settling-slider', 'layer-mod-turn-settling-slider',
     'layer-pitch-settling-slider', 'layer-terrain-follow', 'layer-target-agl',
+    'layer-terrain-source', 'layer-max-slope-angle',
     'layer-name-input', 'road-snap', 'road-focus-mode',
     'boundary-stroke-color', 'boundary-line-style', 'boundary-fill-opacity', 'boundary-elevation',
     'fiducial-default-type', 'fiducial-default-role', 'fiducial-default-size', 'fiducial-marker-color',
@@ -2160,9 +2185,17 @@ function initUIEventListeners() {
   document.querySelectorAll('.layer-head-chip').forEach(btn => {
     btn.addEventListener('click', () => {
       const angle = parseInt(btn.dataset.angle, 10) || 0;
-      if (layerCustomHeadingEl) layerCustomHeadingEl.value = angle;
-      if (layerCustomHeadingVal) layerCustomHeadingVal.textContent = angle;
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer && activeLayer.customHeading !== angle) {
+        if (typeof pushUndoSnapshot === 'function') {
+          pushUndoSnapshot('Change Custom Heading Angle');
+        }
+      }
+      if (layerCustomHeadingEl) {
+        layerCustomHeadingEl.value = angle;
+        layerCustomHeadingEl._undoBaselineValue = angle;
+      }
+      if (layerCustomHeadingVal) layerCustomHeadingVal.textContent = angle;
       if (activeLayer) {
         activeLayer.customHeading = angle;
       }

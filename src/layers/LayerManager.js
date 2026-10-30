@@ -1113,7 +1113,10 @@ function syncUiWithActiveLayer() {
 
   const setVal = (id, val) => {
     const el = document.getElementById(id);
-    if (el && val !== undefined && val !== null) el.value = val;
+    if (el && val !== undefined && val !== null) {
+      el.value = val;
+      el._undoBaselineValue = val;
+    }
   };
 
   updateInheritOptionLabels();
