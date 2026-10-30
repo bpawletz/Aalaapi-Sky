@@ -3,9 +3,9 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.210.0` | **WPML Compiler Hash:** `f01cb90862e5` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.210.1` | **WPML Compiler Hash:** `f01cb90862e5` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
-**Summary Progress:** **0 / 26** Patterns Verified | **0** Needs Re-Test | **26** Untested | **0** Failed
+**Summary Progress:** **1 / 26** Patterns Verified | **0** Needs Re-Test | **25** Untested | **0** Failed
 
 ---
 
@@ -79,7 +79,7 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 
 | # | Pattern ID | Pattern Name | Category | Status | Code Hash | Last Tested Ver | Drone / Firmware | Phases |
 | :---: | :--- | :--- | :--- | :---: | :---: | :---: | :--- | :---: |
-| 1 | `single` | **2D Map (Nadir Grid)** | Mapping & 3D | ⬜ `UNTESTED` | `2060d0169374` | — | — | `0/6` |
+| 1 | `single` | **2D Map (Nadir Grid)** | Mapping & 3D | ✅ `VERIFIED` | `2060d0169374` | v1.210.0 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 2 | `double` | **3D Splat (Double Grid)** | Mapping & 3D | ⬜ `UNTESTED` | `dd5cae736203` | — | — | `0/6` |
 | 3 | `target-splat` | **Target Splat (Frustum Grid)** | Mapping & 3D | ⬜ `UNTESTED` | `0ec37c04a3ff` | — | — | `0/6` |
 | 4 | `orbit` | **3D Object (Circular Orbit)** | Orbit & Structure | ⬜ `UNTESTED` | `64011bf49858` | — | — | `0/6` |
@@ -113,15 +113,15 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ### Category A: Mapping & 3D Surveys
 
 #### `single` — 2D Map (Nadir Grid)
-- **Current Status:** ⬜ `UNTESTED` | **Generator Hash:** `2060d0169374` (`src/patterns/PatternGenerators.js` -> `generateGridCoordinates`)
+- **Current Status:** ✅ `VERIFIED` | **Generator Hash:** `2060d0169374` (`src/patterns/PatternGenerators.js` -> `generateGridCoordinates`)
 - **Recommended Safe Field Parameters:** Origin `[41.3215, -88.9950]`, `altitudeM: 50`, `widthM: 80`, `heightM: 80`, `rotationDeg: 0`, `speedMps: 6`, `gimbalPitchDeg: -90`, `captureMode: continuous`, `headingMode: followWayline`, `pathMode: straight`, `frontOverlapPct: 75`, `sideOverlapPct: 70`, `turnaroundOvershootM: 10`
 - **6-Phase Field Verification Checklist:**
-  - [ ] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export KMZ and load into DJI Fly / RC 2; verify lawn-mower line count and turnaround overshoot nodes.
-  - [ ] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Launch and verify climb to 50m AGL (±1.5m) before entering southern/northern entry overshoot waypoint.
-  - [ ] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Confirm parallel N-S survey lines maintain computed line spacing and 6.0 m/s cruise speed.
-  - [ ] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify aircraft nose tracks forward wayline heading (0° / 180°) and gimbal locks at -90° true nadir.
-  - [ ] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Verify continuous distance-interval shutter fires evenly along survey lines and suppresses photos on turnaround overshoot segments.
-  - [ ] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Confirm mission completes final line, executes configured Finish Action (RTH at safe ceiling), and responds to RC Pause.
+  - [x] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export KMZ and load into DJI Fly / RC 2; verify lawn-mower line count and turnaround overshoot nodes.
+  - [x] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Launch and verify climb to 50m AGL (±1.5m) before entering southern/northern entry overshoot waypoint.
+  - [x] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Confirm parallel N-S survey lines maintain computed line spacing and 6.0 m/s cruise speed.
+  - [x] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify aircraft nose tracks forward wayline heading (0° / 180°) and gimbal locks at -90° true nadir.
+  - [x] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Verify continuous distance-interval shutter fires evenly along survey lines and suppresses photos on turnaround overshoot segments.
+  - [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Confirm mission completes final line, executes configured Finish Action (RTH at safe ceiling), and responds to RC Pause.
 - **Edge-Case & Safety Watchout:** Verify that turnaround overshoot waypoints (isTurnaroundPoint: true, skipPhoto: true) allow the gimbal to level out after 180° turns before re-entering the survey boundary.
 
 #### `double` — 3D Splat (Double Grid)

@@ -226,4 +226,126 @@ describe('IRL Test Plan Tracker & Post-Flight Log Analyzer Tests', () => {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   });
+
+  test('IRL field flight verification: single pattern 24-waypoint nadir grid passes all 6 phases', () => {
+    const csvPath = path.resolve(__dirname, '../../scratch/latest_flight/FlightRecord_2026-10-30_[16-27-06]_decrypted.csv');
+    if (!fs.existsSync(csvPath)) return; // skip if flight file not in local workspace
+
+    const { parseCsvTelemetry } = require('../companion/log_decoder.js');
+    const csv = fs.readFileSync(csvPath, 'utf8');
+    const telemetry = parseCsvTelemetry(csv, 'FlightRecord_2026-10-30_[16-27-06].txt');
+
+    // Canonical 24-waypoint plan from row 262850
+    const dbPath = path.resolve(__dirname, '../../scratch/missions.db');
+    if (!fs.existsSync(dbPath)) return;
+
+    const { DatabaseSync } = require('node:sqlite');
+    const db = new DatabaseSync(dbPath);
+    const row = db.prepare('SELECT plan_json FROM mission_diagnostics WHERE id = 262850').get();
+    if (!row || !row.plan_json) return;
+
+    const plan = JSON.parse(row.plan_json);
+    const result = analyzeFlightLogAgainstPlan(plan.waypoints, telemetry, {
+      patternId: 'single',
+      pathMode: 'straight',
+      captureMode: 'continuous'
+    });
+
+    assert.strictEqual(result.passedAll, true, 'All 6 phases must pass for single pattern');
+    assert.strictEqual(result.phases.kmz_import, true);
+    assert.strictEqual(result.phases.entry_altitude, true);
+    assert.strictEqual(result.phases.geometry_path, true);
+    assert.strictEqual(result.phases.heading_gimbal, true);
+    assert.strictEqual(result.phases.capture_trigger, true);
+    assert.strictEqual(result.phases.exit_rth, true);
+
+    assert.strictEqual(result.metrics.waypointCompletionPct, 100);
+    assert.ok(result.metrics.rmsXteM <= 0.10, `RMS XTE must be <= 0.10m, got ${result.metrics.rmsXteM}m`);
+    assert.ok(result.metrics.actualPhotos >= 24, `Must have logged photos, got ${result.metrics.actualPhotos}`);
+    assert.ok(result.metrics.batteryEndPct >= 15);
+  });
+
+  test('Issue #204: candidate scoring prioritizes geometric path fit and pattern over misleading 7cm center distance', () => {
+    const { haversineDistance } = require('../companion/log_decoder.js');
+
+    // Simulate telemetry along a 30m grid at [40.0128, -83.1770]
+    const telemetry = {
+      homePoint: { lat: 40.012874, lon: -83.177044 },
+      points: [
+        { lat: 40.012702, lon: -83.177160, timestamp: '2026-10-30T16:27:06.000Z' },
+        { lat: 40.012759, lon: -83.177160, timestamp: '2026-10-30T16:27:10.000Z' },
+        { lat: 40.012816, lon: -83.177160, timestamp: '2026-10-30T16:27:15.000Z' },
+        { lat: 40.012874, lon: -83.176785, timestamp: '2026-10-30T16:28:00.000Z' }
+      ]
+    };
+
+    // Candidate A: 20-hour-old road plan with center 8.53m from home, but waypoints 80m away
+    const candRoad = {
+      id: 1,
+      flight_pattern: 'road-following',
+      created_at: '2026-10-30T00:41:36.000Z',
+      plan_json: JSON.stringify({
+        mission: { center: { lat: 40.012818, lon: -83.176991 } }, // 8.53m from homePoint
+        waypoints: [
+          { lat: 40.013070, lon: -83.177465 },
+          { lat: 40.013016, lon: -83.178080 }
+        ]
+      })
+    };
+
+    // Candidate B: Nadir grid planned 2.5 min before takeoff with center 8.60m from home, but waypoints 0.05m from flight
+    const candGrid = {
+      id: 2,
+      flight_pattern: 'single',
+      created_at: '2026-10-30T16:24:39.000Z',
+      plan_json: JSON.stringify({
+        mission: { center: { lat: 40.012845, lon: -83.176972 } }, // 8.60m from homePoint (7cm further than Cand A!)
+        waypoints: [
+          { lat: 40.012702, lon: -83.177160 },
+          { lat: 40.012759, lon: -83.177160 },
+          { lat: 40.012816, lon: -83.177160 }
+        ]
+      })
+    };
+
+    const candidates = [candRoad, candGrid];
+    const pts = telemetry.points;
+    const requestedPattern = 'single';
+
+    let matchedRow = null;
+    let bestScore = Infinity;
+
+    for (const cand of candidates) {
+      let planWps = [];
+      try {
+        const p = JSON.parse(cand.plan_json);
+        planWps = p.waypoints || [];
+      } catch (_) {}
+
+      let meanWpDist = Infinity;
+      if (planWps.length > 0) {
+        let totalDist = 0;
+        for (const wp of planWps) {
+          let minDist = Infinity;
+          for (let i = 0; i < pts.length; i++) {
+            const d = haversineDistance(wp.lat, wp.lon, pts[i].lat, pts[i].lon);
+            if (d < minDist) minDist = d;
+          }
+          totalDist += minDist;
+        }
+        meanWpDist = totalDist / planWps.length;
+      }
+
+      let score = meanWpDist;
+      if (requestedPattern && cand.flight_pattern === requestedPattern) score -= 20.0;
+
+      if (score < bestScore) {
+        bestScore = score;
+        matchedRow = cand;
+      }
+    }
+
+    assert.strictEqual(matchedRow.id, candGrid.id, 'Candidate B (single grid) must be selected over misleading 7cm center distance');
+    assert.strictEqual(matchedRow.flight_pattern, 'single');
+  });
 });

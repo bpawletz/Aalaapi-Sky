@@ -7979,7 +7979,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.210.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.210.1</span></h1>
         </div>
       </div>
 
@@ -14982,7 +14982,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.210.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.210.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15142,6 +15142,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.210.1):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Intelligent Flight Telemetry Mission Resolver &amp; IRL Verification Accuracy (Fixes #204):</strong> Fixed companion flight record matcher to evaluate multi-factor geometric waypoint fit (<code>meanWpDist</code>), active layer pattern (<code>flightPattern</code>), and takeoff time proximity, preventing misattribution of flight records to earlier missions sharing the same takeoff point. Officially recorded IRL field verification of <code>single</code> (2D Map / Nadir Grid) on DJI Mini 4 Pro with 100% completion across all 6 phases.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.210.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -21192,7 +21198,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
   <!-- Custom Javascript -->
   <script>
-if (typeof window !== "undefined") { window.AALAAPI_IRL_STATUS = {"_issue":"https://github.com/bpawletz/Aalaapi-Sky/issues/202","single":{"s":"U","v":null},"double":{"s":"U","v":null},"target-splat":{"s":"U","v":null},"orbit":{"s":"U","v":null},"multi-orbit":{"s":"U","v":null},"tower":{"s":"U","v":null},"vertical-facade":{"s":"U","v":null},"continuous-helix":{"s":"U","v":null},"star-pass":{"s":"U","v":null},"photo-sphere":{"s":"U","v":null},"hyperlapse":{"s":"U","v":null},"light-art":{"s":"U","v":null},"grid-orbit-combo":{"s":"U","v":null},"grid-multi-orbit-combo":{"s":"U","v":null},"freeform":{"s":"U","v":null},"road-following":{"s":"U","v":null},"corridor":{"s":"U","v":null},"exclusion-box":{"s":"U","v":null},"exclusion-freeform":{"s":"U","v":null},"boundary-polygon":{"s":"U","v":null},"fiducial-markers":{"s":"U","v":null},"dome-shell":{"s":"U","v":null},"polygon-grid":{"s":"U","v":null},"sar-search":{"s":"U","v":null},"perimeter-patrol":{"s":"U","v":null},"cinematic-reveal":{"s":"U","v":null}}; }
+if (typeof window !== "undefined") { window.AALAAPI_IRL_STATUS = {"_issue":"https://github.com/bpawletz/Aalaapi-Sky/issues/202","single":{"s":"V","v":"1.210.0"},"double":{"s":"U","v":null},"target-splat":{"s":"U","v":null},"orbit":{"s":"U","v":null},"multi-orbit":{"s":"U","v":null},"tower":{"s":"U","v":null},"vertical-facade":{"s":"U","v":null},"continuous-helix":{"s":"U","v":null},"star-pass":{"s":"U","v":null},"photo-sphere":{"s":"U","v":null},"hyperlapse":{"s":"U","v":null},"light-art":{"s":"U","v":null},"grid-orbit-combo":{"s":"U","v":null},"grid-multi-orbit-combo":{"s":"U","v":null},"freeform":{"s":"U","v":null},"road-following":{"s":"U","v":null},"corridor":{"s":"U","v":null},"exclusion-box":{"s":"U","v":null},"exclusion-freeform":{"s":"U","v":null},"boundary-polygon":{"s":"U","v":null},"fiducial-markers":{"s":"U","v":null},"dome-shell":{"s":"U","v":null},"polygon-grid":{"s":"U","v":null},"sar-search":{"s":"U","v":null},"perimeter-patrol":{"s":"U","v":null},"cinematic-reveal":{"s":"U","v":null}}; }
 // -------------------- src/core/Logger.js --------------------
 // Centralized Logging Utility
 const Logger = {
@@ -68802,14 +68808,16 @@ const FlightDiagnostics = {
           gimbalPitch: Number(w.gimbalPitch !== undefined ? w.gimbalPitch : gimbalPitch)
         })) : [];
 
-        let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
+        const currentPattern = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || null;
+        let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}${currentPattern ? `&pattern=${encodeURIComponent(currentPattern)}` : ''}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(45000) : undefined,
           body: JSON.stringify({
             flightId,
+            flightPattern: currentPattern,
             waypoints: cleanWps,
-            options: { altitude, speed, gimbalPitch, flightId }
+            options: { altitude, speed, gimbalPitch, flightId, flightPattern: currentPattern }
           })
         });
         if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
@@ -68820,11 +68828,11 @@ const FlightDiagnostics = {
           await new Promise(r => setTimeout(r, 800));
           if (this._loadGeneration !== myGeneration) return;
           try {
-            const retryRes = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
+            const retryRes = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}${currentPattern ? `&pattern=${encodeURIComponent(currentPattern)}` : ''}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(20000) : undefined,
-              body: JSON.stringify({ flightId, waypoints: cleanWps, options: { altitude, speed, gimbalPitch, flightId } })
+              body: JSON.stringify({ flightId, flightPattern: currentPattern, waypoints: cleanWps, options: { altitude, speed, gimbalPitch, flightId, flightPattern: currentPattern } })
             });
             if (retryRes.ok) {
               const retryData = await retryRes.json();

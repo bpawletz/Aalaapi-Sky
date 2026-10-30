@@ -1,3 +1,16 @@
+## [1.210.1] - 2026-10-30
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Intelligent Flight Telemetry Mission Resolver & IRL Verification Accuracy**: Fixed an issue where loading RC 2 flight records into Flight Diagnostics could erroneously match a previously saved mission whose home point distance differed by mere centimeters from the actual mission, causing false "Variance Detected" warnings (Fixes #204).
+- **Official Field Verification of `single` (2D Map / Nadir Grid)**: Verified the 2D Map (Nadir Grid) pattern on DJI Mini 4 Pro with 100% waypoint completion (24/24 WPs), 0.05m RMS cross-track error, 0.07m RMS altitude variance, and 47 photos across all 6 IRL phases.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/server.js` (`/api/flight-telemetry`)**: Implemented multi-factor candidate scoring combining waypoint-to-track mean distance (`meanWpDist`), active/requested pattern prioritization (`flightPattern`), and takeoff timestamp proximity, eliminating misleading center-to-homepoint false matches.
+- **`src/3d/DigitalTwin.js`**: Passed `flightPattern` in `/api/flight-telemetry` query and payload to ensure companion prioritizes the active layer's flight pattern when evaluating logs.
+- **`docs/irl_test_status.json` & `docs/IRL_TEST_PLAN.md`**: Transitioned `single` pattern to `VERIFIED` (v1.210.0 / v1.210.1, 6/6 phases passed).
+
 ## [1.210.0] - 2026-10-30
 
 Aalaapi Sky introduces an in-app "Verify Against IRL Test Plan" action button and interactive 6-phase verification scorecard dialog directly inside the Flight Diagnostics & Telemetry Center, allowing pilots to evaluate flown flight logs against planned missions with 1-click field reporting.

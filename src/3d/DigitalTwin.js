@@ -1974,14 +1974,16 @@ const FlightDiagnostics = {
           gimbalPitch: Number(w.gimbalPitch !== undefined ? w.gimbalPitch : gimbalPitch)
         })) : [];
 
-        let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
+        const currentPattern = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || null;
+        let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}${currentPattern ? `&pattern=${encodeURIComponent(currentPattern)}` : ''}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(45000) : undefined,
           body: JSON.stringify({
             flightId,
+            flightPattern: currentPattern,
             waypoints: cleanWps,
-            options: { altitude, speed, gimbalPitch, flightId }
+            options: { altitude, speed, gimbalPitch, flightId, flightPattern: currentPattern }
           })
         });
         if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
@@ -1992,11 +1994,11 @@ const FlightDiagnostics = {
           await new Promise(r => setTimeout(r, 800));
           if (this._loadGeneration !== myGeneration) return;
           try {
-            const retryRes = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
+            const retryRes = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}${currentPattern ? `&pattern=${encodeURIComponent(currentPattern)}` : ''}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(20000) : undefined,
-              body: JSON.stringify({ flightId, waypoints: cleanWps, options: { altitude, speed, gimbalPitch, flightId } })
+              body: JSON.stringify({ flightId, flightPattern: currentPattern, waypoints: cleanWps, options: { altitude, speed, gimbalPitch, flightId, flightPattern: currentPattern } })
             });
             if (retryRes.ok) {
               const retryData = await retryRes.json();
