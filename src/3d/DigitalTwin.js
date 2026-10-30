@@ -1353,6 +1353,21 @@ const FlightDiagnostics = {
       exportBtn.addEventListener('click', () => this.exportGeoJSON());
     }
 
+    // Verify Against IRL Test Plan buttons (Header & Sidebar)
+    const headerIrlBtn = document.getElementById('diag-btn-irl-verify');
+    if (headerIrlBtn && typeof headerIrlBtn.addEventListener === 'function') {
+      headerIrlBtn.addEventListener('click', () => this.performIrlVerification());
+    }
+
+    const sidebarIrlBtn = document.getElementById('diag-sidebar-irl-verify-btn');
+    if (sidebarIrlBtn && typeof sidebarIrlBtn.addEventListener === 'function') {
+      sidebarIrlBtn.addEventListener('click', () => this.performIrlVerification());
+    }
+
+    if (typeof IrlVerifier !== 'undefined' && typeof IrlVerifier.initEvents === 'function') {
+      IrlVerifier.initEvents();
+    }
+
     // Center 2D Map button
     const centerMapBtn = document.getElementById('diag-center-map-btn');
     if (centerMapBtn && typeof centerMapBtn.addEventListener === 'function') {
@@ -1690,6 +1705,19 @@ const FlightDiagnostics = {
         centerMarker.setLatLng([origin.lat, origin.lon]);
       }
       if (typeof updateMissionStats === 'function') updateMissionStats();
+    }
+  },
+
+  performIrlVerification() {
+    if (!this.telemetryData || !this.isActualFlown) {
+      if (typeof showToast === 'function') {
+        showToast('⚠️ IRL verification requires an actual flown flight log. Please load or pull a flight record from RC 2.', 4000);
+      }
+      return;
+    }
+    const planned = this.plannedWaypoints || (typeof getActiveMissionWaypoints === 'function' ? getActiveMissionWaypoints() : []);
+    if (typeof IrlVerifier !== 'undefined' && typeof IrlVerifier.openIrlVerificationModal === 'function') {
+      IrlVerifier.openIrlVerificationModal(this.selectedFlightId, planned, this.telemetryData);
     }
   },
 

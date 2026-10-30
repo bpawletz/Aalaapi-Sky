@@ -29,6 +29,7 @@ import './bridge/ApiClient.js';
 import './bridge/CompanionAuth.js';
 import './bridge/WebUsbMtp.js';
 import './bridge/DjiLogDecryptor.js';
+import './qa/IrlVerifier.js';
 import './3d/DigitalTwin.js';
 import './import/TelemetryParsers.js';
 import './import/KmzImporter.js';

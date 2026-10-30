@@ -38455,3 +38455,263 @@ describe('Comprehensive Layer Controls & Pattern Settings Undo/Redo System (v1.2
   });
 });
 
+describe('IRL Field Test Plan Suite, Section 2 Status Badge & Non-Guarantee Disclaimers (v1.209.0, Issue #201)', () => {
+  const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+  test('build injects compact window.AALAAPI_IRL_STATUS covering every #grid-type pattern', () => {
+    const m = htmlText.match(/window\.AALAAPI_IRL_STATUS = (\{.*?\});/);
+    assert.ok(m, 'index.html must embed window.AALAAPI_IRL_STATUS');
+    const map = JSON.parse(m[1]);
+    assert.strictEqual(map._issue, 'https://github.com/bpawletz/Aalaapi-Sky/issues/202');
+    const dom = new JSDOM(htmlText.replace(/<script[\s\S]*?<\/script>/gi, ''));
+    const opts = Array.from(dom.window.document.querySelectorAll('#grid-type option')).map(o => o.value).filter(Boolean);
+    assert.strictEqual(opts.length, 26, 'Expected 26 flight patterns in #grid-type');
+    for (const id of opts) {
+      assert.ok(map[id], `Pattern "${id}" missing from IRL status map`);
+      assert.ok(['V', 'R', 'F', 'U'].includes(map[id].s), `Pattern "${id}" has invalid status code`);
+    }
+    assert.ok(m[0].length < 4096, 'Embedded IRL status map must stay lightweight (< 4 KB)');
+  });
+
+  test('updateActiveLayerIrlBadge renders V/R/F/U states with non-guarantee tooltip and tolerates stub elements', () => {
+    const dom = new JSDOM('<a id="active-layer-irl-badge" href="#" data-irl-status="U">IRL</a>');
+    const prevDoc = global.document;
+    const prevMap = global.window.AALAAPI_IRL_STATUS;
+    global.document = dom.window.document;
+    global.window.AALAAPI_IRL_STATUS = {
+      _issue: 'https://github.com/bpawletz/Aalaapi-Sky/issues/202',
+      single: { s: 'V', v: '1.209.0' },
+      double: { s: 'R', v: '1.200.0' },
+      orbit: { s: 'F', v: '1.209.0' },
+      tower: 'U'
+    };
+    try {
+      const badge = dom.window.document.getElementById('active-layer-irl-badge');
+      updateActiveLayerIrlBadge('single');
+      assert.strictEqual(badge.getAttribute('data-irl-status'), 'V');
+      assert.ok(badge.textContent.includes('IRL'));
+      assert.ok(badge.title.includes('NOT a guarantee of flight safety'), 'Verified tooltip must carry non-guarantee notice');
+      assert.ok(badge.title.includes('v1.209.0'));
+      assert.strictEqual(badge.href, 'https://github.com/bpawletz/Aalaapi-Sky/issues/202');
+
+      updateActiveLayerIrlBadge('double');
+      assert.strictEqual(badge.getAttribute('data-irl-status'), 'R');
+      assert.ok(badge.textContent.includes('Re-Test'));
+
+      updateActiveLayerIrlBadge('orbit');
+      assert.strictEqual(badge.getAttribute('data-irl-status'), 'F');
+
+      updateActiveLayerIrlBadge('tower');
+      assert.strictEqual(badge.getAttribute('data-irl-status'), 'U');
+
+      updateActiveLayerIrlBadge('unknown-pattern');
+      assert.strictEqual(badge.getAttribute('data-irl-status'), 'U');
+      assert.ok(badge.title.includes('NOT a guarantee'), 'Pending tooltip must carry non-guarantee notice');
+    } finally {
+      global.document = prevDoc;
+      global.window.AALAAPI_IRL_STATUS = prevMap;
+    }
+    assert.doesNotThrow(() => updateActiveLayerIrlBadge('single'));
+  });
+
+  test('"The Legalize" includes the IRL Verification Non-Guarantee & Variations clause in CREDITS.md, README.md, #disclaimer-modal and #about-trademarks-section', () => {
+    const creditsText = fs.readFileSync(path.join(__dirname, 'CREDITS.md'), 'utf8');
+    const readmeText = fs.readFileSync(path.join(__dirname, 'README.md'), 'utf8');
+    assert.ok(/IRL/.test(creditsText) && /guarantee/i.test(creditsText), 'CREDITS.md must include IRL non-guarantee clause');
+    assert.ok(/IRL/.test(readmeText) && /guarantee/i.test(readmeText), 'README.md must include IRL non-guarantee disclaimer');
+    const dom = new JSDOM(htmlText.replace(/<script[\s\S]*?<\/script>/gi, ''));
+    const doc = dom.window.document;
+    const disclaimer = doc.getElementById('disclaimer-modal');
+    const trademarks = doc.getElementById('about-trademarks-section');
+    assert.ok(disclaimer && disclaimer.textContent.includes('IRL Verification Status Is Not a Guarantee'), '#disclaimer-modal must include IRL non-guarantee card');
+    assert.ok(trademarks && trademarks.textContent.includes('IRL Field Verification Non-Guarantee & Variations Disclaimer'), '#about-trademarks-section must include IRL variations clause');
+    for (const term of ['wind', 'GNSS', 'firmware']) {
+      assert.ok(trademarks.textContent.includes(term), `Variations clause must mention ${term}`);
+    }
+    assert.ok(doc.getElementById('active-layer-irl-badge'), '#active-layer-irl-badge must exist in Section 2 header');
+  });
+});
+
+describe('Flight Diagnostics In-App IRL Verification Button & 6-Phase Scorecard (v1.210.0, Issue #203)', () => {
+  const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+  test('Version consistency: v1.210.0 across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.210.0');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.210.0] - 2026-10-30'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.210.0'));
+    assert.ok(template.includes('Version 1.210.0'));
+    assert.ok(template.includes('Changelog (v1.210.0):'));
+    assert.ok(htmlText.includes('v1.210.0'));
+    assert.ok(htmlText.includes('Version 1.210.0'));
+    assert.ok(htmlText.includes('Changelog (v1.210.0):'));
+  });
+
+  test('Flight Diagnostics header toolbar and sidebar include the Verify IRL Plan action buttons', () => {
+    const dom = new JSDOM(htmlText.replace(/<script[\s\S]*?<\/script>/gi, ''));
+    const doc = dom.window.document;
+    const headerBtn = doc.getElementById('diag-btn-irl-verify');
+    assert.ok(headerBtn, '#diag-btn-irl-verify must exist in Diagnostics header');
+    assert.ok(headerBtn.textContent.includes('Verify IRL Plan'), 'Header button text must be Verify IRL Plan');
+
+    const sidebarBtn = doc.getElementById('diag-sidebar-irl-verify-btn');
+    assert.ok(sidebarBtn, '#diag-sidebar-irl-verify-btn must exist in Diagnostics sidebar');
+    assert.ok(sidebarBtn.textContent.includes('Verify Against IRL Test Plan'), 'Sidebar button text must be Verify Against IRL Test Plan');
+  });
+
+  test('IRL Flight Verification Scorecard Modal (#diag-irl-modal) exists with required structure', () => {
+    const dom = new JSDOM(htmlText.replace(/<script[\s\S]*?<\/script>/gi, ''));
+    const doc = dom.window.document;
+    const modal = doc.getElementById('diag-irl-modal');
+    assert.ok(modal, '#diag-irl-modal must exist in DOM');
+    assert.ok(modal.classList.contains('hidden'), '#diag-irl-modal must start hidden');
+
+    assert.ok(doc.getElementById('diag-irl-outcome-badge'), '#diag-irl-outcome-badge must exist');
+    assert.ok(doc.getElementById('diag-irl-flight-name'), '#diag-irl-flight-name must exist');
+    assert.ok(doc.getElementById('diag-irl-pattern-select'), '#diag-irl-pattern-select must exist');
+    assert.ok(doc.getElementById('diag-irl-phases-container'), '#diag-irl-phases-container must exist');
+    assert.ok(doc.getElementById('diag-irl-metrics-table-body'), '#diag-irl-metrics-table-body must exist');
+    assert.ok(doc.getElementById('diag-irl-copy-markdown-btn'), '#diag-irl-copy-markdown-btn must exist');
+    assert.ok(doc.getElementById('diag-irl-export-json-btn'), '#diag-irl-export-json-btn must exist');
+    assert.ok(doc.getElementById('diag-irl-close-btn'), '#diag-irl-close-btn must exist');
+
+    assert.ok(modal.textContent.includes('IRL Field Verification Non-Guarantee & Variations Disclaimer'), 'Modal must display mandatory legal variations notice');
+  });
+
+  test('IrlVerifier.verifyFlightPlanAgainstLog evaluates all 6 phases and calculates metrics accurately', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+    assert.strictEqual(typeof IrlVerifier.verifyFlightPlanAgainstLog, 'function');
+
+    // Create synthetic planned waypoints and nominal telemetry track
+    const plannedWps = [
+      { lat: 41.3215, lon: -88.9950, alt: 50, pitch: -60, heading: 90 },
+      { lat: 41.3215, lon: -88.9940, alt: 50, pitch: -60, heading: 90 },
+      { lat: 41.3220, lon: -88.9940, alt: 50, pitch: -60, heading: 270 },
+      { lat: 41.3220, lon: -88.9950, alt: 50, pitch: -60, heading: 270 }
+    ];
+
+    const actualTelemetry = {
+      points: [
+        { lat: 41.3215, lon: -88.9950, alt: 49.8, pitch: -59.5, yaw: 91, isPhoto: true, speed: 0.2, battery: 98 },
+        { lat: 41.3215, lon: -88.9945, alt: 50.1, pitch: -60.0, yaw: 90, isPhoto: false, speed: 4.0, battery: 95 },
+        { lat: 41.3215, lon: -88.9940, alt: 50.0, pitch: -60.2, yaw: 89, isPhoto: true, speed: 0.1, battery: 92 },
+        { lat: 41.3218, lon: -88.9940, alt: 50.2, pitch: -60.0, yaw: 180, isPhoto: false, speed: 3.5, battery: 89 },
+        { lat: 41.3220, lon: -88.9940, alt: 49.9, pitch: -59.8, yaw: 271, isPhoto: true, speed: 0.3, battery: 85 },
+        { lat: 41.3220, lon: -88.9945, alt: 50.0, pitch: -60.0, yaw: 270, isPhoto: false, speed: 4.1, battery: 82 },
+        { lat: 41.3220, lon: -88.9950, alt: 50.1, pitch: -60.1, yaw: 269, isPhoto: true, speed: 0.2, battery: 78 }
+      ]
+    };
+
+    const result = IrlVerifier.verifyFlightPlanAgainstLog(plannedWps, actualTelemetry, { captureMode: 'hover' });
+    assert.strictEqual(result.passedAll, true, 'Nominal flight track should pass all 6 phases');
+    assert.strictEqual(result.phases.kmz_import, true);
+    assert.strictEqual(result.phases.entry_altitude, true);
+    assert.strictEqual(result.phases.geometry_path, true);
+    assert.strictEqual(result.phases.heading_gimbal, true);
+    assert.strictEqual(result.phases.capture_trigger, true);
+    assert.strictEqual(result.phases.exit_rth, true);
+
+    assert.strictEqual(result.metrics.waypointCompletionPct, 100);
+    assert.ok(result.metrics.rmsXteM < 1.0, `RMS XTE should be < 1.0m, got ${result.metrics.rmsXteM}`);
+    assert.ok(result.metrics.rmsAltitudeErrorM < 0.5, `RMS Alt error should be < 0.5m, got ${result.metrics.rmsAltitudeErrorM}`);
+    assert.strictEqual(result.metrics.photoCountActual, 4);
+    assert.strictEqual(result.metrics.photoCountPlanned, 4);
+  });
+
+  test('IrlVerifier flags flight with large cross-track or altitude error as variance', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+    const plannedWps = [
+      { lat: 41.3215, lon: -88.9950, alt: 50 },
+      { lat: 41.3215, lon: -88.9940, alt: 50 },
+      { lat: 41.3220, lon: -88.9940, alt: 50 }
+    ];
+
+    // Flight with massive +15m altitude drift
+    const badTelemetry = {
+      points: [
+        { lat: 41.3215, lon: -88.9950, alt: 65, pitch: -60, yaw: 90, isPhoto: false, battery: 90 },
+        { lat: 41.3215, lon: -88.9945, alt: 66, pitch: -60, yaw: 90, isPhoto: false, battery: 85 },
+        { lat: 41.3215, lon: -88.9940, alt: 65, pitch: -60, yaw: 90, isPhoto: false, battery: 80 },
+        { lat: 41.3220, lon: -88.9940, alt: 65, pitch: -60, yaw: 90, isPhoto: false, battery: 75 },
+        { lat: 41.3220, lon: -88.9940, alt: 65, pitch: -60, yaw: 90, isPhoto: false, battery: 70 }
+      ]
+    };
+
+    const result = IrlVerifier.verifyFlightPlanAgainstLog(plannedWps, badTelemetry);
+    assert.strictEqual(result.passedAll, false, 'Large altitude error should fail verification');
+    assert.strictEqual(result.phases.entry_altitude, false, 'Entry altitude must fail');
+    assert.strictEqual(result.phases.geometry_path, false, 'Geometry path must fail');
+  });
+
+  test('FlightDiagnostics.performIrlVerification guards against simulation logs and opens modal for flown logs', () => {
+    let toastMessage = null;
+    global.showToast = (msg) => { toastMessage = msg; };
+
+    // When unflown simulation
+    FlightDiagnostics.isActualFlown = false;
+    FlightDiagnostics.telemetryData = { points: [{ lat: 41.32, lon: -88.99 }] };
+    FlightDiagnostics.performIrlVerification();
+    assert.ok(toastMessage && toastMessage.includes('requires an actual flown flight log'), 'Must show alert toast when attempting to verify simulation');
+
+    // When actual flown log
+    FlightDiagnostics.isActualFlown = true;
+    let modalOpened = false;
+    const prevOpen = IrlVerifier.openIrlVerificationModal;
+    IrlVerifier.openIrlVerificationModal = (flightId, planned, telem) => {
+      modalOpened = true;
+      assert.strictEqual(flightId, 'FlightRecord_Test.txt');
+    };
+    try {
+      FlightDiagnostics.selectedFlightId = 'FlightRecord_Test.txt';
+      FlightDiagnostics.performIrlVerification();
+      assert.strictEqual(modalOpened, true, 'Must call IrlVerifier.openIrlVerificationModal for actual flown logs');
+    } finally {
+      IrlVerifier.openIrlVerificationModal = prevOpen;
+      FlightDiagnostics.isActualFlown = false;
+    }
+  });
+
+  test('IrlVerifier.generateMarkdownReport creates formatted checklist with legal variation notice', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+    IrlVerifier.currentFlightId = 'FlightRecord_2026-10-30.txt';
+    IrlVerifier.currentResult = {
+      passedAll: true,
+      phases: {
+        kmz_import: true,
+        entry_altitude: true,
+        geometry_path: true,
+        heading_gimbal: true,
+        capture_trigger: true,
+        exit_rth: true
+      },
+      metrics: {
+        waypointCount: 10,
+        visitedCount: 10,
+        waypointCompletionPct: 100,
+        rmsXteM: 0.8,
+        maxXteM: 1.5,
+        rmsAltitudeErrorM: 0.4,
+        meanGimbalPitchErrorDeg: 1.2,
+        meanYawErrorDeg: 2.5,
+        photoCountPlanned: 8,
+        photoCountActual: 8,
+        photoCaptureRatioPct: 100,
+        batteryStartPct: 98,
+        batteryEndPct: 75,
+        entryDistH: 0.3,
+        entryDistZ: 0.2,
+        exitDistH: 0.4
+      }
+    };
+
+    const md = IrlVerifier.generateMarkdownReport();
+    assert.ok(md.includes('### 🚁 IRL Field Flight Verification Report'));
+    assert.ok(md.includes('- [x] **Phase 1: KMZ Import & Action Parsing**'));
+    assert.ok(md.includes('- [x] **Phase 6: Safe Exit, Landing & RTH**'));
+    assert.ok(md.includes('Non-Guarantee & Variation Notice'));
+    assert.ok(md.includes('FlightRecord_2026-10-30.txt'));
+  });
+});
+

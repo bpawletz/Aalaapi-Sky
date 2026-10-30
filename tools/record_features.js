@@ -3301,6 +3301,77 @@ const scenarios = [
       });
       await page.waitForTimeout(1500);
     }
+  },
+  {
+    id: 'feature_diag_irl_verification_btn',
+    name: 'Flight Diagnostics In-App IRL Verification Button & 6-Phase Scorecard',
+    description: 'Demonstrates opening Flight Diagnostics, clicking the in-app Verify IRL Plan button on a flown telemetry log, reviewing the 6-Phase IRL Scorecard with tolerances, and copying the formatted Markdown report.',
+    issueRef: 'Issue #203',
+    run: async (page) => {
+      // 1. Center map at rural Utica coordinates
+      await page.evaluate(() => {
+        setGridCenter(41.3215, -88.9950);
+      });
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 2. Open Flight Diagnostics modal
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.open === 'function') {
+          FlightDiagnostics.open();
+        } else {
+          const btn = document.getElementById('topbar-diagnostics-btn');
+          if (btn) btn.click();
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Populate a flown telemetry log into Flight Diagnostics
+      await page.evaluate(() => {
+        FlightDiagnostics.isActualFlown = true;
+        FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-10-30_[12-00-00].txt';
+        FlightDiagnostics.telemetryData = {
+          points: [
+            { lat: 41.3215, lon: -88.9950, alt: 50.0, pitch: -60, yaw: 90, isPhoto: true, speed: 0.1, battery: 98 },
+            { lat: 41.3216, lon: -88.9945, alt: 50.0, pitch: -60, yaw: 90, isPhoto: false, speed: 3.5, battery: 95 },
+            { lat: 41.3217, lon: -88.9940, alt: 50.1, pitch: -60, yaw: 90, isPhoto: true, speed: 0.2, battery: 92 },
+            { lat: 41.3218, lon: -88.9940, alt: 50.0, pitch: -60, yaw: 180, isPhoto: false, speed: 4.0, battery: 88 },
+            { lat: 41.3220, lon: -88.9940, alt: 49.9, pitch: -60, yaw: 270, isPhoto: true, speed: 0.1, battery: 84 },
+            { lat: 41.3220, lon: -88.9950, alt: 50.0, pitch: -60, yaw: 270, isPhoto: true, speed: 0.2, battery: 80 }
+          ]
+        };
+        FlightDiagnostics.plannedWaypoints = [
+          { lat: 41.3215, lon: -88.9950, alt: 50, pitch: -60, heading: 90 },
+          { lat: 41.3217, lon: -88.9940, alt: 50, pitch: -60, heading: 90 },
+          { lat: 41.3220, lon: -88.9940, alt: 50, pitch: -60, heading: 270 },
+          { lat: 41.3220, lon: -88.9950, alt: 50, pitch: -60, heading: 270 }
+        ];
+      });
+      await page.waitForTimeout(800);
+
+      // 4. Click header toolbar Verify IRL Plan button
+      await page.evaluate(() => {
+        const btn = document.getElementById('diag-btn-irl-verify');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 5. Scroll through the 6-phase scorecard modal
+      await page.evaluate(() => {
+        const modalContent = document.querySelector('#diag-irl-modal .modal-content');
+        if (modalContent) {
+          modalContent.scrollTo({ top: 300, behavior: 'smooth' });
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 6. Click Copy Field Report (Markdown)
+      await page.evaluate(() => {
+        const copyBtn = document.getElementById('diag-irl-copy-markdown-btn');
+        if (copyBtn) copyBtn.click();
+      });
+      await page.waitForTimeout(1000);
+    }
   }
 ];
 
