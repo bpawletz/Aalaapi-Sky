@@ -4,7 +4,7 @@
     "playwright": "^1.64.1"
   },
   "name": "aalaapi-sky",
-  "version": "1.203.0",
+  "version": "1.203.1",
   "description": "Aalaapi-Sky Drone Flight Planner & Editor for DJI Fly",
   "main": "src/main.js",
   "scripts": {

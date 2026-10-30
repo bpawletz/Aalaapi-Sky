@@ -1014,7 +1014,11 @@ function updateGrid() {
   drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWidth, gridHeight, actualRotation);
 
   // 5. Update Stats Panel
-  const stats = calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, captureMode);
+  const activeLayerForStats = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const effectiveStatsCaptureMode = (typeof getEffectiveLayerCaptureMode === 'function' && activeLayerForStats)
+    ? getEffectiveLayerCaptureMode(activeLayerForStats)
+    : captureMode;
+  const stats = calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, effectiveStatsCaptureMode);
   updateStatsPanel(stats);
 
   // 6. Update Layers List UI
@@ -1062,7 +1066,11 @@ function redrawCurrentMission() {
 
   drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWidth, gridHeight, actualRotation);
 
-  const stats = calculateStats(waypoints, photoLocations, speed, null, null, captureMode);
+  const activeLayerForRedraw = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const effectiveRedrawCaptureMode = (typeof getEffectiveLayerCaptureMode === 'function' && activeLayerForRedraw)
+    ? getEffectiveLayerCaptureMode(activeLayerForRedraw)
+    : captureMode;
+  const stats = calculateStats(waypoints, photoLocations, speed, null, null, effectiveRedrawCaptureMode);
   updateStatsPanel(stats);
 
   // Update 3D Preview if active

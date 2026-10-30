@@ -1,3 +1,17 @@
+## [1.203.1] - 2026-10-29
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Road-Following & Layer Video Capture Mode KMZ Export (Closes #195)**:
+  - Fixed a bug where setting a **Road / Path Following (`road-following`)** or single-layer mission to **Video Recording (`video`)** in Layer Properties exported `<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>` at every waypoint instead of `<wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>` and `<wpml:actionActuatorFunc>stopRecord</wpml:actionActuatorFunc>` when sent via Direct RC 2 / WebUSB sync or audited in the KMZ Inspector.
+  - Preserved auto-calculated road-focus gimbal pitch (`focusRoad` / `lookAhead`, e.g. `-70°`) during WPML post-validation (`validateAndFixWpml`) instead of overwriting it with the flat layer pitch slider value (`-50°`).
+  - Updated the mission stats panel and layer pattern switching logic so switching patterns automatically updates the default layer title (e.g., `Layer 1: Road Following`) and displays `Video (Record)` when layer capture mode is set to `video`.
+
+#### Under the Hood & Technical Details
+- **[src/bridge/ApiClient.js, src/export/Packager.js, src/export/WpmlCompiler.js & src/3d/DigitalTwin.js]**: Preserved full waypoint metadata (`...wp`, `layerId`, `layerCaptureMode`, `captureMode`, `cameraAction`, `isRoadDroneWaypoint`, `roadFocusMode`) in `sendDirectlyToRC2` and `sendDirectlyViaWebUsb`; synced active layer state in `exportKMZ`, `generateKMZBlob`, and `KMZInspector.runCurrentWorkspaceAudit`; added single-layer `road-following` fallback in `buildWaylinesWpml`, `resolveNeighborCaptureMode`, and `validateAndFixWpml`; guarded `hasRoadAutoPitch` against flat `targetPitch` overrides; and fixed `role=[object Object]` serialization in `KMZInspector.generateAntigravityPrompt`.
+- **[src/ui/SidebarManager.js, src/ui/TelemetryHud.js, src/map/MapInteraction.js & src/import/KmzImporter.js]**: Updated `togglePatternParameters` to refresh default `Layer N: <Pattern>` names on pattern change and resolved effective layer capture mode via `getEffectiveLayerCaptureMode(getActiveLayer())` for stats calculation.
+
 ## [1.203.0] - 2026-10-28
 
 Added **Buy Me a Coffee (`buymeacoffee.com/romah74`)** links across the application UI (Top Ribbon, More menu, About modal, and Useful Links modal) and repository metadata (`README.md` and `.github/FUNDING.yml`), explicitly framed as a voluntary coffee tip with no implied technical software support or warranty.

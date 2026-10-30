@@ -276,7 +276,10 @@ function updateStatsPanel(stats) {
   if (statWps) statWps.textContent = stats.waypointsCount;
   const activeWps = (typeof waypoints !== 'undefined' && Array.isArray(waypoints)) ? waypoints : ((typeof generatedWaypoints !== 'undefined' && Array.isArray(generatedWaypoints)) ? generatedWaypoints : []);
   const isHyperlapseActive = (typeof getActiveLayer === 'function' && getActiveLayer()?.pattern === 'hyperlapse') || activeWps.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse'));
-  const captureModeVal = (typeof document !== 'undefined' && document.getElementById('capture-mode')) ? document.getElementById('capture-mode').value : 'stopAndShoot';
+  const activeLayerForCap = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const captureModeVal = (typeof getEffectiveLayerCaptureMode === 'function' && activeLayerForCap)
+    ? getEffectiveLayerCaptureMode(activeLayerForCap)
+    : ((typeof document !== 'undefined' && document.getElementById('capture-mode')) ? document.getElementById('capture-mode').value : 'stopAndShoot');
   const photoText = (captureModeVal === 'video') ? "Video (Record)" : (isHyperlapseActive ? `${stats.photoCount} frames` : stats.photoCount);
   if (statPhotos) statPhotos.textContent = photoText;
 
