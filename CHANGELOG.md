@@ -1,3 +1,24 @@
+## [1.207.0] - 2026-10-30
+
+Aalaapi Sky expands its Undo & Redo system to include all flight layer properties, flight dynamics, and layer lifecycle actions, giving pilots full bidirectional control over parameters and multi-layer missions.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Layer Properties & Dynamics Undo/Redo**: Full undo and redo support for flight parameters in Section 2, including Altitude, Speed, Gimbal Pitch, Grid Dimensions, Overlap, Heading Mode, Capture Mode, Turnaround Dynamics, Settling Times, Terrain Follow, and Camera Zoom (Closes #198).
+  - Smooth Drag Debouncing: Real-time slider dragging updates map paths smoothly without flooding the undo stack; pre-change snapshots are captured on interaction start and committed on release/change.
+  - Redundant State Elimination: Discards candidate snapshots if a slider or input is returned to its starting value without changing.
+  - Layer Lifecycle History: Adding, duplicating, deleting, reordering, and toggling visibility of flight layers are now tracked in the undo history stack with instant restoration.
+  - Flight Pattern Switch Recovery: Switching between flight patterns (Double Grid, Orbit, Corridor, Facade, etc.) is fully reversible, protecting custom waypoint configurations and baseline setups.
+  - Contextual Toast Alerts: Displays descriptive toasts on undo and redo (e.g. `↩️ Undid: Change Altitude`, `↪️ Redid: Add Layer`).
+
+#### Under the Hood & Technical Details
+- **`src/state/MissionStore.js`**: Implemented `preparePendingPropertySnapshot`, `hasLayerPropertiesChanged`, `commitPendingPropertySnapshot`, and `cancelPendingPropertySnapshot`; enriched snapshots with Section 3 Global Defaults (`headingMode`, `captureMode`, `pathMode`, `globalHoverTime`, `globalMaxAltitude`, `globalRthAltitude`, `detourMode`, `clearanceBuffer`).
+- **`src/layers/LayerManager.js`**: Hooked `pushUndoSnapshot` into `addFlightLayer`, `duplicateFlightLayer`, `deleteFlightLayer`, `reorderFlightLayers`, and `toggleFlightLayerVisibility`.
+- **`src/ui/SidebarManager.js`**: Hooked `pushUndoSnapshot` into `togglePatternParameters` to preserve prior pattern and waypoints on pattern switches.
+- **`src/ui/EventBindings.js`**: Implemented `wireUndoPropertyTracking` and bound `pointerdown`, `focusin`, `keydown`, and `change` across `CONTROLS_LIST` and Section 2 layer dynamic inputs.
+- **`index_template.html`**: Bumped header badge to `v1.207.0`, updated Intro Guide Features pane, and updated About modal changelog.
+
 ## [1.206.0] - 2026-10-30
 
 Aalaapi Sky complements its flight undo capability with a comprehensive Mission & Waypoint Redo System, providing bidirectional editing control via on-map buttons, sidebar actions, and standard keyboard shortcuts (Ctrl+Y / Ctrl+Shift+Z).

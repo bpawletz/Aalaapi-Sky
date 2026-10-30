@@ -1,6 +1,74 @@
 function initUIEventListeners() {
   initLayerManager();
 
+  function getControlPropertyLabel(id) {
+    const map = {
+      'grid-width': 'Grid Width',
+      'grid-height': 'Grid Height',
+      'grid-rotation': 'Grid Rotation',
+      'front-overlap': 'Front Overlap',
+      'side-overlap': 'Side Overlap',
+      'altitude': 'Altitude',
+      'speed': 'Flight Speed',
+      'gimbal-pitch': 'Gimbal Pitch',
+      'camera-zoom': 'Camera Zoom',
+      'camera-aspect-ratio': 'Camera Aspect Ratio',
+      'road-offset': 'Road Offset',
+      'road-snap': 'Road Snap',
+      'road-focus-mode': 'Road Focus Mode',
+      'layer-capture-mode': 'Capture Mode',
+      'layer-path-mode': 'Path Mode',
+      'layer-heading-mode': 'Heading Mode',
+      'layer-poi-select': 'Layer POI',
+      'layer-turnaround-overshoot': 'Turnaround Overshoot',
+      'layer-turnaround-speed': 'Turnaround Speed',
+      'layer-corner-damping': 'Corner Damping',
+      'layer-hover-time-mode': 'Hover Time Mode',
+      'layer-hover-time-slider': 'Hover Time',
+      'layer-auto-settling-toggle': 'Auto-Settling',
+      'layer-base-settling-slider': 'Base Settling Time',
+      'layer-major-turn-settling-slider': 'Major Turn Settling',
+      'layer-mod-turn-settling-slider': 'Moderate Turn Settling',
+      'layer-pitch-settling-slider': 'Pitch Settling Time',
+      'layer-terrain-follow': 'Terrain Follow',
+      'layer-target-agl': 'Target AGL',
+      'layer-name-input': 'Layer Name',
+      'boundary-stroke-color': 'Boundary Stroke Color',
+      'boundary-line-style': 'Boundary Line Style',
+      'boundary-fill-opacity': 'Boundary Fill Opacity',
+      'boundary-elevation': 'Boundary Elevation',
+      'fiducial-default-type': 'Fiducial Type',
+      'fiducial-default-role': 'Fiducial Role',
+      'fiducial-default-size': 'Fiducial Size',
+      'fiducial-marker-color': 'Fiducial Color',
+      'heading-mode': 'Global Heading Mode',
+      'capture-mode': 'Global Capture Mode',
+      'path-mode': 'Global Path Mode',
+      'global-hover-time': 'Global Hover Time',
+      'finish-action': 'Finish Action',
+      'global-max-altitude': 'Global Max Altitude',
+      'global-rth-altitude': 'Safe RTH Altitude'
+    };
+    return map[id] || id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  function wireUndoPropertyTracking(el, label, id) {
+    if (!el || typeof el.addEventListener !== 'function') return;
+    const onStart = () => {
+      if (typeof preparePendingPropertySnapshot === 'function') {
+        preparePendingPropertySnapshot(`Change ${label}`, id);
+      }
+    };
+    el.addEventListener('pointerdown', onStart);
+    el.addEventListener('focusin', onStart);
+    el.addEventListener('keydown', onStart);
+    el.addEventListener('change', () => {
+      if (typeof commitPendingPropertySnapshot === 'function') {
+        commitPendingPropertySnapshot(`Change ${label}`, id);
+      }
+    });
+  }
+
   // Get all controls
   const controls = [...CONTROLS_LIST];
 
@@ -8,6 +76,8 @@ function initUIEventListeners() {
     const el = document.getElementById(id);
     if (!el) return;
     if (id === 'grid-type') return;
+
+    wireUndoPropertyTracking(el, getControlPropertyLabel(id), id);
     
     // Listen to changes to trigger redrawing of the grid
     el.addEventListener('input', () => {
@@ -76,6 +146,22 @@ function initUIEventListeners() {
       updateGrid();
       saveAllSettingsToLocalStorage();
     });
+  });
+
+  const additionalLayerControls = [
+    'layer-capture-mode', 'layer-path-mode', 'layer-heading-mode', 'layer-poi-select',
+    'layer-turnaround-overshoot', 'layer-turnaround-speed', 'layer-corner-damping',
+    'layer-hover-time-mode', 'layer-hover-time-slider', 'layer-auto-settling-toggle',
+    'layer-base-settling-slider', 'layer-major-turn-settling-slider', 'layer-mod-turn-settling-slider',
+    'layer-pitch-settling-slider', 'layer-terrain-follow', 'layer-target-agl',
+    'layer-name-input', 'road-snap', 'road-focus-mode',
+    'boundary-stroke-color', 'boundary-line-style', 'boundary-fill-opacity', 'boundary-elevation',
+    'fiducial-default-type', 'fiducial-default-role', 'fiducial-default-size', 'fiducial-marker-color',
+    'global-max-altitude', 'global-rth-altitude'
+  ];
+  additionalLayerControls.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) wireUndoPropertyTracking(el, getControlPropertyLabel(id), id);
   });
 
   const roadSnapEl = document.getElementById('road-snap');

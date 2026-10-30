@@ -592,6 +592,12 @@ function togglePatternParameters() {
 
   if (activeLayer) {
     if (isPatternChanging) {
+      if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+        const patternName = (typeof getPatternDisplayName === 'function') ? getPatternDisplayName(gridType) : gridType;
+        if (gridTypeEl) gridTypeEl.value = previousPattern;
+        pushUndoSnapshot(`Change Pattern: ${patternName}`);
+        if (gridTypeEl) gridTypeEl.value = gridType;
+      }
       if (previousPattern === 'road-following') {
         activeLayer.roadWaypoints = [];
         roadWaypoints = [];
@@ -1784,6 +1790,11 @@ function togglePatternParameters() {
     } else {
       headingModeContainer.style.display = 'block';
     }
+  }
+
+  if (typeof isRestoringUndoState !== 'undefined' && isRestoringUndoState) {
+    if (typeof updateLayerHierarchyBadge === 'function') updateLayerHierarchyBadge();
+    return;
   }
 
   const isProcedural = (gridType !== 'freeform' && gridType !== 'road-following' && gridType !== 'hyperlapse');

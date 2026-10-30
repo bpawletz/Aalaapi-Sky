@@ -3210,6 +3210,56 @@ const scenarios = [
       await page.keyboard.press('Control+y');
       await page.waitForTimeout(1500);
     }
+  },
+  {
+    id: 'feature_layer_properties_undo_redo',
+    name: 'Layer Properties & Dynamics Undo and Redo Workflow',
+    issueRef: 'Issue #198',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 1. Place mission center at rural Utica coords
+      await page.evaluate(() => {
+        setGridCenter(41.3215, -88.9950);
+      });
+      await page.waitForTimeout(1000);
+
+      // 2. Adjust Altitude slider from 50m to 85m
+      await page.evaluate(() => {
+        const altEl = document.getElementById('altitude');
+        if (altEl) {
+          if (typeof preparePendingPropertySnapshot === 'function') preparePendingPropertySnapshot('Change Altitude', 'altitude');
+          altEl.value = '85';
+          altEl.dispatchEvent(new Event('input'));
+          altEl.dispatchEvent(new Event('change'));
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 3. Undo Altitude change via floating map undo button
+      await page.click('#map-undo-btn');
+      await page.waitForTimeout(1500);
+
+      // 4. Redo Altitude change via floating map redo button
+      await page.click('#map-redo-btn');
+      await page.waitForTimeout(1500);
+
+      // 5. Add second layer
+      await page.evaluate(() => {
+        const btn = document.getElementById('add-layer-btn');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 6. Undo add layer
+      await page.click('#map-undo-btn');
+      await page.waitForTimeout(1500);
+
+      // 7. Redo add layer
+      await page.click('#map-redo-btn');
+      await page.waitForTimeout(1500);
+    }
   }
 ];
 

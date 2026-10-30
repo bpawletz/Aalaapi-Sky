@@ -37934,3 +37934,191 @@ describe('Mission & Waypoint Redo System (v1.206.0) (Closes #197)', () => {
     assert.strictEqual(redoHistoryStack.length, 30, 'redoHistoryStack must cap at MAX_UNDO_HISTORY (30)');
   });
 });
+
+
+describe('Layer Properties & Dynamics Undo/Redo System (v1.207.0) (Closes #198)', () => {
+  const prevStubs = global._stubElements;
+
+  beforeEach(() => {
+    importedWaypoints = null;
+    importedPhotos = null;
+    importedFileName = '';
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+    const mockEl = (val) => ({
+      value: val,
+      disabled: false,
+      closest: () => ({ style: {} }),
+      classList: { add: () => {}, remove: () => {}, contains: () => false },
+      style: {}
+    });
+    global._stubElements = {
+      'grid-type': mockEl('double'),
+      'grid-width': mockEl('100'),
+      'grid-height': mockEl('100'),
+      'grid-rotation': mockEl('0'),
+      'front-overlap': mockEl('80'),
+      'side-overlap': mockEl('75'),
+      'altitude': mockEl('50'),
+      'speed': mockEl('4'),
+      'gimbal-pitch': mockEl('-60'),
+      'heading-mode': mockEl('followWayline'),
+      'capture-mode': mockEl('stopAndShoot'),
+      'path-mode': mockEl('smoothTransition'),
+      'global-hover-time': mockEl('0'),
+      'finish-action': mockEl('goHome'),
+      'global-max-altitude': mockEl('120'),
+      'global-rth-altitude': mockEl('60'),
+      'layer-capture-mode': mockEl('inherit'),
+      'layer-path-mode': mockEl('inherit'),
+      'layer-heading-mode': mockEl('inherit'),
+      'layer-turnaround-overshoot': mockEl('0'),
+      'layer-turnaround-speed': mockEl('inherit'),
+      'layer-corner-damping': mockEl('0'),
+      'layer-hover-time-mode': mockEl('inherit'),
+      'layer-hover-time-slider': mockEl('0'),
+      'layer-auto-settling-toggle': { checked: true },
+      'layer-base-settling-slider': mockEl('2.0'),
+      'layer-major-turn-settling-slider': mockEl('5.0'),
+      'layer-mod-turn-settling-slider': mockEl('4.0'),
+      'layer-pitch-settling-slider': mockEl('3.0'),
+      'layer-terrain-follow': mockEl('inherit'),
+      'layer-target-agl': mockEl('inherit'),
+      'camera-zoom': mockEl('1.0'),
+      'road-offset': mockEl('15'),
+      'road-snap': { checked: true }
+    };
+    flightLayers = [createDefaultLayer('layer-1', 'Layer 1: 3D Double Grid', 0, 'double')];
+    activeLayerId = flightLayers[0].id;
+    let mLat = 41.3215;
+    let mLon = -88.9950;
+    centerMarker = {
+      getLatLng: () => ({ lat: mLat, lng: mLon }),
+      setLatLng: (ll) => {
+        mLat = Array.isArray(ll) ? ll[0] : (ll.lat !== undefined ? ll.lat : mLat);
+        mLon = Array.isArray(ll) ? ll[1] : (ll.lng !== undefined ? ll.lng : mLon);
+      },
+      openPopup: () => {},
+      on: () => {},
+      addTo: () => centerMarker
+    };
+  });
+
+  after(() => {
+    global._stubElements = prevStubs;
+  });
+
+  test('Version consistency for v1.207.0 across package.json, CHANGELOG.md, index_template.html and index.html', () => {
+    assertVersionConsistency('1.207.0');
+  });
+
+  test('Layer Properties: Changing altitude, speed, gimbal pitch, and grid dimensions is undoable and redoable', () => {
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+
+    const layer = getActiveLayer();
+    assert.strictEqual(layer.altitude, 50);
+
+    // 1. Prepare snapshot before changing altitude
+    preparePendingPropertySnapshot('Change Altitude', 'altitude');
+
+    // 2. Modify altitude (e.g. user dragged slider to 85m)
+    global._stubElements['altitude'].value = '85';
+    layer.altitude = 85;
+
+    // 3. Commit snapshot on change event
+    const committed = commitPendingPropertySnapshot('Change Altitude', 'altitude');
+    assert.strictEqual(committed, true, 'Property modification should commit snapshot');
+    assert.strictEqual(undoHistoryStack.length, 1);
+    assert.strictEqual(undoHistoryStack[0].flightLayers[0].altitude, 50, 'Snapshot must store pre-change altitude (50)');
+
+    // 4. Undo should restore altitude to 50
+    const undone = undoLastAction();
+    assert.strictEqual(undone, true);
+    assert.strictEqual(getActiveLayer().altitude, 50, 'Altitude must revert to 50 after undo');
+    assert.strictEqual(redoHistoryStack.length, 1);
+    assert.strictEqual(redoHistoryStack[0].flightLayers[0].altitude, 85, 'Redo stack must store modified altitude (85)');
+
+    // 5. Redo should restore altitude to 85
+    const redone = redoLastAction();
+    assert.strictEqual(redone, true);
+    assert.strictEqual(getActiveLayer().altitude, 85, 'Altitude must revert to 85 after redo');
+  });
+
+  test('Layer Properties: Redundant/no-op property edits do not push unnecessary snapshots', () => {
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+
+    preparePendingPropertySnapshot('Change Altitude', 'altitude');
+    // Value remains identical (50)
+    const committed = commitPendingPropertySnapshot('Change Altitude', 'altitude');
+    assert.strictEqual(committed, false, 'Unchanged properties must not commit snapshots');
+    assert.strictEqual(undoHistoryStack.length, 0);
+  });
+
+  test('Layer Lifecycle: Adding, duplicating, and deleting layers is fully reversible via undo/redo', () => {
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+    assert.strictEqual(flightLayers.length, 1);
+
+    // Add Layer
+    const l2 = addFlightLayer('orbit');
+    assert.strictEqual(flightLayers.length, 2);
+    assert.strictEqual(undoHistoryStack.length, 1);
+
+    // Duplicate Layer
+    duplicateFlightLayer(l2.id);
+    assert.strictEqual(flightLayers.length, 3);
+    assert.strictEqual(undoHistoryStack.length, 2);
+
+    // Undo duplicate
+    assert.strictEqual(undoLastAction(), true);
+    assert.strictEqual(flightLayers.length, 2, 'Flight layers must revert to 2 after undoing duplicate');
+
+    // Undo add layer
+    assert.strictEqual(undoLastAction(), true);
+    assert.strictEqual(flightLayers.length, 1, 'Flight layers must revert to 1 after undoing add');
+
+    // Redo add layer
+    assert.strictEqual(redoLastAction(), true);
+    assert.strictEqual(flightLayers.length, 2, 'Flight layers must return to 2 after redoing add');
+
+    // Delete second layer
+    deleteFlightLayer(flightLayers[1].id);
+    assert.strictEqual(flightLayers.length, 1);
+
+    // Undo delete
+    assert.strictEqual(undoLastAction(), true);
+    assert.strictEqual(flightLayers.length, 2, 'Deleting layer must be restored on undo');
+  });
+
+  test('Flight Pattern Switching: Pattern change pushes snapshot and restores previous pattern and waypoints', () => {
+    undoHistoryStack.length = 0;
+    redoHistoryStack.length = 0;
+
+    const layer = getActiveLayer();
+    assert.strictEqual(layer.pattern, 'double');
+
+    // Populate some waypoints
+    layer.waypoints = [{ lat: 41.3215, lon: -88.9950, alt: 50 }, { lat: 41.3220, lon: -88.9940, alt: 50 }];
+
+    // Switch pattern to orbit
+    global._stubElements['grid-type'].value = 'orbit';
+    togglePatternParameters();
+
+    assert.strictEqual(layer.pattern, 'orbit');
+    assert.ok(undoHistoryStack.length >= 1, 'Pattern switch must push undo snapshot');
+    assert.strictEqual(undoHistoryStack[undoHistoryStack.length - 1].flightLayers[0].pattern, 'double');
+
+    // Undo pattern switch
+    const undone = undoLastAction();
+    assert.strictEqual(undone, true);
+    assert.strictEqual(getActiveLayer().pattern, 'double', 'Pattern must revert to double after undo');
+    assert.strictEqual(getActiveLayer().waypoints.length, 2, 'Previous pattern waypoints must be restored');
+
+    // Redo pattern switch
+    const redone = redoLastAction();
+    assert.strictEqual(redone, true);
+    assert.strictEqual(getActiveLayer().pattern, 'orbit', 'Pattern must revert to orbit after redo');
+  });
+});

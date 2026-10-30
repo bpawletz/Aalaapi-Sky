@@ -727,6 +727,7 @@ function updateLayerPoiSelectOptions() {
 }
 
 function saveActiveLayerFromUi(targetLayer) {
+  if (typeof isRestoringUndoState !== 'undefined' && isRestoringUndoState) return;
   const layer = targetLayer || getActiveLayer();
   if (!layer) return;
 
@@ -1580,6 +1581,9 @@ function setActiveLayer(layerId) {
 }
 
 function addFlightLayer(pattern = 'double') {
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Add Layer');
+  }
   saveActiveLayerFromUi();
   const newIndex = flightLayers.length;
 
@@ -1603,11 +1607,17 @@ function addFlightLayer(pattern = 'double') {
     initCenterLon
   );
 
-  // Automatically create dedicated POI for this new layer
+  // Automatically create dedicated POI for this new layer (suppress duplicate undo snapshot)
   if (initCenterLat !== null && initCenterLon !== null) {
-    const layerPoi = addPoi(initCenterLat, initCenterLon, `Layer ${newIndex + 1} Target`);
-    if (layerPoi) {
-      newLayer.targetPoiId = layerPoi.id;
+    const prevRestoring = (typeof isRestoringUndoState !== 'undefined') ? isRestoringUndoState : false;
+    if (typeof isRestoringUndoState !== 'undefined') isRestoringUndoState = true;
+    try {
+      const layerPoi = addPoi(initCenterLat, initCenterLon, `Layer ${newIndex + 1} Target`);
+      if (layerPoi) {
+        newLayer.targetPoiId = layerPoi.id;
+      }
+    } finally {
+      if (typeof isRestoringUndoState !== 'undefined') isRestoringUndoState = prevRestoring;
     }
   }
 
@@ -1626,6 +1636,9 @@ function addFlightLayer(pattern = 'double') {
 }
 
 function duplicateFlightLayer(layerId) {
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Duplicate Layer');
+  }
   saveActiveLayerFromUi();
   const idx = flightLayers.findIndex(l => l.id === layerId);
   if (idx === -1) return;
@@ -1646,6 +1659,10 @@ function duplicateFlightLayer(layerId) {
 function deleteFlightLayer(layerId) {
   const idx = flightLayers.findIndex(l => l.id === layerId);
   if (idx === -1) return;
+
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Delete Layer');
+  }
 
   if (flightLayers.length <= 1) {
     // Single layer deletion: clear its waypoints & disable it so all waypoints are removed from map
@@ -1706,6 +1723,9 @@ function cleanUnusedLayerPois() {
 
 function reorderFlightLayers(fromIndex, toIndex) {
   if (fromIndex < 0 || fromIndex >= flightLayers.length || toIndex < 0 || toIndex >= flightLayers.length) return;
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Reorder Layers');
+  }
   const item = flightLayers.splice(fromIndex, 1)[0];
   flightLayers.splice(toIndex, 0, item);
   if (typeof updateGrid === 'function') updateGrid();
@@ -1715,6 +1735,9 @@ function reorderFlightLayers(fromIndex, toIndex) {
 function toggleFlightLayerVisibility(layerId) {
   const layer = flightLayers.find(l => l.id === layerId);
   if (!layer) return;
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Toggle Layer Visibility');
+  }
   layer.enabled = !layer.enabled;
   if (typeof updateGrid === 'function') updateGrid();
   renderLayersList();
