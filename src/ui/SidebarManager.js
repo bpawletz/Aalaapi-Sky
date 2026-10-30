@@ -829,6 +829,7 @@ function togglePatternParameters() {
   if (activePatternBadge) {
     activePatternBadge.textContent = patternLabels[gridType] || 'Layer Settings';
   }
+  updateActiveLayerIrlBadge(gridType);
 
   if (gridGeometryTitle) {
     if (typeof gridGeometryTitle.querySelector === 'function') {
@@ -1810,6 +1811,45 @@ function togglePatternParameters() {
 }
 
 // Helper to get descriptive flight purpose and styling for a gimbal pitch angle
+function updateActiveLayerIrlBadge(gridType) {
+  if (typeof document === 'undefined' || !document.getElementById) return;
+  const irlBadge = document.getElementById('active-layer-irl-badge');
+  if (!irlBadge || !irlBadge.style || typeof irlBadge.setAttribute !== 'function') return;
+  const statusMap = (typeof window !== 'undefined' && window.AALAAPI_IRL_STATUS) ? window.AALAAPI_IRL_STATUS : null;
+  const rawEntry = (statusMap && statusMap[gridType]) ? statusMap[gridType] : null;
+  const entry = (typeof rawEntry === 'string') ? { s: rawEntry, v: null } : (rawEntry || { s: 'U', v: null });
+  const issueUrl = (statusMap && statusMap._issue) ? statusMap._issue : 'https://github.com/bpawletz/Aalaapi-Sky/issues/202';
+  const legalNotice = 'Historical baseline check only — NOT a guarantee of flight safety across varying wind, GNSS, terrain, or firmware conditions. RPIC retains sole responsibility.';
+
+  irlBadge.href = issueUrl;
+  if (typeof irlBadge.setAttribute === 'function') irlBadge.setAttribute('data-irl-status', entry.s || 'U');
+  if (entry.s === 'V') {
+    irlBadge.textContent = '✅ IRL';
+    irlBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+    irlBadge.style.color = '#34d399';
+    irlBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+    irlBadge.title = `IRL Field Tested${entry.v ? ` (v${entry.v})` : ''}. ${legalNotice} Click to view IRL Test Plan & Matrix.`;
+  } else if (entry.s === 'R') {
+    irlBadge.textContent = '🧪 Re-Test';
+    irlBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+    irlBadge.style.color = '#fbbf24';
+    irlBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+    irlBadge.title = `Needs IRL Re-Test: Pattern code modified since last field verification. ${legalNotice} Click to view IRL Test Plan.`;
+  } else if (entry.s === 'F') {
+    irlBadge.textContent = '❌ IRL';
+    irlBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+    irlBadge.style.color = '#f87171';
+    irlBadge.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+    irlBadge.title = `IRL Field Test Variance/Failure Recorded. ${legalNotice} Click to view IRL Test Plan.`;
+  } else {
+    irlBadge.textContent = '🧪 IRL';
+    irlBadge.style.background = 'rgba(148, 163, 184, 0.12)';
+    irlBadge.style.color = '#94a3b8';
+    irlBadge.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+    irlBadge.title = `Pending IRL Field Test. ${legalNotice} Click to view IRL Test Plan & Matrix.`;
+  }
+}
+
 function getGimbalPitchDescription(pitch) {
   const isAuto = (pitch === 'auto' || (typeof pitch === 'string' && pitch.toLowerCase() === 'auto'));
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;

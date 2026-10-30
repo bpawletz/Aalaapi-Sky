@@ -83,7 +83,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.207.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.209.0</span></h1>
         </div>
       </div>
 
@@ -632,6 +632,7 @@
             <span>2. Layer Properties</span>
             <div style="display: flex; align-items: center; gap: 4px;">
               <span id="layer-hierarchy-status-badge" class="badge" style="display: none; font-size: 0.65rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600;" title="Three-Tier Hierarchy Status"></span>
+              <a id="active-layer-irl-badge" href="https://github.com/bpawletz/Aalaapi-Sky/issues/202" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="badge" data-irl-status="U" style="font-size: 0.65rem; background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; text-decoration: none; cursor: pointer;" title="Pending IRL Field Test. Historical baseline check only — NOT a guarantee of flight safety across varying wind, GNSS, terrain, or firmware conditions. RPIC retains sole responsibility.">🧪 IRL</a>
               <span id="active-layer-pattern-badge" class="badge" style="font-size: 0.7rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; margin-right: 6px;">3D Double Grid</span>
             </div>
           </h3>
@@ -4588,6 +4589,12 @@
             <span style="color: #34d399; font-weight: 700; font-size: 0.72rem;">Multi-Battery Flights &amp; Native Breakpoint Resume</span>
             <span style="color: #34d399;">For long missions exceeding a single battery, rely on DJI Fly's native Breakpoint Resume. When battery runs low, allow Return-to-Home, swap the battery, and tap &quot;Resume from Breakpoint&quot; on the RC 2 to continue.</span>
           </div>
+
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; grid-column: span 2;">
+            <span style="font-size: 1.15rem; line-height: 1;">🧪</span>
+            <span style="color: #fbbf24; font-weight: 700; font-size: 0.72rem;">IRL Verification Status Is Not a Guarantee</span>
+            <span style="color: #fcd34d;">Any &quot;IRL Verified&quot; badge or post-flight log check reflects a single historical baseline test under specific conditions only and <strong>DOES NOT guarantee safe flight</strong> across varying wind, weather, GNSS multipath, geomagnetic drift, terrain/DEM inaccuracies, obstacles, or OEM firmware updates. The Remote Pilot in Command (RPIC) retains 100% sole responsibility for preflight verification and VLOS safety.</span>
+          </div>
         </div>
 
         <p style="font-style: italic; border-top: 1px solid var(--border-color); padding-top: 10px; margin: 0; color: var(--text-muted); font-size: 0.76rem;">
@@ -4703,6 +4710,22 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🚁 IRL Field Test Plan Suite, Post-Flight Log Verifier &amp; Section 2 Status Badge (v1.209.0) (Closes #201)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Bridge the gap between simulation and real-world flight! Aalaapi Sky now pairs every pattern update with a structured 6-phase <strong>In-Real-Life (IRL) Field Flight Test Plan</strong> across all 26 flight patterns (<code>docs/IRL_TEST_PLAN.md</code>), tracked via SHA-256 generator code hashes that automatically flag modified patterns as <code>NEEDS_RETEST</code>. Includes an automated <strong>Post-Flight Telemetry Log Analyzer</strong> (<code>npm run irl:analyze</code>) that cross-checks actual flight logs against planned KMZ waypoints, plus a zero-bloat <strong>Section 2 IRL Status Pill</strong> (<code>#active-layer-irl-badge</code>) linking directly to the Master GitHub Verification Matrix (<a href="https://github.com/bpawletz/Aalaapi-Sky/issues/202" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: underline;">Issue #202</a>) with explicit environmental variation &amp; non-guarantee legal notices.
+            </p>
+          </div>
+          <div style="background: rgba(167, 139, 250, 0.08); border: 1px solid rgba(167, 139, 250, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #c4b5fd; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🔄 Comprehensive Pattern &amp; Layer Controls Undo/Redo (v1.208.0) (Closes #200)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Every flight parameter is now undoable! Extended undo and redo tracking across all 145 Section 2 flight pattern controls (including Dome Shell, Polygon Grid, SAR Search, Perimeter Patrol, and Cinematic Reveal), inter-layer transition rules, next-gen generator parameters, and 2D/3D waypoint overrides. Real-time slider adjustments debounce snapshots cleanly, and all next-gen generator settings persist across layer switches.
+            </p>
+          </div>
           <div style="background: rgba(167, 139, 250, 0.08); border: 1px solid rgba(167, 139, 250, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #c4b5fd; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎛️ Layer Properties &amp; Dynamics Undo/Redo (v1.207.0) (Closes #198)
@@ -7055,7 +7078,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.207.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.209.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7203,8 +7226,11 @@
           <p style="margin: 0 0 6px 0; font-size: 0.73rem; line-height: 1.4; color: var(--text-muted);">
             <strong>DJI:</strong> <em>DJI, DJI Fly, DJI Pilot, DJI RC, DJI RC 2, DJI RC Pro, Mini 4 Pro, Air 3, Mavic, Inspire, Matrice, and WPML (Waypoint Markup Language)</em> are trademarks or registered trademarks of <strong>SZ DJI Technology Co., Ltd.</strong> Aalaapi Sky is an independent third-party flight planning tool and is <strong>NOT affiliated with, authorized by, sponsored by, or endorsed by SZ DJI Technology Co., Ltd.</strong>
           </p>
-          <p style="margin: 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-muted);">
+          <p style="margin: 0 0 6px 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-muted);">
             <strong>Other Marks:</strong> <em>Google, Google Earth, Google Maps, KML, GPano, Android</em> (Google LLC); <em>Esri, ArcGIS, ArcGIS Online</em> (Environmental Systems Research Institute, Inc.); <em>OpenStreetMap</em> (OpenStreetMap Foundation); <em>Apple, iPad, iPhone, macOS</em> (Apple Inc.); <em>Node-RED</em> (OpenJS Foundation); <em>WebGL</em> (Khronos Group Inc.). All other trademarks belong to their respective holders and are used strictly for compatibility identification.
+          </p>
+          <p style="margin: 0; font-size: 0.72rem; line-height: 1.4; color: #fcd34d; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); padding: 6px 8px; border-radius: 6px;">
+            <strong>IRL Field Verification Non-Guarantee &amp; Variations Disclaimer:</strong> An <code>IRL Verified</code> badge, field test matrix status, or automated post-flight log analysis PASS represents a single historical baseline observation under specific conditions only and <strong>DOES NOT constitute a guarantee, certification, or warranty of safe flight</strong>. Real-world autonomous flight is subject to atmospheric variations (wind gusts, density altitude, precipitation), RF/GNSS multipath and KP geomagnetic interference, barometric/DEM elevation errors, physical obstacles, aircraft mechanical state, and unannounced OEM firmware or SDK behavioral changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, obstacle clearance, and immediate manual override.
           </p>
         </div>
 
@@ -7212,6 +7238,18 @@
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.209.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>IRL Field Test Plan Suite, Post-Flight Log Verifier &amp; Section 2 Status Badge (Closes #201):</strong> Established a comprehensive 6-phase In-Real-Life (IRL) Field Flight Test Plan across all 26 flight patterns (<code>docs/IRL_TEST_PLAN.md</code>), SHA-256 generator hash tracking with automatic <code>NEEDS_RETEST</code> invalidation (<code>tools/qa/irl_tracker.js</code>), automated post-flight telemetry log verification (<code>npm run irl:analyze</code>), a compact Section 2 IRL verification status badge (<code>#active-layer-irl-badge</code>) linked to Master Matrix Issue #202, and explicit legal disclaimers for real-world environmental &amp; firmware variations.</li>
+              </ul>
+              <br>
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.208.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Comprehensive Pattern &amp; Layer Controls Undo/Redo (Closes #200):</strong> Extended undo and redo tracking across all 145 Section 2 flight pattern controls (including Dome Shell, Polygon Grid, SAR Search, Perimeter Patrol, and Cinematic Reveal), inter-layer transition rules, next-gen generator parameters, and 2D/3D waypoint overrides. Real-time slider adjustments debounce snapshots cleanly, and next-gen generator settings persist across layer switches.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.207.1):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">

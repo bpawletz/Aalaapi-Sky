@@ -150,11 +150,12 @@ Whenever an AI agent works on a feature request, bug fix, improvement, or task:
    - **If No Matching Issue Exists:** The agent MUST proactively create a new GitHub issue in `bpawletz/Aalaapi-Sky` before writing code, using the GitHub MCP `create_issue` tool with a descriptive title, structured markdown description, and appropriate labels (e.g. `enhancement`, `bug`, or `refactor`). The agent notes the resulting issue number (`#<id>`) for subsequent tracking.
 2. **Auto-Closing Commit Syntax:**
    - Commit messages MUST reference and close the targeted issue using standard GitHub auto-closing keywords (e.g. `fix(scope): brief description (closes #123)` or `feat(scope): brief description (fixes #123)`).
-3. **Direct Issue Status Updates & Resolution Summary:**
+3. **Direct Issue Status Updates & Resolution Summary (including Post-Update IRL Test Plan):**
    - Upon completing and verifying the changes (all unit and E2E tests passing), the agent MUST post a concise resolution comment to the GitHub issue summarizing:
      - The version number containing the fix/feature.
      - Key architectural or logic changes implemented.
      - Verification proof (passing unit/E2E test suites and video recordings).
+     - **A structured `### 🚁 Post-Update IRL Field Test Plan` section** containing interactive `- [ ]` checkboxes for field verification of the update (plus the mandatory Legal Non-Guarantee & Variations Disclaimer), generated via `node tools/qa/irl_tracker.js add-update` or `npm run irl:sync`.
    - The agent MUST update the issue state to `closed` (e.g. using the GitHub MCP `update_issue` tool with `state: "closed"`).
 4. **Changelog & Documentation Cross-Referencing:**
    - The issue reference MUST be documented in `CHANGELOG.md` under the new version header (e.g. `- **Scope:** description (Closes #123)`).
@@ -178,10 +179,11 @@ Whenever introducing, updating, or referencing any third-party library, CDN scri
    - Include project name, homepage/repo link, authors/copyright holders, license type, and the upstream copyright notice.
 3. **Synchronize In-App About Modal (`#about-modal`)**:
    - If the component is loaded in the client-side browser bundle or affects map rendering, update the **Third-Party Credits & Open-Source Licenses** card deck (`#about-credits-section`) inside `index_template.html` (and recompile `index.html`).
-4. **Mandatory Trademark Legal Disclaimers ("The Legalize")**:
+4. **Mandatory Trademark & Non-Guarantee Legal Disclaimers ("The Legalize")**:
    - Whenever referring to manufacturer or third-party brands (e.g., DJI, Google, Esri, OpenStreetMap, Apple, Node-RED, WebGL, Autel, Skydio):
      - Ensure the brand mark is attributed to its respective legal entity (e.g., *SZ DJI Technology Co., Ltd.*, *Google LLC*, *Environmental Systems Research Institute, Inc.*).
      - Explicitly state Aalaapi Sky's independent status and include the non-affiliation / non-endorsement disclaimer in `CREDITS.md`, `README.md`, and `#about-trademarks-section`.
+   - **IRL Verification Non-Guarantee & Variations Disclaimer**: Maintain the explicit legal disclaimer in `CREDITS.md`, `#about-trademarks-section`, `#disclaimer-modal`, and `docs/IRL_TEST_PLAN.md` stating that an "IRL Verified" status or passing post-flight log analysis is a historical reference check only and **does NOT constitute a guarantee, warranty, or certification of safe flight** across varying wind/weather, GNSS multipath, geomagnetic, DEM/terrain, obstacle, or OEM firmware conditions.
 5. **Tile Layer & API Attribution**:
    - Ensure Leaflet tile layers (`L.tileLayer`, `L.tileLayer.wms`, `L.esri.featureLayer`) in `src/map/MapEngine.js` configure an accurate, compliant `attribution` property citing the upstream provider.
 6. **Mandatory Test Verification**:
@@ -206,4 +208,45 @@ To ensure high responsiveness, minimal loop latency, and zero unnecessary CPU/ne
    - **REST `POST / PUT / DELETE` Endpoints**: Reserved exclusively for discrete user-initiated actions, mutations, and commands (e.g., mission sync, camera settings overrides, log export, cache clearing).
 
 4. **Synchronous Shell/Process Execution Caching:**
-   - Server-side helpers that execute synchronous child processes or OS queries (such as `netsh advfirewall`, `iwlist`, or system profilers) MUST cache results with an appropriate Time-To-Live (TTL, typically 30–60 seconds) so that status broadcasts and one-shot API queries do not introduce blocking loop lag (p99 latency) or burn CPU.
+   - Server-side helpers that execute synchronous child processes or OS queries (such as `netsh advfirewall`, `iwlist`, or system profilers) MUST cache results with an appropriate Time-To-Live (TTL, typically 30–60 seconds) so that status broadcasts and one-shot API queries not introduce blocking loop lag (p99 latency) or burn CPU.
+
+## 14. Comprehensive Undo & Redo Integration Policy
+To safeguard pilots against accidental clicks, erroneous parameter inputs, and lost custom mission geometries, all mission-altering actions in Aalaapi Sky MUST be bidirectionally reversible via the Undo & Redo architecture:
+
+1. **Universal Control Tracking (Sliders, Textboxes, Dropdowns, Toggles):**
+   - Every input, slider, textbox, dropdown `<select>`, and toggle checkbox affecting mission geometry, layer dynamics, camera parameters, or global failsafes MUST be registered with `wireUndoPropertyTracking` in `src/ui/EventBindings.js`.
+   - Continuous inputs (e.g. range sliders) use debounced staging (`preparePendingPropertySnapshot` on `pointerdown`/`focusin`/`keydown`, committed on `change`), discarding redundant unchanged snapshots.
+   - Discrete controls (e.g. dropdown selects, quick-select chips, mouse wheel triggers, checkboxes) utilize the active element baseline fallback (`_undoBaselineValue`) to automatically capture pre-change state on direct `change` events.
+   - Descriptive labels MUST be defined in `getControlPropertyLabel` for clean, contextual pilot toasts (e.g. `↩️ Undid: Change Dome Radius`).
+
+2. **Layer State Synchronization Contract (`LayerManager.js`):**
+   - Any property stored on a layer object (including pattern-specific parameters such as Dome, SAR, Corridor, Facade, Helix, Photo Sphere, Hyperlapse, Light Art, and Exclusion Zones) MUST be explicitly extracted in `saveActiveLayerFromUi` and populated in `syncUiWithActiveLayer` (setting `el._undoBaselineValue = val`). This guarantees that layer switching and undo/redo snapshots cleanly preserve and restore every parameter.
+
+3. **Discrete Action & Modal Mutation Snapshots:**
+   - All non-input UI actions that alter the flight plan—including Adding Layers, Duplicating Layers, Deleting Layers, Reordering Layers, Toggling Layer Visibility, Switching Flight Patterns, Updating Inter-Layer Transitions (`#layer-transitions-modal`), Saving/Reverting Waypoint Overrides (`#waypoint-popup` & `#fpv-waypoint-editor`), and Inserting Waypoints—MUST invoke `pushUndoSnapshot('<Action Name>')` prior to state mutation (guarded by `!isRestoringUndoState`).
+
+4. **Mandatory Undo/Redo Test Verification:**
+   - Whenever introducing or modifying flight parameters, pattern generators, or editor dialogs, agents MUST add unit tests in `index.test.js` or E2E tests in `index.e2e.test.js` specifically asserting that modifying the control increments the undo count, `undoLastAction()` restores the previous value, and `redoLastAction()` re-applies the new value.
+
+## 15. Post-Update IRL Field Test Plan Generation, Tracking & Non-Guarantee Policy
+Whenever completing a functional update to Aalaapi Sky (new feature, flight pattern generator change, WPML compilation update, or hardware sync modification), the AI agent **MUST** generate and synchronize an **In-Real-Life (IRL) Field Flight Test Plan**:
+
+1. **Generate Post-Update IRL Test Plan & Synchronize Tracker (`tools/qa/irl_tracker.js`):**
+   - Run `npm run irl:sync` (or `node tools/qa/irl_tracker.js add-update --version <X.Y.Z> --issue <id> --title "<summary>" --patterns "<pattern-ids>" --steps "<step1>;<step2>"`) prior to building `index.html`.
+   - This automatically:
+     1. Recomputes SHA-256 function hashes across `src/patterns/PatternGenerators.js`, `src/3d/GeometryBuilder.js`, `src/layers/LayerManager.js`, `src/vision/GcpEngine.js`, and `src/export/WpmlCompiler.js`.
+     2. Auto-invalidates any previously `VERIFIED` pattern whose generator code hash changed, flipping its status to `NEEDS_RETEST` (`🧪 Re-Test`).
+     3. Appends the versioned post-update IRL test plan to `docs/irl_test_status.json` and regenerates `docs/IRL_TEST_PLAN.md`.
+   - If a new flight pattern is added to `#grid-type`, register its canonical definition, recommended rural test parameters (`[41.3215, -88.9950]`), and 6-phase verification steps in `PATTERN_DEFINITIONS` inside `tools/qa/irl_tracker.js`.
+
+2. **Include Interactive IRL Test Checklist in GitHub Issues & Walkthroughs:**
+   - Include the generated `### 🚁 Post-Update IRL Field Test Plan` block (with interactive `- [ ]` checkboxes and the `npm run irl:analyze` command) in both the GitHub Issue resolution comment (Section 10) and the implementation walkthrough.
+
+3. **Automated Post-Flight Telemetry Log Verification (`npm run irl:analyze`):**
+   - Field test runs can be verified quantitatively by comparing the planned `.wpml`/`.kmz`/`.json` mission against the flown telemetry log (`.csv`, decrypted `.txt`, `.gpx`, or `.geojson`) across all 6 IRL phases (`kmz_import`, `entry_altitude`, `geometry_path`, `heading_gimbal`, `capture_trigger`, `exit_rth`) using:
+     ```bash
+     npm run irl:analyze -- --pattern <id> --plan <path/to/waylines.wpml> --log <path/to/FlightRecord.csv>
+     ```
+
+4. **Mandatory Legal Non-Guarantee & Variations Disclaimer:**
+   - Every generated IRL test plan, post-flight telemetry report, and UI status badge tooltip (`#active-layer-irl-badge`) MUST explicitly state that an `IRL Verified` status indicates historical reference verification only and **does NOT constitute a guarantee, warranty, or certification of safe flight**, accounting for variations in wind/weather, GNSS multipath, geomagnetic interference, barometric drift, DEM/map inaccuracies, unmapped obstacles, and OEM firmware updates. The Remote Pilot in Command (RPIC) retains 100% sole responsibility for VLOS and flight safety.

@@ -843,6 +843,9 @@ function fpvDeleteWaypoint() {
 function fpvInsertWaypoint() {
   const waypoints = getCurrentWaypoints();
   if (!waypoints || waypoints.length === 0) return;
+  if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot('Insert Waypoint');
+  }
 
   const currentWp = waypoints[fpvProgressIndex];
   const nextWp = waypoints[fpvProgressIndex + 1];
@@ -1597,6 +1600,9 @@ function setupFPVListeners() {
   if (fpvSaveBtn) {
     fpvSaveBtn.addEventListener('click', (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+        pushUndoSnapshot('Save 3D Waypoint Override');
+      }
       const waypoints = getCurrentWaypoints();
       if (!waypoints || !waypoints[fpvProgressIndex]) return;
       const wp = waypoints[fpvProgressIndex];
@@ -1679,6 +1685,9 @@ function setupFPVListeners() {
   if (fpvResetBtn) {
     fpvResetBtn.addEventListener('click', (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (typeof isRestoringUndoState !== 'undefined' && !isRestoringUndoState && typeof pushUndoSnapshot === 'function') {
+        pushUndoSnapshot('Reset 3D Waypoint to Origin');
+      }
       const waypoints = getCurrentWaypoints();
       if (!waypoints || !waypoints[fpvProgressIndex]) return;
       const wp = waypoints[fpvProgressIndex];
