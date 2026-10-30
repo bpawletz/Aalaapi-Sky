@@ -4268,6 +4268,45 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 2.55 In-Real-Life (IRL) Verification API (v1.210.0, Issue #203)
+    if (pathname === '/api/irl/record' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const irlTracker = require('../qa/irl_tracker.js');
+          const patternId = payload.patternId || 'double';
+          const rec = irlTracker.recordPatternVerification(patternId, {
+            phases: payload.phases,
+            failed: payload.passedAll === false,
+            pilot: payload.pilot || 'In-App Flight Diagnostics',
+            notes: `In-app verification (${payload.flightId || 'log'}): ${payload.metrics?.waypointCompletionPct || 100}% WPs, XTE=${payload.metrics?.rmsXteM || 0}m`,
+            telemetryMetrics: payload.metrics
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, record: rec, status: rec.status }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (pathname === '/api/irl/status' && req.method === 'GET') {
+      try {
+        const irlTracker = require('../qa/irl_tracker.js');
+        const st = irlTracker.syncIrlStatus();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, ...st }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
     // 2.6 Preflight Checklist Service (SQLite Persisted)
     if (pathname === '/api/checklist/template' && req.method === 'GET') {
       try {

@@ -10971,4 +10971,116 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(widthAfterRedo, 120, "Redoing corridor width must restore 120");
     });
   });
+
+  describe("Flight Diagnostics In-App IRL Verification Button & 6-Phase Scorecard (v1.210.0, Issue #203)", () => {
+    test("Flight Diagnostics toolbar & sidebar have Verify IRL Plan buttons and clicking opens #diag-irl-modal for flown records", async () => {
+      // 1. Initial page setup
+      await page.evaluate(() => {
+        setGridCenter(41.3215, -88.9950);
+      });
+      await page.waitForTimeout(300);
+
+      // 2. Open Flight Diagnostics modal
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.open === 'function') {
+          FlightDiagnostics.open();
+        } else {
+          const btn = document.getElementById('topbar-diagnostics-btn');
+          if (btn) btn.click();
+        }
+      });
+      await page.waitForTimeout(600);
+
+      const isDiagOpen = await page.evaluate(() => {
+        const modal = document.getElementById('flight-diagnostics-modal');
+        return modal && !modal.classList.contains('hidden');
+      });
+      assert.strictEqual(isDiagOpen, true, 'Flight Diagnostics modal must be open');
+
+      // 3. Verify buttons exist
+      const headerBtnExists = await page.evaluate(() => Boolean(document.getElementById('diag-btn-irl-verify')));
+      const sidebarBtnExists = await page.evaluate(() => Boolean(document.getElementById('diag-sidebar-irl-verify-btn')));
+      assert.strictEqual(headerBtnExists, true, '#diag-btn-irl-verify must exist in header toolbar');
+      assert.strictEqual(sidebarBtnExists, true, '#diag-sidebar-irl-verify-btn must exist in sidebar');
+
+      // 4. Test clicking when simulation is active (should guard with toast)
+      await page.evaluate(() => {
+        FlightDiagnostics.isActualFlown = false;
+        document.getElementById('diag-btn-irl-verify').click();
+      });
+      await page.waitForTimeout(400);
+
+      const modalStillHidden = await page.evaluate(() => {
+        const m = document.getElementById('diag-irl-modal');
+        return m && m.classList.contains('hidden');
+      });
+      assert.strictEqual(modalStillHidden, true, 'IRL modal must stay hidden on unflown simulation');
+
+      // 5. Simulate loaded flown flight log and click Verify IRL Plan
+      await page.evaluate(() => {
+        FlightDiagnostics.isActualFlown = true;
+        FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-10-30_[12-00-00].txt';
+        FlightDiagnostics.telemetryData = {
+          points: [
+            { lat: 41.3215, lon: -88.9950, alt: 50.0, pitch: -60, yaw: 90, isPhoto: true, speed: 0.1, battery: 98 },
+            { lat: 41.3216, lon: -88.9945, alt: 50.0, pitch: -60, yaw: 90, isPhoto: false, speed: 3.5, battery: 95 },
+            { lat: 41.3217, lon: -88.9940, alt: 50.1, pitch: -60, yaw: 90, isPhoto: true, speed: 0.2, battery: 92 },
+            { lat: 41.3218, lon: -88.9940, alt: 50.0, pitch: -60, yaw: 180, isPhoto: false, speed: 4.0, battery: 88 },
+            { lat: 41.3220, lon: -88.9940, alt: 49.9, pitch: -60, yaw: 270, isPhoto: true, speed: 0.1, battery: 84 },
+            { lat: 41.3220, lon: -88.9950, alt: 50.0, pitch: -60, yaw: 270, isPhoto: true, speed: 0.2, battery: 80 }
+          ]
+        };
+        FlightDiagnostics.plannedWaypoints = [
+          { lat: 41.3215, lon: -88.9950, alt: 50, pitch: -60, heading: 90 },
+          { lat: 41.3217, lon: -88.9940, alt: 50, pitch: -60, heading: 90 },
+          { lat: 41.3220, lon: -88.9940, alt: 50, pitch: -60, heading: 270 },
+          { lat: 41.3220, lon: -88.9950, alt: 50, pitch: -60, heading: 270 }
+        ];
+
+        document.getElementById('diag-btn-irl-verify').click();
+      });
+      await page.waitForTimeout(500);
+
+      // 6. Verify #diag-irl-modal opened and rendered cards
+      const isIrlModalVisible = await page.evaluate(() => {
+        const m = document.getElementById('diag-irl-modal');
+        return m && !m.classList.contains('hidden');
+      });
+      assert.strictEqual(isIrlModalVisible, true, '#diag-irl-modal must be visible');
+
+      const phaseCardCount = await page.evaluate(() => {
+        return document.querySelectorAll('#diag-irl-phases-container .diag-irl-phase-card').length;
+      });
+      assert.strictEqual(phaseCardCount, 6, 'Must render exactly 6 phase cards in scorecard');
+
+      const outcomeText = await page.evaluate(() => {
+        return document.getElementById('diag-irl-outcome-badge')?.textContent || '';
+      });
+      assert.ok(outcomeText.includes('PASSED') || outcomeText.includes('VARIANCE'), 'Outcome badge must indicate verification result');
+
+      // 7. Verify close button closes modal
+      await page.evaluate(() => {
+        document.getElementById('diag-irl-close-btn').click();
+      });
+      await page.waitForTimeout(300);
+
+      const isClosed = await page.evaluate(() => {
+        const m = document.getElementById('diag-irl-modal');
+        return m && m.classList.contains('hidden');
+      });
+      assert.strictEqual(isClosed, true, 'Clicking close button must hide #diag-irl-modal');
+
+      // Cleanup: close Flight Diagnostics modal
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.close === 'function') {
+          FlightDiagnostics.close();
+        } else {
+          const closeBtn = document.getElementById('diag-close-btn');
+          if (closeBtn) closeBtn.click();
+        }
+      });
+      await page.waitForTimeout(300);
+    });
+  });
+
 });

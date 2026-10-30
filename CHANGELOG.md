@@ -1,3 +1,22 @@
+## [1.210.0] - 2026-10-30
+
+Aalaapi Sky introduces an in-app "Verify Against IRL Test Plan" action button and interactive 6-phase verification scorecard dialog directly inside the Flight Diagnostics & Telemetry Center, allowing pilots to evaluate flown flight logs against planned missions with 1-click field reporting.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **In-App Flight Diagnostics IRL Verification Button (`#diag-btn-irl-verify` & `#diag-sidebar-irl-verify-btn`)**: Added dedicated "Verify IRL Plan" action buttons in the Flight Diagnostics header toolbar and sidebar, allowing pilots to verify any loaded flight log (.csv, .txt, .gpx, or .geojson) against planned mission waypoints directly in the browser (Closes #203).
+  - Unflown Simulation Guard: Alert banner guides pilots to load an actual flown flight log or pull records from connected DJI RC 2 before running verification.
+- **Interactive 6-Phase IRL Verification Scorecard Modal (`#diag-irl-modal`)**: Launches a comprehensive diagnostic evaluation scorecard scoring all 6 IRL test phases (KMZ Import, Safe Entry & Altitude Hold, 3D Geometry XTE, Yaw & Gimbal Pitch Tracking, Photo Shutter Triggers & Settling, and Safe Exit & RTH).
+  - Detailed Metric Scorecards: Shows quantitative pass/fail indicators for Waypoint Completion %, RMS Cross-Track Error, RMS Altitude Error, Mean Heading & Gimbal Pitch Deltas, Photo Count Ratio, and Battery Margin.
+  - 1-Click Field Reporting Actions: Includes "Copy Field Report (Markdown)" with pre-formatted checkboxes ready to paste into Master Matrix Issue #202, "Export IRL Verification JSON", and Companion Bridge synchronization.
+  - Legal Disclaimer Notice: Prominently displays the mandatory IRL Field Verification Non-Guarantee & Variations Disclaimer.
+
+#### Under the Hood & Technical Details
+- **`src/qa/IrlVerifier.js`**: Built an offline-first client-side flight analysis engine implementing 3D nearest-approach waypoint tracking, Haversine horizontal drift, altitude variance, angular differences, and photo trigger validation.
+- **`src/3d/DigitalTwin.js`**: Integrated `performIrlVerification()` into `FlightDiagnostics`, connected toolbar and sidebar action buttons, and bound modal controls.
+- **`tools/companion/server.js`**: Added `POST /api/irl/record` endpoint to synchronize verified test results to `docs/irl_test_status.json` and `docs/IRL_TEST_PLAN.md` via `tools/qa/irl_tracker.js`.
+
 ## [1.209.0] - 2026-10-30
 
 Aalaapi Sky introduces a formal In-Real-Life (IRL) Field Flight Test Plan & QA Verification Framework covering all 26 flight patterns, an automated Post-Flight Telemetry Log Analyzer (`npm run irl:analyze`), a zero-bloat Section 2 IRL verification status badge linked to GitHub Issue #202, and explicit legal disclaimers for environmental and firmware variations.
