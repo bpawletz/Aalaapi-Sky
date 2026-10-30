@@ -1569,6 +1569,266 @@ function initUIEventListeners() {
   };
   setupContinuousHelixListeners();
 
+  // Dome Shell Listeners (Issue #159)
+  const setupDomeShellListeners = () => {
+    const dRad = document.getElementById('dome-radius');
+    const dRadVal = document.getElementById('dome-radius-val');
+    const dBase = document.getElementById('dome-base-alt');
+    const dBaseVal = document.getElementById('dome-base-alt-val');
+    const dTiers = document.getElementById('dome-tiers');
+    const dTiersVal = document.getElementById('dome-tiers-val');
+    const dAltOrder = document.getElementById('dome-alt-order');
+    const dMinAng = document.getElementById('dome-min-angle');
+    const dMinAngVal = document.getElementById('dome-min-angle-val');
+    const dMaxAng = document.getElementById('dome-max-angle');
+    const dMaxAngVal = document.getElementById('dome-max-angle-val');
+    const dCap = document.getElementById('dome-zenith-cap');
+
+    const updateDome = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+
+      if (dRad) {
+        const val = parseFloat(dRad.value) || 40;
+        activeLayer.domeRadius = val;
+        if (dRadVal) dRadVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+      if (dBase) {
+        const val = parseFloat(dBase.value) || 10;
+        activeLayer.domeBaseAlt = val;
+        if (dBaseVal) dBaseVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+      if (dTiers) {
+        const val = parseInt(dTiers.value, 10) || 4;
+        activeLayer.domeTiers = val;
+        if (dTiersVal) dTiersVal.textContent = `${val}`;
+      }
+      if (dAltOrder && dAltOrder.value) activeLayer.domeAltitudeOrder = dAltOrder.value;
+      if (dMinAng) {
+        const val = parseFloat(dMinAng.value) || 20;
+        activeLayer.domeMinAngle = val;
+        if (dMinAngVal) dMinAngVal.textContent = `${val}°`;
+      }
+      if (dMaxAng) {
+        const val = parseFloat(dMaxAng.value) || 80;
+        activeLayer.domeMaxAngle = val;
+        if (dMaxAngVal) dMaxAngVal.textContent = `${val}°`;
+      }
+      if (dCap) activeLayer.domeZenithCap = dCap.checked;
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [dRad, dBase, dTiers, dAltOrder, dMinAng, dMaxAng, dCap].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateDome);
+        el.addEventListener('change', updateDome);
+      }
+    });
+  };
+  setupDomeShellListeners();
+
+  // Polygon Grid Listeners (Issue #160)
+  const setupPolygonGridListeners = () => {
+    const pPass = document.getElementById('polygon-grid-pass');
+    const pAngle = document.getElementById('polygon-grid-angle');
+    const pSyncBtn = document.getElementById('polygon-grid-sync-boundary-btn');
+
+    const updatePolygonGrid = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      if (pPass && pPass.value) activeLayer.polygonGridPass = pPass.value;
+      if (pAngle && pAngle.value) activeLayer.polygonGridAngle = pAngle.value;
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [pPass, pAngle].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updatePolygonGrid);
+        el.addEventListener('change', updatePolygonGrid);
+      }
+    });
+
+    if (pSyncBtn) {
+      pSyncBtn.addEventListener('click', () => {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (!activeLayer) return;
+        const bLayer = (typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.pattern === 'boundary-polygon' && (l.boundaryPolygon?.length >= 3 || l.polygonVertices?.length >= 3)) : null;
+        if (bLayer) {
+          const pts = (bLayer.boundaryPolygon && bLayer.boundaryPolygon.length >= 3) ? bLayer.boundaryPolygon : bLayer.polygonVertices;
+          activeLayer.polygonVertices = JSON.parse(JSON.stringify(pts));
+          updateGrid();
+          updateMapLegend();
+          saveAllSettingsToLocalStorage();
+        }
+      });
+    }
+  };
+  setupPolygonGridListeners();
+
+  // SAR Search Listeners (Issue #161)
+  const setupSarSearchListeners = () => {
+    const sMode = document.getElementById('sar-mode');
+    const sTrack = document.getElementById('sar-track-spacing');
+    const sTrackVal = document.getElementById('sar-track-spacing-val');
+    const sLegs = document.getElementById('sar-max-legs');
+    const sLegsVal = document.getElementById('sar-max-legs-val');
+    const sBearing = document.getElementById('sar-bearing');
+    const sBearingVal = document.getElementById('sar-bearing-val');
+
+    const updateSar = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      if (sMode && sMode.value) activeLayer.sarMode = sMode.value;
+      if (sTrack) {
+        const val = parseFloat(sTrack.value) || 30;
+        activeLayer.sarTrackSpacing = val;
+        if (sTrackVal) sTrackVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+      if (sLegs) {
+        const val = parseInt(sLegs.value, 10) || 12;
+        activeLayer.sarMaxLegs = val;
+        if (sLegsVal) sLegsVal.textContent = `${val}`;
+      }
+      if (sBearing) {
+        const val = parseFloat(sBearing.value) || 0;
+        activeLayer.sarBearing = val;
+        if (sBearingVal) sBearingVal.textContent = `${val}°`;
+      }
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [sMode, sTrack, sLegs, sBearing].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateSar);
+        el.addEventListener('change', updateSar);
+      }
+    });
+  };
+  setupSarSearchListeners();
+
+  // Perimeter Patrol Listeners (Issue #162)
+  const setupPerimeterPatrolListeners = () => {
+    const pOffset = document.getElementById('perimeter-offset');
+    const pOffsetVal = document.getElementById('perimeter-offset-val');
+    const pHeadLock = document.getElementById('perimeter-heading-lock');
+    const pDir = document.getElementById('perimeter-direction');
+    const pLaps = document.getElementById('perimeter-laps');
+    const pLapsVal = document.getElementById('perimeter-laps-val');
+    const pSyncBtn = document.getElementById('perimeter-patrol-sync-boundary-btn');
+
+    const updatePerimeter = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      if (pOffset) {
+        const val = parseFloat(pOffset.value) || 0;
+        activeLayer.perimeterOffset = val;
+        if (pOffsetVal) pOffsetVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+      if (pHeadLock && pHeadLock.value) activeLayer.perimeterHeadingLock = pHeadLock.value;
+      if (pDir && pDir.value) activeLayer.perimeterDirection = pDir.value;
+      if (pLaps) {
+        const val = parseInt(pLaps.value, 10) || 1;
+        activeLayer.perimeterLaps = val;
+        if (pLapsVal) pLapsVal.textContent = `${val}`;
+      }
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [pOffset, pHeadLock, pDir, pLaps].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updatePerimeter);
+        el.addEventListener('change', updatePerimeter);
+      }
+    });
+
+    if (pSyncBtn) {
+      pSyncBtn.addEventListener('click', () => {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (!activeLayer) return;
+        const bLayer = (typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.pattern === 'boundary-polygon' && (l.boundaryPolygon?.length >= 3 || l.polygonVertices?.length >= 3)) : null;
+        if (bLayer) {
+          const pts = (bLayer.boundaryPolygon && bLayer.boundaryPolygon.length >= 3) ? bLayer.boundaryPolygon : bLayer.polygonVertices;
+          activeLayer.polygonVertices = JSON.parse(JSON.stringify(pts));
+          updateGrid();
+          updateMapLegend();
+          saveAllSettingsToLocalStorage();
+        }
+      });
+    }
+  };
+  setupPerimeterPatrolListeners();
+
+  // Cinematic Reveal Listeners (Issue #163)
+  const setupCinematicRevealListeners = () => {
+    const cMode = document.getElementById('cinematic-mode');
+    const cAz = document.getElementById('cinematic-azimuth');
+    const cAzVal = document.getElementById('cinematic-azimuth-val');
+    const cStartD = document.getElementById('cinematic-start-dist');
+    const cStartDVal = document.getElementById('cinematic-start-dist-val');
+    const cEndD = document.getElementById('cinematic-end-dist');
+    const cEndDVal = document.getElementById('cinematic-end-dist-val');
+    const cStartA = document.getElementById('cinematic-start-alt');
+    const cStartAVal = document.getElementById('cinematic-start-alt-val');
+    const cEndA = document.getElementById('cinematic-end-alt');
+    const cEndAVal = document.getElementById('cinematic-end-alt-val');
+
+    const updateCine = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      if (cMode && cMode.value) activeLayer.cinematicMode = cMode.value;
+      if (cAz) {
+        const val = parseFloat(cAz.value) || 180;
+        activeLayer.cinematicAzimuth = val;
+        if (cAzVal) cAzVal.textContent = `${val}°`;
+      }
+      if (cStartD) {
+        const val = parseFloat(cStartD.value) || 5;
+        activeLayer.cinematicStartDist = val;
+        if (cStartDVal) cStartDVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+      if (cEndD) {
+        const val = parseFloat(cEndD.value) || 50;
+        activeLayer.cinematicEndDist = val;
+        if (cEndDVal) cEndDVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+      if (cStartA) {
+        const val = parseFloat(cStartA.value) || 10;
+        activeLayer.cinematicStartAlt = val;
+        if (cStartAVal) cStartAVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+      if (cEndA) {
+        const val = parseFloat(cEndA.value) || 40;
+        activeLayer.cinematicEndAlt = val;
+        if (cEndAVal) cEndAVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [cMode, cAz, cStartD, cEndD, cStartA, cEndA].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateCine);
+        el.addEventListener('change', updateCine);
+      }
+    });
+  };
+  setupCinematicRevealListeners();
+
+
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
   const droneModelEl = document.getElementById('drone-model');

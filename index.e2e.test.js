@@ -9879,7 +9879,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   });
 
   describe('Section 1 Pattern Category Filter & Keyboard Accessibility E2E Suite (v1.188.0)', () => {
-    test('E2E: Category filter bar toggles filtered classes and All restores all 22 cards', async () => {
+    test('E2E: Category filter bar toggles filtered classes and All restores all 27 cards', async () => {
       const result = await page.evaluate(async () => {
         const filterBar = document.getElementById('pattern-category-filter-bar');
         const allPills = Array.from(document.querySelectorAll('.pattern-filter-pill'));
@@ -9912,10 +9912,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       assert.strictEqual(result.hasFilterBar, true, '#pattern-category-filter-bar must exist');
       assert.strictEqual(result.pillCount, 6, 'Should have 6 category filter pills');
-      assert.strictEqual(result.totalCards, 22, 'Should have 22 pattern cards');
+      assert.strictEqual(result.totalCards, 27, 'Should have 27 pattern cards');
       assert.ok(result.hiddenCardsAfterStructure > 0, 'Structure filter should hide non-structure cards');
-      assert.strictEqual(result.visibleStructureCards, 6, 'Structure category should display 6 cards');
-      assert.strictEqual(result.hiddenCardsAfterAll, 0, 'All filter should restore all 22 cards');
+      assert.strictEqual(result.visibleStructureCards, 7, 'Structure category should display 7 cards');
+      assert.strictEqual(result.hiddenCardsAfterAll, 0, 'All filter should restore all 27 cards');
     });
 
     test('E2E: Pattern cards have role="button", tabindex="0", and keyboard Enter activates them', async () => {

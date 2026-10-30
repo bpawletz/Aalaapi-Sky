@@ -34931,10 +34931,10 @@ describe('v1.188.0: Draggable Modeless Floating HUD Panels (Issue #158)', () => 
     assert.ok(tpl.includes('data-category="safety"'), 'Must have Safety category pill');
 
     const cardMatches = tpl.match(/class="pattern-card[^"]*"/g) || [];
-    assert.strictEqual(cardMatches.length, 22, 'Must feature exactly 22 pattern cards in Section 1');
+    assert.strictEqual(cardMatches.length, 27, 'Must feature exactly 27 pattern cards in Section 1');
 
     const categorizedMatches = tpl.match(/data-pattern-category="[^"]+"/g) || [];
-    assert.strictEqual(categorizedMatches.length, 22, 'All 22 pattern cards must have data-pattern-category');
+    assert.strictEqual(categorizedMatches.length, 27, 'All 27 pattern cards must have data-pattern-category');
   });
 
   test('DOM Architecture: #sidebar-quick-nav toolbar and accessible section headers in index_template.html', () => {
@@ -37461,5 +37461,223 @@ describe('Road-Following & Layer Video Capture Mode KMZ Export (v1.203.1 - Issue
       { hideLocation: true }
     );
     assert.ok(!promptStr.includes('role=[object Object]'), 'KMZInspector.generateAntigravityPrompt must never output role=[object Object]');
+  });
+});
+
+
+describe('Next-Generation Flight Patterns Suite (v1.204.0 - Issues #159, #160, #161, #162, #163)', () => {
+  test('Version consistency: v1.204.0 across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.204.0', 'package.json must be 1.204.0');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.204.0]'), 'CHANGELOG.md must contain ## [1.204.0]');
+
+    const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tmpl.includes('Version 1.204.0'), 'index_template.html must contain Version 1.204.0');
+    assert.ok(tmpl.includes('v1.204.0'), 'index_template.html header badge must contain v1.204.0');
+
+    const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(html.includes('Version 1.204.0'), 'index.html must contain Version 1.204.0');
+    assert.ok(html.includes('v1.204.0'), 'index.html header badge must contain v1.204.0');
+  });
+
+  test('Issue #159: Hemispherical Dome (dome-shell) generates concentric tiers, radial standoff, and zenith cap', () => {
+    const layer = {
+      domeRadius: 50,
+      domeBaseAlt: 10,
+      domeTiers: 4,
+      domeMinAngle: 20,
+      domeMaxAngle: 80,
+      domeAltitudeOrder: 'max-to-min',
+      domeZenithCap: true,
+      speed: 4
+    };
+
+    const res = generateDomeShellCoordinates(layer, 10, 50, -45);
+    assert.ok(Array.isArray(res.waypoints) && res.waypoints.length > 0, 'Must produce waypoints');
+    assert.ok(Array.isArray(res.photos) && res.photos.length > 0, 'Must produce photos');
+
+    // First point should be zenith cap when altitude order is max-to-min
+    const firstWp = res.waypoints[0];
+    assert.strictEqual(firstWp.isZenithCap, true, 'First waypoint must be Zenith Cap in max-to-min order');
+    assert.strictEqual(firstWp.x, 0, 'Zenith cap x must be 0');
+    assert.strictEqual(firstWp.y, 0, 'Zenith cap y must be 0');
+    assert.strictEqual(firstWp.alt, 60, 'Zenith cap altitude must be baseAlt + radius = 10 + 50 = 60m');
+    assert.strictEqual(firstWp.pitch, -90, 'Zenith cap pitch must be -90 deg nadir');
+
+    // All waypoints must have valid numbers and negative pitch facing inward
+    res.waypoints.forEach(wp => {
+      assert.ok(!isNaN(wp.x) && !isNaN(wp.y) && !isNaN(wp.alt), 'Coordinates must not be NaN');
+      assert.ok(wp.pitch <= 0, 'Gimbal pitch must be downward/oblique');
+      assert.strictEqual(wp.headingMode, 'towardCenter', 'Heading mode must be towardCenter');
+    });
+
+    // Test min-to-max order
+    const layerAsc = { ...layer, domeAltitudeOrder: 'min-to-max' };
+    const resAsc = generateDomeShellCoordinates(layerAsc, 10, 50, -45);
+    const lastWp = resAsc.waypoints[resAsc.waypoints.length - 1];
+    assert.strictEqual(lastWp.isZenithCap, true, 'Last waypoint must be Zenith Cap in min-to-max order');
+  });
+
+  test('Issue #160: Custom Polygon Area Grid (polygon-grid) clips lines inside arbitrary polygons and computes optimal sweep angle', () => {
+    // Square polygon from (-40, -40) to (40, 40)
+    const polyVertices = [
+      { x: -40, y: -40 },
+      { x: 40, y: -40 },
+      { x: 40, y: 40 },
+      { x: -40, y: 40 }
+    ];
+
+    const optimalAngle = computeOptimalPolygonSweepAngle(polyVertices);
+    assert.ok(typeof optimalAngle === 'number' && optimalAngle >= 0 && optimalAngle < 180, 'Optimal angle must be between 0 and 179');
+
+    const layer = {
+      polygonVertices: polyVertices,
+      polygonGridPass: 'single',
+      polygonGridAngle: 0,
+      gridWidth: 80,
+      gridHeight: 80,
+      speed: 4
+    };
+
+    const res = generatePolygonGridCoordinates(layer, 20, 10, 50, -90, 4);
+    assert.ok(res.waypoints.length >= 10, 'Must generate survey waypoints inside polygon');
+    res.waypoints.forEach(wp => {
+      assert.ok(!isNaN(wp.x) && !isNaN(wp.y), 'Waypoints must be valid numbers');
+      assert.ok(wp.x >= -45 && wp.x <= 45, 'Waypoints must be bounded by polygon bounds');
+      assert.ok(wp.y >= -45 && wp.y <= 45, 'Waypoints must be bounded by polygon bounds');
+      assert.strictEqual(wp.pitch, -90, 'Single pass nadir pitch must be -90');
+    });
+
+    // Test double pass (crosshatch)
+    const layerDouble = { ...layer, polygonGridPass: 'double' };
+    const resDouble = generatePolygonGridCoordinates(layerDouble, 20, 10, 50, -60, 4);
+    assert.ok(resDouble.waypoints.length > res.waypoints.length, 'Double pass must generate more waypoints than single pass');
+  });
+
+  test('Issue #161: Search & Rescue (sar-search) generates Expanding Square (ESS) and Sector Search (Victor Sierra)', () => {
+    // 1. Expanding Square Search (ESS)
+    const essLayer = {
+      sarMode: 'expanding-square',
+      sarTrackSpacing: 25,
+      sarMaxLegs: 8,
+      sarBearing: 0,
+      sarGimbalPitch: -45,
+      speed: 4
+    };
+
+    const resEss = generateSarSearchCoordinates(essLayer, 10, 40, -45, 4);
+    assert.ok(resEss.waypoints.length > 0, 'Must produce ESS waypoints');
+    assert.strictEqual(resEss.waypoints[0].isDatum, true, 'First waypoint must be center datum (0,0)');
+    assert.strictEqual(resEss.waypoints[0].x, 0, 'Datum x must be 0');
+    assert.strictEqual(resEss.waypoints[0].y, 0, 'Datum y must be 0');
+    assert.strictEqual(resEss.waypoints[0].pitch, -45, 'Search pitch must be -45 deg oblique');
+
+    // 2. Sector Search (Victor Sierra)
+    const vsLayer = {
+      sarMode: 'sector-search',
+      sarRadius: 50,
+      sarSectors: 3,
+      sarBearing: 0,
+      sarGimbalPitch: -60,
+      speed: 4
+    };
+
+    const resVs = generateSarSearchCoordinates(vsLayer, 10, 40, -60, 4);
+    assert.ok(resVs.waypoints.length > 0, 'Must produce Sector Search waypoints');
+    resVs.waypoints.forEach(wp => {
+      assert.ok(!isNaN(wp.x) && !isNaN(wp.y) && !isNaN(wp.heading), 'Sector waypoints must be valid numbers');
+    });
+  });
+
+  test('Issue #162: Perimeter Patrol (perimeter-patrol) generates offset closed loops with inward/outward camera normal locks', () => {
+    const squareVertices = [
+      { x: -30, y: -30 },
+      { x: 30, y: -30 },
+      { x: 30, y: 30 },
+      { x: -30, y: 30 }
+    ];
+
+    const layerInward = {
+      polygonVertices: squareVertices,
+      perimeterOffset: 10,
+      perimeterHeadingLock: 'inward',
+      perimeterDirection: 'cw',
+      perimeterLaps: 1,
+      speed: 4
+    };
+
+    const resInward = generatePerimeterPatrolCoordinates(layerInward, 10, 30, -60, 4);
+    assert.ok(resInward.waypoints.length >= 8, 'Must produce closed boundary patrol waypoints');
+    const lastWp = resInward.waypoints[resInward.waypoints.length - 1];
+    assert.strictEqual(lastWp.isLoopClosure, true, 'Last waypoint must close the boundary loop');
+
+    // Verify outward heading lock
+    const layerOutward = { ...layerInward, perimeterHeadingLock: 'outward' };
+    const resOutward = generatePerimeterPatrolCoordinates(layerOutward, 10, 30, -60, 4);
+    assert.strictEqual(resOutward.waypoints.length, resInward.waypoints.length, 'Must produce matching count of waypoints');
+  });
+
+  test('Issue #163: Cinematic Reveal (cinematic-reveal) generates Dronie, Rocket, and Boomerang with dynamic POI pitch tracking', () => {
+    // 1. Dronie (Pull-back climb)
+    const dronieLayer = {
+      cinematicMode: 'dronie',
+      cinematicAzimuth: 180,
+      cinematicStartDist: 10,
+      cinematicEndDist: 60,
+      cinematicStartAlt: 10,
+      cinematicEndAlt: 50,
+      cinematicPoiAlt: 2,
+      speed: 3
+    };
+
+    const resDronie = generateCinematicRevealCoordinates(dronieLayer, 5, 50, -45, 3);
+    assert.ok(resDronie.waypoints.length >= 20, 'Dronie must produce smooth waypoint track');
+    const firstWp = resDronie.waypoints[0];
+    const lastWp = resDronie.waypoints[resDronie.waypoints.length - 1];
+    assert.ok(firstWp.alt < lastWp.alt, 'Dronie must climb in altitude');
+    assert.strictEqual(firstWp.heading, 0, 'Dronie facing POI at heading 180+180=0 (North)');
+    assert.ok(firstWp.pitch < 0 && lastWp.pitch < 0, 'Gimbal pitch must track POI below horizon');
+
+    // 2. Rocket (Vertical Crane)
+    const rocketLayer = {
+      cinematicMode: 'rocket',
+      cinematicStartAlt: 5,
+      cinematicEndAlt: 45,
+      speed: 2.5
+    };
+    const resRocket = generateCinematicRevealCoordinates(rocketLayer, 5, 50, -45, 2.5);
+    const rFirst = resRocket.waypoints[0];
+    const rLast = resRocket.waypoints[resRocket.waypoints.length - 1];
+    assert.ok(rLast.pitch < rFirst.pitch, 'Rocket must smoothly tilt down from horizon toward nadir');
+
+    // 3. Boomerang (Elliptical Orbit)
+    const boomerangLayer = {
+      cinematicMode: 'boomerang',
+      cinematicEndDist: 40,
+      cinematicEccentricity: 0.6,
+      cinematicStartAlt: 15,
+      cinematicEndAlt: 35,
+      speed: 3
+    };
+    const resBoomerang = generateCinematicRevealCoordinates(boomerangLayer, 5, 50, -45, 3);
+    assert.strictEqual(resBoomerang.waypoints.length, 36, 'Boomerang must generate 36 orbital frames');
+  });
+
+  test('LayerManager integration: createDefaultLayer and generateLayerWaypoints cleanly propagate 3-tier parameters for all 5 patterns', () => {
+    const patterns = ['dome-shell', 'polygon-grid', 'sar-search', 'perimeter-patrol', 'cinematic-reveal'];
+    patterns.forEach((pat, idx) => {
+      const l = createDefaultLayer(`test-${pat}`, `Test ${pat}`, idx, pat, 41.3215, -88.9950);
+      assert.strictEqual(l.pattern, pat, `Layer pattern must be ${pat}`);
+
+      const res = generateLayerWaypoints(l, 41.3215, -88.9950);
+      assert.ok(Array.isArray(res.waypoints) && res.waypoints.length > 0, `${pat} must produce non-empty waypoints`);
+      assert.ok(Array.isArray(res.photos) && res.photos.length > 0, `${pat} must produce non-empty photos`);
+      res.waypoints.forEach(wp => {
+        assert.ok(!isNaN(wp.lat) && !isNaN(wp.lon) && !isNaN(wp.alt), `${pat} coordinates must not be NaN`);
+        assert.strictEqual(wp.layerPattern, pat, 'Waypoint must record its layerPattern');
+      });
+    });
   });
 });

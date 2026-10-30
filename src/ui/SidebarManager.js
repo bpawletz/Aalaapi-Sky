@@ -796,7 +796,12 @@ function togglePatternParameters() {
     'vertical-facade': '🏢 Vertical Facade Grid',
     'continuous-helix': '🌀 Continuous Helix / Spiral',
     'star-pass': '⭐ Star Pass (Cross-Hatch)',
-    'corridor': '🛣️ Multi-Pass Corridor'
+    'corridor': '🛣️ Multi-Pass Corridor',
+    'dome-shell': '🌐 Hemispherical Dome',
+    'polygon-grid': '📐 Polygon Area Grid',
+    'sar-search': '🛟 Search & Rescue',
+    'perimeter-patrol': '🛡️ Perimeter Patrol',
+    'cinematic-reveal': '🎬 Cinematic Reveal'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
@@ -808,6 +813,11 @@ function togglePatternParameters() {
   const continuousHelixContainer = document.getElementById('continuous-helix-container');
   const starPassContainer = document.getElementById('star-pass-container');
   const corridorContainer = document.getElementById('corridor-container');
+  const domeShellContainer = document.getElementById('dome-shell-container');
+  const polygonGridContainer = document.getElementById('polygon-grid-container');
+  const sarSearchContainer = document.getElementById('sar-search-container');
+  const perimeterPatrolContainer = document.getElementById('perimeter-patrol-container');
+  const cinematicRevealContainer = document.getElementById('cinematic-reveal-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -908,6 +918,31 @@ function togglePatternParameters() {
     } else {
       lightArtContainer.classList.add('hidden');
     }
+  }
+
+  if (domeShellContainer) {
+    if (gridType === 'dome-shell') domeShellContainer.classList.remove('hidden');
+    else domeShellContainer.classList.add('hidden');
+  }
+
+  if (polygonGridContainer) {
+    if (gridType === 'polygon-grid') polygonGridContainer.classList.remove('hidden');
+    else polygonGridContainer.classList.add('hidden');
+  }
+
+  if (sarSearchContainer) {
+    if (gridType === 'sar-search') sarSearchContainer.classList.remove('hidden');
+    else sarSearchContainer.classList.add('hidden');
+  }
+
+  if (perimeterPatrolContainer) {
+    if (gridType === 'perimeter-patrol') perimeterPatrolContainer.classList.remove('hidden');
+    else perimeterPatrolContainer.classList.add('hidden');
+  }
+
+  if (cinematicRevealContainer) {
+    if (gridType === 'cinematic-reveal') cinematicRevealContainer.classList.remove('hidden');
+    else cinematicRevealContainer.classList.add('hidden');
   }
 
   if (gridType === 'target-splat') {
@@ -1480,6 +1515,112 @@ function togglePatternParameters() {
     const layerPathSelect = document.getElementById('layer-path-mode');
     if (layerPathSelect) layerPathSelect.value = 'curved';
 
+  } else if (gridType === 'dome-shell') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🌐 Dome Shell Geometry";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (domeShellContainer) domeShellContainer.classList.remove('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+    if (activeLayer) activeLayer.headingMode = 'towardCenter';
+
+  } else if (gridType === 'polygon-grid') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "📐 Polygon Grid Geometry";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (polygonGridContainer) polygonGridContainer.classList.remove('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'block';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'block';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'block';
+
+  } else if (gridType === 'sar-search') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🛟 Search & Rescue Geometry";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (sarSearchContainer) sarSearchContainer.classList.remove('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+  } else if (gridType === 'perimeter-patrol') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🛡️ Perimeter Patrol Geometry";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (perimeterPatrolContainer) perimeterPatrolContainer.classList.remove('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+  } else if (gridType === 'cinematic-reveal') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🎬 Cinematic Camera Path";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (cinematicRevealContainer) cinematicRevealContainer.classList.remove('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+    if (activeLayer) {
+      activeLayer.captureMode = 'continuous';
+      activeLayer.pathMode = 'curved';
+      activeLayer.headingMode = 'towardCenter';
+    }
+
   } else if (gridType === 'star-pass') {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
     if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
@@ -1636,7 +1777,7 @@ function togglePatternParameters() {
   // Conditionally hide Heading Mode for orbits and photo-spheres (which have fixed procedural headings)
   const headingModeContainer = document.getElementById('heading-mode-container');
   if (headingModeContainer) {
-    if (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'photo-sphere') {
+    if (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'photo-sphere' || gridType === 'dome-shell' || gridType === 'cinematic-reveal') {
       headingModeContainer.style.display = 'none';
       const helpDrawer = document.getElementById('heading-help-drawer');
       if (helpDrawer) helpDrawer.classList.add('hidden');

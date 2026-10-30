@@ -2,7 +2,7 @@
 
 Welcome to the definitive reference guide for mission planning, flight pattern selection, and parameter configuration in **Aalaapi Sky**.
 
-This document outlines the operational logic, decision trees, parameter cascades, and settings applicability across all **21 flight patterns** supported by Aalaapi Sky for DJI Fly and multi-vendor drone autopilots.
+This document outlines the operational logic, decision trees, parameter cascades, and settings applicability across all **26 flight patterns** supported by Aalaapi Sky for DJI Fly and multi-vendor drone autopilots.
 
 ---
 
@@ -75,6 +75,7 @@ flowchart TD
     Flat -->|"Complex 3D Terrain / Stockpiles"| DoubleGrid["3D Splat (double)<br>Crosshatch Grid -60° Gimbal<br>Gaussian Splatting & Photogrammetry"]
     Flat -->|"Specific Bounded Compound / Frustum"| TargetSplat["Target Splat (target-splat)<br>Auto-Trimmed Oblique Grid<br>Max Battery Savings"]
     Flat -->|"Undulating Hills / Mines / Variable Terrain"| TerrainFollow["Terrain Following (DEM-Aware Grid)<br>Constant AGL & GSD<br>Copernicus 30m / GeoTIFF DEM"]
+    Flat -->|"Arbitrary Irregular Property / Field"| PolygonGrid["Polygon Area Grid (polygon-grid)<br>Ray-Clipped Lawn-Mower Pass<br>Auto Optimal Sweep Angle"]
 
     Structure --> Geometry{"Structure Geometry?"}
     Geometry -->|"Cylindrical / Symmetrical Monolith"| OrbitChoice{"Single vs Multi-Tier?"}
@@ -85,6 +86,7 @@ flowchart TD
     Structure -->|"Tall Lattice / Guyed Telecom Tower"| Tower["Tower Audit (tower)<br>Vertical/Horizontal Columns + Guy Wire Buffer"]
     Structure -->|"Flat Vertical Surface (Wall / Dam / Cliff)"| VerticalFacade["Vertical Facade (vertical-facade)<br>Planar Grid, 0° Gimbal Standoff"]
     Structure -->|"High-Detail Single POI Assessment"| StarPass["Star Pass (star-pass)<br>Cross-Hatch Diametric POI Flyovers"]
+    Structure -->|"Hemisphere / Geodesic Monolith / 3DGS"| DomeShell["Hemispherical Dome (dome-shell)<br>Constant Radial Standoff (R)<br>Auto Inward Pitch + Zenith Cap"]
     Structure -->|"Combined Ortho + Facade Mesh"| HybridChoice{"Hybrid Complexity?"}
     HybridChoice -->|"Single Ring + Grid"| GridOrbitCombo["2D+3D Hybrid (grid-orbit-combo)<br>Nadir Top Grid + Perimeter Ring"]
     HybridChoice -->|"Multi-Ring + Grid"| GridMultiOrbitCombo["Multi-Tier Hybrid (grid-multi-orbit-combo)<br>Nadir Top Grid + Multi-Tier Rings"]
@@ -92,17 +94,20 @@ flowchart TD
     Linear --> LinearType{"Corridor Type & Width?"}
     LinearType -->|"Single Centerline with Lateral Offset"| RoadFollowing["Road Following (road-following)<br>Offset Flight Path, Road-Focus Gimbal"]
     LinearType -->|"Wide Polyline Corridor / Multi-Swath"| Corridor["Corridor Mapping (corridor)<br>Multi-Pass Swaths + Turnaround Overshoots"]
+    LinearType -->|"Closed Boundary Loop / Fenceline"| PerimeterPatrol["Perimeter Patrol (perimeter-patrol)<br>Closed Boundary Offset Loop<br>Inward / Outward / Tangent Yaw"]
 
     Creative --> MediaChoice{"Media Output?"}
     MediaChoice -->|"360° x 180° Virtual Tour Panorama"| PhotoSphere["Photo Sphere (photo-sphere)<br>Pitch Rings, Stop & Shoot Locked"]
     MediaChoice -->|"Cinematic Interval Video Transit"| Hyperlapse["Hyperlapse (hyperlapse)<br>Keyframed Spline Pitch & Smooth Yaw"]
     MediaChoice -->|"Nighttime Long-Exposure Vector Art"| LightArt["Light Art (light-art)<br>Auxiliary Drone LEDs, Smooth Splines"]
+    MediaChoice -->|"Dynamic Cinematic Reveal / Crane / Boomerang"| CinematicReveal["Cinematic Reveal (cinematic-reveal)<br>Dronie Pull-Back Climb<br>Elliptical Boomerang Orbit"]
 
     Spatial --> SpatialType{"Spatial Operation?"}
     SpatialType -->|"Custom Manual Waypoint Sequence"| Freeform["Freeform (freeform)<br>Manual Waypoint Placement"]
     SpatialType -->|"3D Keep-Out Hazard / Restricted Zone"| Exclusion["Exclusion Zone<br>Box (exclusion-box) or Polygon (exclusion-freeform)"]
     SpatialType -->|"Legal Cadastral / Survey Reference Line"| Boundary["Boundary / Parcel (boundary-polygon)<br>Perimeter & Acreage Display"]
     SpatialType -->|"Survey Control Targets / ArUco / AprilTags"| Fiducial["Fiducial / GCPs (fiducial-markers)<br>GCP Coordinate Sheets & Target Printing"]
+    SpatialType -->|"IAMSAR Wilderness Search & Rescue"| SarSearch["Search & Rescue (sar-search)<br>Expanding Square ESS<br>Victor Sierra Sector Search"]
 ```
 
 ---
@@ -170,7 +175,7 @@ flowchart TD
 
 ## 4. Flight Pattern Settings Applicability Matrix
 
-This matrix details exactly which parameters apply to each of Aalaapi Sky's **21 flight patterns**:
+This matrix details exactly which parameters apply to each of Aalaapi Sky's **26 flight patterns**:
 
 | Flight Pattern | Altitude / Height | Width / Radius | Length / Height | Rotation Angle | Front Overlap | Side Overlap | Standoff Dist | Gimbal Pitch | Heading Mode | Path / Turn Mode | Capture Mode | Speed | Turn Speed Boost | Specific Controls |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
@@ -195,6 +200,11 @@ This matrix details exactly which parameters apply to each of Aalaapi Sky's **21
 | **Exclusion Zone: Freeform (exclusion-freeform)** | Floor / Ceiling | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | N/A | N/A | N/A | N/A | N/A | ❌ | Arbitrary Polygon Boundary, 3D Airspace Buffer |
 | **Boundary / Parcel (boundary-polygon)** | Elevation Offset | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | N/A | N/A | N/A | N/A | N/A | ❌ | Stroke Color, Fill Opacity, Acreage/Perimeter |
 | **Fiducial / GCPs (fiducial-markers)** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | N/A | N/A | N/A | N/A | N/A | ❌ | ArUco / AprilTag Dictionary, Physical Size, Role |
+| **Hemispherical Dome (dome-shell)** | Base Alt + R | Standoff ($R$) | ❌ | ❌ | ✅ (Spacing) | ❌ | $R$ | Auto-Radial ($-\theta$ to -90°) | Fixed (Toward Center) | Curved (Dome) | Cont / Stop&Shoot | ✅ | ❌ | Elevation Tiers (2-8), Zenith Nadir Cap, Descent Order |
+| **Polygon Area Grid (polygon-grid)** | ✅ | Clipped Poly | Clipped Poly | ✅ / Auto | ✅ | ✅ | ❌ | -90° / -60° | Follow Wayline | Straight / Curved | Cont / Stop&Shoot | ✅ | ✅ | Single/Double pass, Auto sweep angle optimization, Sync from Boundary |
+| **Search & Rescue (sar-search)** | ✅ | Track Spacing | Radius | Bearing | ✅ (Spacing) | ❌ | ❌ | -45° to -90° | Follow Wayline | Straight (90°/120°) | Cont / Stop&Shoot | ✅ | ❌ | Expanding Square (ESS) vs Sector (Victor Sierra), Track Spacing, Max Legs |
+| **Perimeter Patrol (perimeter-patrol)** | ✅ | Offset ($m$) | ❌ | ❌ | ✅ (Spacing) | ❌ | Offset | -60° to 0° | Inward / Outward / Tangent | Curved Loop | Cont / Stop&Shoot | ✅ | ❌ | Standoff Offset (-50 to +50m), Heading Lock, CW/CCW Direction, Laps |
+| **Cinematic Reveal (cinematic-reveal)** | Start/End Alt | Start/End Dist | ❌ | Azimuth | Frame Interval | ❌ | Standoff | Dynamic POI Pitch | Fixed (Toward Center) | Curved (Spline) | Continuous (Locked) | 1–5 m/s | ❌ | Dronie / Rocket / Boomerang, POI Elevation Offset, Eccentricity |
 
 ---
 
@@ -241,6 +251,34 @@ This matrix details exactly which parameters apply to each of Aalaapi Sky's **21
 - **Primary Use**: Linear infrastructure: highways, pipelines, utility lines, railways, trails.
 - **Corridor Mapping**: Uses multi-swath parallel passes across a polyline corridor width, with customizable turnaround overshoot beyond both ends.
 - **Road Following**: Follows a single centerline with adjustable lateral offset (`-15m` to `+15m`). The camera uses `auto` road-focus mode, dynamically adjusting pitch to keep the road surface centered in frame.
+
+### Hemispherical Dome / Geodesic Shell (`dome-shell`) (Issue #159)
+- **Primary Use**: 3D Gaussian Splatting (3DGS), NeRF, domes, monuments, statues, and tree canopy reconstruction.
+- **Constant Radial Standoff**: Spaced along a 3D hemisphere ($r = R\cos\theta$, $z = z_0 + R\sin\theta$) keeping the camera at constant Euclidean distance $R$ from the subject across all elevation angles.
+- **Automatic Radial Pitch**: Gimbal pitch is continuously computed as $-\theta$ (e.g., -20° up to -80°), topped by an optional Nadir Zenith Cap (-90°).
+- **Descent Order**: Choose `max-to-min` (descending rings) to prevent propeller rotor wash from disturbing ground dust during early survey phases.
+
+### Custom Polygon Area Grid (`polygon-grid`) (Issue #160)
+- **Primary Use**: Agricultural fields, irregular cadastral parcels, solar farm sections, and golf courses.
+- **Ray-Polygon Clipping**: Automatically clips lawn-mower survey lines to the exact interior of an arbitrary polygon, eliminating battery drain on exterior turnaround overshoots.
+- **Auto-Align Sweep Angle**: Analyzes the polygon's convex hull and edge orientations to select the sweep angle that minimizes turnaround count (saving 15–35% in flight duration).
+- **Boundary Sync**: One-click sync from any active `boundary-polygon` parcel layer.
+
+### Search & Rescue (`sar-search`) (Issue #161)
+- **Primary Use**: Wilderness search and rescue, thermal missing-person searches, and maritime datum sweeps following IAMSAR standards.
+- **Expanding Square Search (ESS)**: Starts directly at the Last Known Position (LKP) datum `(0, 0)` and spirals outward in orthogonal 90° legs ($d, d, 2d, 2d, 3d, 3d\dots$).
+- **Sector Search (Victor Sierra)**: Flies 3 equilateral triangular sectors of radius $R$ through the LKP datum from 6 distinct compass directions to detect subjects partially occluded by terrain, trees, or sun glare.
+
+### Perimeter / Fenceline Patrol (`perimeter-patrol`) (Issue #162)
+- **Primary Use**: Facility security audits, levee inspections, property line encroachment checks, and firebreak verification.
+- **Standoff Offset**: Traces a closed polygon boundary at a configurable inward or outward offset (e.g. -10m inside fenceline to +25m standoff).
+- **Directional Camera Lock**: Locks aircraft yaw `inward` (+90° normal toward compound interior), `outward` (-90° normal toward exterior buffer), or `tangent` (forward along fence line).
+
+### Cinematic Reveal & Boomerang (`cinematic-reveal`) (Issue #163)
+- **Primary Use**: Automated cinematic media production, real estate reveals, and landscape videography.
+- **Dronie (Pull-Back Climb)**: Smooth linear recession and altitude climb along a compass azimuth with dynamic trigonometric POI gimbal tracking ($-\arctan2(z - z_{\text{POI}}, d)$).
+- **Rocket**: Vertical crane ascent with gradual pitch tilt from horizon (-15°) down to nadir (-90°).
+- **Boomerang (Elliptical Orbit)**: Eccentric oval orbit with dynamic altitude wave (ascending on far end, descending on near end) keeping camera locked on the central focal point.
 
 ---
 

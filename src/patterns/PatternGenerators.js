@@ -2111,6 +2111,685 @@ function generateCorridorCoordinates(layer, centerline, sPhoto = 20, altitude = 
   };
 }
 
+
+/**
+ * Issue #159: Hemispherical Dome / Geodesic Shell Flight Pattern (dome-shell)
+ * Concentric orbital tiers spaced along a 3D hemisphere with constant radial standoff
+ * from subject centroid and automatic inward radial gimbal pitch.
+ */
+function generateDomeShellCoordinates(layer, sPhoto, altitude, defaultGimbalPitch) {
+  const waypoints = [];
+  const photos = [];
+
+  const radius = Math.max(5, layer && layer.domeRadius ? parseFloat(layer.domeRadius) : 40);
+  const baseAlt = Math.max(0, layer && layer.domeBaseAlt !== undefined ? parseFloat(layer.domeBaseAlt) : 10);
+  const nTiers = Math.max(2, Math.min(10, layer && layer.domeTiers ? parseInt(layer.domeTiers, 10) : 4));
+  const minAngle = Math.max(5, Math.min(60, layer && layer.domeMinAngle !== undefined ? parseFloat(layer.domeMinAngle) : 20));
+  const maxAngle = Math.max(minAngle + 5, Math.min(88, layer && layer.domeMaxAngle !== undefined ? parseFloat(layer.domeMaxAngle) : 80));
+  const altOrder = (layer && layer.domeAltitudeOrder === 'min-to-max') ? 'min-to-max' : 'max-to-min';
+  const hasCap = (layer && layer.domeZenithCap !== false);
+  const speed = (layer && layer.speed !== undefined && layer.speed !== null) ? layer.speed : 4;
+  const photoSpacing = Math.max(2, (typeof sPhoto === 'number' && !isNaN(sPhoto) && sPhoto > 0) ? sPhoto : 10);
+
+  const calcHeading = (dx, dy) => {
+    return Math.round(((Math.atan2(dx, dy) * 180.0 / Math.PI) + 360.0) % 360.0 * 10) / 10;
+  };
+
+  const tiersData = [];
+
+  for (let k = 0; k < nTiers; k++) {
+    const fraction = (nTiers > 1) ? (k / (nTiers - 1)) : 0.5;
+    const thetaDeg = minAngle + fraction * (maxAngle - minAngle);
+    const thetaRad = thetaDeg * Math.PI / 180.0;
+    const rTier = radius * Math.cos(thetaRad);
+    const altTier = baseAlt + radius * Math.sin(thetaRad);
+    const pitchTier = -Math.round(thetaDeg * 10) / 10;
+
+    const ringCircumference = 2 * Math.PI * rTier;
+    const nPoints = Math.max(6, Math.round(ringCircumference / photoSpacing));
+    const angularOffset = (k % 2 === 1) ? (Math.PI / nPoints) : 0; // Stagger alternate rings
+
+    const ringWps = [];
+    for (let j = 0; j < nPoints; j++) {
+      const phi = (2 * Math.PI * j) / nPoints + angularOffset;
+      const px = Math.round(rTier * Math.cos(phi) * 100) / 100;
+      const py = Math.round(rTier * Math.sin(phi) * 100) / 100;
+      const heading = calcHeading(-px, -py);
+
+      const wp = {
+        x: px,
+        y: py,
+        alt: Math.round(altTier * 10) / 10,
+        pitch: pitchTier,
+        gimbalPitch: pitchTier,
+        heading: heading,
+        headingMode: 'towardCenter',
+        speed: speed,
+        gridType: 'dome-shell',
+        layerPattern: 'dome-shell',
+        isRingStart: (j === 0),
+        ringIndex: k,
+        tierElevation: Math.round(thetaDeg)
+      };
+      ringWps.push(wp);
+    }
+    tiersData.push({ tierIndex: k, alt: altTier, points: ringWps });
+  }
+
+  // Optional Zenith Nadir Cap: x = 0, y = 0, z = baseAlt + radius, pitch = -90
+  const zenithCapWp = {
+    x: 0,
+    y: 0,
+    alt: Math.round((baseAlt + radius) * 10) / 10,
+    pitch: -90,
+    gimbalPitch: -90,
+    heading: 0,
+    headingMode: 'towardCenter',
+    speed: speed,
+    gridType: 'dome-shell',
+    layerPattern: 'dome-shell',
+    isZenithCap: true,
+    ringIndex: nTiers
+  };
+
+  if (altOrder === 'max-to-min') {
+    if (hasCap) {
+      waypoints.push(zenithCapWp);
+      photos.push({ ...zenithCapWp });
+    }
+    for (let i = tiersData.length - 1; i >= 0; i--) {
+      tiersData[i].points.forEach(pt => {
+        waypoints.push(pt);
+        photos.push({ ...pt });
+      });
+    }
+  } else {
+    for (let i = 0; i < tiersData.length; i++) {
+      tiersData[i].points.forEach(pt => {
+        waypoints.push(pt);
+        photos.push({ ...pt });
+      });
+    }
+    if (hasCap) {
+      waypoints.push(zenithCapWp);
+      photos.push({ ...zenithCapWp });
+    }
+  }
+
+  return { waypoints, photos };
+}
+
+/**
+ * Issue #160: Custom Polygon Area Grid (polygon-grid)
+ * Generates ray-clipped single or crosshatch lawn-mower survey lines inside an arbitrary polygon.
+ */
+function computeOptimalPolygonSweepAngle(vertices) {
+  if (!Array.isArray(vertices) || vertices.length < 3) return 0;
+
+  let minSpan = Infinity;
+  let bestAngle = 0;
+
+  // Test sweep angles in 5-degree increments from 0 to 175
+  for (let deg = 0; deg < 180; deg += 5) {
+    const rad = deg * Math.PI / 180.0;
+    const sinA = Math.sin(rad);
+    const cosA = Math.cos(rad);
+
+    let minPerp = Infinity;
+    let maxPerp = -Infinity;
+
+    for (let i = 0; i < vertices.length; i++) {
+      const v = vertices[i];
+      const vx = (v.x !== undefined) ? v.x : 0;
+      const vy = (v.y !== undefined) ? v.y : 0;
+      const perp = -vx * sinA + vy * cosA;
+      if (perp < minPerp) minPerp = perp;
+      if (perp > maxPerp) maxPerp = perp;
+    }
+
+    const span = maxPerp - minPerp;
+    if (span < minSpan) {
+      minSpan = span;
+      bestAngle = deg;
+    }
+  }
+
+  return bestAngle;
+}
+
+function generatePolygonGridCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch, speed) {
+  const waypoints = [];
+  const photos = [];
+
+  // Retrieve polygon vertices from layer or generate default regular polygon
+  let vertices = (layer && Array.isArray(layer.polygonVertices) && layer.polygonVertices.length >= 3)
+    ? layer.polygonVertices
+    : ((layer && Array.isArray(layer.boundaryPolygon) && layer.boundaryPolygon.length >= 3)
+      ? layer.boundaryPolygon
+      : null);
+
+  if (!vertices || vertices.length < 3) {
+    const defaultRad = Math.max(25, ((layer && layer.gridWidth) ? layer.gridWidth : 100) / 2);
+    vertices = [];
+    const nDefault = 5;
+    for (let i = 0; i < nDefault; i++) {
+      const ang = (2 * Math.PI * i) / nDefault;
+      vertices.push({ x: defaultRad * Math.cos(ang), y: defaultRad * Math.sin(ang) });
+    }
+  }
+
+  const polyPts = vertices.map(v => ({
+    x: (v.x !== undefined && !isNaN(v.x)) ? v.x : 0,
+    y: (v.y !== undefined && !isNaN(v.y)) ? v.y : 0
+  }));
+
+  let sweepAngle = (layer && layer.polygonGridAngle !== undefined && layer.polygonGridAngle !== 'auto')
+    ? parseFloat(layer.polygonGridAngle)
+    : (layer && layer.gridRotation !== undefined ? layer.gridRotation : 0);
+
+  if (layer && (layer.polygonGridAngle === 'auto' || isNaN(sweepAngle))) {
+    sweepAngle = computeOptimalPolygonSweepAngle(polyPts);
+  }
+
+  const passMode = (layer && layer.polygonGridPass === 'double') ? 'double' : 'single';
+  const lineSpacing = Math.max(5, (typeof sLine === 'number' && !isNaN(sLine) && sLine > 0) ? sLine : 15);
+  const photoSpacing = Math.max(3, (typeof sPhoto === 'number' && !isNaN(sPhoto) && sPhoto > 0) ? sPhoto : 10);
+  const alt = Math.max(5, (typeof altitude === 'number' && !isNaN(altitude)) ? altitude : 50);
+  const pitch = (typeof defaultGimbalPitch === 'number' && !isNaN(defaultGimbalPitch)) ? defaultGimbalPitch : -90;
+  const spd = Math.max(1, (typeof speed === 'number' && !isNaN(speed)) ? speed : 4);
+
+  const generatePassForAngle = (angDeg, passIdx) => {
+    const angRad = angDeg * Math.PI / 180.0;
+    const cosR = Math.cos(-angRad);
+    const sinR = Math.sin(-angRad);
+
+    // Rotate vertices into sweep coordinate frame
+    const rotPts = polyPts.map(p => ({
+      x: p.x * cosR - p.y * sinR,
+      y: p.x * sinR + p.y * cosR
+    }));
+
+    let minY = Infinity, maxY = -Infinity;
+    rotPts.forEach(p => {
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    });
+
+    const N = rotPts.length;
+    let lineIndex = 0;
+
+    for (let curY = minY + lineSpacing / 2; curY <= maxY; curY += lineSpacing) {
+      // Find intersections with polygon edges
+      const xIntersections = [];
+      for (let i = 0; i < N; i++) {
+        const p1 = rotPts[i];
+        const p2 = rotPts[(i + 1) % N];
+
+        if ((p1.y <= curY && p2.y > curY) || (p2.y <= curY && p1.y > curY)) {
+          const t = (curY - p1.y) / (p2.y - p1.y);
+          const xInt = p1.x + t * (p2.x - p1.x);
+          xIntersections.push(xInt);
+        }
+      }
+
+      xIntersections.sort((a, b) => a - b);
+
+      // Pair intersections into interior segments
+      for (let s = 0; s < xIntersections.length - 1; s += 2) {
+        let xStart = xIntersections[s];
+        let xEnd = xIntersections[s + 1];
+        if (xEnd - xStart < 1) continue;
+
+        const isReverse = (lineIndex % 2 === 1);
+        const segLen = xEnd - xStart;
+        const nSteps = Math.max(2, Math.round(segLen / photoSpacing) + 1);
+
+        for (let j = 0; j < nSteps; j++) {
+          const stepFrac = isReverse ? (1 - j / (nSteps - 1)) : (j / (nSteps - 1));
+          const rx = xStart + stepFrac * segLen;
+          const ry = curY;
+
+          // Rotate back to map coordinates
+          const cosBack = Math.cos(angRad);
+          const sinBack = Math.sin(angRad);
+          const wx = Math.round((rx * cosBack - ry * sinBack) * 100) / 100;
+          const wy = Math.round((rx * sinBack + ry * cosBack) * 100) / 100;
+
+          const heading = isReverse ? ((angDeg + 270) % 360) : ((angDeg + 90) % 360);
+
+          const wp = {
+            x: wx,
+            y: wy,
+            alt: alt,
+            pitch: pitch,
+            gimbalPitch: pitch,
+            heading: heading,
+            headingMode: 'followWayline',
+            speed: spd,
+            gridType: 'polygon-grid',
+            layerPattern: 'polygon-grid',
+            passIndex: passIdx,
+            lineIndex: lineIndex
+          };
+
+          waypoints.push(wp);
+          photos.push({ ...wp });
+        }
+        lineIndex++;
+      }
+    }
+  };
+
+  generatePassForAngle(sweepAngle, 0);
+  if (passMode === 'double') {
+    generatePassForAngle((sweepAngle + 90) % 360, 1);
+  }
+
+  return { waypoints, photos, optimalAngle: sweepAngle };
+}
+
+/**
+ * Issue #161: Search & Rescue (sar-search)
+ * Expanding Square Search (ESS) & Sector Search (Victor Sierra) from central datum.
+ */
+function generateSarSearchCoordinates(layer, sPhoto, altitude, defaultGimbalPitch, speed) {
+  const waypoints = [];
+  const photos = [];
+
+  const sarMode = (layer && layer.sarMode === 'sector-search') ? 'sector-search' : 'expanding-square';
+  const trackSpacing = Math.max(10, layer && layer.sarTrackSpacing ? parseFloat(layer.sarTrackSpacing) : 30);
+  const bearing = (layer && layer.sarBearing !== undefined) ? (parseFloat(layer.sarBearing) % 360) : 0;
+  const pitch = (layer && layer.sarGimbalPitch !== undefined) ? parseFloat(layer.sarGimbalPitch) : -45;
+  const alt = Math.max(5, (typeof altitude === 'number' && !isNaN(altitude)) ? altitude : 50);
+  const spd = Math.max(1, (typeof speed === 'number' && !isNaN(speed)) ? speed : 4);
+  const photoStep = Math.max(3, (typeof sPhoto === 'number' && !isNaN(sPhoto) && sPhoto > 0) ? sPhoto : 10);
+
+  if (sarMode === 'expanding-square') {
+    const nLegs = Math.max(4, Math.min(30, layer && layer.sarMaxLegs ? parseInt(layer.sarMaxLegs, 10) : 12));
+    let curX = 0;
+    let curY = 0;
+
+    // Center Datum Waypoint
+    const datumWp = {
+      x: 0,
+      y: 0,
+      alt: alt,
+      pitch: pitch,
+      gimbalPitch: pitch,
+      heading: bearing,
+      headingMode: 'followWayline',
+      speed: spd,
+      gridType: 'sar-search',
+      layerPattern: 'sar-search',
+      isDatum: true
+    };
+    waypoints.push(datumWp);
+    photos.push({ ...datumWp });
+
+    for (let i = 1; i <= nLegs; i++) {
+      const legDist = Math.ceil(i / 2) * trackSpacing;
+      const legHeading = (bearing + (i - 1) * 90) % 360;
+      const radH = legHeading * Math.PI / 180.0;
+      const ux = Math.sin(radH);
+      const uy = Math.cos(radH);
+
+      const nSteps = Math.max(1, Math.round(legDist / photoStep));
+      for (let s = 1; s <= nSteps; s++) {
+        const frac = s / nSteps;
+        const px = Math.round((curX + frac * legDist * ux) * 100) / 100;
+        const py = Math.round((curY + frac * legDist * uy) * 100) / 100;
+
+        const wp = {
+          x: px,
+          y: py,
+          alt: alt,
+          pitch: pitch,
+          gimbalPitch: pitch,
+          heading: legHeading,
+          headingMode: 'followWayline',
+          speed: spd,
+          gridType: 'sar-search',
+          layerPattern: 'sar-search',
+          legIndex: i,
+          isCorner: (s === nSteps)
+        };
+        waypoints.push(wp);
+        photos.push({ ...wp });
+      }
+
+      curX = Math.round((curX + legDist * ux) * 100) / 100;
+      curY = Math.round((curY + legDist * uy) * 100) / 100;
+    }
+  } else {
+    // Sector Search (Victor Sierra)
+    const radius = Math.max(20, Math.min(500, layer && layer.sarRadius ? parseFloat(layer.sarRadius) : 60));
+    const nSectors = Math.max(3, Math.min(6, layer && layer.sarSectors ? parseInt(layer.sarSectors, 10) : 3));
+    const sectorAngle = 360.0 / (2 * nSectors);
+
+    for (let s = 0; s < nSectors; s++) {
+      const beta = (bearing + s * sectorAngle) % 360;
+
+      // Leg 1: (0,0) to Outer 1
+      const rad1 = beta * Math.PI / 180.0;
+      const x1 = radius * Math.sin(rad1);
+      const y1 = radius * Math.cos(rad1);
+
+      // Leg 2: Outer 1 to Outer 2 (120 deg right turn)
+      const h2 = (beta + 120) % 360;
+      const rad2 = h2 * Math.PI / 180.0;
+      const x2 = x1 + radius * Math.sin(rad2);
+      const y2 = y1 + radius * Math.cos(rad2);
+
+      const legs = [
+        { from: { x: 0, y: 0 }, to: { x: x1, y: y1 }, h: beta },
+        { from: { x: x1, y: y1 }, to: { x: x2, y: y2 }, h: h2 },
+        { from: { x: x2, y: y2 }, to: { x: 0, y: 0 }, h: (beta + 240) % 360 }
+      ];
+
+      legs.forEach((leg, lIdx) => {
+        const dx = leg.to.x - leg.from.x;
+        const dy = leg.to.y - leg.from.y;
+        const len = Math.hypot(dx, dy);
+        const steps = Math.max(1, Math.round(len / photoStep));
+
+        for (let j = 1; j <= steps; j++) {
+          const frac = j / steps;
+          const px = Math.round((leg.from.x + frac * dx) * 100) / 100;
+          const py = Math.round((leg.from.y + frac * dy) * 100) / 100;
+
+          const wp = {
+            x: px,
+            y: py,
+            alt: alt,
+            pitch: pitch,
+            gimbalPitch: pitch,
+            heading: leg.h,
+            headingMode: 'followWayline',
+            speed: spd,
+            gridType: 'sar-search',
+            layerPattern: 'sar-search',
+            sectorIndex: s,
+            sectorLegIndex: lIdx
+          };
+          waypoints.push(wp);
+          photos.push({ ...wp });
+        }
+      });
+    }
+  }
+
+  return { waypoints, photos };
+}
+
+/**
+ * Issue #162: Perimeter / Fenceline Patrol (perimeter-patrol)
+ * Closed-loop polygon perimeter with signed standoff offset and directional camera lock.
+ */
+function generatePerimeterPatrolCoordinates(layer, sPhoto, altitude, defaultGimbalPitch, speed) {
+  const waypoints = [];
+  const photos = [];
+
+  let vertices = (layer && Array.isArray(layer.polygonVertices) && layer.polygonVertices.length >= 3)
+    ? layer.polygonVertices
+    : ((layer && Array.isArray(layer.boundaryPolygon) && layer.boundaryPolygon.length >= 3)
+      ? layer.boundaryPolygon
+      : null);
+
+  if (!vertices || vertices.length < 3) {
+    const defaultRad = Math.max(25, ((layer && layer.gridWidth) ? layer.gridWidth : 100) / 2);
+    vertices = [
+      { x: -defaultRad, y: -defaultRad },
+      { x: defaultRad, y: -defaultRad },
+      { x: defaultRad, y: defaultRad },
+      { x: -defaultRad, y: defaultRad }
+    ];
+  }
+
+  let polyPts = vertices.map(v => ({
+    x: (v.x !== undefined && !isNaN(v.x)) ? v.x : 0,
+    y: (v.y !== undefined && !isNaN(v.y)) ? v.y : 0
+  }));
+
+  const offset = (layer && layer.perimeterOffset !== undefined) ? parseFloat(layer.perimeterOffset) : 0;
+  const headingLock = (layer && layer.perimeterHeadingLock) ? layer.perimeterHeadingLock : 'inward';
+  const direction = (layer && layer.perimeterDirection === 'ccw') ? 'ccw' : 'cw';
+  const laps = Math.max(1, Math.min(5, layer && layer.perimeterLaps ? parseInt(layer.perimeterLaps, 10) : 1));
+  const alt = Math.max(5, (typeof altitude === 'number' && !isNaN(altitude)) ? altitude : 50);
+  const pitch = (typeof defaultGimbalPitch === 'number' && !isNaN(defaultGimbalPitch)) ? defaultGimbalPitch : -60;
+  const spd = Math.max(1, (typeof speed === 'number' && !isNaN(speed)) ? speed : 4);
+  const photoStep = Math.max(3, (typeof sPhoto === 'number' && !isNaN(sPhoto) && sPhoto > 0) ? sPhoto : 10);
+
+  // Compute shoelace signed area to test winding order
+  let signedArea = 0;
+  const N = polyPts.length;
+  for (let i = 0; i < N; i++) {
+    const p1 = polyPts[i];
+    const p2 = polyPts[(i + 1) % N];
+    signedArea += (p1.x * p2.y - p2.x * p1.y);
+  }
+
+  const isCCW = (signedArea > 0);
+  if ((direction === 'cw' && isCCW) || (direction === 'ccw' && !isCCW)) {
+    polyPts.reverse();
+  }
+
+  // Generate offset vertices
+  const offsetPts = [];
+  for (let i = 0; i < N; i++) {
+    const prev = polyPts[(i - 1 + N) % N];
+    const cur = polyPts[i];
+    const next = polyPts[(i + 1) % N];
+
+    const d1x = cur.x - prev.x;
+    const d1y = cur.y - prev.y;
+    const l1 = Math.hypot(d1x, d1y) || 1;
+    const n1x = -d1y / l1;
+    const n1y = d1x / l1;
+
+    const d2x = next.x - cur.x;
+    const d2y = next.y - cur.y;
+    const l2 = Math.hypot(d2x, d2y) || 1;
+    const n2x = -d2y / l2;
+    const n2y = d2x / l2;
+
+    const avgNx = (n1x + n2x) / 2.0;
+    const avgNy = (n1y + n2y) / 2.0;
+    const avgLen = Math.hypot(avgNx, avgNy) || 1;
+
+    // Normal points outward for CW polygon
+    const ox = cur.x + (avgNx / avgLen) * offset;
+    const oy = cur.y + (avgNy / avgLen) * offset;
+    offsetPts.push({ x: Math.round(ox * 100) / 100, y: Math.round(oy * 100) / 100 });
+  }
+
+  const calcHeading = (dx, dy) => {
+    return Math.round(((Math.atan2(dx, dy) * 180.0 / Math.PI) + 360.0) % 360.0 * 10) / 10;
+  };
+
+  for (let lap = 0; lap < laps; lap++) {
+    for (let i = 0; i < N; i++) {
+      const p1 = offsetPts[i];
+      const p2 = offsetPts[(i + 1) % N];
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const edgeLen = Math.hypot(dx, dy);
+      const tangentHeading = calcHeading(dx, dy);
+
+      let edgeHeading = tangentHeading;
+      if (headingLock === 'inward') {
+        edgeHeading = (tangentHeading + 90) % 360;
+      } else if (headingLock === 'outward') {
+        edgeHeading = (tangentHeading + 270) % 360;
+      }
+
+      const nSteps = Math.max(1, Math.round(edgeLen / photoStep));
+      for (let s = 0; s < nSteps; s++) {
+        const frac = s / nSteps;
+        const px = Math.round((p1.x + frac * dx) * 100) / 100;
+        const py = Math.round((p1.y + frac * dy) * 100) / 100;
+
+        const wp = {
+          x: px,
+          y: py,
+          alt: alt,
+          pitch: pitch,
+          gimbalPitch: pitch,
+          heading: edgeHeading,
+          headingMode: (headingLock === 'tangent' ? 'followWayline' : 'custom'),
+          speed: spd,
+          gridType: 'perimeter-patrol',
+          layerPattern: 'perimeter-patrol',
+          edgeIndex: i,
+          lapIndex: lap
+        };
+        waypoints.push(wp);
+        photos.push({ ...wp });
+      }
+    }
+  }
+
+  // Close the loop squarely on the first point
+  if (waypoints.length > 0) {
+    const firstWp = { ...waypoints[0], isLoopClosure: true };
+    waypoints.push(firstWp);
+  }
+
+  return { waypoints, photos };
+}
+
+/**
+ * Issue #163: Cinematic Reveal & Boomerang (cinematic-reveal)
+ * Automated Dronie pull-back climb, Rocket crane, and Elliptical Boomerang with trigonometric POI tracking.
+ */
+function generateCinematicRevealCoordinates(layer, sPhoto, altitude, defaultGimbalPitch, speed) {
+  const waypoints = [];
+  const photos = [];
+
+  const mode = (layer && layer.cinematicMode) ? layer.cinematicMode : 'dronie';
+  const azimuth = (layer && layer.cinematicAzimuth !== undefined) ? (parseFloat(layer.cinematicAzimuth) % 360) : 180;
+  const startDist = Math.max(1, layer && layer.cinematicStartDist ? parseFloat(layer.cinematicStartDist) : 5);
+  const endDist = Math.max(startDist + 5, layer && layer.cinematicEndDist ? parseFloat(layer.cinematicEndDist) : 50);
+  const startAlt = Math.max(2, layer && layer.cinematicStartAlt ? parseFloat(layer.cinematicStartAlt) : 10);
+  const endAlt = Math.max(startAlt, layer && layer.cinematicEndAlt ? parseFloat(layer.cinematicEndAlt) : 40);
+  const poiAlt = (layer && layer.cinematicPoiAlt !== undefined) ? parseFloat(layer.cinematicPoiAlt) : 2;
+  const eccentricity = Math.max(0.2, Math.min(1.0, layer && layer.cinematicEccentricity ? parseFloat(layer.cinematicEccentricity) : 0.5));
+  const spd = Math.max(1, (typeof speed === 'number' && !isNaN(speed)) ? speed : 3);
+
+  const calcHeading = (dx, dy) => {
+    return Math.round(((Math.atan2(dx, dy) * 180.0 / Math.PI) + 360.0) % 360.0 * 10) / 10;
+  };
+
+  if (mode === 'dronie') {
+    const nSteps = 24;
+    const radAz = azimuth * Math.PI / 180.0;
+    const ux = Math.sin(radAz);
+    const uy = Math.cos(radAz);
+
+    for (let i = 0; i <= nSteps; i++) {
+      const frac = i / nSteps;
+      const curDist = startDist + frac * (endDist - startDist);
+      const curAlt = startAlt + frac * (endAlt - startAlt);
+      const px = Math.round(curDist * ux * 100) / 100;
+      const py = Math.round(curDist * uy * 100) / 100;
+
+      // Gimbal pitch looking back at POI (0,0,poiAlt)
+      const altDelta = curAlt - poiAlt;
+      const pitchRad = -Math.atan2(altDelta, curDist);
+      const pitchDeg = Math.round((pitchRad * 180.0 / Math.PI) * 10) / 10;
+      const heading = (azimuth + 180) % 360;
+
+      const wp = {
+        x: px,
+        y: py,
+        alt: Math.round(curAlt * 10) / 10,
+        pitch: pitchDeg,
+        gimbalPitch: pitchDeg,
+        heading: heading,
+        headingMode: 'towardCenter',
+        speed: spd,
+        gridType: 'cinematic-reveal',
+        layerPattern: 'cinematic-reveal',
+        cinematicMode: 'dronie',
+        frameIndex: i
+      };
+      waypoints.push(wp);
+      photos.push({ ...wp });
+    }
+  } else if (mode === 'rocket') {
+    const nSteps = 16;
+    const radAz = azimuth * Math.PI / 180.0;
+    const px = Math.round(1.5 * Math.sin(radAz) * 100) / 100;
+    const py = Math.round(1.5 * Math.cos(radAz) * 100) / 100;
+
+    for (let i = 0; i <= nSteps; i++) {
+      const frac = i / nSteps;
+      const curAlt = startAlt + frac * (endAlt - startAlt);
+      const pitchDeg = Math.round((-15 - frac * 75) * 10) / 10; // Pan from -15 deg horizon down to -90 deg nadir
+
+      const wp = {
+        x: px,
+        y: py,
+        alt: Math.round(curAlt * 10) / 10,
+        pitch: pitchDeg,
+        gimbalPitch: pitchDeg,
+        heading: azimuth,
+        headingMode: 'custom',
+        speed: spd,
+        gridType: 'cinematic-reveal',
+        layerPattern: 'cinematic-reveal',
+        cinematicMode: 'rocket',
+        frameIndex: i
+      };
+      waypoints.push(wp);
+      photos.push({ ...wp });
+    }
+  } else {
+    // Boomerang (Elliptical Orbit)
+    const nSteps = 36;
+    const a = endDist;
+    const b = a * eccentricity;
+    const radAz = azimuth * Math.PI / 180.0;
+    const cosAz = Math.cos(radAz);
+    const sinAz = Math.sin(radAz);
+
+    for (let i = 0; i < nSteps; i++) {
+      const phi = (2 * Math.PI * i) / nSteps;
+      const lx = a * Math.cos(phi);
+      const ly = b * Math.sin(phi);
+
+      // Rotate by azimuth
+      const px = Math.round((lx * cosAz - ly * sinAz) * 100) / 100;
+      const py = Math.round((lx * sinAz + ly * cosAz) * 100) / 100;
+      const curDist = Math.hypot(px, py);
+
+      // Altitude rises on the far end, descends on near end
+      const curAlt = startAlt + (endAlt - startAlt) * (0.5 - 0.5 * Math.cos(phi));
+      const altDelta = curAlt - poiAlt;
+      const pitchDeg = Math.round((-Math.atan2(altDelta, curDist) * 180.0 / Math.PI) * 10) / 10;
+      const heading = calcHeading(-px, -py);
+
+      const wp = {
+        x: px,
+        y: py,
+        alt: Math.round(curAlt * 10) / 10,
+        pitch: pitchDeg,
+        gimbalPitch: pitchDeg,
+        heading: heading,
+        headingMode: 'towardCenter',
+        speed: spd,
+        gridType: 'cinematic-reveal',
+        layerPattern: 'cinematic-reveal',
+        cinematicMode: 'boomerang',
+        frameIndex: i
+      };
+      waypoints.push(wp);
+      photos.push({ ...wp });
+    }
+  }
+
+  return { waypoints, photos };
+}
+
 if (typeof window !== 'undefined') {
   window.generateLightArtCoordinates = generateLightArtCoordinates;
   window.calculateLightArtRadiusForDuration = calculateLightArtRadiusForDuration;
@@ -2123,6 +2802,12 @@ if (typeof window !== 'undefined') {
   window.calculatePhotoSphereOverlap = calculatePhotoSphereOverlap;
   window.estimatePhotoSphereDuration = estimatePhotoSphereDuration;
   window.updatePhotoSphereBadge = updatePhotoSphereBadge;
+  window.generateDomeShellCoordinates = generateDomeShellCoordinates;
+  window.generatePolygonGridCoordinates = generatePolygonGridCoordinates;
+  window.computeOptimalPolygonSweepAngle = computeOptimalPolygonSweepAngle;
+  window.generateSarSearchCoordinates = generateSarSearchCoordinates;
+  window.generatePerimeterPatrolCoordinates = generatePerimeterPatrolCoordinates;
+  window.generateCinematicRevealCoordinates = generateCinematicRevealCoordinates;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -2137,6 +2822,12 @@ if (typeof module !== 'undefined' && module.exports) {
     generateVerticalFacadeCoordinates,
     generateHelixCoordinates,
     generateStarPassCoordinates,
+    generateDomeShellCoordinates,
+    generatePolygonGridCoordinates,
+    computeOptimalPolygonSweepAngle,
+    generateSarSearchCoordinates,
+    generatePerimeterPatrolCoordinates,
+    generateCinematicRevealCoordinates,
     generateCorridorCoordinates
   };
 }

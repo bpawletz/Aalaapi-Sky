@@ -1,3 +1,22 @@
+## [1.204.0] - 2026-10-30
+
+Aalaapi Sky expands its flight planning suite with 5 next-generation operational patterns across 3D Gaussian Splatting, polygon cadastral survey, IAMSAR search and rescue, perimeter security patrol, and automated cinematic camera reveals.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Hemispherical Dome / Geodesic Shell (`dome-shell`)**: Added 3D hemispherical shell flight pattern spacing concentric orbital tiers at constant radial standoff ($R$) with automatic inward radial gimbal pitch and zenith nadir cap for 3D Gaussian Splatting (3DGS), monuments, and domes (Closes #159).
+- **Custom Polygon Area Grid (`polygon-grid`)**: Added ray-clipped lawn-mower and crosshatch double grid survey generator for arbitrary multi-vertex polygons, with auto-alignment to the longest edge to minimize 180° turnarounds, and one-click sync from boundary parcel layers (Closes #160).
+- **Search & Rescue Patterns (`sar-search`)**: Added standard IAMSAR Expanding Square Search (ESS) with concentric orthogonal legs ($d, d, 2d, 2d, 3d, 3d\dots$) and Victor Sierra Sector Search equilateral triangular passes through the Last Known Position datum for thermal and optical recon (Closes #161).
+- **Perimeter / Fenceline Patrol (`perimeter-patrol`)**: Added closed-loop boundary patrol trajectory with signed lateral standoff offset ($-50\text{m}$ to $+50\text{m}$), multi-lap traversal, and directional camera heading lock (`inward`, `outward`, or `tangent`) (Closes #162).
+- **Cinematic Reveal & Boomerang (`cinematic-reveal`)**: Added automated cinematic camera trajectories including Dronie pull-back climb, Rocket crane reveal, and Boomerang elliptical orbit with continuous trigonometric POI gimbal pitch and yaw tracking (Closes #163).
+- **In-App Decision Trees & Settings Applicability Matrix**: Synchronized `#intro-pane-matrix` and `FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md` across all 26 flight patterns with interactive category filters and jump-to-setting shortcuts.
+
+#### Under the Hood & Technical Details
+- **`src/patterns/PatternGenerators.js`**: Implemented `generateDomeShellCoordinates`, `generatePolygonGridCoordinates`, `computeOptimalPolygonSweepAngle`, `generateSarSearchCoordinates`, `generatePerimeterPatrolCoordinates`, and `generateCinematicRevealCoordinates`.
+- **`src/layers/LayerManager.js`**: Registered default layer property cascades, pattern display labels, and generator dispatch for all 5 new patterns.
+- **`src/ui/SidebarManager.js` & `src/ui/EventBindings.js`**: Added dynamic parameter panels, two-way slider value displays, and boundary sync bindings for all 5 patterns.
+
 ## [1.203.1] - 2026-10-29
 
 ### Fixed
