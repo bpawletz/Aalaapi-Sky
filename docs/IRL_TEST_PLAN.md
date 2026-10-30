@@ -436,6 +436,13 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 
 ## 6. Post-Update Release IRL Test Plans Log
 
+### [v1.210.1] Intelligent Flight Log Mission Resolution & Single Pattern Verification — 2026-10-30 ([Issue #204](https://github.com/bpawletz/Aalaapi-Sky/issues/204))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `single`
+- [ ] Export test mission KMZ/WPML at synthetic rural coordinates `[41.3215, -88.9950]` and verify clean import into DJI Fly / RC 2.
+- [ ] Verify takeoff, climb to target AGL, and Waypoint 1 entry transition accuracy (±2.0m).
+- [ ] Verify modified flight pattern / feature behavior matches expected 3D trajectory, heading, and gimbal pitch.
+- [ ] Run post-flight telemetry log analysis (`npm run irl:analyze`) and confirm all 6 phases pass within tolerance.
+
 ### [v1.210.0] In-App Flight Diagnostics IRL Test Plan Verification Button & 6-Phase Scorecard Modal — 2026-10-30 ([Issue #203](https://github.com/bpawletz/Aalaapi-Sky/issues/203))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `single`, `double`, `orbit`, `tower`
 - [ ] Open Flight Diagnostics

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-10-30T20:48:30.069Z",
+  "lastUpdated": "2026-10-30T20:51:07.183Z",
   "currentAppVersion": "1.210.1",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
@@ -1201,6 +1201,35 @@
     }
   },
   "releasePlans": [
+    {
+      "id": "rel-1.210.1-204",
+      "version": "1.210.1",
+      "issueNumber": 204,
+      "title": "Intelligent Flight Log Mission Resolution & Single Pattern Verification",
+      "date": "2026-10-30",
+      "affectedPatterns": [
+        "single"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Export test mission KMZ/WPML at synthetic rural coordinates `[41.3215, -88.9950]` and verify clean import into DJI Fly / RC 2.",
+          "checked": false
+        },
+        {
+          "label": "Verify takeoff, climb to target AGL, and Waypoint 1 entry transition accuracy (±2.0m).",
+          "checked": false
+        },
+        {
+          "label": "Verify modified flight pattern / feature behavior matches expected 3D trajectory, heading, and gimbal pitch.",
+          "checked": false
+        },
+        {
+          "label": "Run post-flight telemetry log analysis (`npm run irl:analyze`) and confirm all 6 phases pass within tolerance.",
+          "checked": false
+        }
+      ]
+    },
     {
       "id": "rel-1.210.0-203",
       "version": "1.210.0",
