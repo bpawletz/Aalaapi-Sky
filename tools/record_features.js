@@ -3668,6 +3668,75 @@ const scenarios = [
       });
       await page.waitForTimeout(1200);
     }
+  },
+  {
+    id: 'feature_https_aistudio',
+    name: 'Google AI Studio Integration & Native HTTPS Companion Transport',
+    description: 'Demonstrates dual-port HTTPS and HTTP companion configuration, 1-click Google AI Studio MCP and OpenAPI spec copying, and SSL certificate trust controls.',
+    issueRef: 'Issue #209',
+    run: async (page) => {
+      // 1. Center map at rural Utica reference coordinates
+      await page.evaluate(() => {
+        setGridCenter(41.3215, -88.9950);
+      });
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 2. Open Companion Host configuration panel
+      await page.evaluate(() => {
+        const btn = document.getElementById('companion-config-host-btn');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(800);
+
+      // 3. Highlight the HTTPS 8766 preset and click it
+      await page.evaluate(() => {
+        const httpsBtn = document.getElementById('companion-preset-https-btn');
+        if (httpsBtn) {
+          httpsBtn.style.outline = '2px solid #38bdf8';
+          httpsBtn.click();
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // 4. Click Save to store the HTTPS base URL
+      await page.evaluate(() => {
+        const saveBtn = document.getElementById('companion-host-save-btn');
+        if (saveBtn) saveBtn.click();
+      });
+      await page.waitForTimeout(800);
+
+      // 5. Scroll to MCP Drawer in Section 4 and click Copy AI Studio MCP button
+      await page.evaluate(() => {
+        const mcpSec = document.getElementById('mcp-monitor-section');
+        if (mcpSec) mcpSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const aiStudioBtn = document.getElementById('mcp-copy-aistudio-btn');
+        if (aiStudioBtn) {
+          aiStudioBtn.style.outline = '2px solid #a855f7';
+          aiStudioBtn.click();
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 6. Click Copy OpenAPI Spec button
+      await page.evaluate(() => {
+        const aiStudioBtn = document.getElementById('mcp-copy-aistudio-btn');
+        if (aiStudioBtn) aiStudioBtn.style.outline = '';
+        const openApiBtn = document.getElementById('mcp-copy-openapi-btn');
+        if (openApiBtn) {
+          openApiBtn.style.outline = '2px solid #22c55e';
+          openApiBtn.click();
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 7. Clear outlines
+      await page.evaluate(() => {
+        const openApiBtn = document.getElementById('mcp-copy-openapi-btn');
+        if (openApiBtn) openApiBtn.style.outline = '';
+      });
+      await page.waitForTimeout(800);
+    }
   }
 
 ];

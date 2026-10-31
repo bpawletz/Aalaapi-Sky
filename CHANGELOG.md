@@ -1,3 +1,26 @@
+## [1.213.0] - 2026-10-31
+
+Introduces native HTTPS support and dual-port listening for the Companion Bridge, enabling direct browser connections from Google AI Studio via Model Context Protocol (MCP) and OpenAPI 3.0 function calling.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Google AI Studio Integration & HTTPS Transport (Closes #209)**: Enables pilots and developers to connect Google AI Studio (`https://aistudio.google.com`) directly to the running Aalaapi Sky Companion Bridge without mixed-content browser blocks.
+  - Adds 1-click **AI Studio MCP** URL copy button (`https://localhost:8766/api/mcp/sse`) in the sidebar MCP drawer.
+  - Adds 1-click **OpenAPI Spec** URL copy button (`https://localhost:8766/api/openapi.json`) for instant function calling schema import into Google AI Studio prompts.
+  - Adds HTTP (`:8765`) and HTTPS (`:8766`) quick-switch presets and a 1-click "Trust SSL Cert" link in the companion host panel.
+  - Automatically routes web clients hosted on HTTPS (e.g. GitHub Pages) to the secure companion port (`8766`).
+
+#### Under the Hood & Technical Details
+- **`tools/companion/tls_cert.js`**: Implements a zero-dependency in-memory X.509 v3 self-signed certificate generator using standard Node `crypto` (`crypto.generateKeyPairSync`, `crypto.createSign`) with Subject Alternative Names (SAN) for `localhost`, `127.0.0.1`, `::1`, and local LAN addresses. Caches generated keys in `scratch/certs/`.
+- **`tools/companion/server.js`**: Concurrently binds an HTTP server on port 8765 (ensuring legacy USB MTP scripts and Node-RED continue working seamlessly) and an HTTPS server on port 8766 sharing a unified request router and SSE stream pool.
+- **OpenAPI 3.0 Dynamic Spec Generator (`/api/openapi.json`)**: Dynamically exposes registered flight planning (`generate_flight_plan`), airspace telemetry (`get_airspace_telemetry`), hardware triggers (`trigger_bridge_action`), and diagnostics triage tools in OpenAPI 3.0.3 format.
+- **OpenAPI Tool Dispatcher (`/api/tools/:name`)**: Handles REST POST tool invocations directly from LLM function-calling orchestrators.
+- **PNA & CORS Expansion**: Sets `Access-Control-Allow-Private-Network: true` and includes `baggage` and `sentry-trace` request headers.
+- **`tools/companion/top_dashboard.js`**: Displays dual HTTP and HTTPS host info in the interactive terminal top dashboard and startup banners.
+- **`src/bridge/ApiClient.js`**: Automatically detects `window.location.protocol === 'https:'` and configures `https://127.0.0.1:8766` as default base API.
+- **`src/ui/EventBindings.js`**: Wires clipboard copy feedback for AI Studio MCP, OpenAPI URLs, and port presets.
+
 ## [1.212.1] - 2026-10-30
 
 ### Changed

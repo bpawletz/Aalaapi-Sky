@@ -29,7 +29,25 @@ try {
   console.warn('Could not read package.json version');
 }
 
-const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
+function getCliArg(flag) {
+  const idx = process.argv.indexOf(flag);
+  if (idx !== -1 && idx + 1 < process.argv.length) {
+    return process.argv[idx + 1];
+  }
+  return null;
+}
+
+const cliPort = getCliArg('--port');
+const cliHttpsPort = getCliArg('--https-port') || getCliArg('--ssl-port');
+const cliCert = getCliArg('--ssl-cert') || getCliArg('--cert');
+const cliKey = getCliArg('--ssl-key') || getCliArg('--key');
+const isNoHttps = process.argv.includes('--no-https') || process.env.AALAAPI_NO_HTTPS === '1';
+const isHttpsOnly = process.argv.includes('--https-only') || process.env.AALAAPI_HTTPS_ONLY === '1';
+
+const PORT = cliPort ? parseInt(cliPort, 10) : (process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765);
+const HTTPS_PORT = cliHttpsPort ? parseInt(cliHttpsPort, 10) : (process.env.AALAAPI_HTTPS_PORT ? parseInt(process.env.AALAAPI_HTTPS_PORT, 10) : (PORT === 8765 ? 8766 : PORT + 1));
+const tlsCertEngine = require('./tls_cert.js');
+let tlsCredentials = null;
 const { BridgeMetrics, Dashboard } = require('./top_dashboard.js');
 const bridgeMetrics = new BridgeMetrics();
 const bridgeStartTime = Date.now();
@@ -1152,7 +1170,7 @@ function logDetailLast(label, val) {
 function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-MCP-Session-Id, x-pilot-session-token, Access-Control-Request-Private-Network');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-MCP-Session-Id, x-pilot-session-token, Access-Control-Request-Private-Network, baggage, sentry-trace');
   res.setHeader('Access-Control-Allow-Private-Network', 'true');
 }
 
@@ -3316,6 +3334,107 @@ function getLanAddresses() {
   return lan;
 }
 
+if (!isNoHttps) {
+  try {
+    const rawLan = getLanAddresses();
+    const lanIps = rawLan.map(item => item.address).filter(Boolean);
+    tlsCredentials = tlsCertEngine.getOrCreateCertificate({
+      certFile: cliCert || process.env.AALAAPI_SSL_CERT,
+      keyFile: cliKey || process.env.AALAAPI_SSL_KEY,
+      lanAddresses: lanIps
+    });
+  } catch (err) {
+    logWarn('TLS', `Could not initialize TLS credentials: ${err.message}`);
+  }
+}
+
+/**
+ * Generates an OpenAPI 3.0 specification representing all available Aalaapi Sky tools
+ * for seamless import into Google AI Studio (Tools -> Function calling).
+ */
+function buildOpenApiSpec(req) {
+  const protocol = (req && req.socket && req.socket.encrypted) ? 'https' : 'http';
+  const defaultPort = protocol === 'https' ? HTTPS_PORT : PORT;
+  const host = (req && req.headers && req.headers.host) || `localhost:${defaultPort}`;
+  const toolDefs = (typeof mcpServer !== 'undefined' && mcpServer.getToolDefinitions)
+    ? mcpServer.getToolDefinitions()
+    : [];
+
+  const paths = {
+    '/api/status': {
+      get: {
+        summary: 'Companion Status',
+        description: 'Returns real-time DJI RC 2 USB status, active drone counts, telemetry, and bridge metrics.',
+        operationId: 'getCompanionStatus',
+        responses: {
+          '200': {
+            description: 'Companion status payload',
+            content: { 'application/json': { schema: { type: 'object' } } }
+          }
+        }
+      }
+    }
+  };
+
+  for (const tool of toolDefs) {
+    paths[`/api/tools/${tool.name}`] = {
+      post: {
+        summary: tool.description ? tool.description.split('.')[0] : tool.name,
+        description: tool.description || '',
+        operationId: tool.name,
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: tool.inputSchema || { type: 'object' }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Tool execution result containing content array and status',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    content: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          type: { type: 'string' },
+                          text: { type: 'string' }
+                        }
+                      }
+                    },
+                    isError: { type: 'boolean' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+  }
+
+  return {
+    openapi: '3.0.3',
+    info: {
+      title: 'Aalaapi Sky Drone Companion API',
+      version: VERSION,
+      description: 'Companion Bridge API providing live ADS-B, radar telemetry, DJI WPML flight planning, and hardware automation for Google AI Studio & Gemini.'
+    },
+    servers: [
+      { url: `${protocol}://${host}`, description: 'Current Active Host' },
+      { url: `https://localhost:${HTTPS_PORT}`, description: 'Secure HTTPS Localhost (Google AI Studio)' },
+      { url: `http://localhost:${PORT}`, description: 'Plain HTTP Localhost' }
+    ],
+    paths
+  };
+}
+
 // Format Startup Banner with System & Port Diagnostics
 function printStartupBanner() {
   console.log(`${colors.cyan}${colors.bold}`);
@@ -3328,7 +3447,10 @@ function printStartupBanner() {
   console.log(`${colors.bold}📌 System & Environment:${colors.reset}`);
   logDetail('Bridge Version', `v${VERSION} (Node.js ${process.version})`);
   logDetail('Operating Host', `${os.type()} ${os.release()} (${os.arch()})`);
-  logDetail('Localhost URL', `http://127.0.0.1:${PORT}`);
+  logDetail('Localhost HTTP', `http://127.0.0.1:${PORT}`);
+  if (tlsCredentials) {
+    logDetail('Localhost HTTPS', `https://127.0.0.1:${HTTPS_PORT} (Google AI Studio & Secure Contexts)`);
+  }
   const lanAddrs = getLanAddresses();
   if (lanAddrs.length > 0) {
     lanAddrs.forEach(l => {
@@ -3336,6 +3458,10 @@ function printStartupBanner() {
     });
   }
   logDetail('Local Endpoint', `http://127.0.0.1:${PORT}/api/status`);
+  if (tlsCredentials) {
+    logDetail('AI Studio MCP', `https://localhost:${HTTPS_PORT}/api/mcp/sse`);
+    logDetail('AI Studio OpenAPI', `https://localhost:${HTTPS_PORT}/api/openapi.json`);
+  }
   logDetail('Staging Path', STAGING_DIR);
   logDetail('Flight Logs', LATEST_DIR);
   logDetail('Tile Cache', `${colors.green}Active${colors.reset} (${tileCache.cacheDir}) [${(tileCache.maxSizeBytes / (1024 * 1024 * 1024)).toFixed(1)} GB LRU]`);
@@ -3405,6 +3531,9 @@ function printStartupBanner() {
   console.log(`  ${colors.green}${colors.bold}GET  /api/checklist/history${colors.reset}     ${colors.gray}Historical audit logs for preflight compliance reporting${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/shutdown${colors.reset}              ${colors.gray}Cleanly terminate running companion bridge process${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/restart${colors.reset}               ${colors.gray}Cleanly trigger bridge process auto-restart${colors.reset}`);
+  console.log(`  ${colors.magenta}${colors.bold}GET  /api/openapi.json${colors.reset}         ${colors.gray}OpenAPI 3.0 tool schemas for Google AI Studio Function Calling${colors.reset}`);
+  console.log(`  ${colors.magenta}${colors.bold}POST /api/tools/{name}${colors.reset}          ${colors.gray}Direct invocation endpoint for OpenAPI function calls${colors.reset}`);
+  console.log(`  ${colors.cyan}${colors.bold}GET  /api/mcp/sse${colors.reset}              ${colors.gray}Native Model Context Protocol (MCP) Server-Sent Events stream${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /health${colors.reset}                    ${colors.gray}Service heartbeat and status ping${colors.reset}`);
 
   if (process.stdin.isTTY) {
@@ -3413,15 +3542,25 @@ function printStartupBanner() {
   }
 
   console.log(`${colors.gray}────────────────────────────────────────────────────────────────────────${colors.reset}`);
-  logInfo('[READY]', `Companion server active on http://127.0.0.1:${PORT}`);
+  if (!isHttpsOnly) {
+    logInfo('[READY]', `Companion HTTP server active on http://127.0.0.1:${PORT}`);
+  }
+  if (tlsCredentials) {
+    logInfo('[READY]', `Companion HTTPS server active on https://127.0.0.1:${HTTPS_PORT} (Google AI Studio)`);
+    logInfo('[AI STUDIO]', `MCP SSE Stream:  https://localhost:${HTTPS_PORT}/api/mcp/sse`);
+    logInfo('[AI STUDIO]', `OpenAPI 3.0 Spec: https://localhost:${HTTPS_PORT}/api/openapi.json`);
+  }
 }
 
-// Create HTTP Server
-const server = http.createServer(async (req, res) => {
+// Unified HTTP / HTTPS Request Handler
+const handleHttpRequest = async (req, res) => {
   setCorsHeaders(res);
 
   const reqStartTime = Date.now();
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const isEncrypted = Boolean(req.socket && req.socket.encrypted);
+  const protocol = isEncrypted ? 'https' : 'http';
+  const defaultHost = `localhost:${isEncrypted ? HTTPS_PORT : PORT}`;
+  const url = new URL(req.url, `${protocol}://${req.headers.host || defaultHost}`);
   const pathname = url.pathname;
 
   res.on('finish', () => {
@@ -3462,6 +3601,12 @@ const server = http.createServer(async (req, res) => {
         auth: authSummary,
         sseClients: getSseClientsCount(),
         mcp: mcpMetrics,
+        https: {
+          enabled: Boolean(tlsCredentials),
+          port: HTTPS_PORT,
+          isSelfSigned: tlsCredentials?.isSelfSigned ?? false,
+          fingerprint: tlsCredentials?.fingerprint || ''
+        },
         metrics: bridgeMetrics ? bridgeMetrics.snapshot() : null,
         version: VERSION
       };
@@ -3587,6 +3732,42 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 1d-1. OpenAPI 3.0 Specification Endpoint for Google AI Studio Function Calling
+    if ((pathname === '/api/openapi.json' || pathname === '/api/mcp/openapi.json') && req.method === 'GET') {
+      const spec = buildOpenApiSpec(req);
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify(spec, null, 2));
+      return;
+    }
+
+    // 1d-2. Tool Invocation Endpoint for OpenAPI / Google AI Studio Function Calling
+    if (pathname.startsWith('/api/tools/') && req.method === 'POST') {
+      const toolName = decodeURIComponent(pathname.replace('/api/tools/', '').trim());
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const args = body.trim() ? JSON.parse(body) : {};
+          const result = await mcpServer.handleToolCall(toolName, args);
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(JSON.stringify(result));
+        } catch (e) {
+          res.writeHead(500, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(JSON.stringify({ error: e.message, isError: true }));
+        }
+      });
+      return;
+    }
+
     // 1e. Pilot Authentication, Google SSO & WebAuthn Passkeys Endpoints
     if (pathname === '/api/auth/config' && req.method === 'GET') {
       const gClientId = getGoogleClientId();
@@ -3595,7 +3776,7 @@ const server = http.createServer(async (req, res) => {
         success: true,
         hasGoogleClientId: Boolean(gClientId),
         googleClientId: gClientId,
-        origin: `http://${req.headers.host || 'localhost:8765'}`
+        origin: `${protocol}://${req.headers.host || defaultHost}`
       }));
       return;
     }
@@ -6469,6 +6650,7 @@ const server = http.createServer(async (req, res) => {
       stopScanners();
       setTimeout(() => {
         try { server.close(); } catch (e) {}
+        try { if (httpsServer) httpsServer.close(); } catch (e) {}
         process.exit(0);
       }, 250);
       return;
@@ -6490,6 +6672,7 @@ const server = http.createServer(async (req, res) => {
       stopScanners();
       setTimeout(() => {
         try { server.close(); } catch (e) {}
+        try { if (httpsServer) httpsServer.close(); } catch (e) {}
         process.exit(42);
       }, 250);
       return;
@@ -6896,7 +7079,14 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: err.message }));
   }
-});
+};
+
+// Create HTTP and HTTPS Servers
+const server = http.createServer(handleHttpRequest);
+const httpsServer = (!isNoHttps && tlsCredentials) ? https.createServer({
+  key: tlsCredentials.key,
+  cert: tlsCredentials.cert
+}, handleHttpRequest) : null;
 
 // Setup Interactive CLI Keyboard Shortcuts
 if (process.stdin.isTTY) {
@@ -7080,6 +7270,7 @@ function startDashboard() {
   dashboardInstance = new Dashboard({
     version: VERSION,
     port: PORT,
+    httpsPort: httpsServer ? HTTPS_PORT : null,
     startTime: bridgeStartTime,
     metrics: bridgeMetrics,
     getRc2Status: () => cachedRc2Status || { connected: false },
@@ -7206,15 +7397,17 @@ server.on('upgrade', (req, socket, head) => {
         broadcastCompanionStatus();
       });
     }
-    // Start Server on all network interfaces (0.0.0.0) so LAN tablets/phones can connect
-    server.listen(PORT, '0.0.0.0', () => {
-      const isPlain = process.argv.includes('--plain') ||
-                      process.env.AALAAPI_PLAIN === '1' ||
-                      process.argv.includes('--stdio') ||
-                      process.argv.includes('--mcp') ||
-                      !process.stdout.isTTY ||
-                      !process.stdin.isTTY;
+    const isPlain = process.argv.includes('--plain') ||
+                    process.env.AALAAPI_PLAIN === '1' ||
+                    process.argv.includes('--stdio') ||
+                    process.argv.includes('--mcp') ||
+                    !process.stdout.isTTY ||
+                    !process.stdin.isTTY;
 
+    let uiStarted = false;
+    function triggerUiStart() {
+      if (uiStarted) return;
+      uiStarted = true;
       if (!isPlain) {
         startDashboard();
       } else {
@@ -7224,7 +7417,23 @@ server.on('upgrade', (req, socket, head) => {
       if (process.argv.includes('--stdio') || process.argv.includes('--mcp')) {
         mcpServer.startStdio();
       }
-    });
+    }
+
+    // Start HTTP Server (unless in HTTPS-only mode)
+    if (!isHttpsOnly) {
+      server.listen(PORT, '0.0.0.0', () => {
+        triggerUiStart();
+      });
+    }
+
+    // Start HTTPS Server for Google AI Studio & Secure Contexts
+    if (httpsServer) {
+      httpsServer.listen(HTTPS_PORT, '0.0.0.0', () => {
+        if (isHttpsOnly) {
+          triggerUiStart();
+        }
+      });
+    }
   })();
 }
 
@@ -7305,6 +7514,10 @@ module.exports = {
     } catch (_) {}
     return VERSION;
   },
-  PORT
+  PORT,
+  HTTPS_PORT,
+  httpsServer,
+  tlsCredentials,
+  buildOpenApiSpec
 };
 

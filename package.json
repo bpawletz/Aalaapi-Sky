@@ -4,7 +4,7 @@
     "playwright": "^1.64.1"
   },
   "name": "aalaapi-sky",
-  "version": "1.212.1",
+  "version": "1.213.0",
   "description": "Aalaapi-Sky Drone Flight Planner & Editor for DJI Fly",
   "main": "src/main.js",
   "scripts": {
@@ -22,8 +22,8 @@
     "irl:analyze": "node tools/qa/irl_tracker.js analyze",
     "record:features": "node tools/record_features.js",
     "record:features:all": "node tools/record_features.js --all",
-    "test": "node --test tools/build/module_graph.test.js tools/qa/irl_tracker.test.js tools/companion/tile_cache.test.js tools/companion/checklist_db.test.js tools/companion/auth_db.test.js tools/companion/top_dashboard.test.js tools/companion/buffer.test.js tools/companion/video_service.test.js tools/companion/ai_mesh_engine.test.js tools/node-red-contrib-aalaapi/test/*.test.js index.test.js index.e2e.test.js",
-    "test:unit": "node --test tools/build/module_graph.test.js tools/qa/irl_tracker.test.js tools/companion/tile_cache.test.js tools/companion/checklist_db.test.js tools/companion/auth_db.test.js tools/companion/top_dashboard.test.js tools/companion/buffer.test.js tools/companion/video_service.test.js tools/companion/ai_mesh_engine.test.js tools/node-red-contrib-aalaapi/test/*.test.js index.test.js",
+    "test": "node --test tools/build/module_graph.test.js tools/qa/irl_tracker.test.js tools/companion/tile_cache.test.js tools/companion/checklist_db.test.js tools/companion/auth_db.test.js tools/companion/top_dashboard.test.js tools/companion/buffer.test.js tools/companion/video_service.test.js tools/companion/ai_mesh_engine.test.js tools/companion/tls_cert.test.js tools/companion/server_https.test.js tools/node-red-contrib-aalaapi/test/*.test.js index.test.js index.e2e.test.js",
+    "test:unit": "node --test tools/build/module_graph.test.js tools/qa/irl_tracker.test.js tools/companion/tile_cache.test.js tools/companion/checklist_db.test.js tools/companion/auth_db.test.js tools/companion/top_dashboard.test.js tools/companion/buffer.test.js tools/companion/video_service.test.js tools/companion/ai_mesh_engine.test.js tools/companion/tls_cert.test.js tools/companion/server_https.test.js tools/node-red-contrib-aalaapi/test/*.test.js index.test.js",
     "test:nodered": "node --test tools/node-red-contrib-aalaapi/test/*.test.js",
     "test:e2e": "node --test index.e2e.test.js",
     "tfr:fetch": "node tools/fetch_tfr_data.js",

@@ -1,5 +1,47 @@
 [
   {
+    "notam_id": "6/4122",
+    "facility": "ZAU",
+    "state": "IA",
+    "type": "SECURITY",
+    "description": "DUBUQUE, IA, Sunday, November 1, 2026 through Sunday, November 1, 2026 Local",
+    "mod_date": "10/31/2026 02:37:00",
+    "mod_abs_time": "202610310237",
+    "is_new": "Y",
+    "gid": "6/4122",
+    "start_utc": "2026-11-01T18:10:00.000Z",
+    "end_utc": "2026-11-02T00:45:59.000Z",
+    "exact_time": true
+  },
+  {
+    "notam_id": "6/4121",
+    "facility": "ZKC",
+    "state": "KS",
+    "type": "VIP",
+    "description": "Salina, KS, Sunday, November 1, 2026 through Sunday, November 1, 2026 Local",
+    "mod_date": "10/31/2026 01:37:00",
+    "mod_abs_time": "202610310137",
+    "is_new": "Y",
+    "gid": "6/4121",
+    "start_utc": "2026-11-01T23:15:00.000Z",
+    "end_utc": "2026-11-02T05:00:59.000Z",
+    "exact_time": true
+  },
+  {
+    "notam_id": "6/4120",
+    "facility": "ZAU",
+    "state": "IA",
+    "type": "VIP",
+    "description": "DUBUQUE, IA, Sunday, November 1, 2026 through Sunday, November 1, 2026 Local",
+    "mod_date": "10/31/2026 00:50:00",
+    "mod_abs_time": "202610310050",
+    "is_new": "Y",
+    "gid": "6/4120",
+    "start_utc": "2026-11-01T19:00:00.000Z",
+    "end_utc": "2026-11-02T00:15:59.000Z",
+    "exact_time": true
+  },
+  {
     "notam_id": "6/4117",
     "facility": "ZDV",
     "state": "CO",
@@ -134,20 +176,6 @@
     "exact_time": true
   },
   {
-    "notam_id": "6/3963",
-    "facility": "ZMA",
-    "state": "FL",
-    "type": "SECURITY",
-    "description": "Palm Beach, FL, Friday, October 30, 2026 through Friday, October 30, 2026 Local",
-    "mod_date": "10/29/2026 23:47:00",
-    "mod_abs_time": "202610292347",
-    "is_new": "Y",
-    "gid": "6/3963",
-    "start_utc": "2026-10-30T23:30:00.000Z",
-    "end_utc": "2026-10-31T03:00:59.000Z",
-    "exact_time": true
-  },
-  {
     "notam_id": "6/3960",
     "facility": "ZNY",
     "state": "NY",
@@ -155,7 +183,7 @@
     "description": "NEW YORK, NY, Sunday, November 1, 2026 through Sunday, November 1, 2026 Local",
     "mod_date": "10/29/2026 22:43:00",
     "mod_abs_time": "202610292243",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/3960",
     "start_utc": "2026-11-01T14:00:00.000Z",
     "end_utc": "2026-11-02T02:00:59.000Z",
@@ -215,17 +243,6 @@
     "gid": "6/3657"
   },
   {
-    "notam_id": "6/3353",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "29 NM NW FORT COLLINS, CO, Thursday, October 29, 2026 through Saturday, October 31, 2026 UTC",
-    "mod_date": "10/28/2026 20:53:00",
-    "mod_abs_time": "202610282053",
-    "is_new": "N",
-    "gid": "6/3353"
-  },
-  {
     "notam_id": "6/3283",
     "facility": "ZTL",
     "state": "GA",
@@ -251,34 +268,6 @@
     "gid": "6/3282",
     "start_utc": "2026-10-28T19:00:00.000Z",
     "end_utc": "2026-11-05T04:00:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/3191",
-    "facility": "ZJX",
-    "state": "FL",
-    "type": "VIP",
-    "description": "Daytona Beach, FL, Friday, October 30, 2026 through Friday, October 30, 2026 Local",
-    "mod_date": "10/28/2026 15:23:00",
-    "mod_abs_time": "202610281523",
-    "is_new": "N",
-    "gid": "6/3191",
-    "start_utc": "2026-10-30T21:00:00.000Z",
-    "end_utc": "2026-10-31T03:00:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/2959",
-    "facility": "ZTL",
-    "state": "GA",
-    "type": "SECURITY",
-    "description": "Atlanta, GA, Friday, October 30, 2026 through Friday, October 30, 2026 Local",
-    "mod_date": "10/27/2026 20:16:00",
-    "mod_abs_time": "202610272016",
-    "is_new": "N",
-    "gid": "6/2959",
-    "start_utc": "2026-10-30T21:00:00.000Z",
-    "end_utc": "2026-10-31T01:00:59.000Z",
     "exact_time": true
   },
   {
@@ -321,34 +310,6 @@
     "gid": "6/2670",
     "start_utc": "2026-11-01T03:59:00.000Z",
     "end_utc": "2027-03-14T03:59:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/2667",
-    "facility": "ZLC",
-    "state": "NV",
-    "type": "SPACE OPERATIONS",
-    "description": "67 ZLC AIRSPACE BLACK ROCK, NV, Friday, October 30, 2026 through Saturday, October 31, 2026 UTC",
-    "mod_date": "10/27/2026 13:25:00",
-    "mod_abs_time": "202610271325",
-    "is_new": "N",
-    "gid": "6/2667",
-    "start_utc": "2026-10-30T14:00:00.000Z",
-    "end_utc": "2026-10-31T02:00:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/2666",
-    "facility": "ZLC",
-    "state": "NV",
-    "type": "SPACE OPERATIONS",
-    "description": "66 ZLC AIRSPACE BLACK ROCK, NV, Saturday, October 31, 2026 through Sunday, November 1, 2026 UTC",
-    "mod_date": "10/27/2026 13:23:00",
-    "mod_abs_time": "202610271323",
-    "is_new": "N",
-    "gid": "6/2666",
-    "start_utc": "2026-10-31T14:00:00.000Z",
-    "end_utc": "2026-11-01T02:00:59.000Z",
     "exact_time": true
   },
   {
@@ -427,7 +388,10 @@
     "mod_date": "10/26/2026 10:27:00",
     "mod_abs_time": "202610261027",
     "is_new": "N",
-    "gid": "6/2265"
+    "gid": "6/2265",
+    "start_utc": "2026-10-31T11:00:00.000Z",
+    "end_utc": "2026-10-31T15:00:59.000Z",
+    "exact_time": true
   },
   {
     "notam_id": "6/2204",

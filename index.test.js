@@ -38837,11 +38837,7 @@ describe('Planned Flight Plan Selection & Single-Point Max Error Verification in
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.212.1] - 2026-10-30'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.212.1'));
-    assert.ok(template.includes('Version 1.212.1'));
     assert.ok(template.includes('Changelog (v1.212.1):'));
-    assert.ok(htmlText.includes('v1.212.1'));
-    assert.ok(htmlText.includes('Version 1.212.1'));
     assert.ok(htmlText.includes('Changelog (v1.212.1):'));
   });
 
@@ -39061,11 +39057,7 @@ describe('Inactive "Verify IRL Plan" Button Dimming & Disabling (v1.212.1, Issue
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.212.1] - 2026-10-30'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.212.1'));
-    assert.ok(template.includes('Version 1.212.1'));
     assert.ok(template.includes('Changelog (v1.212.1):'));
-    assert.ok(htmlText.includes('v1.212.1'));
-    assert.ok(htmlText.includes('Version 1.212.1'));
     assert.ok(htmlText.includes('Changelog (v1.212.1):'));
   });
 
@@ -39150,5 +39142,61 @@ describe('Inactive "Verify IRL Plan" Button Dimming & Disabling (v1.212.1, Issue
     } finally {
       global.document = origDoc;
     }
+  });
+});
+
+
+describe('Google AI Studio Integration & Native HTTPS Companion Transport (v1.213.0, Issue #209)', () => {
+  const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+  test('Version consistency: v1.213.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.213.0');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.213.0] - 2026-10-31'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.213.0'));
+    assert.ok(template.includes('Version 1.213.0'));
+    assert.ok(template.includes('Changelog (v1.213.0):'));
+    assert.ok(htmlText.includes('v1.213.0'));
+    assert.ok(htmlText.includes('Version 1.213.0'));
+    assert.ok(htmlText.includes('Changelog (v1.213.0):'));
+  });
+
+  test('Google AI Studio & HTTPS companion controls exist in HTML template', () => {
+    const dom = new JSDOM(htmlText.replace(/<script[\s\S]*?<\/script>/gi, ''));
+    const doc = dom.window.document;
+
+    // AI Studio MCP and OpenAPI copy buttons in MCP drawer
+    const aistudioBtn = doc.getElementById('mcp-copy-aistudio-btn');
+    assert.ok(aistudioBtn, '#mcp-copy-aistudio-btn must exist');
+    assert.ok(aistudioBtn.textContent.includes('AI Studio MCP'));
+
+    const openapiBtn = doc.getElementById('mcp-copy-openapi-btn');
+    assert.ok(openapiBtn, '#mcp-copy-openapi-btn must exist');
+    assert.ok(openapiBtn.textContent.includes('OpenAPI Spec'));
+
+    // Host presets in Companion Host panel
+    const presetHttp = doc.getElementById('companion-preset-http-btn');
+    assert.ok(presetHttp, '#companion-preset-http-btn must exist');
+    const presetHttps = doc.getElementById('companion-preset-https-btn');
+    assert.ok(presetHttps, '#companion-preset-https-btn must exist');
+    const certLink = doc.getElementById('companion-open-cert-link');
+    assert.ok(certLink, '#companion-open-cert-link must exist');
+    assert.equal(certLink.getAttribute('href'), 'https://127.0.0.1:8766/api/status');
+  });
+
+  test('Companion Server exports HTTPS and OpenAPI features (v1.213.0 - Issue #209)', () => {
+    const companion = require('./tools/companion/server.js');
+    assert.ok(companion.server, 'server must be exported');
+    assert.strictEqual(typeof companion.PORT, 'number');
+    assert.strictEqual(typeof companion.HTTPS_PORT, 'number');
+    assert.strictEqual(companion.HTTPS_PORT, 8766);
+    assert.strictEqual(typeof companion.buildOpenApiSpec, 'function');
+
+    const spec = companion.buildOpenApiSpec({ socket: { encrypted: true }, headers: { host: 'localhost:8766' } });
+    assert.strictEqual(spec.openapi, '3.0.3');
+    assert.ok(spec.paths['/api/status']);
+    assert.ok(spec.paths['/api/tools/get_airspace_telemetry']);
+    assert.ok(spec.paths['/api/tools/generate_flight_plan']);
   });
 });
