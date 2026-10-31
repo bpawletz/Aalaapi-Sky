@@ -11036,6 +11036,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
           { lat: 41.3220, lon: -88.9940, alt: 50, pitch: -60, heading: 270 },
           { lat: 41.3220, lon: -88.9950, alt: 50, pitch: -60, heading: 270 }
         ];
+        FlightDiagnostics.updateStatsUI();
 
         document.getElementById('diag-btn-irl-verify').click();
       });
@@ -11126,6 +11127,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
           { id: 'mission-nadir', name: 'Nadir Survey 31m', waypoints: planAllNadir },
           { id: 'mission-level-end', name: 'Landing Level Pitch', waypoints: planWithPitchZero }
         ];
+        FlightDiagnostics.updateStatsUI();
 
         document.getElementById('diag-btn-irl-verify').click();
       });
@@ -11216,7 +11218,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
           { lat: 41.3217, lon: -88.9950, alt: 31, pitch: -90, heading: 186 }
         ];
 
-        // Click verify IRL
+        // Ensure enabled state and click verify IRL
+        FlightDiagnostics.updateStatsUI();
         document.getElementById('diag-btn-irl-verify').click();
       });
       await page.waitForTimeout(600);
@@ -11264,6 +11267,112 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         }
       });
       await page.waitForTimeout(300);
+    });
+
+    test("Verify IRL Plan buttons are dimmed and disabled when not actionable and enabled when flown log is loaded (v1.212.1, Issue #208)", async () => {
+      // 1. Open Flight Diagnostics and ensure active-mission simulation
+      await page.evaluate(async () => {
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.open === 'function') {
+          await FlightDiagnostics.open('3d');
+          FlightDiagnostics.selectedFlightId = 'active-mission';
+          FlightDiagnostics.isActualFlown = false;
+          FlightDiagnostics.telemetryData = { isSimulation: true, points: [{ lat: 41.32, lon: -88.99 }] };
+          const flightSel = document.getElementById('diag-flight-selector');
+          if (flightSel) flightSel.value = 'active-mission';
+          FlightDiagnostics.updateStatsUI();
+        }
+      });
+      await page.waitForTimeout(300);
+
+      // 2. On default active-mission (simulation), verify both buttons are dimmed/disabled
+      const initialButtonStates = await page.evaluate(() => {
+        const headerBtn = document.getElementById('diag-btn-irl-verify');
+        const sidebarBtn = document.getElementById('diag-sidebar-irl-verify-btn');
+        return {
+          headerDisabled: headerBtn?.disabled,
+          headerHasClass: headerBtn?.classList.contains('diag-btn-disabled'),
+          headerTitle: headerBtn?.title || '',
+          sidebarDisabled: sidebarBtn?.disabled,
+          sidebarHasClass: sidebarBtn?.classList.contains('diag-btn-disabled'),
+          sidebarTitle: sidebarBtn?.title || ''
+        };
+      });
+
+      assert.strictEqual(initialButtonStates.headerDisabled, true, 'Header button must be disabled for active simulation');
+      assert.strictEqual(initialButtonStates.headerHasClass, true, 'Header button must have diag-btn-disabled class');
+      assert.ok(initialButtonStates.headerTitle.includes('actual flown flight log'), 'Header tooltip must explain flown requirement');
+
+      assert.strictEqual(initialButtonStates.sidebarDisabled, true, 'Sidebar button must be disabled for active simulation');
+      assert.strictEqual(initialButtonStates.sidebarHasClass, true, 'Sidebar button must have diag-btn-disabled class');
+      assert.ok(initialButtonStates.sidebarTitle.includes('actual flown flight log'), 'Sidebar tooltip must explain flown requirement');
+
+      // 3. Load actual flown telemetry record
+      await page.evaluate(() => {
+        FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-10-30_[20-11-03].txt';
+        FlightDiagnostics.isActualFlown = true;
+        FlightDiagnostics.telemetryData = {
+          isSimulation: false,
+          points: [
+            { lat: 41.3215, lon: -88.9950, alt: 31, pitch: -90, yaw: 6, isPhoto: true, speed: 0.1, battery: 95 },
+            { lat: 41.3216, lon: -88.9950, alt: 31, pitch: -90, yaw: 6, isPhoto: true, speed: 0.1, battery: 90 }
+          ]
+        };
+        FlightDiagnostics.updateStatsUI();
+      });
+      await page.waitForTimeout(300);
+
+      // 4. Verify both buttons transition to enabled emerald state
+      const enabledButtonStates = await page.evaluate(() => {
+        const headerBtn = document.getElementById('diag-btn-irl-verify');
+        const sidebarBtn = document.getElementById('diag-sidebar-irl-verify-btn');
+        return {
+          headerDisabled: headerBtn?.disabled,
+          headerHasClass: headerBtn?.classList.contains('diag-btn-disabled'),
+          headerTitle: headerBtn?.title || '',
+          sidebarDisabled: sidebarBtn?.disabled,
+          sidebarHasClass: sidebarBtn?.classList.contains('diag-btn-disabled'),
+          sidebarTitle: sidebarBtn?.title || ''
+        };
+      });
+
+      assert.strictEqual(enabledButtonStates.headerDisabled, false, 'Header button must be enabled when flown log is loaded');
+      assert.strictEqual(enabledButtonStates.headerHasClass, false, 'Header button must not have diag-btn-disabled class');
+      assert.ok(enabledButtonStates.headerTitle.includes('Verify loaded flight log'), 'Header tooltip must show verify action');
+
+      assert.strictEqual(enabledButtonStates.sidebarDisabled, false, 'Sidebar button must be enabled when flown log is loaded');
+      assert.strictEqual(enabledButtonStates.sidebarHasClass, false, 'Sidebar button must not have diag-btn-disabled class');
+      assert.ok(enabledButtonStates.sidebarTitle.includes('Verify flight against the 6-phase'), 'Sidebar tooltip must show verify action');
+
+      // 5. Switch back to simulation
+      await page.evaluate(() => {
+        FlightDiagnostics.selectedFlightId = 'active-mission';
+        FlightDiagnostics.isActualFlown = false;
+        FlightDiagnostics.telemetryData = { isSimulation: true, points: [{ lat: 41.32, lon: -88.99 }] };
+        FlightDiagnostics.updateStatsUI();
+      });
+      await page.waitForTimeout(300);
+
+      const reDimmedStates = await page.evaluate(() => {
+        const headerBtn = document.getElementById('diag-btn-irl-verify');
+        const sidebarBtn = document.getElementById('diag-sidebar-irl-verify-btn');
+        return {
+          headerDisabled: headerBtn?.disabled,
+          headerHasClass: headerBtn?.classList.contains('diag-btn-disabled'),
+          sidebarDisabled: sidebarBtn?.disabled,
+          sidebarHasClass: sidebarBtn?.classList.contains('diag-btn-disabled')
+        };
+      });
+
+      assert.strictEqual(reDimmedStates.headerDisabled, true, 'Header button must re-dim on simulation');
+      assert.strictEqual(reDimmedStates.headerHasClass, true);
+      assert.strictEqual(reDimmedStates.sidebarDisabled, true, 'Sidebar button must re-dim on simulation');
+      assert.strictEqual(reDimmedStates.sidebarHasClass, true);
+
+      // Close Flight Diagnostics
+      await page.evaluate(() => {
+        FlightDiagnostics.close();
+      });
+      await page.waitForTimeout(200);
     });
   });
 

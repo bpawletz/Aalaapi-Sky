@@ -7892,3 +7892,17 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   border-color: rgba(139, 92, 246, 0.4);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
+
+/* Flight Diagnostics IRL Verification Buttons (Disabled / Dimmed State) */
+#diag-btn-irl-verify:disabled,
+#diag-sidebar-irl-verify-btn:disabled,
+#diag-btn-irl-verify.diag-btn-disabled,
+#diag-sidebar-irl-verify-btn.diag-btn-disabled {
+  opacity: 0.38 !important;
+  cursor: not-allowed !important;
+  filter: grayscale(0.85) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-muted, #94a3b8) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  pointer-events: auto !important; /* ensures informative title tooltip triggers on hover */
+}
