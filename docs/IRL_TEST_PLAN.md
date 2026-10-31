@@ -3,7 +3,7 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.214.0` | **WPML Compiler Hash:** `b21749fd09a5` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.214.1` | **WPML Compiler Hash:** `b21749fd09a5` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
 **Summary Progress:** **1 / 26** Patterns Verified | **0** Needs Re-Test | **25** Untested | **0** Failed
 
@@ -435,6 +435,12 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ---
 
 ## 6. Post-Update Release IRL Test Plans Log
+
+### [v1.214.1] Propagate Pilot Session Token to ADS-B Airspace and Companion Calls — 2026-10-31 ([Issue #211](https://github.com/bpawletz/Aalaapi-Sky/issues/211))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `ALL`
+- [ ] 1. Sign into Aalaapi Sky with pilot credentials
+- [ ] 2. Verify ADS-B airspace requests to /api/airspace/bounds succeed with 200 and display aircraft
+- [ ] 3. Verify unauthenticated requests return 401 cleanly without console spam
 
 ### [v1.214.0] Enforce companion app API and SSE authentication by default with --allow-unauth flag — 2026-10-31 ([Issue #210](https://github.com/bpawletz/Aalaapi-Sky/issues/210))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `none`

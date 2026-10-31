@@ -211,6 +211,69 @@ describe('Companion Server Authentication Enforcement Suite', () => {
       assert.notEqual(res.body.status, 'auth_required');
       assert.equal(res.body.authenticated, true);
     });
+
+    it('rejects unauthenticated GET /api/airspace/bounds with 401 Unauthorized', async () => {
+      const res = await new Promise((resolve, reject) => {
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: testPort,
+          path: '/api/airspace/bounds?lat=40.01250&lon=-83.17593&radius=3&ceiling=2500&includeSafe=true',
+          method: 'GET'
+        }, r => {
+          let body = '';
+          r.on('data', chunk => { body += chunk; });
+          r.on('end', () => resolve({ statusCode: r.statusCode, body: JSON.parse(body) }));
+        });
+        req.on('error', reject);
+        req.end();
+      });
+
+      assert.equal(res.statusCode, 401);
+      assert.equal(res.body.authRequired, true);
+    });
+
+    it('accepts GET /api/airspace/bounds with valid Bearer token header', async () => {
+      const res = await new Promise((resolve, reject) => {
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: testPort,
+          path: '/api/airspace/bounds?lat=40.01250&lon=-83.17593&radius=3&ceiling=2500&includeSafe=true',
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${validToken}`
+          }
+        }, r => {
+          let body = '';
+          r.on('data', chunk => { body += chunk; });
+          r.on('end', () => resolve({ statusCode: r.statusCode, body: JSON.parse(body) }));
+        });
+        req.on('error', reject);
+        req.end();
+      });
+
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.body.success, true);
+    });
+
+    it('accepts GET /api/airspace/bounds with valid token query parameter', async () => {
+      const res = await new Promise((resolve, reject) => {
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: testPort,
+          path: `/api/airspace/bounds?lat=40.01250&lon=-83.17593&radius=3&ceiling=2500&includeSafe=true&token=${encodeURIComponent(validToken)}`,
+          method: 'GET'
+        }, r => {
+          let body = '';
+          r.on('data', chunk => { body += chunk; });
+          r.on('end', () => resolve({ statusCode: r.statusCode, body: JSON.parse(body) }));
+        });
+        req.on('error', reject);
+        req.end();
+      });
+
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.body.success, true);
+    });
   });
 
   describe('Protected Server-Sent Events (SSE) Streams', () => {

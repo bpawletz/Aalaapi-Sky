@@ -7993,7 +7993,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.214.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.214.1</span></h1>
         </div>
       </div>
 
@@ -15024,7 +15024,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.214.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.214.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15184,6 +15184,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.214.1):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>ADS-B Airspace &amp; Companion Auth Session Propagation (Closes #211):</strong> Resolves 401 Unauthorized errors on background ADS-B airspace requests (<code>/api/airspace/bounds</code>) and bridge configuration by automatically propagating active pilot session tokens via headers, query parameters, and a global fetch interceptor. Gracefully handles pre-login 401 states without console error spam.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.214.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -55355,6 +55361,9 @@ function getCompanionAuthHeaders() {
   }
   return {};
 }
+if (typeof window !== 'undefined') {
+  window.getCompanionAuthHeaders = getCompanionAuthHeaders;
+}
 
 function buildAuthenticatedCompanionUrl(endpointPath) {
   const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
@@ -60656,7 +60665,9 @@ const AdsbAirspaceManager = {
 
       const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
-      fetch(apiBase + '/api/config/adsb')
+      fetch(apiBase + '/api/config/adsb', {
+        headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
+      })
 
         .then(res => res.ok ? res.json() : null)
 
@@ -61780,7 +61791,9 @@ const AdsbAirspaceManager = {
 
       const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
-      const res = await fetch(`${apiBase}/api/airspace/status`);
+      const res = await fetch(`${apiBase}/api/airspace/status`, {
+        headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
+      });
 
       if (!res.ok) return;
 
@@ -61832,7 +61845,10 @@ const AdsbAirspaceManager = {
 
           method: 'POST',
 
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...((typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {})
+          },
 
           body: JSON.stringify({ adsbHost: localHost, adsbPort: localPort, force: true })
 
@@ -62555,12 +62571,18 @@ const AdsbAirspaceManager = {
 
 
       const endpoint = this.getEffectiveEndpoint();
+      const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
+      const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+      const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true${tokenParam}`;
 
-      const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true`;
+      const res = await fetch(url, {
+        headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
+      });
 
-      
-
-      const res = await fetch(url);
+      if (res.status === 401) {
+        // Companion bridge requires pilot authentication; exit cleanly until sign-in
+        return;
+      }
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -64999,6 +65021,7 @@ const CompanionAuth = {
       }
     } catch (_) {}
 
+    this.installFetchInterceptor();
     this.bindEvents();
     this.updateTopbarUI();
 
@@ -65026,11 +65049,67 @@ const CompanionAuth = {
 
   getAuthHeaders() {
     const headers = {};
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-      headers['x-pilot-session-token'] = this.token;
+    const effectiveToken = this.token || (typeof localStorage !== 'undefined' ? localStorage.getItem(AUTH_TOKEN_KEY) : null);
+    if (effectiveToken) {
+      headers['Authorization'] = `Bearer ${effectiveToken}`;
+      headers['x-pilot-session-token'] = effectiveToken;
     }
     return headers;
+  },
+
+  installFetchInterceptor() {
+    if (typeof window === 'undefined' || !window.fetch || window._companionFetchIntercepted) return;
+    window._companionFetchIntercepted = true;
+    const originalFetch = window.fetch;
+    const authSelf = this;
+
+    window.fetch = function companionFetch(input, init) {
+      try {
+        const token = authSelf.token || (typeof localStorage !== 'undefined' ? localStorage.getItem(AUTH_TOKEN_KEY) : null);
+        if (token) {
+          let urlStr = '';
+          if (typeof input === 'string') urlStr = input;
+          else if (input && typeof input.url === 'string') urlStr = input.url;
+          else if (typeof URL !== 'undefined' && input instanceof URL) urlStr = input.toString();
+
+          const apiBase = (typeof getCompanionApiBase === 'function')
+            ? getCompanionApiBase()
+            : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+
+          const isCompanion = urlStr.startsWith(apiBase) ||
+                              urlStr.startsWith('http://127.0.0.1:8765') ||
+                              urlStr.startsWith('https://127.0.0.1:8766') ||
+                              urlStr.startsWith('http://localhost:8765') ||
+                              urlStr.startsWith('https://localhost:8766') ||
+                              urlStr.startsWith('/api/');
+
+          if (isCompanion) {
+            init = init ? { ...init } : {};
+            const existingHeaders = init.headers;
+            if (typeof Headers !== 'undefined' && existingHeaders instanceof Headers) {
+              if (!existingHeaders.has('Authorization')) {
+                existingHeaders.set('Authorization', `Bearer ${token}`);
+              }
+              if (!existingHeaders.has('x-pilot-session-token')) {
+                existingHeaders.set('x-pilot-session-token', token);
+              }
+            } else if (Array.isArray(existingHeaders)) {
+              const hasAuth = existingHeaders.some(([k]) => k && k.toLowerCase() === 'authorization');
+              if (!hasAuth) {
+                init.headers = [...existingHeaders, ['Authorization', `Bearer ${token}`], ['x-pilot-session-token', token]];
+              }
+            } else {
+              init.headers = {
+                'Authorization': `Bearer ${token}`,
+                'x-pilot-session-token': token,
+                ...(existingHeaders || {})
+              };
+            }
+          }
+        }
+      } catch (_) {}
+      return originalFetch.apply(this, arguments);
+    };
   },
 
   isAuthenticated() {
@@ -65890,6 +65969,7 @@ const CompanionAuth = {
 // Global exports
 if (typeof window !== 'undefined') {
   window.CompanionAuth = CompanionAuth;
+  try { CompanionAuth.installFetchInterceptor(); } catch (_) {}
 }
 if (typeof global !== 'undefined') {
   global.CompanionAuth = CompanionAuth;
