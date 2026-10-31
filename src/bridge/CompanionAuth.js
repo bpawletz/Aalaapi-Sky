@@ -142,6 +142,7 @@ const CompanionAuth = {
       }
     } catch (_) {}
 
+    this.installFetchInterceptor();
     this.bindEvents();
     this.updateTopbarUI();
 
@@ -169,11 +170,67 @@ const CompanionAuth = {
 
   getAuthHeaders() {
     const headers = {};
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-      headers['x-pilot-session-token'] = this.token;
+    const effectiveToken = this.token || (typeof localStorage !== 'undefined' ? localStorage.getItem(AUTH_TOKEN_KEY) : null);
+    if (effectiveToken) {
+      headers['Authorization'] = `Bearer ${effectiveToken}`;
+      headers['x-pilot-session-token'] = effectiveToken;
     }
     return headers;
+  },
+
+  installFetchInterceptor() {
+    if (typeof window === 'undefined' || !window.fetch || window._companionFetchIntercepted) return;
+    window._companionFetchIntercepted = true;
+    const originalFetch = window.fetch;
+    const authSelf = this;
+
+    window.fetch = function companionFetch(input, init) {
+      try {
+        const token = authSelf.token || (typeof localStorage !== 'undefined' ? localStorage.getItem(AUTH_TOKEN_KEY) : null);
+        if (token) {
+          let urlStr = '';
+          if (typeof input === 'string') urlStr = input;
+          else if (input && typeof input.url === 'string') urlStr = input.url;
+          else if (typeof URL !== 'undefined' && input instanceof URL) urlStr = input.toString();
+
+          const apiBase = (typeof getCompanionApiBase === 'function')
+            ? getCompanionApiBase()
+            : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+
+          const isCompanion = urlStr.startsWith(apiBase) ||
+                              urlStr.startsWith('http://127.0.0.1:8765') ||
+                              urlStr.startsWith('https://127.0.0.1:8766') ||
+                              urlStr.startsWith('http://localhost:8765') ||
+                              urlStr.startsWith('https://localhost:8766') ||
+                              urlStr.startsWith('/api/');
+
+          if (isCompanion) {
+            init = init ? { ...init } : {};
+            const existingHeaders = init.headers;
+            if (typeof Headers !== 'undefined' && existingHeaders instanceof Headers) {
+              if (!existingHeaders.has('Authorization')) {
+                existingHeaders.set('Authorization', `Bearer ${token}`);
+              }
+              if (!existingHeaders.has('x-pilot-session-token')) {
+                existingHeaders.set('x-pilot-session-token', token);
+              }
+            } else if (Array.isArray(existingHeaders)) {
+              const hasAuth = existingHeaders.some(([k]) => k && k.toLowerCase() === 'authorization');
+              if (!hasAuth) {
+                init.headers = [...existingHeaders, ['Authorization', `Bearer ${token}`], ['x-pilot-session-token', token]];
+              }
+            } else {
+              init.headers = {
+                'Authorization': `Bearer ${token}`,
+                'x-pilot-session-token': token,
+                ...(existingHeaders || {})
+              };
+            }
+          }
+        }
+      } catch (_) {}
+      return originalFetch.apply(this, arguments);
+    };
   },
 
   isAuthenticated() {
@@ -1033,6 +1090,7 @@ const CompanionAuth = {
 // Global exports
 if (typeof window !== 'undefined') {
   window.CompanionAuth = CompanionAuth;
+  try { CompanionAuth.installFetchInterceptor(); } catch (_) {}
 }
 if (typeof global !== 'undefined') {
   global.CompanionAuth = CompanionAuth;

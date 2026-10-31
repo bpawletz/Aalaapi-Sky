@@ -1,5 +1,33 @@
 [
   {
+    "notam_id": "6/4151",
+    "facility": "ZOB",
+    "state": "OH",
+    "type": "VIP",
+    "description": "Toledo, OH, Monday, November 2, 2026 Local",
+    "mod_date": "10/31/2026 17:06:00",
+    "mod_abs_time": "202610311706",
+    "is_new": "Y",
+    "gid": "6/4151",
+    "start_utc": "2026-11-02T16:30:00.000Z",
+    "end_utc": "2026-11-02T20:00:59.000Z",
+    "exact_time": true
+  },
+  {
+    "notam_id": "6/4149",
+    "facility": "ZKC",
+    "state": "DC",
+    "type": "SECURITY",
+    "description": "Salina, DC, Sunday, November 1, 2026 through Sunday, November 1, 2026 Local",
+    "mod_date": "10/31/2026 16:18:00",
+    "mod_abs_time": "202610311618",
+    "is_new": "Y",
+    "gid": "6/4149",
+    "start_utc": "2026-11-01T20:20:00.000Z",
+    "end_utc": "2026-11-02T04:30:59.000Z",
+    "exact_time": true
+  },
+  {
     "notam_id": "6/4145",
     "facility": "ZAN",
     "state": "AK",
@@ -38,17 +66,6 @@
     "is_new": "Y",
     "gid": "6/4136",
     "end_utc": "2026-11-01T18:30:59.000Z"
-  },
-  {
-    "notam_id": "6/4135",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "PAGOSA SPRINGS, CO, Saturday, October 31, 2026 through Friday, November 6, 2026 UTC",
-    "mod_date": "10/31/2026 13:12:00",
-    "mod_abs_time": "202610311312",
-    "is_new": "Y",
-    "gid": "6/4135"
   },
   {
     "notam_id": "6/4134",
@@ -150,7 +167,7 @@
     "description": "Somerset, KY, Friday, November 6, 2026 through Saturday, November 7, 2026 UTC",
     "mod_date": "10/30/2026 19:22:00",
     "mod_abs_time": "202610301922",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/4099",
     "start_utc": "2026-11-06T19:00:00.000Z",
     "end_utc": "2026-11-07T20:30:59.000Z",
@@ -164,7 +181,7 @@
     "description": "San Marcos, TX, Friday, November 6, 2026 through Sunday, November 8, 2026 UTC",
     "mod_date": "10/30/2026 18:01:00",
     "mod_abs_time": "202610301801",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/4084"
   },
   {
@@ -175,24 +192,10 @@
     "description": "Libby AAF, AZ, Friday, October 30, 2026 through Sunday, November 1, 2026 Local",
     "mod_date": "10/30/2026 17:47:00",
     "mod_abs_time": "202610301747",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/4083",
     "start_utc": "2026-10-31T06:00:00.000Z",
     "end_utc": "2026-11-01T13:00:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/4079",
-    "facility": "ZJX",
-    "state": "SC",
-    "type": "HAZARDS",
-    "description": "2NM NW AWENDAW, SC, Saturday, October 31, 2026 UTC",
-    "mod_date": "10/30/2026 17:12:00",
-    "mod_abs_time": "202610301712",
-    "is_new": "Y",
-    "gid": "6/4079",
-    "start_utc": "2026-10-31T15:00:00.000Z",
-    "end_utc": "2026-10-31T23:00:59.000Z",
     "exact_time": true
   },
   {
@@ -280,59 +283,6 @@
     "exact_time": true
   },
   {
-    "notam_id": "6/3803",
-    "facility": "ZMA",
-    "state": "FL",
-    "type": "VIP",
-    "description": "West Palm Beach, FL, Friday, October 30, 2026 through Sunday, November 1, 2026 Local",
-    "mod_date": "10/29/2026 18:43:00",
-    "mod_abs_time": "202610291843",
-    "is_new": "N",
-    "gid": "6/3803",
-    "start_utc": "2026-10-30T23:59:00.000Z",
-    "end_utc": "2026-11-01T17:30:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/3657",
-    "facility": "ZJX",
-    "state": "SC",
-    "type": "HAZARDS",
-    "description": "5NM NW BUCK HALL, SC, Friday, October 30, 2026 through Saturday, October 31, 2026 UTC",
-    "mod_date": "10/29/2026 13:55:00",
-    "mod_abs_time": "202610291355",
-    "is_new": "N",
-    "gid": "6/3657"
-  },
-  {
-    "notam_id": "6/3283",
-    "facility": "ZTL",
-    "state": "GA",
-    "type": "SECURITY",
-    "description": "Atlanta, GA, Friday, October 30, 2026 through Saturday, October 31, 2026 Local",
-    "mod_date": "10/28/2026 17:25:00",
-    "mod_abs_time": "202610281725",
-    "is_new": "N",
-    "gid": "6/3283",
-    "start_utc": "2026-10-30T11:00:00.000Z",
-    "end_utc": "2026-10-31T18:30:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/3282",
-    "facility": "ZOA",
-    "state": "CA",
-    "type": "HAZARDS",
-    "description": "30NM NE OF FRESNO, CA, Wednesday, October 28, 2026 through Thursday, November 5, 2026 UTC",
-    "mod_date": "10/28/2026 17:13:00",
-    "mod_abs_time": "202610281713",
-    "is_new": "N",
-    "gid": "6/3282",
-    "start_utc": "2026-10-28T19:00:00.000Z",
-    "end_utc": "2026-11-05T04:00:59.000Z",
-    "exact_time": true
-  },
-  {
     "notam_id": "6/2853",
     "facility": "ZNY",
     "state": "NY",
@@ -344,20 +294,6 @@
     "gid": "6/2853",
     "start_utc": "2026-11-01T10:00:00.000Z",
     "end_utc": "2026-11-01T19:00:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/2792",
-    "facility": "ZNY",
-    "state": "NY",
-    "type": "SECURITY",
-    "description": "New York, NY, Saturday, October 31, 2026 Local",
-    "mod_date": "10/27/2026 15:55:00",
-    "mod_abs_time": "202610271555",
-    "is_new": "N",
-    "gid": "6/2792",
-    "start_utc": "2026-10-31T16:00:00.000Z",
-    "end_utc": "2026-10-31T21:00:59.000Z",
     "exact_time": true
   },
   {

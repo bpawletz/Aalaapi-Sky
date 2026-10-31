@@ -222,6 +222,9 @@ function getCompanionAuthHeaders() {
   }
   return {};
 }
+if (typeof window !== 'undefined') {
+  window.getCompanionAuthHeaders = getCompanionAuthHeaders;
+}
 
 function buildAuthenticatedCompanionUrl(endpointPath) {
   const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
@@ -5523,7 +5526,9 @@ const AdsbAirspaceManager = {
 
       const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
-      fetch(apiBase + '/api/config/adsb')
+      fetch(apiBase + '/api/config/adsb', {
+        headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
+      })
 
         .then(res => res.ok ? res.json() : null)
 
@@ -6647,7 +6652,9 @@ const AdsbAirspaceManager = {
 
       const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
-      const res = await fetch(`${apiBase}/api/airspace/status`);
+      const res = await fetch(`${apiBase}/api/airspace/status`, {
+        headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
+      });
 
       if (!res.ok) return;
 
@@ -6699,7 +6706,10 @@ const AdsbAirspaceManager = {
 
           method: 'POST',
 
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...((typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {})
+          },
 
           body: JSON.stringify({ adsbHost: localHost, adsbPort: localPort, force: true })
 
@@ -7422,12 +7432,18 @@ const AdsbAirspaceManager = {
 
 
       const endpoint = this.getEffectiveEndpoint();
+      const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
+      const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+      const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true${tokenParam}`;
 
-      const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true`;
+      const res = await fetch(url, {
+        headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
+      });
 
-      
-
-      const res = await fetch(url);
+      if (res.status === 401) {
+        // Companion bridge requires pilot authentication; exit cleanly until sign-in
+        return;
+      }
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 

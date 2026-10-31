@@ -39149,16 +39149,12 @@ describe('Inactive "Verify IRL Plan" Button Dimming & Disabling (v1.212.1, Issue
 describe('Google AI Studio Integration & Native HTTPS Companion Transport (v1.214.0, Issue #209)', () => {
   const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
-  test('Version consistency: v1.214.0 across package.json, changelog, index_template.html, and index.html', () => {
+  test('Version consistency: v1.214.0 across package.json and changelog', () => {
     assertVersionConsistency('1.214.0');
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.214.0] - 2026-10-31'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.214.0'));
-    assert.ok(template.includes('Version 1.214.0'));
     assert.ok(template.includes('Changelog (v1.214.0):'));
-    assert.ok(htmlText.includes('v1.214.0'));
-    assert.ok(htmlText.includes('Version 1.214.0'));
     assert.ok(htmlText.includes('Changelog (v1.214.0):'));
   });
 
@@ -39218,5 +39214,41 @@ describe('Companion App Authentication Enforced by Default with --allow-unauth (
 
   test('Companion Auth test suite tools/companion/server_auth.test.js exists', () => {
     assert.ok(fs.existsSync(path.join(__dirname, 'tools/companion/server_auth.test.js')), 'server_auth.test.js must exist');
+  });
+});
+
+describe('Propagate Pilot Session Token to ADS-B Airspace and Companion Calls (v1.214.1, Issue #211)', () => {
+  test('Version consistency: v1.214.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.214.1');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.214.1] - 2026-10-31'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.214.1'));
+    assert.ok(template.includes('Version 1.214.1'));
+    assert.ok(template.includes('Changelog (v1.214.1):'));
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('v1.214.1'));
+    assert.ok(indexHtml.includes('Version 1.214.1'));
+    assert.ok(indexHtml.includes('Changelog (v1.214.1):'));
+  });
+
+  test('CompanionAuth provides installFetchInterceptor and attaches session headers', () => {
+    const CompanionAuth = require('./src/bridge/CompanionAuth.js');
+    assert.strictEqual(typeof CompanionAuth.installFetchInterceptor, 'function');
+    assert.strictEqual(typeof CompanionAuth.getAuthHeaders, 'function');
+
+    // Test getAuthHeaders when token is set
+    CompanionAuth.token = 'test-token-pilot-session';
+    const headers = CompanionAuth.getAuthHeaders();
+    assert.strictEqual(headers['Authorization'], 'Bearer test-token-pilot-session');
+    assert.strictEqual(headers['x-pilot-session-token'], 'test-token-pilot-session');
+    CompanionAuth.token = null;
+  });
+
+  test('AdsbAirspaceManager.pollAirspace attaches token query parameter and auth headers', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'src/bridge/ApiClient.js'), 'utf8');
+    assert.ok(src.includes('tokenParam = token ?'));
+    assert.ok(src.includes('headers: (typeof getCompanionAuthHeaders === \'function\') ? getCompanionAuthHeaders() : {}'));
+    assert.ok(src.includes('if (res.status === 401)'));
   });
 });

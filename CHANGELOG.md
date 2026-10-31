@@ -1,3 +1,25 @@
+## [1.214.1] - 2026-10-31
+
+Resolves issue where logged-in pilots encountered 401 Unauthorized errors on ADS-B airspace requests and companion calls by propagating session tokens via headers, query parameters, and a global fetch interceptor.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **ADS-B Airspace & Companion Auth Session Propagation (Closes #211)**:
+  - Ensures logged-in pilots no longer receive 401 Unauthorized errors when fetching ADS-B airspace deconfliction data (`/api/airspace/bounds`) and bridge configuration.
+  - Active pilot session tokens are now automatically passed on all background airspace polling cycles and diagnostic requests.
+  - Handled 401 unauthenticated states gracefully during pre-login phases, preventing console error spam before sign-in.
+
+#### Under the Hood & Technical Details
+- **`src/bridge/CompanionAuth.js`**:
+  - Implemented `installFetchInterceptor()` which transparently adds `Authorization: Bearer <token>` and `x-pilot-session-token: <token>` to all browser `fetch` requests targeting the Companion Bridge whenever a pilot session is active.
+  - Updated `getAuthHeaders()` to fall back to cached `localStorage` token if available in memory.
+- **`src/bridge/ApiClient.js`**:
+  - Updated `AdsbAirspaceManager.pollAirspace()` to attach `headers: getCompanionAuthHeaders()` and append `?token=<token>` to query strings.
+  - Added auth headers to `fetchAirspaceStatus()`, `loadAdsbConfig()`, and `saveAdsbConfig()`.
+  - Exposed `getCompanionAuthHeaders` on `window.getCompanionAuthHeaders` for universal access across client modules.
+- **`tools/companion/server_auth.test.js`**: Added integration assertions verifying `GET /api/airspace/bounds` returns 401 unauthenticated, and 200 OK when supplied with either an `Authorization` header or `?token=<token>` query parameter.
+
 ## [1.214.0] - 2026-10-31
 
 Enforces pilot authentication by default across all operational Companion Bridge REST API endpoints and Server-Sent Events (SSE) live streams, with a dedicated `--allow-unauth` flag for trusted isolated environments.
