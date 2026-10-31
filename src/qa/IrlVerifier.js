@@ -155,7 +155,15 @@ const IrlVerifier = {
         dPitch: dPitch !== null ? Math.round(dPitch * 10) / 10 : null,
         dYaw: dYaw !== null ? Math.round(dYaw * 10) / 10 : null,
         visited: bestDistH <= horizontalToleranceM,
-        skipPhoto: Boolean(wp.skipPhoto || wp.isTurnaroundPoint || wp.isExclusionDetour)
+        skipPhoto: Boolean(wp.skipPhoto || wp.isTurnaroundPoint || wp.isExclusionDetour),
+        plannedAlt: wpAlt,
+        plannedYaw: wpYaw,
+        plannedPitch: wpPitch,
+        actualAlt: bestPt ? Math.round(parseFloat(bestPt.alt || 0) * 10) / 10 : null,
+        actualYaw: (bestPt && bestPt.yaw !== undefined) ? Math.round(parseFloat(bestPt.yaw) * 10) / 10 : null,
+        actualPitch: (bestPt && bestPt.pitch !== undefined) ? Math.round(parseFloat(bestPt.pitch) * 10) / 10 : null,
+        actualSpeed: (bestPt && bestPt.speed !== undefined) ? Math.round(parseFloat(bestPt.speed) * 10) / 10 : null,
+        bestPtIndex: bestPt ? pts.indexOf(bestPt) : -1
       });
     }
 
@@ -558,6 +566,129 @@ const IrlVerifier = {
     }
   },
 
+  /**
+   * Generates a unified Antigravity AI Review payload combining:
+   * 1. The 6-Phase IRL Verification Scorecard & Quantitative Measurements.
+   * 2. Waypoint-by-Waypoint Planned vs Actual Flown Telemetry Table.
+   * 3. Focused Variance Telemetry Window (surrounding samples for any flagged waypoint).
+   * 4. Complete Planned Mission Settings, Dynamics & WPML Snippet (with privacy masking).
+   */
+  generateAntigravityReport(options = {}) {
+    if (!this.currentResult) return '';
+    const r = this.currentResult;
+    const baseMd = this.generateMarkdownReport();
+    if (!baseMd) return '';
+
+    let out = baseMd.trim() + '\n\n';
+
+    // 1. Waypoint Approach Comparison Table
+    if (Array.isArray(r.wpApproaches) && r.wpApproaches.length > 0) {
+      out += '#### 🛰️ Flown Waypoint Telemetry vs Planned Execution\n';
+      out += '| WP | ΔH (m) | Plan Alt | Flown Alt (ΔZ) | Plan Yaw | Flown Yaw (ΔYaw) | Plan Pitch | Flown Pitch |\n';
+      out += '| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n';
+      r.wpApproaches.forEach(a => {
+        const planAltStr = a.plannedAlt !== undefined ? `${a.plannedAlt}m` : '-';
+        const flownAltStr = a.actualAlt !== null && a.actualAlt !== undefined ? `${a.actualAlt}m (Δ${a.dZ}m)` : `Δ${a.dZ}m`;
+        const planYawStr = a.plannedYaw !== null && a.plannedYaw !== undefined ? `${a.plannedYaw}°` : '-';
+        const flownYawStr = a.actualYaw !== null && a.actualYaw !== undefined ? `${a.actualYaw}° (Δ${a.dYaw !== null ? a.dYaw : 0}°)` : (a.dYaw !== null ? `Δ${a.dYaw}°` : '-');
+        const planPitchStr = a.plannedPitch !== null && a.plannedPitch !== undefined ? `${a.plannedPitch}°` : '-';
+        const flownPitchStr = a.actualPitch !== null && a.actualPitch !== undefined ? `${a.actualPitch}° (Δ${a.dPitch !== null ? a.dPitch : 0}°)` : (a.dPitch !== null ? `Δ${a.dPitch}°` : '-');
+        out += `| **WP ${a.index}** | ${a.dH} m | ${planAltStr} | ${flownAltStr} | ${planYawStr} | ${flownYawStr} | ${planPitchStr} | ${flownPitchStr} |\n`;
+      });
+      out += '\n';
+    }
+
+    // 2. Focused Variance Telemetry Window (if any metric flagged a variance)
+    const pts = (this.currentTelemetryData && Array.isArray(this.currentTelemetryData.points)) ? this.currentTelemetryData.points : [];
+    if (pts.length > 0 && Array.isArray(r.wpApproaches)) {
+      const varianceWps = r.wpApproaches.filter(a => (a.dYaw !== null && a.dYaw > 25.0) || (a.dH > 8.0) || (a.dZ > 5.0) || (a.dPitch !== null && a.dPitch > 15.0));
+      if (varianceWps.length > 0) {
+        out += '#### ⚠️ High-Frequency Telemetry Slice Around Flagged Variance Waypoint(s)\n';
+        varianceWps.forEach(vWp => {
+          const ptIdx = vWp.bestPtIndex !== undefined && vWp.bestPtIndex >= 0 ? vWp.bestPtIndex : -1;
+          if (ptIdx >= 0) {
+            const startIdx = Math.max(0, ptIdx - 3);
+            const endIdx = Math.min(pts.length - 1, ptIdx + 3);
+            out += `\n**Telemetry Window: WP ${vWp.index} (Closest Sample #${ptIdx}):**\n`;
+            out += '| Sample # | Time/Offset | Speed (m/s) | Flown Alt (m) | Flown Yaw (°) | Flown Pitch (°) | Note |\n';
+            out += '| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n';
+            for (let s = startIdx; s <= endIdx; s++) {
+              const p = pts[s];
+              const isApex = s === ptIdx ? ' **← Closest Approach**' : '';
+              const timeStr = p.time || p.timestamp || `+${s - ptIdx}s`;
+              const spdStr = p.speed !== undefined ? `${Math.round(parseFloat(p.speed) * 10) / 10}` : '-';
+              const altStr = p.alt !== undefined ? `${Math.round(parseFloat(p.alt) * 10) / 10}` : '-';
+              const yawStr = p.yaw !== undefined ? `${Math.round(parseFloat(p.yaw) * 10) / 10}` : '-';
+              const pitchStr = p.pitch !== undefined ? `${Math.round(parseFloat(p.pitch) * 10) / 10}` : '-';
+              out += `| #${s} | ${timeStr} | ${spdStr} | ${altStr} | ${yawStr} | ${pitchStr} |${isApex} |\n`;
+            }
+          }
+        });
+        out += '\n';
+      }
+    }
+
+    // 3. Planned Mission Stack & Dynamics (KMZInspector.generateAntigravityPrompt)
+    const kmzInsp = (typeof KMZInspector !== 'undefined')
+      ? KMZInspector
+      : ((typeof global !== 'undefined' && global.KMZInspector)
+        ? global.KMZInspector
+        : ((typeof window !== 'undefined' && window.KMZInspector) ? window.KMZInspector : null));
+
+    let aiContext = '';
+    if (kmzInsp && typeof kmzInsp.generateAntigravityPrompt === 'function') {
+      const includeCoords = (options && options.includeCoords !== undefined)
+        ? !!options.includeCoords
+        : ((typeof document !== 'undefined' && document.getElementById('diag-include-coords-checkbox')?.checked) || false);
+      const mission = (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission) ? FlightDiagnostics.currentLoadedMission : null;
+      aiContext = kmzInsp.generateAntigravityPrompt(
+        mission?.validationReport || null,
+        mission?.wpml_xml || '',
+        this.currentPlannedWaypoints || mission?.plan?.waypoints || null,
+        { hideLocation: !includeCoords, mission, plannedWaypoints: this.currentPlannedWaypoints }
+      );
+    }
+
+    if (aiContext) {
+      out += '---\n\n' + aiContext.trim() + '\n';
+    }
+
+    return out;
+  },
+
+  /**
+   * Copies the unified Antigravity AI Review payload to clipboard.
+   */
+  copyAntigravityReport() {
+    const md = this.generateAntigravityReport();
+    if (!md) return;
+
+    const onCopied = () => {
+      const btn = (typeof document !== 'undefined') ? document.getElementById('diag-irl-copy-ai-btn') : null;
+      if (btn) {
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = '<span>✅</span> Copied for AI!';
+        btn.style.color = '#34d399';
+        setTimeout(() => {
+          btn.innerHTML = origHtml;
+          btn.style.color = '#a5b4fc';
+        }, 2500);
+      }
+      if (typeof showToast === 'function') {
+        showToast('📋 Copied Complete Antigravity Review Package (Flight Report + Flown Telemetry + Mission Plan)!', 4000);
+      }
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(md).then(onCopied).catch(() => {
+        this.fallbackCopy(md);
+      });
+    } else {
+      this.fallbackCopy(md);
+      onCopied();
+    }
+  },
+
   fallbackCopy(text) {
     const ta = document.createElement('textarea');
     ta.value = text;
@@ -756,6 +887,9 @@ const IrlVerifier = {
 
     const copyBtn = document.getElementById('diag-irl-copy-markdown-btn');
     if (copyBtn) copyBtn.onclick = () => this.copyMarkdownReport();
+
+    const copyAiBtn = document.getElementById('diag-irl-copy-ai-btn');
+    if (copyAiBtn) copyAiBtn.onclick = () => this.copyAntigravityReport();
 
     const exportBtn = document.getElementById('diag-irl-export-json-btn');
     if (exportBtn) exportBtn.onclick = () => this.exportJson();

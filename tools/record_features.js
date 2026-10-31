@@ -3489,7 +3489,109 @@ const scenarios = [
       });
       await page.waitForTimeout(800);
     }
+  },
+  {
+    id: 'feature_diag_antigravity_export',
+    name: '1-Click Unified "Copy for Antigravity Review" in Flight Diagnostics',
+    description: 'Demonstrates in-app 1-click Antigravity export (#diag-irl-copy-ai-btn), bundling the 6-phase IRL flight verification scorecard, flown telemetry comparison, variance telemetry window, and full mission parameters.',
+    issueRef: 'Issue #207',
+    run: async (page) => {
+      // 1. Center map at rural Utica reference coordinates
+      await page.evaluate(() => {
+        setGridCenter(41.3215, -88.9950);
+      });
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 2. Open Flight Diagnostics
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.open === 'function') {
+          FlightDiagnostics.open();
+        } else {
+          const btn = document.getElementById('topbar-diagnostics-btn');
+          if (btn) btn.click();
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Populate flown flight record with 12 waypoints and a turnaround yaw variance
+      await page.evaluate(() => {
+        FlightDiagnostics.isActualFlown = true;
+        FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-10-30_[20-11-03].txt';
+
+        const planWps = [
+          { lat: 41.3213941, lon: -88.9951057, alt: 31, pitch: -90, heading: 6 },
+          { lat: 41.3214536, lon: -88.9951139, alt: 31, pitch: -90, heading: 6 },
+          { lat: 41.3215132, lon: -88.9951221, alt: 31, pitch: -90, heading: 6 },
+          { lat: 41.3215728, lon: -88.9951302, alt: 31, pitch: -90, heading: 6 },
+          { lat: 41.3215821, lon: -88.9950136, alt: 31, pitch: -90, heading: 186 },
+          { lat: 41.3215132, lon: -88.9950136, alt: 31, pitch: -90, heading: 186 },
+          { lat: 41.3214536, lon: -88.9950136, alt: 31, pitch: -90, heading: 186 },
+          { lat: 41.3213941, lon: -88.9950136, alt: 31, pitch: -90, heading: 186 },
+          { lat: 41.3214013, lon: -88.9949000, alt: 31, pitch: -90, heading: 6 },
+          { lat: 41.3214536, lon: -88.9949000, alt: 31, pitch: -90, heading: 6 },
+          { lat: 41.3215132, lon: -88.9949000, alt: 31, pitch: -90, heading: 6 },
+          { lat: 41.3215728, lon: -88.9949000, alt: 31, pitch: -90, heading: 6 }
+        ];
+
+        FlightDiagnostics.plannedWaypoints = planWps;
+
+        // Telemetry points with 27.2 deg yaw variance at WP 8 (turnaround lag)
+        const pts = [];
+        planWps.forEach((wp, idx) => {
+          const yawOffset = (idx === 8) ? 27.2 : (Math.random() * 2.0 - 1.0);
+          pts.push({
+            lat: wp.lat + 0.000002,
+            lon: wp.lon + 0.000002,
+            alt: wp.alt + 0.04,
+            pitch: -90.0,
+            yaw: (wp.heading + yawOffset + 360) % 360,
+            speed: (idx === 8) ? 3.2 : 4.1,
+            battery: 98 - idx,
+            isPhoto: true,
+            time: `20:11:${10 + idx * 3}`
+          });
+        });
+
+        FlightDiagnostics.telemetryData = { points: pts };
+
+        // Launch IRL verification modal
+        document.getElementById('diag-btn-irl-verify').click();
+      });
+      await page.waitForTimeout(1000);
+
+      // 4. Highlight the 6-Phase Scorecard with Max Yaw Error variance
+      await page.evaluate(() => {
+        const modalContent = document.querySelector('#diag-irl-modal .modal-content');
+        if (modalContent) {
+          modalContent.scrollTo({ top: 300, behavior: 'smooth' });
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 5. Click '🤖 Copy for Antigravity' button
+      await page.evaluate(() => {
+        const aiBtn = document.getElementById('diag-irl-copy-ai-btn');
+        if (aiBtn) aiBtn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 6. Close IRL modal
+      await page.evaluate(() => {
+        const closeBtn = document.getElementById('diag-irl-close-btn');
+        if (closeBtn) closeBtn.click();
+      });
+      await page.waitForTimeout(800);
+
+      // 7. Click sidebar '📋 Export to AI (Settings & Diag)'
+      await page.evaluate(() => {
+        const sideAiBtn = document.getElementById('diag-copy-antigravity-btn');
+        if (sideAiBtn) sideAiBtn.click();
+      });
+      await page.waitForTimeout(1200);
+    }
   }
+
 ];
 
 /**

@@ -1,3 +1,24 @@
+## [1.212.0] - 2026-10-30
+
+Aalaapi Sky v1.212.0 introduces a unified 1-click "Copy for Antigravity Review" capability in Flight Diagnostics, bundling both the flown flight log evaluation (6-phase scorecard, quantitative metrics, waypoint-by-waypoint planned vs. actual comparison table, and variance telemetry slices) and the complete planned multi-layer mission stack with privacy masking into a single clipboard payload for instant AI triage.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **1-Click Unified "Copy for Antigravity Review" in Flight Diagnostics (Closes #207)**:
+  - Added a dedicated `🤖 Copy for Antigravity` action button (`#diag-irl-copy-ai-btn`) in the IRL Verification Scorecard modal footer.
+  - Enhanced the Flight Diagnostics sidebar export button (`#diag-copy-antigravity-btn`) to automatically bundle the active IRL scorecard and telemetry comparison whenever an IRL flight verification has been run.
+  - Seamlessly bundles the complete flight plan (target drone, multi-layer stack, dynamics, POIs, masked coordinates, and WPML placemarks) together with the flown flight log evaluation (6-phase scorecard, quantitative tolerance measurements, waypoint-by-waypoint planned vs. actual flown comparison table, and high-frequency telemetry slices for any flagged variance waypoints) into a single 1-click clipboard payload.
+  - Respects the privacy coordinate masking toggle (`#diag-include-coords-checkbox`), safely normalizing coordinates to the app default rural reference (`[41.3215, -88.9950]`) by default unless unmasked GPS coordinates are explicitly enabled.
+
+#### Under the Hood & Technical Details
+- **`src/qa/IrlVerifier.js`**:
+  - Implemented `generateAntigravityReport` and `copyAntigravityReport` with waypoint approach extraction (`plannedAlt`, `plannedYaw`, `plannedPitch`, `actualAlt`, `actualYaw`, `actualPitch`, `actualSpeed`, `bestPtIndex`).
+  - Added intelligent variance telemetry window isolation ($\pm 3$ samples around apex) for any waypoint triggering a tolerance variance (e.g. turnaround yaw lag).
+  - Wired `#diag-irl-copy-ai-btn` in `IrlVerifier.bindEvents()` with animated button state feedback (`✅ Copied for AI!`).
+- **`src/3d/DigitalTwin.js`**:
+  - Enhanced `FlightDiagnostics.copyAntigravityPrompt` to check for active `IrlVerifier.currentResult` and automatically delegate to `IrlVerifier.generateAntigravityReport({ includeCoords })`.
+
 ## [1.211.0] - 2026-10-30
 
 Aalaapi Sky v1.211.0 delivers interactive planned flight plan selection in the IRL Verification scorecard and establishes a rigorous two-tier tolerance suite enforcing single-point maximum error thresholds across gimbal pitch, aircraft yaw, cross-track drift, altitude, and stop-and-shoot camera capture speeds.

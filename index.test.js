@@ -38832,17 +38832,17 @@ describe('Terminal Waypoint Survey Gimbal Pitch Preservation (v1.210.2, Issue #2
 describe('Planned Flight Plan Selection & Single-Point Max Error Verification in IRL Scorecard (v1.211.0, Issue #206)', () => {
   const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
-  test('Version consistency: v1.211.0 across package.json, changelog, index_template.html, and index.html', () => {
-    assertVersionConsistency('1.211.0');
+  test('Version consistency: v1.212.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.212.0');
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.211.0] - 2026-10-30'));
+    assert.ok(changelog.includes('## [1.212.0] - 2026-10-30'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.211.0'));
-    assert.ok(template.includes('Version 1.211.0'));
-    assert.ok(template.includes('Changelog (v1.211.0):'));
-    assert.ok(htmlText.includes('v1.211.0'));
-    assert.ok(htmlText.includes('Version 1.211.0'));
-    assert.ok(htmlText.includes('Changelog (v1.211.0):'));
+    assert.ok(template.includes('v1.212.0'));
+    assert.ok(template.includes('Version 1.212.0'));
+    assert.ok(template.includes('Changelog (v1.212.0):'));
+    assert.ok(htmlText.includes('v1.212.0'));
+    assert.ok(htmlText.includes('Version 1.212.0'));
+    assert.ok(htmlText.includes('Changelog (v1.212.0):'));
   });
 
   test('IrlVerifier enforces two-tier max error tolerances (max pitch <= 15 deg, max yaw <= 25 deg, max XTE <= 8.0m, max alt <= 5.0m)', () => {
@@ -38988,4 +38988,66 @@ describe('Planned Flight Plan Selection & Single-Point Max Error Verification in
     IrlVerifier.runVerificationAndRender();
     assert.strictEqual(IrlVerifier.currentResult.metrics.waypointCount, 3);
   });
+
+  test('Issue #207: #diag-irl-copy-ai-btn exists in templates and index.html', () => {
+    const fs = require('fs');
+    const templateHtml = fs.readFileSync('index_template.html', 'utf-8');
+    const indexHtml = fs.readFileSync('index.html', 'utf-8');
+
+    assert.ok(templateHtml.includes('id="diag-irl-copy-ai-btn"'), 'index_template.html must contain #diag-irl-copy-ai-btn');
+    assert.ok(indexHtml.includes('id="diag-irl-copy-ai-btn"'), 'index.html must contain #diag-irl-copy-ai-btn');
+    assert.ok(templateHtml.includes('Copy for Antigravity'), 'Button text must include Copy for Antigravity');
+  });
+
+  test('Issue #207: IrlVerifier.generateAntigravityReport produces unified flight report, flown telemetry, and mission context', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+
+    const plannedWps = [
+      { lat: 41.3215, lon: -88.9950, alt: 50, pitch: -90, heading: 6 },
+      { lat: 41.3216, lon: -88.9950, alt: 50, pitch: -90, heading: 6 },
+      { lat: 41.3217, lon: -88.9950, alt: 50, pitch: -90, heading: 186 }
+    ];
+
+    const actualTelemetry = {
+      points: [
+        { lat: 41.3215, lon: -88.9950, alt: 49.9, pitch: -90.0, yaw: 6.2, isPhoto: true, speed: 0.1, time: '20:11:03' },
+        { lat: 41.32155, lon: -88.9950, alt: 50.0, pitch: -90.0, yaw: 6.1, isPhoto: false, speed: 3.5, time: '20:11:05' },
+        { lat: 41.3216, lon: -88.9950, alt: 50.1, pitch: -90.0, yaw: 6.0, isPhoto: true, speed: 0.2, time: '20:11:07' },
+        { lat: 41.32165, lon: -88.9950, alt: 50.0, pitch: -90.0, yaw: 90.0, isPhoto: false, speed: 2.8, time: '20:11:09' },
+        { lat: 41.3217, lon: -88.9950, alt: 50.0, pitch: -90.0, yaw: 214.0, isPhoto: true, speed: 1.2, time: '20:11:11' },
+        { lat: 41.32172, lon: -88.9950, alt: 50.0, pitch: -90.0, yaw: 195.0, isPhoto: false, speed: 2.0, time: '20:11:13' }
+      ]
+    };
+
+    IrlVerifier.currentFlightId = 'FlightRecord_Test.txt';
+    IrlVerifier.currentPlannedWaypoints = plannedWps;
+    IrlVerifier.currentTelemetryData = actualTelemetry;
+    IrlVerifier.currentResult = IrlVerifier.verifyFlightPlanAgainstLog(plannedWps, actualTelemetry);
+
+    // Provide mock KMZInspector on global and in-scope
+    const mockPromptFn = () => '### 🤖 ANTIGRAVITY & AI MISSION CONTEXT: App Settings & Flight Configuration\n- Target Drone: DJI Mini 4 Pro';
+    if (typeof KMZInspector !== 'undefined') {
+      KMZInspector.generateAntigravityPrompt = mockPromptFn;
+    }
+    global.KMZInspector = { generateAntigravityPrompt: mockPromptFn };
+    if (typeof window !== 'undefined') {
+      window.KMZInspector = { generateAntigravityPrompt: mockPromptFn };
+    }
+
+    const report = IrlVerifier.generateAntigravityReport({ includeCoords: false });
+    assert.ok(typeof report === 'string', 'Report should be a string');
+    assert.ok(report.includes('### 🚁 IRL Field Flight Verification Report'), 'Must include 6-phase flight report');
+    assert.ok(report.includes('#### 🛰️ Flown Waypoint Telemetry vs Planned Execution'), 'Must include waypoint-by-waypoint comparison table');
+    assert.ok(report.includes('**WP 0**'), 'Must detail WP 0');
+    assert.ok(report.includes('**WP 2**'), 'Must detail WP 2');
+
+    // Because WP 2 had a 28° yaw difference (> 25° tolerance), it must isolate the variance telemetry window
+    assert.ok(report.includes('High-Frequency Telemetry Slice Around Flagged Variance Waypoint(s)'), 'Must include variance telemetry window');
+    assert.ok(report.includes('WP 2'), 'Must cite WP 2 in variance slice');
+    assert.ok(report.includes('← Closest Approach'), 'Must flag closest approach sample in variance window');
+
+    // Must include the Antigravity mission context
+    assert.ok(report.includes('### 🤖 ANTIGRAVITY'), 'Must include Antigravity mission context section');
+  });
+
 });
