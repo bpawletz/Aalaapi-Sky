@@ -7993,7 +7993,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.212.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.213.0</span></h1>
         </div>
       </div>
 
@@ -11649,6 +11649,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <input id="companion-host-input" type="text" placeholder="http://127.0.0.1:8765" style="flex: 1; font-size: 0.72rem; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.06); color: var(--text-main);" />
                 <button id="companion-host-save-btn" type="button" class="btn-primary" style="padding: 4px 8px; font-size: 0.7rem; line-height: 1; white-space: nowrap;">Save</button>
               </div>
+              <div style="display: flex; gap: 4px; align-items: center; margin-top: 2px;">
+                <span style="font-size: 0.65rem; color: var(--text-muted);">Presets:</span>
+                <button id="companion-preset-http-btn" type="button" class="btn-secondary" style="padding: 2px 5px; font-size: 0.65rem; line-height: 1;">HTTP :8765</button>
+                <button id="companion-preset-https-btn" type="button" class="btn-secondary" style="padding: 2px 5px; font-size: 0.65rem; line-height: 1; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">HTTPS :8766</button>
+                <a id="companion-open-cert-link" href="https://127.0.0.1:8766/api/status" target="_blank" rel="noopener" style="font-size: 0.65rem; color: #a855f7; margin-left: auto; text-decoration: underline;" title="Open HTTPS status in new tab to trust self-signed cert">Trust SSL Cert ↗</a>
+              </div>
               <div id="companion-host-hint" style="color: var(--text-muted); font-size: 0.65rem; line-height: 1.2;">Enter remote PC IP (e.g. <code>http://192.168.1.50:8765</code>) or use URL param <code>?companion=...</code></div>
               <!-- Map Tile & Asset Cache Config (Issue #91) -->
               <div id="bridge-tile-cache-section" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 4px;">
@@ -11724,9 +11730,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                   <span class="mcp-tool-pill" title="convert_mission_format: QGC .plan &amp; Autel .kml">conversion</span>
                 </div>
               </div>
-              <div style="display: flex; gap: 4px; margin-top: 2px;">
-                <button id="mcp-copy-cli-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.65rem; line-height: 1.2; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 4px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; cursor: pointer;" title="Copy Gemini CLI MCP configuration command">
-                  <span>📋 Copy Gemini CLI Command</span>
+              <div style="display: flex; gap: 4px; margin-top: 2px; flex-wrap: wrap;">
+                <button id="mcp-copy-cli-btn" type="button" class="btn-secondary" style="flex: 1; min-width: 85px; padding: 4px 6px; font-size: 0.65rem; line-height: 1.2; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 4px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; cursor: pointer;" title="Copy Gemini CLI MCP configuration command">
+                  <span>📋 Gemini CLI</span>
+                </button>
+                <button id="mcp-copy-aistudio-btn" type="button" class="btn-secondary" style="flex: 1; min-width: 85px; padding: 4px 6px; font-size: 0.65rem; line-height: 1.2; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 4px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc; cursor: pointer;" title="Copy Google AI Studio MCP Server SSE endpoint URL">
+                  <span>✨ AI Studio MCP</span>
+                </button>
+                <button id="mcp-copy-openapi-btn" type="button" class="btn-secondary" style="flex: 1; min-width: 85px; padding: 4px 6px; font-size: 0.65rem; line-height: 1.2; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 4px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); color: #4ade80; cursor: pointer;" title="Copy OpenAPI 3.0 specification URL for Google AI Studio Function Calling">
+                  <span>⚡ OpenAPI Spec</span>
                 </button>
               </div>
             </div>
@@ -12620,6 +12632,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ✨ Google AI Studio Integration &amp; Native HTTPS Transport (v1.213.0) (Closes #209)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Connect Google AI Studio directly to Aalaapi Sky! The companion bridge now supports native zero-dependency HTTPS (port <code>8766</code>) alongside legacy HTTP (port <code>8765</code>). Features 1-click <strong>AI Studio MCP</strong> and <strong>OpenAPI Spec</strong> URL copy buttons in the sidebar MCP drawer, dual-port host presets, and an automated self-signed certificate engine.
+            </p>
+          </div>
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎯 Planned Flight Plan Selection &amp; Single-Point Max Error Protection (v1.211.0) (Closes #206)
@@ -15004,7 +15024,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.212.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.213.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15164,6 +15184,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.213.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Google AI Studio Integration &amp; Native HTTPS Transport (Closes #209):</strong> Added native HTTPS (TLS) support and dual-port listening (<code>8765</code> HTTP + <code>8766</code> HTTPS) to the Companion Bridge, enabling direct connections from Google AI Studio (<code>https://aistudio.google.com</code>) without mixed-content browser blocks. Features 1-click <code>✨ AI Studio MCP</code> and <code>⚡ OpenAPI Spec</code> copy buttons in the sidebar MCP drawer, dual-port presets and "Trust SSL Cert" link in the host panel, and dynamic OpenAPI 3.0 schema generation at <code>/api/openapi.json</code>.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.212.1):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -36225,6 +36251,22 @@ function initUIEventListeners() {
       });
     }
 
+    const presetHttpBtn = document.getElementById('companion-preset-http-btn');
+    if (presetHttpBtn) {
+      presetHttpBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        companionHostInput.value = 'http://127.0.0.1:8765';
+      });
+    }
+
+    const presetHttpsBtn = document.getElementById('companion-preset-https-btn');
+    if (presetHttpsBtn) {
+      presetHttpsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        companionHostInput.value = 'https://127.0.0.1:8766';
+      });
+    }
+
     const bridgeTileCacheToggle = document.getElementById('bridge-tile-cache-toggle');
     if (bridgeTileCacheToggle) {
       bridgeTileCacheToggle.checked = (typeof isBridgeTileCachingEnabled === 'function') ? isBridgeTileCachingEnabled() : true;
@@ -36265,6 +36307,57 @@ function initUIEventListeners() {
         });
       } else if (typeof prompt === 'function') {
         prompt('Copy Gemini CLI Command:', cmd);
+      }
+    });
+  }
+
+  const mcpAiStudioBtn = document.getElementById('mcp-copy-aistudio-btn');
+  if (mcpAiStudioBtn) {
+    mcpAiStudioBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const base = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'https://127.0.0.1:8766';
+      // If current host is HTTP 8765, convert to HTTPS 8766 for Google AI Studio
+      let aiStudioBase = base;
+      if (aiStudioBase.startsWith('http://127.0.0.1:8765') || aiStudioBase.startsWith('http://localhost:8765')) {
+        aiStudioBase = 'https://localhost:8766';
+      }
+      const mcpUrl = aiStudioBase.replace(/\/+$/, '') + '/api/mcp/sse';
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(mcpUrl).then(() => {
+          const orig = mcpAiStudioBtn.innerHTML;
+          mcpAiStudioBtn.innerHTML = '<span>✅ Copied!</span>';
+          setTimeout(() => { mcpAiStudioBtn.innerHTML = orig; }, 2500);
+          if (typeof showToast === 'function') showToast('Copied AI Studio MCP URL to clipboard!', 2500);
+        }).catch(() => {
+          if (typeof prompt === 'function') prompt('Google AI Studio MCP URL:', mcpUrl);
+        });
+      } else if (typeof prompt === 'function') {
+        prompt('Google AI Studio MCP URL:', mcpUrl);
+      }
+    });
+  }
+
+  const mcpOpenApiBtn = document.getElementById('mcp-copy-openapi-btn');
+  if (mcpOpenApiBtn) {
+    mcpOpenApiBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const base = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'https://127.0.0.1:8766';
+      let aiStudioBase = base;
+      if (aiStudioBase.startsWith('http://127.0.0.1:8765') || aiStudioBase.startsWith('http://localhost:8765')) {
+        aiStudioBase = 'https://localhost:8766';
+      }
+      const openApiUrl = aiStudioBase.replace(/\/+$/, '') + '/api/openapi.json';
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(openApiUrl).then(() => {
+          const orig = mcpOpenApiBtn.innerHTML;
+          mcpOpenApiBtn.innerHTML = '<span>✅ Copied!</span>';
+          setTimeout(() => { mcpOpenApiBtn.innerHTML = orig; }, 2500);
+          if (typeof showToast === 'function') showToast('Copied OpenAPI Spec URL to clipboard!', 2500);
+        }).catch(() => {
+          if (typeof prompt === 'function') prompt('Google AI Studio OpenAPI URL:', openApiUrl);
+        });
+      } else if (typeof prompt === 'function') {
+        prompt('Google AI Studio OpenAPI URL:', openApiUrl);
       }
     });
   }
@@ -55152,9 +55245,15 @@ function getCompanionApiBase() {
 
   if (typeof window !== 'undefined' && window.location) {
 
-    if (window.location.port === '8765') {
+    if (window.location.port === '8765' || window.location.port === '8766') {
 
-      return `${window.location.protocol}//${window.location.hostname}:8765`;
+      return `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
+
+    }
+
+    if (window.location.protocol === 'https:') {
+
+      return 'https://127.0.0.1:8766';
 
     }
 

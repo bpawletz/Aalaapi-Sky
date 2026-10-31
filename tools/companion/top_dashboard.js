@@ -339,7 +339,7 @@ function renderFrame(state, options = {}) {
 
   // Line 1: Header
   const title = `${ANSI.bold}${ANSI.cyan}Aalaapi Sky Bridge v${state.version || '1.144.0'}${ANSI.reset}`;
-  const hostInfo = `${ANSI.gray}http://127.0.0.1:${state.port || 8765}${ANSI.reset}`;
+  const hostInfo = `${ANSI.gray}http://127.0.0.1:${state.port || 8765}${state.httpsPort ? ` | https :${state.httpsPort}` : ''}${ANSI.reset}`;
   const uptimeSec = state.startTime ? (Date.now() - state.startTime) / 1000 : 0;
   const uptimeStr = `${ANSI.gray}up ${formatUptime(uptimeSec)}${ANSI.reset}`;
   const nowStr = `${ANSI.gray}${new Date().toTimeString().slice(0, 8)}${ANSI.reset}`;
@@ -484,6 +484,7 @@ class Dashboard {
   constructor(options = {}) {
     this.version = options.version || '1.144.0';
     this.port = options.port || 8765;
+    this.httpsPort = options.httpsPort || null;
     this.startTime = options.startTime || Date.now();
     this.metrics = options.metrics || new BridgeMetrics();
     this.sampler = new ProcessSampler();
@@ -547,6 +548,7 @@ class Dashboard {
     const frameState = {
       version: this.version,
       port: this.port,
+      httpsPort: this.httpsPort,
       startTime: this.startTime,
       mode: this.mode,
       logBuffer: this.logBuffer,

@@ -118,9 +118,15 @@ function getCompanionApiBase() {
 
   if (typeof window !== 'undefined' && window.location) {
 
-    if (window.location.port === '8765') {
+    if (window.location.port === '8765' || window.location.port === '8766') {
 
-      return `${window.location.protocol}//${window.location.hostname}:8765`;
+      return `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
+
+    }
+
+    if (window.location.protocol === 'https:') {
+
+      return 'https://127.0.0.1:8766';
 
     }
 

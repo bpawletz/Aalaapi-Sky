@@ -3000,6 +3000,22 @@ function initUIEventListeners() {
       });
     }
 
+    const presetHttpBtn = document.getElementById('companion-preset-http-btn');
+    if (presetHttpBtn) {
+      presetHttpBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        companionHostInput.value = 'http://127.0.0.1:8765';
+      });
+    }
+
+    const presetHttpsBtn = document.getElementById('companion-preset-https-btn');
+    if (presetHttpsBtn) {
+      presetHttpsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        companionHostInput.value = 'https://127.0.0.1:8766';
+      });
+    }
+
     const bridgeTileCacheToggle = document.getElementById('bridge-tile-cache-toggle');
     if (bridgeTileCacheToggle) {
       bridgeTileCacheToggle.checked = (typeof isBridgeTileCachingEnabled === 'function') ? isBridgeTileCachingEnabled() : true;
@@ -3040,6 +3056,57 @@ function initUIEventListeners() {
         });
       } else if (typeof prompt === 'function') {
         prompt('Copy Gemini CLI Command:', cmd);
+      }
+    });
+  }
+
+  const mcpAiStudioBtn = document.getElementById('mcp-copy-aistudio-btn');
+  if (mcpAiStudioBtn) {
+    mcpAiStudioBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const base = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'https://127.0.0.1:8766';
+      // If current host is HTTP 8765, convert to HTTPS 8766 for Google AI Studio
+      let aiStudioBase = base;
+      if (aiStudioBase.startsWith('http://127.0.0.1:8765') || aiStudioBase.startsWith('http://localhost:8765')) {
+        aiStudioBase = 'https://localhost:8766';
+      }
+      const mcpUrl = aiStudioBase.replace(/\/+$/, '') + '/api/mcp/sse';
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(mcpUrl).then(() => {
+          const orig = mcpAiStudioBtn.innerHTML;
+          mcpAiStudioBtn.innerHTML = '<span>✅ Copied!</span>';
+          setTimeout(() => { mcpAiStudioBtn.innerHTML = orig; }, 2500);
+          if (typeof showToast === 'function') showToast('Copied AI Studio MCP URL to clipboard!', 2500);
+        }).catch(() => {
+          if (typeof prompt === 'function') prompt('Google AI Studio MCP URL:', mcpUrl);
+        });
+      } else if (typeof prompt === 'function') {
+        prompt('Google AI Studio MCP URL:', mcpUrl);
+      }
+    });
+  }
+
+  const mcpOpenApiBtn = document.getElementById('mcp-copy-openapi-btn');
+  if (mcpOpenApiBtn) {
+    mcpOpenApiBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const base = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'https://127.0.0.1:8766';
+      let aiStudioBase = base;
+      if (aiStudioBase.startsWith('http://127.0.0.1:8765') || aiStudioBase.startsWith('http://localhost:8765')) {
+        aiStudioBase = 'https://localhost:8766';
+      }
+      const openApiUrl = aiStudioBase.replace(/\/+$/, '') + '/api/openapi.json';
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(openApiUrl).then(() => {
+          const orig = mcpOpenApiBtn.innerHTML;
+          mcpOpenApiBtn.innerHTML = '<span>✅ Copied!</span>';
+          setTimeout(() => { mcpOpenApiBtn.innerHTML = orig; }, 2500);
+          if (typeof showToast === 'function') showToast('Copied OpenAPI Spec URL to clipboard!', 2500);
+        }).catch(() => {
+          if (typeof prompt === 'function') prompt('Google AI Studio OpenAPI URL:', openApiUrl);
+        });
+      } else if (typeof prompt === 'function') {
+        prompt('Google AI Studio OpenAPI URL:', openApiUrl);
       }
     });
   }
