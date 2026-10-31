@@ -1,5 +1,30 @@
 [
   {
+    "notam_id": "6/4198",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "PAGOSA SPRINGS, CO, Sunday, November 1, 2026 through Saturday, November 7, 2026 UTC",
+    "mod_date": "10/31/2026 22:47:00",
+    "mod_abs_time": "202610312247",
+    "is_new": "Y",
+    "gid": "6/4198"
+  },
+  {
+    "notam_id": "6/4197",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "PAGOSA SPRINGS, CO, Saturday, October 31, 2026 UTC",
+    "mod_date": "10/31/2026 22:46:00",
+    "mod_abs_time": "202610312246",
+    "is_new": "Y",
+    "gid": "6/4197",
+    "start_utc": "2026-10-31T22:45:00.000Z",
+    "end_utc": "2026-10-31T23:59:59.000Z",
+    "exact_time": true
+  },
+  {
     "notam_id": "6/4151",
     "facility": "ZOB",
     "state": "OH",
@@ -68,17 +93,6 @@
     "end_utc": "2026-11-01T18:30:59.000Z"
   },
   {
-    "notam_id": "6/4134",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "PAGOSA SPRINGS, CO, Saturday, October 31, 2026 through Saturday, November 7, 2026 UTC",
-    "mod_date": "10/31/2026 13:12:00",
-    "mod_abs_time": "202610311312",
-    "is_new": "Y",
-    "gid": "6/4134"
-  },
-  {
     "notam_id": "6/4127",
     "facility": "ZMA",
     "state": "FL",
@@ -142,7 +156,7 @@
     "description": "GRAND FORKS AFB, ND, Sunday, November 1, 2026 through Sunday, March 14, 2027 Local",
     "mod_date": "10/30/2026 22:07:00",
     "mod_abs_time": "202610302207",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/4116",
     "start_utc": "2026-11-01T07:00:00.000Z",
     "end_utc": "2027-03-14T06:59:59.000Z",
@@ -156,7 +170,7 @@
     "description": "29NM NW FORT COLLINS, CO, Saturday, October 31, 2026 through Monday, November 2, 2026 UTC",
     "mod_date": "10/30/2026 22:05:00",
     "mod_abs_time": "202610302205",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/4115"
   },
   {

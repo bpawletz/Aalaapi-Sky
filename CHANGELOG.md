@@ -1,3 +1,22 @@
+## [1.214.2] - 2026-10-31
+
+Whitelists the map tile caching proxy (/api/proxy/tile), DEM terrain elevation, TFR spatial boundaries, and weather observations in the companion authentication gatekeeper to ensure Leaflet basemaps load seamlessly.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Map Tile Proxy & Spatial Asset Public Whitelisting (Closes #212)**:
+  - Whitelists the Companion Bridge map tile caching proxy (`/api/proxy/tile`) and DEM elevation endpoint (`/api/elevation`) as public endpoints in the authentication gatekeeper.
+  - Resolves `401 Unauthorized` errors on Leaflet DOM `<img>` raster tiles (ESRI World Imagery, OpenStreetMap, Topo), preventing blank map tiles when using the companion bridge with authentication enabled.
+  - Added query token parameter fallback (`&token=<token>`) in `getBridgeProxyUrl()` for authenticated client requests.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/server.js`**:
+  - Expanded `isPublicAuthEndpoint()` to permit `/api/proxy/tile`, `/proxy`, `/api/proxy`, `/proxy/tile`, `/api/elevation`, `/api/tfr/*`, `/api/weather/*`, `/api/cache/tiles/stats`, and static data directories (`/data/*`, `/scratch/*`).
+- **`src/bridge/ApiClient.js`**:
+  - Updated `getBridgeProxyUrl()` to append `&token=<token>` when an active pilot session is present.
+- **`tools/companion/server_auth.test.js`**: Added automated assertions verifying unauthenticated `GET /api/proxy/tile` and `GET /api/elevation` requests succeed without HTTP 401.
+
 ## [1.214.1] - 2026-10-31
 
 Resolves issue where logged-in pilots encountered 401 Unauthorized errors on ADS-B airspace requests and companion calls by propagating session tokens via headers, query parameters, and a global fetch interceptor.

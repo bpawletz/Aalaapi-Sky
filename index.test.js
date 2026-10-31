@@ -39218,17 +39218,13 @@ describe('Companion App Authentication Enforced by Default with --allow-unauth (
 });
 
 describe('Propagate Pilot Session Token to ADS-B Airspace and Companion Calls (v1.214.1, Issue #211)', () => {
-  test('Version consistency: v1.214.1 across package.json, changelog, index_template.html, and index.html', () => {
+  test('Version consistency: v1.214.1 across package.json, changelog, and templates', () => {
     assertVersionConsistency('1.214.1');
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.214.1] - 2026-10-31'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.214.1'));
-    assert.ok(template.includes('Version 1.214.1'));
     assert.ok(template.includes('Changelog (v1.214.1):'));
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('v1.214.1'));
-    assert.ok(indexHtml.includes('Version 1.214.1'));
     assert.ok(indexHtml.includes('Changelog (v1.214.1):'));
   });
 
@@ -39250,5 +39246,35 @@ describe('Propagate Pilot Session Token to ADS-B Airspace and Companion Calls (v
     assert.ok(src.includes('tokenParam = token ?'));
     assert.ok(src.includes('headers: (typeof getCompanionAuthHeaders === \'function\') ? getCompanionAuthHeaders() : {}'));
     assert.ok(src.includes('if (res.status === 401)'));
+  });
+});
+
+describe('Map Tile Proxy & Spatial Asset Public Whitelisting (v1.214.2, Issue #212)', () => {
+  test('Version consistency: v1.214.2 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.214.2');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.214.2] - 2026-10-31'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.214.2'));
+    assert.ok(template.includes('Version 1.214.2'));
+    assert.ok(template.includes('Changelog (v1.214.2):'));
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('v1.214.2'));
+    assert.ok(indexHtml.includes('Version 1.214.2'));
+    assert.ok(indexHtml.includes('Changelog (v1.214.2):'));
+  });
+
+  test('Server whitelists /api/proxy/tile and /api/elevation as public endpoints', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'tools/companion/server.js'), 'utf8');
+    assert.ok(src.includes('/api/proxy/tile'), 'Must whitelist /api/proxy/tile');
+    assert.ok(src.includes('/api/elevation'), 'Must whitelist /api/elevation');
+    assert.ok(src.includes('/api/tfr/'), 'Must whitelist /api/tfr/');
+    assert.ok(src.includes('/api/weather/'), 'Must whitelist /api/weather/');
+  });
+
+  test('getBridgeProxyUrl in ApiClient appends token query param when pilot session is active', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'src/bridge/ApiClient.js'), 'utf8');
+    assert.ok(src.includes('tokenParam = token ?'), 'Must compute tokenParam');
+    assert.ok(src.includes('/api/proxy/tile?url='), 'Must proxy tile url');
   });
 });

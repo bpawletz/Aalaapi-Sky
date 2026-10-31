@@ -464,8 +464,9 @@ function getBridgeProxyUrl(rawUrl) {
 
 
   const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-
-  return `${apiBase}/api/proxy/tile?url=${encodeURIComponent(rawUrl)}`;
+  const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
+  const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+  return `${apiBase}/api/proxy/tile?url=${encodeURIComponent(rawUrl)}${tokenParam}`;
 
 }
 
