@@ -108,6 +108,44 @@ describe('Companion Server Authentication Enforcement Suite', () => {
       assert.equal(res.body.success, true);
       assert.equal(res.body.authRequired, true);
     });
+
+    it('allows unauthenticated GET /api/proxy/tile for Leaflet map tiles (Issue #212)', async () => {
+      const res = await new Promise((resolve, reject) => {
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: testPort,
+          path: '/api/proxy/tile?url=https%3A%2F%2Fserver.arcgisonline.com%2FArcGIS%2Frest%2Fservices%2FWorld_Imagery%2FMapServer%2Ftile%2F19%2F198459%2F141008',
+          method: 'GET'
+        }, r => {
+          let body = '';
+          r.on('data', chunk => { body += chunk; });
+          r.on('end', () => resolve({ statusCode: r.statusCode, headers: r.headers }));
+        });
+        req.on('error', reject);
+        req.end();
+      });
+
+      assert.notEqual(res.statusCode, 401, 'Tile proxy must not return 401 Unauthorized');
+    });
+
+    it('allows unauthenticated GET /api/elevation for DEM terrain elevation (Issue #212)', async () => {
+      const res = await new Promise((resolve, reject) => {
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: testPort,
+          path: '/api/elevation?lat=40.0&lon=-83.0',
+          method: 'GET'
+        }, r => {
+          let body = '';
+          r.on('data', chunk => { body += chunk; });
+          r.on('end', () => resolve({ statusCode: r.statusCode }));
+        });
+        req.on('error', reject);
+        req.end();
+      });
+
+      assert.notEqual(res.statusCode, 401, 'Elevation API must not return 401 Unauthorized');
+    });
   });
 
   describe('Protected REST API Endpoints', () => {

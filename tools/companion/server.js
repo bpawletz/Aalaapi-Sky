@@ -189,7 +189,17 @@ function isPublicAuthEndpoint(pathname, method) {
   if (pathname.startsWith('/api/tools/')) return true;
   if (pathname.startsWith('/api/ai3d/')) return true;
   if (pathname === '/health' || pathname === '/favicon.ico') return true;
-  if (pathname === '/' || pathname === '/index.html' || pathname.startsWith('/dist/')) return true;
+
+  // Public geospatial tile proxy & DEM elevation (needed for Leaflet DOM <img> rendering & terrain)
+  if ((pathname === '/api/proxy/tile' || pathname === '/proxy' || pathname === '/api/proxy' || pathname === '/proxy/tile') && method === 'GET') return true;
+  if (pathname === '/api/elevation' && (method === 'GET' || method === 'POST')) return true;
+  if (pathname.startsWith('/api/tfr/') && method === 'GET') return true;
+  if (pathname.startsWith('/api/weather/') && (method === 'GET' || method === 'POST')) return true;
+  if ((pathname === '/api/cache/tiles/stats' || pathname === '/api/proxy/stats' || pathname === '/api/cache/stats') && method === 'GET') return true;
+
+  // Static web app assets, models, documentation, and cached data
+  if (pathname === '/' || pathname === '/app' || pathname === '/index.html' || pathname.startsWith('/dist/') || pathname.startsWith('/data/') || pathname.startsWith('/scratch/')) return true;
+
   return false;
 }
 

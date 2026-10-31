@@ -1891,59 +1891,6 @@
     },
     {
       "type": "Feature",
-      "id": "V_TFR_LOC.6/4134",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              -107.41611111,
-              37.00111111
-            ],
-            [
-              -106.93472222,
-              37.00138889
-            ],
-            [
-              -106.93416667,
-              37.005
-            ],
-            [
-              -106.93444444,
-              37.18083333
-            ],
-            [
-              -107.14861111,
-              37.18194444
-            ],
-            [
-              -107.14861111,
-              37.2375
-            ],
-            [
-              -107.41111111,
-              37.2375
-            ],
-            [
-              -107.41611111,
-              37.00111111
-            ]
-          ]
-        ]
-      },
-      "geometry_name": "SHAPE",
-      "properties": {
-        "GID": 235436,
-        "CNS_LOCATION_ID": "ZDV",
-        "NOTAM_KEY": "6/4134-1-FDC-F",
-        "TITLE": "PAGOSA SPRINGS, CO, Saturday, October 31, 2026 through Saturday, November 7, 2026 UTC",
-        "LAST_MODIFICATION_DATETIME": "202610311312",
-        "STATE": "CO",
-        "LEGAL": "HAZARDS"
-      }
-    },
-    {
-      "type": "Feature",
       "id": "V_TFR_LOC.6/4136",
       "geometry": {
         "type": "Polygon",
@@ -3564,6 +3511,59 @@
         "LAST_MODIFICATION_DATETIME": "202610311706",
         "STATE": "OH",
         "LEGAL": "VIP"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "V_TFR_LOC.6/4198",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -107.41611111,
+              37.00111111
+            ],
+            [
+              -106.93472222,
+              37.00138889
+            ],
+            [
+              -106.93416667,
+              37.005
+            ],
+            [
+              -106.93444444,
+              37.18083333
+            ],
+            [
+              -107.14861111,
+              37.18194444
+            ],
+            [
+              -107.14861111,
+              37.2375
+            ],
+            [
+              -107.41111111,
+              37.2375
+            ],
+            [
+              -107.41611111,
+              37.00111111
+            ]
+          ]
+        ]
+      },
+      "geometry_name": "SHAPE",
+      "properties": {
+        "GID": 235443,
+        "CNS_LOCATION_ID": "ZDV",
+        "NOTAM_KEY": "6/4198-1-FDC-F",
+        "TITLE": "PAGOSA SPRINGS, CO, Sunday, November 1, 2026 through Saturday, November 7, 2026 UTC",
+        "LAST_MODIFICATION_DATETIME": "202610312247",
+        "STATE": "CO",
+        "LEGAL": "HAZARDS"
       }
     },
     {
@@ -11300,6 +11300,59 @@
     },
     {
       "type": "Feature",
+      "id": "V_TFR_LOC.6/4197",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -107.41611111,
+              37.00111111
+            ],
+            [
+              -106.93472222,
+              37.00138889
+            ],
+            [
+              -106.93416667,
+              37.005
+            ],
+            [
+              -106.93444444,
+              37.18083333
+            ],
+            [
+              -107.14861111,
+              37.18194444
+            ],
+            [
+              -107.14861111,
+              37.2375
+            ],
+            [
+              -107.41111111,
+              37.2375
+            ],
+            [
+              -107.41611111,
+              37.00111111
+            ]
+          ]
+        ]
+      },
+      "geometry_name": "SHAPE",
+      "properties": {
+        "GID": 235444,
+        "CNS_LOCATION_ID": "ZDV",
+        "NOTAM_KEY": "6/4197-1-FDC-F",
+        "TITLE": "PAGOSA SPRINGS, CO, Saturday, October 31, 2026 UTC",
+        "LAST_MODIFICATION_DATETIME": "202610312246",
+        "STATE": "CO",
+        "LEGAL": "HAZARDS"
+      }
+    },
+    {
+      "type": "Feature",
       "id": "V_TFR_LOC.6/2698",
       "geometry": {
         "type": "Polygon",
@@ -12301,10 +12354,10 @@
       }
     }
   ],
-  "totalFeatures": 74,
-  "numberMatched": 74,
-  "numberReturned": 74,
-  "timeStamp": "2026-10-31T21:43:02.717Z",
+  "totalFeatures": 75,
+  "numberMatched": 75,
+  "numberReturned": 75,
+  "timeStamp": "2026-10-31T23:22:50.217Z",
   "crs": {
     "type": "name",
     "properties": {
