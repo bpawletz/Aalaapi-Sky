@@ -3,7 +3,7 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.213.0` | **WPML Compiler Hash:** `b21749fd09a5` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.214.0` | **WPML Compiler Hash:** `b21749fd09a5` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
 **Summary Progress:** **1 / 26** Patterns Verified | **0** Needs Re-Test | **25** Untested | **0** Failed
 
@@ -435,6 +435,13 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ---
 
 ## 6. Post-Update Release IRL Test Plans Log
+
+### [v1.214.0] Enforce companion app API and SSE authentication by default with --allow-unauth flag — 2026-10-31 ([Issue #210](https://github.com/bpawletz/Aalaapi-Sky/issues/210))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `none`
+- [ ] Launch bridge with default settings and verify unauthenticated GET /api/status returns auth_required
+- [ ] Verify unauthenticated SSE stream /api/status/stream returns 401
+- [ ] Log in with pilot credentials and verify SSE connects with ?token=
+- [ ] Restart bridge with --allow-unauth and verify unauthenticated access works
 
 ### [v1.213.0] Google AI Studio Integration & HTTPS Transport — 2026-10-31 ([Issue #209](https://github.com/bpawletz/Aalaapi-Sky/issues/209))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** Core / QA Framework

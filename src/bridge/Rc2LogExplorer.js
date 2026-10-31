@@ -471,7 +471,9 @@ async function executeMediaPull() {
 
   if (EventSourceCtor) {
     try {
-      progressEs = new EventSourceCtor(`${apiBase}/api/media/progress/stream`);
+      const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
+      const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+      progressEs = new EventSourceCtor(`${apiBase}/api/media/progress/stream${tokenParam}`);
       progressEs.onmessage = (e) => {
         if (!e || !e.data) return;
         try {

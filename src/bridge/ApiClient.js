@@ -216,6 +216,54 @@ function setCompanionApiBase(newHost) {
 
 let COMPANION_API_BASE = getCompanionApiBase();
 
+function getCompanionAuthHeaders() {
+  if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.getAuthHeaders === 'function') {
+    return CompanionAuth.getAuthHeaders();
+  }
+  return {};
+}
+
+function buildAuthenticatedCompanionUrl(endpointPath) {
+  const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+  const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
+  if (!token) return `${apiBase}${endpointPath}`;
+  const sep = endpointPath.includes('?') ? '&' : '?';
+  return `${apiBase}${endpointPath}${sep}token=${encodeURIComponent(token)}`;
+}
+
+function reconnectAllCompanionStreams() {
+  if (typeof disconnectCompanionStatusStream === 'function') {
+    disconnectCompanionStatusStream();
+  }
+  if (typeof connectCompanionStatusStream === 'function') {
+    connectCompanionStatusStream();
+  }
+  if (typeof RemoteIdRadar !== 'undefined') {
+    if (RemoteIdRadar.eventSource) {
+      try { RemoteIdRadar.eventSource.close(); } catch (_) {}
+      RemoteIdRadar.eventSource = null;
+    }
+    if (typeof RemoteIdRadar.connectStream === 'function') {
+      RemoteIdRadar.connectStream();
+    }
+  }
+  if (typeof AirspaceTracker !== 'undefined') {
+    if (AirspaceTracker.eventSource) {
+      try { AirspaceTracker.eventSource.close(); } catch (_) {}
+      AirspaceTracker.eventSource = null;
+    }
+    if (typeof AirspaceTracker.connectStream === 'function') {
+      AirspaceTracker.connectStream();
+    }
+  }
+  if (typeof checkCompanionStatus === 'function') {
+    checkCompanionStatus();
+  }
+}
+if (typeof window !== 'undefined') {
+  window.reconnectAllCompanionStreams = reconnectAllCompanionStreams;
+}
+
 let isCompanionOnline = false;
 
 let isRc2MtpConnected = false;
@@ -1174,24 +1222,41 @@ function applyCompanionStatusUI(data) {
 
 
   // 3. Update Top Nav Info Node & Sidebar Summary Bar (Issue #128)
+  const isAuthRequiredState = Boolean(data && (data.status === 'auth_required' || (data.authRequired && !data.authenticated)));
 
   const headerPill = document.getElementById('header-bridge-pill');
-
   const headerDot = document.getElementById('header-bridge-dot');
-
   const headerSummary = document.getElementById('header-bridge-summary');
-
   const headerRc2Badge = document.getElementById('header-rc2-summary-badge');
-
   const sidebarBar = document.getElementById('sidebar-bridge-summary-bar');
-
   const sidebarDot = document.getElementById('sidebar-bridge-mini-dot');
-
   const sidebarLabel = document.getElementById('sidebar-bridge-mini-label');
-
   const sidebarRc2Badge = document.getElementById('sidebar-rc2-mini-badge');
-
   const sidebarQuickActions = document.getElementById('sidebar-rc2-quick-actions');
+
+  if (isAuthRequiredState) {
+    if (headerPill) {
+      headerPill.classList.remove('is-offline', 'is-mismatch');
+      headerPill.classList.add('is-online');
+      headerPill.title = 'Aalaapi Bridge Online: Pilot Authentication Required (Click to sign in)';
+    }
+    if (headerDot) headerDot.style.background = '#f59e0b';
+    if (headerSummary) headerSummary.textContent = 'Bridge: Sign-In Required';
+    if (sidebarBar) {
+      sidebarBar.classList.remove('is-offline');
+      sidebarBar.classList.add('is-online');
+    }
+    if (sidebarDot) sidebarDot.style.background = '#f59e0b';
+    if (sidebarLabel) sidebarLabel.textContent = 'Sign-In Required';
+    const sText = document.getElementById('companion-service-text');
+    const sDot = document.getElementById('companion-service-dot');
+    if (sText) {
+      sText.textContent = 'Aalaapi Bridge: Sign-In Required';
+      sText.style.color = '#f59e0b';
+    }
+    if (sDot) sDot.style.background = '#f59e0b';
+    return;
+  }
 
 
 
@@ -1404,9 +1469,7 @@ function connectCompanionStatusStream() {
 
 
 
-  const apiBase = typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765';
-
-  const url = `${apiBase}/api/status/stream`;
+  const url = buildAuthenticatedCompanionUrl('/api/status/stream');
 
 
 
@@ -1572,7 +1635,7 @@ async function pollCompanionStatus() {
 
     const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-    const res = await fetch(`${COMPANION_API_BASE}/api/status`, { signal: controller.signal });
+    const res = await fetch(`${COMPANION_API_BASE}/api/status`, { signal: controller.signal, headers: getCompanionAuthHeaders() });
 
     clearTimeout(timeoutId);
 
@@ -1590,10 +1653,13 @@ async function pollCompanionStatus() {
 
       lastStatusCheckTime = Date.now();
 
+      if (data.status === 'auth_required' || (data.authRequired && !data.authenticated)) {
+        applyCompanionStatusUI(data);
+        return;
+      }
+
       if (typeof data.droneCount === 'number') {
-
         remoteIdDroneCount = data.droneCount;
-
       }
 
       applyCompanionStatusUI(data);
@@ -2264,10 +2330,8 @@ async function sendDirectlyToRC2() {
 
 
     const fetchOptions = {
-
       method: 'POST',
-
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getCompanionAuthHeaders() },
 
       body: requestBodyJson
 
@@ -4515,9 +4579,7 @@ const RemoteIdRadar = {
 
 
 
-    const apiBase = typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765';
-
-    const url = `${apiBase}/api/remote-id/stream`;
+    const url = buildAuthenticatedCompanionUrl('/api/remote-id/stream');
 
 
 
@@ -4663,7 +4725,7 @@ const RemoteIdRadar = {
 
       const timeoutId = controller ? setTimeout(() => controller.abort(), 2500) : null;
 
-      const res = await fetch(`${apiBase}/api/remote-id/drones`, controller ? { signal: controller.signal } : {});
+      const res = await fetch(`${apiBase}/api/remote-id/drones`, { ...(controller ? { signal: controller.signal } : {}), headers: getCompanionAuthHeaders() });
 
       if (timeoutId) clearTimeout(timeoutId);
 
@@ -7023,7 +7085,9 @@ const AdsbAirspaceManager = {
 
     const endpoint = this.getEffectiveStreamEndpoint();
 
-    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true`;
+    const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
+    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true${tokenParam}`;
 
 
 

@@ -220,6 +220,7 @@ describe('AdsbAirspaceTracker Tests', () => {
   });
 
   test('Companion Server exposes /api/airspace/bounds, /api/airspace/status, and /api/airspace/simulate', async () => {
+    process.env.AALAAPI_ALLOW_UNAUTH = '1';
     const { server, adsbTracker, getAdsbConfig } = require('./server.js');
     const origAdsb = (typeof getAdsbConfig === 'function') ? getAdsbConfig() : { adsbHost: '127.0.0.1', adsbPort: 30003 };
     adsbTracker.clear();
@@ -305,6 +306,7 @@ describe('AdsbAirspaceTracker Tests', () => {
   });
 
   test('Companion Server /api/airspace/stream pushes real-time Server-Sent Events (SSE) updates to connected clients', async () => {
+    process.env.AALAAPI_ALLOW_UNAUTH = '1';
     const { server, adsbTracker, getSseAirspaceClientsCount } = require('./server.js');
     adsbTracker.clear();
 
@@ -609,6 +611,7 @@ describe('AdsbAirspaceTracker Tests', () => {
   });
 
   test('Companion Server /api/airspace/stream emits event: status updates over SSE', async () => {
+    process.env.AALAAPI_ALLOW_UNAUTH = '1';
     const { server, adsbTracker } = require('./server.js');
     adsbTracker.clear();
 

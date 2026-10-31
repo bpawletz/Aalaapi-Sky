@@ -159,6 +159,40 @@ function saveCompanionConfig(updates) {
   }
 }
 
+function isAuthRequired() {
+  if (process.argv.includes('--allow-unauth') || process.argv.includes('--no-auth')) {
+    return false;
+  }
+  if (process.env.AALAAPI_ALLOW_UNAUTH === '1' || process.env.AALAAPI_NO_AUTH === '1') {
+    return false;
+  }
+  try {
+    const cfg = loadCompanionConfig();
+    if (cfg && (cfg.allowUnauth === true || cfg.requireAuth === false)) {
+      return false;
+    }
+  } catch (_) {}
+  return true;
+}
+
+function isPublicAuthEndpoint(pathname, method) {
+  if (method === 'OPTIONS') return true;
+  if (pathname === '/api/status' && method === 'GET') return true;
+  if (pathname === '/api/auth/config') return true;
+  if (pathname === '/api/auth/google/callback' && method === 'GET') return true;
+  if (pathname === '/api/auth/google/verify' && method === 'POST') return true;
+  if (pathname === '/api/auth/register' && method === 'POST') return true;
+  if (pathname === '/api/auth/login' && method === 'POST') return true;
+  if (pathname === '/api/auth/passkey/login/options' && method === 'POST') return true;
+  if (pathname === '/api/auth/passkey/login/verify' && method === 'POST') return true;
+  if (pathname === '/api/openapi.json' || pathname === '/api/mcp/openapi.json') return true;
+  if (pathname.startsWith('/api/tools/')) return true;
+  if (pathname.startsWith('/api/ai3d/')) return true;
+  if (pathname === '/health' || pathname === '/favicon.ico') return true;
+  if (pathname === '/' || pathname === '/index.html' || pathname.startsWith('/dist/')) return true;
+  return false;
+}
+
 function fetchUpstreamBinary(targetUrl, clientHeaders = {}, maxRedirects = 4) {
   return new Promise((resolve, reject) => {
     let parsed;
@@ -3447,6 +3481,10 @@ function printStartupBanner() {
   console.log(`${colors.bold}📌 System & Environment:${colors.reset}`);
   logDetail('Bridge Version', `v${VERSION} (Node.js ${process.version})`);
   logDetail('Operating Host', `${os.type()} ${os.release()} (${os.arch()})`);
+  const authModeStr = isAuthRequired()
+    ? `${colors.green}Enforced (Auth Required by Default)${colors.reset} [Pass --allow-unauth to bypass]`
+    : `${colors.yellow}Permissive (Unauthenticated Access Permitted via --allow-unauth)${colors.reset}`;
+  logDetail('Auth Policy', authModeStr);
   logDetail('Localhost HTTP', `http://127.0.0.1:${PORT}`);
   if (tlsCredentials) {
     logDetail('Localhost HTTPS', `https://127.0.0.1:${HTTPS_PORT} (Google AI Studio & Secure Contexts)`);
@@ -3578,9 +3616,60 @@ const handleHttpRequest = async (req, res) => {
     return;
   }
 
+  // Authentication Gatekeeper: Enforce login unless --allow-unauth is provided
+  const authRequired = isAuthRequired();
+  let session = null;
+  const token = extractBearerToken(req, url);
+  if (token && typeof authDb !== 'undefined' && authDb.validateSession) {
+    session = authDb.validateSession(token);
+    if (session) {
+      req.authenticatedUser = session.user;
+    }
+  }
+
+  if (authRequired && !session && !isPublicAuthEndpoint(pathname, req.method)) {
+    res.writeHead(401, {
+      'Content-Type': 'application/json',
+      'WWW-Authenticate': 'Bearer realm="Aalaapi Companion Bridge"'
+    });
+    res.end(JSON.stringify({
+      success: false,
+      error: 'Unauthorized: Pilot login required',
+      authRequired: true
+    }));
+    return;
+  }
+
   try {
     // 1. Controller Status Endpoint (returns cached status instantly; supports ?refresh=true on-demand)
     if (pathname === '/api/status' && req.method === 'GET') {
+      const authSummary = {
+        activePilots: (typeof authDb !== 'undefined' && authDb.listPilots) ? authDb.listPilots().length : 0,
+        googleSsoConfigured: Boolean(getGoogleClientId()),
+        authRequired,
+        authenticated: Boolean(session)
+      };
+
+      if (authRequired && !session) {
+        // Unauthenticated public status fallback: allows client to detect bridge online and prompt login
+        const fallbackPayload = {
+          status: 'auth_required',
+          authRequired: true,
+          authenticated: false,
+          version: VERSION,
+          auth: authSummary,
+          https: {
+            enabled: Boolean(tlsCredentials),
+            port: HTTPS_PORT,
+            isSelfSigned: tlsCredentials?.isSelfSigned ?? false,
+            fingerprint: tlsCredentials?.fingerprint || ''
+          }
+        };
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(fallbackPayload));
+        return;
+      }
+
       const forceRefresh = url.searchParams.get('refresh') === 'true' || url.searchParams.get('refresh') === '1';
       if (forceRefresh && !isCheckingStatus && (Date.now() - cachedRc2Status.lastCheck > 2500)) {
         await updateRc2Status();
@@ -3590,15 +3679,13 @@ const handleHttpRequest = async (req, res) => {
         : 0;
       const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
       const tileCacheStats = (typeof tileCache !== 'undefined' && tileCache.getStats) ? tileCache.getStats() : null;
-      const authSummary = {
-        activePilots: (typeof authDb !== 'undefined' && authDb.listPilots) ? authDb.listPilots().length : 0,
-        googleSsoConfigured: Boolean(getGoogleClientId())
-      };
       const statusPayload = {
         ...cachedRc2Status,
         droneCount,
         tileCache: tileCacheStats,
         auth: authSummary,
+        authRequired,
+        authenticated: true,
         sseClients: getSseClientsCount(),
         mcp: mcpMetrics,
         https: {
@@ -3774,6 +3861,7 @@ const handleHttpRequest = async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: true,
+        authRequired: isAuthRequired(),
         hasGoogleClientId: Boolean(gClientId),
         googleClientId: gClientId,
         origin: `${protocol}://${req.headers.host || defaultHost}`
@@ -7501,6 +7589,7 @@ module.exports = {
   Dashboard,
   authDb,
   AuthDatabase,
+  isAuthRequired,
   getGoogleClientId,
   saveGoogleClientId,
   broadcastAuthUpdate,
