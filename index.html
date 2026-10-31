@@ -7993,7 +7993,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.213.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.214.0</span></h1>
         </div>
       </div>
 
@@ -15024,7 +15024,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.213.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.214.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15184,6 +15184,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.214.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Companion API &amp; SSE Authentication Enforced by Default (Closes #210):</strong> Operational Companion Bridge REST endpoints and real-time SSE streams (<code>/api/status/stream</code>, <code>/api/stream</code>, <code>/api/airspace/stream</code>, <code>/api/remote-id/stream</code>, <code>/api/media/progress/stream</code>) now strictly require pilot authentication by default. Provides an unauthenticated public fallback for <code>/api/status</code> indicating <code>Bridge: Sign-In Required</code> in the topbar and sidebar, and introduces the <code>--allow-unauth</code> (and <code>--no-auth</code>) CLI argument and <code>AALAAPI_ALLOW_UNAUTH=1</code> environment variable to permit unauthenticated access when operating in trusted isolated environments.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.213.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -55343,6 +55349,54 @@ function setCompanionApiBase(newHost) {
 
 let COMPANION_API_BASE = getCompanionApiBase();
 
+function getCompanionAuthHeaders() {
+  if (typeof CompanionAuth !== 'undefined' && typeof CompanionAuth.getAuthHeaders === 'function') {
+    return CompanionAuth.getAuthHeaders();
+  }
+  return {};
+}
+
+function buildAuthenticatedCompanionUrl(endpointPath) {
+  const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+  const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
+  if (!token) return `${apiBase}${endpointPath}`;
+  const sep = endpointPath.includes('?') ? '&' : '?';
+  return `${apiBase}${endpointPath}${sep}token=${encodeURIComponent(token)}`;
+}
+
+function reconnectAllCompanionStreams() {
+  if (typeof disconnectCompanionStatusStream === 'function') {
+    disconnectCompanionStatusStream();
+  }
+  if (typeof connectCompanionStatusStream === 'function') {
+    connectCompanionStatusStream();
+  }
+  if (typeof RemoteIdRadar !== 'undefined') {
+    if (RemoteIdRadar.eventSource) {
+      try { RemoteIdRadar.eventSource.close(); } catch (_) {}
+      RemoteIdRadar.eventSource = null;
+    }
+    if (typeof RemoteIdRadar.connectStream === 'function') {
+      RemoteIdRadar.connectStream();
+    }
+  }
+  if (typeof AirspaceTracker !== 'undefined') {
+    if (AirspaceTracker.eventSource) {
+      try { AirspaceTracker.eventSource.close(); } catch (_) {}
+      AirspaceTracker.eventSource = null;
+    }
+    if (typeof AirspaceTracker.connectStream === 'function') {
+      AirspaceTracker.connectStream();
+    }
+  }
+  if (typeof checkCompanionStatus === 'function') {
+    checkCompanionStatus();
+  }
+}
+if (typeof window !== 'undefined') {
+  window.reconnectAllCompanionStreams = reconnectAllCompanionStreams;
+}
+
 let isCompanionOnline = false;
 
 let isRc2MtpConnected = false;
@@ -56301,24 +56355,41 @@ function applyCompanionStatusUI(data) {
 
 
   // 3. Update Top Nav Info Node & Sidebar Summary Bar (Issue #128)
+  const isAuthRequiredState = Boolean(data && (data.status === 'auth_required' || (data.authRequired && !data.authenticated)));
 
   const headerPill = document.getElementById('header-bridge-pill');
-
   const headerDot = document.getElementById('header-bridge-dot');
-
   const headerSummary = document.getElementById('header-bridge-summary');
-
   const headerRc2Badge = document.getElementById('header-rc2-summary-badge');
-
   const sidebarBar = document.getElementById('sidebar-bridge-summary-bar');
-
   const sidebarDot = document.getElementById('sidebar-bridge-mini-dot');
-
   const sidebarLabel = document.getElementById('sidebar-bridge-mini-label');
-
   const sidebarRc2Badge = document.getElementById('sidebar-rc2-mini-badge');
-
   const sidebarQuickActions = document.getElementById('sidebar-rc2-quick-actions');
+
+  if (isAuthRequiredState) {
+    if (headerPill) {
+      headerPill.classList.remove('is-offline', 'is-mismatch');
+      headerPill.classList.add('is-online');
+      headerPill.title = 'Aalaapi Bridge Online: Pilot Authentication Required (Click to sign in)';
+    }
+    if (headerDot) headerDot.style.background = '#f59e0b';
+    if (headerSummary) headerSummary.textContent = 'Bridge: Sign-In Required';
+    if (sidebarBar) {
+      sidebarBar.classList.remove('is-offline');
+      sidebarBar.classList.add('is-online');
+    }
+    if (sidebarDot) sidebarDot.style.background = '#f59e0b';
+    if (sidebarLabel) sidebarLabel.textContent = 'Sign-In Required';
+    const sText = document.getElementById('companion-service-text');
+    const sDot = document.getElementById('companion-service-dot');
+    if (sText) {
+      sText.textContent = 'Aalaapi Bridge: Sign-In Required';
+      sText.style.color = '#f59e0b';
+    }
+    if (sDot) sDot.style.background = '#f59e0b';
+    return;
+  }
 
 
 
@@ -56531,9 +56602,7 @@ function connectCompanionStatusStream() {
 
 
 
-  const apiBase = typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765';
-
-  const url = `${apiBase}/api/status/stream`;
+  const url = buildAuthenticatedCompanionUrl('/api/status/stream');
 
 
 
@@ -56699,7 +56768,7 @@ async function pollCompanionStatus() {
 
     const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-    const res = await fetch(`${COMPANION_API_BASE}/api/status`, { signal: controller.signal });
+    const res = await fetch(`${COMPANION_API_BASE}/api/status`, { signal: controller.signal, headers: getCompanionAuthHeaders() });
 
     clearTimeout(timeoutId);
 
@@ -56717,10 +56786,13 @@ async function pollCompanionStatus() {
 
       lastStatusCheckTime = Date.now();
 
+      if (data.status === 'auth_required' || (data.authRequired && !data.authenticated)) {
+        applyCompanionStatusUI(data);
+        return;
+      }
+
       if (typeof data.droneCount === 'number') {
-
         remoteIdDroneCount = data.droneCount;
-
       }
 
       applyCompanionStatusUI(data);
@@ -57391,10 +57463,8 @@ async function sendDirectlyToRC2() {
 
 
     const fetchOptions = {
-
       method: 'POST',
-
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getCompanionAuthHeaders() },
 
       body: requestBodyJson
 
@@ -59642,9 +59712,7 @@ const RemoteIdRadar = {
 
 
 
-    const apiBase = typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765';
-
-    const url = `${apiBase}/api/remote-id/stream`;
+    const url = buildAuthenticatedCompanionUrl('/api/remote-id/stream');
 
 
 
@@ -59790,7 +59858,7 @@ const RemoteIdRadar = {
 
       const timeoutId = controller ? setTimeout(() => controller.abort(), 2500) : null;
 
-      const res = await fetch(`${apiBase}/api/remote-id/drones`, controller ? { signal: controller.signal } : {});
+      const res = await fetch(`${apiBase}/api/remote-id/drones`, { ...(controller ? { signal: controller.signal } : {}), headers: getCompanionAuthHeaders() });
 
       if (timeoutId) clearTimeout(timeoutId);
 
@@ -62150,7 +62218,9 @@ const AdsbAirspaceManager = {
 
     const endpoint = this.getEffectiveStreamEndpoint();
 
-    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true`;
+    const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
+    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true${tokenParam}`;
 
 
 
@@ -65340,6 +65410,12 @@ const CompanionAuth = {
       this.applyPreferencesToClient(user.preferences);
     }
 
+    if (typeof reconnectAllCompanionStreams === 'function') {
+      try { reconnectAllCompanionStreams(); } catch (_) {}
+    } else if (typeof window !== 'undefined' && typeof window.reconnectAllCompanionStreams === 'function') {
+      try { window.reconnectAllCompanionStreams(); } catch (_) {}
+    }
+
     this.fetchCurrentProfile().catch(() => {});
   },
 
@@ -65360,6 +65436,11 @@ const CompanionAuth = {
     } catch (_) {}
 
     this.updateTopbarUI();
+    if (typeof reconnectAllCompanionStreams === 'function') {
+      try { reconnectAllCompanionStreams(); } catch (_) {}
+    } else if (typeof window !== 'undefined' && typeof window.reconnectAllCompanionStreams === 'function') {
+      try { window.reconnectAllCompanionStreams(); } catch (_) {}
+    }
     this.showToast('Signed out of Companion Pilot Profile');
     this.closeModal();
   },
@@ -89160,7 +89241,9 @@ async function executeMediaPull() {
 
   if (EventSourceCtor) {
     try {
-      progressEs = new EventSourceCtor(`${apiBase}/api/media/progress/stream`);
+      const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
+      const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+      progressEs = new EventSourceCtor(`${apiBase}/api/media/progress/stream${tokenParam}`);
       progressEs.onmessage = (e) => {
         if (!e || !e.data) return;
         try {

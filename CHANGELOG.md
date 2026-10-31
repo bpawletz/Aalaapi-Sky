@@ -1,3 +1,28 @@
+## [1.214.0] - 2026-10-31
+
+Enforces pilot authentication by default across all operational Companion Bridge REST API endpoints and Server-Sent Events (SSE) live streams, with a dedicated `--allow-unauth` flag for trusted isolated environments.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Companion API & SSE Authentication Enforced by Default (Closes #210)**:
+  - All operational REST endpoints (`/api/sync`, `/api/latest-flight`, `/api/buffer/*`, `/api/cache/*`, `/api/airspace/*`, `/api/restart`, etc.) and real-time SSE streams (`/api/status/stream`, `/api/stream`, `/api/airspace/stream`, `/api/remote-id/stream`, `/api/media/progress/stream`) now strictly require pilot authentication by default.
+  - Added public metadata fallback for unauthenticated `/api/status` calls, enabling the frontend to detect that the bridge is online and display `Bridge: Sign-In Required` in the topbar pill and sidebar.
+  - Introduced `--allow-unauth` (and shorthand `--no-auth`) CLI argument, `AALAAPI_ALLOW_UNAUTH=1` environment variable, and `"allowUnauth": true` configuration option to permit unauthenticated access in trusted or headless environments.
+  - Seamless automatic SSE stream reconnection upon pilot login or logout via `CompanionAuth`.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/server.js`**:
+  - Implemented `isAuthRequired()` policy resolver evaluating `--allow-unauth`, `--no-auth`, `AALAAPI_ALLOW_UNAUTH`, `AALAAPI_NO_AUTH`, and `companion_config.json`.
+  - Added global HTTP gatekeeper middleware that verifies bearer session tokens via `authDb.validateSession()` and returns HTTP 401 with `WWW-Authenticate: Bearer` for protected routes.
+  - Whitelisted public negotiation routes: `OPTIONS *`, `/api/status` (redacted fallback), `/api/auth/config`, `/api/auth/login`, `/api/auth/register`, `/api/auth/google/verify`, `/api/auth/passkey/*`, `/api/openapi.json`, and `/health`.
+  - Updated startup banner to report active authentication policy.
+- **`src/bridge/ApiClient.js`**:
+  - Centralized `getCompanionAuthHeaders()` and `buildAuthenticatedCompanionUrl()` for REST and SSE query-token protocol (`?token=<token>`).
+  - Implemented `reconnectAllCompanionStreams()` wired into `CompanionAuth.setSession` and `CompanionAuth.logout`.
+- **`tools/companion/server_auth.test.js`**: Added comprehensive test suite with 13 assertions verifying default auth enforcement, bearer header & query token validation, 401 rejections, and `--allow-unauth` bypass.
+- **`docs/RC2_COMPANION_BRIDGE_GUIDE.md`**: Added complete Security & Pilot Authentication Modes documentation.
+
 ## [1.213.0] - 2026-10-31
 
 Introduces native HTTPS support and dual-port listening for the Companion Bridge, enabling direct browser connections from Google AI Studio via Model Context Protocol (MCP) and OpenAPI 3.0 function calling.

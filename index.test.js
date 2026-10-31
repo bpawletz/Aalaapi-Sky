@@ -39146,20 +39146,20 @@ describe('Inactive "Verify IRL Plan" Button Dimming & Disabling (v1.212.1, Issue
 });
 
 
-describe('Google AI Studio Integration & Native HTTPS Companion Transport (v1.213.0, Issue #209)', () => {
+describe('Google AI Studio Integration & Native HTTPS Companion Transport (v1.214.0, Issue #209)', () => {
   const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
-  test('Version consistency: v1.213.0 across package.json, changelog, index_template.html, and index.html', () => {
-    assertVersionConsistency('1.213.0');
+  test('Version consistency: v1.214.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.214.0');
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.213.0] - 2026-10-31'));
+    assert.ok(changelog.includes('## [1.214.0] - 2026-10-31'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.213.0'));
-    assert.ok(template.includes('Version 1.213.0'));
-    assert.ok(template.includes('Changelog (v1.213.0):'));
-    assert.ok(htmlText.includes('v1.213.0'));
-    assert.ok(htmlText.includes('Version 1.213.0'));
-    assert.ok(htmlText.includes('Changelog (v1.213.0):'));
+    assert.ok(template.includes('v1.214.0'));
+    assert.ok(template.includes('Version 1.214.0'));
+    assert.ok(template.includes('Changelog (v1.214.0):'));
+    assert.ok(htmlText.includes('v1.214.0'));
+    assert.ok(htmlText.includes('Version 1.214.0'));
+    assert.ok(htmlText.includes('Changelog (v1.214.0):'));
   });
 
   test('Google AI Studio & HTTPS companion controls exist in HTML template', () => {
@@ -39185,7 +39185,7 @@ describe('Google AI Studio Integration & Native HTTPS Companion Transport (v1.21
     assert.equal(certLink.getAttribute('href'), 'https://127.0.0.1:8766/api/status');
   });
 
-  test('Companion Server exports HTTPS and OpenAPI features (v1.213.0 - Issue #209)', () => {
+  test('Companion Server exports HTTPS and OpenAPI features (v1.214.0 - Issue #209)', () => {
     const companion = require('./tools/companion/server.js');
     assert.ok(companion.server, 'server must be exported');
     assert.strictEqual(typeof companion.PORT, 'number');
@@ -39198,5 +39198,25 @@ describe('Google AI Studio Integration & Native HTTPS Companion Transport (v1.21
     assert.ok(spec.paths['/api/status']);
     assert.ok(spec.paths['/api/tools/get_airspace_telemetry']);
     assert.ok(spec.paths['/api/tools/generate_flight_plan']);
+  });
+});
+
+describe('Companion App Authentication Enforced by Default with --allow-unauth (v1.214.0, Issue #210)', () => {
+  test('Companion Server exports isAuthRequired and defaults to true', () => {
+    const companion = require('./tools/companion/server.js');
+    assert.strictEqual(typeof companion.isAuthRequired, 'function');
+    assert.strictEqual(companion.isAuthRequired(), true);
+  });
+
+  test('RC2 Companion Guide documents Security & Pilot Authentication Modes and --allow-unauth', () => {
+    const guide = fs.readFileSync(path.join(__dirname, 'docs/RC2_COMPANION_BRIDGE_GUIDE.md'), 'utf8');
+    assert.ok(guide.includes('Security & Pilot Authentication Modes'), 'Must document Security section');
+    assert.ok(guide.includes('--allow-unauth'), 'Must document --allow-unauth flag');
+    assert.ok(guide.includes('--no-auth'), 'Must document --no-auth alias');
+    assert.ok(guide.includes('AALAAPI_ALLOW_UNAUTH'), 'Must document AALAAPI_ALLOW_UNAUTH env var');
+  });
+
+  test('Companion Auth test suite tools/companion/server_auth.test.js exists', () => {
+    assert.ok(fs.existsSync(path.join(__dirname, 'tools/companion/server_auth.test.js')), 'server_auth.test.js must exist');
   });
 });

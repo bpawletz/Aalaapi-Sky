@@ -115,6 +115,59 @@ When flying aircraft like the **DJI Neo 2** or **DJI Mini series** using the DJI
 
 ---
 
+## 🔐 Security & Pilot Authentication Modes
+
+By default, the Aalaapi Companion Bridge enforces strict pilot authentication across all operational REST API endpoints (`/api/sync`, `/api/latest-flight`, `/api/buffer/*`, `/api/cache/*`, `/api/config/*`, etc.) and Server-Sent Events (SSE) live streams (`/api/status/stream`, `/api/stream`, `/api/airspace/stream`, `/api/remote-id/stream`, `/api/media/progress/stream`).
+
+### Authentication Policy & Defaults
+
+| Mode | Trigger | Behavior |
+| :--- | :--- | :--- |
+| **Enforced (Default)** | Standard launch (`node tools/companion/server.js` or `npm run bridge`) | All operational endpoints and SSE streams require an active pilot session token. Unauthenticated requests receive `401 Unauthorized`. |
+| **Unauthenticated Bypass** | CLI flag `--allow-unauth` / `--no-auth`<br/>Env var `AALAAPI_ALLOW_UNAUTH=1`<br/>Config `allowUnauth: true` in `scratch/companion_config.json` | Bypasses session validation for operational APIs and SSE streams, allowing open access on isolated LANs or automated headless pipelines. |
+
+### Launching with Unauthenticated Access Permitted
+
+To run the bridge without requiring pilot sign-in (for example, in local headless scripts, isolated lab networks, or Node-RED automation nodes):
+
+```bash
+# Via CLI argument
+node tools/companion/server.js --allow-unauth
+
+# Or using the shorthand alias
+node tools/companion/server.js --no-auth
+
+# Via environment variable
+AALAAPI_ALLOW_UNAUTH=1 node tools/companion/server.js
+```
+
+### Passing Authentication Credentials
+
+When authentication is enforced (the default):
+
+1. **REST API Requests**: Provide the active pilot session token via standard HTTP headers:
+   ```http
+   Authorization: Bearer <your_session_token>
+   ```
+   *(Alternative custom header: `x-pilot-session-token: <your_session_token>`)*
+
+2. **Server-Sent Events (SSE) Streams**: Because standard browser `EventSource` APIs do not support custom request headers, session tokens are accepted via query parameter:
+   ```text
+   GET /api/status/stream?token=<your_session_token>
+   GET /api/airspace/stream?lat=...&lon=...&radius=...&token=<your_session_token>
+   GET /api/remote-id/stream?token=<your_session_token>
+   ```
+
+3. **Public Whitelisted Endpoints**: The following endpoints remain accessible without a token:
+   - `OPTIONS *` (CORS preflight)
+   - `GET /api/status` (Returns public fallback metadata `{ status: "auth_required", authRequired: true, authenticated: false }` so the client UI can indicate the bridge is online and prompt for sign-in)
+   - `GET /api/auth/config` (Returns auth requirements and Google OAuth client ID)
+   - `POST /api/auth/login`, `POST /api/auth/register`, `POST /api/auth/google/verify`
+   - `POST /api/auth/passkey/login/options`, `POST /api/auth/passkey/login/verify`
+   - `GET /api/openapi.json` & `/health`
+
+---
+
 ## 🛠️ Troubleshooting & Diagnostics
 
 1. **Bridge Shows `⚪ Offline`**:

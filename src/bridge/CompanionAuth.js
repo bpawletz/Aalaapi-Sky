@@ -553,6 +553,12 @@ const CompanionAuth = {
       this.applyPreferencesToClient(user.preferences);
     }
 
+    if (typeof reconnectAllCompanionStreams === 'function') {
+      try { reconnectAllCompanionStreams(); } catch (_) {}
+    } else if (typeof window !== 'undefined' && typeof window.reconnectAllCompanionStreams === 'function') {
+      try { window.reconnectAllCompanionStreams(); } catch (_) {}
+    }
+
     this.fetchCurrentProfile().catch(() => {});
   },
 
@@ -573,6 +579,11 @@ const CompanionAuth = {
     } catch (_) {}
 
     this.updateTopbarUI();
+    if (typeof reconnectAllCompanionStreams === 'function') {
+      try { reconnectAllCompanionStreams(); } catch (_) {}
+    } else if (typeof window !== 'undefined' && typeof window.reconnectAllCompanionStreams === 'function') {
+      try { window.reconnectAllCompanionStreams(); } catch (_) {}
+    }
     this.showToast('Signed out of Companion Pilot Profile');
     this.closeModal();
   },
