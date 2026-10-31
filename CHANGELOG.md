@@ -1,3 +1,20 @@
+## [1.212.1] - 2026-10-30
+
+### Changed
+
+#### Pilot & Operational Features
+- **Inactive "Verify IRL Plan" Button Dimming & Disabling (Closes #208)**:
+  - Automatically dims, desaturates, and disables the "Verify IRL Plan" action buttons in the Flight Diagnostics header toolbar (`#diag-btn-irl-verify`) and sidebar (`#diag-sidebar-irl-verify-btn`) whenever viewing unflown simulations, active workspace previews, or empty telemetry records.
+  - Displays an informative hover tooltip (`IRL verification requires an actual flown flight log. Load or pull a flight record from RC 2.`) explaining why verification is inactive and instructing pilots how to unlock it.
+  - Seamlessly restores active emerald styling, full opacity, and pointer interaction as soon as a valid flown telemetry record (`isActualFlown: true`) is loaded.
+
+#### Under the Hood & Technical Details
+- **`src/3d/DigitalTwin.js`**:
+  - Implemented `FlightDiagnostics.updateIrlVerificationButtonState()` to evaluate `this.isActualFlown`, `this.telemetryData.points`, `this.selectedFlightId !== 'active-mission'`, and `!this.telemetryData.isSimulation`.
+  - Wired button state synchronization into `initEvents()`, `open()`, `updateStatsUI()`, and `performIrlVerification()`.
+- **`index.css`**:
+  - Defined `#diag-btn-irl-verify:disabled`, `#diag-sidebar-irl-verify-btn:disabled`, and `.diag-btn-disabled` styling with `opacity: 0.38`, `filter: grayscale(0.85)`, `cursor: not-allowed`, desaturated borders, and `pointer-events: auto` to preserve tooltip visibility.
+
 ## [1.212.0] - 2026-10-30
 
 Aalaapi Sky v1.212.0 introduces a unified 1-click "Copy for Antigravity Review" capability in Flight Diagnostics, bundling both the flown flight log evaluation (6-phase scorecard, quantitative metrics, waypoint-by-waypoint planned vs. actual comparison table, and variance telemetry slices) and the complete planned multi-layer mission stack with privacy masking into a single clipboard payload for instant AI triage.

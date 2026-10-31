@@ -3554,6 +3554,7 @@ const scenarios = [
         });
 
         FlightDiagnostics.telemetryData = { points: pts };
+        FlightDiagnostics.updateStatsUI();
 
         // Launch IRL verification modal
         document.getElementById('diag-btn-irl-verify').click();
@@ -3587,6 +3588,83 @@ const scenarios = [
       await page.evaluate(() => {
         const sideAiBtn = document.getElementById('diag-copy-antigravity-btn');
         if (sideAiBtn) sideAiBtn.click();
+      });
+      await page.waitForTimeout(1200);
+    }
+  },
+  {
+    id: 'feature_diag_irl_button_dimming',
+    name: 'Flight Diagnostics "Verify IRL Plan" Inactive State Dimming & Disabling',
+    description: 'Demonstrates dynamically dimming and disabling the Verify IRL Plan buttons on unflown simulations, showing explanatory tooltips, and activating bright emerald styling upon loading real flown telemetry.',
+    issueRef: 'Issue #208',
+    run: async (page) => {
+      // 1. Center map at rural Utica reference coordinates
+      await page.evaluate(() => {
+        setGridCenter(41.3215, -88.9950);
+      });
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 2. Open Flight Diagnostics in 3D mode
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.open === 'function') {
+          FlightDiagnostics.open('3d');
+        } else {
+          const btn = document.getElementById('topbar-diagnostics-btn');
+          if (btn) btn.click();
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Highlight dimmed header and sidebar buttons in unflown active-mission simulation
+      await page.evaluate(() => {
+        const headerBtn = document.getElementById('diag-btn-irl-verify');
+        const sidebarBtn = document.getElementById('diag-sidebar-irl-verify-btn');
+        if (headerBtn) headerBtn.style.outline = '2px dashed #f59e0b';
+        if (sidebarBtn) sidebarBtn.style.outline = '2px dashed #f59e0b';
+      });
+      await page.waitForTimeout(1200);
+
+      // 4. Simulate loading an actual flown flight log
+      await page.evaluate(() => {
+        const headerBtn = document.getElementById('diag-btn-irl-verify');
+        const sidebarBtn = document.getElementById('diag-sidebar-irl-verify-btn');
+        if (headerBtn) headerBtn.style.outline = '';
+        if (sidebarBtn) sidebarBtn.style.outline = '';
+
+        FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-10-30_[20-11-03].txt';
+        FlightDiagnostics.isActualFlown = true;
+        FlightDiagnostics.telemetryData = {
+          isSimulation: false,
+          points: [
+            { lat: 41.3215, lon: -88.9950, alt: 31, pitch: -90, yaw: 6, isPhoto: true, speed: 0.1, battery: 95 },
+            { lat: 41.3216, lon: -88.9950, alt: 31, pitch: -90, yaw: 6, isPhoto: true, speed: 0.1, battery: 90 }
+          ]
+        };
+        FlightDiagnostics.updateStatsUI();
+      });
+      await page.waitForTimeout(1200);
+
+      // 5. Click the now-enabled Verify IRL Plan header button
+      await page.evaluate(() => {
+        const headerBtn = document.getElementById('diag-btn-irl-verify');
+        if (headerBtn) headerBtn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 6. Close the IRL scorecard modal
+      await page.evaluate(() => {
+        const closeBtn = document.getElementById('diag-irl-close-btn');
+        if (closeBtn) closeBtn.click();
+      });
+      await page.waitForTimeout(800);
+
+      // 7. Switch back to active-mission simulation to demonstrate re-dimming
+      await page.evaluate(() => {
+        FlightDiagnostics.selectedFlightId = 'active-mission';
+        FlightDiagnostics.isActualFlown = false;
+        FlightDiagnostics.telemetryData = { isSimulation: true, points: [{ lat: 41.32, lon: -88.99 }] };
+        FlightDiagnostics.updateStatsUI();
       });
       await page.waitForTimeout(1200);
     }

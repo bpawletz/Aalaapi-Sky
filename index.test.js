@@ -38832,17 +38832,17 @@ describe('Terminal Waypoint Survey Gimbal Pitch Preservation (v1.210.2, Issue #2
 describe('Planned Flight Plan Selection & Single-Point Max Error Verification in IRL Scorecard (v1.211.0, Issue #206)', () => {
   const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
-  test('Version consistency: v1.212.0 across package.json, changelog, index_template.html, and index.html', () => {
-    assertVersionConsistency('1.212.0');
+  test('Version consistency: v1.212.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.212.1');
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.212.0] - 2026-10-30'));
+    assert.ok(changelog.includes('## [1.212.1] - 2026-10-30'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.212.0'));
-    assert.ok(template.includes('Version 1.212.0'));
-    assert.ok(template.includes('Changelog (v1.212.0):'));
-    assert.ok(htmlText.includes('v1.212.0'));
-    assert.ok(htmlText.includes('Version 1.212.0'));
-    assert.ok(htmlText.includes('Changelog (v1.212.0):'));
+    assert.ok(template.includes('v1.212.1'));
+    assert.ok(template.includes('Version 1.212.1'));
+    assert.ok(template.includes('Changelog (v1.212.1):'));
+    assert.ok(htmlText.includes('v1.212.1'));
+    assert.ok(htmlText.includes('Version 1.212.1'));
+    assert.ok(htmlText.includes('Changelog (v1.212.1):'));
   });
 
   test('IrlVerifier enforces two-tier max error tolerances (max pitch <= 15 deg, max yaw <= 25 deg, max XTE <= 8.0m, max alt <= 5.0m)', () => {
@@ -39050,4 +39050,105 @@ describe('Planned Flight Plan Selection & Single-Point Max Error Verification in
     assert.ok(report.includes('### 🤖 ANTIGRAVITY'), 'Must include Antigravity mission context section');
   });
 
+});
+
+
+describe('Inactive "Verify IRL Plan" Button Dimming & Disabling (v1.212.1, Issue #208)', () => {
+  const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+  test('Version consistency: v1.212.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.212.1');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.212.1] - 2026-10-30'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.212.1'));
+    assert.ok(template.includes('Version 1.212.1'));
+    assert.ok(template.includes('Changelog (v1.212.1):'));
+    assert.ok(htmlText.includes('v1.212.1'));
+    assert.ok(htmlText.includes('Version 1.212.1'));
+    assert.ok(htmlText.includes('Changelog (v1.212.1):'));
+  });
+
+  test('#diag-btn-irl-verify and #diag-sidebar-irl-verify-btn have disabled and diag-btn-disabled in HTML template', () => {
+    const dom = new JSDOM(htmlText.replace(/<script[\s\S]*?<\/script>/gi, ''));
+    const doc = dom.window.document;
+    const headerBtn = doc.getElementById('diag-btn-irl-verify');
+    assert.ok(headerBtn, '#diag-btn-irl-verify must exist');
+    assert.strictEqual(headerBtn.hasAttribute('disabled'), true, 'Header button must be disabled by default');
+    assert.strictEqual(headerBtn.getAttribute('aria-disabled'), 'true', 'Header button must have aria-disabled');
+    assert.ok(headerBtn.classList.contains('diag-btn-disabled'), 'Header button must have class diag-btn-disabled');
+    assert.ok(headerBtn.title.includes('IRL verification requires an actual flown flight log'), 'Header button title must inform user');
+
+    const sidebarBtn = doc.getElementById('diag-sidebar-irl-verify-btn');
+    assert.ok(sidebarBtn, '#diag-sidebar-irl-verify-btn must exist');
+    assert.strictEqual(sidebarBtn.hasAttribute('disabled'), true, 'Sidebar button must be disabled by default');
+    assert.strictEqual(sidebarBtn.getAttribute('aria-disabled'), 'true', 'Sidebar button must have aria-disabled');
+    assert.ok(sidebarBtn.classList.contains('diag-btn-disabled'), 'Sidebar button must have class diag-btn-disabled');
+    assert.ok(sidebarBtn.title.includes('IRL verification requires an actual flown flight log'), 'Sidebar button title must inform user');
+  });
+
+  test('FlightDiagnostics.updateIrlVerificationButtonState dynamically enables and dims buttons based on telemetry data', () => {
+    const { FlightDiagnostics } = require('./src/3d/DigitalTwin.js');
+    assert.ok(FlightDiagnostics, 'FlightDiagnostics module must be exported');
+    assert.strictEqual(typeof FlightDiagnostics.updateIrlVerificationButtonState, 'function', 'updateIrlVerificationButtonState must exist');
+
+    const dom = new JSDOM(`
+      <button id="diag-btn-irl-verify" class="btn-secondary diag-irl-btn diag-btn-disabled" disabled aria-disabled="true"></button>
+      <button id="diag-sidebar-irl-verify-btn" class="btn-secondary diag-btn-disabled" disabled aria-disabled="true"></button>
+    `);
+    const origDoc = global.document;
+    global.document = dom.window.document;
+
+    try {
+      const headerBtn = dom.window.document.getElementById('diag-btn-irl-verify');
+      const sidebarBtn = dom.window.document.getElementById('diag-sidebar-irl-verify-btn');
+
+      // State 1: Unflown simulation (active-mission)
+      FlightDiagnostics.isActualFlown = false;
+      FlightDiagnostics.selectedFlightId = 'active-mission';
+      FlightDiagnostics.telemetryData = { isSimulation: true, points: [{ lat: 41.32, lon: -88.99 }] };
+      FlightDiagnostics.updateIrlVerificationButtonState();
+
+      assert.strictEqual(headerBtn.disabled, true, 'Header button must be disabled for simulation');
+      assert.strictEqual(headerBtn.classList.contains('diag-btn-disabled'), true);
+      assert.ok(headerBtn.title.includes('actual flown flight log'));
+      assert.strictEqual(sidebarBtn.disabled, true, 'Sidebar button must be disabled for simulation');
+      assert.strictEqual(sidebarBtn.classList.contains('diag-btn-disabled'), true);
+
+      // State 2: Valid actual flown telemetry loaded
+      FlightDiagnostics.isActualFlown = true;
+      FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-10-30_[20-11-03].txt';
+      FlightDiagnostics.telemetryData = {
+        isSimulation: false,
+        points: [
+          { lat: 41.3215, lon: -88.9950, alt: 31, pitch: -90, yaw: 6 },
+          { lat: 41.3216, lon: -88.9950, alt: 31, pitch: -90, yaw: 6 }
+        ]
+      };
+      FlightDiagnostics.updateIrlVerificationButtonState();
+
+      assert.strictEqual(headerBtn.disabled, false, 'Header button must be enabled when flown log is loaded');
+      assert.strictEqual(headerBtn.classList.contains('diag-btn-disabled'), false);
+      assert.strictEqual(headerBtn.hasAttribute('aria-disabled'), false);
+      assert.ok(headerBtn.title.includes('Verify loaded flight log'));
+
+      assert.strictEqual(sidebarBtn.disabled, false, 'Sidebar button must be enabled when flown log is loaded');
+      assert.strictEqual(sidebarBtn.classList.contains('diag-btn-disabled'), false);
+      assert.strictEqual(sidebarBtn.hasAttribute('aria-disabled'), false);
+      assert.ok(sidebarBtn.title.includes('Verify flight against the 6-phase'));
+
+      // State 3: Switching back to active workspace or empty points
+      FlightDiagnostics.isActualFlown = false;
+      FlightDiagnostics.selectedFlightId = 'active-mission';
+      FlightDiagnostics.telemetryData = null;
+      FlightDiagnostics.updateIrlVerificationButtonState();
+
+      assert.strictEqual(headerBtn.disabled, true, 'Header button must re-dim when returning to active workspace');
+      assert.strictEqual(headerBtn.classList.contains('diag-btn-disabled'), true);
+      assert.strictEqual(sidebarBtn.disabled, true, 'Sidebar button must re-dim when returning to active workspace');
+      assert.strictEqual(sidebarBtn.classList.contains('diag-btn-disabled'), true);
+    } finally {
+      global.document = origDoc;
+    }
+  });
 });

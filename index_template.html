@@ -83,7 +83,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.212.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.212.1</span></h1>
         </div>
       </div>
 
@@ -7094,7 +7094,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.212.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.212.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7254,6 +7254,12 @@
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.212.1):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Inactive "Verify IRL Plan" Button Dimming &amp; Disabling (Closes #208):</strong> Automatically dims, desaturates, and disables the "Verify IRL Plan" action buttons in the Flight Diagnostics header toolbar (<code>#diag-btn-irl-verify</code>) and sidebar (<code>#diag-sidebar-irl-verify-btn</code>) whenever viewing unflown simulations, active workspace previews, or empty telemetry records. Displays an informative hover tooltip instructing pilots to load or pull actual flown flight logs from RC 2 to unlock verification, seamlessly restoring active emerald styling once valid flown telemetry is loaded.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.212.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -11625,7 +11631,7 @@
               </svg>
               <span>Load Log...</span>
             </button>
-            <button id="diag-btn-irl-verify" type="button" class="btn-secondary diag-irl-btn" style="color: #34d399; border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.08);" title="Verify loaded flight log and planned waypoints against the 6-phase IRL Field Test Plan">
+            <button id="diag-btn-irl-verify" type="button" class="btn-secondary diag-irl-btn diag-btn-disabled" disabled aria-disabled="true" style="color: #34d399; border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.08);" title="IRL verification requires an actual flown flight log. Load or pull a flight record from RC 2.">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M10 2v7.31M14 2v7.31M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0"/>
                 <path d="M5.52 16h12.96"/>
@@ -11957,7 +11963,7 @@
 
           <!-- Action Buttons -->
           <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
-            <button id="diag-sidebar-irl-verify-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; cursor: pointer;" title="Verify flight against the 6-phase In-Real-Life Test Plan">
+            <button id="diag-sidebar-irl-verify-btn" type="button" class="btn-secondary diag-btn-disabled" disabled aria-disabled="true" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; cursor: pointer;" title="IRL verification requires an actual flown flight log. Load or pull a flight record from RC 2.">
               <span>🧪 Verify Against IRL Test Plan</span>
             </button>
             <label id="diag-include-coords-label" style="display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-muted); cursor: pointer; user-select: none; padding: 2px 4px; border-radius: 4px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);" title="Check to include raw unmasked GPS coordinates in the exported AI diagnostic prompt">

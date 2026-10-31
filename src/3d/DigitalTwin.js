@@ -1364,6 +1364,8 @@ const FlightDiagnostics = {
       sidebarIrlBtn.addEventListener('click', () => this.performIrlVerification());
     }
 
+    this.updateIrlVerificationButtonState();
+
     if (typeof IrlVerifier !== 'undefined' && typeof IrlVerifier.initEvents === 'function') {
       IrlVerifier.initEvents();
     }
@@ -1710,7 +1712,50 @@ const FlightDiagnostics = {
     }
   },
 
+  updateIrlVerificationButtonState() {
+    const isActionable = !!(
+      this.telemetryData &&
+      this.isActualFlown === true &&
+      Array.isArray(this.telemetryData.points) &&
+      this.telemetryData.points.length > 0 &&
+      this.selectedFlightId !== 'active-mission' &&
+      !this.telemetryData.isSimulation
+    );
+
+    const headerBtn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-irl-verify') : null;
+    const sidebarBtn = (typeof document !== 'undefined') ? document.getElementById('diag-sidebar-irl-verify-btn') : null;
+
+    const updateBtn = (btn, isSidebar) => {
+      if (!btn) return;
+      if (isActionable) {
+        btn.disabled = false;
+        if (btn.classList && typeof btn.classList.remove === 'function') {
+          btn.classList.remove('diag-btn-disabled');
+        }
+        if (typeof btn.removeAttribute === 'function') {
+          btn.removeAttribute('aria-disabled');
+        }
+        btn.title = isSidebar
+          ? 'Verify flight against the 6-phase In-Real-Life Test Plan'
+          : 'Verify loaded flight log and planned waypoints against the 6-phase IRL Field Test Plan';
+      } else {
+        btn.disabled = true;
+        if (btn.classList && typeof btn.classList.add === 'function') {
+          btn.classList.add('diag-btn-disabled');
+        }
+        if (typeof btn.setAttribute === 'function') {
+          btn.setAttribute('aria-disabled', 'true');
+        }
+        btn.title = 'IRL verification requires an actual flown flight log. Load or pull a flight record from RC 2.';
+      }
+    };
+
+    updateBtn(headerBtn, false);
+    updateBtn(sidebarBtn, true);
+  },
+
   performIrlVerification() {
+    this.updateIrlVerificationButtonState();
     if (!this.telemetryData || !this.isActualFlown) {
       if (typeof showToast === 'function') {
         showToast('⚠️ IRL verification requires an actual flown flight log. Please load or pull a flight record from RC 2.', 4000);
@@ -2274,6 +2319,7 @@ const FlightDiagnostics = {
 
     this.switchTab(targetTab);
     this.checkDjiApiKeyStatus();
+    this.updateIrlVerificationButtonState();
 
     if (typeof requestAnimationFrame !== 'undefined') {
       requestAnimationFrame(() => this.handleResize());
@@ -2327,6 +2373,7 @@ const FlightDiagnostics = {
   },
 
   updateStatsUI() {
+    this.updateIrlVerificationButtonState();
     const trajCard = (typeof document !== 'undefined') ? document.getElementById('diag-trajectory-card') : null;
     const battCard = (typeof document !== 'undefined') ? document.getElementById('diag-battery-card') : null;
 
