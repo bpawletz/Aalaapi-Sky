@@ -1660,7 +1660,9 @@ const FlightDiagnostics = {
   copyAntigravityPrompt() {
     const includeCoords = (typeof document !== 'undefined' && document.getElementById('diag-include-coords-checkbox')?.checked) || false;
     let promptText = '';
-    if (this.currentLoadedMission) {
+    if (typeof IrlVerifier !== 'undefined' && IrlVerifier.currentResult && typeof IrlVerifier.generateAntigravityReport === 'function') {
+      promptText = IrlVerifier.generateAntigravityReport({ includeCoords });
+    } else if (this.currentLoadedMission) {
       const m = this.currentLoadedMission;
       promptText = KMZInspector.generateAntigravityPrompt(
         m.validationReport || { rulesPassed: m.validation_rules_passed || 0, errors: m.validationErrors || [], warnings: m.validationWarnings || [] },

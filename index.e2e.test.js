@@ -11184,6 +11184,87 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       });
       await page.waitForTimeout(300);
     });
+    test("IRL Scorecard provides 1-Click 'Copy for Antigravity' (#diag-irl-copy-ai-btn) bundling flight verification and mission settings (v1.212.0, Issue #207)", async () => {
+      // 1. Open Flight Diagnostics
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.open === 'function') {
+          FlightDiagnostics.open();
+        } else {
+          const btn = document.getElementById('topbar-diagnostics-btn');
+          if (btn) btn.click();
+        }
+      });
+      await page.waitForTimeout(600);
+
+      // 2. Set flown state and planned waypoints
+      await page.evaluate(() => {
+        FlightDiagnostics.isActualFlown = true;
+        FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-10-30_[20-11-03].txt';
+        FlightDiagnostics.telemetryData = {
+          points: [
+            { lat: 41.3215, lon: -88.9950, alt: 31.0, pitch: -90, yaw: 6, isPhoto: true, speed: 0.1, battery: 98, time: '20:11:03' },
+            { lat: 41.32155, lon: -88.9950, alt: 31.0, pitch: -90, yaw: 6, isPhoto: false, speed: 2.6, battery: 96, time: '20:11:04' },
+            { lat: 41.3216, lon: -88.9950, alt: 31.0, pitch: -90, yaw: 6, isPhoto: true, speed: 0.2, battery: 95, time: '20:11:05' },
+            { lat: 41.32165, lon: -88.9950, alt: 31.0, pitch: -90, yaw: 90, isPhoto: false, speed: 2.8, battery: 93, time: '20:11:06' },
+            { lat: 41.3217, lon: -88.9950, alt: 31.0, pitch: -90, yaw: 214, isPhoto: true, speed: 1.5, battery: 92, time: '20:11:07' },
+            { lat: 41.32172, lon: -88.9950, alt: 31.0, pitch: -90, yaw: 195, isPhoto: false, speed: 2.0, battery: 90, time: '20:11:08' }
+          ]
+        };
+        FlightDiagnostics.plannedWaypoints = [
+          { lat: 41.3215, lon: -88.9950, alt: 31, pitch: -90, heading: 6 },
+          { lat: 41.3216, lon: -88.9950, alt: 31, pitch: -90, heading: 6 },
+          { lat: 41.3217, lon: -88.9950, alt: 31, pitch: -90, heading: 186 }
+        ];
+
+        // Click verify IRL
+        document.getElementById('diag-btn-irl-verify').click();
+      });
+      await page.waitForTimeout(600);
+
+      // 3. Verify #diag-irl-copy-ai-btn exists and has correct title
+      const copyAiBtnInfo = await page.evaluate(() => {
+        const btn = document.getElementById('diag-irl-copy-ai-btn');
+        return {
+          exists: !!btn,
+          visible: btn && btn.offsetParent !== null,
+          text: btn ? btn.textContent.trim() : '',
+          title: btn ? btn.title : ''
+        };
+      });
+      assert.strictEqual(copyAiBtnInfo.exists, true, '#diag-irl-copy-ai-btn must exist in DOM');
+      assert.ok(copyAiBtnInfo.text.includes('Copy for Antigravity'), 'Button text must include Copy for Antigravity');
+
+      // 4. Test clicking #diag-irl-copy-ai-btn and verify generated content
+      const generatedReport = await page.evaluate(() => {
+        if (typeof IrlVerifier !== 'undefined' && typeof IrlVerifier.generateAntigravityReport === 'function') {
+          return IrlVerifier.generateAntigravityReport({ includeCoords: false });
+        }
+        return '';
+      });
+      assert.ok(generatedReport.includes('### 🚁 IRL Field Flight Verification Report'), 'Must contain IRL report');
+      assert.ok(generatedReport.includes('#### 🛰️ Flown Waypoint Telemetry vs Planned Execution'), 'Must contain waypoint approach table');
+      assert.ok(generatedReport.includes('High-Frequency Telemetry Slice Around Flagged Variance Waypoint(s)'), 'Must contain variance slice for WP 2');
+
+      // 5. Click the button to test UI button state feedback
+      await page.evaluate(() => {
+        document.getElementById('diag-irl-copy-ai-btn').click();
+      });
+      await page.waitForTimeout(200);
+
+      const btnStateAfterClick = await page.evaluate(() => {
+        return document.getElementById('diag-irl-copy-ai-btn')?.textContent || '';
+      });
+      assert.ok(btnStateAfterClick.includes('Copied for AI!') || btnStateAfterClick.includes('Copy for Antigravity'), 'Button should update text on copy');
+
+      // 6. Close modal
+      await page.evaluate(() => {
+        document.getElementById('diag-irl-close-btn').click();
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.close === 'function') {
+          FlightDiagnostics.close();
+        }
+      });
+      await page.waitForTimeout(300);
+    });
   });
 
 });

@@ -83,7 +83,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.211.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.212.0</span></h1>
         </div>
       </div>
 
@@ -7094,7 +7094,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.211.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.212.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7254,6 +7254,12 @@
                               <div>
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.212.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>1-Click Unified "Copy for Antigravity Review" in Flight Diagnostics (Closes #207):</strong> Added a dedicated <code>🤖 Copy for Antigravity</code> action button (<code>#diag-irl-copy-ai-btn</code>) in the IRL Verification Scorecard modal footer and enhanced the Flight Diagnostics sidebar export button (<code>#diag-copy-antigravity-btn</code>). Automatically bundles the complete flight plan (target drone, multi-layer stack, dynamics, POIs, masked coordinates, and WPML placemarks) together with the flown flight log evaluation (6-phase scorecard, quantitative tolerance measurements, waypoint-by-waypoint planned vs. actual flown comparison table, and high-frequency telemetry slices for any flagged variance waypoints) into a single 1-click clipboard payload.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.211.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -12211,6 +12217,9 @@
       <!-- Modal Footer Actions -->
       <footer class="modal-footer" style="padding: 10px 18px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px; background: rgba(15, 23, 42, 0.8); flex-wrap: wrap;">
         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <button id="diag-irl-copy-ai-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #a5b4fc; border-color: rgba(99, 102, 241, 0.4); background: rgba(99, 102, 241, 0.15);" title="Copy complete flight verification report, flown telemetry, and mission settings for Antigravity AI review">
+            <span>🤖</span> Copy for Antigravity
+          </button>
           <button id="diag-irl-copy-markdown-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.35);" title="Copy markdown checklist report to paste into GitHub Issue #202">
             <span>📋</span> Copy Field Report (Markdown)
           </button>
