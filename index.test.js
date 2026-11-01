@@ -39347,12 +39347,8 @@ describe('Variable-Altitude WPML Compiler Altitude Preservation & Chronological 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.215.1] - 2026-11-01'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.215.1'));
-    assert.ok(template.includes('Version 1.215.1'));
     assert.ok(template.includes('Changelog (v1.215.1):'));
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('v1.215.1'));
-    assert.ok(indexHtml.includes('Version 1.215.1'));
     assert.ok(indexHtml.includes('Changelog (v1.215.1):'));
   });
 
@@ -39451,5 +39447,51 @@ describe('Variable-Altitude WPML Compiler Altitude Preservation & Chronological 
     for (let i = 1; i < result.wpApproaches.length; i++) {
       assert.ok(result.wpApproaches[i].bestPtIndex >= result.wpApproaches[i - 1].bestPtIndex, 'Point indices must advance chronologically');
     }
+  });
+});
+
+describe('Initial Waypoint Gimbal Rotation Settling & Corridor Verification (v1.215.2, Issue #218)', () => {
+  test('Version consistency: v1.215.2 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.215.2');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.215.2] - 2026-11-01'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.215.2'));
+    assert.ok(template.includes('Version 1.215.2'));
+    assert.ok(template.includes('Changelog (v1.215.2):'));
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('v1.215.2'));
+    assert.ok(indexHtml.includes('Version 1.215.2'));
+    assert.ok(indexHtml.includes('Changelog (v1.215.2):'));
+  });
+
+  test('IrlVerifier prioritizes settled gimbal pitch over mid-rotation sample at initial waypoint WP 0', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+    
+    const planWps = [
+      { lat: 41.3210711, lon: -88.9948408, alt: 30, yaw: 349.9, pitch: -45 },
+      { lat: 41.3212480, lon: -88.9948819, alt: 30, yaw: 349.9, pitch: -45 }
+    ];
+
+    // Flight points where sample 0 is mid-rotation (-3.3 deg) at dH=0.93m and sample 1 is settled (-45 deg) at dH=1.05m
+    const flightPts = [
+      { lat: 41.3210711, lon: -88.9948408, alt: 30, yaw: -9.9, pitch: -3.3, photoCount: 1, flightTime: 38 },
+      { lat: 41.3210719, lon: -88.9948408, alt: 30, yaw: -10.0, pitch: -45.0, photoCount: 2, flightTime: 39 },
+      { lat: 41.3211500, lon: -88.9948600, alt: 30, yaw: -10.0, pitch: -45.0, photoCount: 2, flightTime: 41 },
+      { lat: 41.3212480, lon: -88.9948819, alt: 30, yaw: -10.1, pitch: -45.0, photoCount: 3, flightTime: 45 },
+      { lat: 41.3212480, lon: -88.9948819, alt: 30, yaw: -10.1, pitch: -45.0, photoCount: 3, flightTime: 46 }
+    ];
+
+    const result = IrlVerifier.verifyFlightPlanAgainstLog(planWps, flightPts);
+    assert.strictEqual(result.wpApproaches[0].bestPtIndex, 1, 'WP 0 must select settled sample (index 1) over mid-rotation sample (index 0)');
+    assert.strictEqual(result.wpApproaches[0].dPitch, 0, 'WP 0 pitch error must be 0 after selecting settled sample');
+    assert.strictEqual(result.phases.heading_gimbal, true, 'Heading and gimbal phase passes');
+  });
+
+  test('IRL status tracker formally marks corridor as VERIFIED with all 6 checklist phases true', () => {
+    const statusData = JSON.parse(fs.readFileSync(path.join(__dirname, 'docs/irl_test_status.json'), 'utf8'));
+    assert.strictEqual(statusData.patterns['corridor'].status, 'VERIFIED');
+    const chk = statusData.patterns['corridor'].checklist;
+    assert.ok(chk.kmz_import && chk.entry_altitude && chk.geometry_path && chk.heading_gimbal && chk.capture_trigger && chk.exit_rth);
   });
 });

@@ -7993,7 +7993,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.215.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.215.2</span></h1>
         </div>
       </div>
 
@@ -15025,7 +15025,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.215.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.215.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15186,6 +15186,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.215.2):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Initial Waypoint Gimbal Rotation Settling &amp; Corridor Verification (Closes #218):</strong> Added arrival settling sampling for Waypoint 0 to prioritize settled gimbal pitch over mid-rotation samples when the drone arrives at target altitude. Corridor Mapping verified 100% nominal across all 6 phases.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.215.1):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -21339,7 +21345,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
   <!-- Custom Javascript -->
   <script>
-if (typeof window !== "undefined") { window.AALAAPI_IRL_STATUS = {"_issue":"https://github.com/bpawletz/Aalaapi-Sky/issues/202","single":{"s":"V","v":"1.210.0"},"double":{"s":"U","v":null},"target-splat":{"s":"U","v":null},"orbit":{"s":"V","v":"1.215.0"},"multi-orbit":{"s":"U","v":null},"tower":{"s":"U","v":null},"vertical-facade":{"s":"U","v":null},"continuous-helix":{"s":"U","v":null},"star-pass":{"s":"U","v":null},"photo-sphere":{"s":"U","v":null},"hyperlapse":{"s":"U","v":null},"light-art":{"s":"U","v":null},"grid-orbit-combo":{"s":"U","v":null},"grid-multi-orbit-combo":{"s":"U","v":null},"freeform":{"s":"U","v":null},"road-following":{"s":"U","v":null},"corridor":{"s":"U","v":null},"exclusion-box":{"s":"U","v":null},"exclusion-freeform":{"s":"U","v":null},"boundary-polygon":{"s":"U","v":null},"fiducial-markers":{"s":"U","v":null},"dome-shell":{"s":"U","v":null},"polygon-grid":{"s":"U","v":null},"sar-search":{"s":"U","v":null},"perimeter-patrol":{"s":"U","v":null},"cinematic-reveal":{"s":"U","v":null}}; }
+if (typeof window !== "undefined") { window.AALAAPI_IRL_STATUS = {"_issue":"https://github.com/bpawletz/Aalaapi-Sky/issues/202","single":{"s":"V","v":"1.210.0"},"double":{"s":"U","v":null},"target-splat":{"s":"U","v":null},"orbit":{"s":"V","v":"1.215.0"},"multi-orbit":{"s":"U","v":null},"tower":{"s":"U","v":null},"vertical-facade":{"s":"U","v":null},"continuous-helix":{"s":"U","v":null},"star-pass":{"s":"U","v":null},"photo-sphere":{"s":"U","v":null},"hyperlapse":{"s":"U","v":null},"light-art":{"s":"U","v":null},"grid-orbit-combo":{"s":"U","v":null},"grid-multi-orbit-combo":{"s":"U","v":null},"freeform":{"s":"U","v":null},"road-following":{"s":"U","v":null},"corridor":{"s":"V","v":"1.215.1"},"exclusion-box":{"s":"U","v":null},"exclusion-freeform":{"s":"U","v":null},"boundary-polygon":{"s":"U","v":null},"fiducial-markers":{"s":"U","v":null},"dome-shell":{"s":"U","v":null},"polygon-grid":{"s":"U","v":null},"sar-search":{"s":"U","v":null},"perimeter-patrol":{"s":"U","v":null},"cinematic-reveal":{"s":"U","v":null}}; }
 // -------------------- src/core/Logger.js --------------------
 // Centralized Logging Utility
 const Logger = {
@@ -66891,12 +66897,15 @@ const IrlVerifier = {
         const dZCand = Math.abs(parseFloat(pt.alt || 0) - wpAlt);
         const score = hasVerticalStacking ? Math.hypot(dH, dZCand) : dH;
 
+        // At WP 0, prefer sample where gimbal pitch has settled toward planned pitch at arrival altitude
         // At final waypoint, prefer approach sample before post-mission RTH disengagement levels gimbal to 0°
-        const isBetter = (i === 0 && dH < 1.0 && bestDistH < 1.0)
-          ? (j > 0 && dH <= bestDistH + 0.25)
-          : (isFinalWp && dH <= Math.min(1.0, horizontalToleranceM) && bestDistH <= Math.min(1.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined)
-            ? (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)
-            : (score < bestScore);
+        const isBetter = (i === 0 && dH <= Math.min(2.0, horizontalToleranceM) && bestDistH <= Math.min(2.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined)
+          ? (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)
+          : (i === 0 && dH < 1.0 && bestDistH < 1.0)
+            ? (j > 0 && dH <= bestDistH + 0.25)
+            : (isFinalWp && dH <= Math.min(1.0, horizontalToleranceM) && bestDistH <= Math.min(1.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined)
+              ? (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)
+              : (score < bestScore);
 
         if (isBetter) {
           bestScore = score;
