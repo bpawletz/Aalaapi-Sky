@@ -142,12 +142,15 @@ const IrlVerifier = {
         const dZCand = Math.abs(parseFloat(pt.alt || 0) - wpAlt);
         const score = hasVerticalStacking ? Math.hypot(dH, dZCand) : dH;
 
+        // At WP 0, prefer sample where gimbal pitch has settled toward planned pitch at arrival altitude
         // At final waypoint, prefer approach sample before post-mission RTH disengagement levels gimbal to 0°
-        const isBetter = (i === 0 && dH < 1.0 && bestDistH < 1.0)
-          ? (j > 0 && dH <= bestDistH + 0.25)
-          : (isFinalWp && dH <= Math.min(1.0, horizontalToleranceM) && bestDistH <= Math.min(1.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined)
-            ? (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)
-            : (score < bestScore);
+        const isBetter = (i === 0 && dH <= Math.min(2.0, horizontalToleranceM) && bestDistH <= Math.min(2.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined)
+          ? (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)
+          : (i === 0 && dH < 1.0 && bestDistH < 1.0)
+            ? (j > 0 && dH <= bestDistH + 0.25)
+            : (isFinalWp && dH <= Math.min(1.0, horizontalToleranceM) && bestDistH <= Math.min(1.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined)
+              ? (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)
+              : (score < bestScore);
 
         if (isBetter) {
           bestScore = score;

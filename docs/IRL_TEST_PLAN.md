@@ -5,7 +5,7 @@
 
 **Document & Tracker Version:** `v1.215.1` | **WPML Compiler Hash:** `065c12fa7b08` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
-**Summary Progress:** **2 / 26** Patterns Verified | **0** Needs Re-Test | **24** Untested | **0** Failed
+**Summary Progress:** **3 / 26** Patterns Verified | **0** Needs Re-Test | **23** Untested | **0** Failed
 
 ---
 
@@ -95,7 +95,7 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 | 14 | `grid-multi-orbit-combo` | **2D + 3D Hybrid (Grid + Multi-Orbit)** | Mapping & 3D | ⬜ `UNTESTED` | `5d8e10e013e4` | — | — | `0/6` |
 | 15 | `freeform` | **Freeform Flight Plan (Manual Waypoints)** | Linear & Route | ⬜ `UNTESTED` | `1af7e6adb578` | — | — | `0/6` |
 | 16 | `road-following` | **Road Following (Offset Path)** | Linear & Route | ⬜ `UNTESTED` | `e20683d1d303` | — | — | `0/6` |
-| 17 | `corridor` | **Corridor Mapping (Multi-Pass Polyline)** | Linear & Route | ⬜ `UNTESTED` | `4ff8bc9f909e` | — | — | `0/6` |
+| 17 | `corridor` | **Corridor Mapping (Multi-Pass Polyline)** | Linear & Route | ✅ `VERIFIED` | `4ff8bc9f909e` | v1.215.1 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 18 | `exclusion-box` | **Exclusion Zone (Rectangular Box)** | Safety & GCP | ⬜ `UNTESTED` | `912ee3191092` | — | — | `0/6` |
 | 19 | `exclusion-freeform` | **Exclusion Zone (Freeform Polygon)** | Safety & GCP | ⬜ `UNTESTED` | `3950f2668594` | — | — | `0/6` |
 | 20 | `boundary-polygon` | **Boundary / Parcel (Drawing Layer)** | Safety & GCP | ⬜ `UNTESTED` | `49ed96c0dfa0` | — | — | `0/6` |
@@ -297,15 +297,15 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 - **Edge-Case & Safety Watchout:** Verify miter/bevel offset geometry at sharp road bends does not self-intersect or cross over the active roadway.
 
 #### `corridor` — Corridor Mapping (Multi-Pass Polyline)
-- **Current Status:** ⬜ `UNTESTED` | **Generator Hash:** `4ff8bc9f909e` (`src/patterns/PatternGenerators.js` -> `generateCorridorCoordinates`)
+- **Current Status:** ✅ `VERIFIED` | **Generator Hash:** `4ff8bc9f909e` (`src/patterns/PatternGenerators.js` -> `generateCorridorCoordinates`)
 - **Recommended Safe Field Parameters:** Origin `[41.3215, -88.9950]`, `altitudeM: 60`, `corridorWidthM: 60`, `passes: 3`, `overshootM: 15`, `turnType: bulb`, `speedMps: 6.5`, `gimbalPitchDeg: -90`, `captureMode: continuous`, `headingMode: followWayline`, `pathMode: curved`
 - **6-Phase Field Verification Checklist:**
-  - [ ] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export 3-pass Corridor Mapping KMZ (60m width, 15m overshoot, `bulb` turnarounds) and verify on RC 2.
-  - [ ] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Confirm climb to 60m AGL at Pass 1 entry overshoot waypoint.
-  - [ ] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify 3 parallel offset swaths track the polyline centerline with smooth bulb turnaround loops at corridor ends.
-  - [ ] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify aircraft nose aligns with each swath direction and gimbal maintains -90° nadir (or -60° oblique).
-  - [ ] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Confirm continuous photos fire along corridor swaths and pause (`skipPhoto: true`) during bulb turnaround loops.
-  - [ ] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Verify RTH from the end of Pass 3.
+  - [x] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export 3-pass Corridor Mapping KMZ (60m width, 15m overshoot, `bulb` turnarounds) and verify on RC 2.
+  - [x] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Confirm climb to 60m AGL at Pass 1 entry overshoot waypoint.
+  - [x] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify 3 parallel offset swaths track the polyline centerline with smooth bulb turnaround loops at corridor ends.
+  - [x] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify aircraft nose aligns with each swath direction and gimbal maintains -90° nadir (or -60° oblique).
+  - [x] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Confirm continuous photos fire along corridor swaths and pause (`skipPhoto: true`) during bulb turnaround loops.
+  - [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Verify RTH from the end of Pass 3.
 - **Edge-Case & Safety Watchout:** At polyline vertex bends > 45°, verify outer swath miter clamping prevents excessive corner overshoot.
 
 #### `perimeter-patrol` — Perimeter Patrol (Closed Boundary Loop)

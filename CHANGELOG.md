@@ -1,3 +1,21 @@
+## [1.215.2] - 2026-11-01
+
+Refines IRL field flight verifier with initial waypoint gimbal rotation settling sampling and formally promotes Corridor Mapping to VERIFIED.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Initial Waypoint Gimbal Rotation Settling Prioritization (Closes #218)**:
+  - Added arrival settling sampling for Waypoint 0 in both the in-app flight verifier (`IrlVerifier.js`) and CLI verification tracker (`irl_tracker.js`).
+  - When the aircraft arrives at Waypoint 0 at the planned altitude, the verifier prioritizes the sample after the camera gimbal completes its initial tilt down from 0° (takeoff) to the planned survey pitch (e.g. -45° or -60°).
+  - Prevents false-positive pitch variance flags caused by sampling mid-rotation when the drone is stationary at the initial entry waypoint.
+- **Corridor Mapping IRL Field Verification**:
+  - Formally promoted Corridor Mapping (`corridor`) to `VERIFIED` status in the IRL Field Flight Tracker following 100% nominal pass across all 6 verification phases in `FlightRecord_2026-11-01_[17-10-42].txt` (100% waypoints reached, RMS cross-track error 0.65 m, mean yaw error 0.1°, mean pitch error 0.0°).
+
+#### Under the Hood & Technical Details
+- **`src/qa/IrlVerifier.js` & `tools/qa/irl_tracker.js`**:
+  - Enhanced sample selection for `i === 0` to prefer samples within 2.0 m horizontal proximity where `pt.pitch` has settled toward `wpPitch` by more than 5°.
+
 ## [1.215.1] - 2026-11-01
 
 Fixes WPML executeHeight compiler flattening on variable-altitude flight patterns and introduces chronological sliding windowing and RTH disengagement filtering to the IRL flight log verifier.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-01T21:33:16.725Z",
+  "lastUpdated": "2026-11-01T22:18:41.041Z",
   "currentAppVersion": "1.215.1",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
@@ -802,15 +802,15 @@
         "generateCorridorCoordinates"
       ],
       "codeHash": "4ff8bc9f909e",
-      "verifiedCodeHash": null,
-      "status": "UNTESTED",
+      "verifiedCodeHash": "4ff8bc9f909e",
+      "status": "VERIFIED",
       "lastModifiedVersion": "1.209.0",
-      "lastTestedVersion": null,
-      "lastTestedDate": null,
-      "testedBy": null,
-      "droneModel": null,
-      "firmware": null,
-      "notes": "",
+      "lastTestedVersion": "1.215.1",
+      "lastTestedDate": "2026-11-01T22:18:31.187Z",
+      "testedBy": "RPIC Field QA",
+      "droneModel": "DJI Mini 4 Pro",
+      "firmware": "RC 2 / DJI Fly",
+      "notes": "Verified all 6 IRL field test phases in FlightRecord_2026-11-01_[17-10-42].txt.",
       "testParams": {
         "centerCoords": [
           41.3215,
@@ -828,15 +828,35 @@
         "pathMode": "curved"
       },
       "checklist": {
-        "kmz_import": false,
-        "entry_altitude": false,
-        "geometry_path": false,
-        "heading_gimbal": false,
-        "capture_trigger": false,
-        "exit_rth": false
+        "kmz_import": true,
+        "entry_altitude": true,
+        "geometry_path": true,
+        "heading_gimbal": true,
+        "capture_trigger": true,
+        "exit_rth": true
       },
       "lastTelemetryMetrics": null,
-      "history": []
+      "history": [
+        {
+          "timestamp": "2026-11-01T22:18:31.187Z",
+          "version": "1.215.1",
+          "status": "VERIFIED",
+          "codeHash": "4ff8bc9f909e",
+          "testedBy": "RPIC Field QA",
+          "droneModel": "DJI Mini 4 Pro",
+          "firmware": "RC 2 / DJI Fly",
+          "notes": "Verified all 6 IRL field test phases in FlightRecord_2026-11-01_[17-10-42].txt.",
+          "checklist": {
+            "kmz_import": true,
+            "entry_altitude": true,
+            "geometry_path": true,
+            "heading_gimbal": true,
+            "capture_trigger": true,
+            "exit_rth": true
+          },
+          "telemetryMetrics": null
+        }
+      ]
     },
     "exclusion-box": {
       "id": "exclusion-box",
