@@ -50,6 +50,9 @@ test('tls_cert: getOrCreateCertificate persists and reloads cached certificate',
     assert.ok(fs.existsSync(res1.certPath));
     assert.ok(fs.existsSync(res1.keyPath));
 
+    const x509 = new crypto.X509Certificate(res1.cert);
+    assert.ok(x509.subjectAltName.includes('DNS:aalaapi-sky.local'), 'SAN includes DNS:aalaapi-sky.local');
+
     // Second call: loads from cache
     const res2 = getOrCreateCertificate({ certsDir: tempDir });
     assert.equal(res2.source, 'cached');

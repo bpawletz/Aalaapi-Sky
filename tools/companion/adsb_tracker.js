@@ -833,6 +833,26 @@ class AdsbAirspaceTracker extends EventEmitter {
     return { success: true, tcpHost: this.tcpHost, tcpPort: this.tcpPort };
   }
 
+  /**
+   * Scans the local network via Bonjour for active dump1090 / SBS servers.
+   * If autoConnect is true and an SBS server is discovered, switches connection to that server.
+   */
+  async discoverBonjourServers(options = {}) {
+    try {
+      const { MdnsService } = require('./mdns_service.js');
+      const servers = await MdnsService.discoverAdsb({ timeoutMs: options.timeoutMs || 1500 });
+      if (options.autoConnect && servers.length > 0 && !this.connected) {
+        const best = servers[0];
+        const targetHost = best.address || best.host;
+        const targetPort = best.port || 30003;
+        this.updateServerConfig({ tcpHost: targetHost, tcpPort: targetPort });
+      }
+      return servers;
+    } catch (err) {
+      return [];
+    }
+  }
+
   getStatus() {
     const hw = this.detectHardware();
     const isRemoteServer = (this.tcpHost !== '127.0.0.1' && this.tcpHost !== 'localhost');

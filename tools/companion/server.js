@@ -43,6 +43,9 @@ const cliCert = getCliArg('--ssl-cert') || getCliArg('--cert');
 const cliKey = getCliArg('--ssl-key') || getCliArg('--key');
 const isNoHttps = process.argv.includes('--no-https') || process.env.AALAAPI_NO_HTTPS === '1';
 const isHttpsOnly = process.argv.includes('--https-only') || process.env.AALAAPI_HTTPS_ONLY === '1';
+const isNoMdns = process.argv.includes('--no-mdns') || process.env.AALAAPI_NO_MDNS === '1';
+const { MdnsService } = require('./mdns_service.js');
+let mdnsService = null;
 
 const PORT = cliPort ? parseInt(cliPort, 10) : (process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765);
 const HTTPS_PORT = cliHttpsPort ? parseInt(cliHttpsPort, 10) : (process.env.AALAAPI_HTTPS_PORT ? parseInt(process.env.AALAAPI_HTTPS_PORT, 10) : (PORT === 8765 ? 8766 : PORT + 1));
@@ -189,6 +192,7 @@ function isPublicAuthEndpoint(pathname, method) {
   if (pathname.startsWith('/api/tools/')) return true;
   if (pathname.startsWith('/api/ai3d/')) return true;
   if (pathname === '/health' || pathname === '/favicon.ico') return true;
+  if (pathname === '/api/discovery' || pathname === '/api/airspace/discover' || pathname === '/api/adsb/discover' || pathname === '/api/bridge/discover') return true;
 
   // Public geospatial tile proxy & DEM elevation (needed for Leaflet DOM <img> rendering & terrain)
   if ((pathname === '/api/proxy/tile' || pathname === '/proxy' || pathname === '/api/proxy' || pathname === '/proxy/tile') && method === 'GET') return true;
@@ -335,6 +339,9 @@ function saveAdsbConfig(host, port) {
   saveWorkingAdsbConnection(cleanHost, cleanPort);
   if (adsbTracker && typeof adsbTracker.updateServerConfig === 'function') {
     adsbTracker.updateServerConfig({ tcpHost: cleanHost, tcpPort: cleanPort });
+  }
+  if (typeof mdnsService !== 'undefined' && mdnsService && typeof mdnsService.updateAdsbService === 'function') {
+    mdnsService.updateAdsbService({ port: cleanPort, host: cleanHost, enabled: true });
   }
   return { adsbHost: cleanHost, adsbPort: cleanPort };
 }
@@ -539,6 +546,25 @@ const adsbTracker = new AdsbAirspaceTracker({
 adsbTracker.on('connected', ({ tcpHost, tcpPort }) => {
   saveWorkingAdsbConnection(tcpHost, tcpPort, { driverType: 'dump1090-tcp' });
 });
+
+if (!isNoMdns) {
+  try {
+    mdnsService = new MdnsService({
+      hostname: getCliArg('--mdns-name') || process.env.AALAAPI_MDNS_NAME || 'aalaapi-sky',
+      instanceName: 'Aalaapi Sky Drone Bridge',
+      port: PORT,
+      httpsPort: HTTPS_PORT,
+      hasHttps: Boolean(!isNoHttps),
+      rtmpPort: (typeof videoService !== 'undefined' && videoService.rtmpPort) ? videoService.rtmpPort : 1935,
+      adsbHost: initialAdsbCfg.adsbHost,
+      adsbPort: initialAdsbCfg.adsbPort,
+      adsbEnabled: true,
+      version: VERSION
+    });
+  } catch (err) {
+    logWarn('[MDNS INIT ERROR]', err.message);
+  }
+}
 
 // Cache for external online ADS-B feeds (adsb.lol / airplanes.live)
 let lastExternalFeedCache = null;
@@ -1106,6 +1132,10 @@ function stopScanners() {
   }
   if (typeof videoService !== 'undefined' && videoService && typeof videoService.stop === 'function') {
     try { videoService.stop(); } catch (e) {}
+  }
+  if (typeof mdnsService !== 'undefined' && mdnsService && typeof mdnsService.stop === 'function') {
+    try { mdnsService.stop(); } catch (e) {}
+    mdnsService = null;
   }
 }
 
@@ -3504,6 +3534,18 @@ function printStartupBanner() {
   if (tlsCredentials) {
     logDetail('Localhost HTTPS', `https://127.0.0.1:${HTTPS_PORT} (Google AI Studio & Secure Contexts)`);
   }
+  if (mdnsService) {
+    logDetail('Bonjour Host', `${colors.green}${mdnsService.fqdnHost}${colors.reset} (mDNS / Zeroconf active)`);
+    logDetail('Bonjour HTTP', `http://${mdnsService.fqdnHost}:${PORT}`);
+    if (tlsCredentials) {
+      logDetail('Bonjour HTTPS', `https://${mdnsService.fqdnHost}:${HTTPS_PORT}`);
+    }
+    if (typeof videoService !== 'undefined' && videoService.rtmpPort) {
+      logDetail('Bonjour RTMP', `rtmp://${mdnsService.fqdnHost}:${videoService.rtmpPort}/live/stream`);
+    }
+    const adsbCfg = getAdsbConfig();
+    logDetail('Bonjour SBS', `sbs://${mdnsService.fqdnHost}:${adsbCfg.adsbPort || 30003} (_sbs._tcp / _dump1090._tcp)`);
+  }
   const lanAddrs = getLanAddresses();
   if (lanAddrs.length > 0) {
     lanAddrs.forEach(l => {
@@ -3710,6 +3752,12 @@ const handleHttpRequest = async (req, res) => {
           fingerprint: tlsCredentials?.fingerprint || ''
         },
         metrics: bridgeMetrics ? bridgeMetrics.snapshot() : null,
+        mdns: mdnsService ? {
+          enabled: true,
+          hostname: mdnsService.fqdnHost,
+          port: mdnsService.port,
+          services: mdnsService.getAdvertisedRecords().filter(r => r.type === 12).map(r => r.name)
+        } : { enabled: false },
         version: VERSION
       };
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -3750,7 +3798,8 @@ const handleHttpRequest = async (req, res) => {
         activePilots: (typeof authDb !== 'undefined' && authDb.listPilots) ? authDb.listPilots().length : 0,
         googleSsoConfigured: Boolean(getGoogleClientId())
       };
-      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, videoDevices, tileCache: tileCacheStats, rtmp: rtmpStatus, auth: authSummary, version: VERSION })}\n\n`);
+      const mdnsInfo = mdnsService ? { enabled: true, hostname: mdnsService.fqdnHost } : { enabled: false };
+      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, videoDevices, tileCache: tileCacheStats, rtmp: rtmpStatus, auth: authSummary, mdns: mdnsInfo, version: VERSION })}\n\n`);
       return;
     }
 
@@ -3833,6 +3882,50 @@ const handleHttpRequest = async (req, res) => {
         prompts: mcpServer.getPromptDefinitions(),
         resources: mcpServer.getResourceDefinitions()
       }));
+      return;
+    }
+
+    // 1d-0. General Bonjour / mDNS Service Discovery Endpoints
+    if (pathname === '/api/discovery' && req.method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify({
+        success: true,
+        version: VERSION,
+        mdns: mdnsService ? {
+          enabled: true,
+          hostname: mdnsService.fqdnHost,
+          systemHostname: mdnsService.fqdnSysHost,
+          port: mdnsService.port,
+          httpsPort: mdnsService.httpsPort,
+          rtmpPort: mdnsService.rtmpPort,
+          adsbPort: mdnsService.adsbPort,
+          adsbHost: mdnsService.adsbHost,
+          services: mdnsService.getAdvertisedRecords().filter(r => r.type === 12).map(r => r.name)
+        } : { enabled: false },
+        lanAddresses: getLanAddresses()
+      }));
+      return;
+    }
+
+    if (pathname === '/api/bridge/discover' && req.method === 'GET') {
+      const timeoutMs = parseInt(url.searchParams.get('timeout') || '1500', 10);
+      try {
+        const discovered = await MdnsService.discover({ serviceType: '_aalaapi-sky._tcp.local', timeoutMs });
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        });
+        res.end(JSON.stringify({ success: true, count: discovered.length, bridges: discovered }));
+      } catch (err) {
+        res.writeHead(500, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        });
+        res.end(JSON.stringify({ success: false, error: err.message, bridges: [] }));
+      }
       return;
     }
 
@@ -6336,10 +6429,30 @@ const handleHttpRequest = async (req, res) => {
     // 9a-2b. ADS-B Host Port Probe Diagnostic
     if ((pathname === '/api/config/adsb/probe' || pathname === '/api/airspace/probe' || pathname === '/api/adsb/probe') && req.method === 'GET') {
       const cfg = getAdsbConfig();
-      const targetHost = parsedUrl.searchParams.get('host') || cfg.adsbHost || '127.0.0.1';
+      const targetHost = url.searchParams.get('host') || cfg.adsbHost || '127.0.0.1';
       const probeResult = await probeAdsbHost(targetHost);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(probeResult));
+      return;
+    }
+
+    // 9a-2c. ADS-B Bonjour / mDNS Service Discovery Endpoint
+    if ((pathname === '/api/airspace/discover' || pathname === '/api/adsb/discover') && req.method === 'GET') {
+      const timeoutMs = parseInt(url.searchParams.get('timeout') || '1500', 10);
+      try {
+        const discovered = await MdnsService.discoverAdsb({ timeoutMs });
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        });
+        res.end(JSON.stringify({ success: true, count: discovered.length, servers: discovered }));
+      } catch (err) {
+        res.writeHead(500, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        });
+        res.end(JSON.stringify({ success: false, error: err.message, servers: [] }));
+      }
       return;
     }
 
@@ -7380,6 +7493,7 @@ function startDashboard() {
     version: VERSION,
     port: PORT,
     httpsPort: httpsServer ? HTTPS_PORT : null,
+    mdnsHost: mdnsService ? mdnsService.fqdnHost : 'aalaapi-sky.local',
     startTime: bridgeStartTime,
     metrics: bridgeMetrics,
     getRc2Status: () => cachedRc2Status || { connected: false },
@@ -7528,6 +7642,15 @@ server.on('upgrade', (req, socket, head) => {
       }
     }
 
+    // Start Bonjour / mDNS Service Responder
+    if (mdnsService && typeof mdnsService.start === 'function') {
+      try {
+        mdnsService.start();
+      } catch (err) {
+        logWarn('MDNS', `Could not start Bonjour mDNS responder: ${err.message}`);
+      }
+    }
+
     // Start HTTP Server (unless in HTTPS-only mode)
     if (!isHttpsOnly) {
       server.listen(PORT, '0.0.0.0', () => {
@@ -7614,6 +7737,8 @@ module.exports = {
   getGoogleClientId,
   saveGoogleClientId,
   broadcastAuthUpdate,
+  mdnsService,
+  MdnsService,
   get VERSION() {
     try {
       const p = path.join(__dirname, '../../package.json');

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-01T04:05:27.236Z",
-  "currentAppVersion": "1.214.5",
+  "lastUpdated": "2026-11-01T13:52:51.950Z",
+  "currentAppVersion": "1.215.0",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "b21749fd09a5",
@@ -1201,6 +1201,37 @@
     }
   },
   "releasePlans": [
+    {
+      "id": "rel-1.215.0-216",
+      "version": "1.215.0",
+      "issueNumber": 216,
+      "title": "Zero-Dependency Bonjour mDNS/DNS-SD Service Broadcasting & SBS Port Advertisement",
+      "date": "2026-11-01",
+      "affectedPatterns": [
+        "grid",
+        "orbit",
+        "target-splat"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Start companion bridge with npm run companion",
+          "checked": false
+        },
+        {
+          "label": "Verify aalaapi-sky.local resolves via ping or browser",
+          "checked": false
+        },
+        {
+          "label": "Verify _dump1090._tcp and _sbs._tcp advertise on port 30003",
+          "checked": false
+        },
+        {
+          "label": "Click Bonjour Scan in Airspace Settings modal and connect",
+          "checked": false
+        }
+      ]
+    },
     {
       "id": "rel-1.214.5-215",
       "version": "1.214.5",

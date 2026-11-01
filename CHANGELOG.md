@@ -1,3 +1,33 @@
+## [1.215.0] - 2026-11-01
+
+Introduces zero-dependency Bonjour (mDNS / DNS-SD RFC 6762 & RFC 6763) local service broadcasting, stable aalaapi-sky.local hostname resolution, dump1090 / SBS BaseStation port advertisement, and LAN auto-discovery across the companion bridge, web UI, and Node-RED.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Zero-Dependency Bonjour (mDNS / DNS-SD) Service Broadcasting (Closes #216)**:
+  - Companion Bridge now advertises `aalaapi-sky.local` alongside standard DNS-SD service types across all active LAN network interfaces with zero external npm dependencies.
+  - Pilots can permanently configure `rtmp://aalaapi-sky.local:1935/live/stream` in DJI Fly on their DJI RC 2 controller and open `http://aalaapi-sky.local:8765` (or `https://aalaapi-sky.local:8766`) on any iPad, tablet, or phone without tracking changing subnet IP addresses.
+  - Advertises `_aalaapi-sky._tcp.local`, `_http._tcp.local`, `_https._tcp.local`, `_rtmp._tcp.local`, and `_mcp._tcp.local` with rich TXT metadata.
+- **dump1090 / SBS BaseStation Port Advertisement & LAN Auto-Discovery**:
+  - Automatically advertises `_dump1090._tcp.local` and `_sbs._tcp.local` on port 30003 (or the configured ADS-B port) with format metadata (`protocol=sbs1`, `rawPort=30002`, `beastPort=30005`, `httpPort=8080`).
+  - Added a **"✨ Bonjour Scan"** button in the Airspace Settings modal (`#adsb-config-modal`) to automatically detect local and remote SBS feeders on the network and connect with one click.
+  - Includes a standalone beacon CLI mode (`node tools/companion/mdns_service.js --sbs-only`) and an Avahi service descriptor generator (`--print-avahi`) for Linux/Raspberry Pi feeders.
+- **Node-RED LAN Auto-Discovery**:
+  - Added a **"Discover (Bonjour)"** button to `aalaapi-config` nodes in the Node-RED editor to automatically discover and connect to running Aalaapi Bridge instances on the local network.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/mdns_service.js`**:
+  - Implemented pure Node.js (`node:dgram`, `node:os`) RFC 6762 / RFC 6763 wire-format DNS encoder, decoder with compression pointer navigation, multicast responder on `224.0.0.251:5353`, unsolicited announcement broadcast, `TTL=0` goodbye packet generation, and active subnet discovery scanner.
+- **`tools/companion/tls_cert.js`**:
+  - Added `aalaapi-sky.local` and `${os.hostname().toLowerCase()}.local` to Subject Alternative Names (SANs) for self-signed X.509 certificate generation.
+- **`tools/companion/server.js`**:
+  - Integrated `MdnsService` into Companion Bridge startup, dynamic ADS-B config updates (`saveAdsbConfig`), and clean teardown (`stopScanners()`). Added `/api/discovery`, `/api/airspace/discover`, and `/api/bridge/discover` endpoints.
+- **`tools/companion/top_dashboard.js`**:
+  - Added Bonjour `.local` hostname badge to the interactive ASCII Top Dashboard header bar.
+- **`tools/companion/mdns_service.test.js` & `tools/companion/server_discovery.test.js`**:
+  - Added comprehensive unit test suites verifying wire-format label parsing, record serialization, Avahi XML generation, and server discovery endpoints.
+
 ## [1.214.5] - 2026-10-31
 
 Echoes dynamic Access-Control-Request-Headers and includes Cache-Control and Pragma in CORS preflight responses to eliminate preflight failures on cross-origin SSE streams.

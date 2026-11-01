@@ -29,6 +29,30 @@
             statusSpan.html('<span style="color: #d32f2f;"><i class="fa fa-times-circle"></i> Error: ' + err + '</span>');
           });
       });
+
+      $('#node-config-discover-btn').on('click', function() {
+        const statusSpan = $('#node-config-test-status');
+        statusSpan.html('<i class="fa fa-spinner fa-spin"></i> Scanning LAN via Bonjour...');
+
+        $.getJSON('/aalaapi-bridge/discover')
+          .done(function(data) {
+            if (data.bridges && data.bridges.length > 0) {
+              const b = data.bridges[0];
+              const resolvedHost = b.host || b.address || 'aalaapi-sky.local';
+              $('#node-config-input-host').val(resolvedHost);
+              if (b.port) $('#node-config-input-port').val(b.port);
+              statusSpan.html('<span style="color: #2e7d32;"><i class="fa fa-check"></i> Found ' + resolvedHost + ':' + (b.port || 8765) + '</span>');
+            } else {
+              // Default to standard mDNS hostname
+              $('#node-config-input-host').val('aalaapi-sky.local');
+              statusSpan.html('<span style="color: #2e7d32;"><i class="fa fa-info-circle"></i> Set to aalaapi-sky.local</span>');
+            }
+          })
+          .fail(function() {
+            $('#node-config-input-host').val('aalaapi-sky.local');
+            statusSpan.html('<span style="color: #2e7d32;"><i class="fa fa-info-circle"></i> Set to aalaapi-sky.local</span>');
+          });
+      });
     }
   });
 </script>
@@ -59,6 +83,7 @@
   </div>
   <div class="form-row" style="margin-top: 15px;">
     <button type="button" class="red-ui-button" id="node-config-test-btn"><i class="fa fa-plug"></i> Test Connection</button>
+    <button type="button" class="red-ui-button" id="node-config-discover-btn" style="margin-left: 8px;"><i class="fa fa-search"></i> Discover (Bonjour)</button>
     <span id="node-config-test-status" style="margin-left: 10px; font-weight: bold;"></span>
   </div>
 </script>

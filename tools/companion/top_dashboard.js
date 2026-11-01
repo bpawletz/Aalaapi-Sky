@@ -339,12 +339,13 @@ function renderFrame(state, options = {}) {
 
   // Line 1: Header
   const title = `${ANSI.bold}${ANSI.cyan}Aalaapi Sky Bridge v${state.version || '1.144.0'}${ANSI.reset}`;
+  const mdnsPart = state.mdnsHost ? ` ${ANSI.green}${state.mdnsHost}${ANSI.reset} ` : ' ';
   const hostInfo = `${ANSI.gray}http://127.0.0.1:${state.port || 8765}${state.httpsPort ? ` | https :${state.httpsPort}` : ''}${ANSI.reset}`;
   const uptimeSec = state.startTime ? (Date.now() - state.startTime) / 1000 : 0;
   const uptimeStr = `${ANSI.gray}up ${formatUptime(uptimeSec)}${ANSI.reset}`;
   const nowStr = `${ANSI.gray}${new Date().toTimeString().slice(0, 8)}${ANSI.reset}`;
 
-  const headerLeft = ` ${title}   ${hostInfo}   ${uptimeStr}`;
+  const headerLeft = ` ${title} ${mdnsPart}${hostInfo}   ${uptimeStr}`;
   const headerRight = `${nowStr} `;
   const spaces = Math.max(1, cols - visibleLength(headerLeft) - visibleLength(headerRight));
   lines.push(headerLeft + ' '.repeat(spaces) + headerRight);
@@ -485,6 +486,7 @@ class Dashboard {
     this.version = options.version || '1.144.0';
     this.port = options.port || 8765;
     this.httpsPort = options.httpsPort || null;
+    this.mdnsHost = options.mdnsHost || 'aalaapi-sky.local';
     this.startTime = options.startTime || Date.now();
     this.metrics = options.metrics || new BridgeMetrics();
     this.sampler = new ProcessSampler();
@@ -549,6 +551,7 @@ class Dashboard {
       version: this.version,
       port: this.port,
       httpsPort: this.httpsPort,
+      mdnsHost: this.mdnsHost,
       startTime: this.startTime,
       mode: this.mode,
       logBuffer: this.logBuffer,

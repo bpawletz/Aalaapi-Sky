@@ -74,7 +74,7 @@
     "description": "West Palm Beach, FL",
     "mod_date": "10/31/2026 13:44:00",
     "mod_abs_time": "202610311344",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/4136",
     "end_utc": "2026-11-01T18:30:59.000Z"
   },
@@ -86,7 +86,7 @@
     "description": "Palm Beach, FL, Sunday, November 1, 2026 Local",
     "mod_date": "10/31/2026 11:00:00",
     "mod_abs_time": "202610311100",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/4127",
     "start_utc": "2026-11-01T13:00:00.000Z",
     "end_utc": "2026-11-01T18:00:59.000Z",
@@ -183,20 +183,6 @@
     "mod_abs_time": "202610301801",
     "is_new": "N",
     "gid": "6/4084"
-  },
-  {
-    "notam_id": "6/4083",
-    "facility": "ZAB",
-    "state": "AZ",
-    "type": "SECURITY",
-    "description": "Libby AAF, AZ, Friday, October 30, 2026 through Sunday, November 1, 2026 Local",
-    "mod_date": "10/30/2026 17:47:00",
-    "mod_abs_time": "202610301747",
-    "is_new": "N",
-    "gid": "6/4083",
-    "start_utc": "2026-10-31T06:00:00.000Z",
-    "end_utc": "2026-11-01T13:00:59.000Z",
-    "exact_time": true
   },
   {
     "notam_id": "6/4077",
@@ -381,34 +367,6 @@
     "exact_time": true
   },
   {
-    "notam_id": "6/2171",
-    "facility": "ZOB",
-    "state": "PA",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Pittsburgh, PA, Saturday, October 31, 2026 through Sunday, November 1, 2026 UTC",
-    "mod_date": "10/25/2026 15:01:00",
-    "mod_abs_time": "202610251501",
-    "is_new": "N",
-    "gid": "6/2171",
-    "start_utc": "2026-10-31T12:00:00.000Z",
-    "end_utc": "2026-11-01T04:00:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/2103",
-    "facility": "ZLA",
-    "state": "CA",
-    "type": "SECURITY",
-    "description": "WEST HOLLYWOOD, CA, Saturday, October 31, 2026 through Sunday, November 1, 2026 Local",
-    "mod_date": "10/25/2026 00:04:00",
-    "mod_abs_time": "202610250004",
-    "is_new": "N",
-    "gid": "6/2103",
-    "start_utc": "2026-10-31T21:00:00.000Z",
-    "end_utc": "2026-11-01T09:00:59.000Z",
-    "exact_time": true
-  },
-  {
     "notam_id": "6/1947",
     "facility": "ZHU",
     "state": "TX",
@@ -563,18 +521,6 @@
     "exact_time": true
   },
   {
-    "notam_id": "6/3002",
-    "facility": "ZAN",
-    "state": "AK",
-    "type": "SECURITY",
-    "description": "Clear, AK",
-    "mod_date": "07/05/2026 20:43:00",
-    "mod_abs_time": "202607052043",
-    "is_new": "N",
-    "gid": "6/3002",
-    "end_utc": "2026-11-01T10:00:59.000Z"
-  },
-  {
     "notam_id": "6/2657",
     "facility": "ZLA",
     "state": "CA",
@@ -640,32 +586,6 @@
     "gid": null
   },
   {
-    "notam_id": "6/4508",
-    "facility": "ZSU",
-    "state": "PR",
-    "type": "SECURITY",
-    "description": "CEIBA, PR",
-    "mod_date": "03/26/2026 15:35:00",
-    "mod_abs_time": "202603261535",
-    "is_new": "N",
-    "gid": "6/4508",
-    "end_utc": "2026-11-01T03:59:59.000Z"
-  },
-  {
-    "notam_id": "6/4240",
-    "facility": "ZFW",
-    "state": "TX",
-    "type": "SECURITY",
-    "description": "SAN ANGELO, TX, Sunday, March 8, 2026 through Sunday, November 1, 2026 Local",
-    "mod_date": "03/05/2026 20:27:00",
-    "mod_abs_time": "202603052027",
-    "is_new": "N",
-    "gid": "6/4240",
-    "start_utc": "2026-03-08T08:00:00.000Z",
-    "end_utc": "2026-11-01T07:00:59.000Z",
-    "exact_time": true
-  },
-  {
     "notam_id": "6/4143",
     "facility": "ZUA",
     "state": "GU",
@@ -677,34 +597,6 @@
     "gid": "6/4143",
     "start_utc": "2026-03-08T16:00:00.000Z",
     "end_utc": "2027-03-08T15:59:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/4348",
-    "facility": "ZMP",
-    "state": "ND",
-    "type": "SECURITY",
-    "description": "GRAND FORKS AFB, ND, Sunday, March 8, 2026 through Sunday, November 1, 2026 Local",
-    "mod_date": "03/05/2026 17:01:00",
-    "mod_abs_time": "202603051701",
-    "is_new": "N",
-    "gid": "6/4348",
-    "start_utc": "2026-03-08T07:00:00.000Z",
-    "end_utc": "2026-11-01T06:59:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/3475",
-    "facility": "ZOA",
-    "state": "CA",
-    "type": "SECURITY",
-    "description": "BEALE AFB, CA, Sunday, March 8, 2026 through Sunday, November 1, 2026 Local",
-    "mod_date": "03/04/2026 11:40:00",
-    "mod_abs_time": "202603041140",
-    "is_new": "N",
-    "gid": "6/3475",
-    "start_utc": "2026-03-08T09:00:00.000Z",
-    "end_utc": "2026-11-01T09:59:59.000Z",
     "exact_time": true
   },
   {
