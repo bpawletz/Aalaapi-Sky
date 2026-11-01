@@ -1,3 +1,27 @@
+## [1.215.1] - 2026-11-01
+
+Fixes WPML executeHeight compiler flattening on variable-altitude flight patterns and introduces chronological sliding windowing and RTH disengagement filtering to the IRL flight log verifier.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Preserve Variable Altitude Passes in WPML Export (Closes #217)**:
+  - Fixed an issue where the mission compiler's post-processing validation unconditionally flattened `<wpml:executeHeight>` to the baseline layer altitude.
+  - Variable-altitude flight patterns—including Target Splat (`target-splat` perimeter orbit at 65% altitude), Dome Shell (`dome-shell`), Combo patterns (`grid-multi-orbit-combo`), and Cinematic Reveal (`cinematic-reveal`)—now strictly retain their custom waypoint altitudes in exported KMZ flight plans.
+- **IRL Field Verifier Chronological Windowing & Turnaround Filtering**:
+  - Upgraded telemetry log analysis with chronological forward-sliding windowing to prevent orthogonal multi-pass grids (`double`, `corridor`) from falsely aliasing waypoint timestamps against crosshatch intersections flown minutes later.
+  - Added turnaround overshoot and coordinated banking filtering (`skipPhoto: true`, `isTurnaround: true`) to prevent banked turns from distorting planned linear survey heading metrics.
+  - Refined final waypoint sampling prior to Return-to-Home (RTH) disengagement so post-mission gimbal leveling does not trigger false pitch variances.
+- **Circular Orbit IRL Field Verification**:
+  - Formally promoted Circular Orbit (`orbit`) to `VERIFIED` status in the IRL Field Flight Tracker following 100% nominal pass across all 6 verification phases.
+
+#### Under the Hood & Technical Details
+- **`src/export/WpmlCompiler.js`**:
+  - Expanded `isWpVariableAlt` and `isVariableAltPattern` checks in `buildWaylinesWpml` and `validateAndFixWpml` to recognize `wp.isPerimeterOrbit`, `wp.isTransition`, `wp.isPerimeterTransit`, `wp.isMultiOrbit`, `wp.ringIndex`, `dome-shell`, `grid-multi-orbit-combo`, and `cinematic-reveal`.
+- **`src/qa/IrlVerifier.js` & `tools/qa/irl_tracker.js`**:
+  - Added forward-sliding lookahead window (`startJ = (i === 0) ? 0 : Math.max(0, lastBestPtIndex - 3)`, `lookaheadWindow = Math.max(45, avgPtsPerWp * 3)`) to reject out-of-order temporal aliasing.
+  - Added pre-RTH approach prioritization for the terminal waypoint when within 1.0 m horizontal proximity.
+
 ## [1.215.0] - 2026-11-01
 
 Introduces zero-dependency Bonjour (mDNS / DNS-SD RFC 6762 & RFC 6763) local service broadcasting, stable aalaapi-sky.local hostname resolution, dump1090 / SBS BaseStation port advertisement, and LAN auto-discovery across the companion bridge, web UI, and Node-RED.

@@ -3,9 +3,9 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.215.0` | **WPML Compiler Hash:** `b21749fd09a5` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.215.1` | **WPML Compiler Hash:** `065c12fa7b08` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
-**Summary Progress:** **1 / 26** Patterns Verified | **0** Needs Re-Test | **25** Untested | **0** Failed
+**Summary Progress:** **2 / 26** Patterns Verified | **0** Needs Re-Test | **24** Untested | **0** Failed
 
 ---
 
@@ -82,7 +82,7 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 | 1 | `single` | **2D Map (Nadir Grid)** | Mapping & 3D | ✅ `VERIFIED` | `2060d0169374` | v1.210.0 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 2 | `double` | **3D Splat (Double Grid)** | Mapping & 3D | ⬜ `UNTESTED` | `dd5cae736203` | — | — | `0/6` |
 | 3 | `target-splat` | **Target Splat (Frustum Grid)** | Mapping & 3D | ⬜ `UNTESTED` | `0ec37c04a3ff` | — | — | `0/6` |
-| 4 | `orbit` | **3D Object (Circular Orbit)** | Orbit & Structure | ⬜ `UNTESTED` | `64011bf49858` | — | — | `0/6` |
+| 4 | `orbit` | **3D Object (Circular Orbit)** | Orbit & Structure | ✅ `VERIFIED` | `64011bf49858` | v1.215.0 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 5 | `multi-orbit` | **3D Object (Multi-Tiered Orbit)** | Orbit & Structure | ⬜ `UNTESTED` | `0d54cef3c772` | — | — | `0/6` |
 | 6 | `tower` | **3D Structure (Tower Audit)** | Orbit & Structure | ⬜ `UNTESTED` | `691c76eb56a7` | — | — | `0/6` |
 | 7 | `vertical-facade` | **Vertical Facade (Planar Infrastructure)** | Orbit & Structure | ⬜ `UNTESTED` | `d8232774e98a` | — | — | `0/6` |
@@ -187,15 +187,15 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ### Category B: Orbit & 3D Structure Inspections
 
 #### `orbit` — 3D Object (Circular Orbit)
-- **Current Status:** ⬜ `UNTESTED` | **Generator Hash:** `64011bf49858` (`src/patterns/PatternGenerators.js` -> `generateOrbitCoordinates`)
+- **Current Status:** ✅ `VERIFIED` | **Generator Hash:** `64011bf49858` (`src/patterns/PatternGenerators.js` -> `generateOrbitCoordinates`)
 - **Recommended Safe Field Parameters:** Origin `[41.3215, -88.9950]`, `altitudeM: 40`, `radiusM: 30`, `speedMps: 4`, `gimbalPitchDeg: -45`, `captureMode: continuous`, `headingMode: towardCenter`, `pathMode: curved`, `frontOverlapPct: 75`
 - **6-Phase Field Verification Checklist:**
-  - [ ] **Phase 1: KMZ / WPML Export & RC 2 Import**: Load Circular Orbit KMZ on RC 2; verify circular ring waypoints and curved turn radius tags.
-  - [ ] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Confirm climb to 40m AGL and tangent entry onto the 30m radius circumference.
-  - [ ] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify smooth coordinated banking (`curved` path mode) around the 360° circumference at constant 30m standoff.
-  - [ ] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Confirm nose (`towardCenter`) and -45° gimbal remain locked on the central POI `[41.3215, -88.9950]` throughout 360° rotation.
-  - [ ] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Verify angular photo spacing captures evenly spaced inward-facing frames around the full circle.
-  - [ ] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Confirm orbit closes cleanly at 360° and executes RTH without spiraling inward.
+  - [x] **Phase 1: KMZ / WPML Export & RC 2 Import**: Load Circular Orbit KMZ on RC 2; verify circular ring waypoints and curved turn radius tags.
+  - [x] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Confirm climb to 40m AGL and tangent entry onto the 30m radius circumference.
+  - [x] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify smooth coordinated banking (`curved` path mode) around the 360° circumference at constant 30m standoff.
+  - [x] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Confirm nose (`towardCenter`) and -45° gimbal remain locked on the central POI `[41.3215, -88.9950]` throughout 360° rotation.
+  - [x] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Verify angular photo spacing captures evenly spaced inward-facing frames around the full circle.
+  - [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Confirm orbit closes cleanly at 360° and executes RTH without spiraling inward.
 - **Edge-Case & Safety Watchout:** Check crosswind yaw crabbing: gimbal yaw compensation should keep the central POI centered within ±8°.
 
 #### `multi-orbit` — 3D Object (Multi-Tiered Orbit)
