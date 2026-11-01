@@ -1,3 +1,22 @@
+## [1.214.4] - 2026-10-31
+
+Hardens Companion Bridge security by strictly enforcing scrypt-verified cryptographic session authentication and eliminating unverified local-tok token bypasses.
+
+### 🔒 Security
+
+#### Pilot & Operational Features
+- **Enforced Cryptographic Session Authentication (Closes #214)**:
+  - Eliminates the unverified `local-tok-*` token bypass on the Companion Bridge, ensuring that all pilot sessions require authentic verification via `POST /api/auth/login` (with `scrypt` password hashing), Google SSO, or WebAuthn Passkeys.
+  - Prevents unauthorized callers from forging session tokens by guessing or referencing a pilot's public callsign.
+  - Preserves Chrome Private Network Access (PNA) streaming compatibility (`Access-Control-Allow-Private-Network: true`) for authenticated external web clients such as Pocket Radar.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/auth_db.js`**:
+  - Removed `local-tok-` pattern matching from `validateSession()`. All incoming Bearer tokens and `?token=` parameters must now match a valid 64-character hex session stored in the SQLite `auth_sessions` table.
+- **`tools/companion/server_auth.test.js`**:
+  - Added dedicated test asserting that unverified `local-tok-<username>-<suffix>` tokens are rejected with `HTTP 401 Unauthorized`.
+  - Added test asserting that valid session tokens issued via `POST /api/auth/login` successfully establish live SSE airspace streams with PNA headers.
+
 ## [1.214.3] - 2026-10-31
 
 Adds support for local pilot callsign tokens (local-tok-<username>-<suffix>) used by AI Studio apps (e.g. aalaapi-pocket-radar) and attaches Private Network Access (PNA) CORS headers to all Server-Sent Events live streams.

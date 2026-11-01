@@ -408,13 +408,34 @@ describe('Companion Server Authentication Enforcement Suite', () => {
       assert.ok(streamRes.data.includes(': connected'));
     });
 
-    it('establishes SSE stream on GET /api/airspace/stream with local pilot token (local-tok-<username>-<suffix>) and includes PNA header (Issue #213)', async () => {
+    it('rejects unverified local pilot tokens (local-tok-<username>-<suffix>) with HTTP 401 Unauthorized (Issue #214)', async () => {
       const localToken = `local-tok-${testUsername}-mvx8nrw1`;
-      const streamRes = await new Promise((resolve, reject) => {
+      const res = await new Promise((resolve, reject) => {
         const req = http.request({
           hostname: '127.0.0.1',
           port: testPort,
           path: `/api/airspace/stream?lat=40.0127&lon=-83.1761&radius=5&ceiling=2500&token=${encodeURIComponent(localToken)}`,
+          method: 'GET'
+        }, r => {
+          let body = '';
+          r.on('data', chunk => { body += chunk; });
+          r.on('end', () => resolve({ statusCode: r.statusCode, body: JSON.parse(body) }));
+        });
+        req.on('error', reject);
+        req.end();
+      });
+
+      assert.equal(res.statusCode, 401);
+      assert.equal(res.body.success, false);
+      assert.ok(res.body.error.includes('Unauthorized'));
+    });
+
+    it('establishes SSE stream on GET /api/airspace/stream with cryptographically verified token and includes PNA header (Issue #214)', async () => {
+      const streamRes = await new Promise((resolve, reject) => {
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: testPort,
+          path: `/api/airspace/stream?lat=40.0127&lon=-83.1761&radius=5&ceiling=2500&token=${encodeURIComponent(validToken)}`,
           method: 'GET'
         }, r => {
           let receivedData = '';
