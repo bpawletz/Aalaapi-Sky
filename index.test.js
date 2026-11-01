@@ -39275,19 +39275,25 @@ describe('Map Tile Proxy & Spatial Asset Public Whitelisting (v1.214.2, Issue #2
   });
 });
 
-describe('Enforce Cryptographic Session Authentication (v1.214.4, Issue #214)', () => {
-  test('Version consistency: v1.214.4 across package.json, changelog, index_template.html, and index.html', () => {
-    assertVersionConsistency('1.214.4');
+describe('Dynamic CORS Preflight Header Echoing (v1.214.5, Issue #215)', () => {
+  test('Version consistency: v1.214.5 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.214.5');
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.214.4] - 2026-10-31'));
+    assert.ok(changelog.includes('## [1.214.5] - 2026-10-31'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.214.4'));
-    assert.ok(template.includes('Version 1.214.4'));
-    assert.ok(template.includes('Changelog (v1.214.4):'));
+    assert.ok(template.includes('v1.214.5'));
+    assert.ok(template.includes('Version 1.214.5'));
+    assert.ok(template.includes('Changelog (v1.214.5):'));
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('v1.214.4'));
-    assert.ok(indexHtml.includes('Version 1.214.4'));
-    assert.ok(indexHtml.includes('Changelog (v1.214.4):'));
+    assert.ok(indexHtml.includes('v1.214.5'));
+    assert.ok(indexHtml.includes('Version 1.214.5'));
+    assert.ok(indexHtml.includes('Changelog (v1.214.5):'));
+  });
+
+  test('Companion server setCorsHeaders supports dynamic Access-Control-Request-Headers', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'tools/companion/server.js'), 'utf8');
+    assert.ok(src.includes("req.headers['access-control-request-headers']"));
+    assert.ok(src.includes('Cache-Control'));
   });
 
   test('authDb.validateSession strictly rejects unverified local-tok-<username>-<random> tokens', () => {

@@ -3,7 +3,7 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.214.4` | **WPML Compiler Hash:** `b21749fd09a5` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.214.5` | **WPML Compiler Hash:** `b21749fd09a5` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
 **Summary Progress:** **1 / 26** Patterns Verified | **0** Needs Re-Test | **25** Untested | **0** Failed
 
@@ -435,6 +435,13 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ---
 
 ## 6. Post-Update Release IRL Test Plans Log
+
+### [v1.214.5] Dynamic CORS Preflight Header Echoing and SSE Proxy Fallback Prevention — 2026-11-01 ([Issue #215](https://github.com/bpawletz/Aalaapi-Sky/issues/215))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** Core / QA Framework
+- [ ] Export test mission KMZ/WPML at synthetic rural coordinates `[41.3215, -88.9950]` and verify clean import into DJI Fly / RC 2.
+- [ ] Verify takeoff, climb to target AGL, and Waypoint 1 entry transition accuracy (±2.0m).
+- [ ] Verify modified flight pattern / feature behavior matches expected 3D trajectory, heading, and gimbal pitch.
+- [ ] Run post-flight telemetry log analysis (`npm run irl:analyze`) and confirm all 6 phases pass within tolerance.
 
 ### [v1.214.4] Enforce Cryptographic Session Authentication and Eliminate local-tok Bypass — 2026-11-01 ([Issue #214](https://github.com/bpawletz/Aalaapi-Sky/issues/214))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** Core / QA Framework

@@ -1,3 +1,20 @@
+## [1.214.5] - 2026-10-31
+
+Echoes dynamic Access-Control-Request-Headers and includes Cache-Control and Pragma in CORS preflight responses to eliminate preflight failures on cross-origin SSE streams.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Dynamic CORS Preflight Header Echoing (Closes #215)**:
+  - Resolves preflight blocks when external web applications (such as Google AI Studio apps like Pocket Radar) initiate requests with `Cache-Control: no-cache` and `Authorization: Bearer <token>`.
+  - Ensures browsers do not block cross-origin live ADS-B airspace telemetry streams due to non-safelisted request headers.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/server.js`**:
+  - Updated `setCorsHeaders(res, req)` to echo `req.headers['access-control-request-headers']` if present, while providing an expanded fallback list (`Content-Type, Authorization, Cache-Control, Pragma, Accept, X-Requested-With, X-MCP-Session-Id, x-pilot-session-token, Access-Control-Request-Private-Network, baggage, sentry-trace`).
+- **`tools/companion/server_auth.test.js`**:
+  - Added dedicated test asserting that preflight `OPTIONS` requests specifying `Access-Control-Request-Headers: authorization,cache-control` receive matching `Access-Control-Allow-Headers` with PNA headers.
+
 ## [1.214.4] - 2026-10-31
 
 Hardens Companion Bridge security by strictly enforcing scrypt-verified cryptographic session authentication and eliminating unverified local-tok token bypasses.
