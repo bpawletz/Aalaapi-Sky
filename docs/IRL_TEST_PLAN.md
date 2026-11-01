@@ -3,9 +3,9 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.215.1` | **WPML Compiler Hash:** `065c12fa7b08` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.215.3` | **WPML Compiler Hash:** `065c12fa7b08` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
-**Summary Progress:** **3 / 26** Patterns Verified | **0** Needs Re-Test | **23** Untested | **0** Failed
+**Summary Progress:** **4 / 26** Patterns Verified | **0** Needs Re-Test | **22** Untested | **0** Failed
 
 ---
 
@@ -80,7 +80,7 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 | # | Pattern ID | Pattern Name | Category | Status | Code Hash | Last Tested Ver | Drone / Firmware | Phases |
 | :---: | :--- | :--- | :--- | :---: | :---: | :---: | :--- | :---: |
 | 1 | `single` | **2D Map (Nadir Grid)** | Mapping & 3D | ✅ `VERIFIED` | `2060d0169374` | v1.210.0 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
-| 2 | `double` | **3D Splat (Double Grid)** | Mapping & 3D | ⬜ `UNTESTED` | `dd5cae736203` | — | — | `0/6` |
+| 2 | `double` | **3D Splat (Double Grid)** | Mapping & 3D | ✅ `VERIFIED` | `dd5cae736203` | v1.215.2 | DJI Mini 4 Pro (01.00.0600) | `6/6` |
 | 3 | `target-splat` | **Target Splat (Frustum Grid)** | Mapping & 3D | ⬜ `UNTESTED` | `0ec37c04a3ff` | — | — | `0/6` |
 | 4 | `orbit` | **3D Object (Circular Orbit)** | Orbit & Structure | ✅ `VERIFIED` | `64011bf49858` | v1.215.0 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 5 | `multi-orbit` | **3D Object (Multi-Tiered Orbit)** | Orbit & Structure | ⬜ `UNTESTED` | `0d54cef3c772` | — | — | `0/6` |
@@ -125,15 +125,15 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 - **Edge-Case & Safety Watchout:** Verify that turnaround overshoot waypoints (isTurnaroundPoint: true, skipPhoto: true) allow the gimbal to level out after 180° turns before re-entering the survey boundary.
 
 #### `double` — 3D Splat (Double Grid)
-- **Current Status:** ⬜ `UNTESTED` | **Generator Hash:** `dd5cae736203` (`src/patterns/PatternGenerators.js` -> `generateGridCoordinates`)
+- **Current Status:** ✅ `VERIFIED` | **Generator Hash:** `dd5cae736203` (`src/patterns/PatternGenerators.js` -> `generateGridCoordinates`)
 - **Recommended Safe Field Parameters:** Origin `[41.3215, -88.9950]`, `altitudeM: 50`, `widthM: 70`, `heightM: 70`, `rotationDeg: 0`, `speedMps: 5`, `gimbalPitchDeg: -60`, `captureMode: continuous`, `headingMode: followWayline`, `pathMode: straight`, `frontOverlapPct: 75`, `sideOverlapPct: 70`, `turnaroundOvershootM: 10`
 - **6-Phase Field Verification Checklist:**
-  - [ ] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export Double Grid KMZ and verify both Pass 1 (N-S) and Pass 2 (E-W) orthogonal crosshatch passes appear on RC 2.
-  - [ ] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Verify ascent to 50m AGL and smooth entry into Pass 1 Line 0.
-  - [ ] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify seamless corner junction from Pass 1 final waypoint directly into Pass 2 Line 0 without diagonal deadhead transit across the grid.
-  - [ ] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Confirm 90° yaw rotation at Pass 1 -> Pass 2 transition and steady -60° oblique gimbal pitch on all four compass headings.
-  - [ ] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Confirm oblique photos fire across both orthogonal passes with zero duplicate trigger at the Pass 1/Pass 2 corner junction.
-  - [ ] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Verify RTH initiation after Pass 2 completion with >= 20% battery margin.
+  - [x] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export Double Grid KMZ and verify both Pass 1 (N-S) and Pass 2 (E-W) orthogonal crosshatch passes appear on RC 2.
+  - [x] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Verify ascent to 50m AGL and smooth entry into Pass 1 Line 0.
+  - [x] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify seamless corner junction from Pass 1 final waypoint directly into Pass 2 Line 0 without diagonal deadhead transit across the grid.
+  - [x] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Confirm 90° yaw rotation at Pass 1 -> Pass 2 transition and steady -60° oblique gimbal pitch on all four compass headings.
+  - [x] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Confirm oblique photos fire across both orthogonal passes with zero duplicate trigger at the Pass 1/Pass 2 corner junction.
+  - [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Verify RTH initiation after Pass 2 completion with >= 20% battery margin.
 - **Edge-Case & Safety Watchout:** Watch the Pass 1 -> Pass 2 corner transition: aircraft must rotate 90° and settle before starting perpendicular pass.
 
 #### `target-splat` — Target Splat (Frustum Grid)
@@ -435,6 +435,14 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ---
 
 ## 6. Post-Update Release IRL Test Plans Log
+
+### [v1.215.3] Heading-Aware Crosshatch Telemetry Disambiguation & Double Grid Verification — 2026-11-01 ([Issue #219](https://github.com/bpawletz/Aalaapi-Sky/issues/219))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `double`
+- [ ] Import Double Grid KMZ/WPML at synthetic rural coordinates [41.3215, -88.9950] and verify clean import into DJI Fly / RC 2
+- [ ] Verify safe takeoff, climb to target AGL (30m), and entry transition accuracy (+/-2.0m)
+- [ ] Verify orthogonal crosshatch pass transition without heading aliasing
+- [ ] Verify full waypoint completion, cross-track error (<=4.5m), and gimbal pitch lock (-60 deg)
+- [ ] Confirm post-flight telemetry log analysis (npm run irl:analyze or in-app verifier) passes all 6 phases
 
 ### [v1.215.0] Zero-Dependency Bonjour mDNS/DNS-SD Service Broadcasting & SBS Port Advertisement — 2026-11-01 ([Issue #216](https://github.com/bpawletz/Aalaapi-Sky/issues/216))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `grid`, `orbit`, `target-splat`

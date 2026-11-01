@@ -1,3 +1,21 @@
+## [1.215.3] - 2026-11-01
+
+Adds heading-aware candidate disambiguation for orthogonal crosshatch grids to the IRL flight verifier and formally promotes 3D Splat (Double Grid) to VERIFIED.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Heading-Aware Crosshatch Telemetry Disambiguation (Closes #219)**:
+  - Added heading-aware candidate point disambiguation to both the in-app flight verifier (`IrlVerifier.js`) and CLI verification tracker (`irl_tracker.js`).
+  - In multi-pass and crosshatch flight patterns where primary and perpendicular survey lines intersect at identical coordinates (such as Double Grid `double` or multi-pass Corridor), the verifier now prioritizes candidate samples whose heading matches the planned flight pass over orthogonal flight lines flown later.
+  - Prevents false-positive heading variance flags caused by sub-centimeter GPS jitter selecting a 90° perpendicular crosshatch sample over the collinear pass.
+- **3D Splat (Double Grid) IRL Field Verification**:
+  - Formally promoted 3D Splat / Double Grid (`double`) to `VERIFIED` status in the IRL Field Flight Tracker following 100% nominal pass across all 6 verification phases in `FlightRecord_2026-11-01_[17-20-25].txt` (100% waypoints completed, RMS cross-track error 1.11 m, mean yaw error 0.2°, max yaw error 1.7°, mean gimbal pitch error 0.0°).
+
+#### Under the Hood & Technical Details
+- **`src/qa/IrlVerifier.js` & `tools/qa/irl_tracker.js`**:
+  - Refined nearest-neighbor candidate selection when `wpYaw !== null`: when candidates are within horizontal tolerance (`dH <= horizontalToleranceM`), rejects candidates with high yaw error (`> maxYawToleranceDeg`, 25°) if an aligned candidate exists (`<= maxYawToleranceDeg`), preventing window displacement in subsequent turnaround and overshoot matching.
+
 ## [1.215.2] - 2026-11-01
 
 Refines IRL field flight verifier with initial waypoint gimbal rotation settling sampling and formally promotes Corridor Mapping to VERIFIED.

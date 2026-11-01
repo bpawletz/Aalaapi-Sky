@@ -143,14 +143,30 @@ const IrlVerifier = {
         const score = hasVerticalStacking ? Math.hypot(dH, dZCand) : dH;
 
         // At WP 0, prefer sample where gimbal pitch has settled toward planned pitch at arrival altitude
-        // At final waypoint, prefer approach sample before post-mission RTH disengagement levels gimbal to 0°
-        const isBetter = (i === 0 && dH <= Math.min(2.0, horizontalToleranceM) && bestDistH <= Math.min(2.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined)
-          ? (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)
-          : (i === 0 && dH < 1.0 && bestDistH < 1.0)
-            ? (j > 0 && dH <= bestDistH + 0.25)
-            : (isFinalWp && dH <= Math.min(1.0, horizontalToleranceM) && bestDistH <= Math.min(1.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined)
-              ? (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)
-              : (score < bestScore);
+      // At final waypoint, prefer approach sample before post-mission RTH disengagement levels gimbal to 0°
+      // In crosshatch / orthogonal grids, prefer candidate sample aligned with planned yaw over perpendicular passes
+      let isBetter = false;
+      if (!bestPt) {
+        isBetter = true;
+      } else if (i === 0 && dH <= Math.min(2.0, horizontalToleranceM) && bestDistH <= Math.min(2.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined && (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)) {
+        isBetter = true;
+      } else if (i === 0 && dH < 1.0 && bestDistH < 1.0 && j > 0 && dH <= bestDistH + 0.25 && (wpYaw === null || pt.yaw === undefined || angularDiffDeg(parseFloat(pt.yaw), wpYaw) <= maxYawToleranceDeg)) {
+        isBetter = true;
+      } else if (isFinalWp && dH <= Math.min(1.0, horizontalToleranceM) && bestDistH <= Math.min(1.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined && (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)) {
+        isBetter = true;
+      } else if (wpYaw !== null && pt.yaw !== undefined && bestPt.yaw !== undefined && bestDistH <= horizontalToleranceM && dH <= horizontalToleranceM && Math.abs(dH - bestDistH) <= 1.5) {
+        const bestPtYawErr = angularDiffDeg(parseFloat(bestPt.yaw), wpYaw);
+        const candYawErr = angularDiffDeg(parseFloat(pt.yaw), wpYaw);
+        if (bestPtYawErr <= maxYawToleranceDeg && candYawErr > maxYawToleranceDeg) {
+          isBetter = false;
+        } else if (bestPtYawErr > maxYawToleranceDeg && candYawErr <= maxYawToleranceDeg) {
+          isBetter = true;
+        } else {
+          isBetter = (score < bestScore);
+        }
+      } else {
+        isBetter = (score < bestScore);
+      }
 
         if (isBetter) {
           bestScore = score;
@@ -167,7 +183,23 @@ const IrlVerifier = {
           const dH = haversineDistance(wpLat, wpLon, parseFloat(pt.lat), parseFloat(pt.lon));
           const dZCand = Math.abs(parseFloat(pt.alt || 0) - wpAlt);
           const score = hasVerticalStacking ? Math.hypot(dH, dZCand) : dH;
-          if (score < bestScore) {
+          let isBetter = false;
+          if (!bestPt) {
+            isBetter = true;
+          } else if (wpYaw !== null && pt.yaw !== undefined && bestPt.yaw !== undefined && bestDistH <= horizontalToleranceM && dH <= horizontalToleranceM && Math.abs(dH - bestDistH) <= 1.5) {
+            const bestPtYawErr = angularDiffDeg(parseFloat(bestPt.yaw), wpYaw);
+            const candYawErr = angularDiffDeg(parseFloat(pt.yaw), wpYaw);
+            if (bestPtYawErr <= maxYawToleranceDeg && candYawErr > maxYawToleranceDeg) {
+              isBetter = false;
+            } else if (bestPtYawErr > maxYawToleranceDeg && candYawErr <= maxYawToleranceDeg) {
+              isBetter = true;
+            } else {
+              isBetter = (score < bestScore);
+            }
+          } else {
+            isBetter = (score < bestScore);
+          }
+          if (isBetter) {
             bestScore = score;
             bestDistH = dH;
             bestPt = pt;
