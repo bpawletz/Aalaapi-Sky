@@ -336,21 +336,68 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       ((wp.roadFocusMode || (wpLayer && wpLayer.roadFocusMode) || 'focusRoad') !== 'custom') &&
       ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'));
 
+    const isMultiRingOrProceduralPitch = (wpLayer && (
+        wpLayer.pattern === 'multi-orbit' ||
+        wpLayer.pattern === 'photo-sphere' ||
+        wpLayer.pattern === 'continuous-helix' ||
+        wpLayer.pattern === 'star-pass' ||
+        wpLayer.pattern === 'dome-shell' ||
+        wpLayer.pattern === 'grid-multi-orbit-combo' ||
+        wpLayer.pattern === 'target-splat' ||
+        wpLayer.pattern === 'tower' ||
+        wpLayer.pattern === 'vertical-facade'
+      )) ||
+      (gridType === 'multi-orbit' ||
+        gridType === 'photo-sphere' ||
+        gridType === 'continuous-helix' ||
+        gridType === 'star-pass' ||
+        gridType === 'dome-shell' ||
+        gridType === 'grid-multi-orbit-combo' ||
+        gridType === 'target-splat' ||
+        gridType === 'tower' ||
+        gridType === 'vertical-facade') ||
+      (wp.isMultiOrbit ||
+        wp.isPhotoSphere ||
+        wp.isContinuousHelix ||
+        wp.isStarPass ||
+        wp.isDomeShell ||
+        wp.isPerimeterOrbit ||
+        wp.isVerticalFacade ||
+        wp.gridType === 'multi-orbit' ||
+        wp.gridType === 'photo-sphere' ||
+        wp.gridType === 'continuous-helix' ||
+        wp.gridType === 'star-pass' ||
+        wp.gridType === 'dome-shell' ||
+        wp.gridType === 'grid-multi-orbit-combo' ||
+        wp.gridType === 'target-splat' ||
+        wp.gridType === 'tower' ||
+        wp.gridType === 'vertical-facade' ||
+        wp.layerPattern === 'multi-orbit' ||
+        wp.layerPattern === 'photo-sphere' ||
+        wp.layerPattern === 'continuous-helix' ||
+        wp.layerPattern === 'star-pass' ||
+        wp.layerPattern === 'dome-shell' ||
+        wp.layerPattern === 'grid-multi-orbit-combo' ||
+        wp.layerPattern === 'target-splat' ||
+        wp.layerPattern === 'tower' ||
+        wp.layerPattern === 'vertical-facade' ||
+        (wp.ringIndex !== undefined && wp.ringIndex !== null));
+
+    const isProceduralPitch = isPhotoSphere || isContinuousHelix || isMultiRingOrProceduralPitch;
+
     const rawWpPitch = isWpPitchOverridden
       ? wp.pitch
       : (isHyperlapseSweep && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit'
         ? wp.pitch
         : (isRoadAutoPitch
           ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-          : (isContinuousHelix && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+          : (isProceduralPitch && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
             ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-            : (isPhotoSphere && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
-              ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-              : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
-                ? wp.layerGimbalPitch
-                : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
-                  ? wpLayer.gimbalPitch
-                  : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch))))))));
+            : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
+              ? wp.layerGimbalPitch
+              : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
+                ? wpLayer.gimbalPitch
+                : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch)))))));
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
       const effectiveAltForPitch = (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit')
         ? wp.alt
@@ -1465,17 +1512,25 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
             wpLayer.pattern === 'star-pass' ||
             wpLayer.pattern === 'dome-shell' ||
             wpLayer.pattern === 'grid-multi-orbit-combo' ||
-            wpLayer.pattern === 'target-splat'
+            wpLayer.pattern === 'target-splat' ||
+            wpLayer.pattern === 'tower' ||
+            wpLayer.pattern === 'vertical-facade'
           )) ||
           (wpObj.isMultiOrbit ||
             wpObj.isPhotoSphere ||
             wpObj.isContinuousHelix ||
             wpObj.isStarPass ||
             wpObj.isPerimeterOrbit ||
+            wpObj.isVerticalFacade ||
+            wpObj.gridType === 'multi-orbit' ||
             wpObj.gridType === 'photo-sphere' ||
             wpObj.gridType === 'continuous-helix' ||
             wpObj.gridType === 'star-pass' ||
             wpObj.gridType === 'dome-shell' ||
+            wpObj.gridType === 'grid-multi-orbit-combo' ||
+            wpObj.gridType === 'target-splat' ||
+            wpObj.gridType === 'tower' ||
+            wpObj.gridType === 'vertical-facade' ||
             (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
         const hasHlSweep = (wpLayer && wpLayer.pattern === 'hyperlapse' && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined && wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch) ||
           (wpLayer && wpLayer.pattern === 'continuous-helix' && wpLayer.helixPitchStart !== undefined && wpLayer.helixPitchEnd !== undefined && wpLayer.helixPitchStart !== wpLayer.helixPitchEnd);

@@ -7993,7 +7993,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.215.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.215.4</span></h1>
         </div>
       </div>
 
@@ -15025,7 +15025,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.215.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.215.4</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15186,6 +15186,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.215.4):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Procedural Multi-Orbit Gimbal Pitch Export (Closes #220):</strong> Preserved procedural per-ring waypoint gimbal pitches across multi-orbit, combo, and dome-shell patterns in WPML export, ensuring tiered camera angles (-60°, -45°, -30°) are exported without being flattened to static layer slider defaults.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.215.3):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">'
@@ -52455,21 +52461,68 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       ((wp.roadFocusMode || (wpLayer && wpLayer.roadFocusMode) || 'focusRoad') !== 'custom') &&
       ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'));
 
+    const isMultiRingOrProceduralPitch = (wpLayer && (
+        wpLayer.pattern === 'multi-orbit' ||
+        wpLayer.pattern === 'photo-sphere' ||
+        wpLayer.pattern === 'continuous-helix' ||
+        wpLayer.pattern === 'star-pass' ||
+        wpLayer.pattern === 'dome-shell' ||
+        wpLayer.pattern === 'grid-multi-orbit-combo' ||
+        wpLayer.pattern === 'target-splat' ||
+        wpLayer.pattern === 'tower' ||
+        wpLayer.pattern === 'vertical-facade'
+      )) ||
+      (gridType === 'multi-orbit' ||
+        gridType === 'photo-sphere' ||
+        gridType === 'continuous-helix' ||
+        gridType === 'star-pass' ||
+        gridType === 'dome-shell' ||
+        gridType === 'grid-multi-orbit-combo' ||
+        gridType === 'target-splat' ||
+        gridType === 'tower' ||
+        gridType === 'vertical-facade') ||
+      (wp.isMultiOrbit ||
+        wp.isPhotoSphere ||
+        wp.isContinuousHelix ||
+        wp.isStarPass ||
+        wp.isDomeShell ||
+        wp.isPerimeterOrbit ||
+        wp.isVerticalFacade ||
+        wp.gridType === 'multi-orbit' ||
+        wp.gridType === 'photo-sphere' ||
+        wp.gridType === 'continuous-helix' ||
+        wp.gridType === 'star-pass' ||
+        wp.gridType === 'dome-shell' ||
+        wp.gridType === 'grid-multi-orbit-combo' ||
+        wp.gridType === 'target-splat' ||
+        wp.gridType === 'tower' ||
+        wp.gridType === 'vertical-facade' ||
+        wp.layerPattern === 'multi-orbit' ||
+        wp.layerPattern === 'photo-sphere' ||
+        wp.layerPattern === 'continuous-helix' ||
+        wp.layerPattern === 'star-pass' ||
+        wp.layerPattern === 'dome-shell' ||
+        wp.layerPattern === 'grid-multi-orbit-combo' ||
+        wp.layerPattern === 'target-splat' ||
+        wp.layerPattern === 'tower' ||
+        wp.layerPattern === 'vertical-facade' ||
+        (wp.ringIndex !== undefined && wp.ringIndex !== null));
+
+    const isProceduralPitch = isPhotoSphere || isContinuousHelix || isMultiRingOrProceduralPitch;
+
     const rawWpPitch = isWpPitchOverridden
       ? wp.pitch
       : (isHyperlapseSweep && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit'
         ? wp.pitch
         : (isRoadAutoPitch
           ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-          : (isContinuousHelix && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
+          : (isProceduralPitch && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
             ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-            : (isPhotoSphere && ((wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit'))
-              ? (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : wp.gimbalPitch)
-              : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
-                ? wp.layerGimbalPitch
-                : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
-                  ? wpLayer.gimbalPitch
-                  : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch))))))));
+            : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
+              ? wp.layerGimbalPitch
+              : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
+                ? wpLayer.gimbalPitch
+                : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit' ? wp.gimbalPitch : gimbalPitch)))))));
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
       const effectiveAltForPitch = (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit')
         ? wp.alt
@@ -53584,17 +53637,25 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
             wpLayer.pattern === 'star-pass' ||
             wpLayer.pattern === 'dome-shell' ||
             wpLayer.pattern === 'grid-multi-orbit-combo' ||
-            wpLayer.pattern === 'target-splat'
+            wpLayer.pattern === 'target-splat' ||
+            wpLayer.pattern === 'tower' ||
+            wpLayer.pattern === 'vertical-facade'
           )) ||
           (wpObj.isMultiOrbit ||
             wpObj.isPhotoSphere ||
             wpObj.isContinuousHelix ||
             wpObj.isStarPass ||
             wpObj.isPerimeterOrbit ||
+            wpObj.isVerticalFacade ||
+            wpObj.gridType === 'multi-orbit' ||
             wpObj.gridType === 'photo-sphere' ||
             wpObj.gridType === 'continuous-helix' ||
             wpObj.gridType === 'star-pass' ||
             wpObj.gridType === 'dome-shell' ||
+            wpObj.gridType === 'grid-multi-orbit-combo' ||
+            wpObj.gridType === 'target-splat' ||
+            wpObj.gridType === 'tower' ||
+            wpObj.gridType === 'vertical-facade' ||
             (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
         const hasHlSweep = (wpLayer && wpLayer.pattern === 'hyperlapse' && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined && wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch) ||
           (wpLayer && wpLayer.pattern === 'continuous-helix' && wpLayer.helixPitchStart !== undefined && wpLayer.helixPitchEnd !== undefined && wpLayer.helixPitchStart !== wpLayer.helixPitchEnd);
