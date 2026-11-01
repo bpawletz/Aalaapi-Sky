@@ -1211,10 +1211,15 @@ function logDetailLast(label, val) {
 }
 
 // Common CORS Headers
-function setCorsHeaders(res) {
+function setCorsHeaders(res, req = null) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-MCP-Session-Id, x-pilot-session-token, Access-Control-Request-Private-Network, baggage, sentry-trace');
+  const requestedHeaders = req && req.headers ? req.headers['access-control-request-headers'] : null;
+  if (requestedHeaders) {
+    res.setHeader('Access-Control-Allow-Headers', requestedHeaders);
+  } else {
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Accept, X-Requested-With, X-MCP-Session-Id, x-pilot-session-token, Access-Control-Request-Private-Network, baggage, sentry-trace');
+  }
   res.setHeader('Access-Control-Allow-Private-Network', 'true');
 }
 
@@ -3602,7 +3607,7 @@ function printStartupBanner() {
 
 // Unified HTTP / HTTPS Request Handler
 const handleHttpRequest = async (req, res) => {
-  setCorsHeaders(res);
+  setCorsHeaders(res, req);
 
   const reqStartTime = Date.now();
   const isEncrypted = Boolean(req.socket && req.socket.encrypted);

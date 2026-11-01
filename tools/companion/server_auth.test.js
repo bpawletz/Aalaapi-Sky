@@ -67,6 +67,27 @@ describe('Companion Server Authentication Enforcement Suite', () => {
       assert.equal(res.statusCode, 204);
     });
 
+    it('echoes requested headers and includes cache-control in OPTIONS preflight responses (Issue #215)', async () => {
+      const res = await new Promise((resolve, reject) => {
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: testPort,
+          path: '/api/airspace/stream',
+          method: 'OPTIONS',
+          headers: {
+            'Access-Control-Request-Headers': 'authorization,cache-control',
+            'Access-Control-Request-Method': 'GET',
+            'Origin': 'https://aalaapi-pocket-radar.ai.studio'
+          }
+        }, resolve);
+        req.on('error', reject);
+        req.end();
+      });
+      assert.equal(res.statusCode, 204);
+      assert.equal(res.headers['access-control-allow-headers'], 'authorization,cache-control');
+      assert.equal(res.headers['access-control-allow-private-network'], 'true');
+    });
+
     it('returns public metadata fallback on unauthenticated GET /api/status', async () => {
       const res = await new Promise((resolve, reject) => {
         const req = http.request({
