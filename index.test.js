@@ -39456,13 +39456,10 @@ describe('Initial Waypoint Gimbal Rotation Settling & Corridor Verification (v1.
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.215.2] - 2026-11-01'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.215.2'));
-    assert.ok(template.includes('Version 1.215.2'));
-    assert.ok(template.includes('Changelog (v1.215.2):'));
+            assert.ok(template.includes('Changelog (v1.215.2):'));
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
     assert.ok(indexHtml.includes('v1.215.2'));
-    assert.ok(indexHtml.includes('Version 1.215.2'));
-    assert.ok(indexHtml.includes('Changelog (v1.215.2):'));
+        assert.ok(indexHtml.includes('Changelog (v1.215.2):'));
   });
 
   test('IrlVerifier prioritizes settled gimbal pitch over mid-rotation sample at initial waypoint WP 0', () => {
@@ -39492,6 +39489,56 @@ describe('Initial Waypoint Gimbal Rotation Settling & Corridor Verification (v1.
     const statusData = JSON.parse(fs.readFileSync(path.join(__dirname, 'docs/irl_test_status.json'), 'utf8'));
     assert.strictEqual(statusData.patterns['corridor'].status, 'VERIFIED');
     const chk = statusData.patterns['corridor'].checklist;
+    assert.ok(chk.kmz_import && chk.entry_altitude && chk.geometry_path && chk.heading_gimbal && chk.capture_trigger && chk.exit_rth);
+  });
+});
+
+describe('Heading-Aware Crosshatch Telemetry Disambiguation & Double Grid Verification (v1.215.3, Issue #219)', () => {
+  test('Version consistency: v1.215.3 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.215.3');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.215.3] - 2026-11-01'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.215.3'));
+    assert.ok(template.includes('Version 1.215.3'));
+    assert.ok(template.includes('Changelog (v1.215.3):'));
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('v1.215.3'));
+    assert.ok(indexHtml.includes('Version 1.215.3'));
+    assert.ok(indexHtml.includes('Changelog (v1.215.3):'));
+  });
+
+  test('IrlVerifier disambiguates orthogonal crosshatch waypoints at identical coordinates using planned heading', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+    
+    // Two waypoints at the exact same location with orthogonal headings (Pass 1 North: 0 deg, Pass 2 West: 270 deg)
+    const planWps = [
+      { lat: 41.3215, lon: -88.9950, alt: 30, yaw: 0, pitch: -60 },
+      { lat: 41.3215, lon: -88.9950, alt: 30, yaw: 270, pitch: -60 }
+    ];
+
+    // Flight telemetry where sample 0 is North-facing (dH=0.06m, yaw=0.1 deg) and sample 1 is West-facing (dH=0.04m, yaw=-91.7 deg)
+    // Even though sample 1 is 2cm closer, WP 0 (planned yaw 0) must choose sample 0 over sample 1
+    const flightPts = [
+      { lat: 41.3215005, lon: -88.9950005, alt: 30, yaw: 0.1, pitch: -60.0, photoCount: 1, flightTime: 10 },
+      { lat: 41.3215003, lon: -88.9950003, alt: 30, yaw: -91.7, pitch: -60.0, photoCount: 2, flightTime: 20 },
+      { lat: 41.3215003, lon: -88.9950003, alt: 30, yaw: -90.0, pitch: -60.0, photoCount: 2, flightTime: 21 },
+      { lat: 41.3215003, lon: -88.9950003, alt: 30, yaw: -90.0, pitch: -60.0, photoCount: 3, flightTime: 22 },
+      { lat: 41.3215003, lon: -88.9950003, alt: 30, yaw: -90.0, pitch: -60.0, photoCount: 3, flightTime: 23 }
+    ];
+
+    const result = IrlVerifier.verifyFlightPlanAgainstLog(planWps, flightPts);
+    assert.strictEqual(result.wpApproaches[0].bestPtIndex, 0, 'WP 0 (heading 0 deg) must match on-heading sample 0 instead of orthogonal sample 1');
+    assert.strictEqual(result.wpApproaches[0].dYaw, 0.1, 'WP 0 yaw error must be 0.1 deg');
+    assert.strictEqual(result.wpApproaches[1].bestPtIndex, 1, 'WP 1 (heading 270 deg) must match orthogonal sample 1');
+    assert.ok(result.wpApproaches[1].dYaw <= 2.0, 'WP 1 yaw error must be within 2 deg');
+    assert.strictEqual(result.phases.heading_gimbal, true, 'Heading and gimbal phase passes without orthogonal aliasing variance');
+  });
+
+  test('IRL status tracker formally marks double grid as VERIFIED with all 6 checklist phases true', () => {
+    const statusData = JSON.parse(fs.readFileSync(path.join(__dirname, 'docs/irl_test_status.json'), 'utf8'));
+    assert.strictEqual(statusData.patterns['double'].status, 'VERIFIED');
+    const chk = statusData.patterns['double'].checklist;
     assert.ok(chk.kmz_import && chk.entry_altitude && chk.geometry_path && chk.heading_gimbal && chk.capture_trigger && chk.exit_rth);
   });
 });
