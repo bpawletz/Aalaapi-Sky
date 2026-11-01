@@ -3,7 +3,7 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.214.5` | **WPML Compiler Hash:** `b21749fd09a5` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.215.0` | **WPML Compiler Hash:** `b21749fd09a5` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
 **Summary Progress:** **1 / 26** Patterns Verified | **0** Needs Re-Test | **25** Untested | **0** Failed
 
@@ -435,6 +435,13 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ---
 
 ## 6. Post-Update Release IRL Test Plans Log
+
+### [v1.215.0] Zero-Dependency Bonjour mDNS/DNS-SD Service Broadcasting & SBS Port Advertisement — 2026-11-01 ([Issue #216](https://github.com/bpawletz/Aalaapi-Sky/issues/216))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `grid`, `orbit`, `target-splat`
+- [ ] Start companion bridge with npm run companion
+- [ ] Verify aalaapi-sky.local resolves via ping or browser
+- [ ] Verify _dump1090._tcp and _sbs._tcp advertise on port 30003
+- [ ] Click Bonjour Scan in Airspace Settings modal and connect
 
 ### [v1.214.5] Dynamic CORS Preflight Header Echoing and SSE Proxy Fallback Prevention — 2026-11-01 ([Issue #215](https://github.com/bpawletz/Aalaapi-Sky/issues/215))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** Core / QA Framework

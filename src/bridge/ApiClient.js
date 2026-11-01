@@ -9614,6 +9614,49 @@ const AdsbAirspaceManager = {
 
     }
 
+    const discoverBtn = document.getElementById('adsb-discover-btn');
+    if (discoverBtn && probeFeedback) {
+      discoverBtn.addEventListener('click', async () => {
+        probeFeedback.style.display = 'block';
+        probeFeedback.innerHTML = '<span style="color: #4ade80;">✨ Scanning local network via Bonjour for dump1090 / SBS servers...</span>';
+        discoverBtn.disabled = true;
+        discoverBtn.textContent = 'Scanning...';
+        try {
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+          const res = await fetch(`${apiBase}/api/airspace/discover?timeout=2000`);
+          const data = await res.json();
+          if (data && data.servers && data.servers.length > 0) {
+            let html = '<div style="font-weight: 600; color: #4ade80; margin-bottom: 4px;">✨ Found ' + data.servers.length + ' SBS Server(s) via Bonjour:</div>';
+            data.servers.forEach((s) => {
+              const sHost = s.host || s.address || 'aalaapi-sky.local';
+              const sPort = s.port || 30003;
+              html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 3px; padding: 2px 0; border-top: 1px solid rgba(255,255,255,0.08);">' +
+                '<span><b>' + (s.name || 'dump1090') + '</b> &mdash; <code>' + sHost + ':' + sPort + '</code></span>' +
+                '<button type="button" class="btn-xs adsb-use-server-btn" data-host="' + sHost + '" data-port="' + sPort + '" style="padding: 1px 6px; font-size: 0.6rem; cursor: pointer; background: #22c55e; color: #fff; border: none; border-radius: 3px;">Use</button>' +
+              '</div>';
+            });
+            probeFeedback.innerHTML = html;
+            probeFeedback.querySelectorAll('.adsb-use-server-btn').forEach(b => {
+              b.addEventListener('click', () => {
+                const h = b.getAttribute('data-host');
+                const p = b.getAttribute('data-port');
+                if (hostInput) hostInput.value = h;
+                if (portInput) portInput.value = p;
+                if (serverSaveBtn) serverSaveBtn.click();
+              });
+            });
+          } else {
+            probeFeedback.innerHTML = '<span style="color: #facc15;">ℹ️ No external SBS servers found on LAN. Local server advertised at <code>aalaapi-sky.local:30003</code>.</span>';
+          }
+        } catch (err) {
+          probeFeedback.innerHTML = '<span style="color: #ef4444;">⚠️ Discovery error: ' + err.message + '</span>';
+        } finally {
+          discoverBtn.disabled = false;
+          discoverBtn.textContent = '✨ Bonjour Scan';
+        }
+      });
+    }
+
 
 
     const endpointSaveBtn = document.getElementById('adsb-endpoint-save-btn');

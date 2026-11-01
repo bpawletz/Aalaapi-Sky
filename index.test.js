@@ -39281,12 +39281,8 @@ describe('Dynamic CORS Preflight Header Echoing (v1.214.5, Issue #215)', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.214.5] - 2026-10-31'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.214.5'));
-    assert.ok(template.includes('Version 1.214.5'));
     assert.ok(template.includes('Changelog (v1.214.5):'));
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('v1.214.5'));
-    assert.ok(indexHtml.includes('Version 1.214.5'));
     assert.ok(indexHtml.includes('Changelog (v1.214.5):'));
   });
 
@@ -39306,5 +39302,45 @@ describe('Dynamic CORS Preflight Header Echoing (v1.214.5, Issue #215)', () => {
   test('Server SSE stream responses include Access-Control-Allow-Private-Network header', () => {
     const src = fs.readFileSync(path.join(__dirname, 'tools/companion/server.js'), 'utf8');
     assert.ok(src.includes("'Access-Control-Allow-Private-Network': 'true'"));
+  });
+});
+
+
+describe('Zero-Dependency Bonjour (mDNS/DNS-SD) Local Service Broadcasting & SBS Port Advertisement (v1.215.0, Issue #216)', () => {
+  test('Version consistency: v1.215.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.215.0');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.215.0] - 2026-11-01'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.215.0'));
+    assert.ok(template.includes('Version 1.215.0'));
+    assert.ok(template.includes('Changelog (v1.215.0):'));
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('v1.215.0'));
+    assert.ok(indexHtml.includes('Version 1.215.0'));
+    assert.ok(indexHtml.includes('Changelog (v1.215.0):'));
+  });
+
+  test('MdnsService encodes and decodes RFC 6762 / RFC 6763 DNS-SD records', () => {
+    const { MdnsService, RR_TYPE } = require('./tools/companion/mdns_service.js');
+    const svc = new MdnsService({ hostname: 'aalaapi-sky', port: 8765, adsbPort: 30003 });
+    const records = svc.getAdvertisedRecords(120);
+    assert.ok(records.some(r => r.name === 'aalaapi-sky.local' && r.type === RR_TYPE.A));
+    assert.ok(records.some(r => r.name === '_aalaapi-sky._tcp.local' && r.type === RR_TYPE.PTR));
+    assert.ok(records.some(r => r.name === '_sbs._tcp.local' && r.type === RR_TYPE.PTR));
+    assert.ok(records.some(r => r.name === '_dump1090._tcp.local' && r.type === RR_TYPE.PTR));
+  });
+
+  test('AdsbAirspaceTracker supports discoverBonjourServers helper', () => {
+    const { AdsbAirspaceTracker } = require('./tools/companion/adsb_tracker.js');
+    const tracker = new AdsbAirspaceTracker({ autoConnect: false });
+    assert.strictEqual(typeof tracker.discoverBonjourServers, 'function');
+  });
+
+  test('Airspace settings modal and ApiClient include Bonjour scan button and discovery logic', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('id="adsb-discover-btn"'));
+    const apiClient = fs.readFileSync(path.join(__dirname, 'src/bridge/ApiClient.js'), 'utf8');
+    assert.ok(apiClient.includes('/api/airspace/discover'));
   });
 });

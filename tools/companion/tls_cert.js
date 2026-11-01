@@ -299,7 +299,8 @@ function getOrCreateCertificate(options = {}) {
   }
 
   // 3. Generate a fresh self-signed certificate
-  const altNames = ['localhost', '127.0.0.1', '::1'];
+  const defaultDnsNames = ['localhost', '127.0.0.1', '::1', 'aalaapi-sky.local', `${os.hostname().toLowerCase()}.local`];
+  const altNames = [...defaultDnsNames];
   if (Array.isArray(options.lanAddresses)) {
     for (const ip of options.lanAddresses) {
       if (ip && typeof ip === 'string' && !altNames.includes(ip)) {

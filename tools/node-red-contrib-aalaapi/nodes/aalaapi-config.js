@@ -54,4 +54,23 @@ module.exports = function(RED) {
       });
     }
   });
+
+  // Admin HTTP endpoint for discovering Aalaapi Bridge on the LAN via Bonjour (mDNS)
+  RED.httpAdmin.get('/aalaapi-bridge/discover', RED.auth.needsPermission('aalaapi.read'), async function(req, res) {
+    try {
+      const { MdnsService } = require('../../companion/mdns_service.js');
+      const bridges = await MdnsService.discover({ serviceType: '_aalaapi-sky._tcp.local', timeoutMs: 1500 });
+      res.json({
+        success: true,
+        count: bridges.length,
+        bridges
+      });
+    } catch (err) {
+      res.status(500).json({
+        success: false,
+        error: err.message,
+        bridges: []
+      });
+    }
+  });
 };
