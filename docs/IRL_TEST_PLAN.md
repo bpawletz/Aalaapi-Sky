@@ -5,7 +5,7 @@
 
 **Document & Tracker Version:** `v1.215.4` | **WPML Compiler Hash:** `6523a6a20c83` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
-**Summary Progress:** **4 / 26** Patterns Verified | **0** Needs Re-Test | **22** Untested | **0** Failed
+**Summary Progress:** **5 / 26** Patterns Verified | **0** Needs Re-Test | **21** Untested | **0** Failed
 
 ---
 
@@ -94,7 +94,7 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 | 13 | `grid-orbit-combo` | **2D + 3D Hybrid (Grid + Orbit Combo)** | Mapping & 3D | ⬜ `UNTESTED` | `ee49e925a455` | — | — | `0/6` |
 | 14 | `grid-multi-orbit-combo` | **2D + 3D Hybrid (Grid + Multi-Orbit)** | Mapping & 3D | ⬜ `UNTESTED` | `5d8e10e013e4` | — | — | `0/6` |
 | 15 | `freeform` | **Freeform Flight Plan (Manual Waypoints)** | Linear & Route | ⬜ `UNTESTED` | `1af7e6adb578` | — | — | `0/6` |
-| 16 | `road-following` | **Road Following (Offset Path)** | Linear & Route | ⬜ `UNTESTED` | `e20683d1d303` | — | — | `0/6` |
+| 16 | `road-following` | **Road Following (Offset Path)** | Linear & Route | ✅ `VERIFIED` | `e20683d1d303` | v1.215.4 | DJI Mini 4 Pro (68) (RC 2 / DJI Fly) | `6/6` |
 | 17 | `corridor` | **Corridor Mapping (Multi-Pass Polyline)** | Linear & Route | ✅ `VERIFIED` | `4ff8bc9f909e` | v1.215.1 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 18 | `exclusion-box` | **Exclusion Zone (Rectangular Box)** | Safety & GCP | ⬜ `UNTESTED` | `912ee3191092` | — | — | `0/6` |
 | 19 | `exclusion-freeform` | **Exclusion Zone (Freeform Polygon)** | Safety & GCP | ⬜ `UNTESTED` | `3950f2668594` | — | — | `0/6` |
@@ -285,15 +285,15 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 - **Edge-Case & Safety Watchout:** Verify Three-Tier Hierarchy cascade: waypoints set to `inherit` resolve to Layer settings, while explicit overrides take precedence.
 
 #### `road-following` — Road Following (Offset Path)
-- **Current Status:** ⬜ `UNTESTED` | **Generator Hash:** `e20683d1d303` (`src/layers/LayerManager.js` -> `generateRoadFlightWaypoints`)
+- **Current Status:** ✅ `VERIFIED` | **Generator Hash:** `e20683d1d303` (`src/layers/LayerManager.js` -> `generateRoadFlightWaypoints`)
 - **Recommended Safe Field Parameters:** Origin `[41.3215, -88.9950]`, `altitudeM: 45`, `roadOffsetM: 15`, `speedMps: 5.5`, `gimbalPitchDeg: auto`, `captureMode: continuous`, `headingMode: followWayline`, `pathMode: curved`
 - **6-Phase Field Verification Checklist:**
-  - [ ] **Phase 1: KMZ / WPML Export & RC 2 Import**: Draw/snap a 3-node road polyline with +15m right-hand lateral offset and export KMZ.
-  - [ ] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Confirm climb to 45m AGL and entry at offset start coordinate (not directly over road centerline).
-  - [ ] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify parallel offset trajectory maintains constant +15m lateral separation around road bends.
-  - [ ] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify `auto` road-focus gimbal pitch (`-atan2(45, 15) = -72°`) and inward/forward orientation keep road centered in frame.
-  - [ ] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Verify distance-interval photo triggers fire along the entire offset corridor.
-  - [ ] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Confirm safe RTH from road endpoint.
+  - [x] **Phase 1: KMZ / WPML Export & RC 2 Import**: Draw/snap a 3-node road polyline with +15m right-hand lateral offset and export KMZ.
+  - [x] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Confirm climb to 45m AGL and entry at offset start coordinate (not directly over road centerline).
+  - [x] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify parallel offset trajectory maintains constant +15m lateral separation around road bends.
+  - [x] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify `auto` road-focus gimbal pitch (`-atan2(45, 15) = -72°`) and inward/forward orientation keep road centered in frame.
+  - [x] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Verify distance-interval photo triggers fire along the entire offset corridor.
+  - [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Confirm safe RTH from road endpoint.
 - **Edge-Case & Safety Watchout:** Verify miter/bevel offset geometry at sharp road bends does not self-intersect or cross over the active roadway.
 
 #### `corridor` — Corridor Mapping (Multi-Pass Polyline)

@@ -9,6 +9,8 @@ Preserves procedural waypoint gimbal pitches across multi-orbit, combo, and dome
   - Fixed an issue in WPML placemark and action compilation where procedural multi-tiered flight patterns (`multi-orbit`, `grid-multi-orbit-combo`, `dome-shell`, `tower`, and `vertical-facade`) had their per-ring waypoint gimbal pitches flattened to the static layer pitch slider setting.
   - Multi-Orbit missions now correctly export procedural tiered camera angles (`Ring 0: -60°`, `Ring 1: -45°`, `Ring 2: -30°`) into both `<wpml:waypointGimbalPitchAngle>` and `<wpml:gimbalPitchRotateAngle>` transition actions, ensuring the gimbal tilts accurately at each ring transition as planned.
   - Maintains full Three-Tier Cascading Hierarchy support: individual waypoint overrides (`wp.isModified`) continue to take highest precedence, procedural pattern pitches take precedence over flat layer defaults, and flat flight patterns continue to inherit the layer slider.
+- **Road Following (Offset Path) IRL Field Verification**:
+  - Formally promoted Road Following (`road-following`) to `VERIFIED` status in the IRL Field Flight Tracker following 100% nominal pass across all 6 verification phases in `FlightRecord_2026-11-01_[17-45-04].txt` (100% waypoints completed, RMS cross-track error 0.40 m, max XTE 0.55 m, RMS altitude variance 0.07 m, mean yaw error 0.2°, mean gimbal pitch error 0.0°, and 200% photo trigger ratio).
 
 #### Under the Hood & Technical Details
 - **`src/export/WpmlCompiler.js`**:

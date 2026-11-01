@@ -39643,4 +39643,11 @@ describe('Procedural Multi-Orbit Gimbal Pitch Preservation (v1.215.4, Issue #220
     assert.strictEqual(pitchAngles[0], -75, 'Overridden WP 0 retains pilot-modified pitch -75');
     assert.strictEqual(pitchAngles[1], -60, 'Unmodified WP 1 retains procedural pitch -60');
   });
+
+  test('IRL status tracker formally marks road-following as VERIFIED with all 6 checklist phases true', () => {
+    const statusData = JSON.parse(fs.readFileSync(path.join(__dirname, 'docs/irl_test_status.json'), 'utf8'));
+    assert.strictEqual(statusData.patterns['road-following'].status, 'VERIFIED');
+    const chk = statusData.patterns['road-following'].checklist;
+    assert.ok(chk.kmz_import && chk.entry_altitude && chk.geometry_path && chk.heading_gimbal && chk.capture_trigger && chk.exit_rth);
+  });
 });
