@@ -903,9 +903,35 @@ ${waypointActions.join('\n')}
       }
     }
 
+    const isWpVariableAlt = Boolean(
+      wp.isModified ||
+      wp.isPerimeterOrbit ||
+      wp.isTransition ||
+      wp.isPerimeterTransit ||
+      wp.isMultiOrbit ||
+      (wp.ringIndex !== null && wp.ringIndex !== undefined) ||
+      wp.isTowerPoint ||
+      wp.gridType === 'tower' ||
+      wp.gridType === 'vertical-facade' ||
+      wp.gridType === 'continuous-helix' ||
+      wp.gridType === 'dome-shell' ||
+      wp.gridType === 'grid-multi-orbit-combo' ||
+      wp.gridType === 'cinematic-reveal' ||
+      (wpLayer && (
+        wpLayer.pattern === 'tower' ||
+        wpLayer.pattern === 'multi-orbit' ||
+        wpLayer.pattern === 'vertical-facade' ||
+        wpLayer.pattern === 'continuous-helix' ||
+        wpLayer.pattern === 'dome-shell' ||
+        wpLayer.pattern === 'grid-multi-orbit-combo' ||
+        wpLayer.pattern === 'cinematic-reveal' ||
+        (wpLayer.pattern === 'light-art' && (wpLayer.lightArtOrientation === 'vertical' || wpLayer.lightArtPreset === 'helix'))
+      ))
+    );
+
     // Resolve Altitude via Three-Tier Cascading Hierarchy (Tier 3 Override -> Tier 2 Layer -> Tier 1 Global)
     let currentAltitude;
-    if (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit') {
+    if (isWpVariableAlt && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit' && !isNaN(Number(wp.alt))) {
       currentAltitude = wp.alt;
     } else if (wp.isTerrainFollow || (wpLayer && (wpLayer.terrainFollow === 'enabled' || wpLayer.terrainFollow === true))) {
       currentAltitude = (wp.alt !== undefined && wp.alt !== null) ? wp.alt : altitude;
@@ -1390,8 +1416,40 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
             ? wpLayer.altitude
             : (options && options.altitude !== undefined && options.altitude !== null ? options.altitude : null));
 
-        const isVariableAltPattern = (wpLayer && (wpLayer.pattern === 'tower' || wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix' || wpLayer.terrainFollow === 'enabled' || wpLayer.terrainFollow === true || (wpLayer.pattern === 'light-art' && (wpLayer.lightArtOrientation === 'vertical' || wpLayer.lightArtPreset === 'helix')))) ||
-          (wpObj && (wpObj.isMultiOrbit || wpObj.gridType === 'tower' || wpObj.gridType === 'vertical-facade' || wpObj.gridType === 'continuous-helix' || wpObj.layerPattern === 'vertical-facade' || wpObj.layerPattern === 'continuous-helix' || wpObj.isVerticalFacade || wpObj.isContinuousHelix || wpObj.isTerrainFollow === true || wpObj.surfaceElevation !== undefined));
+        const isVariableAltPattern = (wpLayer && (
+            wpLayer.pattern === 'tower' ||
+            wpLayer.pattern === 'multi-orbit' ||
+            wpLayer.pattern === 'vertical-facade' ||
+            wpLayer.pattern === 'continuous-helix' ||
+            wpLayer.pattern === 'dome-shell' ||
+            wpLayer.pattern === 'grid-multi-orbit-combo' ||
+            wpLayer.pattern === 'cinematic-reveal' ||
+            wpLayer.terrainFollow === 'enabled' ||
+            wpLayer.terrainFollow === true ||
+            (wpLayer.pattern === 'light-art' && (wpLayer.lightArtOrientation === 'vertical' || wpLayer.lightArtPreset === 'helix'))
+          )) ||
+          (wpObj && (
+            wpObj.isMultiOrbit ||
+            wpObj.isPerimeterOrbit ||
+            wpObj.isTransition ||
+            wpObj.isPerimeterTransit ||
+            wpObj.gridType === 'tower' ||
+            wpObj.gridType === 'vertical-facade' ||
+            wpObj.gridType === 'continuous-helix' ||
+            wpObj.gridType === 'dome-shell' ||
+            wpObj.gridType === 'grid-multi-orbit-combo' ||
+            wpObj.gridType === 'cinematic-reveal' ||
+            wpObj.layerPattern === 'vertical-facade' ||
+            wpObj.layerPattern === 'continuous-helix' ||
+            wpObj.layerPattern === 'dome-shell' ||
+            wpObj.layerPattern === 'grid-multi-orbit-combo' ||
+            wpObj.layerPattern === 'cinematic-reveal' ||
+            wpObj.isVerticalFacade ||
+            wpObj.isContinuousHelix ||
+            wpObj.isTerrainFollow === true ||
+            wpObj.surfaceElevation !== undefined ||
+            (wpObj.ringIndex !== null && wpObj.ringIndex !== undefined && wpObj.alt !== undefined)
+          ));
 
         if (targetAlt !== null && !isNaN(targetAlt) && !isVariableAltPattern) {
           pms[i] = pms[i].replace(
@@ -1400,8 +1458,25 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           );
         }
 
-        const isMultiRing = (wpLayer && (wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'photo-sphere' || wpLayer.pattern === 'continuous-helix' || wpLayer.pattern === 'star-pass')) ||
-          (wpObj.isMultiOrbit || wpObj.isPhotoSphere || wpObj.isContinuousHelix || wpObj.isStarPass || wpObj.gridType === 'photo-sphere' || wpObj.gridType === 'continuous-helix' || wpObj.gridType === 'star-pass' || (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
+        const isMultiRing = (wpLayer && (
+            wpLayer.pattern === 'multi-orbit' ||
+            wpLayer.pattern === 'photo-sphere' ||
+            wpLayer.pattern === 'continuous-helix' ||
+            wpLayer.pattern === 'star-pass' ||
+            wpLayer.pattern === 'dome-shell' ||
+            wpLayer.pattern === 'grid-multi-orbit-combo' ||
+            wpLayer.pattern === 'target-splat'
+          )) ||
+          (wpObj.isMultiOrbit ||
+            wpObj.isPhotoSphere ||
+            wpObj.isContinuousHelix ||
+            wpObj.isStarPass ||
+            wpObj.isPerimeterOrbit ||
+            wpObj.gridType === 'photo-sphere' ||
+            wpObj.gridType === 'continuous-helix' ||
+            wpObj.gridType === 'star-pass' ||
+            wpObj.gridType === 'dome-shell' ||
+            (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
         const hasHlSweep = (wpLayer && wpLayer.pattern === 'hyperlapse' && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined && wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch) ||
           (wpLayer && wpLayer.pattern === 'continuous-helix' && wpLayer.helixPitchStart !== undefined && wpLayer.helixPitchEnd !== undefined && wpLayer.helixPitchStart !== wpLayer.helixPitchEnd);
         const hasRoadAutoPitch = Boolean(wpObj && (wpObj.isRoadDroneWaypoint || wpObj.layerPattern === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following')) && ((wpObj.roadFocusMode || (wpLayer && wpLayer.roadFocusMode) || 'focusRoad') !== 'custom') && wpObj.pitch !== undefined && wpObj.pitch !== null);

@@ -1235,6 +1235,10 @@ function analyzeFlightLogAgainstPlan(plannedWaypoints, actualTelemetry, options 
 
   // Analyze each planned waypoint against actual telemetry track
   const wpApproaches = [];
+  let lastBestPtIndex = 0;
+  const avgPtsPerWp = Math.max(5, Math.ceil(pts.length / Math.max(1, wps.length)));
+  const lookaheadWindow = Math.max(45, avgPtsPerWp * 3);
+
   for (let i = 0; i < wps.length; i++) {
     const wp = wps[i];
     const wpLat = parseFloat(wp.lat);
@@ -1246,24 +1250,57 @@ function analyzeFlightLogAgainstPlan(plannedWaypoints, actualTelemetry, options 
     const wpYaw = (wp.heading !== undefined && !isNaN(parseFloat(wp.heading)))
       ? parseFloat(wp.heading)
       : ((wp.yaw !== undefined && !isNaN(parseFloat(wp.yaw))) ? parseFloat(wp.yaw) : null);
+    const isTurnaround = Boolean(wp.skipPhoto || wp.isTurnaroundPoint || wp.isExclusionDetour);
+    const isFinalWp = (i === wps.length - 1);
 
     let bestScore = Infinity;
     let bestDistH = Infinity;
     let bestPt = null;
-    for (let j = 0; j < pts.length; j++) {
+    let bestPtIdx = -1;
+
+    // Chronological window: enforce forward progression across flight timeline
+    const startJ = (i === 0) ? 0 : Math.max(0, lastBestPtIndex - 3);
+    let endJ = (i === 0) ? Math.ceil(pts.length * 0.4) : Math.min(pts.length, startJ + lookaheadWindow);
+
+    for (let j = startJ; j < endJ; j++) {
       const pt = pts[j];
       const dH = haversine(wpLat, wpLon, parseFloat(pt.lat), parseFloat(pt.lon));
       const dZCand = Math.abs(parseFloat(pt.alt || 0) - wpAlt);
       const score = hasVerticalStacking ? Math.hypot(dH, dZCand) : dH;
-      // Use <= when i === 0 during initial takeoff climb so we pick the top-of-climb sample rather than ground launch sample
+
+      // At final waypoint, prefer approach sample before post-mission RTH disengagement levels gimbal to 0°
       const isBetter = (i === 0 && dH < 1.0 && bestDistH < 1.0)
-        ? (j > 0 && dH <= bestDistH + 0.25 && j <= Math.ceil(pts.length * 0.4))
-        : (score < bestScore);
+        ? (j > 0 && dH <= bestDistH + 0.25)
+        : (isFinalWp && dH <= Math.min(1.0, horizontalToleranceM) && bestDistH <= Math.min(1.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined)
+          ? (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)
+          : (score < bestScore);
+
       if (isBetter) {
         bestScore = score;
         bestDistH = dH;
         bestPt = pt;
+        bestPtIdx = j;
       }
+    }
+
+    // Expand forward search if not found within local window
+    if (bestDistH > horizontalToleranceM && endJ < pts.length) {
+      for (let j = endJ; j < pts.length; j++) {
+        const pt = pts[j];
+        const dH = haversine(wpLat, wpLon, parseFloat(pt.lat), parseFloat(pt.lon));
+        const dZCand = Math.abs(parseFloat(pt.alt || 0) - wpAlt);
+        const score = hasVerticalStacking ? Math.hypot(dH, dZCand) : dH;
+        if (score < bestScore) {
+          bestScore = score;
+          bestDistH = dH;
+          bestPt = pt;
+          bestPtIdx = j;
+        }
+      }
+    }
+
+    if (bestPtIdx !== -1) {
+      lastBestPtIndex = bestPtIdx;
     }
 
     const dZ = bestPt ? Math.abs(parseFloat(bestPt.alt || 0) - wpAlt) : Infinity;
@@ -1281,10 +1318,10 @@ function analyzeFlightLogAgainstPlan(plannedWaypoints, actualTelemetry, options 
       dPitch: dPitch !== null ? Math.round(dPitch * 10) / 10 : null,
       dYaw: dYaw !== null ? Math.round(dYaw * 10) / 10 : null,
       visited: bestDistH <= horizontalToleranceM,
-      skipPhoto: Boolean(wp.skipPhoto || wp.isTurnaroundPoint || wp.isExclusionDetour)
+      skipPhoto: isTurnaround,
+      isTurnaround: isTurnaround
     });
   }
-
   // Phase 2: Entry & Target AGL (Waypoint 0)
   const wp0 = wpApproaches[0];
   const entryAltitudePassed = wp0.dH <= Math.max(4.0, horizontalToleranceM) && wp0.dZ <= altitudeToleranceM;
@@ -1306,7 +1343,8 @@ function analyzeFlightLogAgainstPlan(plannedWaypoints, actualTelemetry, options 
 
   // Phase 4: Heading & Gimbal Lock
   const pitchSamples = wpApproaches.filter(a => a.visited && a.dPitch !== null);
-  const yawSamples = wpApproaches.filter(a => a.visited && a.dYaw !== null);
+  const inLineYawSamples = wpApproaches.filter(a => a.visited && a.dYaw !== null && !a.skipPhoto && !a.isTurnaround);
+  const yawSamples = inLineYawSamples.length > 0 ? inLineYawSamples : wpApproaches.filter(a => a.visited && a.dYaw !== null);
   const meanPitchError = pitchSamples.length > 0
     ? pitchSamples.reduce((s, v) => s + v.dPitch, 0) / pitchSamples.length
     : 0;

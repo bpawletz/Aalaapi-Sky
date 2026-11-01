@@ -39312,12 +39312,8 @@ describe('Zero-Dependency Bonjour (mDNS/DNS-SD) Local Service Broadcasting & SBS
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.215.0] - 2026-11-01'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.215.0'));
-    assert.ok(template.includes('Version 1.215.0'));
     assert.ok(template.includes('Changelog (v1.215.0):'));
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('v1.215.0'));
-    assert.ok(indexHtml.includes('Version 1.215.0'));
     assert.ok(indexHtml.includes('Changelog (v1.215.0):'));
   });
 
@@ -39342,5 +39338,118 @@ describe('Zero-Dependency Bonjour (mDNS/DNS-SD) Local Service Broadcasting & SBS
     assert.ok(template.includes('id="adsb-discover-btn"'));
     const apiClient = fs.readFileSync(path.join(__dirname, 'src/bridge/ApiClient.js'), 'utf8');
     assert.ok(apiClient.includes('/api/airspace/discover'));
+  });
+});
+
+describe('Variable-Altitude WPML Compiler Altitude Preservation & Chronological IRL Verifier Windowing (v1.215.1, Issue #217)', () => {
+  test('Version consistency: v1.215.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.215.1');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.215.1] - 2026-11-01'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.215.1'));
+    assert.ok(template.includes('Version 1.215.1'));
+    assert.ok(template.includes('Changelog (v1.215.1):'));
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('v1.215.1'));
+    assert.ok(indexHtml.includes('Version 1.215.1'));
+    assert.ok(indexHtml.includes('Changelog (v1.215.1):'));
+  });
+
+  test('validateAndFixWpml preserves individual waypoint altitudes for variable-altitude patterns (target-splat perimeter orbit, dome-shell, combo, cinematic)', () => {
+    const rawXml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.6">
+  <Document>
+    <wpml:missionConfig>
+      <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
+      <wpml:finishAction>goHome</wpml:finishAction>
+      <wpml:exitOnRTH>executeLostAction</wpml:exitOnRTH>
+      <wpml:takeOffSecurityHeight>20</wpml:takeOffSecurityHeight>
+      <wpml:globalTransitionalSpeed>5</wpml:globalTransitionalSpeed>
+      <wpml:droneInfo>
+        <wpml:droneEnumValue>68</wpml:droneEnumValue>
+      </wpml:droneInfo>
+    </wpml:missionConfig>
+    <Folder>
+      <wpml:templateId>0</wpml:templateId>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <wpml:waylineId>0</wpml:waylineId>
+      <wpml:autoFlightSpeed>5</wpml:autoFlightSpeed>
+      <Placemark>
+        <Point><coordinates>-88.9950,41.3215</coordinates></Point>
+        <wpml:index>0</wpml:index>
+        <wpml:executeHeight>30.0</wpml:executeHeight>
+        <wpml:waypointSpeed>5</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>manually</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0.1</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-88.9951,41.3216</coordinates></Point>
+        <wpml:index>1</wpml:index>
+        <wpml:executeHeight>19.5</wpml:executeHeight>
+        <wpml:waypointSpeed>5</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>manually</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0.1</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+
+    const fixed = vm.runInThisContext(`validateAndFixWpml(\`${rawXml}\`, '', { gridType: 'target-splat' })`);
+    assert.strictEqual(fixed.validation.valid, true);
+    const pms = fixed.wpmlXml.split('<Placemark>').slice(1);
+    const h0 = pms[0].match(/<wpml:executeHeight>([^<]+)<\/wpml:executeHeight>/)[1];
+    const h1 = pms[1].match(/<wpml:executeHeight>([^<]+)<\/wpml:executeHeight>/)[1];
+    assert.strictEqual(h0, '30.0');
+    assert.strictEqual(h1, '19.5', 'target-splat perimeter orbit waypoint executeHeight must not be flattened to target altitude');
+
+    // Also verify dome-shell, combo, and cinematic-reveal
+    for (const pattern of ['dome-shell', 'grid-multi-orbit-combo', 'cinematic-reveal']) {
+      const fixedPattern = vm.runInThisContext(`validateAndFixWpml(\`${rawXml}\`, '', { gridType: '${pattern}' })`);
+      const pmsPattern = fixedPattern.wpmlXml.split('<Placemark>').slice(1);
+      const patH1 = pmsPattern[1].match(/<wpml:executeHeight>([^<]+)<\/wpml:executeHeight>/)[1];
+      assert.strictEqual(patH1, '19.5', `${pattern} waypoint executeHeight must not be flattened`);
+    }
+  });
+
+  test('IrlVerifier chronological forward-sliding window rejects out-of-order aliasing', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+    assert.strictEqual(typeof IrlVerifier.verifyFlightPlanAgainstLog, 'function');
+    
+    // Test with synthetic plan and flight points where an orthogonal waypoint crosses earlier coordinates
+    const planWps = [
+      { lat: 41.3215, lon: -88.9950, alt: 30, yaw: 0, pitch: -60 },
+      { lat: 41.3220, lon: -88.9950, alt: 30, yaw: 0, pitch: -60 },
+      { lat: 41.3220, lon: -88.9945, alt: 30, yaw: 90, pitch: -60 },
+      { lat: 41.3215, lon: -88.9945, alt: 30, yaw: 180, pitch: -60 }
+    ];
+
+    // Synthetic telemetry following the path chronologically
+    const flightPts = [
+      { lat: 41.3215, lon: -88.9950, alt: 30, yaw: 0, pitch: -60, photoCount: 1, flightTime: 10 },
+      { lat: 41.3218, lon: -88.9950, alt: 30, yaw: 0, pitch: -60, photoCount: 2, flightTime: 20 },
+      { lat: 41.3220, lon: -88.9950, alt: 30, yaw: 0, pitch: -60, photoCount: 3, flightTime: 30 },
+      { lat: 41.3220, lon: -88.9947, alt: 30, yaw: 90, pitch: -60, photoCount: 4, flightTime: 40 },
+      { lat: 41.3220, lon: -88.9945, alt: 30, yaw: 90, pitch: -60, photoCount: 5, flightTime: 50 },
+      { lat: 41.3217, lon: -88.9945, alt: 30, yaw: 180, pitch: -60, photoCount: 6, flightTime: 60 },
+      { lat: 41.3215, lon: -88.9945, alt: 30, yaw: 180, pitch: -60, photoCount: 7, flightTime: 70 }
+    ];
+
+    const result = IrlVerifier.verifyFlightPlanAgainstLog(planWps, flightPts);
+    assert.strictEqual(result.phases.geometry_path, true, 'Chronological matching passes geometry phase');
+    assert.strictEqual(result.metrics.visitedCount, 4, 'All 4 waypoints visited');
+    assert.strictEqual(result.wpApproaches.length, 4, 'All 4 waypoints matched chronologically');
+    // Ensure matched point indices are monotonically advancing
+    for (let i = 1; i < result.wpApproaches.length; i++) {
+      assert.ok(result.wpApproaches[i].bestPtIndex >= result.wpApproaches[i - 1].bestPtIndex, 'Point indices must advance chronologically');
+    }
   });
 });
