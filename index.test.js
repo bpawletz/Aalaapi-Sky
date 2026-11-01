@@ -39250,17 +39250,13 @@ describe('Propagate Pilot Session Token to ADS-B Airspace and Companion Calls (v
 });
 
 describe('Map Tile Proxy & Spatial Asset Public Whitelisting (v1.214.2, Issue #212)', () => {
-  test('Version consistency: v1.214.2 across package.json, changelog, index_template.html, and index.html', () => {
+  test('Version consistency: v1.214.2 across package.json, changelog, and templates', () => {
     assertVersionConsistency('1.214.2');
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.214.2] - 2026-10-31'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.214.2'));
-    assert.ok(template.includes('Version 1.214.2'));
     assert.ok(template.includes('Changelog (v1.214.2):'));
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('v1.214.2'));
-    assert.ok(indexHtml.includes('Version 1.214.2'));
     assert.ok(indexHtml.includes('Changelog (v1.214.2):'));
   });
 
@@ -39276,5 +39272,35 @@ describe('Map Tile Proxy & Spatial Asset Public Whitelisting (v1.214.2, Issue #2
     const src = fs.readFileSync(path.join(__dirname, 'src/bridge/ApiClient.js'), 'utf8');
     assert.ok(src.includes('tokenParam = token ?'), 'Must compute tokenParam');
     assert.ok(src.includes('/api/proxy/tile?url='), 'Must proxy tile url');
+  });
+});
+
+describe('Local Pilot Token Support & PNA Headers (v1.214.3, Issue #213)', () => {
+  test('Version consistency: v1.214.3 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.214.3');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.214.3] - 2026-10-31'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.214.3'));
+    assert.ok(template.includes('Version 1.214.3'));
+    assert.ok(template.includes('Changelog (v1.214.3):'));
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('v1.214.3'));
+    assert.ok(indexHtml.includes('Version 1.214.3'));
+    assert.ok(indexHtml.includes('Changelog (v1.214.3):'));
+  });
+
+  test('authDb.validateSession resolves local-tok-<username>-<random> against pilot accounts', () => {
+    const { AuthDatabase } = require('./tools/companion/auth_db.js');
+    const db = new AuthDatabase();
+    const res = db.validateSession('local-tok-ROMAH74-mvx8nrw1');
+    assert.ok(res, 'Session must resolve for local-tok-ROMAH74');
+    assert.strictEqual(res.user.username, 'romah74');
+    assert.strictEqual(res.user.displayName, 'Brian Pawletzki');
+  });
+
+  test('Server SSE stream responses include Access-Control-Allow-Private-Network header', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'tools/companion/server.js'), 'utf8');
+    assert.ok(src.includes("'Access-Control-Allow-Private-Network': 'true'"));
   });
 });

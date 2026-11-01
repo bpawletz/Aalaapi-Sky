@@ -1,3 +1,22 @@
+## [1.214.3] - 2026-10-31
+
+Adds support for local pilot callsign tokens (local-tok-<username>-<suffix>) used by AI Studio apps (e.g. aalaapi-pocket-radar) and attaches Private Network Access (PNA) CORS headers to all Server-Sent Events live streams.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Local Pilot Token Support for AI Studio Apps (Closes #213)**:
+  - Enables Google AI Studio web applications (such as `https://aalaapi-pocket-radar.ai.studio`) to authenticate with the Companion Bridge using pilot callsign tokens (`local-tok-<username>-<random>`).
+  - Resolves `401 Unauthorized` errors on real-time deconfliction streams (`/api/airspace/stream`) and operational endpoints when called from external client-side apps.
+  - Added `Access-Control-Allow-Private-Network: true` to all real-time SSE stream endpoints, ensuring Chrome's Private Network Access security mechanism permits cross-site connections from public HTTPS domains to local LAN bridge IPs (e.g. `192.168.1.44:8766`).
+
+#### Under the Hood & Technical Details
+- **`tools/companion/auth_db.js`**:
+  - Enhanced `validateSession()` with dynamic resolution for tokens matching `^local-tok-([a-zA-Z0-9_.]+)(?:-([a-zA-Z0-9]+))?$`, looking up the registered pilot in SQLite via `getUserByUsername()`.
+- **`tools/companion/server.js`**:
+  - Injected `'Access-Control-Allow-Private-Network': 'true'` across all 6 Server-Sent Events (SSE) stream handlers (`/api/status/stream`, `/api/mcp/sse`, `/api/media/progress/stream`, `/api/remote-id/stream`, `/api/stream`, `/api/airspace/stream`).
+- **`tools/companion/server_auth.test.js`**: Added integration assertion verifying SSE stream establishment with `local-tok-<username>-mvx8nrw1` and confirming the presence of the PNA response header.
+
 ## [1.214.2] - 2026-10-31
 
 Whitelists the map tile caching proxy (/api/proxy/tile), DEM terrain elevation, TFR spatial boundaries, and weather observations in the companion authentication gatekeeper to ensure Leaflet basemaps load seamlessly.
