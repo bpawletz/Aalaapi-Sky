@@ -14,6 +14,7 @@ describe('Companion Server Authentication Enforcement Suite', () => {
   let testPort;
   let validToken;
   let testPilotUserId;
+  let testUsername;
 
   before(async () => {
     // Spin up test HTTP server using companion server handler
@@ -24,6 +25,7 @@ describe('Companion Server Authentication Enforcement Suite', () => {
 
     // Create a test pilot in authDb to generate a real session token
     const username = `authpilot_${Date.now()}`;
+    testUsername = username;
     const user = companion.authDb.createPilotUser({
       username,
       password: 'SecurePassword123!',
@@ -403,6 +405,44 @@ describe('Companion Server Authentication Enforcement Suite', () => {
 
       assert.equal(streamRes.statusCode, 200);
       assert.ok(streamRes.contentType.includes('text/event-stream'));
+      assert.ok(streamRes.data.includes(': connected'));
+    });
+
+    it('establishes SSE stream on GET /api/airspace/stream with local pilot token (local-tok-<username>-<suffix>) and includes PNA header (Issue #213)', async () => {
+      const localToken = `local-tok-${testUsername}-mvx8nrw1`;
+      const streamRes = await new Promise((resolve, reject) => {
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: testPort,
+          path: `/api/airspace/stream?lat=40.0127&lon=-83.1761&radius=5&ceiling=2500&token=${encodeURIComponent(localToken)}`,
+          method: 'GET'
+        }, r => {
+          let receivedData = '';
+          r.on('data', chunk => {
+            receivedData += chunk.toString('utf8');
+            if (receivedData.includes(': connected')) {
+              req.destroy();
+              resolve({
+                statusCode: r.statusCode,
+                contentType: r.headers['content-type'],
+                pnaHeader: r.headers['access-control-allow-private-network'],
+                corsOrigin: r.headers['access-control-allow-origin'],
+                data: receivedData
+              });
+            }
+          });
+        });
+        req.on('error', (err) => {
+          if (err.code === 'ECONNRESET') return;
+          reject(err);
+        });
+        req.end();
+      });
+
+      assert.equal(streamRes.statusCode, 200);
+      assert.ok(streamRes.contentType.includes('text/event-stream'));
+      assert.equal(streamRes.pnaHeader, 'true');
+      assert.equal(streamRes.corsOrigin, '*');
       assert.ok(streamRes.data.includes(': connected'));
     });
   });

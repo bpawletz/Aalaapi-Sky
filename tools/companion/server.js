@@ -3718,7 +3718,8 @@ const handleHttpRequest = async (req, res) => {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Private-Network': 'true'
       });
       if (res.flushHeaders) res.flushHeaders();
 
@@ -3754,7 +3755,8 @@ const handleHttpRequest = async (req, res) => {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Private-Network': 'true'
       });
       if (res.flushHeaders) res.flushHeaders();
 
@@ -5117,7 +5119,8 @@ const handleHttpRequest = async (req, res) => {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Private-Network': 'true'
       });
       if (res.flushHeaders) res.flushHeaders();
 
@@ -5884,7 +5887,8 @@ const handleHttpRequest = async (req, res) => {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Private-Network': 'true'
       });
       if (res.flushHeaders) res.flushHeaders();
 
@@ -5911,7 +5915,8 @@ const handleHttpRequest = async (req, res) => {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Private-Network': 'true'
       });
       if (res.flushHeaders) res.flushHeaders();
 
@@ -6133,7 +6138,8 @@ const handleHttpRequest = async (req, res) => {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Private-Network': 'true'
       });
       if (res.flushHeaders) res.flushHeaders();
 
