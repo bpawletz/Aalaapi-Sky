@@ -39500,11 +39500,9 @@ describe('Heading-Aware Crosshatch Telemetry Disambiguation & Double Grid Verifi
     assert.ok(changelog.includes('## [1.215.3] - 2026-11-01'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
     assert.ok(template.includes('v1.215.3'));
-    assert.ok(template.includes('Version 1.215.3'));
     assert.ok(template.includes('Changelog (v1.215.3):'));
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
     assert.ok(indexHtml.includes('v1.215.3'));
-    assert.ok(indexHtml.includes('Version 1.215.3'));
     assert.ok(indexHtml.includes('Changelog (v1.215.3):'));
   });
 
@@ -39540,5 +39538,109 @@ describe('Heading-Aware Crosshatch Telemetry Disambiguation & Double Grid Verifi
     assert.strictEqual(statusData.patterns['double'].status, 'VERIFIED');
     const chk = statusData.patterns['double'].checklist;
     assert.ok(chk.kmz_import && chk.entry_altitude && chk.geometry_path && chk.heading_gimbal && chk.capture_trigger && chk.exit_rth);
+  });
+});
+
+describe('Procedural Multi-Orbit Gimbal Pitch Preservation (v1.215.4, Issue #220)', () => {
+  test('Version consistency: v1.215.4 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.215.4');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.215.4] - 2026-11-01'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('v1.215.4'));
+    assert.ok(template.includes('Version 1.215.4'));
+    assert.ok(template.includes('Changelog (v1.215.4):'));
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('v1.215.4'));
+    assert.ok(indexHtml.includes('Version 1.215.4'));
+    assert.ok(indexHtml.includes('Changelog (v1.215.4):'));
+  });
+
+  test('buildWaylinesWpml preserves procedural per-ring gimbal pitches for multi-orbit pattern', () => {
+    // Construct 3 rings with procedural pitches: Ring 0 (-60), Ring 1 (-45), Ring 2 (-30)
+    const multiOrbitWps = [
+      // Ring 0: alt 36m, pitch -60
+      { lat: 41.3215, lon: -88.9950, alt: 36, pitch: -60, heading: 0, ringIndex: 0, isRingStart: true, isMultiOrbit: true },
+      { lat: 41.3216, lon: -88.9951, alt: 36, pitch: -60, heading: 90, ringIndex: 0, isMultiOrbit: true },
+      // Ring 1: alt 30m, pitch -45
+      { lat: 41.3215, lon: -88.9950, alt: 30, pitch: -45, heading: 0, ringIndex: 1, isRingStart: true, isMultiOrbit: true },
+      { lat: 41.3216, lon: -88.9951, alt: 30, pitch: -45, heading: 90, ringIndex: 1, isMultiOrbit: true },
+      // Ring 2: alt 24m, pitch -30
+      { lat: 41.3215, lon: -88.9950, alt: 24, pitch: -30, heading: 0, ringIndex: 2, isRingStart: true, isMultiOrbit: true },
+      { lat: 41.3216, lon: -88.9951, alt: 24, pitch: -30, heading: 90, ringIndex: 2, isMultiOrbit: true }
+    ];
+
+    const mockLayers = [{
+      id: 'layer-test-multi-orbit',
+      pattern: 'multi-orbit',
+      gimbalPitch: -45, // Static layer fallback slider
+      altitude: 30
+    }];
+
+    const xml = vm.runInThisContext('buildWaylinesWpml')(
+      multiOrbitWps,
+      30,
+      4,
+      'smoothTransition',
+      'goHome',
+      -45,
+      'continuous',
+      'multi-orbit',
+      1.0,
+      0,
+      false,
+      null,
+      { layers: mockLayers }
+    );
+
+    const pitchAngles = [...xml.matchAll(/<wpml:waypointGimbalPitchAngle>([^<]+)<\/wpml:waypointGimbalPitchAngle>/g)].map(m => parseFloat(m[1]));
+    assert.strictEqual(pitchAngles.length, 6, 'All 6 placemarks have waypointGimbalPitchAngle');
+    assert.strictEqual(pitchAngles[0], -60, 'Ring 0 WP 0 has pitch -60');
+    assert.strictEqual(pitchAngles[1], -60, 'Ring 0 WP 1 has pitch -60');
+    assert.strictEqual(pitchAngles[2], -45, 'Ring 1 WP 2 has pitch -45');
+    assert.strictEqual(pitchAngles[3], -45, 'Ring 1 WP 3 has pitch -45');
+    assert.strictEqual(pitchAngles[4], -30, 'Ring 2 WP 4 has pitch -30');
+    assert.strictEqual(pitchAngles[5], -30, 'Ring 2 WP 5 has pitch -30');
+
+    // Gimbal rotate actions emitted at ring starts
+    const rotateActions = [...xml.matchAll(/<wpml:gimbalPitchRotateAngle>([^<]+)<\/wpml:gimbalPitchRotateAngle>/g)].map(m => parseFloat(m[1]));
+    assert.ok(rotateActions.includes(-60), 'Action group includes -60 for Ring 0');
+    assert.ok(rotateActions.includes(-45), 'Action group includes -45 for Ring 1');
+    assert.ok(rotateActions.includes(-30), 'Action group includes -30 for Ring 2');
+  });
+
+  test('Waypoint override (Tier 3) takes highest precedence over procedural pitches and layer pitches', () => {
+    const multiOrbitWps = [
+      // Ring 0: procedural pitch is -60, but pilot explicitly overrode it to -75
+      { lat: 41.3215, lon: -88.9950, alt: 36, pitch: -75, isModified: true, heading: 0, ringIndex: 0, isRingStart: true, isMultiOrbit: true },
+      { lat: 41.3216, lon: -88.9951, alt: 36, pitch: -60, heading: 90, ringIndex: 0, isMultiOrbit: true }
+    ];
+
+    const mockLayers = [{
+      id: 'layer-test-multi-orbit',
+      pattern: 'multi-orbit',
+      gimbalPitch: -45,
+      altitude: 30
+    }];
+
+    const xml = vm.runInThisContext('buildWaylinesWpml')(
+      multiOrbitWps,
+      30,
+      4,
+      'smoothTransition',
+      'goHome',
+      -45,
+      'continuous',
+      'multi-orbit',
+      1.0,
+      0,
+      false,
+      null,
+      { layers: mockLayers }
+    );
+
+    const pitchAngles = [...xml.matchAll(/<wpml:waypointGimbalPitchAngle>([^<]+)<\/wpml:waypointGimbalPitchAngle>/g)].map(m => parseFloat(m[1]));
+    assert.strictEqual(pitchAngles[0], -75, 'Overridden WP 0 retains pilot-modified pitch -75');
+    assert.strictEqual(pitchAngles[1], -60, 'Unmodified WP 1 retains procedural pitch -60');
   });
 });

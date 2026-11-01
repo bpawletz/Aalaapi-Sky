@@ -1,3 +1,20 @@
+## [1.215.4] - 2026-11-01
+
+Preserves procedural waypoint gimbal pitches across multi-orbit, combo, and dome-shell patterns in WPML export, preventing fallback layer flattening.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Procedural Multi-Orbit Gimbal Pitch Export (Closes #220)**:
+  - Fixed an issue in WPML placemark and action compilation where procedural multi-tiered flight patterns (`multi-orbit`, `grid-multi-orbit-combo`, `dome-shell`, `tower`, and `vertical-facade`) had their per-ring waypoint gimbal pitches flattened to the static layer pitch slider setting.
+  - Multi-Orbit missions now correctly export procedural tiered camera angles (`Ring 0: -60°`, `Ring 1: -45°`, `Ring 2: -30°`) into both `<wpml:waypointGimbalPitchAngle>` and `<wpml:gimbalPitchRotateAngle>` transition actions, ensuring the gimbal tilts accurately at each ring transition as planned.
+  - Maintains full Three-Tier Cascading Hierarchy support: individual waypoint overrides (`wp.isModified`) continue to take highest precedence, procedural pattern pitches take precedence over flat layer defaults, and flat flight patterns continue to inherit the layer slider.
+
+#### Under the Hood & Technical Details
+- **`src/export/WpmlCompiler.js`**:
+  - Defined `isMultiRingOrProceduralPitch` and `isProceduralPitch` whitelist in `buildWaylinesWpml` to preserve `wp.pitch` / `wp.gimbalPitch` before falling back to `wp.layerGimbalPitch` or `wpLayer.gimbalPitch`.
+  - Updated `validateAndFixWpml` to include `tower` and `vertical-facade` in `isMultiRing` multi-tier pattern safeguards, preventing post-processing regex replacements from overriding procedural tiered pitch setpoints.
+
 ## [1.215.3] - 2026-11-01
 
 Adds heading-aware candidate disambiguation for orthogonal crosshatch grids to the IRL flight verifier and formally promotes 3D Splat (Double Grid) to VERIFIED.
