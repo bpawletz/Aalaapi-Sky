@@ -507,27 +507,6 @@ class AuthDatabase {
     const cleanToken = token.trim();
     const now = Date.now();
 
-    // Support local pilot tokens (e.g. local-tok-ROMAH74-mvx8nrw1 from AI Studio apps)
-    if (cleanToken.startsWith('local-tok-')) {
-      const match = cleanToken.match(/^local-tok-([a-zA-Z0-9_\.]+)(?:-([a-zA-Z0-9]+))?$/i);
-      if (match && match[1]) {
-        const rawUser = this.getUserByUsername(match[1]);
-        if (rawUser) {
-          const user = this.sanitizeUserRow(rawUser);
-          return {
-            session: {
-              token: cleanToken,
-              user_id: user.userId,
-              created_at: now,
-              expires_at: now + (30 * 24 * 60 * 60 * 1000),
-              user_agent: 'LocalPilotToken'
-            },
-            user
-          };
-        }
-      }
-    }
-
     let session = null;
     if (this.db) {
       session = this.db.prepare('SELECT * FROM auth_sessions WHERE token = ?').get(cleanToken);

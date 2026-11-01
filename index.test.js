@@ -39275,28 +39275,26 @@ describe('Map Tile Proxy & Spatial Asset Public Whitelisting (v1.214.2, Issue #2
   });
 });
 
-describe('Local Pilot Token Support & PNA Headers (v1.214.3, Issue #213)', () => {
-  test('Version consistency: v1.214.3 across package.json, changelog, index_template.html, and index.html', () => {
-    assertVersionConsistency('1.214.3');
+describe('Enforce Cryptographic Session Authentication (v1.214.4, Issue #214)', () => {
+  test('Version consistency: v1.214.4 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.214.4');
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.214.3] - 2026-10-31'));
+    assert.ok(changelog.includes('## [1.214.4] - 2026-10-31'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.214.3'));
-    assert.ok(template.includes('Version 1.214.3'));
-    assert.ok(template.includes('Changelog (v1.214.3):'));
+    assert.ok(template.includes('v1.214.4'));
+    assert.ok(template.includes('Version 1.214.4'));
+    assert.ok(template.includes('Changelog (v1.214.4):'));
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('v1.214.3'));
-    assert.ok(indexHtml.includes('Version 1.214.3'));
-    assert.ok(indexHtml.includes('Changelog (v1.214.3):'));
+    assert.ok(indexHtml.includes('v1.214.4'));
+    assert.ok(indexHtml.includes('Version 1.214.4'));
+    assert.ok(indexHtml.includes('Changelog (v1.214.4):'));
   });
 
-  test('authDb.validateSession resolves local-tok-<username>-<random> against pilot accounts', () => {
+  test('authDb.validateSession strictly rejects unverified local-tok-<username>-<random> tokens', () => {
     const { AuthDatabase } = require('./tools/companion/auth_db.js');
     const db = new AuthDatabase();
     const res = db.validateSession('local-tok-ROMAH74-mvx8nrw1');
-    assert.ok(res, 'Session must resolve for local-tok-ROMAH74');
-    assert.strictEqual(res.user.username, 'romah74');
-    assert.strictEqual(res.user.displayName, 'Brian Pawletzki');
+    assert.strictEqual(res, null, 'Unverified local-tok token must be rejected with null');
   });
 
   test('Server SSE stream responses include Access-Control-Allow-Private-Network header', () => {
