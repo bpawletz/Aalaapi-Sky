@@ -42,5 +42,6 @@ import './geo/Photogrammetry.js';
 import './geo/NdFilterAdvisor.js';
 import './vision/TagDetector.js';
 import './ui/Modals/PhotoInspector.js';
+import './ui/ActionFlowModal.js';
 import './bridge/Rc2LogExplorer.js';
 import './bridge/VideoCastClient.js';

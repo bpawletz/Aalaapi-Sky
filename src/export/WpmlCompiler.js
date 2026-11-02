@@ -222,6 +222,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
   });
 
+  let prevEffectivePitch = (gimbalPitch !== undefined && gimbalPitch !== null && !isNaN(gimbalPitch)) ? gimbalPitch : -60; // Aircraft takes off with gimbal at horizon 0.0°
   sanitizedWps.forEach((wp, idx) => {
     const waypointActions = [];
     const isHyperlapse = (gridType === 'hyperlapse') || (wp.isHyperlapse) || (wp.gridType === 'hyperlapse') || (wp.layerPattern === 'hyperlapse');
@@ -277,54 +278,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const reposInfo = checkNeedsReposition(idx, sanitizedWps);
     const isRoadFollowing = gridType === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following') || wp.layerPattern === 'road-following';
 
-    // Three-Tier Hover Time Resolution:
-    // Tier 3: wp.hoverTime (if not null/undefined/inherit)
-    // Tier 2: wp.layerHoverTime or wpLayer.hoverTime (if not null/undefined/inherit)
-    // Tier 1: globalHoverTime (or 0 for light-art default)
-    let baseHover = isLightArt ? 0 : globalHoverTime;
-    const layerHover = wp.layerHoverTime !== undefined ? wp.layerHoverTime : (wpLayer && wpLayer.hoverTime);
-    if (layerHover !== undefined && layerHover !== null && layerHover !== 'inherit') {
-      baseHover = parseInt(layerHover, 10) || 0;
-    }
-    if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
-      baseHover = parseInt(wp.hoverTime, 10) || 0;
-    }
-    let effectiveHover = baseHover;
-
-    // Universal Auto-Settling Delays across ALL flight patterns in stopAndShoot mode
-    const autoSettlingEnabled = wp.autoSettlingEnabled !== false;
-    const baseSettling = wp.baseSettlingTime !== undefined ? wp.baseSettlingTime : 2.0;
-    const majorTurnSettling = wp.majorTurnSettlingTime !== undefined ? wp.majorTurnSettlingTime : 5.0;
-    const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
-    const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
-
-    const isPhotoSphere = (gridType === 'photo-sphere') || (wp.isPhotoSphere) || (wp.isPhotoSpherePoint) || (wp.layerPattern === 'photo-sphere');
-
-    const isExtendedSettling = (gridType === 'target-splat') ||
-      (gridType === 'photo-sphere') ||
-      isPhotoSphere ||
-      (wp.gridType === 'target-splat') ||
-      (wp.gridType === 'photo-sphere') ||
-      (wp.isPhotoSpherePoint) ||
-      (wp._clusterSize > 1) ||
-      (wp.layerId && (wp.majorTurnSettlingTime !== undefined || (typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && (l.pattern === 'target-splat' || l.pattern === 'photo-sphere')))));
-
-    if ((isStopAndShoot || isPhotoSphere) && autoSettlingEnabled && !wp.skipPhoto && !wp.isDetour && !wp.isTransition) {
-      if (effectiveHover < baseSettling) {
-        effectiveHover = baseSettling;
-      }
-      if (idx > 0 && isExtendedSettling) {
-        if (reposInfo.headingDiff >= 60) {
-          effectiveHover = Math.max(effectiveHover, majorTurnSettling);
-        } else if (reposInfo.headingDiff >= 25) {
-          effectiveHover = Math.max(effectiveHover, modTurnSettling);
-        } else if (reposInfo.isGimbalChanged) {
-          effectiveHover = Math.max(effectiveHover, isPhotoSphere ? Math.max(modTurnSettling, pitchSettling) : pitchSettling);
-        }
-      }
-    }
-
-    // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
+    // Compute effective pitch FIRST so gimbal slew delta (pitchDiff) is known for auto-settling timing
     let effectivePitch;
     const isWpPitchOverridden = wp.isModified && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit';
     const isHyperlapseSweep = (wp.layerPattern === 'hyperlapse' || wpLayer?.pattern === 'hyperlapse') &&
@@ -383,6 +337,13 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         wp.layerPattern === 'vertical-facade' ||
         (wp.ringIndex !== undefined && wp.ringIndex !== null));
 
+    const isPhotoSphere = (gridType === 'photo-sphere') ||
+      (wp.gridType === 'photo-sphere') ||
+      (wp.isPhotoSpherePoint) ||
+      (wp.isPhotoSphere) ||
+      (wp.layerPattern === 'photo-sphere') ||
+      (wpLayer && wpLayer.pattern === 'photo-sphere');
+
     const isProceduralPitch = isPhotoSphere || isContinuousHelix || isMultiRingOrProceduralPitch;
 
     const rawWpPitch = isWpPitchOverridden
@@ -420,13 +381,94 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       effectivePitch = parseGimbalPitch(rawWpPitch, -60);
     }
 
-    if (wp.isPhotoSphereActionGroup && Array.isArray(wp.photoSphereActions) && wp.photoSphereActions.length > 0) {
-      wp.photoSphereActions.forEach(action => {
-        let actHeading = action.yaw;
-        actHeading = ((actHeading % 360) + 360) % 360;
-        if (actHeading > 180) actHeading -= 360;
-        if (actHeading === 0) actHeading = 0.1;
+    const isExtendedSettling = (gridType === 'target-splat') ||
+      (gridType === 'photo-sphere') ||
+      isPhotoSphere ||
+      (wp.gridType === 'target-splat') ||
+      (wp.gridType === 'photo-sphere') ||
+      (wp.isPhotoSpherePoint) ||
+      (wp._clusterSize > 1) ||
+      (wp.layerId && (wp.majorTurnSettlingTime !== undefined || (typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && (l.pattern === 'target-splat' || l.pattern === 'photo-sphere')))));
 
+    // Exact angular pitch delta:
+    // At idx === 0: delta relative to default mission/layer gimbal pitch
+    // At idx > 0: delta relative to previous waypoint pitch
+    const defaultPitch0 = (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit')
+      ? (typeof parseGimbalPitch === 'function' ? parseGimbalPitch(wpLayer.gimbalPitch, -60) : wpLayer.gimbalPitch)
+      : ((gimbalPitch !== undefined && gimbalPitch !== null && !isNaN(gimbalPitch)) ? gimbalPitch : -60);
+    const pitchDiff = (idx === 0)
+      ? Math.abs(effectivePitch - defaultPitch0)
+      : Math.abs(effectivePitch - prevEffectivePitch);
+    const isPitchSlew = (idx === 0) ? (pitchDiff >= 5.0) : (pitchDiff >= 5.0 || reposInfo.isGimbalChanged);
+    prevEffectivePitch = effectivePitch;
+
+    // Three-Tier Hover Time Resolution:
+    // Tier 3: wp.hoverTime (if not null/undefined/inherit)
+    // Tier 2: wp.layerHoverTime or wpLayer.hoverTime (if not null/undefined/inherit)
+    // Tier 1: globalHoverTime (or 0 for light-art default)
+    let baseHover = isLightArt ? 0 : globalHoverTime;
+    const layerHover = wp.layerHoverTime !== undefined ? wp.layerHoverTime : (wpLayer && wpLayer.hoverTime);
+    if (layerHover !== undefined && layerHover !== null && layerHover !== 'inherit') {
+      baseHover = parseInt(layerHover, 10) || 0;
+    }
+    if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
+      baseHover = parseInt(wp.hoverTime, 10) || 0;
+    }
+    let effectiveHover = baseHover;
+
+    // Universal Auto-Settling Delays across ALL flight patterns in stopAndShoot mode (AGENTS.md Section 16)
+    const autoSettlingEnabled = (wp.autoSettlingEnabled !== undefined)
+      ? (wp.autoSettlingEnabled !== false)
+      : ((wpLayer && wpLayer.autoSettlingEnabled !== undefined) ? (wpLayer.autoSettlingEnabled !== false) : true);
+    const baseSettling = (wp.baseSettlingTime !== undefined && wp.baseSettlingTime !== null && wp.baseSettlingTime !== 'inherit')
+      ? parseFloat(wp.baseSettlingTime)
+      : ((wpLayer && wpLayer.baseSettlingTime !== undefined && wpLayer.baseSettlingTime !== null && wpLayer.baseSettlingTime !== 'inherit') ? parseFloat(wpLayer.baseSettlingTime) : 2.0);
+    const majorTurnSettling = (wp.majorTurnSettlingTime !== undefined && wp.majorTurnSettlingTime !== null && wp.majorTurnSettlingTime !== 'inherit')
+      ? parseFloat(wp.majorTurnSettlingTime)
+      : ((wpLayer && wpLayer.majorTurnSettlingTime !== undefined && wpLayer.majorTurnSettlingTime !== null && wpLayer.majorTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.majorTurnSettlingTime) : 5.0);
+    const modTurnSettling = (wp.moderateTurnSettlingTime !== undefined && wp.moderateTurnSettlingTime !== null && wp.moderateTurnSettlingTime !== 'inherit')
+      ? parseFloat(wp.moderateTurnSettlingTime)
+      : ((wpLayer && wpLayer.moderateTurnSettlingTime !== undefined && wpLayer.moderateTurnSettlingTime !== null && wpLayer.moderateTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.moderateTurnSettlingTime) : 4.0);
+    const pitchSettling = (wp.pitchSettlingTime !== undefined && wp.pitchSettlingTime !== null && wp.pitchSettlingTime !== 'inherit')
+      ? parseFloat(wp.pitchSettlingTime)
+      : ((wpLayer && wpLayer.pitchSettlingTime !== undefined && wpLayer.pitchSettlingTime !== null && wpLayer.pitchSettlingTime !== 'inherit') ? parseFloat(wpLayer.pitchSettlingTime) : 3.0);
+
+// isPhotoSphere already declared above
+
+    if ((isStopAndShoot || isPhotoSphere) && autoSettlingEnabled && !wp.skipPhoto && !wp.isDetour && !wp.isTransition) {
+      if (effectiveHover < baseSettling) {
+        effectiveHover = baseSettling;
+      }
+      // 1. Yaw turn settling (extended settling on target-splat, photo-sphere, or cluster)
+      if (idx > 0 && isExtendedSettling) {
+        if (reposInfo.headingDiff >= 60) {
+          effectiveHover = Math.max(effectiveHover, majorTurnSettling);
+        } else if (reposInfo.headingDiff >= 25) {
+          effectiveHover = Math.max(effectiveHover, modTurnSettling);
+        }
+      }
+      // 2. Gimbal pitch slew settling across ALL patterns and ALL waypoints (idx >= 0)
+      if (isPitchSlew) {
+        if (pitchDiff >= 65.0) {
+          // Large full-travel slew (e.g. >= 0° to -90°): requires >= 5.0s (or majorTurnSettling)
+          effectiveHover = Math.max(effectiveHover, majorTurnSettling, 5.0);
+        } else if (pitchDiff >= 35.0) {
+          // Medium pitch slew (e.g. 0° to -51°): requires >= 4.0s (or modTurnSettling)
+          effectiveHover = Math.max(effectiveHover, modTurnSettling, 4.0);
+        } else {
+          // Moderate pitch tilt (>= 5°): requires >= 3.0s (or pitchSettling)
+          effectiveHover = Math.max(effectiveHover, pitchSettling);
+        }
+        if (isPhotoSphere) {
+          effectiveHover = Math.max(effectiveHover, modTurnSettling);
+        }
+      }
+    }
+
+    // Photo sphere actions:
+    if (wp.photoSphereActions && Array.isArray(wp.photoSphereActions) && wp.photoSphereActions.length > 0) {
+      wp.photoSphereActions.forEach(action => {
+        const actHeading = (action.heading !== undefined && action.heading !== null && !isNaN(action.heading)) ? action.heading : 0;
         waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc>
@@ -491,7 +533,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         wp.isRingStart ||
         isRoadFollowing ||
         isVerticalFacade ||
-        reposInfo.isGimbalChanged ||
+        isPitchSlew ||
         isObliqueStopAndShoot;
       if (shouldEmitGimbalRotate) {
         const currentPitch = effectivePitch;

@@ -824,7 +824,14 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       if (typeof setGridCenter === 'function') {
         setGridCenter(41.88, -87.62);
       }
-      const wps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : [];
+      let wps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : [];
+      if (!wps || wps.length === 0) {
+        generatedWaypoints = [
+          { lat: 41.3215, lon: -88.9950, alt: 30, pitch: -45, heading: 0 },
+          { lat: 41.3218, lon: -88.9950, alt: 30, pitch: -45, heading: 0 }
+        ];
+        wps = generatedWaypoints;
+      }
       if (!wps || wps.length === 0) return { success: false, reason: 'No waypoints found', zoomErrors: [], orphanedZoomanimCount: -1 };
 
       // 2. Find a marker from waypointMarkersGroup or generatedWaypoints
@@ -4045,7 +4052,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
     assert.strictEqual(moreMenuOpenState.menuVisible, true, 'More menu should be visible after clicking more button');
-    assert.strictEqual(moreMenuOpenState.itemsCount, 10, 'More menu should contain 10 action items (Bridge, ADS-B, Diagnostics, Photos, Pilot Identity, Intro, About, Links, Buy Me a Coffee, Customize Ribbon)');
+    assert.strictEqual(moreMenuOpenState.itemsCount, 11, 'More menu should contain 11 action items (Bridge, ADS-B, Diagnostics, Photos, Pilot Identity, Intro, About, Links, Action Flow, Buy Me a Coffee, Customize Ribbon)');
 
     // Click About from More Menu
     await page.locator('#more-menu-about-btn').click();
@@ -4363,7 +4370,14 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const detourText = detourInheritOpt.textContent;
 
       // 2. Tier 3: 2D Waypoint Editor Popup
-      const wps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : [];
+      let wps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : [];
+      if (!wps || wps.length === 0) {
+        generatedWaypoints = [
+          { lat: 41.3215, lon: -88.9950, alt: 30, pitch: -45, heading: 0 },
+          { lat: 41.3218, lon: -88.9950, alt: 30, pitch: -45, heading: 0 }
+        ];
+        wps = generatedWaypoints;
+      }
       let popupSpeedText = '';
       let popupCameraInheritText = '';
       let popupHeadingInheritText = '';
@@ -11377,6 +11391,58 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         FlightDiagnostics.close();
       });
       await page.waitForTimeout(200);
+    });
+
+    test('E2E: Node-RED Flight Action Flow modal opens, renders SVG node cards, and links from waypoint popup', async () => {
+      // 1. Ensure mission has waypoints
+      await page.evaluate(() => {
+        generatedWaypoints = [
+          { index: 0, lat: 41.3215, lon: -88.9950, alt: 30, pitch: -45, heading: 0 },
+          { index: 1, lat: 41.3218, lon: -88.9950, alt: 30, pitch: -45, heading: 0 }
+        ];
+      });
+      await page.waitForTimeout(100);
+
+      // 2. Verify Action Flow topbar button exists
+      const topbarBtnExists = await page.evaluate(() => {
+        return !!document.getElementById('action-flow-topbar-btn');
+      });
+      assert.strictEqual(topbarBtnExists, true, 'Action Flow topbar button must exist');
+
+      // 3. Open Action Flow modal via topbar button
+      await page.evaluate(() => {
+        document.getElementById('action-flow-topbar-btn').click();
+      });
+      await page.waitForTimeout(300);
+
+      const modalState = await page.evaluate(() => {
+        const modal = document.getElementById('action-flow-modal');
+        const nodes = modal.querySelectorAll('.af-node-card');
+        const wires = modal.querySelectorAll('.af-wire-path');
+        const statsBar = document.getElementById('action-flow-summary-bar');
+        return {
+          isVisible: !modal.classList.contains('hidden'),
+          nodeCount: nodes.length,
+          wireCount: wires.length,
+          statsText: statsBar?.textContent || ''
+        };
+      });
+
+      assert.strictEqual(modalState.isVisible, true, 'Action Flow modal should be visible');
+      assert.ok(modalState.nodeCount >= 1, 'Action Flow modal should render at least 1 node card');
+      assert.ok(modalState.statsText.includes('Waypoints'), 'Action Flow summary bar should show Waypoints stat');
+
+      // 3. Test closing Action Flow modal
+      await page.evaluate(() => {
+        document.getElementById('action-flow-close-btn').click();
+      });
+      await page.waitForTimeout(200);
+
+      const closedState = await page.evaluate(() => {
+        const modal = document.getElementById('action-flow-modal');
+        return modal.classList.contains('hidden');
+      });
+      assert.strictEqual(closedState, true, 'Action Flow modal should be hidden after clicking close');
     });
   });
 

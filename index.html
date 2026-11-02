@@ -2336,6 +2336,7 @@ body.modal-drag-active {
   #intro-tour-btn:not(.ribbon-force-show),
   #about-btn:not(.ribbon-force-show),
   #useful-links-btn:not(.ribbon-force-show),
+  #action-flow-topbar-btn:not(.ribbon-force-show),
   #buy-coffee-topbar-btn:not(.ribbon-force-show) {
     display: none !important;
   }
@@ -2419,6 +2420,7 @@ body.modal-drag-active {
   #intro-tour-btn,
   #about-btn,
   #useful-links-btn,
+  #action-flow-topbar-btn,
   #adsb-topbar-btn,
   #header-pilot-btn,
   #header-system-status-group,
@@ -7924,6 +7926,364 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   pointer-events: auto !important; /* ensures informative title tooltip triggers on hover */
 }
 
+
+/* ==========================================================================
+   Visual Flight Action Flow Visualizer (Node-RED Style Canvas) - v1.216.0
+   ========================================================================== */
+
+#action-flow-modal {
+  z-index: 10060;
+  padding: 0;
+}
+
+.action-flow-card {
+  max-width: 96vw;
+  width: 96vw;
+  height: 94vh;
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 12px;
+  background: #070a13;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+}
+
+.action-flow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.9);
+  flex-shrink: 0;
+}
+
+#action-flow-viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: #060911;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+  cursor: grab;
+  user-select: none;
+}
+
+#action-flow-viewport:active {
+  cursor: grabbing;
+}
+
+#action-flow-canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#action-flow-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.af-svg-wire {
+  fill: none;
+  stroke: url(#afWireGradient);
+  stroke-width: 2.5px;
+  stroke-dasharray: 6 3;
+  filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.5));
+  animation: afWirePulse 40s linear infinite;
+}
+
+@keyframes afWirePulse {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+
+#action-flow-nodes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: 50px;
+  padding: 50px 70px;
+  z-index: 2;
+  pointer-events: auto;
+  align-items: flex-start;
+}
+
+.af-node-card {
+  width: 290px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  position: relative;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.af-node-card:hover {
+  border-color: rgba(6, 182, 212, 0.6);
+  box-shadow: 0 12px 38px rgba(6, 182, 212, 0.18);
+  transform: translateY(-2px);
+}
+
+.af-node-start {
+  border-left: 5px solid #10b981;
+}
+
+.af-node-wp {
+  border-left: 5px solid #06b6d4;
+}
+
+.af-node-finish {
+  border-left: 5px solid #a855f7;
+}
+
+.af-node-focused,
+.af-highlight-pulse {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.7) !important;
+  transform: scale(1.03) !important;
+}
+
+.af-node-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.af-node-layer {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.af-node-alt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.af-node-submeta {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 14px;
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 0.68rem;
+  color: #94a3b8;
+  font-family: monospace;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.af-node-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.af-port {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #38bdf8;
+  border: 2px solid #0f172a;
+  top: 22px;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+  z-index: 5;
+}
+
+.af-port-in {
+  left: -8px;
+}
+
+.af-port-out {
+  right: -8px;
+}
+
+.af-action-step-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.af-step-index {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.62rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.af-action-chip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 0;
+}
+
+.af-chip-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.af-chip-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.af-chip-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.af-chip-reason {
+  font-size: 0.62rem;
+  color: #38bdf8;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.af-chip-detail {
+  font-family: monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.af-action-yaw {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.09);
+  color: #fde68a;
+}
+
+.af-action-gimbal {
+  border-color: rgba(236, 72, 153, 0.45);
+  background: rgba(236, 72, 153, 0.09);
+  color: #fbcfe8;
+}
+
+.af-action-hover-auto {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.12);
+  color: #bae6fd;
+}
+
+.af-action-hover-manual {
+  border-color: rgba(168, 85, 247, 0.45);
+  background: rgba(168, 85, 247, 0.09);
+  color: #e9d5ff;
+}
+
+.af-action-photo {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.12);
+  color: #a7f3d0;
+}
+
+.af-action-video {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+
+.af-action-zoom {
+  border-color: rgba(99, 102, 241, 0.45);
+  background: rgba(99, 102, 241, 0.12);
+  color: #c7d2fe;
+}
+
+.af-action-transit {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: #cbd5e1;
+}
+
+.af-node-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.af-badge-wp {
+  background: rgba(6, 182, 212, 0.22);
+  color: #38bdf8;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+}
+
+.af-badge-finish {
+  background: rgba(168, 85, 247, 0.22);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.action-flow-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.9);
+  flex-shrink: 0;
+}
+
+#action-flow-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.af-stat-sep {
+  color: rgba(255, 255, 255, 0.2);
+}
+
 </style>
   
   <!-- App Icon & Favicon -->
@@ -7993,7 +8353,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.215.5</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.216.0</span></h1>
         </div>
       </div>
 
@@ -8075,6 +8435,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <span id="header-pilot-icon">👤</span>
           <span id="header-pilot-label">Pilot</span>
         </button>
+        <button id="action-flow-topbar-btn" class="btn-secondary header-about-btn" type="button" title="Visual Node-RED Flight Action Flow Visualizer" aria-label="Flight Action Flow" onclick="openActionFlowModal()"><span>🔀</span><span>Action Flow</span></button>
         <button id="about-btn" class="btn-secondary header-about-btn" type="button" title="About &amp; Changelog">About</button>
         <button id="useful-links-btn" class="btn-secondary header-about-btn" type="button" title="Useful Links">Links</button>
         <a id="buy-coffee-topbar-btn" href="https://buymeacoffee.com/romah74" target="_blank" rel="noopener noreferrer" class="btn-secondary header-about-btn btn-coffee-pill" title="Buy Me a Coffee (buymeacoffee.com/romah74)" aria-label="Buy Me a Coffee"><span>☕</span><span>Coffee</span></a>
@@ -8118,6 +8479,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <button id="more-menu-intro-btn" class="more-menu-item" type="button">
           <span class="more-menu-icon">🎓</span>
           <span class="more-menu-label">Intro &amp; Quickstart Tour</span>
+        </button>
+        <button id="more-menu-action-flow-btn" class="more-menu-item" type="button" onclick="openActionFlowModal(); closeMoreMenu();">
+          <span class="more-menu-icon">🔀</span>
+          <span class="more-menu-label">Flight Action Flow</span>
         </button>
         <button id="more-menu-about-btn" class="more-menu-item" type="button">
           <span class="more-menu-icon">ℹ️</span>
@@ -15025,7 +15390,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.215.5</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.216.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15186,6 +15551,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.216.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Universal Kinematic Gimbal &amp; Turn Auto-Settling (Closes #222):</strong> Extended auto-settling pauses to all flight patterns (road-following, corridor, grids, freeform) and all waypoints including Waypoint 0 takeoff slew, scaling settling delay by angular pitch tilt (&ge;65&deg; &rarr; 5.0s, &ge;35&deg; &rarr; 4.0s, &ge;5&deg; &rarr; 3.0s) and yaw turn (&ge;60&deg; &rarr; 5.0s, &ge;25&deg; &rarr; 4.0s).</li>
+                <li><strong>Transparent Waypoint Hover Timing:</strong> Overhauled 2D map waypoint editor popup and 3D FPV HUD to display dynamic auto-settled pause durations (e.g. <code>Auto (4.0s)</code>) with contextual settling badges rather than misleading 0s values.</li>
+                <li><strong>Visual Node-RED Flight Action Flow Visualizer:</strong> Added full-screen interactive node-graph canvas (<code>#action-flow-modal</code>) rendering sequential flight actions with SVG bezier connecting wires, pan/zoom, waypoint inspection, and execution timing stats.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.215.5):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -37421,6 +37794,32 @@ function initUIEventListeners() {
 
   // Setup Terrain Following & Elevation Profile Listeners (Issue #129)
   initTerrainFollowListeners();
+
+  // Setup Visual Flight Action Flow Visualizer (v1.216.0, Issue #222)
+  if (typeof initActionFlowModal === 'function') {
+    initActionFlowModal();
+  }
+
+  const actionFlowTopbarBtn = document.getElementById('action-flow-topbar-btn');
+  if (actionFlowTopbarBtn) {
+    actionFlowTopbarBtn.addEventListener('click', () => {
+      if (typeof openActionFlowModal === 'function') {
+        openActionFlowModal();
+      }
+    });
+  }
+
+  const moreMenuActionFlowBtn = document.getElementById('more-menu-action-flow-btn');
+  if (moreMenuActionFlowBtn) {
+    moreMenuActionFlowBtn.addEventListener('click', () => {
+      if (typeof openActionFlowModal === 'function') {
+        openActionFlowModal();
+      }
+      if (typeof closeMoreMenu === 'function') {
+        closeMoreMenu();
+      }
+    });
+  }
 }
 
 /**
@@ -38229,6 +38628,7 @@ const DEFAULT_RIBBON_ITEMS = [
   { id: 'intro', label: 'Intro Guide Tour', selector: '#intro-tour-btn', defaultVisible: true },
   { id: 'about', label: 'About & Changelog', selector: '#about-btn', defaultVisible: true },
   { id: 'links', label: 'Useful Aviation Links', selector: '#useful-links-btn', defaultVisible: true },
+  { id: 'action-flow', label: 'Flight Action Flow', selector: '#action-flow-topbar-btn', defaultVisible: true },
   { id: 'coffee', label: 'Buy Me a Coffee (☕)', selector: '#buy-coffee-topbar-btn', defaultVisible: true }
 ];
 
@@ -38286,7 +38686,7 @@ function applyTopbarRibbonConfig(cfg) {
     const isVisible = itemCfg ? itemCfg.visible : def.defaultVisible;
     if (isVisible) {
       el.classList.remove('ribbon-hidden');
-      if (['intro', 'about', 'links', 'coffee'].includes(def.id) && config.preset === 'studio') {
+      if (['intro', 'about', 'links', 'action-flow', 'coffee'].includes(def.id) && config.preset === 'studio') {
         el.classList.add('ribbon-force-show');
       } else {
         el.classList.remove('ribbon-force-show');
@@ -46395,19 +46795,26 @@ function localToGeodetic(x, y, centerLat, centerLon, rotationDeg) {
 // Calculate the default path-following heading for a waypoint
 function getDefaultHeading(idx, waypoints, rotationDeg) {
   if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) return 0;
-  if (waypoints && waypoints[idx]) {
-    const wp = waypoints[idx];
-    if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
-      return ((wp.heading % 360) + 360) % 360;
-    }
+  const rot = (rotationDeg !== undefined && rotationDeg !== null && !isNaN(rotationDeg)) ? rotationDeg : 0;
+  const curWp = waypoints[idx];
+  if (curWp && curWp.heading !== null && curWp.heading !== undefined && !isNaN(curWp.heading)) {
+    return ((curWp.heading % 360) + 360) % 360;
   }
   let heading = 0;
-  if (idx < waypoints.length - 1) {
+  if (curWp && idx < waypoints.length - 1 && waypoints[idx + 1]) {
     const nextWp = waypoints[idx + 1];
-    heading = Math.atan2(nextWp.x - waypoints[idx].x, nextWp.y - waypoints[idx].y) * (180.0 / Math.PI) + rotationDeg;
-  } else if (idx > 0) {
+    if (nextWp.x !== undefined && curWp.x !== undefined) {
+      heading = Math.atan2(nextWp.x - curWp.x, nextWp.y - curWp.y) * (180.0 / Math.PI) + rot;
+    } else if (nextWp.lat !== undefined && curWp.lat !== undefined && typeof calculateBearing === 'function') {
+      heading = calculateBearing(curWp.lat, curWp.lon !== undefined ? curWp.lon : curWp.lng, nextWp.lat, nextWp.lon !== undefined ? nextWp.lon : nextWp.lng);
+    }
+  } else if (curWp && idx > 0 && waypoints[idx - 1]) {
     const prevWp = waypoints[idx - 1];
-    heading = Math.atan2(waypoints[idx].x - prevWp.x, waypoints[idx].y - prevWp.y) * (180.0 / Math.PI) + rotationDeg;
+    if (prevWp.x !== undefined && curWp.x !== undefined) {
+      heading = Math.atan2(curWp.x - prevWp.x, curWp.y - prevWp.y) * (180.0 / Math.PI) + rot;
+    } else if (prevWp.lat !== undefined && curWp.lat !== undefined && typeof calculateBearing === 'function') {
+      heading = calculateBearing(prevWp.lat, prevWp.lon !== undefined ? prevWp.lon : prevWp.lng, curWp.lat, curWp.lon !== undefined ? curWp.lon : curWp.lng);
+    }
   }
   if (heading < 0) heading += 360;
   return heading % 360;
@@ -48299,28 +48706,45 @@ function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
   const globalHover = globalHoverEl ? (parseInt(globalHoverEl.value) || 0) : 0;
   
   let totalHoverSeconds = 0;
+  const defaultGimbalEl = typeof document !== 'undefined' ? document.getElementById('gimbal-pitch') : null;
+  const defaultGimbalVal = defaultGimbalEl ? (parseFloat(defaultGimbalEl.value) || -60) : -60;
+  let prevPitch = defaultGimbalVal;
   for (let i = startIdx; i <= endIdx; i++) {
     const wp = wps[i];
     if (!wp) continue;
     const wpCapture = (wp.captureMode && wp.captureMode !== 'inherit') ? wp.captureMode : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit') ? wp.layerCaptureMode : captureMode;
     const wpIsStopAndShoot = wpCapture === 'stopAndShoot';
 
+    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+
     let baseHover = globalHover;
-    if (wp.layerHoverTime !== undefined && wp.layerHoverTime !== null && wp.layerHoverTime !== 'inherit') {
-      baseHover = parseInt(wp.layerHoverTime, 10) || 0;
+    const layerHover = wp.layerHoverTime !== undefined ? wp.layerHoverTime : (wpLayer && wpLayer.hoverTime);
+    if (layerHover !== undefined && layerHover !== null && layerHover !== 'inherit') {
+      baseHover = parseInt(layerHover, 10) || 0;
     }
     if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
       baseHover = parseInt(wp.hoverTime, 10) || 0;
     }
     let wpEffectiveHover = baseHover;
 
-    const autoSettling = wp.autoSettlingEnabled !== false;
-    const baseSettling = wp.baseSettlingTime !== undefined ? wp.baseSettlingTime : 2.0;
-    const majorTurnSettling = wp.majorTurnSettlingTime !== undefined ? wp.majorTurnSettlingTime : 5.0;
-    const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
-    const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
+    const autoSettling = (wp.autoSettlingEnabled !== undefined)
+      ? (wp.autoSettlingEnabled !== false)
+      : ((wpLayer && wpLayer.autoSettlingEnabled !== undefined) ? (wpLayer.autoSettlingEnabled !== false) : true);
 
-    const reposInfo = checkNeedsReposition(i, wps);
+    const baseSettling = (wp.baseSettlingTime !== undefined && wp.baseSettlingTime !== null && wp.baseSettlingTime !== 'inherit')
+      ? parseFloat(wp.baseSettlingTime)
+      : ((wpLayer && wpLayer.baseSettlingTime !== undefined && wpLayer.baseSettlingTime !== null && wpLayer.baseSettlingTime !== 'inherit') ? parseFloat(wpLayer.baseSettlingTime) : 2.0);
+    const majorTurnSettling = (wp.majorTurnSettlingTime !== undefined && wp.majorTurnSettlingTime !== null && wp.majorTurnSettlingTime !== 'inherit')
+      ? parseFloat(wp.majorTurnSettlingTime)
+      : ((wpLayer && wpLayer.majorTurnSettlingTime !== undefined && wpLayer.majorTurnSettlingTime !== null && wpLayer.majorTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.majorTurnSettlingTime) : 5.0);
+    const modTurnSettling = (wp.moderateTurnSettlingTime !== undefined && wp.moderateTurnSettlingTime !== null && wp.moderateTurnSettlingTime !== 'inherit')
+      ? parseFloat(wp.moderateTurnSettlingTime)
+      : ((wpLayer && wpLayer.moderateTurnSettlingTime !== undefined && wpLayer.moderateTurnSettlingTime !== null && wpLayer.moderateTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.moderateTurnSettlingTime) : 4.0);
+    const pitchSettling = (wp.pitchSettlingTime !== undefined && wp.pitchSettlingTime !== null && wp.pitchSettlingTime !== 'inherit')
+      ? parseFloat(wp.pitchSettlingTime)
+      : ((wpLayer && wpLayer.pitchSettlingTime !== undefined && wpLayer.pitchSettlingTime !== null && wpLayer.pitchSettlingTime !== 'inherit') ? parseFloat(wpLayer.pitchSettlingTime) : 3.0);
+
+    const reposInfo = (typeof checkNeedsReposition === 'function') ? checkNeedsReposition(i, wps) : { needsReposition: false, headingDiff: 0, isGimbalChanged: false, pitchDiff: 0 };
     const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
     const gridTypeVal = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (wps.find(w => w && w.gridType)?.gridType || '');
     const isTargetSplat = gridTypeVal === 'target-splat' ||
@@ -48333,15 +48757,39 @@ function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
       (wp.layerId && typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && (l.pattern === 'target-splat' || l.pattern === 'photo-sphere'))) ||
       (wp.majorTurnSettlingTime !== undefined && wp.layerId);
 
-    if (wpIsStopAndShoot && autoSettling && reposInfo.needsReposition) {
+    const hasExplicitPitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && !isNaN(wp.gimbalPitch));
+    const currentPitch = hasExplicitPitch ? (parseFloat(wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : wp.gimbalPitch)) : prevPitch;
+    const pitchDiff = (i === 0) ? (reposInfo.pitchDiff || 0) : Math.abs(currentPitch - prevPitch);
+    prevPitch = currentPitch;
+
+    const isPitchSlew = (i === 0) ? (pitchDiff >= 5.0) : (pitchDiff >= 5.0 || reposInfo.isGimbalChanged);
+    const isExtendedSettling = isTargetSplat || (wpLayer && (wpLayer.pattern === 'target-splat' || wpLayer.pattern === 'photo-sphere'));
+    const isPhotoSphere = (wp.gridType === 'photo-sphere') || (wp.isPhotoSpherePoint) || (wp.isPhotoSphere) || (wp.layerPattern === 'photo-sphere') || (wpLayer && wpLayer.pattern === 'photo-sphere');
+    const needsSettling = reposInfo.needsReposition || isPitchSlew || (i === 0 && (wp.hoverTime === null || wp.hoverTime === undefined));
+
+    if ((wpIsStopAndShoot || isPhotoSphere) && autoSettling && needsSettling && !wp.skipPhoto && !wp.isDetour && !wp.isTransition) {
       let settlingDelay = baseSettling;
-      if (isTargetSplat && i > 0) {
-        if (reposInfo.headingDiff >= 60) {
-          settlingDelay = Math.max(settlingDelay, majorTurnSettling);
-        } else if (reposInfo.headingDiff >= 25) {
-          settlingDelay = Math.max(settlingDelay, modTurnSettling);
-        } else if (reposInfo.isGimbalChanged) {
-          settlingDelay = Math.max(settlingDelay, pitchSettling);
+      if (i > 0) {
+        // 1. Yaw turn settling (extended settling on target-splat/photo-sphere)
+        if (isExtendedSettling) {
+          if (reposInfo.headingDiff >= 60) {
+            settlingDelay = Math.max(settlingDelay, majorTurnSettling);
+          } else if (reposInfo.headingDiff >= 25) {
+            settlingDelay = Math.max(settlingDelay, modTurnSettling);
+          }
+        }
+        // 2. Gimbal pitch slew settling across ALL patterns
+        if (isPitchSlew) {
+          if (pitchDiff >= 65.0) {
+            settlingDelay = Math.max(settlingDelay, majorTurnSettling, 5.0);
+          } else if (pitchDiff >= 35.0) {
+            settlingDelay = Math.max(settlingDelay, modTurnSettling, 4.0);
+          } else {
+            settlingDelay = Math.max(settlingDelay, pitchSettling);
+          }
+          if (isPhotoSphere) {
+            settlingDelay = Math.max(settlingDelay, modTurnSettling);
+          }
         }
       }
       wpEffectiveHover = Math.max(wpEffectiveHover, settlingDelay);
@@ -51441,26 +51889,43 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   const globalHover = globalHoverEl ? (parseInt(globalHoverEl.value) || 0) : 0;
 
   let totalHoverSeconds = 0;
+  const defaultGimbalEl = typeof document !== 'undefined' ? document.getElementById('gimbal-pitch') : null;
+  const defaultGimbalVal = defaultGimbalEl ? (parseFloat(defaultGimbalEl.value) || -60) : -60;
+  let prevPitch = defaultGimbalVal;
   waypoints.forEach((wp, idx) => {
     const wpCapture = (wp.captureMode && wp.captureMode !== 'inherit') ? wp.captureMode : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit') ? wp.layerCaptureMode : captureMode;
     const wpIsStopAndShoot = wpCapture === 'stopAndShoot';
 
+    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+
     let baseHover = globalHover;
-    if (wp.layerHoverTime !== undefined && wp.layerHoverTime !== null && wp.layerHoverTime !== 'inherit') {
-      baseHover = parseInt(wp.layerHoverTime, 10) || 0;
+    const layerHover = wp.layerHoverTime !== undefined ? wp.layerHoverTime : (wpLayer && wpLayer.hoverTime);
+    if (layerHover !== undefined && layerHover !== null && layerHover !== 'inherit') {
+      baseHover = parseInt(layerHover, 10) || 0;
     }
     if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
       baseHover = parseInt(wp.hoverTime, 10) || 0;
     }
     let wpEffectiveHover = baseHover;
 
-    const autoSettling = wp.autoSettlingEnabled !== false;
-    const baseSettling = wp.baseSettlingTime !== undefined ? wp.baseSettlingTime : 2.0;
-    const majorTurnSettling = wp.majorTurnSettlingTime !== undefined ? wp.majorTurnSettlingTime : 5.0;
-    const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
-    const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
+    const autoSettling = (wp.autoSettlingEnabled !== undefined)
+      ? (wp.autoSettlingEnabled !== false)
+      : ((wpLayer && wpLayer.autoSettlingEnabled !== undefined) ? (wpLayer.autoSettlingEnabled !== false) : true);
 
-    const reposInfo = checkNeedsReposition(idx, waypoints);
+    const baseSettling = (wp.baseSettlingTime !== undefined && wp.baseSettlingTime !== null && wp.baseSettlingTime !== 'inherit')
+      ? parseFloat(wp.baseSettlingTime)
+      : ((wpLayer && wpLayer.baseSettlingTime !== undefined && wpLayer.baseSettlingTime !== null && wpLayer.baseSettlingTime !== 'inherit') ? parseFloat(wpLayer.baseSettlingTime) : 2.0);
+    const majorTurnSettling = (wp.majorTurnSettlingTime !== undefined && wp.majorTurnSettlingTime !== null && wp.majorTurnSettlingTime !== 'inherit')
+      ? parseFloat(wp.majorTurnSettlingTime)
+      : ((wpLayer && wpLayer.majorTurnSettlingTime !== undefined && wpLayer.majorTurnSettlingTime !== null && wpLayer.majorTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.majorTurnSettlingTime) : 5.0);
+    const modTurnSettling = (wp.moderateTurnSettlingTime !== undefined && wp.moderateTurnSettlingTime !== null && wp.moderateTurnSettlingTime !== 'inherit')
+      ? parseFloat(wp.moderateTurnSettlingTime)
+      : ((wpLayer && wpLayer.moderateTurnSettlingTime !== undefined && wpLayer.moderateTurnSettlingTime !== null && wpLayer.moderateTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.moderateTurnSettlingTime) : 4.0);
+    const pitchSettling = (wp.pitchSettlingTime !== undefined && wp.pitchSettlingTime !== null && wp.pitchSettlingTime !== 'inherit')
+      ? parseFloat(wp.pitchSettlingTime)
+      : ((wpLayer && wpLayer.pitchSettlingTime !== undefined && wpLayer.pitchSettlingTime !== null && wpLayer.pitchSettlingTime !== 'inherit') ? parseFloat(wpLayer.pitchSettlingTime) : 3.0);
+
+    const reposInfo = (typeof checkNeedsReposition === 'function') ? checkNeedsReposition(idx, waypoints) : { needsReposition: false, headingDiff: 0, isGimbalChanged: false, pitchDiff: 0 };
     const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
     const gridTypeVal = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
     const isTargetSplat = gridTypeVal === 'target-splat' ||
@@ -51473,15 +51938,39 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
       (wp.layerId && typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && (l.pattern === 'target-splat' || l.pattern === 'photo-sphere'))) ||
       (wp.majorTurnSettlingTime !== undefined && wp.layerId);
 
-    if (wpIsStopAndShoot && autoSettling && reposInfo.needsReposition) {
+    const hasExplicitPitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && !isNaN(wp.gimbalPitch));
+    const currentPitch = hasExplicitPitch ? (parseFloat(wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : wp.gimbalPitch)) : prevPitch;
+    const pitchDiff = (idx === 0) ? (reposInfo.pitchDiff || 0) : Math.abs(currentPitch - prevPitch);
+    prevPitch = currentPitch;
+
+    const isPitchSlew = (idx === 0) ? (pitchDiff >= 5.0) : (pitchDiff >= 5.0 || reposInfo.isGimbalChanged);
+    const isExtendedSettling = isTargetSplat || (wpLayer && (wpLayer.pattern === 'target-splat' || wpLayer.pattern === 'photo-sphere'));
+    const isPhotoSphere = (wp.gridType === 'photo-sphere') || (wp.isPhotoSpherePoint) || (wp.isPhotoSphere) || (wp.layerPattern === 'photo-sphere') || (wpLayer && wpLayer.pattern === 'photo-sphere');
+    const needsSettling = reposInfo.needsReposition || isPitchSlew || (idx === 0 && (wp.hoverTime === null || wp.hoverTime === undefined));
+
+    if ((wpIsStopAndShoot || isPhotoSphere) && autoSettling && needsSettling && !wp.skipPhoto && !wp.isDetour && !wp.isTransition) {
       let settlingDelay = baseSettling;
-      if (isTargetSplat && idx > 0) {
-        if (reposInfo.headingDiff >= 60) {
-          settlingDelay = Math.max(settlingDelay, majorTurnSettling);
-        } else if (reposInfo.headingDiff >= 25) {
-          settlingDelay = Math.max(settlingDelay, modTurnSettling);
-        } else if (reposInfo.isGimbalChanged) {
-          settlingDelay = Math.max(settlingDelay, pitchSettling);
+      if (idx > 0) {
+        // 1. Yaw turn settling (extended settling on target-splat/photo-sphere)
+        if (isExtendedSettling) {
+          if (reposInfo.headingDiff >= 60) {
+            settlingDelay = Math.max(settlingDelay, majorTurnSettling);
+          } else if (reposInfo.headingDiff >= 25) {
+            settlingDelay = Math.max(settlingDelay, modTurnSettling);
+          }
+        }
+        // 2. Gimbal pitch slew settling across ALL patterns
+        if (isPitchSlew) {
+          if (pitchDiff >= 65.0) {
+            settlingDelay = Math.max(settlingDelay, majorTurnSettling, 5.0);
+          } else if (pitchDiff >= 35.0) {
+            settlingDelay = Math.max(settlingDelay, modTurnSettling, 4.0);
+          } else {
+            settlingDelay = Math.max(settlingDelay, pitchSettling);
+          }
+          if (isPhotoSphere) {
+            settlingDelay = Math.max(settlingDelay, modTurnSettling);
+          }
         }
       }
       wpEffectiveHover = Math.max(wpEffectiveHover, settlingDelay);
@@ -52354,6 +52843,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
   });
 
+  let prevEffectivePitch = (gimbalPitch !== undefined && gimbalPitch !== null && !isNaN(gimbalPitch)) ? gimbalPitch : -60; // Aircraft takes off with gimbal at horizon 0.0°
   sanitizedWps.forEach((wp, idx) => {
     const waypointActions = [];
     const isHyperlapse = (gridType === 'hyperlapse') || (wp.isHyperlapse) || (wp.gridType === 'hyperlapse') || (wp.layerPattern === 'hyperlapse');
@@ -52409,54 +52899,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const reposInfo = checkNeedsReposition(idx, sanitizedWps);
     const isRoadFollowing = gridType === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following') || wp.layerPattern === 'road-following';
 
-    // Three-Tier Hover Time Resolution:
-    // Tier 3: wp.hoverTime (if not null/undefined/inherit)
-    // Tier 2: wp.layerHoverTime or wpLayer.hoverTime (if not null/undefined/inherit)
-    // Tier 1: globalHoverTime (or 0 for light-art default)
-    let baseHover = isLightArt ? 0 : globalHoverTime;
-    const layerHover = wp.layerHoverTime !== undefined ? wp.layerHoverTime : (wpLayer && wpLayer.hoverTime);
-    if (layerHover !== undefined && layerHover !== null && layerHover !== 'inherit') {
-      baseHover = parseInt(layerHover, 10) || 0;
-    }
-    if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
-      baseHover = parseInt(wp.hoverTime, 10) || 0;
-    }
-    let effectiveHover = baseHover;
-
-    // Universal Auto-Settling Delays across ALL flight patterns in stopAndShoot mode
-    const autoSettlingEnabled = wp.autoSettlingEnabled !== false;
-    const baseSettling = wp.baseSettlingTime !== undefined ? wp.baseSettlingTime : 2.0;
-    const majorTurnSettling = wp.majorTurnSettlingTime !== undefined ? wp.majorTurnSettlingTime : 5.0;
-    const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
-    const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
-
-    const isPhotoSphere = (gridType === 'photo-sphere') || (wp.isPhotoSphere) || (wp.isPhotoSpherePoint) || (wp.layerPattern === 'photo-sphere');
-
-    const isExtendedSettling = (gridType === 'target-splat') ||
-      (gridType === 'photo-sphere') ||
-      isPhotoSphere ||
-      (wp.gridType === 'target-splat') ||
-      (wp.gridType === 'photo-sphere') ||
-      (wp.isPhotoSpherePoint) ||
-      (wp._clusterSize > 1) ||
-      (wp.layerId && (wp.majorTurnSettlingTime !== undefined || (typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && (l.pattern === 'target-splat' || l.pattern === 'photo-sphere')))));
-
-    if ((isStopAndShoot || isPhotoSphere) && autoSettlingEnabled && !wp.skipPhoto && !wp.isDetour && !wp.isTransition) {
-      if (effectiveHover < baseSettling) {
-        effectiveHover = baseSettling;
-      }
-      if (idx > 0 && isExtendedSettling) {
-        if (reposInfo.headingDiff >= 60) {
-          effectiveHover = Math.max(effectiveHover, majorTurnSettling);
-        } else if (reposInfo.headingDiff >= 25) {
-          effectiveHover = Math.max(effectiveHover, modTurnSettling);
-        } else if (reposInfo.isGimbalChanged) {
-          effectiveHover = Math.max(effectiveHover, isPhotoSphere ? Math.max(modTurnSettling, pitchSettling) : pitchSettling);
-        }
-      }
-    }
-
-    // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
+    // Compute effective pitch FIRST so gimbal slew delta (pitchDiff) is known for auto-settling timing
     let effectivePitch;
     const isWpPitchOverridden = wp.isModified && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit';
     const isHyperlapseSweep = (wp.layerPattern === 'hyperlapse' || wpLayer?.pattern === 'hyperlapse') &&
@@ -52515,6 +52958,13 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         wp.layerPattern === 'vertical-facade' ||
         (wp.ringIndex !== undefined && wp.ringIndex !== null));
 
+    const isPhotoSphere = (gridType === 'photo-sphere') ||
+      (wp.gridType === 'photo-sphere') ||
+      (wp.isPhotoSpherePoint) ||
+      (wp.isPhotoSphere) ||
+      (wp.layerPattern === 'photo-sphere') ||
+      (wpLayer && wpLayer.pattern === 'photo-sphere');
+
     const isProceduralPitch = isPhotoSphere || isContinuousHelix || isMultiRingOrProceduralPitch;
 
     const rawWpPitch = isWpPitchOverridden
@@ -52552,13 +53002,94 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       effectivePitch = parseGimbalPitch(rawWpPitch, -60);
     }
 
-    if (wp.isPhotoSphereActionGroup && Array.isArray(wp.photoSphereActions) && wp.photoSphereActions.length > 0) {
-      wp.photoSphereActions.forEach(action => {
-        let actHeading = action.yaw;
-        actHeading = ((actHeading % 360) + 360) % 360;
-        if (actHeading > 180) actHeading -= 360;
-        if (actHeading === 0) actHeading = 0.1;
+    const isExtendedSettling = (gridType === 'target-splat') ||
+      (gridType === 'photo-sphere') ||
+      isPhotoSphere ||
+      (wp.gridType === 'target-splat') ||
+      (wp.gridType === 'photo-sphere') ||
+      (wp.isPhotoSpherePoint) ||
+      (wp._clusterSize > 1) ||
+      (wp.layerId && (wp.majorTurnSettlingTime !== undefined || (typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && (l.pattern === 'target-splat' || l.pattern === 'photo-sphere')))));
 
+    // Exact angular pitch delta:
+    // At idx === 0: delta relative to default mission/layer gimbal pitch
+    // At idx > 0: delta relative to previous waypoint pitch
+    const defaultPitch0 = (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit')
+      ? (typeof parseGimbalPitch === 'function' ? parseGimbalPitch(wpLayer.gimbalPitch, -60) : wpLayer.gimbalPitch)
+      : ((gimbalPitch !== undefined && gimbalPitch !== null && !isNaN(gimbalPitch)) ? gimbalPitch : -60);
+    const pitchDiff = (idx === 0)
+      ? Math.abs(effectivePitch - defaultPitch0)
+      : Math.abs(effectivePitch - prevEffectivePitch);
+    const isPitchSlew = (idx === 0) ? (pitchDiff >= 5.0) : (pitchDiff >= 5.0 || reposInfo.isGimbalChanged);
+    prevEffectivePitch = effectivePitch;
+
+    // Three-Tier Hover Time Resolution:
+    // Tier 3: wp.hoverTime (if not null/undefined/inherit)
+    // Tier 2: wp.layerHoverTime or wpLayer.hoverTime (if not null/undefined/inherit)
+    // Tier 1: globalHoverTime (or 0 for light-art default)
+    let baseHover = isLightArt ? 0 : globalHoverTime;
+    const layerHover = wp.layerHoverTime !== undefined ? wp.layerHoverTime : (wpLayer && wpLayer.hoverTime);
+    if (layerHover !== undefined && layerHover !== null && layerHover !== 'inherit') {
+      baseHover = parseInt(layerHover, 10) || 0;
+    }
+    if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
+      baseHover = parseInt(wp.hoverTime, 10) || 0;
+    }
+    let effectiveHover = baseHover;
+
+    // Universal Auto-Settling Delays across ALL flight patterns in stopAndShoot mode (AGENTS.md Section 16)
+    const autoSettlingEnabled = (wp.autoSettlingEnabled !== undefined)
+      ? (wp.autoSettlingEnabled !== false)
+      : ((wpLayer && wpLayer.autoSettlingEnabled !== undefined) ? (wpLayer.autoSettlingEnabled !== false) : true);
+    const baseSettling = (wp.baseSettlingTime !== undefined && wp.baseSettlingTime !== null && wp.baseSettlingTime !== 'inherit')
+      ? parseFloat(wp.baseSettlingTime)
+      : ((wpLayer && wpLayer.baseSettlingTime !== undefined && wpLayer.baseSettlingTime !== null && wpLayer.baseSettlingTime !== 'inherit') ? parseFloat(wpLayer.baseSettlingTime) : 2.0);
+    const majorTurnSettling = (wp.majorTurnSettlingTime !== undefined && wp.majorTurnSettlingTime !== null && wp.majorTurnSettlingTime !== 'inherit')
+      ? parseFloat(wp.majorTurnSettlingTime)
+      : ((wpLayer && wpLayer.majorTurnSettlingTime !== undefined && wpLayer.majorTurnSettlingTime !== null && wpLayer.majorTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.majorTurnSettlingTime) : 5.0);
+    const modTurnSettling = (wp.moderateTurnSettlingTime !== undefined && wp.moderateTurnSettlingTime !== null && wp.moderateTurnSettlingTime !== 'inherit')
+      ? parseFloat(wp.moderateTurnSettlingTime)
+      : ((wpLayer && wpLayer.moderateTurnSettlingTime !== undefined && wpLayer.moderateTurnSettlingTime !== null && wpLayer.moderateTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.moderateTurnSettlingTime) : 4.0);
+    const pitchSettling = (wp.pitchSettlingTime !== undefined && wp.pitchSettlingTime !== null && wp.pitchSettlingTime !== 'inherit')
+      ? parseFloat(wp.pitchSettlingTime)
+      : ((wpLayer && wpLayer.pitchSettlingTime !== undefined && wpLayer.pitchSettlingTime !== null && wpLayer.pitchSettlingTime !== 'inherit') ? parseFloat(wpLayer.pitchSettlingTime) : 3.0);
+
+// isPhotoSphere already declared above
+
+    if ((isStopAndShoot || isPhotoSphere) && autoSettlingEnabled && !wp.skipPhoto && !wp.isDetour && !wp.isTransition) {
+      if (effectiveHover < baseSettling) {
+        effectiveHover = baseSettling;
+      }
+      // 1. Yaw turn settling (extended settling on target-splat, photo-sphere, or cluster)
+      if (idx > 0 && isExtendedSettling) {
+        if (reposInfo.headingDiff >= 60) {
+          effectiveHover = Math.max(effectiveHover, majorTurnSettling);
+        } else if (reposInfo.headingDiff >= 25) {
+          effectiveHover = Math.max(effectiveHover, modTurnSettling);
+        }
+      }
+      // 2. Gimbal pitch slew settling across ALL patterns and ALL waypoints (idx >= 0)
+      if (isPitchSlew) {
+        if (pitchDiff >= 65.0) {
+          // Large full-travel slew (e.g. >= 0° to -90°): requires >= 5.0s (or majorTurnSettling)
+          effectiveHover = Math.max(effectiveHover, majorTurnSettling, 5.0);
+        } else if (pitchDiff >= 35.0) {
+          // Medium pitch slew (e.g. 0° to -51°): requires >= 4.0s (or modTurnSettling)
+          effectiveHover = Math.max(effectiveHover, modTurnSettling, 4.0);
+        } else {
+          // Moderate pitch tilt (>= 5°): requires >= 3.0s (or pitchSettling)
+          effectiveHover = Math.max(effectiveHover, pitchSettling);
+        }
+        if (isPhotoSphere) {
+          effectiveHover = Math.max(effectiveHover, modTurnSettling);
+        }
+      }
+    }
+
+    // Photo sphere actions:
+    if (wp.photoSphereActions && Array.isArray(wp.photoSphereActions) && wp.photoSphereActions.length > 0) {
+      wp.photoSphereActions.forEach(action => {
+        const actHeading = (action.heading !== undefined && action.heading !== null && !isNaN(action.heading)) ? action.heading : 0;
         waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc>
@@ -52623,7 +53154,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         wp.isRingStart ||
         isRoadFollowing ||
         isVerticalFacade ||
-        reposInfo.isGimbalChanged ||
+        isPitchSlew ||
         isObliqueStopAndShoot;
       if (shouldEmitGimbalRotate) {
         const currentPitch = effectivePitch;
@@ -56047,7 +56578,7 @@ function getAppVersion() {
     } catch (_) {}
   }
 
-  return '1.215.5';
+  return '1.216.0';
 
 }
 
@@ -67054,12 +67585,25 @@ const IrlVerifier = {
         lastBestPtIndex = bestPtIndex;
       }
 
+      // Check if there is a photo shutter sample captured at this waypoint during dwell
+      let photoPt = null;
+      if (bestPtIndex !== -1) {
+        const searchMin = Math.max(0, bestPtIndex - 15);
+        const searchMax = Math.min(pts.length - 1, bestPtIndex + 30);
+        for (let pj = searchMin; pj <= searchMax; pj++) {
+          if (pts[pj].isPhoto && haversineDistance(wpLat, wpLon, parseFloat(pts[pj].lat), parseFloat(pts[pj].lon)) <= Math.max(3.0, horizontalToleranceM)) {
+            photoPt = pts[pj];
+            break;
+          }
+        }
+      }
+      const evalPt = photoPt || bestPt;
       const dZ = bestPt ? Math.abs(parseFloat(bestPt.alt || 0) - wpAlt) : Infinity;
-      const dPitch = (bestPt && wpPitch !== null && bestPt.pitch !== undefined)
-        ? Math.abs(parseFloat(bestPt.pitch) - wpPitch)
+      const dPitch = (evalPt && wpPitch !== null && evalPt.pitch !== undefined)
+        ? Math.abs(parseFloat(evalPt.pitch) - wpPitch)
         : null;
-      const dYaw = (bestPt && wpYaw !== null && bestPt.yaw !== undefined)
-        ? angularDiffDeg(parseFloat(bestPt.yaw), wpYaw)
+      const dYaw = (evalPt && wpYaw !== null && evalPt.yaw !== undefined)
+        ? angularDiffDeg(parseFloat(evalPt.yaw), wpYaw)
         : null;
 
       wpApproaches.push({
@@ -67457,7 +68001,7 @@ const IrlVerifier = {
 | **Photo Shutter Ratio** | ${r.metrics.photoCountActual} / ${r.metrics.photoCountPlanned} (${r.metrics.photoCaptureRatioPct}%) | $\\ge 85\\%$ | ${r.metrics.photoCaptureRatioPct >= 85 ? 'PASS' : 'VARIANCE'} |
 | **Ending Battery Reserve** | ${r.metrics.batteryEndPct}% | $\\ge 15\\%$ | ${r.metrics.batteryEndPct >= 15 ? 'PASS' : 'VARIANCE'} |
 
-*Generated by Aalaapi Sky Flight Diagnostics (v${(typeof getAppVersion === 'function' ? getAppVersion() : ((typeof window !== 'undefined' && typeof window.getAppVersion === 'function') ? window.getAppVersion() : ((typeof document !== 'undefined' && document.querySelector('.header-version-badge')) ? document.querySelector('.header-version-badge').textContent.replace(/^v/i, '').trim() : '1.215.5')))}).*
+*Generated by Aalaapi Sky Flight Diagnostics (v${(typeof getAppVersion === 'function' ? getAppVersion() : ((typeof window !== 'undefined' && typeof window.getAppVersion === 'function') ? window.getAppVersion() : ((typeof document !== 'undefined' && document.querySelector('.header-version-badge')) ? document.querySelector('.header-version-badge').textContent.replace(/^v/i, '').trim() : '1.216.0')))}).*
 `;
   },
 
@@ -67676,7 +68220,7 @@ const IrlVerifier = {
         }
         if (typeof updateActiveLayerIrlBadge === 'function') {
           if (window.AALAAPI_IRL_STATUS) {
-            const activeVer = (typeof getAppVersion === 'function' ? getAppVersion() : ((typeof window !== 'undefined' && typeof window.getAppVersion === 'function') ? window.getAppVersion() : '1.215.5'));
+            const activeVer = (typeof getAppVersion === 'function' ? getAppVersion() : ((typeof window !== 'undefined' && typeof window.getAppVersion === 'function') ? window.getAppVersion() : '1.216.0'));
             window.AALAAPI_IRL_STATUS[patternId] = { s: data.status || (this.currentResult.passedAll ? 'V' : 'F'), v: activeVer };
           }
           updateActiveLayerIrlBadge(patternId);
@@ -75608,6 +76152,47 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
   };
   const resolvedHeadingLabel = mapHeadingName[effHeadingMode] || effHeadingMode;
 
+  const effectiveActions = (typeof resolveWaypointEffectiveActions === 'function')
+    ? resolveWaypointEffectiveActions(idx, allWaypoints)
+    : null;
+  const hasCustomHover = (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit');
+  const baseHoverFallback = (wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0);
+  const resolvedEffHover = effectiveActions ? effectiveActions.effectiveHover : baseHoverFallback;
+  const hoverDispText = hasCustomHover ? `${wp.hoverTime}s` : `Auto (${resolvedEffHover.toFixed(1)}s)`;
+  const hoverStatusPill = (!hasCustomHover && effectiveActions && effectiveActions.autoSettlingActive)
+    ? `<div style="font-size: 0.65rem; color: #38bdf8; margin-top: 2px; line-height: 1.2; display: flex; align-items: center; gap: 4px;"><span>⏱️ Auto-settle:</span><span style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 4px; border-radius: 3px;">${effectiveActions.hoverReason || 'Pitch / Turn Settling'}</span></div>`
+    : '';
+
+  let actionChipsHtml = '';
+  if (effectiveActions && Array.isArray(effectiveActions.actions) && effectiveActions.actions.length > 0) {
+    actionChipsHtml = effectiveActions.actions.map((act) => `
+      <div style="display: inline-flex; align-items: center; gap: 4px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 4px; padding: 2px 6px; font-size: 0.68rem; color: #f8fafc; white-space: nowrap;">
+        <span>${act.icon || '⚡'}</span>
+        <span style="font-weight: 600;">${act.label}</span>
+        <span style="color: #38bdf8; font-family: monospace;">${act.detail}</span>
+      </div>
+    `).join('<span style="color: #64748b; font-size: 0.65rem;">➔</span>');
+  } else {
+    actionChipsHtml = `<span style="color: #94a3b8; font-size: 0.7rem;">Curved fly-through (continuous flight)</span>`;
+  }
+
+  const actionPipelineHTML = `
+    <!-- Node-RED Style Inline Action Flow Strip -->
+    <div id="edit-wp-action-pipeline" style="margin-top: 4px; background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 6px; padding: 6px 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <span style="font-size: 0.68rem; font-weight: 600; color: #38bdf8; display: inline-flex; align-items: center; gap: 4px;">
+          <span>⚡ Waypoint Action Sequence</span>
+        </span>
+        <button id="open-action-flow-from-wp" type="button" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.35); color: #38bdf8; border-radius: 4px; font-size: 0.65rem; padding: 1px 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;" title="Open Visual Node-RED Flight Action Flow">
+          <span>🔀 Action Flow Graph</span>
+        </button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+        ${actionChipsHtml}
+      </div>
+    </div>
+  `;
+
   popupContent.innerHTML = `
     <div id="wp-popup-drag-handle" style="cursor: grab; padding: 0 24px 6px 0; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); user-select: none;">
       <div style="font-weight: 600; color: #06b6d4; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between;">
@@ -75678,9 +76263,10 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
               Hover:
               ${hoverBadgeHTML}
             </span>
-            <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap;"><span id="edit-wp-hover-val">${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}</span>s</span>
+            <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap;"><span id="edit-wp-hover-val">${hoverDispText}</span></span>
           </div>
-          <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; min-width: 0; box-sizing: border-box;">
+          <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${hasCustomHover ? wp.hoverTime : resolvedEffHover}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; min-width: 0; box-sizing: border-box;">
+          ${hoverStatusPill}
           <div id="edit-wp-hover-warning" style="display: none; font-size: 0.65rem; color: #f59e0b; margin-top: 2px; line-height: 1.2;">
             ⚠️ Repositioning detected: auto-settling delay will be applied in KML export.
           </div>
@@ -75796,6 +76382,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
         </div>
       </div>
 
+      ${actionPipelineHTML}
+
       <!-- Action Buttons (matching FPV button style) -->
       <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; font-size: 0.72rem; box-sizing: border-box; width: 100%;">
         <button id="save-wp-btn" class="btn-primary" type="button" style="flex: 1 1 calc(50% - 3px); min-width: 0; box-sizing: border-box; padding: 5px 4px; background: var(--primary-gradient); border-radius: 6px; font-weight: 600;">Save</button>
@@ -75808,6 +76396,17 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
 
   if (typeof popupContent.querySelector !== 'function') {
     return popupContent;
+  }
+
+  const openActionFlowBtn = popupContent.querySelector('#open-action-flow-from-wp');
+  if (openActionFlowBtn) {
+    openActionFlowBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof openActionFlowModal === 'function') {
+        openActionFlowModal(idx);
+      }
+    });
   }
 
   const popupCollapseBtn = popupContent.querySelector('#wp-popup-collapse-btn');
@@ -76247,43 +76846,25 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     if (!warningDiv) return;
     
     const currentHoverVal = hoverSlider ? parseInt(hoverSlider.value) : 0;
-    const effCapture = (wp.captureMode && wp.captureMode !== 'inherit') ? wp.captureMode : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit') ? wp.layerCaptureMode : document.getElementById('capture-mode')?.value;
-    const isStopAndShoot = effCapture === 'stopAndShoot';
+    const curWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || allWaypoints;
+    if (!curWps) return;
     
     const tempWp = {
       ...wp,
       alt: parseFloat(altSlider.value),
-      pitch: parseFloat(pitchSlider.value),
+      pitch: isAutoPitch ? 'auto' : parseFloat(pitchSlider.value),
       headingMode: headingModeSelect.value,
       heading: headingModeSelect.value === 'custom' ? parseFloat(headingSlider.value) : (wp.heading !== undefined ? wp.heading : null),
       poiIndex: poiSelect ? parseInt(poiSelect.value) : (wp.poiIndex || 0),
     };
     
-    const curWps = getCurrentWaypoints();
-    if (!curWps) return;
     const waypointsCopy = curWps.map((w, i) => i === idx ? tempWp : w);
-    const reposInfo = checkNeedsReposition(idx, waypointsCopy);
-    
-    const autoSettling = wp.autoSettlingEnabled !== false;
-    const baseSettling = wp.baseSettlingTime !== undefined ? wp.baseSettlingTime : 2.0;
-    const majorTurnSettling = wp.majorTurnSettlingTime !== undefined ? wp.majorTurnSettlingTime : 5.0;
-    const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
-    const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
+    const eff = (typeof resolveWaypointEffectiveActions === 'function')
+      ? resolveWaypointEffectiveActions(idx, waypointsCopy)
+      : null;
 
-    let requiredDelay = 0;
-    if (isStopAndShoot && autoSettling) {
-      if (idx > 0) {
-        if (reposInfo.headingDiff >= 60) requiredDelay = majorTurnSettling;
-        else if (reposInfo.headingDiff >= 25) requiredDelay = modTurnSettling;
-        else if (reposInfo.isGimbalChanged) requiredDelay = pitchSettling;
-        else if (reposInfo.needsReposition) requiredDelay = baseSettling;
-      } else if (reposInfo.needsReposition) {
-        requiredDelay = baseSettling;
-      }
-    }
-
-    if (requiredDelay > 0 && currentHoverVal < requiredDelay) {
-      warningDiv.textContent = `⚠️ Turn/pitch settling: ${requiredDelay.toFixed(1)}s auto-pause will be applied in KML export.`;
+    if (eff && eff.autoSettlingActive && currentHoverVal < eff.effectiveHover) {
+      warningDiv.textContent = `⚠️ Auto-settling: ${eff.effectiveHover.toFixed(1)}s pause applied in KML export (${eff.hoverReason || 'Pitch / Turn Settling'}).`;
       warningDiv.style.display = 'block';
     } else {
       warningDiv.style.display = 'none';
@@ -77067,66 +77648,283 @@ function drawCoverageHeatmap(ctx, planeOffsetX, planeOffsetZ, planeSize) {
 // Check if a waypoint requires repositioning of gimbal or drone heading
 function checkNeedsReposition(idx, waypoints) {
   if (!waypoints || waypoints.length === 0 || idx === null || idx === undefined || idx < 0 || idx >= waypoints.length) {
-    return { needsReposition: false, isGimbalChanged: false, isHeadingChanged: false, headingDiff: 0 };
+    return { needsReposition: false, isGimbalChanged: false, isHeadingChanged: false, headingDiff: 0, pitchDiff: 0 };
   }
   const current = getWaypointHeadingAndPitch(idx, waypoints);
   
   let isGimbalChanged = false;
   let isHeadingChanged = false;
   let headingDiff = 0;
+  let pitchDiff = 0;
   
   if (idx === 0) {
-    // Takeoff: gimbal defaults to 0. Any target pitch less than -5 is a change.
-    isGimbalChanged = current.pitch < -5;
+    // Takeoff: compare against default layer gimbal pitch. If WP 0 diverges by >= 5°, it is an active pitch slew.
+    const defPitch = (current.defaultPitch !== undefined) ? current.defaultPitch : current.pitch;
+    pitchDiff = Math.abs(current.pitch - defPitch);
+    isGimbalChanged = pitchDiff >= 5.0;
     isHeadingChanged = false;
     headingDiff = 0;
   } else {
     const prev = getWaypointHeadingAndPitch(idx - 1, waypoints);
-    isGimbalChanged = Math.abs(current.pitch - prev.pitch) >= 5;
+    pitchDiff = Math.abs(current.pitch - prev.pitch);
+    isGimbalChanged = pitchDiff >= 5.0;
     
     headingDiff = Math.abs(current.heading - prev.heading) % 360;
     if (headingDiff > 180) headingDiff = 360 - headingDiff;
-    isHeadingChanged = headingDiff >= 10;
+    isHeadingChanged = headingDiff >= 10.0;
   }
   
   return {
-    needsReposition: isGimbalChanged || isHeadingChanged,
+    needsReposition: (idx === 0) ? (current.pitch < -5 || isGimbalChanged) : (isGimbalChanged || isHeadingChanged),
     isGimbalChanged,
     isHeadingChanged,
-    headingDiff
+    headingDiff,
+    pitchDiff
   };
 }
 
 // Calculate the heading and pitch for a waypoint index
 function getWaypointHeadingAndPitch(idx, waypoints) {
   const wps = Array.isArray(waypoints) ? waypoints : [];
-  const wp = (wps && wps[idx]) ? wps[idx] : {};
+  const wp = (wps && wps[idx]) ? wps[idx] : (wps[0] || {});
   const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined')
     ? flightLayers.find(l => l.id === wp.layerId)
     : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
   const rotationDeg = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-rotation'))
     ? parseFloat(document.getElementById('grid-rotation').value) || 0
     : 0;
-  const heading = getEffectiveWaypointHeading(wp, idx, wps, rotationDeg, null, wpLayer);
+  const heading = (typeof getEffectiveWaypointHeading === 'function')
+    ? getEffectiveWaypointHeading(wp, idx, wps, rotationDeg, null, wpLayer)
+    : ((wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0);
 
-  const defaultGimbalPitch = (wpLayer && wpLayer.gimbalPitch !== undefined)
+  const defaultGimbalPitch = (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit')
     ? wpLayer.gimbalPitch
     : ((typeof document !== 'undefined' && document && document.getElementById && document.getElementById('gimbal-pitch'))
       ? document.getElementById('gimbal-pitch').value
       : -60);
 
-  const rawPitch = (wp.pitch !== undefined && wp.pitch !== null) ? wp.pitch : defaultGimbalPitch;
+  const rawPitch = (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit')
+    ? wp.pitch
+    : ((wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit')
+      ? wp.gimbalPitch
+      : defaultGimbalPitch);
+
   let pitch;
   if (rawPitch === 'auto' || (typeof rawPitch === 'string' && rawPitch.toLowerCase() === 'auto')) {
-    const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
-    pitch = (typeof calculate3DPoiPitch === 'function')
-      ? calculate3DPoiPitch(wp, targetPoi, wp.alt || (wpLayer?.altitude) || 50)
-      : -45;
+    const isRoad = wp.isRoadDroneWaypoint || (wpLayer && wpLayer.pattern === 'road-following') || (typeof gridType !== 'undefined' && gridType === 'road-following');
+    if (isRoad) {
+      const offset = (wpLayer && wpLayer.roadOffset !== undefined) ? wpLayer.roadOffset : 15;
+      const altVal = (wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit') ? wp.alt : ((wpLayer && wpLayer.altitude) ? wpLayer.altitude : 50);
+      pitch = (Math.abs(offset) < 0.01) ? -90 : -Math.round(Math.atan2(altVal, Math.max(Math.abs(offset), 1)) * (180.0 / Math.PI));
+    } else {
+      const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
+      pitch = (typeof calculate3DPoiPitch === 'function')
+        ? calculate3DPoiPitch(wp, targetPoi, wp.alt || (wpLayer?.altitude) || 50)
+        : -45;
+    }
   } else {
-    pitch = parseGimbalPitch(rawPitch, -60);
+    pitch = (typeof parseGimbalPitch === 'function') ? parseGimbalPitch(rawPitch, -60) : (parseFloat(rawPitch) || -60);
   }
 
-  return { heading, pitch };
+  const defGimbal = (typeof parseGimbalPitch === 'function') ? parseGimbalPitch(defaultGimbalPitch, -60) : (parseFloat(defaultGimbalPitch) || -60);
+  return { heading, pitch, defaultPitch: defGimbal };
+}
+
+// Resolves the exact ordered sequential action pipeline for waypoint idx in DJI WPML
+function resolveWaypointEffectiveActions(idx, waypoints, options = {}) {
+  const wps = Array.isArray(waypoints) ? waypoints : [];
+  const wp = (wps && wps[idx]) ? wps[idx] : (wps[0] || {});
+  if (!wp) return { effectivePitch: -60, effectiveHover: 0, settlingReason: '', reposInfo: { needsReposition: false, isGimbalChanged: false, pitchDiff: 0, headingDiff: 0 }, actions: [] };
+
+  const layersList = options.flightLayers || (typeof flightLayers !== 'undefined' ? flightLayers : null);
+  const wpLayer = (wp.layerId && layersList) ? layersList.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+
+  const { heading, pitch } = getWaypointHeadingAndPitch(idx, wps);
+  const effectivePitch = pitch;
+  const reposInfo = checkNeedsReposition(idx, wps);
+
+  const effCaptureMode = (wp.captureMode && wp.captureMode !== 'inherit')
+    ? wp.captureMode
+    : ((wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit')
+      ? wp.layerCaptureMode
+      : ((wpLayer && wpLayer.captureMode && wpLayer.captureMode !== 'inherit') ? wpLayer.captureMode : 'stopAndShoot'));
+  const isStopAndShoot = effCaptureMode === 'stopAndShoot';
+  const isVideo = effCaptureMode === 'video';
+
+  // Manual hover resolution (3-tier)
+  let baseHover = 0;
+  if (options.globalHoverTime !== undefined) baseHover = parseInt(options.globalHoverTime, 10) || 0;
+  else if (typeof document !== 'undefined' && document.getElementById('global-hover-time')) baseHover = parseInt(document.getElementById('global-hover-time').value, 10) || 0;
+
+  const layerHover = wp.layerHoverTime !== undefined ? wp.layerHoverTime : (wpLayer && wpLayer.hoverTime);
+  if (layerHover !== undefined && layerHover !== null && layerHover !== 'inherit') {
+    baseHover = parseInt(layerHover, 10) || 0;
+  }
+  if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
+    baseHover = parseInt(wp.hoverTime, 10) || 0;
+  }
+
+  let effectiveHover = baseHover;
+  let settlingReason = '';
+
+  const autoSettlingEnabled = (wp.autoSettlingEnabled !== undefined)
+    ? (wp.autoSettlingEnabled !== false)
+    : ((wpLayer && wpLayer.autoSettlingEnabled !== undefined) ? (wpLayer.autoSettlingEnabled !== false) : true);
+
+  const baseSettling = (wp.baseSettlingTime !== undefined && wp.baseSettlingTime !== null && wp.baseSettlingTime !== 'inherit')
+    ? parseFloat(wp.baseSettlingTime)
+    : ((wpLayer && wpLayer.baseSettlingTime !== undefined && wpLayer.baseSettlingTime !== null && wpLayer.baseSettlingTime !== 'inherit') ? parseFloat(wpLayer.baseSettlingTime) : 2.0);
+  const majorTurnSettling = (wp.majorTurnSettlingTime !== undefined && wp.majorTurnSettlingTime !== null && wp.majorTurnSettlingTime !== 'inherit')
+    ? parseFloat(wp.majorTurnSettlingTime)
+    : ((wpLayer && wpLayer.majorTurnSettlingTime !== undefined && wpLayer.majorTurnSettlingTime !== null && wpLayer.majorTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.majorTurnSettlingTime) : 5.0);
+  const modTurnSettling = (wp.moderateTurnSettlingTime !== undefined && wp.moderateTurnSettlingTime !== null && wp.moderateTurnSettlingTime !== 'inherit')
+    ? parseFloat(wp.moderateTurnSettlingTime)
+    : ((wpLayer && wpLayer.moderateTurnSettlingTime !== undefined && wpLayer.moderateTurnSettlingTime !== null && wpLayer.moderateTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.moderateTurnSettlingTime) : 4.0);
+  const pitchSettling = (wp.pitchSettlingTime !== undefined && wp.pitchSettlingTime !== null && wp.pitchSettlingTime !== 'inherit')
+    ? parseFloat(wp.pitchSettlingTime)
+    : ((wpLayer && wpLayer.pitchSettlingTime !== undefined && wpLayer.pitchSettlingTime !== null && wpLayer.pitchSettlingTime !== 'inherit') ? parseFloat(wpLayer.pitchSettlingTime) : 3.0);
+
+  const isPhotoSphere = (wp.isPhotoSphere) || (wp.isPhotoSpherePoint) || (wpLayer && wpLayer.pattern === 'photo-sphere');
+
+  if ((isStopAndShoot || isPhotoSphere) && autoSettlingEnabled && !wp.skipPhoto && !wp.isDetour && !wp.isTransition) {
+    if (effectiveHover < baseSettling) {
+      effectiveHover = baseSettling;
+      settlingReason = `Base Shutter Settling (${baseSettling.toFixed(1)}s)`;
+    }
+
+    if (idx > 0) {
+      if (reposInfo.headingDiff >= 60) {
+        if (majorTurnSettling > effectiveHover) {
+          effectiveHover = majorTurnSettling;
+          settlingReason = `Major Turn Settle (Δ${reposInfo.headingDiff.toFixed(0)}° Turn, ${majorTurnSettling.toFixed(1)}s)`;
+        }
+      } else if (reposInfo.headingDiff >= 25) {
+        if (modTurnSettling > effectiveHover) {
+          effectiveHover = modTurnSettling;
+          settlingReason = `Turn Settle (Δ${reposInfo.headingDiff.toFixed(0)}° Turn, ${modTurnSettling.toFixed(1)}s)`;
+        }
+      }
+    }
+
+    const isPitchSlew = (idx === 0) ? (reposInfo.pitchDiff >= 5.0) : (reposInfo.pitchDiff >= 5.0 || reposInfo.isGimbalChanged);
+    if (isPitchSlew) {
+      if (reposInfo.pitchDiff >= 65.0) {
+        const req = Math.max(majorTurnSettling, 5.0);
+        if (req > effectiveHover) {
+          effectiveHover = req;
+          settlingReason = `Full Gimbal Slew (Δ${reposInfo.pitchDiff.toFixed(0)}° Pitch, ${req.toFixed(1)}s)`;
+        }
+      } else if (reposInfo.pitchDiff >= 35.0) {
+        const req = Math.max(modTurnSettling, 4.0);
+        if (req > effectiveHover) {
+          effectiveHover = req;
+          settlingReason = `Gimbal Slew (Δ${reposInfo.pitchDiff.toFixed(0)}° Pitch, ${req.toFixed(1)}s)`;
+        }
+      } else {
+        const req = pitchSettling;
+        if (req > effectiveHover) {
+          effectiveHover = req;
+          settlingReason = `Pitch Tilt (Δ${reposInfo.pitchDiff.toFixed(0)}°, ${req.toFixed(1)}s)`;
+        }
+      }
+      if (isPhotoSphere) {
+        effectiveHover = Math.max(effectiveHover, modTurnSettling);
+      }
+    }
+  }
+
+  // Construct sequential actions
+  const actions = [];
+
+  // 1. Yaw rotation (if photo sphere or specific yaw action)
+  if (isPhotoSphere && typeof wp.heading === 'number') {
+    actions.push({
+      type: 'rotateYaw',
+      category: 'yaw',
+      label: 'Rotate Yaw',
+      detail: `${wp.heading.toFixed(1)}°`,
+      icon: '🧭'
+    });
+  }
+
+  // 2. Gimbal rotation (if initial waypoint, pitch change, or photo waypoint)
+  const shouldEmitGimbal = idx === 0 || reposInfo.isGimbalChanged || (isStopAndShoot && effectivePitch > -85) || wp.isRingStart;
+  if (shouldEmitGimbal) {
+    actions.push({
+      type: 'gimbalRotate',
+      category: 'gimbal',
+      label: 'Gimbal Pitch',
+      detail: `${effectivePitch.toFixed(0)}°${reposInfo.pitchDiff >= 5 ? ` (Δ${reposInfo.pitchDiff.toFixed(0)}°)` : ''}`,
+      pitch: effectivePitch,
+      pitchDiff: reposInfo.pitchDiff,
+      icon: '🎯'
+    });
+  }
+
+  // 3. Hover dwell (auto-settling or manual)
+  if (effectiveHover > 0) {
+    actions.push({
+      type: 'hover',
+      category: 'hover',
+      label: 'Hover Dwell',
+      detail: `${effectiveHover.toFixed(1)}s`,
+      time: effectiveHover,
+      reason: settlingReason || 'Manual Pause',
+      isAuto: !wp.hoverTime || wp.hoverTime === 'inherit',
+      icon: '⏱️'
+    });
+  }
+
+  // 4. Zoom action (idx === 0)
+  const cameraZoom = wp.zoom || (wpLayer && wpLayer.cameraZoom) || 1.0;
+  if (cameraZoom > 1.0 && idx === 0) {
+    actions.push({
+      type: 'zoom',
+      category: 'camera',
+      label: 'Camera Zoom',
+      detail: `${cameraZoom.toFixed(1)}x`,
+      icon: '🔍'
+    });
+  }
+
+  // 5. Video record or Photo capture
+  const perWpAction = wp.cameraAction || 'inherit';
+  if (isVideo) {
+    actions.push({
+      type: 'video',
+      category: 'camera',
+      label: 'Video Mode',
+      detail: 'Continuous Recording',
+      icon: '📹'
+    });
+  } else if (!wp.skipPhoto && (isStopAndShoot || isPhotoSphere || perWpAction === 'takePhoto')) {
+    actions.push({
+      type: 'takePhoto',
+      category: 'camera',
+      label: 'Take Photo',
+      detail: 'Single Shot',
+      icon: '📸'
+    });
+  }
+
+  return {
+    effectivePitch,
+    effectiveHover,
+    settlingReason,
+    reposInfo,
+    actions
+  };
+}
+
+if (typeof window !== 'undefined') {
+  window.checkNeedsReposition = checkNeedsReposition;
+  window.getWaypointHeadingAndPitch = getWaypointHeadingAndPitch;
+  window.resolveWaypointEffectiveActions = resolveWaypointEffectiveActions;
+}
+if (typeof global !== 'undefined') {
+  global.checkNeedsReposition = checkNeedsReposition;
+  global.getWaypointHeadingAndPitch = getWaypointHeadingAndPitch;
+  global.resolveWaypointEffectiveActions = resolveWaypointEffectiveActions;
 }
 
 let showDroneModels = true;
@@ -78963,10 +79761,20 @@ function updateFPVEditorUI() {
     const hasCustomHover = (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit');
     const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
     const resolvedHover = hasCustomHover ? wp.hoverTime : getEffectiveLayerHoverTime(wpLayer);
-    if (document.activeElement !== hoverSlider) {
-      hoverSlider.value = resolvedHover;
+    let autoHover = resolvedHover;
+    let autoReason = '';
+    if (!hasCustomHover && typeof resolveWaypointEffectiveActions === 'function') {
+      const allWps = (typeof waypoints !== 'undefined') ? waypoints : [];
+      const eff = resolveWaypointEffectiveActions(fpvProgressIndex, allWps);
+      if (eff && eff.effectiveHover !== undefined) {
+        autoHover = eff.effectiveHover;
+        if (eff.hoverReason) autoReason = ` (${eff.hoverReason})`;
+      }
     }
-    hoverVal.textContent = hasCustomHover ? `${resolvedHover}s` : `${resolvedHover}s (Inherited)`;
+    if (document.activeElement !== hoverSlider) {
+      hoverSlider.value = hasCustomHover ? resolvedHover : autoHover;
+    }
+    hoverVal.textContent = hasCustomHover ? `${resolvedHover}s` : `Auto (${autoHover}s) (Inherited)${autoReason}`;
   }
 
   // Turn Mode
@@ -89171,6 +89979,487 @@ if (typeof document !== 'undefined') {
     PhotoInspector.setupEvents();
   }
 }
+// -------------------- src/ui/ActionFlowModal.js --------------------
+/**
+ * ActionFlowModal.js
+ * Aalaapi Sky - Visual Node-RED Flight Action Flow Visualizer
+ *
+ * Provides a node-graph canvas illustrating the exact sequential execution of flight actions
+ * across every waypoint: entry transit, yaw slews, gimbal tilts, auto-settling hover pauses,
+ * camera triggers, and departure transits, connected with SVG bezier wires.
+ */
+
+let actionFlowZoom = 1.0;
+let actionFlowPan = { x: 40, y: 40 };
+let isActionFlowPanning = false;
+let actionFlowPanStart = { x: 0, y: 0 };
+let focusedWaypointIndex = null;
+
+function initActionFlowModal() {
+  if (typeof document === 'undefined') return;
+
+  const modal = document.getElementById('action-flow-modal');
+  if (!modal) return;
+
+  const closeBtn = document.getElementById('action-flow-close-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeActionFlowModal);
+  }
+
+  // Backdrop click to close
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeActionFlowModal();
+    }
+  });
+
+  // Filter dropdown
+  const filterSelect = document.getElementById('action-flow-filter-select');
+  if (filterSelect) {
+    filterSelect.addEventListener('change', () => {
+      renderActionFlowGraph();
+    });
+  }
+
+  // Zoom controls
+  const zoomInBtn = document.getElementById('action-flow-zoom-in');
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener('click', () => {
+      actionFlowZoom = Math.min(2.0, actionFlowZoom + 0.15);
+      applyActionFlowTransform();
+    });
+  }
+
+  const zoomOutBtn = document.getElementById('action-flow-zoom-out');
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener('click', () => {
+      actionFlowZoom = Math.max(0.4, actionFlowZoom - 0.15);
+      applyActionFlowTransform();
+    });
+  }
+
+  const zoomResetBtn = document.getElementById('action-flow-zoom-reset');
+  if (zoomResetBtn) {
+    zoomResetBtn.addEventListener('click', () => {
+      actionFlowZoom = 1.0;
+      actionFlowPan = { x: 40, y: 40 };
+      applyActionFlowTransform();
+    });
+  }
+
+  // Canvas pan via pointer
+  const viewport = document.getElementById('action-flow-viewport');
+  if (viewport) {
+    viewport.addEventListener('pointerdown', (e) => {
+      // Don't pan if clicking inside an interactive node or button
+      if (e.target.closest('button') || e.target.closest('select') || e.target.closest('input')) return;
+      isActionFlowPanning = true;
+      actionFlowPanStart = { x: e.clientX - actionFlowPan.x, y: e.clientY - actionFlowPan.y };
+      viewport.style.cursor = 'grabbing';
+      if (viewport.setPointerCapture) viewport.setPointerCapture(e.pointerId);
+    });
+
+    viewport.addEventListener('pointermove', (e) => {
+      if (!isActionFlowPanning) return;
+      actionFlowPan.x = e.clientX - actionFlowPanStart.x;
+      actionFlowPan.y = e.clientY - actionFlowPanStart.y;
+      applyActionFlowTransform();
+    });
+
+    const endPan = (e) => {
+      if (isActionFlowPanning) {
+        isActionFlowPanning = false;
+        viewport.style.cursor = 'grab';
+        try {
+          if (viewport.releasePointerCapture && e.pointerId) {
+            viewport.releasePointerCapture(e.pointerId);
+          }
+        } catch (_) {}
+      }
+    };
+
+    viewport.addEventListener('pointerup', endPan);
+    viewport.addEventListener('pointercancel', endPan);
+
+    // Mouse wheel zoom
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      actionFlowZoom = Math.max(0.35, Math.min(2.5, actionFlowZoom * zoomFactor));
+      applyActionFlowTransform();
+    }, { passive: false });
+  }
+
+  // Window resize re-draw wires
+  window.addEventListener('resize', () => {
+    if (modal && !modal.classList.contains('hidden')) {
+      updateActionFlowWires();
+    }
+  });
+}
+
+function openActionFlowModal(focusIndex = null) {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('action-flow-modal');
+  if (!modal) return;
+
+  focusedWaypointIndex = (focusIndex !== null && focusIndex !== undefined && !isNaN(focusIndex)) ? parseInt(focusIndex, 10) : null;
+  modal.classList.remove('hidden');
+
+  populateActionFlowFilterDropdown();
+  renderActionFlowGraph();
+
+  if (focusedWaypointIndex !== null) {
+    setTimeout(() => {
+      centerOnWaypointNode(focusedWaypointIndex);
+    }, 150);
+  }
+}
+
+function closeActionFlowModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('action-flow-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+function applyActionFlowTransform() {
+  const container = document.getElementById('action-flow-canvas-container');
+  const zoomLabel = document.getElementById('action-flow-zoom-label');
+  if (container) {
+    container.style.transform = `translate(${actionFlowPan.x}px, ${actionFlowPan.y}px) scale(${actionFlowZoom})`;
+  }
+  if (zoomLabel) {
+    zoomLabel.textContent = `${Math.round(actionFlowZoom * 100)}%`;
+  }
+}
+
+function populateActionFlowFilterDropdown() {
+  const filterSelect = document.getElementById('action-flow-filter-select');
+  if (!filterSelect) return;
+
+  const layersList = (typeof flightLayers !== 'undefined') ? flightLayers : [];
+  let html = `<option value="all">🌐 All Waypoints & Layers</option>`;
+
+  if (layersList && layersList.length > 0) {
+    html += `<optgroup label="Flight Layers">`;
+    layersList.forEach((l, idx) => {
+      const name = l.name || `Layer ${idx + 1}`;
+      html += `<option value="layer_${l.id}">${name} (${l.pattern || 'freeform'})</option>`;
+    });
+    html += `</optgroup>`;
+  }
+
+  filterSelect.innerHTML = html;
+}
+
+function centerOnWaypointNode(wpIdx) {
+  const targetNode = document.getElementById(`af-wp-card-${wpIdx}`);
+  const viewport = document.getElementById('action-flow-viewport');
+  if (!targetNode || !viewport) return;
+
+  const vpRect = viewport.getBoundingClientRect();
+  const nodeLeft = targetNode.offsetLeft;
+  const nodeTop = targetNode.offsetTop;
+  const nodeWidth = targetNode.offsetWidth;
+  const nodeHeight = targetNode.offsetHeight;
+
+  actionFlowPan.x = (vpRect.width / 2) - ((nodeLeft + nodeWidth / 2) * actionFlowZoom);
+  actionFlowPan.y = (vpRect.height / 2) - ((nodeTop + nodeHeight / 2) * actionFlowZoom);
+  applyActionFlowTransform();
+
+  // Pulse highlight
+  targetNode.classList.add('af-highlight-pulse');
+  setTimeout(() => {
+    targetNode.classList.remove('af-highlight-pulse');
+  }, 2500);
+}
+
+function renderActionFlowGraph() {
+  const nodesContainer = document.getElementById('action-flow-nodes');
+  const svgWires = document.getElementById('action-flow-svg');
+  const statsSummary = document.getElementById('action-flow-summary-bar');
+  if (!nodesContainer) return;
+
+  const wps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || (typeof waypoints !== 'undefined' ? waypoints : []) || [];
+  if (!wps || wps.length === 0) {
+    nodesContainer.innerHTML = `
+      <div style="padding: 60px 20px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+        <div style="font-size: 2rem; margin-bottom: 12px;">🛸</div>
+        <div>No waypoints found in active mission.</div>
+        <div style="font-size: 0.78rem; margin-top: 6px; color: #64748b;">Create or generate a flight pattern on the map to visualize its action sequence.</div>
+      </div>
+    `;
+    if (svgWires) svgWires.innerHTML = '';
+    if (statsSummary) statsSummary.textContent = '0 Waypoints | 0 Actions';
+    return;
+  }
+
+  const filterSelect = document.getElementById('action-flow-filter-select');
+  const filterVal = filterSelect ? filterSelect.value : 'all';
+
+  let totalAutoSettlingHover = 0;
+  let totalExplicitHover = 0;
+  let totalPhotos = 0;
+  let totalActionsCount = 0;
+
+  let cardsHtml = '';
+
+  // 1. Takeoff / Launch Node
+  cardsHtml += `
+    <div class="af-node-card af-node-start" id="af-node-takeoff" style="grid-column: 1;">
+      <div class="af-node-header">
+        <span class="af-node-badge">TAKEOFF</span>
+        <span class="af-node-title">Ground Launch & Climb</span>
+      </div>
+      <div class="af-node-body">
+        <div class="af-action-chip af-action-transit">
+          <span class="af-chip-icon">🚀</span>
+          <span class="af-chip-title">Safe Climb to Target AGL</span>
+          <span class="af-chip-detail">${wps[0].alt ? Math.round(wps[0].alt) : 30}m</span>
+        </div>
+      </div>
+      <div class="af-port af-port-out" data-port="takeoff-out"></div>
+    </div>
+  `;
+
+  // 2. Iterate Waypoints
+  wps.forEach((wp, idx) => {
+    if (filterVal.startsWith('layer_')) {
+      const targetLayerId = filterVal.replace('layer_', '');
+      if (wp.layerId && wp.layerId !== targetLayerId) return;
+    }
+
+    const eff = (typeof resolveWaypointEffectiveActions === 'function')
+      ? resolveWaypointEffectiveActions(idx, wps)
+      : null;
+
+    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined')
+      ? flightLayers.find(l => l.id === wp.layerId)
+      : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+
+    const layerName = wpLayer?.name || (wp.layerId ? `Layer (${wp.layerId})` : 'Default Layer');
+    const isFocused = (focusedWaypointIndex === idx);
+
+    const effHover = eff ? eff.effectiveHover : ((wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') ? parseFloat(wp.hoverTime) : 0);
+    const hasCustomHover = (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit');
+    if (hasCustomHover) {
+      totalExplicitHover += effHover;
+    } else {
+      totalAutoSettlingHover += effHover;
+    }
+
+    const actionsList = eff?.actions || [];
+    totalActionsCount += actionsList.length;
+    if (actionsList.some(a => a.type === 'takePhoto')) {
+      totalPhotos += 1;
+    }
+
+    // Build action step chips inside WP card
+    let stepsHtml = '';
+    actionsList.forEach((act, actIdx) => {
+      let chipClass = 'af-action-misc';
+      if (act.type === 'rotateYaw') chipClass = 'af-action-yaw';
+      else if (act.type === 'gimbalRotate') chipClass = 'af-action-gimbal';
+      else if (act.type === 'hover') chipClass = act.isAuto ? 'af-action-hover-auto' : 'af-action-hover-manual';
+      else if (act.type === 'takePhoto') chipClass = 'af-action-photo';
+      else if (act.type === 'startRecord' || act.type === 'stopRecord') chipClass = 'af-action-video';
+      else if (act.type === 'zoom') chipClass = 'af-action-zoom';
+
+      stepsHtml += `
+        <div class="af-action-step-row" id="af-step-${idx}-${actIdx}">
+          <div class="af-step-index">${actIdx + 1}</div>
+          <div class="af-action-chip ${chipClass}">
+            <span class="af-chip-icon">${act.icon || '⚡'}</span>
+            <div class="af-chip-content">
+              <span class="af-chip-title">${act.label}</span>
+              ${act.reason ? `<span class="af-chip-reason">${act.reason}</span>` : ''}
+            </div>
+            <span class="af-chip-detail">${act.detail}</span>
+          </div>
+        </div>
+      `;
+    });
+
+    if (actionsList.length === 0) {
+      stepsHtml = `
+        <div class="af-action-step-row">
+          <div class="af-action-chip af-action-transit">
+            <span class="af-chip-icon">✈️</span>
+            <span class="af-chip-title">Curved Smooth Pass</span>
+            <span class="af-chip-detail">Continuous Flight</span>
+          </div>
+        </div>
+      `;
+    }
+
+    cardsHtml += `
+      <div class="af-node-card af-node-wp ${isFocused ? 'af-node-focused' : ''}" id="af-wp-card-${idx}">
+        <div class="af-port af-port-in" data-port="wp-${idx}-in"></div>
+        <div class="af-node-header">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="af-node-badge af-badge-wp">WP ${idx}</span>
+            <span class="af-node-layer">${layerName}</span>
+          </div>
+          <span class="af-node-alt">${Math.round(wp.alt || 30)}m AGL</span>
+        </div>
+        <div class="af-node-submeta">
+          <span>Lat: ${wp.lat ? wp.lat.toFixed(5) : '0.0'}</span>
+          <span>Lon: ${wp.lon ? wp.lon.toFixed(5) : '0.0'}</span>
+        </div>
+        <div class="af-node-body">
+          ${stepsHtml}
+        </div>
+        <div class="af-port af-port-out" data-port="wp-${idx}-out"></div>
+      </div>
+    `;
+  });
+
+  // 3. Finish / Landing Node
+  cardsHtml += `
+    <div class="af-node-card af-node-finish" id="af-node-finish">
+      <div class="af-port af-port-in" data-port="finish-in"></div>
+      <div class="af-node-header">
+        <span class="af-node-badge af-badge-finish">FINISH</span>
+        <span class="af-node-title">Mission Complete & RTH</span>
+      </div>
+      <div class="af-node-body">
+        <div class="af-action-chip af-action-transit">
+          <span class="af-chip-icon">🏠</span>
+          <span class="af-chip-title">Return to Home & Descend</span>
+          <span class="af-chip-detail">Auto Land</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  nodesContainer.innerHTML = cardsHtml;
+
+  // Update bottom stats summary
+  if (statsSummary) {
+    statsSummary.innerHTML = `
+      <span>📍 <strong>${wps.length}</strong> Waypoints</span>
+      <span class="af-stat-sep">•</span>
+      <span>📸 <strong>${totalPhotos}</strong> Shutter Triggers</span>
+      <span class="af-stat-sep">•</span>
+      <span>⏱️ <strong>${totalAutoSettlingHover.toFixed(1)}s</strong> Auto-Settling Hover</span>
+      <span class="af-stat-sep">•</span>
+      <span>⚡ <strong>${totalActionsCount}</strong> Total Flight Operations</span>
+    `;
+  }
+
+  // Draw connecting wires after DOM layout
+  setTimeout(() => {
+    updateActionFlowWires();
+  }, 50);
+}
+
+function updateActionFlowWires() {
+  const svgWires = document.getElementById('action-flow-svg');
+  const nodesContainer = document.getElementById('action-flow-nodes');
+  if (!svgWires || !nodesContainer) return;
+
+  const wps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || (typeof waypoints !== 'undefined' ? waypoints : []) || [];
+  if (!wps || wps.length === 0) {
+    svgWires.innerHTML = '';
+    return;
+  }
+
+  const containerRect = nodesContainer.getBoundingClientRect();
+  const cWidth = Math.max(nodesContainer.scrollWidth, containerRect.width, 2400);
+  const cHeight = Math.max(nodesContainer.scrollHeight, containerRect.height, 1200);
+
+  svgWires.setAttribute('width', `${cWidth}`);
+  svgWires.setAttribute('height', `${cHeight}`);
+  svgWires.setAttribute('viewBox', `0 0 ${cWidth} ${cHeight}`);
+
+  let pathsHtml = `
+    <defs>
+      <linearGradient id="afWireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.8" />
+        <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.9" />
+        <stop offset="100%" stop-color="#a855f7" stop-opacity="0.8" />
+      </linearGradient>
+      <filter id="afGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+  `;
+
+  // Helper to get center coords of an element relative to nodesContainer
+  const getPortCoords = (portEl) => {
+    if (!portEl) return null;
+    const pRect = portEl.getBoundingClientRect();
+    return {
+      x: (pRect.left - containerRect.left) / actionFlowZoom,
+      y: (pRect.top - containerRect.top) / actionFlowZoom
+    };
+  };
+
+  // Wire 1: Takeoff -> WP 0
+  const takeoffOut = document.querySelector('[data-port="takeoff-out"]');
+  const wp0In = document.querySelector('[data-port="wp-0-in"]');
+  if (takeoffOut && wp0In) {
+    const p1 = getPortCoords(takeoffOut);
+    const p2 = getPortCoords(wp0In);
+    if (p1 && p2) {
+      const dx = Math.max(40, (p2.x - p1.x) * 0.5);
+      pathsHtml += `<path d="M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}" class="af-svg-wire" />`;
+    }
+  }
+
+  // Wire 2: WP(i) -> WP(i+1)
+  const renderedWpCards = document.querySelectorAll('.af-node-wp');
+  for (let i = 0; i < renderedWpCards.length - 1; i++) {
+    const fromCard = renderedWpCards[i];
+    const toCard = renderedWpCards[i + 1];
+    const outPort = fromCard.querySelector('.af-port-out');
+    const inPort = toCard.querySelector('.af-port-in');
+    if (outPort && inPort) {
+      const p1 = getPortCoords(outPort);
+      const p2 = getPortCoords(inPort);
+      if (p1 && p2) {
+        const dx = Math.max(50, Math.abs(p2.x - p1.x) * 0.5);
+        pathsHtml += `<path d="M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}" class="af-svg-wire" />`;
+      }
+    }
+  }
+
+  // Wire 3: Last WP -> Finish
+  const lastCard = renderedWpCards[renderedWpCards.length - 1];
+  const finishIn = document.querySelector('[data-port="finish-in"]');
+  if (lastCard && finishIn) {
+    const outPort = lastCard.querySelector('.af-port-out');
+    if (outPort) {
+      const p1 = getPortCoords(outPort);
+      const p2 = getPortCoords(finishIn);
+      if (p1 && p2) {
+        const dx = Math.max(40, (p2.x - p1.x) * 0.5);
+        pathsHtml += `<path d="M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}" class="af-svg-wire" />`;
+      }
+    }
+  }
+
+  svgWires.innerHTML = pathsHtml;
+}
+
+if (typeof window !== 'undefined') {
+  window.initActionFlowModal = initActionFlowModal;
+  window.openActionFlowModal = openActionFlowModal;
+  window.closeActionFlowModal = closeActionFlowModal;
+  window.renderActionFlowGraph = renderActionFlowGraph;
+  window.updateActionFlowWires = updateActionFlowWires;
+}
+
+if (typeof global !== 'undefined') {
+  global.initActionFlowModal = initActionFlowModal;
+  global.openActionFlowModal = openActionFlowModal;
+  global.closeActionFlowModal = closeActionFlowModal;
+  global.renderActionFlowGraph = renderActionFlowGraph;
+  global.updateActionFlowWires = updateActionFlowWires;
+}
 // -------------------- src/bridge/Rc2LogExplorer.js --------------------
 let rc2LogsCache = [];
 
@@ -91716,6 +93005,64 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 </script>
+  <!-- Visual Flight Action Flow Visualizer (Node-RED Style Canvas) Modal (v1.216.0, Issue #222) -->
+  <div id="action-flow-modal" class="modal-overlay hidden" style="z-index: 10060; padding: 0;">
+    <div class="modal glass action-flow-card">
+      <!-- Top Action Flow Header -->
+      <header class="action-flow-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 1.2rem;">🔀</span>
+          <div>
+            <h2 style="margin: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+              <span>Visual Flight Action Flow</span>
+              <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-size: 0.68rem; padding: 1px 6px; border-radius: 4px; font-weight: 700;">Node-RED Style Execution Sequence</span>
+            </h2>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 1px;">
+              Visualizes the exact sequential execution of flight actions across every waypoint: entry transit, yaw slews, gimbal tilts, auto-settling pauses, camera triggers, and departure transits.
+            </div>
+          </div>
+        </div>
+
+        <!-- Header Controls (Filter, Zoom, Close) -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 4px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 2px 6px;">
+            <label for="action-flow-filter-select" style="font-size: 0.68rem; color: #94a3b8;">Filter:</label>
+            <select id="action-flow-filter-select" class="form-select" style="font-size: 0.72rem; padding: 2px 6px; background: transparent; border: none; color: #f8fafc; cursor: pointer;">
+              <option value="all">🌐 All Waypoints &amp; Layers</option>
+            </select>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 2px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 2px 4px;">
+            <button id="action-flow-zoom-out" class="btn-secondary" type="button" style="padding: 2px 8px; font-size: 0.75rem; border-radius: 4px;" title="Zoom Out">-</button>
+            <span id="action-flow-zoom-label" style="font-size: 0.7rem; font-family: monospace; color: #38bdf8; min-width: 38px; text-align: center;">100%</span>
+            <button id="action-flow-zoom-in" class="btn-secondary" type="button" style="padding: 2px 8px; font-size: 0.75rem; border-radius: 4px;" title="Zoom In">+</button>
+            <button id="action-flow-zoom-reset" class="btn-secondary" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px;" title="Reset View">Reset</button>
+          </div>
+
+          <button id="action-flow-close-btn" class="close-btn" type="button" aria-label="Close action flow">&times;</button>
+        </div>
+      </header>
+
+      <!-- Viewport / Canvas Container -->
+      <div id="action-flow-viewport">
+        <div id="action-flow-canvas-container">
+          <svg id="action-flow-svg"></svg>
+          <div id="action-flow-nodes"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Stats Summary Footer -->
+      <footer class="action-flow-footer">
+        <div id="action-flow-summary-bar">
+          <span>0 Waypoints | 0 Actions</span>
+        </div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+          <span>💡 Click &amp; drag canvas to pan • Scroll wheel to zoom</span>
+        </div>
+      </footer>
+    </div>
+  </div>
+
 </body>
 </html>
 
