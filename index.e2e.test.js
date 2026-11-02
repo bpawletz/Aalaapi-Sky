@@ -9041,7 +9041,11 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
           };
         }
 
-        // Render solar overlay with default (auto/CLR)
+        // Explicitly set CLR to sample clear-sky shadow opacity
+        select.value = 'CLR';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // Render solar overlay with CLR
         if (typeof renderSolarOverlay2D === 'function') {
           renderSolarOverlay2D(41.3215, -88.9950);
         }

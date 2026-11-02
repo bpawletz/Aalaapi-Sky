@@ -763,9 +763,9 @@ const PATTERN_DEFINITIONS = [
 function getAppVersion() {
   try {
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8'));
-    return pkg.version || '1.209.0';
+    return pkg.version || '1.215.5';
   } catch (_) {
-    return '1.209.0';
+    return '1.215.5';
   }
 }
 

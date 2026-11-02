@@ -696,7 +696,7 @@ function getAppVersion() {
 
     if (tag && tag.textContent) {
 
-      const match = tag.textContent.match(/[\d\.]+/);
+      const match = tag.textContent.match(/[\d.]+/);
 
       if (match) return match[0];
 
@@ -704,7 +704,18 @@ function getAppVersion() {
 
   }
 
-  return '1.149.0';
+  if (typeof require === 'function') {
+    try {
+      const path = require('path');
+      const pkgPath = path.resolve(__dirname, '../../package.json');
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        if (pkg && pkg.version) return pkg.version;
+      }
+    } catch (_) {}
+  }
+
+  return '1.215.5';
 
 }
 
@@ -9766,11 +9777,13 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 if (typeof window !== 'undefined') {
+  window.getAppVersion = getAppVersion;
   window.getDeviceDisplayInfo = getDeviceDisplayInfo;
   window.getLastDetectedFlightDevice = getLastDetectedFlightDevice;
 }
 
 if (typeof global !== 'undefined') {
+  global.getAppVersion = getAppVersion;
   global.getDeviceDisplayInfo = getDeviceDisplayInfo;
   global.getLastDetectedFlightDevice = getLastDetectedFlightDevice;
 }
