@@ -3,7 +3,7 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.218.1` | **WPML Compiler Hash:** `1974a16b75ae` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.218.2` | **WPML Compiler Hash:** `1974a16b75ae` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
 **Summary Progress:** **5 / 26** Patterns Verified | **0** Needs Re-Test | **21** Untested | **0** Failed
 
@@ -435,6 +435,13 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ---
 
 ## 6. Post-Update Release IRL Test Plans Log
+
+### [v1.218.2] Heading-Aware Photo Disambiguation on Crosshatch Grids — 2026-11-02 ([Issue #226](https://github.com/bpawletz/Aalaapi-Sky/issues/226))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `double`
+- [ ] Open Flight Diagnostics and load Flight 46
+- [ ] Verify WP 19 displays nominal yaw (-91.7 deg vs 270 deg, delta 1.7 deg) instead of 90.1 deg
+- [ ] Verify all 3D camera cones are nominal green with zero red cones
+- [ ] Click Verify IRL Plan and verify 100% pass across all 6 phases
 
 ### [v1.218.1] Flight Diagnostics IRL Verify Modal Crash and Corridor Mission Auto-Matching — 2026-11-02 ([Issue #225](https://github.com/bpawletz/Aalaapi-Sky/issues/225))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `corridor`, `double`

@@ -40103,4 +40103,59 @@ describe('Flight Diagnostics IRL Verification Modal Crash Fix & Corridor Mission
       FlightDiagnostics.telemetryData = origTelem;
     }
   });
+  });
+
+describe('Heading-Aware Photo Disambiguation on Crosshatch Grids (v1.218.2, Issue #226)', () => {
+  const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+  test('Version consistency: v1.218.2 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.218.2');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.218.2] - 2026-11-01'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('Changelog (v1.218.2):'));
+    assert.ok(htmlText.includes('Changelog (v1.218.2):'));
+  });
+
+  test('IrlVerifier disambiguates photo shutter at orthogonal crosshatch nodes based on planned yaw alignment', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+
+    const plannedWps = [
+      { index: 0, lat: 41.3215, lon: -88.9950, alt: 30, heading: 0, pitch: -60, skipPhoto: false },
+      { index: 1, lat: 41.32155, lon: -88.99495, alt: 30, heading: 270, pitch: -60, skipPhoto: true, isTurnaroundPoint: true },
+      { index: 2, lat: 41.3215, lon: -88.9950, alt: 30, heading: 270, pitch: -60, skipPhoto: false }
+    ];
+
+    const points = [];
+    for (let i = 0; i < 30; i++) {
+      if (i === 5) {
+        points.push({ lat: 41.3215, lon: -88.9950, alt: 30, speed: 0.1, pitch: -60, yaw: 0.1, isPhoto: true, time: 10 });
+      } else if (i === 15) {
+        points.push({ lat: 41.32155, lon: -88.99495, alt: 30, speed: 2.0, pitch: -60, yaw: -86.1, isPhoto: false, time: 15 });
+      } else if (i === 20) {
+        points.push({ lat: 41.3215, lon: -88.9950, alt: 30, speed: 0.1, pitch: -60, yaw: -91.7, isPhoto: true, time: 20 });
+      } else {
+        points.push({ lat: 41.3215, lon: -88.9950, alt: 30, speed: 4.0, pitch: -60, yaw: 0, isPhoto: false, time: i });
+      }
+    }
+
+    const telemetry = { points };
+    const res = IrlVerifier.verifyFlightPlanAgainstLog(plannedWps, telemetry, {
+      patternId: 'double',
+      pathMode: 'curved',
+      captureMode: 'continuous'
+    });
+
+    const wp0App = res.wpApproaches[0];
+    const wp2App = res.wpApproaches[2];
+
+    assert.ok(wp0App.dYaw <= 1.0, `WP 0 yaw error must be small (~0.1°), got ${wp0App.dYaw}°`);
+    assert.strictEqual(wp0App.actualYaw, 0.1, 'WP 0 actualYaw must be 0.1°');
+
+    // WP 2 must match Photo 2 (-91.7°), NOT Photo 1 (0.1° which would yield 90.1° error)
+    assert.ok(wp2App.dYaw <= 2.5, `WP 2 yaw error must be <= 2.5°, got ${wp2App.dYaw}°`);
+    assert.strictEqual(wp2App.actualYaw, -91.7, 'WP 2 actualYaw must reflect evaluated photo at -91.7°');
+    assert.strictEqual(res.phases.heading_gimbal, true, 'Heading & gimbal pitch lock phase must pass');
+  });
 });
+

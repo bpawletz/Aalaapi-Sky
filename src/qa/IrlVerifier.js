@@ -214,13 +214,31 @@ const IrlVerifier = {
 
       // Check if there is a photo shutter sample captured at this waypoint during dwell
       let photoPt = null;
-      if (bestPtIndex !== -1) {
+      if (!isTurnaround && !wps[i].skipPhoto && bestPtIndex !== -1) {
+        let bestPhotoIndexDiff = Infinity;
+        let bestPhotoYawDiff = Infinity;
         const searchMin = Math.max(0, bestPtIndex - 15);
         const searchMax = Math.min(pts.length - 1, bestPtIndex + 30);
         for (let pj = searchMin; pj <= searchMax; pj++) {
-          if (pts[pj].isPhoto && haversineDistance(wpLat, wpLon, parseFloat(pts[pj].lat), parseFloat(pts[pj].lon)) <= Math.max(3.0, horizontalToleranceM)) {
-            photoPt = pts[pj];
-            break;
+          if (pts[pj].isPhoto) {
+            const hDist = haversineDistance(wpLat, wpLon, parseFloat(pts[pj].lat), parseFloat(pts[pj].lon));
+            if (hDist <= Math.max(3.0, horizontalToleranceM)) {
+              const yawDiff = (wpYaw !== null && pts[pj].yaw !== undefined) ? angularDiffDeg(parseFloat(pts[pj].yaw), wpYaw) : 0;
+              const indexDiff = Math.abs(pj - bestPtIndex);
+              if (photoPt === null) {
+                photoPt = pts[pj];
+                bestPhotoIndexDiff = indexDiff;
+                bestPhotoYawDiff = yawDiff;
+              } else if (yawDiff <= maxYawToleranceDeg && bestPhotoYawDiff > maxYawToleranceDeg) {
+                photoPt = pts[pj];
+                bestPhotoIndexDiff = indexDiff;
+                bestPhotoYawDiff = yawDiff;
+              } else if ((yawDiff <= maxYawToleranceDeg || bestPhotoYawDiff > maxYawToleranceDeg) && indexDiff < bestPhotoIndexDiff) {
+                photoPt = pts[pj];
+                bestPhotoIndexDiff = indexDiff;
+                bestPhotoYawDiff = yawDiff;
+              }
+            }
           }
         }
       }
@@ -246,8 +264,8 @@ const IrlVerifier = {
         plannedYaw: wpYaw,
         plannedPitch: wpPitch,
         actualAlt: bestPt ? Math.round(parseFloat(bestPt.alt || 0) * 10) / 10 : null,
-        actualYaw: (bestPt && bestPt.yaw !== undefined) ? Math.round(parseFloat(bestPt.yaw) * 10) / 10 : null,
-        actualPitch: (bestPt && bestPt.pitch !== undefined) ? Math.round(parseFloat(bestPt.pitch) * 10) / 10 : null,
+        actualYaw: (evalPt && evalPt.yaw !== undefined) ? Math.round(parseFloat(evalPt.yaw) * 10) / 10 : ((bestPt && bestPt.yaw !== undefined) ? Math.round(parseFloat(bestPt.yaw) * 10) / 10 : null),
+        actualPitch: (evalPt && evalPt.pitch !== undefined) ? Math.round(parseFloat(evalPt.pitch) * 10) / 10 : ((bestPt && bestPt.pitch !== undefined) ? Math.round(parseFloat(bestPt.pitch) * 10) / 10 : null),
         actualSpeed: (bestPt && bestPt.speed !== undefined) ? Math.round(parseFloat(bestPt.speed) * 10) / 10 : null,
         bestPtIndex: bestPt ? pts.indexOf(bestPt) : -1
       });
