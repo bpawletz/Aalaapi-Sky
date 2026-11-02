@@ -1,3 +1,18 @@
+## [1.218.2] - 2026-11-01
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Heading-Aware Photo Disambiguation on Crosshatch Grids (Closes #226)**:
+  - Fixed a false-positive 90.1° yaw variance warning on Double Grid (3D Splat) flight verifications (such as Flight 46, WP 19).
+  - In crosshatch grid intersections where orthogonal survey passes share identical ground coordinates, the photo shutter matching engine now prioritizes heading alignment (<= 25°) and temporal proximity rather than prematurely breaking on photos captured during previous orthogonal passes.
+  - Corrected table readout in Flight Diagnostics so Flown Yaw and delta Yaw strictly describe the same evaluated telemetry sample.
+
+#### Under the Hood & Technical Details
+- **`src/qa/IrlVerifier.js`**:
+  - Enhanced photo shutter candidate selection inside `verifyFlightPlanAgainstLog()` to filter out turnaround transit points (`skipPhoto: true`, `isTurnaround: true`) and score candidate photos by planned yaw difference and index delta from `bestPtIndex`.
+  - Bound `wpApproaches[i].actualYaw` and `actualPitch` directly to `evalPt` when a photo shutter point is selected.
+
 ## [1.218.1] - 2026-11-01
 
 ### 🐛 Fixed
