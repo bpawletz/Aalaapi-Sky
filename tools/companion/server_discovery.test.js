@@ -84,8 +84,13 @@ test('server_discovery: GET /api/status includes mdns status payload', async () 
     });
 
     assert.ok(data);
-    // Unauthenticated status returns basic metadata with authRequired
+    // Unauthenticated status returns basic metadata with authRequired, plus mdns and lanAddresses
     assert.strictEqual(data.authRequired, true);
+    assert.ok(data.mdns, 'GET /api/status should include mdns object');
+    assert.strictEqual(data.mdns.enabled, true);
+    assert.ok(data.mdns.hostname.includes('.local'));
+    assert.strictEqual(typeof data.mdns.httpsPort, 'number');
+    assert.ok(Array.isArray(data.lanAddresses), 'GET /api/status should include lanAddresses array');
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

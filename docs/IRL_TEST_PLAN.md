@@ -3,7 +3,7 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.217.0` | **WPML Compiler Hash:** `1974a16b75ae` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.218.1` | **WPML Compiler Hash:** `1974a16b75ae` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
 **Summary Progress:** **5 / 26** Patterns Verified | **0** Needs Re-Test | **21** Untested | **0** Failed
 
@@ -435,6 +435,20 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ---
 
 ## 6. Post-Update Release IRL Test Plans Log
+
+### [v1.218.1] Flight Diagnostics IRL Verify Modal Crash and Corridor Mission Auto-Matching — 2026-11-02 ([Issue #225](https://github.com/bpawletz/Aalaapi-Sky/issues/225))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `corridor`, `double`
+- [ ] Open Flight Diagnostics and load Flight 45
+- [ ] Verify matched mission displays Corridor (-45 deg pitch) and 30 WPs with zero red cones
+- [ ] Click Verify IRL Plan button in header toolbar and confirm modal opens
+- [ ] Click Verify Against IRL Test Plan in sidebar and confirm modal opens
+
+### [v1.218.0] Companion Server & Bonjour (mDNS) Special Card in Useful Links Modal — 2026-11-02 ([Issue #224](https://github.com/bpawletz/Aalaapi-Sky/issues/224))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `grid`
+- [ ] Open Aalaapi Sky and click Links (#useful-links-btn) in the top header ribbon to open #links-modal
+- [ ] Verify the special Companion Server & Bonjour (mDNS) Links card (#links-modal-server-card) displays Bonjour HTTPS (https://aalaapi-sky.local:8766/), Bonjour HTTP (http://aalaapi-sky.local:8765/), Localhost HTTPS (https://127.0.0.1:8766/), Localhost HTTP (http://127.0.0.1:8765/), and served API/MCP/RTMP/SBS endpoints
+- [ ] Click Copy on any served link to verify clipboard copy and toast confirmation
+- [ ] Export and fly a 2D Nadir Grid mission to verify nominal flight operations
 
 ### [v1.217.0] 3D Visual Variance Highlighting in Flight Diagnostics — 2026-11-02 ([Issue #223](https://github.com/bpawletz/Aalaapi-Sky/issues/223))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `multi-orbit`, `road-following`

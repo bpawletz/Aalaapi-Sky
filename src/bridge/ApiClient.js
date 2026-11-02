@@ -274,6 +274,117 @@ let isRc2MtpConnected = false;
 let rc2MtpActiveUUID = '';
 
 let lastDetectedFlightDevice = null;
+let lastCompanionServerLinksState = null;
+
+function updateServedLinksModalUI(statusData) {
+  if (typeof document === 'undefined') return;
+  if (statusData && typeof statusData === 'object') {
+    lastCompanionServerLinksState = statusData;
+  }
+  const state = (statusData && typeof statusData === 'object') ? statusData : lastCompanionServerLinksState;
+  const card = document.getElementById('links-modal-server-card');
+  if (!card) return;
+
+  const mdnsHost = (state && state.mdns && state.mdns.hostname ? String(state.mdns.hostname) : 'aalaapi-sky.local').replace(/\/+$/, '');
+  const httpPort = (state && state.mdns && state.mdns.port) ? Number(state.mdns.port) : 8765;
+  const httpsPort = (state && state.https && state.https.port)
+    ? Number(state.https.port)
+    : ((state && state.mdns && state.mdns.httpsPort) ? Number(state.mdns.httpsPort) : 8766);
+  const rtmpPort = (state && state.rtmp && state.rtmp.port)
+    ? Number(state.rtmp.port)
+    : ((state && state.mdns && state.mdns.rtmpPort) ? Number(state.mdns.rtmpPort) : 1935);
+  const adsbPort = (state && state.mdns && state.mdns.adsbPort) ? Number(state.mdns.adsbPort) : 30003;
+  const mdnsEnabled = Boolean(state && state.mdns && state.mdns.enabled);
+  const bridgeOnline = Boolean(state && (state.version || state.mdns || state.https || isCompanionOnline));
+
+  const badge = document.getElementById('links-server-status-badge');
+  if (badge) {
+    if (bridgeOnline && mdnsEnabled) {
+      badge.textContent = `🟢 mDNS Active (${mdnsHost})`;
+      badge.style.background = 'rgba(34, 197, 94, 0.16)';
+      badge.style.color = '#4ade80';
+      badge.style.borderColor = 'rgba(34, 197, 94, 0.45)';
+    } else if (bridgeOnline) {
+      badge.textContent = '🟢 Bridge Online (Localhost)';
+      badge.style.background = 'rgba(56, 189, 248, 0.16)';
+      badge.style.color = '#38bdf8';
+      badge.style.borderColor = 'rgba(56, 189, 248, 0.45)';
+    } else {
+      badge.textContent = '⚪ Default Local Endpoints';
+      badge.style.background = 'rgba(148, 163, 184, 0.15)';
+      badge.style.color = '#cbd5e1';
+      badge.style.borderColor = 'rgba(148, 163, 184, 0.35)';
+    }
+  }
+
+  const updatePrimaryRow = (linkId, openId, rowId, url) => {
+    const linkEl = document.getElementById(linkId);
+    if (linkEl) {
+      linkEl.href = url;
+      linkEl.textContent = url;
+    }
+    const openEl = document.getElementById(openId);
+    if (openEl) {
+      openEl.href = url;
+    }
+    const rowEl = document.getElementById(rowId);
+    if (rowEl && typeof rowEl.querySelector === 'function') {
+      const copyBtn = rowEl.querySelector('.links-copy-url-btn');
+      if (copyBtn) copyBtn.setAttribute('data-copy-url', url);
+    }
+  };
+
+  updatePrimaryRow('links-bonjour-https', 'links-bonjour-https-open', 'links-bonjour-https-row', `https://${mdnsHost}:${httpsPort}/`);
+  updatePrimaryRow('links-bonjour-http', 'links-bonjour-http-open', 'links-bonjour-http-row', `http://${mdnsHost}:${httpPort}/`);
+  updatePrimaryRow('links-local-https', 'links-local-https-open', 'links-local-https-row', `https://127.0.0.1:${httpsPort}/`);
+  updatePrimaryRow('links-local-http', 'links-local-http-open', 'links-local-http-row', `http://127.0.0.1:${httpPort}/`);
+
+  const updateEndpointRow = (elId, url, isAnchor) => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (isAnchor) el.href = url;
+    el.textContent = url;
+    const parent = el.parentElement;
+    if (parent && typeof parent.querySelector === 'function') {
+      const copyBtn = parent.querySelector('.links-copy-url-btn');
+      if (copyBtn) copyBtn.setAttribute('data-copy-url', url);
+    }
+  };
+
+  updateEndpointRow('links-endpoint-status', `https://127.0.0.1:${httpsPort}/api/status`, true);
+  updateEndpointRow('links-endpoint-mcp', `https://localhost:${httpsPort}/api/mcp/sse`, true);
+  updateEndpointRow('links-endpoint-openapi', `https://localhost:${httpsPort}/api/openapi.json`, true);
+  updateEndpointRow('links-endpoint-discovery', `http://${mdnsHost}:${httpPort}/api/discovery`, true);
+  updateEndpointRow('links-endpoint-rtmp', `rtmp://${mdnsHost}:${rtmpPort}/live/stream`, false);
+  updateEndpointRow('links-endpoint-sbs', `sbs://${mdnsHost}:${adsbPort}`, false);
+
+  const lanSection = document.getElementById('links-lan-dynamic-section');
+  const lanList = document.getElementById('links-lan-dynamic-list');
+  if (lanSection && lanList) {
+    const lanAddrs = (state && Array.isArray(state.lanAddresses)) ? state.lanAddresses : [];
+    if (lanAddrs.length > 0) {
+      lanSection.style.display = 'flex';
+      lanList.innerHTML = lanAddrs.map(item => {
+        const safeName = typeof escapeHtml === 'function' ? escapeHtml(item.name || 'LAN') : (item.name || 'LAN');
+        const httpUrl = item.url || `http://${item.address}:${httpPort}`;
+        const httpsUrl = item.httpsUrl || `https://${item.address}:${httpsPort}`;
+        return `
+          <div class="links-lan-item-row" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 8px; font-size: 0.68rem;">
+            <span style="color: #94a3b8; font-weight: 600;">${safeName}:</span>
+            <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <a href="${httpsUrl}" target="_blank" rel="noopener noreferrer" style="font-family: monospace; color: #34d399; text-decoration: underline;">${httpsUrl}</a>
+              <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="${httpsUrl}" style="padding: 1px 5px; font-size: 0.6rem; line-height: 1.1;">Copy HTTPS</button>
+              <a href="${httpUrl}" target="_blank" rel="noopener noreferrer" style="font-family: monospace; color: #38bdf8; text-decoration: underline;">${httpUrl}</a>
+              <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="${httpUrl}" style="padding: 1px 5px; font-size: 0.6rem; line-height: 1.1;">Copy HTTP</button>
+            </div>
+          </div>`;
+      }).join('');
+    } else {
+      lanSection.style.display = 'none';
+      lanList.innerHTML = '';
+    }
+  }
+}
 
 function getLastDetectedFlightDevice() {
   return lastDetectedFlightDevice;
@@ -1108,6 +1219,7 @@ function applyCompanionStatusUI(data) {
   }
 
   if (typeof updateMcpMonitorUI === 'function') updateMcpMonitorUI(data?.mcp, true);
+  if (typeof updateServedLinksModalUI === 'function') updateServedLinksModalUI(data);
 
 
 
@@ -9773,7 +9885,8 @@ if (typeof module !== 'undefined' && module.exports) {
 
     applyCompanionStatusUI,
     getDeviceDisplayInfo,
-    getLastDetectedFlightDevice
+    getLastDetectedFlightDevice,
+    updateServedLinksModalUI
   };
 }
 
@@ -9781,12 +9894,14 @@ if (typeof window !== 'undefined') {
   window.getAppVersion = getAppVersion;
   window.getDeviceDisplayInfo = getDeviceDisplayInfo;
   window.getLastDetectedFlightDevice = getLastDetectedFlightDevice;
+  window.updateServedLinksModalUI = updateServedLinksModalUI;
 }
 
 if (typeof global !== 'undefined') {
   global.getAppVersion = getAppVersion;
   global.getDeviceDisplayInfo = getDeviceDisplayInfo;
   global.getLastDetectedFlightDevice = getLastDetectedFlightDevice;
+  global.updateServedLinksModalUI = updateServedLinksModalUI;
 }
 
 

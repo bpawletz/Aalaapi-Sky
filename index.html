@@ -8353,7 +8353,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.217.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.218.1</span></h1>
         </div>
       </div>
 
@@ -12998,6 +12998,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🛰️ Companion Server &amp; Bonjour (mDNS) Special Card in Useful Links (v1.218.0) (Closes #224)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Open or copy any local server and Bonjour (<code>aalaapi-sky.local</code>) endpoint directly from the <strong>Useful Links</strong> modal (<code>#links-modal</code>)! Features a dedicated glassmorphic special card with live SSE mDNS status, 1-click open and copy buttons for Bonjour HTTPS (<code>https://aalaapi-sky.local:8766/</code>), Bonjour HTTP (<code>http://aalaapi-sky.local:8765/</code>), Localhost HTTPS (<code>https://127.0.0.1:8766/</code>), Localhost HTTP (<code>http://127.0.0.1:8765/</code>), active Wi-Fi LAN interfaces, and served AI Studio MCP, OpenAPI, RTMP, and ADS-B SBS endpoints.
+            </p>
+          </div>
           <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #f87171; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🚨 3D Visual Variance Highlighting &amp; Node-RED Action Flow Visualizer (v1.217.0) (Closes #222, #223)
@@ -13183,6 +13191,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
               Take aerial sky painting to new dimensions! Pilots can now continuously tilt the Light Art canvas from flat horizontal (0°) to upright vertical (90°) or oblique angles (30°, 45°, 60°). Includes an interactive SVG Compass Rose dial to align the plane of the artwork directly with ground camera positions, plus an adjustable Ground Clearance Safety Deck (5m-30m) with automated low-clearance warnings and one-click base altitude elevation.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🪟 Universal Draggable Modal Dialogs (v1.181.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Move any dialog anywhere on screen by dragging its top header bar. Keep waypoints, flight telemetry, and map imagery visible without closing your tools. Reopening dialogs retains your chosen position, and double-clicking the header instantly re-centers the window.
             </p>
           </div>
           <div style="background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.35); border-radius: 8px; padding: 12px;">
@@ -15276,14 +15292,133 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <button id="close-links-btn" class="close-btn" type="button" aria-label="Close links">&times;</button>
       </header>
       <div class="modal-content" style="display: flex; flex-direction: column; gap: 12px;">
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 14px;">
-              <h4 style="margin: 0 0 6px 0; font-size: 0.88rem; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
-                <span>🪟</span> Universal Draggable Modal Dialogs (v1.181.0)
+        <!-- Special Card: Companion Server & Bonjour (mDNS) Links (Issue #224) -->
+        <div id="links-modal-server-card" class="links-server-special-card" style="background: linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(8, 47, 73, 0.52)); border: 1px solid rgba(56, 189, 248, 0.45); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <h4 style="margin: 0; font-size: 0.88rem; color: #38bdf8; display: flex; align-items: center; gap: 6px; font-weight: 700;">
+                <span>🛰️</span>
+                <span>Companion Server &amp; Bonjour (mDNS) Links</span>
               </h4>
-              <p style="margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--text-muted);">
-                Move any dialog anywhere on screen by dragging its top header bar. Keep waypoints, flight telemetry, and map imagery visible without closing your tools. Reopening dialogs retains your chosen position, and double-clicking the header instantly re-centers the window.
-              </p>
+              <span style="font-size: 0.7rem; color: var(--text-muted);">Served local web interfaces, Zeroconf LAN hostnames, and AI Studio / stream endpoints.</span>
             </div>
+            <span id="links-server-status-badge" style="font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35); white-space: nowrap;">⚪ Default Local Endpoints</span>
+          </div>
+
+          <!-- Primary Web App Links (Bonjour & Localhost) -->
+          <div id="links-primary-web-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px;">
+            <!-- Bonjour HTTPS -->
+            <div id="links-bonjour-https-row" style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                <span style="font-size: 0.64rem; background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 4px; padding: 1px 5px; font-weight: 700;">Bonjour HTTPS</span>
+                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                  <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="https://aalaapi-sky.local:8766/" style="padding: 2px 6px; font-size: 0.64rem; line-height: 1.1; height: auto;" title="Copy Bonjour HTTPS URL">Copy</button>
+                  <a id="links-bonjour-https-open" href="https://aalaapi-sky.local:8766/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 2px 6px; font-size: 0.64rem; line-height: 1.1; text-decoration: none; color: #34d399; border-color: rgba(16, 185, 129, 0.4);" title="Open Bonjour HTTPS in new tab">Open ↗</a>
+                </div>
+              </div>
+              <a id="links-bonjour-https" href="https://aalaapi-sky.local:8766/" target="_blank" rel="noopener noreferrer" style="font-family: monospace; font-size: 0.74rem; color: #f8fafc; text-decoration: none; word-break: break-all; font-weight: 600;">https://aalaapi-sky.local:8766/</a>
+              <span style="font-size: 0.66rem; color: var(--text-muted);">Zeroconf LAN Secure Web App (port 8766)</span>
+            </div>
+
+            <!-- Bonjour HTTP -->
+            <div id="links-bonjour-http-row" style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(52, 211, 153, 0.25); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                <span style="font-size: 0.64rem; background: rgba(52, 211, 153, 0.14); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.32); border-radius: 4px; padding: 1px 5px; font-weight: 700;">Bonjour HTTP</span>
+                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                  <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="http://aalaapi-sky.local:8765/" style="padding: 2px 6px; font-size: 0.64rem; line-height: 1.1; height: auto;" title="Copy Bonjour HTTP URL">Copy</button>
+                  <a id="links-bonjour-http-open" href="http://aalaapi-sky.local:8765/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 2px 6px; font-size: 0.64rem; line-height: 1.1; text-decoration: none; color: #6ee7b7; border-color: rgba(52, 211, 153, 0.32);" title="Open Bonjour HTTP in new tab">Open ↗</a>
+                </div>
+              </div>
+              <a id="links-bonjour-http" href="http://aalaapi-sky.local:8765/" target="_blank" rel="noopener noreferrer" style="font-family: monospace; font-size: 0.74rem; color: #f8fafc; text-decoration: none; word-break: break-all; font-weight: 600;">http://aalaapi-sky.local:8765/</a>
+              <span style="font-size: 0.66rem; color: var(--text-muted);">Zeroconf LAN Web App &amp; REST API (port 8765)</span>
+            </div>
+
+            <!-- Localhost HTTPS (:8766) -->
+            <div id="links-local-https-row" style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                <span style="font-size: 0.64rem; background: rgba(168, 85, 247, 0.18); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 4px; padding: 1px 5px; font-weight: 700;">Localhost HTTPS</span>
+                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                  <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="https://127.0.0.1:8766/" style="padding: 2px 6px; font-size: 0.64rem; line-height: 1.1; height: auto;" title="Copy Localhost HTTPS URL">Copy</button>
+                  <a id="links-local-https-open" href="https://127.0.0.1:8766/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 2px 6px; font-size: 0.64rem; line-height: 1.1; text-decoration: none; color: #c084fc; border-color: rgba(168, 85, 247, 0.4);" title="Open Localhost HTTPS in new tab">Open ↗</a>
+                </div>
+              </div>
+              <a id="links-local-https" href="https://127.0.0.1:8766/" target="_blank" rel="noopener noreferrer" style="font-family: monospace; font-size: 0.74rem; color: #f8fafc; text-decoration: none; word-break: break-all; font-weight: 600;">https://127.0.0.1:8766/</a>
+              <span style="font-size: 0.66rem; color: var(--text-muted);">Secure Localhost &amp; Google AI Studio (port 8766)</span>
+            </div>
+
+            <!-- Localhost HTTP (:8765) -->
+            <div id="links-local-http-row" style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                <span style="font-size: 0.64rem; background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; padding: 1px 5px; font-weight: 700;">Localhost HTTP</span>
+                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                  <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="http://127.0.0.1:8765/" style="padding: 2px 6px; font-size: 0.64rem; line-height: 1.1; height: auto;" title="Copy Localhost HTTP URL">Copy</button>
+                  <a id="links-local-http-open" href="http://127.0.0.1:8765/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 2px 6px; font-size: 0.64rem; line-height: 1.1; text-decoration: none; color: #38bdf8; border-color: rgba(56, 189, 248, 0.35);" title="Open Localhost HTTP in new tab">Open ↗</a>
+                </div>
+              </div>
+              <a id="links-local-http" href="http://127.0.0.1:8765/" target="_blank" rel="noopener noreferrer" style="font-family: monospace; font-size: 0.74rem; color: #f8fafc; text-decoration: none; word-break: break-all; font-weight: 600;">http://127.0.0.1:8765/</a>
+              <span style="font-size: 0.66rem; color: var(--text-muted);">Standard Localhost Web App (port 8765)</span>
+            </div>
+          </div>
+
+          <!-- Dynamic LAN Interface Links (Populated when Bridge is online) -->
+          <div id="links-lan-dynamic-section" style="display: none; flex-direction: column; gap: 5px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+            <span style="font-size: 0.68rem; font-weight: 700; color: #38bdf8;">📶 Active Wi-Fi / LAN Network Interfaces (Open on Tablet or Phone):</span>
+            <div id="links-lan-dynamic-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+          </div>
+
+          <!-- Served API, AI Studio & Stream Endpoints -->
+          <div id="links-served-endpoints-list" style="background: rgba(2, 6, 23, 0.55); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 5px;">
+            <div style="font-size: 0.68rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px;">Served Companion API, AI Studio &amp; Stream Endpoints</div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.7rem;">
+              <span style="color: var(--text-muted); white-space: nowrap;">🔒 HTTPS Status / Trust Cert:</span>
+              <div style="display: inline-flex; align-items: center; gap: 6px; min-width: 0;">
+                <a id="links-endpoint-status" href="https://127.0.0.1:8766/api/status" target="_blank" rel="noopener noreferrer" style="font-family: monospace; color: #c084fc; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://127.0.0.1:8766/api/status</a>
+                <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="https://127.0.0.1:8766/api/status" style="padding: 1px 5px; font-size: 0.62rem; line-height: 1.1; flex-shrink: 0;">Copy</button>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.7rem;">
+              <span style="color: var(--text-muted); white-space: nowrap;">✨ AI Studio MCP SSE:</span>
+              <div style="display: inline-flex; align-items: center; gap: 6px; min-width: 0;">
+                <a id="links-endpoint-mcp" href="https://localhost:8766/api/mcp/sse" target="_blank" rel="noopener noreferrer" style="font-family: monospace; color: #38bdf8; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://localhost:8766/api/mcp/sse</a>
+                <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="https://localhost:8766/api/mcp/sse" style="padding: 1px 5px; font-size: 0.62rem; line-height: 1.1; flex-shrink: 0;">Copy</button>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.7rem;">
+              <span style="color: var(--text-muted); white-space: nowrap;">⚡ OpenAPI 3.0 Spec:</span>
+              <div style="display: inline-flex; align-items: center; gap: 6px; min-width: 0;">
+                <a id="links-endpoint-openapi" href="https://localhost:8766/api/openapi.json" target="_blank" rel="noopener noreferrer" style="font-family: monospace; color: #38bdf8; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://localhost:8766/api/openapi.json</a>
+                <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="https://localhost:8766/api/openapi.json" style="padding: 1px 5px; font-size: 0.62rem; line-height: 1.1; flex-shrink: 0;">Copy</button>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.7rem;">
+              <span style="color: var(--text-muted); white-space: nowrap;">🌐 Bonjour Discovery JSON:</span>
+              <div style="display: inline-flex; align-items: center; gap: 6px; min-width: 0;">
+                <a id="links-endpoint-discovery" href="http://aalaapi-sky.local:8765/api/discovery" target="_blank" rel="noopener noreferrer" style="font-family: monospace; color: #34d399; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">http://aalaapi-sky.local:8765/api/discovery</a>
+                <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="http://aalaapi-sky.local:8765/api/discovery" style="padding: 1px 5px; font-size: 0.62rem; line-height: 1.1; flex-shrink: 0;">Copy</button>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.7rem;">
+              <span style="color: var(--text-muted); white-space: nowrap;">📹 Bonjour RTMP Ingest:</span>
+              <div style="display: inline-flex; align-items: center; gap: 6px; min-width: 0;">
+                <code id="links-endpoint-rtmp" style="font-family: monospace; color: #fbbf24; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">rtmp://aalaapi-sky.local:1935/live/stream</code>
+                <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="rtmp://aalaapi-sky.local:1935/live/stream" style="padding: 1px 5px; font-size: 0.62rem; line-height: 1.1; flex-shrink: 0;">Copy</button>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.7rem;">
+              <span style="color: var(--text-muted); white-space: nowrap;">✈️ Bonjour ADS-B SBS:</span>
+              <div style="display: inline-flex; align-items: center; gap: 6px; min-width: 0;">
+                <code id="links-endpoint-sbs" style="font-family: monospace; color: #38bdf8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">sbs://aalaapi-sky.local:30003</code>
+                <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="sbs://aalaapi-sky.local:30003" style="padding: 1px 5px; font-size: 0.62rem; line-height: 1.1; flex-shrink: 0;">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <a id="opensky-link" href="https://map.opensky-network.org/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between;">
           <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
@@ -15398,7 +15533,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.217.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.218.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15559,6 +15694,20 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.218.1):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Flight Diagnostics IRL Verification Modal Crash Fix (Closes #225):</strong> Fixed an issue where clicking "Verify IRL Plan" or "Verify Against IRL Test Plan" failed to open <code>#diag-irl-modal</code> due to non-existent ground footprint method calls during 3D scene re-sync.</li>
+                <li><strong>Corridor &amp; Historical Mission Auto-Matching:</strong> Upgraded flight log correlation to evaluate bidirectional Chamfer path distance, gimbal pitch agreement, and calendar date alignment, preventing background 2D workspace grid patterns from misattributing historical corridor and orbit flights.</li>
+              </ul>
+              <br>
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.218.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Companion Server &amp; Bonjour (mDNS) Special Card in Useful Links (Closes #224):</strong> Added a dedicated special card (<code>#links-modal-server-card</code>) to the Useful Links modal displaying clickable and 1-click copyable links for Bonjour HTTPS (<code>https://aalaapi-sky.local:8766/</code>), Bonjour HTTP (<code>http://aalaapi-sky.local:8765/</code>), Localhost HTTPS (<code>https://127.0.0.1:8766/</code>), Localhost HTTP (<code>http://127.0.0.1:8765/</code>), active LAN interfaces, and served AI Studio MCP, OpenAPI, RTMP, and ADS-B SBS endpoints.</li>
+                <li><strong>Intro Guide Hub Cleanup:</strong> Relocated the misplaced <code>Universal Draggable Modal Dialogs (v1.181.0)</code> highlight card from the Useful Links modal to its chronological place in the What's New tab (<code>#intro-pane-features</code>).</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.217.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -36886,6 +37035,9 @@ function initUIEventListeners() {
       linksModal.classList.toggle('hidden');
       if (!linksModal.classList.contains('hidden')) {
         updateOpenSkyLink();
+        if (typeof updateServedLinksModalUI === 'function') {
+          updateServedLinksModalUI();
+        }
         if (window.innerWidth <= 768) {
           document.querySelector('.sidebar').classList.remove('open');
         }
@@ -36894,6 +37046,39 @@ function initUIEventListeners() {
     showLinksBtn.addEventListener('click', toggleLinksModal);
     if (closeLinksBtn) closeLinksBtn.addEventListener('click', toggleLinksModal);
     if (closeLinksFooterBtn) closeLinksFooterBtn.addEventListener('click', toggleLinksModal);
+    linksModal.addEventListener('click', async (e) => {
+      const copyBtn = (e.target && typeof e.target.closest === 'function')
+        ? e.target.closest('.links-copy-url-btn')
+        : null;
+      if (!copyBtn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const targetUrl = copyBtn.getAttribute('data-copy-url') || '';
+      if (!targetUrl) return;
+      const origText = copyBtn.getAttribute('data-orig-label') || copyBtn.textContent || 'Copy';
+      copyBtn.setAttribute('data-orig-label', origText);
+      copyBtn.textContent = '✓ Copied';
+      setTimeout(() => {
+        copyBtn.textContent = origText;
+      }, 1500);
+      if (typeof showToast === 'function') {
+        showToast(`📋 Copied link: ${targetUrl}`, 'info');
+      }
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          await navigator.clipboard.writeText(targetUrl);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = targetUrl;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        }
+      } catch (_) {}
+    });
   }
 
   // 3-Tier Intro Guide Hub & Spotlight Tour controls
@@ -56161,6 +56346,117 @@ let isRc2MtpConnected = false;
 let rc2MtpActiveUUID = '';
 
 let lastDetectedFlightDevice = null;
+let lastCompanionServerLinksState = null;
+
+function updateServedLinksModalUI(statusData) {
+  if (typeof document === 'undefined') return;
+  if (statusData && typeof statusData === 'object') {
+    lastCompanionServerLinksState = statusData;
+  }
+  const state = (statusData && typeof statusData === 'object') ? statusData : lastCompanionServerLinksState;
+  const card = document.getElementById('links-modal-server-card');
+  if (!card) return;
+
+  const mdnsHost = (state && state.mdns && state.mdns.hostname ? String(state.mdns.hostname) : 'aalaapi-sky.local').replace(/\/+$/, '');
+  const httpPort = (state && state.mdns && state.mdns.port) ? Number(state.mdns.port) : 8765;
+  const httpsPort = (state && state.https && state.https.port)
+    ? Number(state.https.port)
+    : ((state && state.mdns && state.mdns.httpsPort) ? Number(state.mdns.httpsPort) : 8766);
+  const rtmpPort = (state && state.rtmp && state.rtmp.port)
+    ? Number(state.rtmp.port)
+    : ((state && state.mdns && state.mdns.rtmpPort) ? Number(state.mdns.rtmpPort) : 1935);
+  const adsbPort = (state && state.mdns && state.mdns.adsbPort) ? Number(state.mdns.adsbPort) : 30003;
+  const mdnsEnabled = Boolean(state && state.mdns && state.mdns.enabled);
+  const bridgeOnline = Boolean(state && (state.version || state.mdns || state.https || isCompanionOnline));
+
+  const badge = document.getElementById('links-server-status-badge');
+  if (badge) {
+    if (bridgeOnline && mdnsEnabled) {
+      badge.textContent = `🟢 mDNS Active (${mdnsHost})`;
+      badge.style.background = 'rgba(34, 197, 94, 0.16)';
+      badge.style.color = '#4ade80';
+      badge.style.borderColor = 'rgba(34, 197, 94, 0.45)';
+    } else if (bridgeOnline) {
+      badge.textContent = '🟢 Bridge Online (Localhost)';
+      badge.style.background = 'rgba(56, 189, 248, 0.16)';
+      badge.style.color = '#38bdf8';
+      badge.style.borderColor = 'rgba(56, 189, 248, 0.45)';
+    } else {
+      badge.textContent = '⚪ Default Local Endpoints';
+      badge.style.background = 'rgba(148, 163, 184, 0.15)';
+      badge.style.color = '#cbd5e1';
+      badge.style.borderColor = 'rgba(148, 163, 184, 0.35)';
+    }
+  }
+
+  const updatePrimaryRow = (linkId, openId, rowId, url) => {
+    const linkEl = document.getElementById(linkId);
+    if (linkEl) {
+      linkEl.href = url;
+      linkEl.textContent = url;
+    }
+    const openEl = document.getElementById(openId);
+    if (openEl) {
+      openEl.href = url;
+    }
+    const rowEl = document.getElementById(rowId);
+    if (rowEl && typeof rowEl.querySelector === 'function') {
+      const copyBtn = rowEl.querySelector('.links-copy-url-btn');
+      if (copyBtn) copyBtn.setAttribute('data-copy-url', url);
+    }
+  };
+
+  updatePrimaryRow('links-bonjour-https', 'links-bonjour-https-open', 'links-bonjour-https-row', `https://${mdnsHost}:${httpsPort}/`);
+  updatePrimaryRow('links-bonjour-http', 'links-bonjour-http-open', 'links-bonjour-http-row', `http://${mdnsHost}:${httpPort}/`);
+  updatePrimaryRow('links-local-https', 'links-local-https-open', 'links-local-https-row', `https://127.0.0.1:${httpsPort}/`);
+  updatePrimaryRow('links-local-http', 'links-local-http-open', 'links-local-http-row', `http://127.0.0.1:${httpPort}/`);
+
+  const updateEndpointRow = (elId, url, isAnchor) => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (isAnchor) el.href = url;
+    el.textContent = url;
+    const parent = el.parentElement;
+    if (parent && typeof parent.querySelector === 'function') {
+      const copyBtn = parent.querySelector('.links-copy-url-btn');
+      if (copyBtn) copyBtn.setAttribute('data-copy-url', url);
+    }
+  };
+
+  updateEndpointRow('links-endpoint-status', `https://127.0.0.1:${httpsPort}/api/status`, true);
+  updateEndpointRow('links-endpoint-mcp', `https://localhost:${httpsPort}/api/mcp/sse`, true);
+  updateEndpointRow('links-endpoint-openapi', `https://localhost:${httpsPort}/api/openapi.json`, true);
+  updateEndpointRow('links-endpoint-discovery', `http://${mdnsHost}:${httpPort}/api/discovery`, true);
+  updateEndpointRow('links-endpoint-rtmp', `rtmp://${mdnsHost}:${rtmpPort}/live/stream`, false);
+  updateEndpointRow('links-endpoint-sbs', `sbs://${mdnsHost}:${adsbPort}`, false);
+
+  const lanSection = document.getElementById('links-lan-dynamic-section');
+  const lanList = document.getElementById('links-lan-dynamic-list');
+  if (lanSection && lanList) {
+    const lanAddrs = (state && Array.isArray(state.lanAddresses)) ? state.lanAddresses : [];
+    if (lanAddrs.length > 0) {
+      lanSection.style.display = 'flex';
+      lanList.innerHTML = lanAddrs.map(item => {
+        const safeName = typeof escapeHtml === 'function' ? escapeHtml(item.name || 'LAN') : (item.name || 'LAN');
+        const httpUrl = item.url || `http://${item.address}:${httpPort}`;
+        const httpsUrl = item.httpsUrl || `https://${item.address}:${httpsPort}`;
+        return `
+          <div class="links-lan-item-row" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 8px; font-size: 0.68rem;">
+            <span style="color: #94a3b8; font-weight: 600;">${safeName}:</span>
+            <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <a href="${httpsUrl}" target="_blank" rel="noopener noreferrer" style="font-family: monospace; color: #34d399; text-decoration: underline;">${httpsUrl}</a>
+              <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="${httpsUrl}" style="padding: 1px 5px; font-size: 0.6rem; line-height: 1.1;">Copy HTTPS</button>
+              <a href="${httpUrl}" target="_blank" rel="noopener noreferrer" style="font-family: monospace; color: #38bdf8; text-decoration: underline;">${httpUrl}</a>
+              <button type="button" class="btn-secondary links-copy-url-btn" data-copy-url="${httpUrl}" style="padding: 1px 5px; font-size: 0.6rem; line-height: 1.1;">Copy HTTP</button>
+            </div>
+          </div>`;
+      }).join('');
+    } else {
+      lanSection.style.display = 'none';
+      lanList.innerHTML = '';
+    }
+  }
+}
 
 function getLastDetectedFlightDevice() {
   return lastDetectedFlightDevice;
@@ -56995,6 +57291,7 @@ function applyCompanionStatusUI(data) {
   }
 
   if (typeof updateMcpMonitorUI === 'function') updateMcpMonitorUI(data?.mcp, true);
+  if (typeof updateServedLinksModalUI === 'function') updateServedLinksModalUI(data);
 
 
 
@@ -65660,7 +65957,8 @@ if (typeof module !== 'undefined' && module.exports) {
 
     applyCompanionStatusUI,
     getDeviceDisplayInfo,
-    getLastDetectedFlightDevice
+    getLastDetectedFlightDevice,
+    updateServedLinksModalUI
   };
 }
 
@@ -65668,12 +65966,14 @@ if (typeof window !== 'undefined') {
   window.getAppVersion = getAppVersion;
   window.getDeviceDisplayInfo = getDeviceDisplayInfo;
   window.getLastDetectedFlightDevice = getLastDetectedFlightDevice;
+  window.updateServedLinksModalUI = updateServedLinksModalUI;
 }
 
 if (typeof global !== 'undefined') {
   global.getAppVersion = getAppVersion;
   global.getDeviceDisplayInfo = getDeviceDisplayInfo;
   global.getLastDetectedFlightDevice = getLastDetectedFlightDevice;
+  global.updateServedLinksModalUI = updateServedLinksModalUI;
 }
 
 
@@ -67841,9 +68141,9 @@ const IrlVerifier = {
       patSelect.value = activePattern;
     }
 
-    this.runVerificationAndRender();
-
     modal.classList.remove('hidden');
+
+    this.runVerificationAndRender();
   },
 
   /**
@@ -67868,7 +68168,11 @@ const IrlVerifier = {
     );
     this.currentResult = result;
     if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.applyIrlVerificationResult === 'function' && FlightDiagnostics.telemetryData === this.currentTelemetryData) {
-      FlightDiagnostics.applyIrlVerificationResult(result, this.currentPlannedWaypoints);
+      try {
+        FlightDiagnostics.applyIrlVerificationResult(result, this.currentPlannedWaypoints);
+      } catch (applyErr) {
+        console.warn('[IRL VERIFIER] Error updating FlightDiagnostics 3D scene:', applyErr);
+      }
     }
 
     // Update Outcome Badge
@@ -70223,9 +70527,13 @@ const FlightDiagnostics = {
     }
 
     if (typeof IrlVerifier !== 'undefined' && typeof IrlVerifier.openIrlVerificationModal === 'function') {
+      const defaultPattern = (this.currentLoadedMission && this.currentLoadedMission.flight_pattern)
+        || this.currentMatchedMissionPattern
+        || (planCandidates[0] && planCandidates[0].pattern)
+        || activePattern;
       IrlVerifier.openIrlVerificationModal(this.selectedFlightId, planned, this.telemetryData, {
         planCandidates,
-        patternId: activePattern
+        patternId: defaultPattern
       });
     }
   },
@@ -70485,13 +70793,14 @@ const FlightDiagnostics = {
         })) : [];
 
         const currentPattern = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || null;
-        let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}${currentPattern ? `&pattern=${encodeURIComponent(currentPattern)}` : ''}`, {
+        const queryPatternParam = (!flightId || !flightId.startsWith('FlightRecord_')) && currentPattern ? `&pattern=${encodeURIComponent(currentPattern)}` : '';
+        let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}${queryPatternParam}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(45000) : undefined,
           body: JSON.stringify({
             flightId,
-            flightPattern: currentPattern,
+            flightPattern: (!flightId || !flightId.startsWith('FlightRecord_')) ? currentPattern : null,
             waypoints: cleanWps,
             options: { altitude, speed, gimbalPitch, flightId, flightPattern: currentPattern }
           })
@@ -70530,6 +70839,7 @@ const FlightDiagnostics = {
           if (data.mission) {
             this.currentLoadedMission = data.mission;
           }
+          this.currentMatchedMissionPattern = data.matchedMissionPattern || (data.mission ? data.mission.flight_pattern : null);
           const plannedWps = data.telemetry.plannedWaypoints || data.plannedWaypoints || (data.mission?.plan?.waypoints) || null;
           if (!this.isDecrypted && telem && telem.points && plannedWps && plannedWps.length > 1) {
             const photoAlts = new Set(telem.points.filter(p => p.isPhoto).map(p => p.alt));
@@ -70849,17 +71159,19 @@ const FlightDiagnostics = {
 
       wpApps.forEach((wpApp, idx) => {
         const reasons = [];
-        if (wpApp.dPitch !== null && wpApp.dPitch > pitchTol) {
-          reasons.push(`Pitch ${wpApp.actualPitch}° vs ${wpApp.plannedPitch}° Plan (Δ${wpApp.dPitch}°)`);
-        }
-        if (!wpApp.skipPhoto && !wpApp.isTurnaround && wpApp.dYaw !== null && wpApp.dYaw > yawTol) {
-          reasons.push(`Yaw ${wpApp.actualYaw}° vs ${wpApp.plannedYaw}° Plan (Δ${wpApp.dYaw}°)`);
+        if (wpApp.visited || wpApp.dH <= horizontalTol * 2) {
+          if (wpApp.dPitch !== null && wpApp.dPitch > pitchTol) {
+            reasons.push(`Pitch ${wpApp.actualPitch}° vs ${wpApp.plannedPitch}° Plan (Δ${wpApp.dPitch}°)`);
+          }
+          if (!wpApp.skipPhoto && !wpApp.isTurnaround && wpApp.dYaw !== null && wpApp.dYaw > yawTol) {
+            reasons.push(`Yaw ${wpApp.actualYaw}° vs ${wpApp.plannedYaw}° Plan (Δ${wpApp.dYaw}°)`);
+          }
+          if (wpApp.dZ > altTol) {
+            reasons.push(`Alt ${wpApp.actualAlt}m vs ${wpApp.plannedAlt}m Plan (Δ${wpApp.dZ}m)`);
+          }
         }
         if (wpApp.dH > horizontalTol) {
           reasons.push(`XTE Drift ${wpApp.dH}m (Tol ≤${horizontalTol}m)`);
-        }
-        if (wpApp.dZ > altTol) {
-          reasons.push(`Alt ${wpApp.actualAlt}m vs ${wpApp.plannedAlt}m Plan (Δ${wpApp.dZ}m)`);
         }
 
         wpApp.hasVariance = reasons.length > 0;
@@ -70957,8 +71269,11 @@ const FlightDiagnostics = {
     this.updateStatsUI(true);
     if (this.threeScene) {
       this.buildTrajectoryMeshes();
-      this.clearGroundFootprints();
-      this.syncFootprintsUpTo(this.currentPointIndex || 0);
+      if (typeof this.resetGroundCanvas === 'function') this.resetGroundCanvas();
+      if (typeof this.redrawGroundFootprints === 'function' && this.diagShowFootprints) {
+        this.redrawGroundFootprints(this.currentPointIndex || 0);
+      }
+
       this.seekTo(this.currentPointIndex || 0, false, false);
       if (this.threeRenderer && this.threeCamera) {
         this.threeRenderer.render(this.threeScene, this.threeCamera);

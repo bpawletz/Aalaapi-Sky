@@ -443,9 +443,9 @@ const IrlVerifier = {
       patSelect.value = activePattern;
     }
 
-    this.runVerificationAndRender();
-
     modal.classList.remove('hidden');
+
+    this.runVerificationAndRender();
   },
 
   /**
@@ -470,7 +470,11 @@ const IrlVerifier = {
     );
     this.currentResult = result;
     if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.applyIrlVerificationResult === 'function' && FlightDiagnostics.telemetryData === this.currentTelemetryData) {
-      FlightDiagnostics.applyIrlVerificationResult(result, this.currentPlannedWaypoints);
+      try {
+        FlightDiagnostics.applyIrlVerificationResult(result, this.currentPlannedWaypoints);
+      } catch (applyErr) {
+        console.warn('[IRL VERIFIER] Error updating FlightDiagnostics 3D scene:', applyErr);
+      }
     }
 
     // Update Outcome Badge
