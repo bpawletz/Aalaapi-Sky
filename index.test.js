@@ -357,7 +357,7 @@ describe('updateOpenSkyLink Tests', () => {
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
 
     // Extract links-modal block
-    const linksModalMatch = templateHtml.match(/<div id="links-modal"[\s\S]*?<\/div>\s*<\/div>/);
+    const linksModalMatch = templateHtml.match(/<div id="links-modal"[\s\S]*?<\/footer>\s*<\/div>\s*<\/div>/);
     assert.ok(linksModalMatch, '#links-modal block should exist in index_template.html');
     assert.ok(linksModalMatch[0].includes('id="opensky-link"'), '#opensky-link should exist inside #links-modal');
 
@@ -39736,8 +39736,8 @@ describe('3D Visual Variance Highlighting in Flight Diagnostics (v1.217.0, Issue
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.217.0] - 2026-11-01'));
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('v1.217.0'));
-    assert.ok(template.includes('Version 1.217.0'));
+
+
     assert.ok(template.includes('Changelog (v1.217.0):'));
   });
 
@@ -39874,6 +39874,233 @@ describe('3D Visual Variance Highlighting in Flight Diagnostics (v1.217.0, Issue
       FlightDiagnostics.threeScene = origScene;
       FlightDiagnostics.varianceSummary = null;
       global.THREE = origTHREE;
+    }
+  });
+});
+
+
+describe('Issue #224 & v1.218.0: Companion Server & Bonjour (mDNS) Special Card in Useful Links Suite', () => {
+  test('Version consistency: v1.218.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.218.0');
+  });
+
+  test('#links-modal contains #links-modal-server-card with Bonjour, Localhost, and served API/MCP/RTMP/SBS links, and v1.181.0 highlight is in #intro-pane-features', () => {
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const linksModalStart = template.indexOf('id="links-modal"');
+    const linksModalEnd = template.indexOf('id="tfr-briefing-modal"');
+    assert.ok(linksModalStart > -1 && linksModalEnd > linksModalStart, '#links-modal section must exist');
+    const linksModalHtml = template.slice(linksModalStart, linksModalEnd);
+
+    assert.ok(linksModalHtml.includes('id="links-modal-server-card"'), 'Must contain #links-modal-server-card special card');
+    assert.ok(linksModalHtml.includes('id="links-bonjour-https"'), 'Must contain #links-bonjour-https link');
+    assert.ok(linksModalHtml.includes('https://aalaapi-sky.local:8766/'), 'Must include https://aalaapi-sky.local:8766/');
+    assert.ok(linksModalHtml.includes('id="links-bonjour-http"'), 'Must contain #links-bonjour-http link');
+    assert.ok(linksModalHtml.includes('http://aalaapi-sky.local:8765/'), 'Must include http://aalaapi-sky.local:8765/');
+    assert.ok(linksModalHtml.includes('id="links-local-https"'), 'Must contain #links-local-https link');
+    assert.ok(linksModalHtml.includes('https://127.0.0.1:8766/'), 'Must include https://127.0.0.1:8766/');
+    assert.ok(linksModalHtml.includes('id="links-local-http"'), 'Must contain #links-local-http link');
+    assert.ok(linksModalHtml.includes('http://127.0.0.1:8765/'), 'Must include http://127.0.0.1:8765/');
+    assert.ok(linksModalHtml.includes('id="links-endpoint-status"'), 'Must contain #links-endpoint-status');
+    assert.ok(linksModalHtml.includes('id="links-endpoint-mcp"'), 'Must contain #links-endpoint-mcp');
+    assert.ok(linksModalHtml.includes('id="links-endpoint-openapi"'), 'Must contain #links-endpoint-openapi');
+    assert.ok(linksModalHtml.includes('id="links-endpoint-discovery"'), 'Must contain #links-endpoint-discovery');
+    assert.ok(linksModalHtml.includes('id="links-endpoint-rtmp"'), 'Must contain #links-endpoint-rtmp');
+    assert.ok(linksModalHtml.includes('id="links-endpoint-sbs"'), 'Must contain #links-endpoint-sbs');
+    assert.strictEqual(
+      linksModalHtml.includes('Universal Draggable Modal Dialogs (v1.181.0)'),
+      false,
+      'Misplaced v1.181.0 highlight must no longer be inside #links-modal'
+    );
+
+    const introFeaturesStart = template.indexOf('id="intro-pane-features"');
+    const introTipsStart = template.indexOf('id="intro-pane-tips"');
+    const introFeaturesHtml = template.slice(introFeaturesStart, introTipsStart);
+    assert.ok(
+      introFeaturesHtml.includes('Universal Draggable Modal Dialogs (v1.181.0)'),
+      'v1.181.0 highlight must be located inside #intro-pane-features'
+    );
+  });
+
+  test('updateServedLinksModalUI dynamically updates Bonjour hostname, ports, status badge, and LAN interfaces', () => {
+    const updateFn = window.updateServedLinksModalUI || global.updateServedLinksModalUI;
+    assert.strictEqual(typeof updateFn, 'function', 'updateServedLinksModalUI must be exported');
+
+    const mockElements = {};
+    const getOrCreateMock = (id) => {
+      if (!mockElements[id]) {
+        mockElements[id] = {
+          id,
+          href: '',
+          textContent: '',
+          innerHTML: '',
+          style: {},
+          setAttribute: function(k, v) { this[k] = v; },
+          querySelector: () => ({ setAttribute: () => {} })
+        };
+      }
+      return mockElements[id];
+    };
+    const origGetElementById = document.getElementById;
+    document.getElementById = (id) => getOrCreateMock(id);
+
+    try {
+      updateFn({
+        version: '1.218.0',
+        mdns: {
+          enabled: true,
+          hostname: 'custom-drone-rig.local',
+          port: 8765,
+          httpsPort: 8766,
+          rtmpPort: 1935,
+          adsbPort: 30003
+        },
+        https: {
+          enabled: true,
+          port: 8766
+        },
+        lanAddresses: [
+          {
+            name: 'Wi-Fi',
+            address: '10.0.0.42',
+            url: 'http://10.0.0.42:8765',
+            httpsUrl: 'https://10.0.0.42:8766'
+          }
+        ]
+      });
+
+      const badge = document.getElementById('links-server-status-badge');
+      const bonjourHttps = document.getElementById('links-bonjour-https');
+      const bonjourHttp = document.getElementById('links-bonjour-http');
+      const discoveryEl = document.getElementById('links-endpoint-discovery');
+      const rtmpEl = document.getElementById('links-endpoint-rtmp');
+      const lanSection = document.getElementById('links-lan-dynamic-section');
+      const lanList = document.getElementById('links-lan-dynamic-list');
+
+      assert.ok(badge.textContent.includes('mDNS Active (custom-drone-rig.local)'));
+      assert.strictEqual(bonjourHttps.textContent, 'https://custom-drone-rig.local:8766/');
+      assert.strictEqual(bonjourHttp.textContent, 'http://custom-drone-rig.local:8765/');
+      assert.strictEqual(discoveryEl.textContent, 'http://custom-drone-rig.local:8765/api/discovery');
+      assert.strictEqual(rtmpEl.textContent, 'rtmp://custom-drone-rig.local:1935/live/stream');
+      assert.strictEqual(lanSection.style.display, 'flex');
+      assert.ok(lanList.innerHTML.includes('https://10.0.0.42:8766'));
+      assert.ok(lanList.innerHTML.includes('http://10.0.0.42:8765'));
+
+      // Reset back to default state
+      updateFn({});
+      assert.strictEqual(bonjourHttps.textContent, 'https://aalaapi-sky.local:8766/');
+      assert.strictEqual(lanSection.style.display, 'none');
+    } finally {
+      document.getElementById = origGetElementById;
+    }
+  });
+
+});
+
+describe('Flight Diagnostics IRL Verification Modal Crash Fix & Corridor Mission Auto-Matching (v1.218.1, Issue #225)', () => {
+  const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+  test('Version consistency: v1.218.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.218.1');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.218.1] - 2026-11-01'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('Changelog (v1.218.1):'));
+    assert.ok(htmlText.includes('Changelog (v1.218.1):'));
+  });
+
+  test('Issue #225: FlightDiagnostics.applyIrlVerificationResult safely resets canvas and redraws footprints with active threeScene', () => {
+    const { FlightDiagnostics } = require('./src/3d/DigitalTwin.js');
+    let resetCalled = false;
+    let redrawCalled = false;
+    let seekCalled = false;
+    let renderCalled = false;
+
+    const origReset = FlightDiagnostics.resetGroundCanvas;
+    const origRedraw = FlightDiagnostics.redrawGroundFootprints;
+    const origBuild = FlightDiagnostics.buildTrajectoryMeshes;
+    const origSeek = FlightDiagnostics.seekTo;
+    const origScene = FlightDiagnostics.threeScene;
+    const origRenderer = FlightDiagnostics.threeRenderer;
+    const origCamera = FlightDiagnostics.threeCamera;
+    const origShow = FlightDiagnostics.diagShowFootprints;
+
+    try {
+      FlightDiagnostics.resetGroundCanvas = () => { resetCalled = true; };
+      FlightDiagnostics.redrawGroundFootprints = () => { redrawCalled = true; };
+      FlightDiagnostics.buildTrajectoryMeshes = () => {};
+      FlightDiagnostics.seekTo = () => { seekCalled = true; };
+      FlightDiagnostics.threeScene = {};
+      FlightDiagnostics.threeRenderer = { render: () => { renderCalled = true; } };
+      FlightDiagnostics.threeCamera = {};
+      FlightDiagnostics.diagShowFootprints = true;
+
+      const mockResult = {
+        wpApproaches: [{ visited: true, dH: 0.5, dZ: 0.1, dPitch: 0, dYaw: 0, bestPtIndex: 0 }]
+      };
+      const mockWps = [{ lat: 41.32, lon: -88.99, altitude: 30 }, { lat: 41.321, lon: -88.99, altitude: 30 }];
+
+      assert.doesNotThrow(() => {
+        FlightDiagnostics.applyIrlVerificationResult(mockResult, mockWps);
+      });
+
+      assert.strictEqual(resetCalled, true, 'Must call resetGroundCanvas');
+      assert.strictEqual(redrawCalled, true, 'Must call redrawGroundFootprints');
+      assert.strictEqual(seekCalled, true, 'Must call seekTo');
+      assert.strictEqual(renderCalled, true, 'Must call threeRenderer.render');
+    } finally {
+      FlightDiagnostics.resetGroundCanvas = origReset;
+      FlightDiagnostics.redrawGroundFootprints = origRedraw;
+      FlightDiagnostics.buildTrajectoryMeshes = origBuild;
+      FlightDiagnostics.seekTo = origSeek;
+      FlightDiagnostics.threeScene = origScene;
+      FlightDiagnostics.threeRenderer = origRenderer;
+      FlightDiagnostics.threeCamera = origCamera;
+      FlightDiagnostics.diagShowFootprints = origShow;
+    }
+  });
+
+  test('Issue #225: IrlVerifier.openIrlVerificationModal reveals modal even if 3D scene update throws', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+    const { FlightDiagnostics } = require('./src/3d/DigitalTwin.js');
+
+    const mockModal = {
+      classList: {
+        _classes: new Set(['hidden']),
+        remove(c) { this._classes.delete(c); },
+        add(c) { this._classes.add(c); },
+        contains(c) { return this._classes.has(c); }
+      }
+    };
+
+    const origGetEl = document.getElementById;
+    document.getElementById = (id) => {
+      if (id === 'diag-irl-modal') return mockModal;
+      return origGetEl.call(document, id);
+    };
+
+    const origApply = FlightDiagnostics.applyIrlVerificationResult;
+    const origTelem = FlightDiagnostics.telemetryData;
+    const mockTelem = { points: [{ lat: 41.32, lon: -88.99, alt: 30, isPhoto: true, pitch: -45, yaw: 0, time: 0 }] };
+
+    try {
+      FlightDiagnostics.telemetryData = mockTelem;
+      FlightDiagnostics.applyIrlVerificationResult = () => {
+        throw new Error('Simulated 3D mesh error');
+      };
+
+      const plannedWps = [{ lat: 41.32, lon: -88.99, altitude: 30 }, { lat: 41.321, lon: -88.99, altitude: 30 }];
+
+      assert.doesNotThrow(() => {
+        IrlVerifier.openIrlVerificationModal('test_flight.txt', plannedWps, mockTelem, {
+          patternId: 'corridor'
+        });
+      });
+
+      assert.strictEqual(mockModal.classList.contains('hidden'), false, 'Modal must have hidden class removed');
+    } finally {
+      document.getElementById = origGetEl;
+      FlightDiagnostics.applyIrlVerificationResult = origApply;
+      FlightDiagnostics.telemetryData = origTelem;
     }
   });
 });

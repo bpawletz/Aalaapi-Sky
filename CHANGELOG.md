@@ -1,3 +1,59 @@
+## [1.218.1] - 2026-11-01
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Flight Diagnostics IRL Verification Modal (Closes #225)**:
+  - Fixed an issue where clicking "Verify IRL Plan" in the header toolbar (`#diag-btn-irl-verify`) or "Verify Against IRL Test Plan" in the sidebar (`#diag-sidebar-irl-verify-btn`) failed to open the verification modal (`#diag-irl-modal`) when an active 3D scene was present.
+  - The modal now un-hides immediately upon click, and 3D scene re-sync is guarded with error boundaries so unexpected rendering issues cannot block verification.
+- **Corridor & Historical Flight Plan Correlation (Closes #225)**:
+  - Upgraded telemetry mission auto-matching so historical flight logs (such as Flight 45, a 30-waypoint Corridor mission at -45° gimbal pitch) accurately match their true planned mission rather than being artificially biased toward whatever flight pattern happens to be active in the background 2D planning workspace.
+  - Mitigates false-positive pitch variance alerts by correlating bidirectional Chamfer path distance, planned vs flown gimbal pitch agreement, and calendar flight dates.
+
+#### Under the Hood & Technical Details
+- **`src/3d/DigitalTwin.js`**:
+  - Replaced non-existent `clearGroundFootprints()` / `syncFootprintsUpTo()` calls inside `applyIrlVerificationResult()` with `resetGroundCanvas()` and `redrawGroundFootprints(currentPointIndex)`.
+  - In `loadSelectedFlight()`, omitted `&pattern=` query override when requesting specific historical `FlightRecord_*.txt` logs so server-side geometric correlation operates cleanly without 2D workspace bias.
+  - In `performIrlVerification()`, defaulted `patternId` to the matched mission's true flight pattern (`currentMatchedMissionPattern` or `currentLoadedMission.flight_pattern`).
+  - In `evaluateTelemetryVariances()`, restricted pitch and yaw variance evaluations to reached waypoints or waypoints within 2x horizontal tolerance, categorizing far-off unreached waypoints exclusively as cross-track drift (`XTE Drift`).
+- **`src/qa/IrlVerifier.js`**:
+  - Un-hides `#diag-irl-modal` (`modal.classList.remove('hidden')`) before invoking `runVerificationAndRender()`, guaranteeing visibility on user click.
+  - Wrapped `FlightDiagnostics.applyIrlVerificationResult(...)` in a `try / catch` guard.
+- **`tools/companion/server.js`**:
+  - Enhanced candidate mission scoring in `/api/flight-telemetry` using bidirectional Chamfer distance (`(meanWpToPt + meanPtToWp) / 2`), gimbal pitch agreement penalties for planned vs flown photo pitches, and calendar day alignment.
+  - Added self-healing verification to existing `actual_flight_file` links so an old mismatched link is automatically reassigned when a candidate with superior geometric and pitch fit exists.
+  - Added `matchedMissionPattern` to the API response payload.
+
+## [1.218.0] - 2026-11-01
+
+Adds a dedicated Companion Server & Bonjour (`mDNS`) special card inside the Useful Links modal (`#links-modal`) for 1-click access and copying of Bonjour `.local`, localhost HTTP/HTTPS, active LAN, and served AI Studio / stream endpoints, while relocating the misplaced `v1.181.0` draggable modal feature highlight card to the Intro Guide Hub.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Companion Server & Bonjour (`mDNS`) Special Card in Useful Links (Closes #224)**:
+  - Added a dedicated glassmorphic special card (`#links-modal-server-card`) at the top of the **Useful Links** modal (`#links-modal`, opened via `#useful-links-btn` or `#more-menu-links-btn`).
+  - Displays a live status pill (`#links-server-status-badge`) indicating whether the Companion Bridge mDNS responder is active (`🟢 mDNS Active (aalaapi-sky.local)`) or showing default local endpoints.
+  - Provides clickable open links (`target="_blank"`) and 1-click **Copy** buttons (`.links-copy-url-btn`) for:
+    - **Bonjour HTTPS**: `https://aalaapi-sky.local:8766/` (`#links-bonjour-https`)
+    - **Bonjour HTTP**: `http://aalaapi-sky.local:8765/` (`#links-bonjour-http`)
+    - **Localhost HTTPS**: `https://127.0.0.1:8766/` (`#links-local-https`)
+    - **Localhost HTTP**: `http://127.0.0.1:8765/` (`#links-local-http`)
+  - Dynamically renders active Wi-Fi / LAN interface HTTP & HTTPS URLs (`#links-lan-dynamic-list`) when connected to the Companion Bridge for easy opening on tablets and phones.
+  - Includes a **Served Companion API, AI Studio & Stream Endpoints** sub-panel (`#links-served-endpoints-list`) with 1-click open/copy actions for `https://127.0.0.1:8766/api/status` (SSL Cert Trust), `https://localhost:8766/api/mcp/sse` (AI Studio MCP SSE), `https://localhost:8766/api/openapi.json` (OpenAPI 3.0 Spec), `http://aalaapi-sky.local:8765/api/discovery` (Bonjour Discovery JSON), `rtmp://aalaapi-sky.local:1935/live/stream` (RTMP Video Ingest), and `sbs://aalaapi-sky.local:30003` (ADS-B SBS Stream).
+
+#### Under the Hood & Technical Details
+- **`tools/companion/server.js`**:
+  - Enriched `mdns` metadata (`httpsPort`, `rtmpPort`, `adsbPort`), `https` status, and `lanAddresses` (`httpsUrl`) across `/api/status`, `/api/status/stream`, and `broadcastCompanionStatus()` following the SSE-First Architecture Policy.
+- **`src/bridge/ApiClient.js` & `src/ui/EventBindings.js`**:
+  - Implemented `updateServedLinksModalUI(statusData)` to reactively hydrate `#links-modal-server-card` from SSE status frames and on modal open, plus delegated `.links-copy-url-btn` clipboard copy handlers with toast feedback.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Intro Guide Hub & Useful Links Modal Organization (Closes #224)**:
+  - Relocated the misplaced `🪟 Universal Draggable Modal Dialogs (v1.181.0)` feature highlight card out of `#links-modal` and into its proper chronological position inside the **What's New & Feature Highlights** tab (`#intro-pane-features` in `#quickstart-modal`).
+
 ## [1.217.0] - 2026-11-01
 
 Highlights telemetry and gimbal variances in crimson red directly on the 3D visual trajectory path, 3D camera frustum cones, ground coverage footprints, Cockpit HUD, and interactive sidebar waypoint chips in Flight Diagnostics.

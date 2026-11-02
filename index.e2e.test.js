@@ -11514,4 +11514,85 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
   });
 
+  describe("Companion Server & Bonjour (mDNS) Special Card in Useful Links Modal (v1.218.0, Issue #224)", () => {
+    test("Clicking Links button opens #links-modal with #links-modal-server-card, Bonjour/Localhost links, and 1-click Copy buttons", async () => {
+      const cardData = await page.evaluate(async () => {
+        const linksBtn = document.getElementById('useful-links-btn');
+        if (linksBtn) linksBtn.click();
+
+        const modal = document.getElementById('links-modal');
+        const card = document.getElementById('links-modal-server-card');
+        const bonjourHttps = document.getElementById('links-bonjour-https')?.getAttribute('href') || '';
+        const bonjourHttp = document.getElementById('links-bonjour-http')?.getAttribute('href') || '';
+        const localHttps = document.getElementById('links-local-https')?.getAttribute('href') || '';
+        const localHttp = document.getElementById('links-local-http')?.getAttribute('href') || '';
+
+        const copyBtn = card ? card.querySelector('.links-copy-url-btn') : null;
+        if (copyBtn) copyBtn.click();
+        const copiedLabel = copyBtn ? copyBtn.textContent : '';
+
+        const closeBtn = document.getElementById('close-links-btn');
+        if (closeBtn) closeBtn.click();
+
+        return {
+          modalOpen: Boolean(modal && !modal.classList.contains('hidden')),
+          cardExists: Boolean(card),
+          bonjourHttps,
+          bonjourHttp,
+          localHttps,
+          localHttp,
+          copiedLabel
+        };
+      });
+
+      assert.strictEqual(cardData.cardExists, true, '#links-modal-server-card must exist');
+      assert.strictEqual(cardData.bonjourHttps, 'https://aalaapi-sky.local:8766/');
+      assert.strictEqual(cardData.bonjourHttp, 'http://aalaapi-sky.local:8765/');
+      assert.strictEqual(cardData.localHttps, 'https://127.0.0.1:8766/');
+      assert.strictEqual(cardData.localHttp, 'http://127.0.0.1:8765/');
+      assert.strictEqual(cardData.copiedLabel, '✓ Copied');
+    });
+
+    test('E2E: Issue #225 - Verify IRL Plan button opens #diag-irl-modal when FlightDiagnostics has active 3D scene without throwing TypeError', async () => {
+      // 1. Open Flight Diagnostics modal and wait for initialization
+      await page.evaluate(() => {
+        FlightDiagnostics.open();
+      });
+      await page.waitForTimeout(600);
+
+      // 2. Setup actual flown telemetry and active 3D scene state
+      await page.evaluate(() => {
+        FlightDiagnostics.isActualFlown = true;
+        FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-11-01_[17-10-42].txt';
+        FlightDiagnostics.telemetryData = {
+          points: [
+            { lat: 41.3215, lon: -88.9950, alt: 30, speed: 4, pitch: -45, yaw: 0, time: 0, isPhoto: true },
+            { lat: 41.3218, lon: -88.9950, alt: 30, speed: 4, pitch: -45, yaw: 0, time: 5, isPhoto: true }
+          ]
+        };
+        FlightDiagnostics.plannedWaypoints = [
+          { lat: 41.3215, lon: -88.9950, altitude: 30, speed: 4, gimbalPitch: -45 },
+          { lat: 41.3218, lon: -88.9950, altitude: 30, speed: 4, gimbalPitch: -45 }
+        ];
+        FlightDiagnostics.updateStatsUI();
+        document.getElementById('diag-btn-irl-verify').click();
+      });
+      await page.waitForTimeout(500);
+
+      // 3. Assert #diag-irl-modal is visible
+      const modalOpen = await page.evaluate(() => {
+        const modal = document.getElementById('diag-irl-modal');
+        return Boolean(modal && !modal.classList.contains('hidden'));
+      });
+      assert.strictEqual(modalOpen, true, '#diag-irl-modal must be open after clicking #diag-btn-irl-verify');
+
+      // 4. Close IRL modal and Flight Diagnostics
+      await page.evaluate(() => {
+        IrlVerifier.closeIrlVerificationModal();
+        FlightDiagnostics.close();
+      });
+      await page.waitForTimeout(200);
+    });
+  });
+
 });

@@ -3165,6 +3165,9 @@ function initUIEventListeners() {
       linksModal.classList.toggle('hidden');
       if (!linksModal.classList.contains('hidden')) {
         updateOpenSkyLink();
+        if (typeof updateServedLinksModalUI === 'function') {
+          updateServedLinksModalUI();
+        }
         if (window.innerWidth <= 768) {
           document.querySelector('.sidebar').classList.remove('open');
         }
@@ -3173,6 +3176,39 @@ function initUIEventListeners() {
     showLinksBtn.addEventListener('click', toggleLinksModal);
     if (closeLinksBtn) closeLinksBtn.addEventListener('click', toggleLinksModal);
     if (closeLinksFooterBtn) closeLinksFooterBtn.addEventListener('click', toggleLinksModal);
+    linksModal.addEventListener('click', async (e) => {
+      const copyBtn = (e.target && typeof e.target.closest === 'function')
+        ? e.target.closest('.links-copy-url-btn')
+        : null;
+      if (!copyBtn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const targetUrl = copyBtn.getAttribute('data-copy-url') || '';
+      if (!targetUrl) return;
+      const origText = copyBtn.getAttribute('data-orig-label') || copyBtn.textContent || 'Copy';
+      copyBtn.setAttribute('data-orig-label', origText);
+      copyBtn.textContent = '✓ Copied';
+      setTimeout(() => {
+        copyBtn.textContent = origText;
+      }, 1500);
+      if (typeof showToast === 'function') {
+        showToast(`📋 Copied link: ${targetUrl}`, 'info');
+      }
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          await navigator.clipboard.writeText(targetUrl);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = targetUrl;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        }
+      } catch (_) {}
+    });
   }
 
   // 3-Tier Intro Guide Hub & Spotlight Tour controls

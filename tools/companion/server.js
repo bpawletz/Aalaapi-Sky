@@ -641,7 +641,23 @@ function broadcastCompanionStatus(status) {
     activePilots: (typeof authDb !== 'undefined' && authDb.listPilots) ? authDb.listPilots().length : 0,
     googleSsoConfigured: Boolean(getGoogleClientId())
   };
-  const payloadStr = JSON.stringify({ ...st, tileCache: tileCacheStats, droneCount, mcp: mcpMetrics, videoDevices, rtmp: rtmpStatus, auth: authSummary, version: VERSION });
+  const mdnsInfo = mdnsService ? {
+    enabled: true,
+    hostname: mdnsService.fqdnHost,
+    port: mdnsService.port,
+    httpsPort: mdnsService.httpsPort,
+    rtmpPort: mdnsService.rtmpPort,
+    adsbPort: mdnsService.adsbPort,
+    services: mdnsService.getAdvertisedRecords().filter(r => r.type === 12).map(r => r.name)
+  } : { enabled: false };
+  const httpsInfo = {
+    enabled: Boolean(tlsCredentials),
+    port: HTTPS_PORT,
+    isSelfSigned: tlsCredentials?.isSelfSigned ?? false,
+    fingerprint: tlsCredentials?.fingerprint || ''
+  };
+  const lanAddresses = typeof getLanAddresses === 'function' ? getLanAddresses() : [];
+  const payloadStr = JSON.stringify({ ...st, tileCache: tileCacheStats, droneCount, mcp: mcpMetrics, videoDevices, rtmp: rtmpStatus, auth: authSummary, mdns: mdnsInfo, https: httpsInfo, lanAddresses, version: VERSION });
   for (const client of sseStatusClients) {
     try {
       client.res.write(`data: ${payloadStr}\n\n`);
@@ -3406,7 +3422,12 @@ function getLanAddresses() {
   for (const name of Object.keys(nets)) {
     for (const net of nets[name]) {
       if (net.family === 'IPv4' && !net.internal) {
-        lan.push({ name, address: net.address, url: `http://${net.address}:${PORT}` });
+        lan.push({
+          name,
+          address: net.address,
+          url: `http://${net.address}:${PORT}`,
+          httpsUrl: tlsCredentials ? `https://${net.address}:${HTTPS_PORT}` : null
+        });
       }
     }
   }
@@ -3720,7 +3741,17 @@ const handleHttpRequest = async (req, res) => {
             port: HTTPS_PORT,
             isSelfSigned: tlsCredentials?.isSelfSigned ?? false,
             fingerprint: tlsCredentials?.fingerprint || ''
-          }
+          },
+          mdns: mdnsService ? {
+            enabled: true,
+            hostname: mdnsService.fqdnHost,
+            port: mdnsService.port,
+            httpsPort: mdnsService.httpsPort,
+            rtmpPort: mdnsService.rtmpPort,
+            adsbPort: mdnsService.adsbPort,
+            services: mdnsService.getAdvertisedRecords().filter(r => r.type === 12).map(r => r.name)
+          } : { enabled: false },
+          lanAddresses: getLanAddresses()
         };
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(fallbackPayload));
@@ -3756,8 +3787,12 @@ const handleHttpRequest = async (req, res) => {
           enabled: true,
           hostname: mdnsService.fqdnHost,
           port: mdnsService.port,
+          httpsPort: mdnsService.httpsPort,
+          rtmpPort: mdnsService.rtmpPort,
+          adsbPort: mdnsService.adsbPort,
           services: mdnsService.getAdvertisedRecords().filter(r => r.type === 12).map(r => r.name)
         } : { enabled: false },
+        lanAddresses: getLanAddresses(),
         version: VERSION
       };
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -3798,8 +3833,23 @@ const handleHttpRequest = async (req, res) => {
         activePilots: (typeof authDb !== 'undefined' && authDb.listPilots) ? authDb.listPilots().length : 0,
         googleSsoConfigured: Boolean(getGoogleClientId())
       };
-      const mdnsInfo = mdnsService ? { enabled: true, hostname: mdnsService.fqdnHost } : { enabled: false };
-      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, videoDevices, tileCache: tileCacheStats, rtmp: rtmpStatus, auth: authSummary, mdns: mdnsInfo, version: VERSION })}\n\n`);
+      const mdnsInfo = mdnsService ? {
+        enabled: true,
+        hostname: mdnsService.fqdnHost,
+        port: mdnsService.port,
+        httpsPort: mdnsService.httpsPort,
+        rtmpPort: mdnsService.rtmpPort,
+        adsbPort: mdnsService.adsbPort,
+        services: mdnsService.getAdvertisedRecords().filter(r => r.type === 12).map(r => r.name)
+      } : { enabled: false };
+      const httpsInfo = {
+        enabled: Boolean(tlsCredentials),
+        port: HTTPS_PORT,
+        isSelfSigned: tlsCredentials?.isSelfSigned ?? false,
+        fingerprint: tlsCredentials?.fingerprint || ''
+      };
+      const lanAddresses = getLanAddresses();
+      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, videoDevices, tileCache: tileCacheStats, rtmp: rtmpStatus, auth: authSummary, mdns: mdnsInfo, https: httpsInfo, lanAddresses, version: VERSION })}\n\n`);
       return;
     }
 
@@ -5013,19 +5063,32 @@ const handleHttpRequest = async (req, res) => {
                 if (candidates && candidates.length > 0) {
                   let matchedRow = null;
                   let bestScore = Infinity;
+                  const explicitRow = candidates.find(c => c.actual_flight_file === flightId);
 
-                  // First check if an existing row has actual_flight_file = flightId AND matches requestedPattern (if requested)
-                  const explicitlyLinked = candidates.find(c => c.actual_flight_file === flightId && (!requestedPattern || c.flight_pattern === requestedPattern));
-                  if (explicitlyLinked) {
-                    matchedRow = explicitlyLinked;
-                  } else if (telemetry && Array.isArray(telemetry.points) && telemetry.points.length > 0) {
+                  if (telemetry && Array.isArray(telemetry.points) && telemetry.points.length > 0) {
                     // Multi-factor intelligent matching:
-                    // 1. Geometric path fit: average distance from candidate waypoints to flown telemetry points
-                    // 2. Pattern match bonus: prioritizes the selected flight pattern
-                    // 3. Temporal proximity: favors missions planned closest prior to takeoff
+                    // 1. Bidirectional Chamfer distance: average distance from candidate waypoints to flown telemetry points + photo points to plan waypoints
+                    // 2. Gimbal pitch agreement: compares planned pitch vs actual photo gimbal pitch
+                    // 3. Calendar day / temporal proximity: favors plans created on the same day prior to takeoff
+                    // 4. Pattern preference tie-breaker: weak bonus for active pattern without overriding geometric truth
                     const pts = telemetry.points;
                     const step = Math.max(1, Math.floor(pts.length / 50));
-                    const flightTimeMs = pts[0]?.timestamp ? new Date(pts[0].timestamp).getTime() : null;
+                    const photoPts = pts.filter(p => p.isPhoto);
+                    const evalPts = photoPts.length >= 5 ? photoPts : pts.filter((_, idx) => idx % step === 0);
+
+                    // Compute average flown photo gimbal pitch if available
+                    let avgFlownPitch = null;
+                    const pitchSamples = (photoPts.length > 0 ? photoPts : pts).map(p => Number(p.pitch)).filter(v => !isNaN(v));
+                    if (pitchSamples.length > 0) {
+                      avgFlownPitch = pitchSamples.reduce((a, b) => a + b, 0) / pitchSamples.length;
+                    }
+
+                    // Extract flight date string YYYY-MM-DD
+                    let flightDateYmd = null;
+                    if (typeof flightId === 'string') {
+                      const m = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})/);
+                      if (m) flightDateYmd = m[1];
+                    }
 
                     for (const cand of candidates) {
                       let planWps = [];
@@ -5034,18 +5097,34 @@ const handleHttpRequest = async (req, res) => {
                         planWps = p.waypoints || [];
                       } catch (_) {}
 
-                      let meanWpDist = Infinity;
+                      let meanWpToPt = Infinity;
+                      let meanPtToWp = Infinity;
+
                       if (planWps.length > 0) {
-                        let totalDist = 0;
+                        // 1. Plan WPs to Telemetry Points distance
+                        let totalWpDist = 0;
                         for (const wp of planWps) {
                           let minDist = Infinity;
                           for (let i = 0; i < pts.length; i += step) {
                             const d = haversineDistance(wp.lat, wp.lon, pts[i].lat, pts[i].lon);
                             if (d < minDist) minDist = d;
                           }
-                          totalDist += minDist;
+                          totalWpDist += minDist;
                         }
-                        meanWpDist = totalDist / planWps.length;
+                        const meanWpDist = totalWpDist / planWps.length;
+                        meanWpToPt = meanWpDist;
+
+                        // 2. Telemetry / Photo Points to Plan WPs distance (Bidirectional Chamfer)
+                        let totalPtDist = 0;
+                        for (const ep of evalPts) {
+                          let minDist = Infinity;
+                          for (const wp of planWps) {
+                            const d = haversineDistance(ep.lat, ep.lon, wp.lat, wp.lon);
+                            if (d < minDist) minDist = d;
+                          }
+                          totalPtDist += minDist;
+                        }
+                        meanPtToWp = totalPtDist / evalPts.length;
                       } else if (telemetry.homePoint && typeof telemetry.homePoint.lat === 'number') {
                         let cLat = cand.center_lat;
                         let cLon = cand.center_lon;
@@ -5057,37 +5136,51 @@ const handleHttpRequest = async (req, res) => {
                           } catch (_) {}
                         }
                         if (typeof cLat === 'number' && typeof cLon === 'number') {
-                          meanWpDist = haversineDistance(cLat, cLon, telemetry.homePoint.lat, telemetry.homePoint.lon);
+                          meanWpToPt = haversineDistance(cLat, cLon, telemetry.homePoint.lat, telemetry.homePoint.lon);
+                          meanPtToWp = meanWpToPt;
                         }
                       }
 
-                      let score = meanWpDist;
-                      // Strong bonus if candidate pattern matches the user's requested / active pattern
+                      const geomDist = (isFinite(meanWpToPt) && isFinite(meanPtToWp)) ? (meanWpToPt + meanPtToWp) / 2 : meanWpToPt;
+                      let score = isFinite(geomDist) ? geomDist : 999.0;
+
+                      // 3. Gimbal pitch agreement penalty
+                      if (avgFlownPitch !== null && planWps.length > 0) {
+                        const planPitches = planWps.map(w => Number(w.gimbalPitch !== undefined ? w.gimbalPitch : (w.pitch !== undefined ? w.pitch : NaN))).filter(v => !isNaN(v));
+                        if (planPitches.length > 0) {
+                          const avgPlanPitch = planPitches.reduce((a, b) => a + b, 0) / planPitches.length;
+                          const pitchDiff = Math.abs(avgPlanPitch - avgFlownPitch);
+                          if (pitchDiff > 5.0) {
+                            score += Math.min(pitchDiff * 0.8, 15.0);
+                          }
+                        }
+                      }
+
+                      // 4. Same calendar day bonus
+                      if (flightDateYmd && cand.created_at && cand.created_at.startsWith(flightDateYmd)) {
+                        score -= 2.0;
+                      }
+
+                      // 5. Pattern preference tie-breaker (weak bonus only, max -1.5m)
                       if (requestedPattern && cand.flight_pattern === requestedPattern) {
-                        score -= 20.0;
+                        score -= 1.5;
                       }
 
-                      // Temporal proximity bonus
-                      if (flightTimeMs && cand.created_at) {
-                        const candTimeMs = new Date(cand.created_at).getTime();
-                        const diffHours = (flightTimeMs - candTimeMs) / (1000 * 3600);
-                        // Favor plans created 0 to 4 hours before the flight
-                        if (diffHours >= 0 && diffHours <= 4) {
-                          score -= 5.0;
-                        } else if (diffHours < 0) {
-                          // Created after flight started
-                          score += 15.0;
-                        } else {
-                          // Created many hours earlier
-                          score += Math.min(diffHours * 0.5, 20.0);
-                        }
-                      }
-
+                      cand._matchScore = score;
                       if (score < bestScore) {
                         bestScore = score;
                         matchedRow = cand;
                       }
                     }
+
+                    // Keep explicit link only if it is of good quality and not substantially worse than best candidate
+                    if (explicitRow && explicitRow._matchScore !== undefined) {
+                      if (explicitRow._matchScore <= 2.5 || (explicitRow._matchScore - bestScore) < 2.0) {
+                        matchedRow = explicitRow;
+                      }
+                    }
+                  } else if (explicitRow) {
+                    matchedRow = explicitRow;
                   } else if (telemetry && telemetry.homePoint && typeof telemetry.homePoint.lat === 'number') {
                     for (const cand of candidates) {
                       let cLat = cand.center_lat;
@@ -5102,7 +5195,7 @@ const handleHttpRequest = async (req, res) => {
                       if (typeof cLat === 'number' && typeof cLon === 'number') {
                         const dist = haversineDistance(cLat, cLon, telemetry.homePoint.lat, telemetry.homePoint.lon);
                         let score = dist;
-                        if (requestedPattern && cand.flight_pattern === requestedPattern) score -= 20.0;
+                        if (requestedPattern && cand.flight_pattern === requestedPattern) score -= 1.5;
                         if (score < bestScore) {
                           bestScore = score;
                           matchedRow = cand;
@@ -5186,6 +5279,7 @@ const handleHttpRequest = async (req, res) => {
             needsDjiApiKey: !isDecrypted && !getDjiApiKey() && Boolean(candidateLogPath),
             djiApiKeyConfigured: Boolean(getDjiApiKey()),
             djiDecryptError,
+            matchedMissionPattern: matchedMissionPayload?.flight_pattern || matchedRow?.flight_pattern || null,
             mission: matchedMissionPayload
           }));
         } catch (e) {

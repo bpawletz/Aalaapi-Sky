@@ -3730,15 +3730,65 @@ const scenarios = [
       });
       await page.waitForTimeout(1500);
 
-      // 7. Clear outlines
+      // 7. Clear outlines (end of aistudio_https_mcp)
       await page.evaluate(() => {
         const openApiBtn = document.getElementById('mcp-copy-openapi-btn');
         if (openApiBtn) openApiBtn.style.outline = '';
       });
       await page.waitForTimeout(800);
     }
+  },
+  {
+    id: 'bonjour_served_links',
+    name: 'Companion Server & Bonjour (mDNS) Special Card in Useful Links Modal',
+    issueRef: 'Issue #224',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+      await page.evaluate(() => {
+        const btn = document.getElementById('useful-links-btn');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(1000);
+      await page.evaluate(() => {
+        if (typeof window.updateServedLinksModalUI === 'function') {
+          window.updateServedLinksModalUI({
+            version: '1.218.0',
+            mdns: {
+              enabled: true,
+              hostname: 'aalaapi-sky.local',
+              port: 8765,
+              httpsPort: 8766,
+              rtmpPort: 1935,
+              adsbPort: 30003
+            },
+            https: {
+              enabled: true,
+              port: 8766
+            },
+            lanAddresses: [
+              {
+                name: 'Wi-Fi',
+                address: '10.0.0.42',
+                url: 'http://10.0.0.42:8765',
+                httpsUrl: 'https://10.0.0.42:8766'
+              }
+            ]
+          });
+        }
+      });
+      await page.waitForTimeout(1200);
+      await page.evaluate(() => {
+        const bonjourRow = document.getElementById('links-bonjour-https-row');
+        if (bonjourRow) {
+          const copyBtn = bonjourRow.querySelector('.links-copy-url-btn');
+          if (copyBtn) copyBtn.click();
+        }
+      });
+      await page.waitForTimeout(1000);
+      await page.screenshot({ path: 'recordings/bonjour_served_links_preview.png' });
+    }
   }
-
 ];
 
 /**

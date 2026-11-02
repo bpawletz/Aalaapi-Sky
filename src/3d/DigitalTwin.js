@@ -1820,9 +1820,13 @@ const FlightDiagnostics = {
     }
 
     if (typeof IrlVerifier !== 'undefined' && typeof IrlVerifier.openIrlVerificationModal === 'function') {
+      const defaultPattern = (this.currentLoadedMission && this.currentLoadedMission.flight_pattern)
+        || this.currentMatchedMissionPattern
+        || (planCandidates[0] && planCandidates[0].pattern)
+        || activePattern;
       IrlVerifier.openIrlVerificationModal(this.selectedFlightId, planned, this.telemetryData, {
         planCandidates,
-        patternId: activePattern
+        patternId: defaultPattern
       });
     }
   },
@@ -2082,13 +2086,14 @@ const FlightDiagnostics = {
         })) : [];
 
         const currentPattern = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || null;
-        let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}${currentPattern ? `&pattern=${encodeURIComponent(currentPattern)}` : ''}`, {
+        const queryPatternParam = (!flightId || !flightId.startsWith('FlightRecord_')) && currentPattern ? `&pattern=${encodeURIComponent(currentPattern)}` : '';
+        let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}${queryPatternParam}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(45000) : undefined,
           body: JSON.stringify({
             flightId,
-            flightPattern: currentPattern,
+            flightPattern: (!flightId || !flightId.startsWith('FlightRecord_')) ? currentPattern : null,
             waypoints: cleanWps,
             options: { altitude, speed, gimbalPitch, flightId, flightPattern: currentPattern }
           })
@@ -2127,6 +2132,7 @@ const FlightDiagnostics = {
           if (data.mission) {
             this.currentLoadedMission = data.mission;
           }
+          this.currentMatchedMissionPattern = data.matchedMissionPattern || (data.mission ? data.mission.flight_pattern : null);
           const plannedWps = data.telemetry.plannedWaypoints || data.plannedWaypoints || (data.mission?.plan?.waypoints) || null;
           if (!this.isDecrypted && telem && telem.points && plannedWps && plannedWps.length > 1) {
             const photoAlts = new Set(telem.points.filter(p => p.isPhoto).map(p => p.alt));
@@ -2446,17 +2452,19 @@ const FlightDiagnostics = {
 
       wpApps.forEach((wpApp, idx) => {
         const reasons = [];
-        if (wpApp.dPitch !== null && wpApp.dPitch > pitchTol) {
-          reasons.push(`Pitch ${wpApp.actualPitch}° vs ${wpApp.plannedPitch}° Plan (Δ${wpApp.dPitch}°)`);
-        }
-        if (!wpApp.skipPhoto && !wpApp.isTurnaround && wpApp.dYaw !== null && wpApp.dYaw > yawTol) {
-          reasons.push(`Yaw ${wpApp.actualYaw}° vs ${wpApp.plannedYaw}° Plan (Δ${wpApp.dYaw}°)`);
+        if (wpApp.visited || wpApp.dH <= horizontalTol * 2) {
+          if (wpApp.dPitch !== null && wpApp.dPitch > pitchTol) {
+            reasons.push(`Pitch ${wpApp.actualPitch}° vs ${wpApp.plannedPitch}° Plan (Δ${wpApp.dPitch}°)`);
+          }
+          if (!wpApp.skipPhoto && !wpApp.isTurnaround && wpApp.dYaw !== null && wpApp.dYaw > yawTol) {
+            reasons.push(`Yaw ${wpApp.actualYaw}° vs ${wpApp.plannedYaw}° Plan (Δ${wpApp.dYaw}°)`);
+          }
+          if (wpApp.dZ > altTol) {
+            reasons.push(`Alt ${wpApp.actualAlt}m vs ${wpApp.plannedAlt}m Plan (Δ${wpApp.dZ}m)`);
+          }
         }
         if (wpApp.dH > horizontalTol) {
           reasons.push(`XTE Drift ${wpApp.dH}m (Tol ≤${horizontalTol}m)`);
-        }
-        if (wpApp.dZ > altTol) {
-          reasons.push(`Alt ${wpApp.actualAlt}m vs ${wpApp.plannedAlt}m Plan (Δ${wpApp.dZ}m)`);
         }
 
         wpApp.hasVariance = reasons.length > 0;
@@ -2554,8 +2562,11 @@ const FlightDiagnostics = {
     this.updateStatsUI(true);
     if (this.threeScene) {
       this.buildTrajectoryMeshes();
-      this.clearGroundFootprints();
-      this.syncFootprintsUpTo(this.currentPointIndex || 0);
+      if (typeof this.resetGroundCanvas === 'function') this.resetGroundCanvas();
+      if (typeof this.redrawGroundFootprints === 'function' && this.diagShowFootprints) {
+        this.redrawGroundFootprints(this.currentPointIndex || 0);
+      }
+
       this.seekTo(this.currentPointIndex || 0, false, false);
       if (this.threeRenderer && this.threeCamera) {
         this.threeRenderer.render(this.threeScene, this.threeCamera);
