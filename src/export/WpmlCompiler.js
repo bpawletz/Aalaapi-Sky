@@ -36,11 +36,11 @@ function buildTemplateKml(finishAction, speed) {
 }
 
 // Generate the WPML waylines.wpml content
-function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode) {
+function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode, optionsArg = {}) {
   if (!waypoints || !Array.isArray(waypoints)) waypoints = [];
   const timestamp = Date.now();
 
-  let opts = {};
+  let opts = (optionsArg && typeof optionsArg === 'object') ? optionsArg : {};
   if (typeof altitude === 'object' && altitude !== null) {
     opts = altitude;
     altitude = opts.altitude;
@@ -228,9 +228,11 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const isHyperlapse = (gridType === 'hyperlapse') || (wp.isHyperlapse) || (wp.gridType === 'hyperlapse') || (wp.layerPattern === 'hyperlapse');
     
     // Resolve layer reference if available (Three-Tier Cascading Hierarchy)
-    const layersList = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
-      ? global.flightLayers
-      : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null);
+    const layersList = (opts && Array.isArray(opts.flightLayers) && opts.flightLayers.length > 0)
+      ? opts.flightLayers
+      : ((typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+        ? global.flightLayers
+        : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null));
     let wpLayer = (wp.layerId && layersList) ? layersList.find(l => l.id === wp.layerId) : null;
     if (!wpLayer && layersList && typeof wp.layerIndex === 'number' && layersList[wp.layerIndex]) {
       wpLayer = layersList[wp.layerIndex];
@@ -276,7 +278,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
     // Determine if repositioning (gimbal pitch or heading yaw) is required
     const reposInfo = checkNeedsReposition(idx, sanitizedWps);
-    const isRoadFollowing = gridType === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following') || wp.layerPattern === 'road-following';
+    const isRoadFollowing = gridType === 'road-following' || wp.gridType === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following') || wp.layerPattern === 'road-following';
 
     // Compute effective pitch FIRST so gimbal slew delta (pitchDiff) is known for auto-settling timing
     let effectivePitch;

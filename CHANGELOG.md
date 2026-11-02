@@ -1,3 +1,24 @@
+## [1.217.0] - 2026-11-01
+
+Highlights telemetry and gimbal variances in crimson red directly on the 3D visual trajectory path, 3D camera frustum cones, ground coverage footprints, Cockpit HUD, and interactive sidebar waypoint chips in Flight Diagnostics.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **3D Visual Variance Highlighting in Flight Diagnostics (Closes #223)**:
+  - Automatically evaluates flown telemetry logs against planned mission waypoints (`IrlVerifier.verifyFlightPlanAgainstLog`) and highlights any out-of-tolerance waypoints or photo triggers (Gimbal Pitch error > 6.0°, Yaw error > 15.0°, Horizontal XTE drift > 4.5 m, or Altitude error > 2.0 m) in **crimson red (`#ef4444`)**.
+  - **Crimson 3D Camera Cones & Planned-Pitch Ghost Wireframes**: Out-of-tolerance photo spheres and 3D camera frustum pyramids render in crimson red (`0xef4444`) with a cyan ghost wireframe cone (`0x06b6d4`) showing the intended planned pitch angle alongside the actual flown camera angle.
+  - **Per-Vertex Colored 3D Flown Path & Ground Footprints**: Upgrades the 3D flown trajectory line (`actualLineMesh`) with per-vertex colors so variance segments glow crimson red while nominal segments remain amber, and paints ground footprints (`drawFootprintOnGround`) in crimson red where coverage was compromised.
+  - **Cockpit Telemetry HUD & Interactive Click-to-Seek Variance Chips**: Highlights offending HUD readouts (`#diag-hud-pitch`, `#diag-hud-alt`) in red with planned comparison values, displays a live `#diag-hud-variance-banner` callout during playback, adds a `⚠️ Variance / Out of Tol.` entry to `#diag-path-legend`, and populates the Trajectory Accuracy card (`#diag-stat-trigger-status`) with 1-click waypoint variance chips (`🎯 WP N`) that jump the 3D playhead directly to the offending camera cone.
+
+#### Under the Hood & Technical Details
+- **`src/3d/DigitalTwin.js`**:
+  - Added `evaluateTelemetryVariances(customResult, customPlannedWps)` and `applyIrlVerificationResult(irlResult, plannedWaypoints)` on `FlightDiagnostics`.
+  - Upgraded `buildTrajectoryMeshes()` with `THREE.Float32BufferAttribute` vertex colors on `actualLineMesh`, red/green conditional materials on `photoMarkers`, and ghost planned-pitch wireframe cones.
+  - Updated `drawFootprintOnGround()`, `seekTo()`, and `updateStatsUI()` to reflect per-sample and mission-wide variance state.
+- **`src/qa/IrlVerifier.js`**:
+  - Connected `runVerificationAndRender()` to `FlightDiagnostics.applyIrlVerificationResult()` so switching the reference plan in `#diag-irl-plan-select` live-updates the 3D visual path and camera cones.
+
 ## [1.216.0] - 2026-11-01
 
 Universal kinematics auto-settling for gimbal slew & turn repositioning, transparent waypoint hover timing display, and visual Node-RED flight action flow visualizer.

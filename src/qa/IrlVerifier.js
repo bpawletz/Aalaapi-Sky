@@ -469,6 +469,9 @@ const IrlVerifier = {
       { patternId: selectedPattern, captureMode, pathMode }
     );
     this.currentResult = result;
+    if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.applyIrlVerificationResult === 'function' && FlightDiagnostics.telemetryData === this.currentTelemetryData) {
+      FlightDiagnostics.applyIrlVerificationResult(result, this.currentPlannedWaypoints);
+    }
 
     // Update Outcome Badge
     const outcomeBadge = document.getElementById('diag-irl-outcome-badge');
