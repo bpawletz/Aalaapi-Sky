@@ -706,6 +706,7 @@ function getAppVersion() {
 
   if (typeof require === 'function') {
     try {
+      const fs = require('fs');
       const path = require('path');
       const pkgPath = path.resolve(__dirname, '../../package.json');
       if (fs.existsSync(pkgPath)) {
@@ -715,7 +716,7 @@ function getAppVersion() {
     } catch (_) {}
   }
 
-  return '1.216.0';
+  return '1.217.0';
 
 }
 

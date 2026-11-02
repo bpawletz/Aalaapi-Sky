@@ -8353,7 +8353,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.216.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.217.0</span></h1>
         </div>
       </div>
 
@@ -12998,6 +12998,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f87171; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🚨 3D Visual Variance Highlighting &amp; Node-RED Action Flow Visualizer (v1.217.0) (Closes #222, #223)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Spot gimbal pitch, yaw, altitude, and cross-track drift variances at a glance in the <strong>3D Telemetry Replay</strong>! Out-of-tolerance photo spheres, 3D camera frustum cones, vertex-colored trajectory segments, and ground footprints automatically highlight in <strong>crimson red (<code>#ef4444</code>)</strong> alongside cyan ghost cones showing the planned camera angle, live Cockpit HUD alerts, and 1-click waypoint seek chips. Plus, inspect every waypoint's sequential execution pipeline in the new <strong>Node-RED Flight Action Flow Visualizer</strong> (<code>#action-flow-modal</code>) with universal gimbal slew auto-settling.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ✨ Google AI Studio Integration &amp; Native HTTPS Transport (v1.213.0) (Closes #209)
@@ -15390,7 +15398,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.216.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.217.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15551,6 +15559,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.217.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>3D Visual Variance Highlighting in Flight Diagnostics (Closes #223):</strong> Automatically evaluates flown telemetry against planned waypoints and highlights out-of-tolerance 3D camera frustum cones, photo spheres, vertex-colored trajectory path segments, and ground coverage footprints in crimson red (<code>#ef4444</code>) with cyan planned-pitch ghost cones.</li>
+                <li><strong>Cockpit HUD Variance Alerts &amp; Interactive Waypoint Chips:</strong> Highlights offending HUD telemetry readouts in red with planned reference values, displays a live variance banner during timeline scrubbing, and populates the Trajectory Accuracy card with 1-click waypoint chips that seek the 3D playhead directly to each variance cone.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.216.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -20087,6 +20102,9 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                   <div id="diag-hud-dba" style="font-weight: 700; color: #10b981; font-size: 0.95rem;">-- dBA</div>
                 </div>
               </div>
+              <div id="diag-hud-variance-banner" style="display: none; margin-top: 4px; padding: 3px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.22); border: 1px solid rgba(239, 68, 68, 0.5); color: #fca5a5; font-size: 0.68rem; font-weight: 700; line-height: 1.3;">
+                ⚠️ Variance Detected
+              </div>
             </div>
 
             <!-- Exclusion Zone Warning Banner in 3D Replay -->
@@ -20220,6 +20238,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <div id="diag-legend-photo" style="display: flex; align-items: center; gap: 5px;">
                   <span style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
                   <span id="diag-legend-photo-text" style="color: var(--text-muted);">Photo Trigger</span>
+                </div>
+                <div id="diag-legend-variance" style="display: none; align-items: center; gap: 5px;">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.8); display: inline-block;"></span>
+                  <span id="diag-legend-variance-text" style="color: #f87171; font-weight: 700;">⚠️ Variance / Out of Tol.</span>
                 </div>
                 <div id="diag-legend-boundary" style="display: none; align-items: center; gap: 5px;">
                   <span style="width: 10px; height: 3px; border-top: 2px dashed #06b6d4; display: inline-block;"></span>
@@ -52657,11 +52679,11 @@ function buildTemplateKml(finishAction, speed) {
 }
 
 // Generate the WPML waylines.wpml content
-function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode) {
+function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode, optionsArg = {}) {
   if (!waypoints || !Array.isArray(waypoints)) waypoints = [];
   const timestamp = Date.now();
 
-  let opts = {};
+  let opts = (optionsArg && typeof optionsArg === 'object') ? optionsArg : {};
   if (typeof altitude === 'object' && altitude !== null) {
     opts = altitude;
     altitude = opts.altitude;
@@ -52849,9 +52871,11 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const isHyperlapse = (gridType === 'hyperlapse') || (wp.isHyperlapse) || (wp.gridType === 'hyperlapse') || (wp.layerPattern === 'hyperlapse');
     
     // Resolve layer reference if available (Three-Tier Cascading Hierarchy)
-    const layersList = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
-      ? global.flightLayers
-      : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null);
+    const layersList = (opts && Array.isArray(opts.flightLayers) && opts.flightLayers.length > 0)
+      ? opts.flightLayers
+      : ((typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+        ? global.flightLayers
+        : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null));
     let wpLayer = (wp.layerId && layersList) ? layersList.find(l => l.id === wp.layerId) : null;
     if (!wpLayer && layersList && typeof wp.layerIndex === 'number' && layersList[wp.layerIndex]) {
       wpLayer = layersList[wp.layerIndex];
@@ -52897,7 +52921,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
     // Determine if repositioning (gimbal pitch or heading yaw) is required
     const reposInfo = checkNeedsReposition(idx, sanitizedWps);
-    const isRoadFollowing = gridType === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following') || wp.layerPattern === 'road-following';
+    const isRoadFollowing = gridType === 'road-following' || wp.gridType === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following') || wp.layerPattern === 'road-following';
 
     // Compute effective pitch FIRST so gimbal slew delta (pitchDiff) is known for auto-settling timing
     let effectivePitch;
@@ -56569,6 +56593,7 @@ function getAppVersion() {
 
   if (typeof require === 'function') {
     try {
+      const fs = require('fs');
       const path = require('path');
       const pkgPath = path.resolve(__dirname, '../../package.json');
       if (fs.existsSync(pkgPath)) {
@@ -56578,7 +56603,7 @@ function getAppVersion() {
     } catch (_) {}
   }
 
-  return '1.216.0';
+  return '1.217.0';
 
 }
 
@@ -67842,6 +67867,9 @@ const IrlVerifier = {
       { patternId: selectedPattern, captureMode, pathMode }
     );
     this.currentResult = result;
+    if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.applyIrlVerificationResult === 'function' && FlightDiagnostics.telemetryData === this.currentTelemetryData) {
+      FlightDiagnostics.applyIrlVerificationResult(result, this.currentPlannedWaypoints);
+    }
 
     // Update Outcome Badge
     const outcomeBadge = document.getElementById('diag-irl-outcome-badge');
@@ -68806,6 +68834,7 @@ const FlightDiagnostics = {
   isActualFlown: false,
   telemetryData: null,
   comparisonData: null,
+  varianceSummary: null,
   animFrameId: null,
   lastFrameTime: null,
   threeScene: null,
@@ -70747,14 +70776,208 @@ const FlightDiagnostics = {
     }
   },
 
-  updateStatsUI() {
+  evaluateTelemetryVariances(customResult = null, customPlannedWps = null) {
+    this.varianceSummary = null;
+    if (!this.telemetryData || !Array.isArray(this.telemetryData.points) || this.telemetryData.points.length === 0) {
+      return null;
+    }
+    const pts = this.telemetryData.points;
+    const isActual = (this.isActualFlown === true) ||
+      (this.isActualFlown !== false && this.selectedFlightId !== 'active-mission' && !this.telemetryData?.isSimulation) ||
+      (!!this.comparisonData?.maxDeviation && this.selectedFlightId !== 'active-mission' && !this.telemetryData?.isSimulation);
+
+    if (!isActual) {
+      pts.forEach(p => {
+        if (p) {
+          p.hasVariance = false;
+          p.varianceReasons = [];
+          p.varianceWpIndex = null;
+        }
+      });
+      return null;
+    }
+
+    let plannedWps = customPlannedWps;
+    if (!Array.isArray(plannedWps) || plannedWps.length < 2) {
+      if (Array.isArray(this.plannedWaypoints) && this.plannedWaypoints.length >= 2) {
+        plannedWps = this.plannedWaypoints;
+      } else if (this.currentLoadedMission && this.currentLoadedMission.plan && Array.isArray(this.currentLoadedMission.plan.waypoints) && this.currentLoadedMission.plan.waypoints.length >= 2) {
+        plannedWps = this.currentLoadedMission.plan.waypoints;
+      } else if (typeof IrlVerifier !== 'undefined' && IrlVerifier.currentFlightId === this.selectedFlightId && Array.isArray(IrlVerifier.currentPlannedWaypoints) && IrlVerifier.currentPlannedWaypoints.length >= 2) {
+        plannedWps = IrlVerifier.currentPlannedWaypoints;
+      } else if (typeof getActiveMissionWaypoints === 'function') {
+        const activeWps = getActiveMissionWaypoints();
+        if (Array.isArray(activeWps) && activeWps.length >= 2 && pts.length >= 5) {
+          const p0 = pts[0];
+          const w0 = activeWps[0];
+          const wLon = w0.lon !== undefined ? w0.lon : w0.lng;
+          const dLatM = Math.abs(parseFloat(p0.lat) - parseFloat(w0.lat)) * 111320;
+          const dLonM = Math.abs(parseFloat(p0.lon) - parseFloat(wLon)) * 111320 * Math.cos(parseFloat(p0.lat) * Math.PI / 180);
+          if (Math.hypot(dLatM, dLonM) <= 500) {
+            plannedWps = activeWps;
+          }
+        }
+      }
+    }
+
+    const pathMode = (typeof document !== 'undefined' && document.getElementById('path-mode')?.value) || 'straight';
+    const captureMode = (typeof document !== 'undefined' && document.getElementById('capture-mode')?.value) || 'continuous';
+    const horizontalTol = pathMode === 'curved' ? 8.0 : 4.5;
+    const altTol = 2.0;
+    const pitchTol = 6.0;
+    const yawTol = 15.0;
+
+    let irlResult = customResult;
+    if (!irlResult && Array.isArray(plannedWps) && plannedWps.length >= 2 && pts.length >= 5 && typeof IrlVerifier !== 'undefined' && typeof IrlVerifier.verifyFlightPlanAgainstLog === 'function') {
+      irlResult = IrlVerifier.verifyFlightPlanAgainstLog(plannedWps, this.telemetryData, { pathMode, captureMode });
+    }
+
+    if (irlResult && Array.isArray(irlResult.wpApproaches) && irlResult.wpApproaches.length > 0) {
+      pts.forEach(p => {
+        if (p) {
+          p.hasVariance = false;
+          p.varianceReasons = [];
+          p.varianceWpIndex = null;
+          p.plannedPitch = null;
+          p.plannedYaw = null;
+          p.plannedAlt = null;
+        }
+      });
+
+      const varianceWps = [];
+      const wpApps = irlResult.wpApproaches;
+
+      wpApps.forEach((wpApp, idx) => {
+        const reasons = [];
+        if (wpApp.dPitch !== null && wpApp.dPitch > pitchTol) {
+          reasons.push(`Pitch ${wpApp.actualPitch}° vs ${wpApp.plannedPitch}° Plan (Δ${wpApp.dPitch}°)`);
+        }
+        if (!wpApp.skipPhoto && !wpApp.isTurnaround && wpApp.dYaw !== null && wpApp.dYaw > yawTol) {
+          reasons.push(`Yaw ${wpApp.actualYaw}° vs ${wpApp.plannedYaw}° Plan (Δ${wpApp.dYaw}°)`);
+        }
+        if (wpApp.dH > horizontalTol) {
+          reasons.push(`XTE Drift ${wpApp.dH}m (Tol ≤${horizontalTol}m)`);
+        }
+        if (wpApp.dZ > altTol) {
+          reasons.push(`Alt ${wpApp.actualAlt}m vs ${wpApp.plannedAlt}m Plan (Δ${wpApp.dZ}m)`);
+        }
+
+        wpApp.hasVariance = reasons.length > 0;
+        wpApp.varianceReasons = reasons;
+
+        const prevIdx = idx > 0 && wpApps[idx - 1].bestPtIndex >= 0
+          ? Math.floor((wpApps[idx - 1].bestPtIndex + wpApp.bestPtIndex) / 2)
+          : Math.max(0, wpApp.bestPtIndex - 8);
+        const nextIdx = idx < wpApps.length - 1 && wpApps[idx + 1].bestPtIndex >= 0
+          ? Math.ceil((wpApp.bestPtIndex + wpApps[idx + 1].bestPtIndex) / 2)
+          : Math.min(pts.length - 1, wpApp.bestPtIndex + 8);
+
+        if (wpApp.bestPtIndex >= 0) {
+          for (let k = Math.max(0, prevIdx); k <= Math.min(pts.length - 1, nextIdx); k++) {
+            const pt = pts[k];
+            if (!pt) continue;
+            pt.plannedPitch = wpApp.plannedPitch;
+            pt.plannedYaw = wpApp.plannedYaw;
+            pt.plannedAlt = wpApp.plannedAlt;
+            pt.varianceWpIndex = wpApp.index;
+            if (wpApp.hasVariance) {
+              pt.hasVariance = true;
+              pt.varianceReasons = reasons.slice();
+            } else if (pt.isPhoto) {
+              const photoReasons = [];
+              if (wpApp.plannedPitch !== null && pt.pitch !== undefined && Math.abs(parseFloat(pt.pitch) - wpApp.plannedPitch) > pitchTol) {
+                const dp = Math.round(Math.abs(parseFloat(pt.pitch) - wpApp.plannedPitch) * 10) / 10;
+                photoReasons.push(`Pitch ${Math.round(parseFloat(pt.pitch) * 10) / 10}° vs ${wpApp.plannedPitch}° Plan (Δ${dp}°)`);
+              }
+              if (wpApp.plannedAlt !== null && pt.alt !== undefined && Math.abs(parseFloat(pt.alt) - wpApp.plannedAlt) > altTol) {
+                const dz = Math.round(Math.abs(parseFloat(pt.alt) - wpApp.plannedAlt) * 10) / 10;
+                photoReasons.push(`Alt ${Math.round(parseFloat(pt.alt) * 10) / 10}m vs ${wpApp.plannedAlt}m Plan (Δ${dz}m)`);
+              }
+              if (photoReasons.length > 0) {
+                pt.hasVariance = true;
+                pt.varianceReasons = photoReasons;
+              }
+            }
+          }
+        }
+
+        if (wpApp.hasVariance) {
+          varianceWps.push({
+            wpIndex: wpApp.index,
+            ptIndex: wpApp.bestPtIndex >= 0 ? wpApp.bestPtIndex : 0,
+            reasons,
+            dPitch: wpApp.dPitch,
+            dYaw: wpApp.dYaw,
+            dH: wpApp.dH,
+            dZ: wpApp.dZ,
+            actualPitch: wpApp.actualPitch,
+            plannedPitch: wpApp.plannedPitch
+          });
+        }
+      });
+
+      const variancePhotosCount = pts.filter(p => p && p.isPhoto && p.hasVariance).length;
+      this.varianceSummary = {
+        hasVariance: varianceWps.length > 0 || variancePhotosCount > 0 || !irlResult.passedAll,
+        totalWaypoints: wpApps.length,
+        varianceWaypointCount: varianceWps.length,
+        variancePhotoCount: variancePhotosCount,
+        varianceWaypoints: varianceWps,
+        irlResult
+      };
+      return this.varianceSummary;
+    }
+
+    const preVariancePts = pts.map((p, idx) => ({ p, idx })).filter(item => item.p && item.p.hasVariance);
+    if (preVariancePts.length > 0) {
+      const varianceWps = preVariancePts.filter(item => item.p.isPhoto || item.idx === 0).map((item, i) => ({
+        wpIndex: item.p.varianceWpIndex !== undefined && item.p.varianceWpIndex !== null ? item.p.varianceWpIndex : i,
+        ptIndex: item.idx,
+        reasons: Array.isArray(item.p.varianceReasons) && item.p.varianceReasons.length > 0 ? item.p.varianceReasons : ['Out of tolerance']
+      }));
+      this.varianceSummary = {
+        hasVariance: true,
+        totalWaypoints: (Array.isArray(plannedWps) && plannedWps.length) || varianceWps.length,
+        varianceWaypointCount: varianceWps.length,
+        variancePhotoCount: pts.filter(p => p && p.isPhoto && p.hasVariance).length,
+        varianceWaypoints: varianceWps,
+        irlResult: null
+      };
+      return this.varianceSummary;
+    }
+
+    return null;
+  },
+
+  applyIrlVerificationResult(irlResult, plannedWaypoints) {
+    if (Array.isArray(plannedWaypoints) && plannedWaypoints.length >= 2) {
+      this.plannedWaypoints = plannedWaypoints;
+    }
+    this.evaluateTelemetryVariances(irlResult, this.plannedWaypoints);
+    this.updateStatsUI(true);
+    if (this.threeScene) {
+      this.buildTrajectoryMeshes();
+      this.clearGroundFootprints();
+      this.syncFootprintsUpTo(this.currentPointIndex || 0);
+      this.seekTo(this.currentPointIndex || 0, false, false);
+      if (this.threeRenderer && this.threeCamera) {
+        this.threeRenderer.render(this.threeScene, this.threeCamera);
+      }
+    }
+  },
+
+  updateStatsUI(skipVarianceEval = false) {
     this.updateIrlVerificationButtonState();
+    if (!skipVarianceEval) {
+      this.evaluateTelemetryVariances();
+    }
     const trajCard = (typeof document !== 'undefined') ? document.getElementById('diag-trajectory-card') : null;
     const battCard = (typeof document !== 'undefined') ? document.getElementById('diag-battery-card') : null;
 
     const isActual = (this.isActualFlown === true) ||
       (this.isActualFlown !== false && this.selectedFlightId !== 'active-mission' && !this.telemetryData?.isSimulation) ||
       (!!this.comparisonData?.maxDeviation && this.selectedFlightId !== 'active-mission' && !this.telemetryData?.isSimulation);
+    const hasVariance = Boolean(isActual && this.varianceSummary && this.varianceSummary.hasVariance);
     const modeTitleEl = (typeof document !== 'undefined') ? document.getElementById('diag-sidebar-mode-title') : null;
     const statusBadgeEl = (typeof document !== 'undefined') ? document.getElementById('diag-sidebar-status-badge') : null;
     const timeDeltaEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-time-delta') : null;
@@ -70789,11 +71012,21 @@ const FlightDiagnostics = {
     } else {
       if (modeTitleEl) modeTitleEl.textContent = 'Mission Comparison';
       if (statusBadgeEl) {
-        statusBadgeEl.textContent = '✅ Completed';
-        if (statusBadgeEl.style) {
-          statusBadgeEl.style.color = '#22c55e';
-          statusBadgeEl.style.background = 'rgba(34, 197, 94, 0.15)';
-          statusBadgeEl.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+        if (hasVariance) {
+          const vCount = this.varianceSummary?.varianceWaypointCount || 1;
+          statusBadgeEl.textContent = `⚠️ Variance (${vCount} WPs)`;
+          if (statusBadgeEl.style) {
+            statusBadgeEl.style.color = '#f87171';
+            statusBadgeEl.style.background = 'rgba(239, 68, 68, 0.16)';
+            statusBadgeEl.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+          }
+        } else {
+          statusBadgeEl.textContent = '✅ Completed';
+          if (statusBadgeEl.style) {
+            statusBadgeEl.style.color = '#22c55e';
+            statusBadgeEl.style.background = 'rgba(34, 197, 94, 0.15)';
+            statusBadgeEl.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+          }
         }
       }
       if (timeLabelEl) timeLabelEl.textContent = 'Flight Time';
@@ -70862,17 +71095,40 @@ const FlightDiagnostics = {
       setTxt('diag-stat-photos-actual', `${this.telemetryData.photoCount || 0} Photos`);
     }
 
-    // Trajectory Accuracy card (only shown for actual flown flights with drift metrics)
+    // Trajectory Accuracy card (only shown for actual flown flights with drift metrics or variances)
     const maxDev = comp?.maxDeviation || this.telemetryData.maxDeviation;
-    if (isActual && maxDev && maxDev !== '0' && maxDev !== 'undefined') {
-      if (trajCard) trajCard.style.display = 'flex';
-      setTxt('diag-stat-drift', maxDev);
-      setTxt('diag-stat-heading-error', this.telemetryData.headingError || '< 1.2°');
+    if (isActual && ((maxDev && maxDev !== '0' && maxDev !== 'undefined') || hasVariance)) {
+      if (trajCard) {
+        trajCard.style.display = 'flex';
+        if (trajCard.style) {
+          trajCard.style.background = hasVariance ? 'rgba(239, 68, 68, 0.08)' : 'rgba(6, 182, 212, 0.05)';
+          trajCard.style.borderColor = hasVariance ? 'rgba(239, 68, 68, 0.35)' : 'rgba(6, 182, 212, 0.2)';
+        }
+      }
+      setTxt('diag-stat-drift', maxDev || `${this.varianceSummary?.irlResult?.metrics?.maxXteM || 0} m`);
+      setTxt('diag-stat-heading-error', this.telemetryData.headingError || (this.varianceSummary?.irlResult?.metrics?.maxYawErrorDeg !== undefined ? `${this.varianceSummary.irlResult.metrics.maxYawErrorDeg}°` : '< 1.2°'));
       const photoCount = comp?.photos?.actual ?? this.telemetryData.photoCount ?? 0;
-      const photoTxt = photoCount > 0
-        ? `All ${photoCount} waypoint photo trigger positions verified within tolerance.`
-        : 'Waypoint positions verified within tolerance.';
-      setTxt('diag-stat-trigger-status', photoTxt);
+      if (hasVariance && this.varianceSummary) {
+        const vs = this.varianceSummary;
+        const summaryText = `⚠️ ${vs.varianceWaypointCount} / ${vs.totalWaypoints} waypoints out of tolerance (${vs.variancePhotoCount} red camera cones).`;
+        const trigEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-trigger-status') : null;
+        if (trigEl) {
+          trigEl.textContent = summaryText;
+          if ('innerHTML' in trigEl && Array.isArray(vs.varianceWaypoints) && vs.varianceWaypoints.length > 0) {
+            const chipsHtml = vs.varianceWaypoints.slice(0, 6).map(vw => {
+              const shortReason = (vw.reasons && vw.reasons[0]) ? vw.reasons[0] : 'Variance';
+              return `<button type="button" class="diag-variance-wp-chip" data-wp-index="${vw.wpIndex}" data-pt-index="${vw.ptIndex}" onclick="if(typeof FlightDiagnostics!=='undefined')FlightDiagnostics.seekTo(${vw.ptIndex},true,true)" style="background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(239, 68, 68, 0.45); color: #fca5a5; border-radius: 4px; padding: 2px 6px; font-size: 0.66rem; font-weight: 600; cursor: pointer; text-align: left;" title="Click to jump 3D playhead to Waypoint ${vw.wpIndex}">🎯 WP ${vw.wpIndex}: ${shortReason}</button>`;
+            }).join('');
+            const moreCount = vs.varianceWaypoints.length > 6 ? `<span style="font-size: 0.65rem; color: #fca5a5; align-self: center;">+${vs.varianceWaypoints.length - 6} more</span>` : '';
+            trigEl.innerHTML = `<span style="color: #f87171; font-weight: 700; display: block; margin-bottom: 4px;">${summaryText}</span><div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">${chipsHtml}${moreCount}</div>`;
+          }
+        }
+      } else {
+        const photoTxt = photoCount > 0
+          ? `All ${photoCount} waypoint photo trigger positions verified within tolerance.`
+          : 'Waypoint positions verified within tolerance.';
+        setTxt('diag-stat-trigger-status', photoTxt);
+      }
     } else if (trajCard) {
       trajCard.style.display = 'none';
     }
@@ -71291,9 +71547,15 @@ const FlightDiagnostics = {
 
     const ctx = this.groundCtx;
     const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, rad);
-    grad.addColorStop(0, 'rgba(6, 182, 212, 0.45)');
-    grad.addColorStop(0.6, 'rgba(16, 185, 129, 0.22)');
-    grad.addColorStop(1, 'rgba(6, 182, 212, 0)');
+    if (pt.hasVariance) {
+      grad.addColorStop(0, 'rgba(239, 68, 68, 0.50)');
+      grad.addColorStop(0.6, 'rgba(220, 38, 38, 0.25)');
+      grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+    } else {
+      grad.addColorStop(0, 'rgba(6, 182, 212, 0.45)');
+      grad.addColorStop(0.6, 'rgba(16, 185, 129, 0.22)');
+      grad.addColorStop(1, 'rgba(6, 182, 212, 0)');
+    }
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(cx, cy, rad, 0, Math.PI * 2);
@@ -71396,15 +71658,23 @@ const FlightDiagnostics = {
     if (!this.telemetryData || !this.telemetryData.points) return;
     const pts = this.telemetryData.points;
     const isActual = !!this.isActualFlown;
+    if (isActual && !this.varianceSummary && !pts.some(p => p && p.hasVariance !== undefined)) {
+      this.evaluateTelemetryVariances();
+    }
+    const hasAnyVariance = isActual && pts.some(p => p && p.hasVariance);
 
     // Update legend visibility & labels
     const legendActual = (typeof document !== 'undefined') ? document.getElementById('diag-legend-actual') : null;
     const legendPlannedText = (typeof document !== 'undefined') ? document.getElementById('diag-legend-planned-text') : null;
+    const legendVariance = (typeof document !== 'undefined') ? document.getElementById('diag-legend-variance') : null;
     if (legendActual) {
       legendActual.style.display = isActual ? 'flex' : 'none';
     }
     if (legendPlannedText) {
       legendPlannedText.textContent = isActual ? 'Planned WPML' : 'Planned Flight Path';
+    }
+    if (legendVariance) {
+      legendVariance.style.display = hasAnyVariance ? 'flex' : 'none';
     }
 
     if (this.diagAcoustic3DGroup && this.threeScene) {
@@ -71468,18 +71738,38 @@ const FlightDiagnostics = {
 
     if (isActual) {
       const actualCoords = [];
+      const actualColors = [];
       pts.forEach(p => {
         actualCoords.push(this.projectToWorld(p.lat, p.lon, p.alt));
+        if (p && p.hasVariance) {
+          // Crimson red (#ef4444) for out-of-tolerance trajectory segments
+          actualColors.push(0.937, 0.267, 0.267);
+        } else {
+          // Standard amber (#f59e0b) for nominal trajectory segments
+          actualColors.push(0.961, 0.620, 0.043);
+        }
       });
 
       const actualGeo = new THREE.BufferGeometry().setFromPoints(actualCoords);
-      const actualMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 3 });
+      if (hasAnyVariance && typeof THREE.Float32BufferAttribute === 'function' && typeof actualGeo.setAttribute === 'function') {
+        actualGeo.setAttribute('color', new THREE.Float32BufferAttribute(actualColors, 3));
+      }
+      const actualMat = new THREE.LineBasicMaterial({
+        color: hasAnyVariance ? 0xffffff : 0xf59e0b,
+        vertexColors: Boolean(hasAnyVariance),
+        linewidth: 3
+      });
       this.actualLineMesh = new THREE.Line(actualGeo, actualMat);
       this.threeScene.add(this.actualLineMesh);
     }
 
     pts.forEach((p, pIdx) => {
       if (p.isPhoto) {
+        const isBad = Boolean(p.hasVariance);
+        const markerHex = isBad ? 0xef4444 : 0x22c55e;
+        const sphereRadius = isBad ? 0.95 : 0.8;
+        const coneFillOpacity = isBad ? 0.32 : 0.2;
+        const coneWireOpacity = isBad ? 0.95 : 0.6;
         let photoMarker;
         if (typeof THREE.Group === 'function') {
           const photoGroup = new THREE.Group();
@@ -71493,8 +71783,8 @@ const FlightDiagnostics = {
           }
 
           if (typeof THREE.SphereGeometry === 'function' && typeof THREE.MeshBasicMaterial === 'function' && typeof THREE.Mesh === 'function') {
-            const photoGeo = new THREE.SphereGeometry(0.8, 8, 8);
-            const photoMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+            const photoGeo = new THREE.SphereGeometry(sphereRadius, 8, 8);
+            const photoMat = new THREE.MeshBasicMaterial({ color: markerHex });
             const photoMesh = new THREE.Mesh(photoGeo, photoMat);
             photoGroup.add(photoMesh);
           }
@@ -71504,10 +71794,10 @@ const FlightDiagnostics = {
             const coneGeom = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, 3.5);
             if (coneGeom && typeof THREE.MeshBasicMaterial === 'function' && typeof THREE.Mesh === 'function') {
               const coneMat = new THREE.MeshBasicMaterial({
-                color: 0x22c55e,
+                color: markerHex,
                 wireframe: false,
                 transparent: true,
-                opacity: 0.2,
+                opacity: coneFillOpacity,
                 side: THREE.DoubleSide,
                 depthWrite: false
               });
@@ -71517,16 +71807,31 @@ const FlightDiagnostics = {
               }
               if (typeof THREE.EdgesGeometry === 'function' && typeof THREE.LineBasicMaterial === 'function' && typeof THREE.LineSegments === 'function') {
                 const wireGeom = new THREE.EdgesGeometry(coneGeom);
-                const wireMat = new THREE.LineBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.6 });
+                const wireMat = new THREE.LineBasicMaterial({ color: markerHex, transparent: true, opacity: coneWireOpacity });
                 coneMesh.add(new THREE.LineSegments(wireGeom, wireMat));
               }
               photoGroup.add(coneMesh);
+
+              // Ghost planned-pitch cone when gimbal pitch had a variance (> 6 deg)
+              if (isBad && p.plannedPitch !== undefined && p.plannedPitch !== null && !isNaN(p.plannedPitch) && Math.abs(photoPitch - p.plannedPitch) > 6.0) {
+                if (typeof THREE.EdgesGeometry === 'function' && typeof THREE.LineBasicMaterial === 'function' && typeof THREE.LineSegments === 'function') {
+                  const ghostGeom = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, 3.5);
+                  const ghostEdges = new THREE.EdgesGeometry(ghostGeom);
+                  const ghostMat = new THREE.LineBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.45 });
+                  const ghostWire = new THREE.LineSegments(ghostEdges, ghostMat);
+                  if (ghostWire.rotation) {
+                    ghostWire.rotation.x = ((90 + parseFloat(p.plannedPitch)) * Math.PI) / 180;
+                  }
+                  ghostWire.userData = { isPlannedGhostCone: true, plannedPitch: p.plannedPitch };
+                  photoGroup.add(ghostWire);
+                }
+              }
             }
           }
           photoMarker = photoGroup;
         } else if (typeof THREE.Mesh === 'function') {
-          const photoGeo = typeof THREE.SphereGeometry === 'function' ? new THREE.SphereGeometry(0.8, 8, 8) : null;
-          const photoMat = typeof THREE.MeshBasicMaterial === 'function' ? new THREE.MeshBasicMaterial({ color: 0x22c55e }) : null;
+          const photoGeo = typeof THREE.SphereGeometry === 'function' ? new THREE.SphereGeometry(sphereRadius, 8, 8) : null;
+          const photoMat = typeof THREE.MeshBasicMaterial === 'function' ? new THREE.MeshBasicMaterial({ color: markerHex }) : null;
           photoMarker = new THREE.Mesh(photoGeo, photoMat);
           if (photoMarker.position && photoMarker.position.copy) {
             photoMarker.position.copy(this.projectToWorld(p.lat, p.lon, p.alt));
@@ -71534,7 +71839,13 @@ const FlightDiagnostics = {
         }
 
         if (photoMarker) {
-          photoMarker.userData = { isPhoto: true, point: p, index: pIdx };
+          photoMarker.userData = {
+            isPhoto: true,
+            point: p,
+            index: pIdx,
+            hasVariance: isBad,
+            varianceReasons: p.varianceReasons || []
+          };
           if (this.threeScene && this.threeScene.add) this.threeScene.add(photoMarker);
           this.photoMarkers.push(photoMarker);
         }
@@ -72009,6 +72320,17 @@ const FlightDiagnostics = {
       if (this.frustumMesh) {
         const pitchVal = (pt.pitch !== undefined && pt.pitch !== null && !isNaN(pt.pitch)) ? pt.pitch : -60;
         this.frustumMesh.rotation.x = ((90 + pitchVal) * Math.PI) / 180;
+        const liveFrustumHex = pt.hasVariance ? 0xef4444 : 0xfbbf24;
+        if (this.frustumMesh.material && this.frustumMesh.material.color && typeof this.frustumMesh.material.color.setHex === 'function') {
+          this.frustumMesh.material.color.setHex(liveFrustumHex);
+        }
+        if (Array.isArray(this.frustumMesh.children)) {
+          this.frustumMesh.children.forEach(ch => {
+            if (ch && ch.material && ch.material.color && typeof ch.material.color.setHex === 'function') {
+              ch.material.color.setHex(liveFrustumHex);
+            }
+          });
+        }
       }
     }
 
@@ -72018,13 +72340,35 @@ const FlightDiagnostics = {
     }
 
     const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    setTxt('diag-hud-alt', `${(pt.alt !== undefined && pt.alt !== null ? pt.alt : 0).toFixed(1)} m`);
+    const altNum = (pt.alt !== undefined && pt.alt !== null) ? pt.alt : 0;
+    const pitchNum = (pt.pitch !== undefined && pt.pitch !== null) ? pt.pitch : 0;
+    const hasPitchVar = Boolean(pt.hasVariance && pt.plannedPitch !== undefined && pt.plannedPitch !== null && Math.abs(pitchNum - pt.plannedPitch) > 6.0);
+    const hasAltVar = Boolean(pt.hasVariance && pt.plannedAlt !== undefined && pt.plannedAlt !== null && Math.abs(altNum - pt.plannedAlt) > 2.0);
+
+    setTxt('diag-hud-alt', hasAltVar ? `${altNum.toFixed(1)} m (Plan ${pt.plannedAlt}m)` : `${altNum.toFixed(1)} m`);
     setTxt('diag-hud-speed', `${(pt.speed !== undefined && pt.speed !== null ? pt.speed : 0).toFixed(1)} m/s`);
-    setTxt('diag-hud-pitch', `${(pt.pitch !== undefined && pt.pitch !== null ? pt.pitch : 0).toFixed(1)}°`);
+    setTxt('diag-hud-pitch', hasPitchVar ? `${pitchNum.toFixed(1)}° (Plan ${pt.plannedPitch}°)` : `${pitchNum.toFixed(1)}°`);
     setTxt('diag-hud-battery', `${(pt.battery !== undefined && pt.battery !== null ? pt.battery : 100).toFixed(0)}%`);
     setTxt('diag-hud-sats', (pt.satellites !== undefined && pt.satellites !== null ? pt.satellites : 0).toString());
     setTxt('diag-hud-coords', `${(pt.lat !== undefined && pt.lat !== null ? pt.lat : 0).toFixed(6)}, ${(pt.lon !== undefined && pt.lon !== null ? pt.lon : 0).toFixed(6)}`);
     setTxt('diag-time-display', `${pt.timeStr || '00:00'} / ${this.telemetryData?.durationFormatted || '00:00'}`);
+
+    const hudAltEl = (typeof document !== 'undefined') ? document.getElementById('diag-hud-alt') : null;
+    if (hudAltEl && hudAltEl.style) hudAltEl.style.color = hasAltVar ? '#f87171' : '#38bdf8';
+    const hudPitchEl = (typeof document !== 'undefined') ? document.getElementById('diag-hud-pitch') : null;
+    if (hudPitchEl && hudPitchEl.style) hudPitchEl.style.color = hasPitchVar ? '#f87171' : '#fbbf24';
+
+    const varBanner = (typeof document !== 'undefined') ? document.getElementById('diag-hud-variance-banner') : null;
+    if (varBanner) {
+      if (pt.hasVariance) {
+        const wpTag = (pt.varianceWpIndex !== undefined && pt.varianceWpIndex !== null) ? `WP ${pt.varianceWpIndex}` : 'Telemetry';
+        const reasonStr = (Array.isArray(pt.varianceReasons) && pt.varianceReasons.length > 0) ? pt.varianceReasons.join(' • ') : 'Out of tolerance';
+        varBanner.textContent = `⚠️ ${wpTag} Variance: ${reasonStr}`;
+        if (varBanner.style) varBanner.style.display = 'block';
+      } else if (varBanner.style) {
+        varBanner.style.display = 'none';
+      }
+    }
 
     // Cross-track error & drift (Issue #142)
     if (typeof PlaybackManager !== 'undefined' && PlaybackManager.crossTrackDriftCm !== undefined) {

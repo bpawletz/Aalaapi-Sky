@@ -11446,4 +11446,72 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
   });
 
+  describe('3D Visual Variance Highlighting in Flight Diagnostics E2E (v1.217.0, Issue #223)', () => {
+    test('Highlights out-of-tolerance waypoints in red on 3D cones, Path Legend, Cockpit HUD, and clickable sidebar chips', async () => {
+      const diagState = await page.evaluate(() => {
+        const modal = document.getElementById('flight-diagnostics-modal');
+        if (modal) modal.classList.remove('hidden');
+        FlightDiagnostics.isOpen = true;
+        FlightDiagnostics.isActualFlown = true;
+        FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-11-01_[17-29-28].txt';
+        FlightDiagnostics.plannedWaypoints = [
+          { lat: 41.3215, lon: -88.9950, altitude: 30, gimbalPitch: -60, heading: 0 },
+          { lat: 41.3218, lon: -88.9950, altitude: 30, gimbalPitch: -45, heading: 0 }
+        ];
+        FlightDiagnostics.telemetryData = {
+          isSimulation: false,
+          durationFormatted: '02:00',
+          durationSec: 120,
+          photoCount: 2,
+          maxDeviation: '0.8 m',
+          points: [
+            { lat: 41.3215, lon: -88.9950, alt: 30, pitch: -45, yaw: 0, speed: 0, battery: 90, satellites: 24, timeStr: '00:10', isPhoto: false },
+            { lat: 41.3215, lon: -88.9950, alt: 30, pitch: -45, yaw: 0, speed: 0, battery: 89, satellites: 24, timeStr: '00:20', isPhoto: true },
+            { lat: 41.32165, lon: -88.9950, alt: 30, pitch: -45, yaw: 0, speed: 4, battery: 88, satellites: 24, timeStr: '00:40', isPhoto: false },
+            { lat: 41.3218, lon: -88.9950, alt: 30, pitch: -45, yaw: 0, speed: 0, battery: 87, satellites: 24, timeStr: '01:00', isPhoto: true },
+            { lat: 41.3218, lon: -88.9950, alt: 30, pitch: -45, yaw: 0, speed: 0, battery: 86, satellites: 24, timeStr: '01:10', isPhoto: false }
+          ]
+        };
+        FlightDiagnostics.comparisonData = {
+          time: { actual: '02:00', delta: '+5s' },
+          distance: { actual: '120 m', planned: '115 m' },
+          altitude: { actual: '30 m', delta: '0.0 m' },
+          photos: { actual: 2, planned: 2 },
+          maxDeviation: '0.8 m'
+        };
+
+        FlightDiagnostics.updateStatsUI();
+        FlightDiagnostics.init3DScene();
+        FlightDiagnostics.seekTo(1, true, true);
+
+        const statusBadge = document.getElementById('diag-sidebar-status-badge')?.textContent || '';
+        const triggerHtml = document.getElementById('diag-stat-trigger-status')?.innerHTML || '';
+        const chipCount = document.querySelectorAll('.diag-variance-wp-chip').length;
+        const legendVarDisplay = document.getElementById('diag-legend-variance')?.style.display || '';
+        const hudBannerText = document.getElementById('diag-hud-variance-banner')?.textContent || '';
+        const hudBannerDisplay = document.getElementById('diag-hud-variance-banner')?.style.display || '';
+        const hudPitchText = document.getElementById('diag-hud-pitch')?.textContent || '';
+
+        FlightDiagnostics.close();
+        return {
+          statusBadge,
+          triggerHtml,
+          chipCount,
+          legendVarDisplay,
+          hudBannerText,
+          hudBannerDisplay,
+          hudPitchText
+        };
+      });
+
+      assert.ok(diagState.statusBadge.includes('Variance'), `Sidebar badge must show Variance, got: ${diagState.statusBadge}`);
+      assert.ok(diagState.triggerHtml.includes('out of tolerance'), 'Trajectory Accuracy card must report waypoints out of tolerance');
+      assert.strictEqual(diagState.chipCount, 1, 'Should render 1 clickable variance waypoint chip for WP 0');
+      assert.strictEqual(diagState.legendVarDisplay, 'flex', 'Path Legend variance indicator must be visible');
+      assert.strictEqual(diagState.hudBannerDisplay, 'block', 'Cockpit HUD variance banner must be visible at variance sample');
+      assert.ok(diagState.hudBannerText.includes('WP 0 Variance'), `HUD banner must cite WP 0 Variance, got: ${diagState.hudBannerText}`);
+      assert.ok(diagState.hudPitchText.includes('Plan -60°'), `HUD pitch readout must include planned pitch comparison, got: ${diagState.hudPitchText}`);
+    });
+  });
+
 });

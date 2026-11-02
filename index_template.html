@@ -83,7 +83,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.216.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.217.0</span></h1>
         </div>
       </div>
 
@@ -4728,6 +4728,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f87171; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🚨 3D Visual Variance Highlighting &amp; Node-RED Action Flow Visualizer (v1.217.0) (Closes #222, #223)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Spot gimbal pitch, yaw, altitude, and cross-track drift variances at a glance in the <strong>3D Telemetry Replay</strong>! Out-of-tolerance photo spheres, 3D camera frustum cones, vertex-colored trajectory segments, and ground footprints automatically highlight in <strong>crimson red (<code>#ef4444</code>)</strong> alongside cyan ghost cones showing the planned camera angle, live Cockpit HUD alerts, and 1-click waypoint seek chips. Plus, inspect every waypoint's sequential execution pipeline in the new <strong>Node-RED Flight Action Flow Visualizer</strong> (<code>#action-flow-modal</code>) with universal gimbal slew auto-settling.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ✨ Google AI Studio Integration &amp; Native HTTPS Transport (v1.213.0) (Closes #209)
@@ -7120,7 +7128,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.216.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.217.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7281,6 +7289,13 @@
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.217.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>3D Visual Variance Highlighting in Flight Diagnostics (Closes #223):</strong> Automatically evaluates flown telemetry against planned waypoints and highlights out-of-tolerance 3D camera frustum cones, photo spheres, vertex-colored trajectory path segments, and ground coverage footprints in crimson red (<code>#ef4444</code>) with cyan planned-pitch ghost cones.</li>
+                <li><strong>Cockpit HUD Variance Alerts &amp; Interactive Waypoint Chips:</strong> Highlights offending HUD telemetry readouts in red with planned reference values, displays a live variance banner during timeline scrubbing, and populates the Trajectory Accuracy card with 1-click waypoint chips that seek the 3D playhead directly to each variance cone.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.216.0):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -11817,6 +11832,9 @@
                   <div id="diag-hud-dba" style="font-weight: 700; color: #10b981; font-size: 0.95rem;">-- dBA</div>
                 </div>
               </div>
+              <div id="diag-hud-variance-banner" style="display: none; margin-top: 4px; padding: 3px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.22); border: 1px solid rgba(239, 68, 68, 0.5); color: #fca5a5; font-size: 0.68rem; font-weight: 700; line-height: 1.3;">
+                ⚠️ Variance Detected
+              </div>
             </div>
 
             <!-- Exclusion Zone Warning Banner in 3D Replay -->
@@ -11950,6 +11968,10 @@
                 <div id="diag-legend-photo" style="display: flex; align-items: center; gap: 5px;">
                   <span style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
                   <span id="diag-legend-photo-text" style="color: var(--text-muted);">Photo Trigger</span>
+                </div>
+                <div id="diag-legend-variance" style="display: none; align-items: center; gap: 5px;">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.8); display: inline-block;"></span>
+                  <span id="diag-legend-variance-text" style="color: #f87171; font-weight: 700;">⚠️ Variance / Out of Tol.</span>
                 </div>
                 <div id="diag-legend-boundary" style="display: none; align-items: center; gap: 5px;">
                   <span style="width: 10px; height: 3px; border-top: 2px dashed #06b6d4; display: inline-block;"></span>

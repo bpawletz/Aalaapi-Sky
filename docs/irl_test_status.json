@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-02T02:09:37.805Z",
-  "currentAppVersion": "1.216.0",
+  "lastUpdated": "2026-11-02T03:28:22.637Z",
+  "currentAppVersion": "1.217.0",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
-  "wpmlCompilerHash": "3600257d0f63",
+  "wpmlCompilerHash": "1974a16b75ae",
   "patterns": {
     "single": {
       "id": "single",
@@ -1281,6 +1281,32 @@
     }
   },
   "releasePlans": [
+    {
+      "id": "rel-1.217.0-223",
+      "version": "1.217.0",
+      "issueNumber": 223,
+      "title": "3D Visual Variance Highlighting in Flight Diagnostics",
+      "date": "2026-11-02",
+      "affectedPatterns": [
+        "multi-orbit",
+        "road-following"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Load an actual flown flight log with a gimbal pitch or cross-track variance in Flight Diagnostics (#flight-diagnostics-modal)",
+          "checked": false
+        },
+        {
+          "label": "Verify out-of-tolerance 3D camera frustum cones, photo spheres, vertex-colored trajectory path segments, and ground footprints highlight in crimson red (#ef4444) with cyan planned-pitch ghost cones",
+          "checked": false
+        },
+        {
+          "label": "Click a waypoint variance chip in the Trajectory Accuracy sidebar card and verify the 3D playhead jumps to that waypoint and displays the Cockpit HUD variance banner",
+          "checked": false
+        }
+      ]
+    },
     {
       "id": "rel-1.216.0-222",
       "version": "1.216.0",
