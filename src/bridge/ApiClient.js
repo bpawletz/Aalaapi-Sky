@@ -715,7 +715,7 @@ function getAppVersion() {
     } catch (_) {}
   }
 
-  return '1.215.5';
+  return '1.216.0';
 
 }
 

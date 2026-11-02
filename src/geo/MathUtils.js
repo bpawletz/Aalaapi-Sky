@@ -23,19 +23,26 @@ function localToGeodetic(x, y, centerLat, centerLon, rotationDeg) {
 // Calculate the default path-following heading for a waypoint
 function getDefaultHeading(idx, waypoints, rotationDeg) {
   if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) return 0;
-  if (waypoints && waypoints[idx]) {
-    const wp = waypoints[idx];
-    if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
-      return ((wp.heading % 360) + 360) % 360;
-    }
+  const rot = (rotationDeg !== undefined && rotationDeg !== null && !isNaN(rotationDeg)) ? rotationDeg : 0;
+  const curWp = waypoints[idx];
+  if (curWp && curWp.heading !== null && curWp.heading !== undefined && !isNaN(curWp.heading)) {
+    return ((curWp.heading % 360) + 360) % 360;
   }
   let heading = 0;
-  if (idx < waypoints.length - 1) {
+  if (curWp && idx < waypoints.length - 1 && waypoints[idx + 1]) {
     const nextWp = waypoints[idx + 1];
-    heading = Math.atan2(nextWp.x - waypoints[idx].x, nextWp.y - waypoints[idx].y) * (180.0 / Math.PI) + rotationDeg;
-  } else if (idx > 0) {
+    if (nextWp.x !== undefined && curWp.x !== undefined) {
+      heading = Math.atan2(nextWp.x - curWp.x, nextWp.y - curWp.y) * (180.0 / Math.PI) + rot;
+    } else if (nextWp.lat !== undefined && curWp.lat !== undefined && typeof calculateBearing === 'function') {
+      heading = calculateBearing(curWp.lat, curWp.lon !== undefined ? curWp.lon : curWp.lng, nextWp.lat, nextWp.lon !== undefined ? nextWp.lon : nextWp.lng);
+    }
+  } else if (curWp && idx > 0 && waypoints[idx - 1]) {
     const prevWp = waypoints[idx - 1];
-    heading = Math.atan2(waypoints[idx].x - prevWp.x, waypoints[idx].y - prevWp.y) * (180.0 / Math.PI) + rotationDeg;
+    if (prevWp.x !== undefined && curWp.x !== undefined) {
+      heading = Math.atan2(curWp.x - prevWp.x, curWp.y - prevWp.y) * (180.0 / Math.PI) + rot;
+    } else if (prevWp.lat !== undefined && curWp.lat !== undefined && typeof calculateBearing === 'function') {
+      heading = calculateBearing(prevWp.lat, prevWp.lon !== undefined ? prevWp.lon : prevWp.lng, curWp.lat, curWp.lon !== undefined ? curWp.lon : curWp.lng);
+    }
   }
   if (heading < 0) heading += 360;
   return heading % 360;
@@ -1927,28 +1934,45 @@ function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
   const globalHover = globalHoverEl ? (parseInt(globalHoverEl.value) || 0) : 0;
   
   let totalHoverSeconds = 0;
+  const defaultGimbalEl = typeof document !== 'undefined' ? document.getElementById('gimbal-pitch') : null;
+  const defaultGimbalVal = defaultGimbalEl ? (parseFloat(defaultGimbalEl.value) || -60) : -60;
+  let prevPitch = defaultGimbalVal;
   for (let i = startIdx; i <= endIdx; i++) {
     const wp = wps[i];
     if (!wp) continue;
     const wpCapture = (wp.captureMode && wp.captureMode !== 'inherit') ? wp.captureMode : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit') ? wp.layerCaptureMode : captureMode;
     const wpIsStopAndShoot = wpCapture === 'stopAndShoot';
 
+    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+
     let baseHover = globalHover;
-    if (wp.layerHoverTime !== undefined && wp.layerHoverTime !== null && wp.layerHoverTime !== 'inherit') {
-      baseHover = parseInt(wp.layerHoverTime, 10) || 0;
+    const layerHover = wp.layerHoverTime !== undefined ? wp.layerHoverTime : (wpLayer && wpLayer.hoverTime);
+    if (layerHover !== undefined && layerHover !== null && layerHover !== 'inherit') {
+      baseHover = parseInt(layerHover, 10) || 0;
     }
     if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
       baseHover = parseInt(wp.hoverTime, 10) || 0;
     }
     let wpEffectiveHover = baseHover;
 
-    const autoSettling = wp.autoSettlingEnabled !== false;
-    const baseSettling = wp.baseSettlingTime !== undefined ? wp.baseSettlingTime : 2.0;
-    const majorTurnSettling = wp.majorTurnSettlingTime !== undefined ? wp.majorTurnSettlingTime : 5.0;
-    const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
-    const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
+    const autoSettling = (wp.autoSettlingEnabled !== undefined)
+      ? (wp.autoSettlingEnabled !== false)
+      : ((wpLayer && wpLayer.autoSettlingEnabled !== undefined) ? (wpLayer.autoSettlingEnabled !== false) : true);
 
-    const reposInfo = checkNeedsReposition(i, wps);
+    const baseSettling = (wp.baseSettlingTime !== undefined && wp.baseSettlingTime !== null && wp.baseSettlingTime !== 'inherit')
+      ? parseFloat(wp.baseSettlingTime)
+      : ((wpLayer && wpLayer.baseSettlingTime !== undefined && wpLayer.baseSettlingTime !== null && wpLayer.baseSettlingTime !== 'inherit') ? parseFloat(wpLayer.baseSettlingTime) : 2.0);
+    const majorTurnSettling = (wp.majorTurnSettlingTime !== undefined && wp.majorTurnSettlingTime !== null && wp.majorTurnSettlingTime !== 'inherit')
+      ? parseFloat(wp.majorTurnSettlingTime)
+      : ((wpLayer && wpLayer.majorTurnSettlingTime !== undefined && wpLayer.majorTurnSettlingTime !== null && wpLayer.majorTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.majorTurnSettlingTime) : 5.0);
+    const modTurnSettling = (wp.moderateTurnSettlingTime !== undefined && wp.moderateTurnSettlingTime !== null && wp.moderateTurnSettlingTime !== 'inherit')
+      ? parseFloat(wp.moderateTurnSettlingTime)
+      : ((wpLayer && wpLayer.moderateTurnSettlingTime !== undefined && wpLayer.moderateTurnSettlingTime !== null && wpLayer.moderateTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.moderateTurnSettlingTime) : 4.0);
+    const pitchSettling = (wp.pitchSettlingTime !== undefined && wp.pitchSettlingTime !== null && wp.pitchSettlingTime !== 'inherit')
+      ? parseFloat(wp.pitchSettlingTime)
+      : ((wpLayer && wpLayer.pitchSettlingTime !== undefined && wpLayer.pitchSettlingTime !== null && wpLayer.pitchSettlingTime !== 'inherit') ? parseFloat(wpLayer.pitchSettlingTime) : 3.0);
+
+    const reposInfo = (typeof checkNeedsReposition === 'function') ? checkNeedsReposition(i, wps) : { needsReposition: false, headingDiff: 0, isGimbalChanged: false, pitchDiff: 0 };
     const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
     const gridTypeVal = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (wps.find(w => w && w.gridType)?.gridType || '');
     const isTargetSplat = gridTypeVal === 'target-splat' ||
@@ -1961,15 +1985,39 @@ function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
       (wp.layerId && typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && (l.pattern === 'target-splat' || l.pattern === 'photo-sphere'))) ||
       (wp.majorTurnSettlingTime !== undefined && wp.layerId);
 
-    if (wpIsStopAndShoot && autoSettling && reposInfo.needsReposition) {
+    const hasExplicitPitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) || (wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && !isNaN(wp.gimbalPitch));
+    const currentPitch = hasExplicitPitch ? (parseFloat(wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : wp.gimbalPitch)) : prevPitch;
+    const pitchDiff = (i === 0) ? (reposInfo.pitchDiff || 0) : Math.abs(currentPitch - prevPitch);
+    prevPitch = currentPitch;
+
+    const isPitchSlew = (i === 0) ? (pitchDiff >= 5.0) : (pitchDiff >= 5.0 || reposInfo.isGimbalChanged);
+    const isExtendedSettling = isTargetSplat || (wpLayer && (wpLayer.pattern === 'target-splat' || wpLayer.pattern === 'photo-sphere'));
+    const isPhotoSphere = (wp.gridType === 'photo-sphere') || (wp.isPhotoSpherePoint) || (wp.isPhotoSphere) || (wp.layerPattern === 'photo-sphere') || (wpLayer && wpLayer.pattern === 'photo-sphere');
+    const needsSettling = reposInfo.needsReposition || isPitchSlew || (i === 0 && (wp.hoverTime === null || wp.hoverTime === undefined));
+
+    if ((wpIsStopAndShoot || isPhotoSphere) && autoSettling && needsSettling && !wp.skipPhoto && !wp.isDetour && !wp.isTransition) {
       let settlingDelay = baseSettling;
-      if (isTargetSplat && i > 0) {
-        if (reposInfo.headingDiff >= 60) {
-          settlingDelay = Math.max(settlingDelay, majorTurnSettling);
-        } else if (reposInfo.headingDiff >= 25) {
-          settlingDelay = Math.max(settlingDelay, modTurnSettling);
-        } else if (reposInfo.isGimbalChanged) {
-          settlingDelay = Math.max(settlingDelay, pitchSettling);
+      if (i > 0) {
+        // 1. Yaw turn settling (extended settling on target-splat/photo-sphere)
+        if (isExtendedSettling) {
+          if (reposInfo.headingDiff >= 60) {
+            settlingDelay = Math.max(settlingDelay, majorTurnSettling);
+          } else if (reposInfo.headingDiff >= 25) {
+            settlingDelay = Math.max(settlingDelay, modTurnSettling);
+          }
+        }
+        // 2. Gimbal pitch slew settling across ALL patterns
+        if (isPitchSlew) {
+          if (pitchDiff >= 65.0) {
+            settlingDelay = Math.max(settlingDelay, majorTurnSettling, 5.0);
+          } else if (pitchDiff >= 35.0) {
+            settlingDelay = Math.max(settlingDelay, modTurnSettling, 4.0);
+          } else {
+            settlingDelay = Math.max(settlingDelay, pitchSettling);
+          }
+          if (isPhotoSphere) {
+            settlingDelay = Math.max(settlingDelay, modTurnSettling);
+          }
         }
       }
       wpEffectiveHover = Math.max(wpEffectiveHover, settlingDelay);

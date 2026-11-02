@@ -1274,6 +1274,47 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
   };
   const resolvedHeadingLabel = mapHeadingName[effHeadingMode] || effHeadingMode;
 
+  const effectiveActions = (typeof resolveWaypointEffectiveActions === 'function')
+    ? resolveWaypointEffectiveActions(idx, allWaypoints)
+    : null;
+  const hasCustomHover = (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit');
+  const baseHoverFallback = (wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0);
+  const resolvedEffHover = effectiveActions ? effectiveActions.effectiveHover : baseHoverFallback;
+  const hoverDispText = hasCustomHover ? `${wp.hoverTime}s` : `Auto (${resolvedEffHover.toFixed(1)}s)`;
+  const hoverStatusPill = (!hasCustomHover && effectiveActions && effectiveActions.autoSettlingActive)
+    ? `<div style="font-size: 0.65rem; color: #38bdf8; margin-top: 2px; line-height: 1.2; display: flex; align-items: center; gap: 4px;"><span>⏱️ Auto-settle:</span><span style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 4px; border-radius: 3px;">${effectiveActions.hoverReason || 'Pitch / Turn Settling'}</span></div>`
+    : '';
+
+  let actionChipsHtml = '';
+  if (effectiveActions && Array.isArray(effectiveActions.actions) && effectiveActions.actions.length > 0) {
+    actionChipsHtml = effectiveActions.actions.map((act) => `
+      <div style="display: inline-flex; align-items: center; gap: 4px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 4px; padding: 2px 6px; font-size: 0.68rem; color: #f8fafc; white-space: nowrap;">
+        <span>${act.icon || '⚡'}</span>
+        <span style="font-weight: 600;">${act.label}</span>
+        <span style="color: #38bdf8; font-family: monospace;">${act.detail}</span>
+      </div>
+    `).join('<span style="color: #64748b; font-size: 0.65rem;">➔</span>');
+  } else {
+    actionChipsHtml = `<span style="color: #94a3b8; font-size: 0.7rem;">Curved fly-through (continuous flight)</span>`;
+  }
+
+  const actionPipelineHTML = `
+    <!-- Node-RED Style Inline Action Flow Strip -->
+    <div id="edit-wp-action-pipeline" style="margin-top: 4px; background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 6px; padding: 6px 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <span style="font-size: 0.68rem; font-weight: 600; color: #38bdf8; display: inline-flex; align-items: center; gap: 4px;">
+          <span>⚡ Waypoint Action Sequence</span>
+        </span>
+        <button id="open-action-flow-from-wp" type="button" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.35); color: #38bdf8; border-radius: 4px; font-size: 0.65rem; padding: 1px 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;" title="Open Visual Node-RED Flight Action Flow">
+          <span>🔀 Action Flow Graph</span>
+        </button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+        ${actionChipsHtml}
+      </div>
+    </div>
+  `;
+
   popupContent.innerHTML = `
     <div id="wp-popup-drag-handle" style="cursor: grab; padding: 0 24px 6px 0; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); user-select: none;">
       <div style="font-weight: 600; color: #06b6d4; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between;">
@@ -1344,9 +1385,10 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
               Hover:
               ${hoverBadgeHTML}
             </span>
-            <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap;"><span id="edit-wp-hover-val">${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}</span>s</span>
+            <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap;"><span id="edit-wp-hover-val">${hoverDispText}</span></span>
           </div>
-          <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; min-width: 0; box-sizing: border-box;">
+          <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${hasCustomHover ? wp.hoverTime : resolvedEffHover}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; min-width: 0; box-sizing: border-box;">
+          ${hoverStatusPill}
           <div id="edit-wp-hover-warning" style="display: none; font-size: 0.65rem; color: #f59e0b; margin-top: 2px; line-height: 1.2;">
             ⚠️ Repositioning detected: auto-settling delay will be applied in KML export.
           </div>
@@ -1462,6 +1504,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
         </div>
       </div>
 
+      ${actionPipelineHTML}
+
       <!-- Action Buttons (matching FPV button style) -->
       <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; font-size: 0.72rem; box-sizing: border-box; width: 100%;">
         <button id="save-wp-btn" class="btn-primary" type="button" style="flex: 1 1 calc(50% - 3px); min-width: 0; box-sizing: border-box; padding: 5px 4px; background: var(--primary-gradient); border-radius: 6px; font-weight: 600;">Save</button>
@@ -1474,6 +1518,17 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
 
   if (typeof popupContent.querySelector !== 'function') {
     return popupContent;
+  }
+
+  const openActionFlowBtn = popupContent.querySelector('#open-action-flow-from-wp');
+  if (openActionFlowBtn) {
+    openActionFlowBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof openActionFlowModal === 'function') {
+        openActionFlowModal(idx);
+      }
+    });
   }
 
   const popupCollapseBtn = popupContent.querySelector('#wp-popup-collapse-btn');
@@ -1913,43 +1968,25 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     if (!warningDiv) return;
     
     const currentHoverVal = hoverSlider ? parseInt(hoverSlider.value) : 0;
-    const effCapture = (wp.captureMode && wp.captureMode !== 'inherit') ? wp.captureMode : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit') ? wp.layerCaptureMode : document.getElementById('capture-mode')?.value;
-    const isStopAndShoot = effCapture === 'stopAndShoot';
+    const curWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || allWaypoints;
+    if (!curWps) return;
     
     const tempWp = {
       ...wp,
       alt: parseFloat(altSlider.value),
-      pitch: parseFloat(pitchSlider.value),
+      pitch: isAutoPitch ? 'auto' : parseFloat(pitchSlider.value),
       headingMode: headingModeSelect.value,
       heading: headingModeSelect.value === 'custom' ? parseFloat(headingSlider.value) : (wp.heading !== undefined ? wp.heading : null),
       poiIndex: poiSelect ? parseInt(poiSelect.value) : (wp.poiIndex || 0),
     };
     
-    const curWps = getCurrentWaypoints();
-    if (!curWps) return;
     const waypointsCopy = curWps.map((w, i) => i === idx ? tempWp : w);
-    const reposInfo = checkNeedsReposition(idx, waypointsCopy);
-    
-    const autoSettling = wp.autoSettlingEnabled !== false;
-    const baseSettling = wp.baseSettlingTime !== undefined ? wp.baseSettlingTime : 2.0;
-    const majorTurnSettling = wp.majorTurnSettlingTime !== undefined ? wp.majorTurnSettlingTime : 5.0;
-    const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
-    const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
+    const eff = (typeof resolveWaypointEffectiveActions === 'function')
+      ? resolveWaypointEffectiveActions(idx, waypointsCopy)
+      : null;
 
-    let requiredDelay = 0;
-    if (isStopAndShoot && autoSettling) {
-      if (idx > 0) {
-        if (reposInfo.headingDiff >= 60) requiredDelay = majorTurnSettling;
-        else if (reposInfo.headingDiff >= 25) requiredDelay = modTurnSettling;
-        else if (reposInfo.isGimbalChanged) requiredDelay = pitchSettling;
-        else if (reposInfo.needsReposition) requiredDelay = baseSettling;
-      } else if (reposInfo.needsReposition) {
-        requiredDelay = baseSettling;
-      }
-    }
-
-    if (requiredDelay > 0 && currentHoverVal < requiredDelay) {
-      warningDiv.textContent = `⚠️ Turn/pitch settling: ${requiredDelay.toFixed(1)}s auto-pause will be applied in KML export.`;
+    if (eff && eff.autoSettlingActive && currentHoverVal < eff.effectiveHover) {
+      warningDiv.textContent = `⚠️ Auto-settling: ${eff.effectiveHover.toFixed(1)}s pause applied in KML export (${eff.hoverReason || 'Pitch / Turn Settling'}).`;
       warningDiv.style.display = 'block';
     } else {
       warningDiv.style.display = 'none';

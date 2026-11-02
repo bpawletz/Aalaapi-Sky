@@ -4095,6 +4095,32 @@ function initUIEventListeners() {
 
   // Setup Terrain Following & Elevation Profile Listeners (Issue #129)
   initTerrainFollowListeners();
+
+  // Setup Visual Flight Action Flow Visualizer (v1.216.0, Issue #222)
+  if (typeof initActionFlowModal === 'function') {
+    initActionFlowModal();
+  }
+
+  const actionFlowTopbarBtn = document.getElementById('action-flow-topbar-btn');
+  if (actionFlowTopbarBtn) {
+    actionFlowTopbarBtn.addEventListener('click', () => {
+      if (typeof openActionFlowModal === 'function') {
+        openActionFlowModal();
+      }
+    });
+  }
+
+  const moreMenuActionFlowBtn = document.getElementById('more-menu-action-flow-btn');
+  if (moreMenuActionFlowBtn) {
+    moreMenuActionFlowBtn.addEventListener('click', () => {
+      if (typeof openActionFlowModal === 'function') {
+        openActionFlowModal();
+      }
+      if (typeof closeMoreMenu === 'function') {
+        closeMoreMenu();
+      }
+    });
+  }
 }
 
 /**

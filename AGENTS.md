@@ -250,3 +250,32 @@ Whenever completing a functional update to Aalaapi Sky (new feature, flight patt
 
 4. **Mandatory Legal Non-Guarantee & Variations Disclaimer:**
    - Every generated IRL test plan, post-flight telemetry report, and UI status badge tooltip (`#active-layer-irl-badge`) MUST explicitly state that an `IRL Verified` status indicates historical reference verification only and **does NOT constitute a guarantee, warranty, or certification of safe flight**, accounting for variations in wind/weather, GNSS multipath, geomagnetic interference, barometric drift, DEM/map inaccuracies, unmapped obstacles, and OEM firmware updates. The Remote Pilot in Command (RPIC) retains 100% sole responsibility for VLOS and flight safety.
+
+## 16. Mandatory Gimbal Slew & Inertia Auto-Settling Policy (WPML Kinematic Timing)
+In DJI Fly and WPML placemark action execution, `<wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>` is asynchronous and non-blocking: the flight controller dispatches the pitch rotation command to the gimbal motor and immediately advances to subsequent actions (`hover`, `takePhoto`) without waiting for physical movement to complete. In addition, aircraft deceleration into the waypoint tolerance envelope consumes approximately 1.0–1.5s of the hover timer before the gimbal motor engages.
+
+To guarantee zero motion blur and prevent camera shutter triggers while the gimbal is still rotating (e.g. from takeoff horizon to survey nadir or during mid-mission transitions), all mission compilers and mathematical calculators MUST strictly enforce the following rules:
+
+1. **Universal Pattern Applicability & Zero Gatekeeping:**
+   - Gimbal and inertia auto-settling MUST apply across **all flight patterns** in `stopAndShoot` (and `photo-sphere`) modes (including single grid, double grid, corridor, road-following, orbit, multi-orbit, facade, and freeform).
+   - Agents MUST NEVER gate auto-settling behind pattern-specific flags (e.g., `isExtendedSettling`) or restrict it only to clustered points.
+
+2. **Full-Mission Waypoint Coverage (`idx = 0 ... N - 1`):**
+   - Auto-settling evaluation MUST include **Waypoint 0 (`idx === 0`)**.
+   - At Waypoint 0, the aircraft transits from takeoff with the gimbal at nominal horizon ($0.0^\circ$). If the initial survey pitch tilts downwards (e.g. $0^\circ \to -51^\circ$ or $-90^\circ$), this constitutes an angular pitch slew of $\Delta\text{pitch} = |\text{effectivePitch} - 0.0^\circ|$ and MUST receive the full scaled settling pause.
+   - Slew evaluation applies identically across all mid-mission waypoints where $\Delta\text{pitch} = |\text{effectivePitch}_i - \text{effectivePitch}_{i-1}|$.
+
+3. **Angular Slew Magnitude Scaling:**
+   - Auto-settling hover dwell MUST scale according to the physical mechanical travel of the gimbal:
+     - **Baseline Straight-Line Pause ($\Delta\text{pitch} < 5^\circ$, $\Delta\text{yaw} < 25^\circ$):** $\ge \text{baseSettlingTime}$ (default $2.0\text{s}$).
+     - **Moderate Pitch Tilt ($5^\circ \le \Delta\text{pitch} < 35^\circ$):** $\ge \text{pitchSettlingTime}$ (default $3.0\text{s}$).
+     - **Medium Pitch Slew ($35^\circ \le \Delta\text{pitch} < 65^\circ$, e.g. $0^\circ \to -51^\circ$):** $\ge \max(\text{pitchSettlingTime}, \text{moderateTurnSettlingTime}, 4.0\text{s})$.
+     - **Large / Full-Travel Slew ($\Delta\text{pitch} \ge 65^\circ$, e.g. $\ge 0^\circ \to -90^\circ$ or oblique-to-nadir):** $\ge \max(\text{pitchSettlingTime}, \text{majorTurnSettlingTime}, 5.0\text{s})$.
+     - **Yaw Turns:** Apply $\text{moderateTurnSettlingTime}$ ($\ge 25^\circ$, default $4.0\text{s}$) and $\text{majorTurnSettlingTime}$ ($\ge 60^\circ$, default $5.0\text{s}$) universally.
+
+4. **Transparent Waypoint UI & Zero-Hidden Actions:**
+   - Waypoint popups (`createWaypointEditorDOM`) and 3D FPV editors MUST display the true compiled effective hover dwell (e.g. `Auto (4.0s)`) rather than raw `0s` when auto-settling is active.
+   - The compiled sequential action pipeline (`gimbalRotate` $\to$ `hover` $\to$ `takePhoto`) MUST be surfaced visually via an inline action strip and the interactive Node-RED Flight Action Flow visualizer (`#action-flow-modal`).
+
+5. **Zero-Masking Policy in Telemetry Verification (`IrlVerifier.js`):**
+   - `IrlVerifier.js` MUST evaluate gimbal pitch compliance at the actual `CAMERA.isPhoto` shutter trigger sample. Agents are strictly prohibited from masking mid-slew shutter triggers by sampling post-photo resting states.

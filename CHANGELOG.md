@@ -1,3 +1,38 @@
+## [1.216.0] - 2026-11-01
+
+Universal kinematics auto-settling for gimbal slew & turn repositioning, transparent waypoint hover timing display, and visual Node-RED flight action flow visualizer.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Universal Kinematic Gimbal Slew & Turn Auto-Settling (Closes #222)**:
+  - Extended automated camera and flight settling to all flight patterns (road-following, corridor, grid, SAR, orbit, and freeform) and all waypoints, including Waypoint 0 takeoff slew.
+  - Dynamically scales auto-settling hover pauses according to the physical angular displacement of the gimbal pitch and yaw motors (pitch slew >= 65° -> 5.0s, >= 35° -> 4.0s, >= 5° -> 3.0s; yaw turn >= 60° -> 5.0s, >= 25° -> 4.0s).
+  - Eliminates mid-rotation shutter firing and motion blur by guaranteeing the drone hovers motionless until the gimbal motor reaches its commanded angle before triggering photos.
+- **Transparent Waypoint Hover Timing Display**:
+  - Overhauled 2D map waypoint editor popup (`#waypoint-popup`) and 3D FPV HUD editor to display real resolved hover times (e.g. `Auto (4.0s)`) and auto-settling status pills rather than misleading `0s` values when inheriting settings.
+- **Visual Node-RED Flight Action Flow Visualizer (`#action-flow-modal`)**:
+  - Added full-screen interactive node-graph canvas illustrating the exact sequential execution of flight actions across every waypoint (entry transit, yaw slews, gimbal tilts, auto-settling pauses, camera actions, and departure transits) connected with animated SVG bezier wires.
+  - Interactive canvas includes pan, mousewheel zoom, reset, layer/waypoint filtering, waypoint focus highlighting, and an operational summary bar showing total flight operations and auto-settling dwell.
+  - Added inline Node-RED execution sequence strips to 2D waypoint editor popups with 1-click jump to the action flow graph.
+
+#### Under the Hood & Technical Details
+- **`src/export/WpmlCompiler.js`**:
+  - Reordered placemark compilation so `effectivePitch` is resolved prior to `effectiveHover`.
+  - Removed restrictive pattern gatekeeping (`idx > 0 && isExtendedSettling`), applying universal angular slew calculations across all patterns and waypoints.
+  - Cascaded layer-level settling options (`baseSettlingTime`, `pitchSettlingTime`, `moderateTurnSettlingTime`, `majorTurnSettlingTime`, `autoSettlingEnabled`).
+- **`src/3d/FlightSimulation.js`**:
+  - Updated `checkNeedsReposition(idx, waypoints)` to track `pitchDiff` at Waypoint 0 against nominal takeoff (0.0°) and subsequent waypoints.
+  - Exported `resolveWaypointEffectiveActions(idx, waypoints, options)` returning full action sequences and effective parameters.
+- **`src/geo/MathUtils.js` & `src/ui/TelemetryHud.js`**:
+  - Synchronized `getSubMissionFlightTime` and `calculateStats` hover time accumulation with the universal auto-settling model.
+- **`src/import/KmzImporter.js` & `src/3d/FpvHud.js`**:
+  - Updated waypoint popups and FPV HUD to show effective auto-settled hover durations, auto-settling badges, and the inline Node-RED action flow pipeline.
+- **`src/ui/ActionFlowModal.js`**:
+  - Created new module implementing the full Node-RED style Flight Action Flow graph, SVG bezier connections, and pan/zoom transform engine.
+- **`AGENTS.md`**:
+  - Added Section 16 (Mandatory Gimbal Slew & Inertia Auto-Settling Policy / WPML Kinematic Timing).
+
 ## [1.215.5] - 2026-11-01
 
 Dynamically resolves application release version in Flight Diagnostics reports and client IRL verification tracking.

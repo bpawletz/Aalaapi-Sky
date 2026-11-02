@@ -573,10 +573,20 @@ function updateFPVEditorUI() {
     const hasCustomHover = (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit');
     const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
     const resolvedHover = hasCustomHover ? wp.hoverTime : getEffectiveLayerHoverTime(wpLayer);
-    if (document.activeElement !== hoverSlider) {
-      hoverSlider.value = resolvedHover;
+    let autoHover = resolvedHover;
+    let autoReason = '';
+    if (!hasCustomHover && typeof resolveWaypointEffectiveActions === 'function') {
+      const allWps = (typeof waypoints !== 'undefined') ? waypoints : [];
+      const eff = resolveWaypointEffectiveActions(fpvProgressIndex, allWps);
+      if (eff && eff.effectiveHover !== undefined) {
+        autoHover = eff.effectiveHover;
+        if (eff.hoverReason) autoReason = ` (${eff.hoverReason})`;
+      }
     }
-    hoverVal.textContent = hasCustomHover ? `${resolvedHover}s` : `${resolvedHover}s (Inherited)`;
+    if (document.activeElement !== hoverSlider) {
+      hoverSlider.value = hasCustomHover ? resolvedHover : autoHover;
+    }
+    hoverVal.textContent = hasCustomHover ? `${resolvedHover}s` : `Auto (${autoHover}s) (Inherited)${autoReason}`;
   }
 
   // Turn Mode

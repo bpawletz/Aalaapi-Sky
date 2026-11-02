@@ -162,66 +162,283 @@ function drawCoverageHeatmap(ctx, planeOffsetX, planeOffsetZ, planeSize) {
 // Check if a waypoint requires repositioning of gimbal or drone heading
 function checkNeedsReposition(idx, waypoints) {
   if (!waypoints || waypoints.length === 0 || idx === null || idx === undefined || idx < 0 || idx >= waypoints.length) {
-    return { needsReposition: false, isGimbalChanged: false, isHeadingChanged: false, headingDiff: 0 };
+    return { needsReposition: false, isGimbalChanged: false, isHeadingChanged: false, headingDiff: 0, pitchDiff: 0 };
   }
   const current = getWaypointHeadingAndPitch(idx, waypoints);
   
   let isGimbalChanged = false;
   let isHeadingChanged = false;
   let headingDiff = 0;
+  let pitchDiff = 0;
   
   if (idx === 0) {
-    // Takeoff: gimbal defaults to 0. Any target pitch less than -5 is a change.
-    isGimbalChanged = current.pitch < -5;
+    // Takeoff: compare against default layer gimbal pitch. If WP 0 diverges by >= 5°, it is an active pitch slew.
+    const defPitch = (current.defaultPitch !== undefined) ? current.defaultPitch : current.pitch;
+    pitchDiff = Math.abs(current.pitch - defPitch);
+    isGimbalChanged = pitchDiff >= 5.0;
     isHeadingChanged = false;
     headingDiff = 0;
   } else {
     const prev = getWaypointHeadingAndPitch(idx - 1, waypoints);
-    isGimbalChanged = Math.abs(current.pitch - prev.pitch) >= 5;
+    pitchDiff = Math.abs(current.pitch - prev.pitch);
+    isGimbalChanged = pitchDiff >= 5.0;
     
     headingDiff = Math.abs(current.heading - prev.heading) % 360;
     if (headingDiff > 180) headingDiff = 360 - headingDiff;
-    isHeadingChanged = headingDiff >= 10;
+    isHeadingChanged = headingDiff >= 10.0;
   }
   
   return {
-    needsReposition: isGimbalChanged || isHeadingChanged,
+    needsReposition: (idx === 0) ? (current.pitch < -5 || isGimbalChanged) : (isGimbalChanged || isHeadingChanged),
     isGimbalChanged,
     isHeadingChanged,
-    headingDiff
+    headingDiff,
+    pitchDiff
   };
 }
 
 // Calculate the heading and pitch for a waypoint index
 function getWaypointHeadingAndPitch(idx, waypoints) {
   const wps = Array.isArray(waypoints) ? waypoints : [];
-  const wp = (wps && wps[idx]) ? wps[idx] : {};
+  const wp = (wps && wps[idx]) ? wps[idx] : (wps[0] || {});
   const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined')
     ? flightLayers.find(l => l.id === wp.layerId)
     : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
   const rotationDeg = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-rotation'))
     ? parseFloat(document.getElementById('grid-rotation').value) || 0
     : 0;
-  const heading = getEffectiveWaypointHeading(wp, idx, wps, rotationDeg, null, wpLayer);
+  const heading = (typeof getEffectiveWaypointHeading === 'function')
+    ? getEffectiveWaypointHeading(wp, idx, wps, rotationDeg, null, wpLayer)
+    : ((wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0);
 
-  const defaultGimbalPitch = (wpLayer && wpLayer.gimbalPitch !== undefined)
+  const defaultGimbalPitch = (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit')
     ? wpLayer.gimbalPitch
     : ((typeof document !== 'undefined' && document && document.getElementById && document.getElementById('gimbal-pitch'))
       ? document.getElementById('gimbal-pitch').value
       : -60);
 
-  const rawPitch = (wp.pitch !== undefined && wp.pitch !== null) ? wp.pitch : defaultGimbalPitch;
+  const rawPitch = (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit')
+    ? wp.pitch
+    : ((wp.gimbalPitch !== undefined && wp.gimbalPitch !== null && wp.gimbalPitch !== 'inherit')
+      ? wp.gimbalPitch
+      : defaultGimbalPitch);
+
   let pitch;
   if (rawPitch === 'auto' || (typeof rawPitch === 'string' && rawPitch.toLowerCase() === 'auto')) {
-    const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
-    pitch = (typeof calculate3DPoiPitch === 'function')
-      ? calculate3DPoiPitch(wp, targetPoi, wp.alt || (wpLayer?.altitude) || 50)
-      : -45;
+    const isRoad = wp.isRoadDroneWaypoint || (wpLayer && wpLayer.pattern === 'road-following') || (typeof gridType !== 'undefined' && gridType === 'road-following');
+    if (isRoad) {
+      const offset = (wpLayer && wpLayer.roadOffset !== undefined) ? wpLayer.roadOffset : 15;
+      const altVal = (wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit') ? wp.alt : ((wpLayer && wpLayer.altitude) ? wpLayer.altitude : 50);
+      pitch = (Math.abs(offset) < 0.01) ? -90 : -Math.round(Math.atan2(altVal, Math.max(Math.abs(offset), 1)) * (180.0 / Math.PI));
+    } else {
+      const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
+      pitch = (typeof calculate3DPoiPitch === 'function')
+        ? calculate3DPoiPitch(wp, targetPoi, wp.alt || (wpLayer?.altitude) || 50)
+        : -45;
+    }
   } else {
-    pitch = parseGimbalPitch(rawPitch, -60);
+    pitch = (typeof parseGimbalPitch === 'function') ? parseGimbalPitch(rawPitch, -60) : (parseFloat(rawPitch) || -60);
   }
 
-  return { heading, pitch };
+  const defGimbal = (typeof parseGimbalPitch === 'function') ? parseGimbalPitch(defaultGimbalPitch, -60) : (parseFloat(defaultGimbalPitch) || -60);
+  return { heading, pitch, defaultPitch: defGimbal };
+}
+
+// Resolves the exact ordered sequential action pipeline for waypoint idx in DJI WPML
+function resolveWaypointEffectiveActions(idx, waypoints, options = {}) {
+  const wps = Array.isArray(waypoints) ? waypoints : [];
+  const wp = (wps && wps[idx]) ? wps[idx] : (wps[0] || {});
+  if (!wp) return { effectivePitch: -60, effectiveHover: 0, settlingReason: '', reposInfo: { needsReposition: false, isGimbalChanged: false, pitchDiff: 0, headingDiff: 0 }, actions: [] };
+
+  const layersList = options.flightLayers || (typeof flightLayers !== 'undefined' ? flightLayers : null);
+  const wpLayer = (wp.layerId && layersList) ? layersList.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+
+  const { heading, pitch } = getWaypointHeadingAndPitch(idx, wps);
+  const effectivePitch = pitch;
+  const reposInfo = checkNeedsReposition(idx, wps);
+
+  const effCaptureMode = (wp.captureMode && wp.captureMode !== 'inherit')
+    ? wp.captureMode
+    : ((wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit')
+      ? wp.layerCaptureMode
+      : ((wpLayer && wpLayer.captureMode && wpLayer.captureMode !== 'inherit') ? wpLayer.captureMode : 'stopAndShoot'));
+  const isStopAndShoot = effCaptureMode === 'stopAndShoot';
+  const isVideo = effCaptureMode === 'video';
+
+  // Manual hover resolution (3-tier)
+  let baseHover = 0;
+  if (options.globalHoverTime !== undefined) baseHover = parseInt(options.globalHoverTime, 10) || 0;
+  else if (typeof document !== 'undefined' && document.getElementById('global-hover-time')) baseHover = parseInt(document.getElementById('global-hover-time').value, 10) || 0;
+
+  const layerHover = wp.layerHoverTime !== undefined ? wp.layerHoverTime : (wpLayer && wpLayer.hoverTime);
+  if (layerHover !== undefined && layerHover !== null && layerHover !== 'inherit') {
+    baseHover = parseInt(layerHover, 10) || 0;
+  }
+  if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
+    baseHover = parseInt(wp.hoverTime, 10) || 0;
+  }
+
+  let effectiveHover = baseHover;
+  let settlingReason = '';
+
+  const autoSettlingEnabled = (wp.autoSettlingEnabled !== undefined)
+    ? (wp.autoSettlingEnabled !== false)
+    : ((wpLayer && wpLayer.autoSettlingEnabled !== undefined) ? (wpLayer.autoSettlingEnabled !== false) : true);
+
+  const baseSettling = (wp.baseSettlingTime !== undefined && wp.baseSettlingTime !== null && wp.baseSettlingTime !== 'inherit')
+    ? parseFloat(wp.baseSettlingTime)
+    : ((wpLayer && wpLayer.baseSettlingTime !== undefined && wpLayer.baseSettlingTime !== null && wpLayer.baseSettlingTime !== 'inherit') ? parseFloat(wpLayer.baseSettlingTime) : 2.0);
+  const majorTurnSettling = (wp.majorTurnSettlingTime !== undefined && wp.majorTurnSettlingTime !== null && wp.majorTurnSettlingTime !== 'inherit')
+    ? parseFloat(wp.majorTurnSettlingTime)
+    : ((wpLayer && wpLayer.majorTurnSettlingTime !== undefined && wpLayer.majorTurnSettlingTime !== null && wpLayer.majorTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.majorTurnSettlingTime) : 5.0);
+  const modTurnSettling = (wp.moderateTurnSettlingTime !== undefined && wp.moderateTurnSettlingTime !== null && wp.moderateTurnSettlingTime !== 'inherit')
+    ? parseFloat(wp.moderateTurnSettlingTime)
+    : ((wpLayer && wpLayer.moderateTurnSettlingTime !== undefined && wpLayer.moderateTurnSettlingTime !== null && wpLayer.moderateTurnSettlingTime !== 'inherit') ? parseFloat(wpLayer.moderateTurnSettlingTime) : 4.0);
+  const pitchSettling = (wp.pitchSettlingTime !== undefined && wp.pitchSettlingTime !== null && wp.pitchSettlingTime !== 'inherit')
+    ? parseFloat(wp.pitchSettlingTime)
+    : ((wpLayer && wpLayer.pitchSettlingTime !== undefined && wpLayer.pitchSettlingTime !== null && wpLayer.pitchSettlingTime !== 'inherit') ? parseFloat(wpLayer.pitchSettlingTime) : 3.0);
+
+  const isPhotoSphere = (wp.isPhotoSphere) || (wp.isPhotoSpherePoint) || (wpLayer && wpLayer.pattern === 'photo-sphere');
+
+  if ((isStopAndShoot || isPhotoSphere) && autoSettlingEnabled && !wp.skipPhoto && !wp.isDetour && !wp.isTransition) {
+    if (effectiveHover < baseSettling) {
+      effectiveHover = baseSettling;
+      settlingReason = `Base Shutter Settling (${baseSettling.toFixed(1)}s)`;
+    }
+
+    if (idx > 0) {
+      if (reposInfo.headingDiff >= 60) {
+        if (majorTurnSettling > effectiveHover) {
+          effectiveHover = majorTurnSettling;
+          settlingReason = `Major Turn Settle (Δ${reposInfo.headingDiff.toFixed(0)}° Turn, ${majorTurnSettling.toFixed(1)}s)`;
+        }
+      } else if (reposInfo.headingDiff >= 25) {
+        if (modTurnSettling > effectiveHover) {
+          effectiveHover = modTurnSettling;
+          settlingReason = `Turn Settle (Δ${reposInfo.headingDiff.toFixed(0)}° Turn, ${modTurnSettling.toFixed(1)}s)`;
+        }
+      }
+    }
+
+    const isPitchSlew = (idx === 0) ? (reposInfo.pitchDiff >= 5.0) : (reposInfo.pitchDiff >= 5.0 || reposInfo.isGimbalChanged);
+    if (isPitchSlew) {
+      if (reposInfo.pitchDiff >= 65.0) {
+        const req = Math.max(majorTurnSettling, 5.0);
+        if (req > effectiveHover) {
+          effectiveHover = req;
+          settlingReason = `Full Gimbal Slew (Δ${reposInfo.pitchDiff.toFixed(0)}° Pitch, ${req.toFixed(1)}s)`;
+        }
+      } else if (reposInfo.pitchDiff >= 35.0) {
+        const req = Math.max(modTurnSettling, 4.0);
+        if (req > effectiveHover) {
+          effectiveHover = req;
+          settlingReason = `Gimbal Slew (Δ${reposInfo.pitchDiff.toFixed(0)}° Pitch, ${req.toFixed(1)}s)`;
+        }
+      } else {
+        const req = pitchSettling;
+        if (req > effectiveHover) {
+          effectiveHover = req;
+          settlingReason = `Pitch Tilt (Δ${reposInfo.pitchDiff.toFixed(0)}°, ${req.toFixed(1)}s)`;
+        }
+      }
+      if (isPhotoSphere) {
+        effectiveHover = Math.max(effectiveHover, modTurnSettling);
+      }
+    }
+  }
+
+  // Construct sequential actions
+  const actions = [];
+
+  // 1. Yaw rotation (if photo sphere or specific yaw action)
+  if (isPhotoSphere && typeof wp.heading === 'number') {
+    actions.push({
+      type: 'rotateYaw',
+      category: 'yaw',
+      label: 'Rotate Yaw',
+      detail: `${wp.heading.toFixed(1)}°`,
+      icon: '🧭'
+    });
+  }
+
+  // 2. Gimbal rotation (if initial waypoint, pitch change, or photo waypoint)
+  const shouldEmitGimbal = idx === 0 || reposInfo.isGimbalChanged || (isStopAndShoot && effectivePitch > -85) || wp.isRingStart;
+  if (shouldEmitGimbal) {
+    actions.push({
+      type: 'gimbalRotate',
+      category: 'gimbal',
+      label: 'Gimbal Pitch',
+      detail: `${effectivePitch.toFixed(0)}°${reposInfo.pitchDiff >= 5 ? ` (Δ${reposInfo.pitchDiff.toFixed(0)}°)` : ''}`,
+      pitch: effectivePitch,
+      pitchDiff: reposInfo.pitchDiff,
+      icon: '🎯'
+    });
+  }
+
+  // 3. Hover dwell (auto-settling or manual)
+  if (effectiveHover > 0) {
+    actions.push({
+      type: 'hover',
+      category: 'hover',
+      label: 'Hover Dwell',
+      detail: `${effectiveHover.toFixed(1)}s`,
+      time: effectiveHover,
+      reason: settlingReason || 'Manual Pause',
+      isAuto: !wp.hoverTime || wp.hoverTime === 'inherit',
+      icon: '⏱️'
+    });
+  }
+
+  // 4. Zoom action (idx === 0)
+  const cameraZoom = wp.zoom || (wpLayer && wpLayer.cameraZoom) || 1.0;
+  if (cameraZoom > 1.0 && idx === 0) {
+    actions.push({
+      type: 'zoom',
+      category: 'camera',
+      label: 'Camera Zoom',
+      detail: `${cameraZoom.toFixed(1)}x`,
+      icon: '🔍'
+    });
+  }
+
+  // 5. Video record or Photo capture
+  const perWpAction = wp.cameraAction || 'inherit';
+  if (isVideo) {
+    actions.push({
+      type: 'video',
+      category: 'camera',
+      label: 'Video Mode',
+      detail: 'Continuous Recording',
+      icon: '📹'
+    });
+  } else if (!wp.skipPhoto && (isStopAndShoot || isPhotoSphere || perWpAction === 'takePhoto')) {
+    actions.push({
+      type: 'takePhoto',
+      category: 'camera',
+      label: 'Take Photo',
+      detail: 'Single Shot',
+      icon: '📸'
+    });
+  }
+
+  return {
+    effectivePitch,
+    effectiveHover,
+    settlingReason,
+    reposInfo,
+    actions
+  };
+}
+
+if (typeof window !== 'undefined') {
+  window.checkNeedsReposition = checkNeedsReposition;
+  window.getWaypointHeadingAndPitch = getWaypointHeadingAndPitch;
+  window.resolveWaypointEffectiveActions = resolveWaypointEffectiveActions;
+}
+if (typeof global !== 'undefined') {
+  global.checkNeedsReposition = checkNeedsReposition;
+  global.getWaypointHeadingAndPitch = getWaypointHeadingAndPitch;
+  global.resolveWaypointEffectiveActions = resolveWaypointEffectiveActions;
 }
 
 let showDroneModels = true;
