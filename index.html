@@ -7993,7 +7993,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.215.4</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.215.5</span></h1>
         </div>
       </div>
 
@@ -15025,7 +15025,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.215.4</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.215.5</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15186,6 +15186,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.215.5):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Dynamic Flight Diagnostics Version Reporting (Closes #221):</strong> Replaced hardcoded v1.211.0 in Flight Diagnostics reports and client IRL tracker states with dynamic application release version resolution.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.215.4):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -56022,7 +56028,7 @@ function getAppVersion() {
 
     if (tag && tag.textContent) {
 
-      const match = tag.textContent.match(/[\d\.]+/);
+      const match = tag.textContent.match(/[\d.]+/);
 
       if (match) return match[0];
 
@@ -56030,7 +56036,18 @@ function getAppVersion() {
 
   }
 
-  return '1.149.0';
+  if (typeof require === 'function') {
+    try {
+      const path = require('path');
+      const pkgPath = path.resolve(__dirname, '../../package.json');
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        if (pkg && pkg.version) return pkg.version;
+      }
+    } catch (_) {}
+  }
+
+  return '1.215.5';
 
 }
 
@@ -65092,11 +65109,13 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 if (typeof window !== 'undefined') {
+  window.getAppVersion = getAppVersion;
   window.getDeviceDisplayInfo = getDeviceDisplayInfo;
   window.getLastDetectedFlightDevice = getLastDetectedFlightDevice;
 }
 
 if (typeof global !== 'undefined') {
+  global.getAppVersion = getAppVersion;
   global.getDeviceDisplayInfo = getDeviceDisplayInfo;
   global.getLastDetectedFlightDevice = getLastDetectedFlightDevice;
 }
@@ -67438,7 +67457,7 @@ const IrlVerifier = {
 | **Photo Shutter Ratio** | ${r.metrics.photoCountActual} / ${r.metrics.photoCountPlanned} (${r.metrics.photoCaptureRatioPct}%) | $\\ge 85\\%$ | ${r.metrics.photoCaptureRatioPct >= 85 ? 'PASS' : 'VARIANCE'} |
 | **Ending Battery Reserve** | ${r.metrics.batteryEndPct}% | $\\ge 15\\%$ | ${r.metrics.batteryEndPct >= 15 ? 'PASS' : 'VARIANCE'} |
 
-*Generated by Aalaapi Sky Flight Diagnostics (v1.211.0).*
+*Generated by Aalaapi Sky Flight Diagnostics (v${(typeof getAppVersion === 'function' ? getAppVersion() : ((typeof window !== 'undefined' && typeof window.getAppVersion === 'function') ? window.getAppVersion() : ((typeof document !== 'undefined' && document.querySelector('.header-version-badge')) ? document.querySelector('.header-version-badge').textContent.replace(/^v/i, '').trim() : '1.215.5')))}).*
 `;
   },
 
@@ -67657,7 +67676,8 @@ const IrlVerifier = {
         }
         if (typeof updateActiveLayerIrlBadge === 'function') {
           if (window.AALAAPI_IRL_STATUS) {
-            window.AALAAPI_IRL_STATUS[patternId] = { s: data.status || (this.currentResult.passedAll ? 'V' : 'F'), v: '1.211.0' };
+            const activeVer = (typeof getAppVersion === 'function' ? getAppVersion() : ((typeof window !== 'undefined' && typeof window.getAppVersion === 'function') ? window.getAppVersion() : '1.215.5'));
+            window.AALAAPI_IRL_STATUS[patternId] = { s: data.status || (this.currentResult.passedAll ? 'V' : 'F'), v: activeVer };
           }
           updateActiveLayerIrlBadge(patternId);
         }
