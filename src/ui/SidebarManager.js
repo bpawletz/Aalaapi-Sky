@@ -1824,30 +1824,39 @@ function updateActiveLayerIrlBadge(gridType) {
 
   irlBadge.href = issueUrl;
   if (typeof irlBadge.setAttribute === 'function') irlBadge.setAttribute('data-irl-status', entry.s || 'U');
-  if (entry.s === 'V') {
-    irlBadge.textContent = '✅ IRL';
+
+  const score = (entry.p !== undefined && entry.p !== null) ? Number(entry.p) : (entry.s === 'V' ? 6 : (entry.s === 'U' ? 0 : null));
+
+  if (entry.s === 'V' || score === 6) {
+    irlBadge.textContent = '6/6 ✅ IRL';
     irlBadge.style.background = 'rgba(16, 185, 129, 0.15)';
     irlBadge.style.color = '#34d399';
     irlBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
-    irlBadge.title = `IRL Field Tested${entry.v ? ` (v${entry.v})` : ''}. ${legalNotice} Click to view IRL Test Plan & Matrix.`;
+    irlBadge.title = `IRL Field Tested: 6/6 Phases Passed (100% Nominal Fidelity)${entry.v ? ` (v${entry.v})` : ''}. ${legalNotice} Click to view IRL Test Plan & Matrix.`;
+  } else if (entry.s === 'O' || (score !== null && score >= 4 && score < 6)) {
+    irlBadge.textContent = `${score !== null ? `${score}/6 ` : ''}⚠️ IRL`;
+    irlBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+    irlBadge.style.color = '#fbbf24';
+    irlBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+    irlBadge.title = `IRL Field Tested: ${score !== null ? `${score}/6 Phases Passed (${Math.round(score / 6 * 100)}% Operational Variance)` : 'Operational Variance Recorded'}${entry.v ? ` (v${entry.v})` : ''}. ${legalNotice} Click to view IRL Test Plan.`;
   } else if (entry.s === 'R') {
     irlBadge.textContent = '🧪 Re-Test';
     irlBadge.style.background = 'rgba(245, 158, 11, 0.15)';
     irlBadge.style.color = '#fbbf24';
     irlBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
     irlBadge.title = `Needs IRL Re-Test: Pattern code modified since last field verification. ${legalNotice} Click to view IRL Test Plan.`;
-  } else if (entry.s === 'F') {
-    irlBadge.textContent = '❌ IRL';
+  } else if (entry.s === 'F' || (score !== null && score > 0 && score < 4)) {
+    irlBadge.textContent = `${score !== null ? `${score}/6 ` : ''}❌ IRL`;
     irlBadge.style.background = 'rgba(239, 68, 68, 0.15)';
     irlBadge.style.color = '#f87171';
     irlBadge.style.borderColor = 'rgba(239, 68, 68, 0.35)';
-    irlBadge.title = `IRL Field Test Variance/Failure Recorded. ${legalNotice} Click to view IRL Test Plan.`;
+    irlBadge.title = `IRL Field Test Critical Variance Recorded${score !== null ? ` (${score}/6 Phases)` : ''}${entry.v ? ` (v${entry.v})` : ''}. ${legalNotice} Click to view IRL Test Plan.`;
   } else {
-    irlBadge.textContent = '🧪 IRL';
+    irlBadge.textContent = '0/6 ⚪ IRL';
     irlBadge.style.background = 'rgba(148, 163, 184, 0.12)';
     irlBadge.style.color = '#94a3b8';
     irlBadge.style.borderColor = 'rgba(148, 163, 184, 0.3)';
-    irlBadge.title = `Pending IRL Field Test. ${legalNotice} Click to view IRL Test Plan & Matrix.`;
+    irlBadge.title = `Pending IRL Field Test (0/6 Phases). ${legalNotice} Click to view IRL Test Plan & Matrix.`;
   }
 }
 

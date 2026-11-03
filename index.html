@@ -8353,7 +8353,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.219.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.220.0</span></h1>
         </div>
       </div>
 
@@ -8907,7 +8907,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <span>2. Layer Properties</span>
             <div style="display: flex; align-items: center; gap: 4px;">
               <span id="layer-hierarchy-status-badge" class="badge" style="display: none; font-size: 0.65rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600;" title="Three-Tier Hierarchy Status"></span>
-              <a id="active-layer-irl-badge" href="https://github.com/bpawletz/Aalaapi-Sky/issues/202" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="badge" data-irl-status="U" style="font-size: 0.65rem; background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; text-decoration: none; cursor: pointer;" title="Pending IRL Field Test. Historical baseline check only — NOT a guarantee of flight safety across varying wind, GNSS, terrain, or firmware conditions. RPIC retains sole responsibility.">🧪 IRL</a>
+              <a id="active-layer-irl-badge" href="https://github.com/bpawletz/Aalaapi-Sky/issues/202" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="badge" data-irl-status="U" style="font-size: 0.65rem; background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; text-decoration: none; cursor: pointer;" title="Pending IRL Field Test. Historical baseline check only — NOT a guarantee of flight safety across varying wind, GNSS, terrain, or firmware conditions. RPIC retains sole responsibility.">0/6 ⚪ IRL</a>
               <span id="active-layer-pattern-badge" class="badge" style="font-size: 0.7rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; margin-right: 6px;">3D Double Grid</span>
             </div>
           </h3>
@@ -15558,7 +15558,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.219.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.220.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15716,6 +15716,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                            <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.220.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>6-Phase Flight Fidelity Gauge &amp; Scorecard Meter (Fixes #231):</strong> Transformed the Section 2 IRL verification marker (<code>#active-layer-irl-badge</code>) and Diagnostics Scorecard modal (<code>#diag-irl-modal</code>) into a multi-tiered 6-phase fidelity gauge (<code>6/6 ✅</code>, <code>5/6 ⚠️</code>, <code>3/6 ❌</code>, <code>🧪 Re-Test</code>, <code>0/6 ⚪</code>) with dynamic 6-segment progress pip visualization.</li>
+                <li><strong>Continuous Helix &amp; Progressive Sweep Gimbal Tilt Fix:</strong> Fixed WPML generation in <code>WpmlCompiler.js</code> to emit <code>gimbalRotate</code> actions across helical pitch tapers, ensuring continuous corkscrews tilt smoothly toward central POIs instead of locking at entry angle.</li>
+                <li><strong>Video Capture Mode In-App Verifier Support:</strong> Automatically detects video flight missions in <code>IrlVerifier.js</code>, eliminating false photo count variances when video recording is active.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.219.3):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -20803,7 +20811,22 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           </div>
         </div>
 
-        <!-- 6-Phase Scorecard Grid -->
+                <!-- 6-Phase Flight Fidelity Gauge Meter (v1.220.0, Issue #231) -->
+        <div id="diag-irl-gauge-container" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; flex-wrap: wrap; gap: 6px;">
+            <strong style="color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+              <span>🎯</span>
+              <span>Flight Fidelity Gauge:</span>
+              <span id="diag-irl-gauge-tier" style="color: #34d399; font-weight: 700;">Evaluating...</span>
+            </strong>
+            <span id="diag-irl-gauge-ratio" style="font-family: monospace; font-weight: 700; color: #38bdf8;">-- / 6 (--%)</span>
+          </div>
+          <div id="diag-irl-gauge-bar" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; height: 10px; border-radius: 5px; overflow: hidden; background: rgba(255, 255, 255, 0.05); padding: 2px;">
+            <!-- 6 phase pips rendered dynamically -->
+          </div>
+        </div>
+
+<!-- 6-Phase Scorecard Grid -->
         <div id="diag-irl-phases-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 10px;">
           <!-- 6 cards generated dynamically by IrlVerifier.renderScorecard() -->
         </div>
@@ -40495,30 +40518,39 @@ function updateActiveLayerIrlBadge(gridType) {
 
   irlBadge.href = issueUrl;
   if (typeof irlBadge.setAttribute === 'function') irlBadge.setAttribute('data-irl-status', entry.s || 'U');
-  if (entry.s === 'V') {
-    irlBadge.textContent = '✅ IRL';
+
+  const score = (entry.p !== undefined && entry.p !== null) ? Number(entry.p) : (entry.s === 'V' ? 6 : (entry.s === 'U' ? 0 : null));
+
+  if (entry.s === 'V' || score === 6) {
+    irlBadge.textContent = '6/6 ✅ IRL';
     irlBadge.style.background = 'rgba(16, 185, 129, 0.15)';
     irlBadge.style.color = '#34d399';
     irlBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
-    irlBadge.title = `IRL Field Tested${entry.v ? ` (v${entry.v})` : ''}. ${legalNotice} Click to view IRL Test Plan & Matrix.`;
+    irlBadge.title = `IRL Field Tested: 6/6 Phases Passed (100% Nominal Fidelity)${entry.v ? ` (v${entry.v})` : ''}. ${legalNotice} Click to view IRL Test Plan & Matrix.`;
+  } else if (entry.s === 'O' || (score !== null && score >= 4 && score < 6)) {
+    irlBadge.textContent = `${score !== null ? `${score}/6 ` : ''}⚠️ IRL`;
+    irlBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+    irlBadge.style.color = '#fbbf24';
+    irlBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+    irlBadge.title = `IRL Field Tested: ${score !== null ? `${score}/6 Phases Passed (${Math.round(score / 6 * 100)}% Operational Variance)` : 'Operational Variance Recorded'}${entry.v ? ` (v${entry.v})` : ''}. ${legalNotice} Click to view IRL Test Plan.`;
   } else if (entry.s === 'R') {
     irlBadge.textContent = '🧪 Re-Test';
     irlBadge.style.background = 'rgba(245, 158, 11, 0.15)';
     irlBadge.style.color = '#fbbf24';
     irlBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
     irlBadge.title = `Needs IRL Re-Test: Pattern code modified since last field verification. ${legalNotice} Click to view IRL Test Plan.`;
-  } else if (entry.s === 'F') {
-    irlBadge.textContent = '❌ IRL';
+  } else if (entry.s === 'F' || (score !== null && score > 0 && score < 4)) {
+    irlBadge.textContent = `${score !== null ? `${score}/6 ` : ''}❌ IRL`;
     irlBadge.style.background = 'rgba(239, 68, 68, 0.15)';
     irlBadge.style.color = '#f87171';
     irlBadge.style.borderColor = 'rgba(239, 68, 68, 0.35)';
-    irlBadge.title = `IRL Field Test Variance/Failure Recorded. ${legalNotice} Click to view IRL Test Plan.`;
+    irlBadge.title = `IRL Field Test Critical Variance Recorded${score !== null ? ` (${score}/6 Phases)` : ''}${entry.v ? ` (v${entry.v})` : ''}. ${legalNotice} Click to view IRL Test Plan.`;
   } else {
-    irlBadge.textContent = '🧪 IRL';
+    irlBadge.textContent = '0/6 ⚪ IRL';
     irlBadge.style.background = 'rgba(148, 163, 184, 0.12)';
     irlBadge.style.color = '#94a3b8';
     irlBadge.style.borderColor = 'rgba(148, 163, 184, 0.3)';
-    irlBadge.title = `Pending IRL Field Test. ${legalNotice} Click to view IRL Test Plan & Matrix.`;
+    irlBadge.title = `Pending IRL Field Test (0/6 Phases). ${legalNotice} Click to view IRL Test Plan & Matrix.`;
   }
 }
 
@@ -70040,15 +70072,20 @@ const IrlVerifier = {
                                 maxYawError <= maxYawToleranceDeg;
 
     // Phase 5: Camera Shutter & Capture Dynamics (Ratio + Max Shutter Speed)
-    const plannedPhotos = wps.filter(w => !w.skipPhoto && !w.isTurnaroundPoint && !w.isExclusionDetour).length;
+    const isVideoMode = options.captureMode === 'video' ||
+      (options.flightLayers && options.flightLayers.some(l => l.pattern === options.patternId && l.captureMode === 'video')) ||
+      (typeof getActiveLayer === 'function' && getActiveLayer()?.captureMode === 'video') ||
+      Boolean(wps[0] && (wps[0].captureMode === 'video' || wps[0].layerCaptureMode === 'video'));
+
+    const plannedPhotos = isVideoMode ? 0 : wps.filter(w => !w.skipPhoto && !w.isTurnaroundPoint && !w.isExclusionDetour).length;
     const actualPhotos = pts.filter(p => p.isPhoto).length;
-    const photoRatio = plannedPhotos > 0 ? (actualPhotos / plannedPhotos) : (actualPhotos === 0 ? 1.0 : 0.8);
+    const photoRatio = isVideoMode ? 1.0 : (plannedPhotos > 0 ? (actualPhotos / plannedPhotos) : (actualPhotos === 0 ? 1.0 : 0.8));
     const photoRatioTolerance = options.photoRatioTolerance || 0.85;
 
     let shutterSettlingPassed = true;
     let maxShutterSpeedMps = 0;
     let medianShutterSpeedMps = 0;
-    if (options.captureMode === 'hover' || options.captureMode === 'stopAndShoot') {
+    if (!isVideoMode && (options.captureMode === 'hover' || options.captureMode === 'stopAndShoot')) {
       const photoPts = pts.filter(p => p.isPhoto && p.speed !== undefined);
       if (photoPts.length > 0) {
         const speeds = photoPts.map(p => parseFloat(p.speed) || 0).sort((a, b) => a - b);
@@ -70059,7 +70096,7 @@ const IrlVerifier = {
         }
       }
     }
-    const captureTriggerPassed = photoRatio >= photoRatioTolerance && shutterSettlingPassed;
+    const captureTriggerPassed = isVideoMode ? true : (photoRatio >= photoRatioTolerance && shutterSettlingPassed);
 
     // Phase 6: Safe Exit, Landing & RTH
     const wpLast = wpApproaches[wpApproaches.length - 1];
@@ -70078,9 +70115,34 @@ const IrlVerifier = {
       exit_rth: exitRthPassed
     };
 
-    const passedAll = Object.values(phases).every(Boolean);
+    const passedPhaseCount = Object.values(phases).filter(Boolean).length;
+    const totalPhaseCount = Object.keys(phases).length; // 6
+    const fidelityPct = Math.round((passedPhaseCount / totalPhaseCount) * 100);
+
+    let outcomeTier = 'CRITICAL_VARIANCE';
+    let tierCode = 'F';
+    let tierLabel = 'Critical Variance';
+
+    if (passedPhaseCount === totalPhaseCount) {
+      outcomeTier = 'VERIFIED';
+      tierCode = 'V';
+      tierLabel = 'All 6 Phases Passed';
+    } else if (passedPhaseCount >= 4) {
+      outcomeTier = 'OPERATIONAL_VARIANCE';
+      tierCode = 'O';
+      tierLabel = 'Operational Variance';
+    }
+
+    const passedAll = (passedPhaseCount === totalPhaseCount);
 
     const metrics = {
+      passedPhaseCount,
+      totalPhaseCount,
+      fidelityPct,
+      outcomeTier,
+      tierCode,
+      tierLabel,
+      isVideoMode,
       waypointCount: wps.length,
       visitedCount,
       waypointCompletionPct: Math.round(completionRatio * 100),
@@ -70228,19 +70290,52 @@ const IrlVerifier = {
       }
     }
 
-    // Update Outcome Badge
+    // Update Outcome Badge & 6-Phase Fidelity Gauge
     const outcomeBadge = document.getElementById('diag-irl-outcome-badge');
     if (outcomeBadge) {
       if (result.passedAll) {
-        outcomeBadge.textContent = '\u2705 ALL 6 PHASES PASSED';
+        outcomeBadge.textContent = '\u2705 6/6 PHASES PASSED • 100% NOMINAL';
         outcomeBadge.style.background = 'rgba(16, 185, 129, 0.2)';
         outcomeBadge.style.color = '#34d399';
         outcomeBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-      } else {
-        outcomeBadge.textContent = '\u26A0\uFE0F VARIANCE DETECTED';
+      } else if (result.metrics.passedPhaseCount >= 4) {
+        outcomeBadge.textContent = `\u26A0\uFE0F ${result.metrics.passedPhaseCount}/6 PHASES PASSED • ${result.metrics.fidelityPct}% OPERATIONAL VARIANCE`;
         outcomeBadge.style.background = 'rgba(245, 158, 11, 0.2)';
         outcomeBadge.style.color = '#fbbf24';
         outcomeBadge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+      } else {
+        outcomeBadge.textContent = `\u274C ${result.metrics.passedPhaseCount}/6 PHASES PASSED • ${result.metrics.fidelityPct}% CRITICAL VARIANCE`;
+        outcomeBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+        outcomeBadge.style.color = '#f87171';
+        outcomeBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+      }
+    }
+
+    // Render 6-Phase Fidelity Gauge Bar
+    const gaugeTierEl = document.getElementById('diag-irl-gauge-tier');
+    const gaugeRatioEl = document.getElementById('diag-irl-gauge-ratio');
+    const gaugeBarEl = document.getElementById('diag-irl-gauge-bar');
+    if (gaugeBarEl) {
+      gaugeBarEl.innerHTML = '';
+      const phaseKeys = Object.keys(PHASE_LABELS);
+      phaseKeys.forEach((key, idx) => {
+        const passed = Boolean(result.phases[key]);
+        const pip = document.createElement('div');
+        pip.className = 'diag-irl-gauge-pip';
+        pip.style.borderRadius = '3px';
+        pip.style.height = '100%';
+        pip.style.background = passed ? '#10b981' : (result.metrics.passedPhaseCount >= 4 ? '#f59e0b' : '#ef4444');
+        pip.style.boxShadow = passed ? '0 0 6px rgba(16, 185, 129, 0.4)' : 'none';
+        pip.title = `Phase ${idx + 1}: ${PHASE_LABELS[key]} — ${passed ? 'PASSED' : 'VARIANCE'}`;
+        gaugeBarEl.appendChild(pip);
+      });
+      if (gaugeTierEl) {
+        gaugeTierEl.textContent = result.metrics.tierLabel;
+        gaugeTierEl.style.color = result.passedAll ? '#34d399' : (result.metrics.passedPhaseCount >= 4 ? '#fbbf24' : '#f87171');
+      }
+      if (gaugeRatioEl) {
+        gaugeRatioEl.textContent = `${result.metrics.passedPhaseCount} / 6 (${result.metrics.fidelityPct}%)`;
+        gaugeRatioEl.style.color = result.passedAll ? '#34d399' : (result.metrics.passedPhaseCount >= 4 ? '#fbbf24' : '#f87171');
       }
     }
 
@@ -70313,7 +70408,8 @@ const IrlVerifier = {
         { label: 'Max Gimbal Pitch Error', val: `${result.metrics.maxPitchErrorDeg}° (WP ${result.metrics.maxPitchWpIndex !== null ? result.metrics.maxPitchWpIndex : '-'})`, tol: '≤ 15.0°' },
         { label: 'Mean Yaw Tracking Error', val: `${result.metrics.meanYawErrorDeg}°`, tol: '≤ 15.0°' },
         { label: 'Max Yaw Tracking Error', val: `${result.metrics.maxYawErrorDeg}° (WP ${result.metrics.maxYawWpIndex !== null ? result.metrics.maxYawWpIndex : '-'})`, tol: '≤ 25.0°' },
-        { label: 'Photo Shutter Triggers', val: `${result.metrics.photoCountActual} / ${result.metrics.photoCountPlanned} (${result.metrics.photoCaptureRatioPct}%)`, tol: '≥ 85%' },
+        { label: '6-Phase Fidelity Gauge', val: `${result.metrics.passedPhaseCount} / 6 (${result.metrics.fidelityPct}%)`, tol: result.metrics.tierLabel },
+        { label: 'Photo Shutter Triggers', val: result.metrics.isVideoMode ? 'Video Mode (0 photos)' : `${result.metrics.photoCountActual} / ${result.metrics.photoCountPlanned} (${result.metrics.photoCaptureRatioPct}%)`, tol: result.metrics.isVideoMode ? 'Video Flight' : '≥ 85%' },
         { label: 'Entry Drift (WP[0])', val: `H: ${result.metrics.entryDistH}m • Z: ${result.metrics.entryDistZ}m`, tol: 'H ≤ 4m, Z ≤ 2m' },
         { label: 'Battery Consumption', val: `${result.metrics.batteryStartPct}% → ${result.metrics.batteryEndPct}% (Used: ${result.metrics.batteryUsedPct}%)`, tol: 'End ≥ 15%' }
       ];
@@ -70361,7 +70457,7 @@ const IrlVerifier = {
 > **Non-Guarantee & Variation Notice:** Passing these field checks verifies nominal reference behavior on the tested hardware/firmware only and **does not guarantee** future flight performance under varying wind, GNSS, geomagnetic, terrain, or OEM firmware conditions. The RPIC retains sole responsibility for VLOS and flight safety.
 
 **Flight Log:** \`${this.currentFlightId}\`
-**Overall Outcome:** ${r.passedAll ? '\u2705 `VERIFIED` (All 6 Phases Passed)' : '\u26A0\uFE0F `VARIANCE DETECTED` (Review Needed)'}
+**Overall Outcome:** ${r.passedAll ? '\u2705 `VERIFIED` (All 6 Phases Passed • 100% Fidelity)' : (r.metrics.passedPhaseCount >= 4 ? `\u26A0\uFE0F \`OPERATIONAL VARIANCE\` (${r.metrics.passedPhaseCount}/6 Phases • ${r.metrics.fidelityPct}% Fidelity)` : `\u274C \`CRITICAL VARIANCE\` (${r.metrics.passedPhaseCount}/6 Phases • ${r.metrics.fidelityPct}% Fidelity)`)}
 
 #### Six-Phase Verification Checklist
 - [${r.phases.kmz_import ? 'x' : ' '}] **Phase 1: KMZ Import & Action Parsing** (${r.metrics.waypointCount} WPs, ${this.currentTelemetryData?.points?.length || 0} samples)
@@ -70606,7 +70702,7 @@ const IrlVerifier = {
         if (typeof updateActiveLayerIrlBadge === 'function') {
           if (window.AALAAPI_IRL_STATUS) {
             const activeVer = (typeof getAppVersion === 'function' ? getAppVersion() : ((typeof window !== 'undefined' && typeof window.getAppVersion === 'function') ? window.getAppVersion() : '1.216.0'));
-            window.AALAAPI_IRL_STATUS[patternId] = { s: data.status || (this.currentResult.passedAll ? 'V' : 'F'), v: activeVer };
+            window.AALAAPI_IRL_STATUS[patternId] = { s: data.status || this.currentResult.metrics?.tierCode || (this.currentResult.passedAll ? 'V' : 'F'), p: this.currentResult.metrics?.passedPhaseCount || (this.currentResult.passedAll ? 6 : 0), v: activeVer };
           }
           updateActiveLayerIrlBadge(patternId);
         }

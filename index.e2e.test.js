@@ -11658,4 +11658,60 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(await authModal.evaluate(el => el.classList.contains('hidden')), true, 'Auth modal must close');
     });
   });
+  describe('6-Phase Flight Fidelity Gauge & Scorecard Meter E2E Suite (v1.220.0, Issue #231)', () => {
+    test('Section 2 header badge displays 6-phase gauge ratio and clicking opens Issue #202', async () => {
+      const badge = page.locator('#active-layer-irl-badge');
+      assert.strictEqual(await badge.isVisible(), true, '#active-layer-irl-badge must be visible in Section 2');
+
+      const badgeText = await badge.textContent();
+      assert.ok(badgeText.includes('IRL'), 'Badge text must include IRL');
+
+      // Check that gauge elements exist in #diag-irl-modal
+      const gaugeContainer = page.locator('#diag-irl-gauge-container');
+      const gaugeBar = page.locator('#diag-irl-gauge-bar');
+      const gaugeTier = page.locator('#diag-irl-gauge-tier');
+      const gaugeRatio = page.locator('#diag-irl-gauge-ratio');
+
+      assert.strictEqual(await gaugeContainer.count(), 1, '#diag-irl-gauge-container must be in DOM');
+      assert.strictEqual(await gaugeBar.count(), 1, '#diag-irl-gauge-bar must be in DOM');
+      assert.strictEqual(await gaugeTier.count(), 1, '#diag-irl-gauge-tier must be in DOM');
+      assert.strictEqual(await gaugeRatio.count(), 1, '#diag-irl-gauge-ratio must be in DOM');
+    });
+
+    test('IrlVerifier renders 6 gauge pips and tier badge when scorecard modal is opened', async () => {
+      await page.evaluate(() => {
+        const dummyPlan = [
+          { lat: 41.3215, lon: -88.9950, alt: 30, heading: 0, pitch: -45 },
+          { lat: 41.3216, lon: -88.9950, alt: 30, heading: 0, pitch: -45 }
+        ];
+        const dummyTelem = {
+          points: [
+            { lat: 41.3215, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: true, battery: 85, speed: 0 },
+            { lat: 41.32152, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 84, speed: 2 },
+            { lat: 41.32155, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 83, speed: 2 },
+            { lat: 41.32158, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 82, speed: 1 },
+            { lat: 41.3216, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: true, battery: 80, speed: 0 }
+          ]
+        };
+        IrlVerifier.openIrlVerificationModal('Test_Gauge_Flight.txt', dummyPlan, dummyTelem, { captureMode: 'hover' });
+      });
+
+      await page.waitForTimeout(400);
+
+      const pipsCount = await page.locator('.diag-irl-gauge-pip').count();
+      assert.strictEqual(pipsCount, 6, 'Must render exactly 6 gauge pips in #diag-irl-gauge-bar');
+
+      const tierText = await page.locator('#diag-irl-gauge-tier').textContent();
+      assert.strictEqual(tierText, 'All 6 Phases Passed', 'Tier text must indicate All 6 Phases Passed for nominal flight');
+
+      const ratioText = await page.locator('#diag-irl-gauge-ratio').textContent();
+      assert.strictEqual(ratioText, '6 / 6 (100%)', 'Ratio text must be 6 / 6 (100%)');
+
+      // Close modal
+      await page.evaluate(() => {
+        IrlVerifier.closeIrlVerificationModal();
+      });
+      await page.waitForTimeout(200);
+    });
+  });
 });
