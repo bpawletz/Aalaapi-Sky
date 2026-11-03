@@ -535,6 +535,8 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         wp.isRingStart ||
         isRoadFollowing ||
         isVerticalFacade ||
+        isContinuousHelix ||
+        isHyperlapseSweep ||
         isPitchSlew ||
         isObliqueStopAndShoot;
       if (shouldEmitGimbalRotate) {
@@ -707,14 +709,16 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // Terminal Waypoint Gimbal Horizon Restoration:
-    // Only apply terminal horizon restoration to Photo Sphere workflows (where 360° panos end at nadir in a stationary cluster)
-    // or when explicitly requested. NEVER apply to multi-waypoint mapping surveys (single/double grid, corridor, facade, etc.)
-    // because injecting gimbalRotate(0°) into an active survey photo waypoint causes DJI Fly to interpolate pitch to 0°
-    // during the approach leg, ruining the final survey photo (Issue #205).
+    // Only apply terminal horizon restoration to single-node stationary inspections or single-waypoint Photo Sphere action groups
+    // (where the drone executes in a stationary hover with no preceding approach leg).
+    // NEVER apply to multi-waypoint missions (surveys or discrete 49-node Photo Spheres) where the terminal waypoint captures a photo,
+    // because injecting gimbalRotate(0°) into an active photo waypoint causes DJI Fly to interpolate pitch towards 0°
+    // during the preceding approach leg, ruining the final nadir/survey photo (Issue #205, Issue #230).
     const isLastMissionWaypoint = (idx === waypoints.length - 1);
-    const isPhotoSphereMission = isPhotoSphere || Boolean(wp && (wp.isPhotoSpherePoint || wp.gridType === 'photo-sphere' || wp.layerPattern === 'photo-sphere' || wp.isPhotoSphereActionGroup)) ||
-      Boolean(opts && (opts.gridType === 'photo-sphere' || opts.pattern === 'photo-sphere' || opts.flightPattern === 'photo-sphere' || opts.isPhotoSphere));
-    const requiresTerminalRestoration = isPhotoSphereMission || Boolean(opts && opts.terminalHorizonRestoration === true);
+    const isMultiWpMission = (waypoints.length > 1);
+    const isSingleNodePhotoSphere = (waypoints.length === 1) && (isPhotoSphere || Boolean(wp && (wp.isPhotoSpherePoint || wp.gridType === 'photo-sphere' || wp.layerPattern === 'photo-sphere' || wp.isPhotoSphereActionGroup)) ||
+      Boolean(opts && (opts.gridType === 'photo-sphere' || opts.pattern === 'photo-sphere' || opts.flightPattern === 'photo-sphere' || opts.isPhotoSphere)));
+    const requiresTerminalRestoration = !isMultiWpMission && (isSingleNodePhotoSphere || Boolean(opts && opts.terminalHorizonRestoration === true));
     const hasPhotoOrCaptureAction = waypointActions.some(act => act.includes('takePhoto') || act.includes('stopRecord') || act.includes('startRecord'));
     if (isLastMissionWaypoint && requiresTerminalRestoration && hasPhotoOrCaptureAction) {
       waypointActions.push(`          <wpml:action>
@@ -1924,12 +1928,11 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
   // from target pitch (e.g. -90°) to 0° across the preceding approach leg, causing the final survey photo to be captured at horizon (Issue #205).
   const lastPlacemarkIndex = fixedWpml.lastIndexOf('<Placemark>');
   if (lastPlacemarkIndex !== -1) {
-    const isMultiWpSurvey = (options && (options.gridType === 'single' || options.gridType === 'double' || options.gridType === 'crosshatch' || options.gridType === 'corridor' || options.gridType === 'facade' || options.flightPattern === 'single' || options.flightPattern === 'double' || options.flightPattern === 'crosshatch' || options.flightPattern === 'corridor')) ||
-      (options && Array.isArray(options.waypoints) && options.waypoints.length > 1 && !options.waypoints.some(w => w && (w.isPhotoSpherePoint || w.gridType === 'photo-sphere' || w.layerPattern === 'photo-sphere')));
-    const isPhotoSphereMission = (options && (options.gridType === 'photo-sphere' || options.pattern === 'photo-sphere' || options.flightPattern === 'photo-sphere' || options.isPhotoSphere)) ||
-      (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'photo-sphere' || w.isPhotoSphere || w.isPhotoSpherePoint || w.layerPattern === 'photo-sphere')));
     const isSingleNodeInspection = (fixedWpml.split('<Placemark>').length === 2); // exactly 1 placemark
-    const allowRestoration = (isPhotoSphereMission || isSingleNodeInspection || (options && options.terminalHorizonRestoration === true)) && !isMultiWpSurvey;
+    const isMultiWpMission = (fixedWpml.split('<Placemark>').length > 2) || (options && Array.isArray(options.waypoints) && options.waypoints.length > 1);
+    const isSingleNodePhotoSphere = isSingleNodeInspection && ((options && (options.gridType === 'photo-sphere' || options.pattern === 'photo-sphere' || options.flightPattern === 'photo-sphere' || options.isPhotoSphere)) ||
+      (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'photo-sphere' || w.isPhotoSphere || w.isPhotoSpherePoint || w.layerPattern === 'photo-sphere'))));
+    const allowRestoration = (isSingleNodePhotoSphere || isSingleNodeInspection || (options && options.terminalHorizonRestoration === true)) && !isMultiWpMission;
 
     if (allowRestoration) {
       const lastPlacemark = fixedWpml.substring(lastPlacemarkIndex);

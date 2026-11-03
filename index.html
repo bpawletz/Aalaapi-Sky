@@ -8353,7 +8353,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.219.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.219.3</span></h1>
         </div>
       </div>
 
@@ -15558,7 +15558,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.219.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.219.3</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15716,9 +15716,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
-                                    <li style="margin-bottom: 8px;">
-                                                                                                                          <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.219.3):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Photo Sphere Nadir Ground-Lock Precision (Closes #230):</strong> Prevented premature upward gimbal pitch interpolation on discrete 49-node 360° Photo Sphere missions where the final -90° nadir photo was captured mid-transit at -14.1°. Preserved full -90° vertical ground-lock pitch at the terminal photo waypoint, preventing DJI Fly from interpolating the gimbal pitch to horizon during the approach leg.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.219.2):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -53852,6 +53855,8 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         wp.isRingStart ||
         isRoadFollowing ||
         isVerticalFacade ||
+        isContinuousHelix ||
+        isHyperlapseSweep ||
         isPitchSlew ||
         isObliqueStopAndShoot;
       if (shouldEmitGimbalRotate) {
@@ -54024,14 +54029,16 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // Terminal Waypoint Gimbal Horizon Restoration:
-    // Only apply terminal horizon restoration to Photo Sphere workflows (where 360° panos end at nadir in a stationary cluster)
-    // or when explicitly requested. NEVER apply to multi-waypoint mapping surveys (single/double grid, corridor, facade, etc.)
-    // because injecting gimbalRotate(0°) into an active survey photo waypoint causes DJI Fly to interpolate pitch to 0°
-    // during the approach leg, ruining the final survey photo (Issue #205).
+    // Only apply terminal horizon restoration to single-node stationary inspections or single-waypoint Photo Sphere action groups
+    // (where the drone executes in a stationary hover with no preceding approach leg).
+    // NEVER apply to multi-waypoint missions (surveys or discrete 49-node Photo Spheres) where the terminal waypoint captures a photo,
+    // because injecting gimbalRotate(0°) into an active photo waypoint causes DJI Fly to interpolate pitch towards 0°
+    // during the preceding approach leg, ruining the final nadir/survey photo (Issue #205, Issue #230).
     const isLastMissionWaypoint = (idx === waypoints.length - 1);
-    const isPhotoSphereMission = isPhotoSphere || Boolean(wp && (wp.isPhotoSpherePoint || wp.gridType === 'photo-sphere' || wp.layerPattern === 'photo-sphere' || wp.isPhotoSphereActionGroup)) ||
-      Boolean(opts && (opts.gridType === 'photo-sphere' || opts.pattern === 'photo-sphere' || opts.flightPattern === 'photo-sphere' || opts.isPhotoSphere));
-    const requiresTerminalRestoration = isPhotoSphereMission || Boolean(opts && opts.terminalHorizonRestoration === true);
+    const isMultiWpMission = (waypoints.length > 1);
+    const isSingleNodePhotoSphere = (waypoints.length === 1) && (isPhotoSphere || Boolean(wp && (wp.isPhotoSpherePoint || wp.gridType === 'photo-sphere' || wp.layerPattern === 'photo-sphere' || wp.isPhotoSphereActionGroup)) ||
+      Boolean(opts && (opts.gridType === 'photo-sphere' || opts.pattern === 'photo-sphere' || opts.flightPattern === 'photo-sphere' || opts.isPhotoSphere)));
+    const requiresTerminalRestoration = !isMultiWpMission && (isSingleNodePhotoSphere || Boolean(opts && opts.terminalHorizonRestoration === true));
     const hasPhotoOrCaptureAction = waypointActions.some(act => act.includes('takePhoto') || act.includes('stopRecord') || act.includes('startRecord'));
     if (isLastMissionWaypoint && requiresTerminalRestoration && hasPhotoOrCaptureAction) {
       waypointActions.push(`          <wpml:action>
@@ -55241,12 +55248,11 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
   // from target pitch (e.g. -90°) to 0° across the preceding approach leg, causing the final survey photo to be captured at horizon (Issue #205).
   const lastPlacemarkIndex = fixedWpml.lastIndexOf('<Placemark>');
   if (lastPlacemarkIndex !== -1) {
-    const isMultiWpSurvey = (options && (options.gridType === 'single' || options.gridType === 'double' || options.gridType === 'crosshatch' || options.gridType === 'corridor' || options.gridType === 'facade' || options.flightPattern === 'single' || options.flightPattern === 'double' || options.flightPattern === 'crosshatch' || options.flightPattern === 'corridor')) ||
-      (options && Array.isArray(options.waypoints) && options.waypoints.length > 1 && !options.waypoints.some(w => w && (w.isPhotoSpherePoint || w.gridType === 'photo-sphere' || w.layerPattern === 'photo-sphere')));
-    const isPhotoSphereMission = (options && (options.gridType === 'photo-sphere' || options.pattern === 'photo-sphere' || options.flightPattern === 'photo-sphere' || options.isPhotoSphere)) ||
-      (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'photo-sphere' || w.isPhotoSphere || w.isPhotoSpherePoint || w.layerPattern === 'photo-sphere')));
     const isSingleNodeInspection = (fixedWpml.split('<Placemark>').length === 2); // exactly 1 placemark
-    const allowRestoration = (isPhotoSphereMission || isSingleNodeInspection || (options && options.terminalHorizonRestoration === true)) && !isMultiWpSurvey;
+    const isMultiWpMission = (fixedWpml.split('<Placemark>').length > 2) || (options && Array.isArray(options.waypoints) && options.waypoints.length > 1);
+    const isSingleNodePhotoSphere = isSingleNodeInspection && ((options && (options.gridType === 'photo-sphere' || options.pattern === 'photo-sphere' || options.flightPattern === 'photo-sphere' || options.isPhotoSphere)) ||
+      (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'photo-sphere' || w.isPhotoSphere || w.isPhotoSpherePoint || w.layerPattern === 'photo-sphere'))));
+    const allowRestoration = (isSingleNodePhotoSphere || isSingleNodeInspection || (options && options.terminalHorizonRestoration === true)) && !isMultiWpMission;
 
     if (allowRestoration) {
       const lastPlacemark = fixedWpml.substring(lastPlacemarkIndex);
