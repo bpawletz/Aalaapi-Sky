@@ -35977,7 +35977,7 @@ describe('v1.197.2: Zero-Polling SSE Enforcement for Airspace & Tile Cache Stats
       assert.ok(indexHtml.includes('Changelog (v1.197.4):'));
       assert.ok(indexHtml.includes('v1.197.4'));
     });
-    test('buildWaylinesWpml restores gimbal to horizon (0°) and hovers at final nadir waypoint in discrete Photo Spheres', () => {
+    test('buildWaylinesWpml preserves -90 nadir pitch at final waypoint in discrete Photo Spheres without premature gimbal restoration (Issue #182, Issue #230)', () => {
       const origStub = global._stubElements;
       try {
         global._stubElements = {
@@ -36014,14 +36014,8 @@ describe('v1.197.2: Zero-Polling SSE Enforcement for Airspace & Tile Cache Stats
         // Must contain takePhoto
         assert.ok(lastPm.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'), 'Must capture nadir photo');
 
-        // Must contain gimbalRotate to 0° AFTER takePhoto
-        const takePhotoIdx = lastPm.indexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
-        const gimbalRestoreIdx = lastPm.indexOf('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>');
-        assert.ok(gimbalRestoreIdx > takePhotoIdx, 'Gimbal restore to 0° must occur after takePhoto');
-
-        // Must contain hover dwell after gimbal restoration to allow mechanical leveling before finishAction engages
-        const postHoverIdx = lastPm.indexOf('<wpml:hoverTime>2.0</wpml:hoverTime>', gimbalRestoreIdx);
-        assert.ok(postHoverIdx > gimbalRestoreIdx, 'Leveling hover dwell must occur after gimbal restoration');
+        // Must NOT contain gimbalRotate to 0° on multi-waypoint missions to prevent approach-leg interpolation (Issue #230)
+        assert.ok(!lastPm.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'), 'Must NOT inject premature gimbal restore to 0° on multi-waypoint missions');
 
         // Validation against all 10 WPML rules
         const val = validateWpmlMission(wpml, '', { isConsumer: true, gridType: 'photo-sphere' });
@@ -38826,6 +38820,57 @@ describe('Terminal Waypoint Survey Gimbal Pitch Preservation (v1.210.2, Issue #2
     assert.ok(wpml, 'WPML must be generated');
     assert.ok(wpml.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'), 'Photo Sphere must still restore gimbal to 0');
   });
+
+  test('buildWaylinesWpml preserves -90 nadir pitch at terminal waypoint of multi-waypoint discrete Photo Sphere (no premature gimbalRotate 0, Issue #230)', () => {
+    const wps = [
+      { lat: 41.3215, lon: -88.9950, alt: 12, pitch: 20, gimbalPitch: 20, isPhotoSpherePoint: true, gridType: 'photo-sphere' },
+      { lat: 41.3215, lon: -88.9950, alt: 12, pitch: -75, gimbalPitch: -75, isPhotoSpherePoint: true, gridType: 'photo-sphere' },
+      { lat: 41.3215, lon: -88.9950, alt: 12, pitch: -90, gimbalPitch: -90, isPhotoSpherePoint: true, gridType: 'photo-sphere', cameraAction: 'takePhoto' }
+    ];
+
+    const wpml = buildWaylinesWpml(wps, 12, 4.0, 'smoothTransition', 'goHome', -45, 'stopAndShoot', 'curved', {
+      flightPattern: 'photo-sphere',
+      gridType: 'photo-sphere',
+      isConsumer: true,
+      waypoints: wps
+    });
+    assert.ok(wpml, 'WPML must be generated');
+
+    const placemarks = wpml.split('<Placemark>').slice(1);
+    assert.strictEqual(placemarks.length, 3, 'Must have 3 placemarks');
+    const lastPm = placemarks[2];
+
+    assert.ok(lastPm.includes('<wpml:waypointGimbalPitchAngle>-90</wpml:waypointGimbalPitchAngle>'), 'Last placemark must have pitch -90');
+    assert.ok(lastPm.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'), 'Last placemark must contain takePhoto');
+    assert.ok(!lastPm.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'), 'Multi-waypoint discrete Photo Sphere terminal waypoint MUST NOT contain gimbalRotate to 0 (Issue #230)');
+  });
+
+  test('validateAndFixWpml does not inject terminal gimbalRotate 0 into multi-waypoint discrete Photo Sphere missions (Issue #230)', () => {
+    const wps = [
+      { lat: 41.3215, lon: -88.9950, alt: 12, pitch: 20, gimbalPitch: 20, isPhotoSpherePoint: true, gridType: 'photo-sphere' },
+      { lat: 41.3215, lon: -88.9950, alt: 12, pitch: -75, gimbalPitch: -75, isPhotoSpherePoint: true, gridType: 'photo-sphere' },
+      { lat: 41.3215, lon: -88.9950, alt: 12, pitch: -90, gimbalPitch: -90, isPhotoSpherePoint: true, gridType: 'photo-sphere', cameraAction: 'takePhoto' }
+    ];
+
+    const rawWpml = buildWaylinesWpml(wps, 12, 4.0, 'smoothTransition', 'goHome', -45, 'stopAndShoot', 'curved', {
+      flightPattern: 'photo-sphere',
+      gridType: 'photo-sphere',
+      isConsumer: true,
+      waypoints: wps
+    });
+
+    const res = validateAndFixWpml(rawWpml, '', {
+      gridType: 'photo-sphere',
+      flightPattern: 'photo-sphere',
+      waypoints: wps,
+      isConsumer: true
+    });
+
+    assert.ok(res.wpmlXml, 'Repaired WPML must be generated');
+    const placemarks = res.wpmlXml.split('<Placemark>').slice(1);
+    const lastPm = placemarks[placemarks.length - 1];
+    assert.ok(!lastPm.includes('<wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>'), 'Audit must NOT inject gimbalRotate 0 into multi-waypoint discrete Photo Sphere (Issue #230)');
+  });
 });
 
 
@@ -40189,5 +40234,22 @@ describe('Heading-Aware Photo Disambiguation on Crosshatch Grids (v1.218.2, Issu
     assert.strictEqual(res.wpApproaches[0].dZ, 0, 'WP 0 dZ must be 0m');
     assert.ok(res.wpApproaches[1].bestPtIndex >= 18 && res.wpApproaches[1].bestPtIndex <= 22, 'WP 1 must match cluster (18-22)');
     assert.ok(res.wpApproaches[2].bestPtIndex >= 48 && res.wpApproaches[2].bestPtIndex <= 52, 'WP 2 must match lower tier cluster (48-52)');
+  });
+});
+
+
+describe('Photo Sphere Nadir Ground-Lock Precision (v1.219.3, Issue #230)', () => {
+  test('Version consistency: v1.219.3 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.219.3');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.219.3] - 2026-11-03'), 'Changelog must include v1.219.3 header');
+    assert.ok(changelog.includes('Photo Sphere Nadir Ground-Lock Precision (Closes #230)'), 'Changelog must mention Photo Sphere Nadir Ground-Lock Precision');
+
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('Changelog (v1.219.3):'), 'index_template.html must include v1.219.3 changelog header');
+
+    const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(htmlText.includes('Changelog (v1.219.3):'), 'index.html must include v1.219.3 changelog header');
+    assert.ok(htmlText.includes('Version 1.219.3'), 'index.html must display Version 1.219.3');
   });
 });

@@ -1,3 +1,18 @@
+## [1.219.3] - 2026-11-03
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Photo Sphere Nadir Ground-Lock Precision (Closes #230)**:
+  - Fixed premature upward gimbal tilt on discrete 49-node 360° Photo Sphere missions where the final -90° nadir photo was captured mid-transit at -14.1°.
+  - Preserves full -90° vertical ground-lock pitch at the terminal photo waypoint, preventing DJI Fly from interpolating the gimbal pitch to horizon during the approach leg.
+
+#### Under the Hood & Technical Details
+- **`src/export/WpmlCompiler.js`**:
+  - Restricted terminal horizon restoration in `buildWaylinesWpml` and `validateAndFixWpml` exclusively to single-node stationary missions (`!isMultiWpMission`), preventing injection of `gimbalRotate(0.0°)` into active terminal photo placemarks on multi-waypoint missions.
+- **`index.test.js`**:
+  - Added regression unit tests asserting that multi-waypoint discrete Photo Sphere missions preserve -90° nadir pitch at the terminal waypoint without injecting `gimbalRotate(0.0°)`.
+
 ## [1.219.2] - 2026-11-03
 
 ### 🐛 Fixed
