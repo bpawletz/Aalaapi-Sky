@@ -40250,6 +40250,162 @@ describe('Photo Sphere Nadir Ground-Lock Precision (v1.219.3, Issue #230)', () =
 
     const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
     assert.ok(htmlText.includes('Changelog (v1.219.3):'), 'index.html must include v1.219.3 changelog header');
-    assert.ok(htmlText.includes('Version 1.219.3'), 'index.html must display Version 1.219.3');
+  });
+});
+
+describe('6-Phase Flight Fidelity Gauge & Continuous Helix Pitch Taper Fix (v1.220.0, Issue #231)', () => {
+  test('Version consistency: v1.220.0 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.220.0');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.220.0] - 2026-11-03'), 'Changelog must include v1.220.0 header');
+    assert.ok(changelog.includes('Fixes #231'), 'Changelog must mention Fixes #231');
+
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('Changelog (v1.220.0):'), 'index_template.html must include v1.220.0 changelog header');
+
+    const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(htmlText.includes('Changelog (v1.220.0):'), 'index.html must include v1.220.0 changelog header');
+    assert.ok(htmlText.includes('Version 1.220.0'), 'index.html must display Version 1.220.0');
+    assert.ok(htmlText.includes('v1.220.0'), 'index.html must include v1.220.0 badge');
+  });
+
+  test('DOM Architecture: #diag-irl-gauge-container and gauge elements exist in template and index.html', () => {
+    const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(htmlText.includes('id="diag-irl-gauge-container"'), 'index.html must contain #diag-irl-gauge-container');
+    assert.ok(htmlText.includes('id="diag-irl-gauge-bar"'), 'index.html must contain #diag-irl-gauge-bar');
+    assert.ok(htmlText.includes('id="diag-irl-gauge-tier"'), 'index.html must contain #diag-irl-gauge-tier');
+    assert.ok(htmlText.includes('id="diag-irl-gauge-ratio"'), 'index.html must contain #diag-irl-gauge-ratio');
+  });
+
+  test('IrlVerifier computes multi-tier gauge metrics, 6-phase ratio, and fidelity percentage', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+    assert.ok(typeof IrlVerifier !== 'undefined' && typeof IrlVerifier.verifyFlightPlanAgainstLog === 'function');
+
+    // 1. Nominal flight (6/6 passed)
+    const nominalWps = [
+      { lat: 41.3215, lon: -88.9950, alt: 30, heading: 0, pitch: -45, isModified: false },
+      { lat: 41.3216, lon: -88.9950, alt: 30, heading: 0, pitch: -45, isModified: false }
+    ];
+    const nominalPts = [
+      { lat: 41.3215, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: true, battery: 85, speed: 0 },
+      { lat: 41.32152, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 84, speed: 2 },
+      { lat: 41.32155, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 83, speed: 2 },
+      { lat: 41.32158, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 82, speed: 1 },
+      { lat: 41.3216, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: true, battery: 80, speed: 0 }
+    ];
+    const resNominal = IrlVerifier.verifyFlightPlanAgainstLog(nominalWps, nominalPts, { captureMode: 'hover' });
+    assert.strictEqual(resNominal.metrics.passedPhaseCount, 6, 'All 6 phases must pass for nominal flight');
+    assert.strictEqual(resNominal.metrics.fidelityPct, 100, 'Nominal fidelity must be 100%');
+    assert.strictEqual(resNominal.metrics.outcomeTier, 'VERIFIED');
+    assert.strictEqual(resNominal.metrics.tierCode, 'V');
+    assert.strictEqual(resNominal.passedAll, true);
+
+    // 2. Operational Variance flight (5/6 passed - e.g. low ending battery 13%)
+    const lowBatPts = [
+      { lat: 41.3215, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: true, battery: 85, speed: 0 },
+      { lat: 41.32152, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 60, speed: 2 },
+      { lat: 41.32155, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 40, speed: 2 },
+      { lat: 41.32158, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 25, speed: 1 },
+      { lat: 41.3216, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: true, battery: 13, speed: 0 }
+    ];
+    const resLowBat = IrlVerifier.verifyFlightPlanAgainstLog(nominalWps, lowBatPts, { captureMode: 'hover' });
+    assert.strictEqual(resLowBat.metrics.passedPhaseCount, 5, '5 phases must pass when battery reserve is 13%');
+    assert.strictEqual(resLowBat.metrics.fidelityPct, 83, '5/6 fidelity must be 83%');
+    assert.strictEqual(resLowBat.metrics.outcomeTier, 'OPERATIONAL_VARIANCE');
+    assert.strictEqual(resLowBat.metrics.tierCode, 'O');
+    assert.strictEqual(resLowBat.passedAll, false);
+
+    // 3. Video Capture Mode support: 0 still photos does NOT fail Phase 5 in video mode
+    const videoPts = [
+      { lat: 41.3215, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 85, speed: 0 },
+      { lat: 41.32152, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 84, speed: 2 },
+      { lat: 41.32155, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 83, speed: 2 },
+      { lat: 41.32158, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 82, speed: 1 },
+      { lat: 41.3216, lon: -88.9950, alt: 30, yaw: 0, pitch: -45, isPhoto: false, battery: 80, speed: 0 }
+    ];
+    const videoRes = IrlVerifier.verifyFlightPlanAgainstLog(nominalWps, videoPts, { captureMode: 'video' });
+    assert.strictEqual(videoRes.phases.capture_trigger, true, 'Phase 5 must pass in video mode even with 0 photos');
+  });
+
+  test('updateActiveLayerIrlBadge renders 6/6 ✅, 5/6 ⚠️, 3/6 ❌, Re-Test, and 0/6 ⚪ states with non-guarantee disclaimer', () => {
+    const { JSDOM } = require('jsdom');
+    const dom = new JSDOM('<a id="active-layer-irl-badge" href="#" data-irl-status="U">IRL</a>');
+    const prevDoc = global.document;
+    const prevMap = global.window.AALAAPI_IRL_STATUS;
+    global.document = dom.window.document;
+    global.window.AALAAPI_IRL_STATUS = {
+      _issue: 'https://github.com/bpawletz/Aalaapi-Sky/issues/202',
+      verified: { s: 'V', p: 6, v: '1.220.0' },
+      opVariance: { s: 'O', p: 5, v: '1.219.1' },
+      critVariance: { s: 'F', p: 3, v: '1.210.0' },
+      retest: { s: 'R', v: '1.200.0' },
+      untested: { s: 'U', p: 0, v: null }
+    };
+
+    try {
+      const badge = dom.window.document.getElementById('active-layer-irl-badge');
+
+      // Tier 1: Verified (6/6)
+      updateActiveLayerIrlBadge('verified');
+      assert.strictEqual(badge.getAttribute('data-irl-status'), 'V');
+      assert.strictEqual(badge.textContent, '6/6 ✅ IRL');
+      assert.ok(badge.title.includes('100% Nominal Fidelity'));
+      assert.ok(badge.title.includes('NOT a guarantee of flight safety'));
+
+      // Tier 2: Operational Variance (5/6)
+      updateActiveLayerIrlBadge('opVariance');
+      assert.strictEqual(badge.getAttribute('data-irl-status'), 'O');
+      assert.strictEqual(badge.textContent, '5/6 ⚠️ IRL');
+      assert.ok(badge.title.includes('83% Operational Variance'));
+
+      // Tier 3: Critical Variance (3/6)
+      updateActiveLayerIrlBadge('critVariance');
+      assert.strictEqual(badge.getAttribute('data-irl-status'), 'F');
+      assert.strictEqual(badge.textContent, '3/6 ❌ IRL');
+
+      // Tier 4: Re-Test
+      updateActiveLayerIrlBadge('retest');
+      assert.strictEqual(badge.getAttribute('data-irl-status'), 'R');
+      assert.strictEqual(badge.textContent, '🧪 Re-Test');
+
+      // Tier 5: Untested
+      updateActiveLayerIrlBadge('untested');
+      assert.strictEqual(badge.getAttribute('data-irl-status'), 'U');
+      assert.strictEqual(badge.textContent, '0/6 ⚪ IRL');
+    } finally {
+      global.document = prevDoc;
+      global.window.AALAAPI_IRL_STATUS = prevMap;
+    }
+  });
+
+  test('Continuous Helix WPML export emits progressive gimbalRotate pitch actions across spiral waypoints (Issue #231)', () => {
+    assert.ok(typeof buildWaylinesWpml === 'function', 'buildWaylinesWpml must be defined');
+
+    const helixWps = [];
+    for (let i = 0; i < 10; i++) {
+      helixWps.push({
+        lat: 41.3215 + i * 0.0001,
+        lon: -88.9950 + i * 0.0001,
+        alt: 20 + i * 2,
+        pitch: -25 - i * 4, // Tapering from -25 to -61 deg
+        heading: 180 + i * 15,
+        gridType: 'continuous-helix',
+        isContinuousHelix: true,
+        layerPattern: 'continuous-helix'
+      });
+    }
+
+    const xml = buildWaylinesWpml(helixWps, null, {
+      gridType: 'continuous-helix',
+      captureMode: 'video'
+    });
+
+    const pitchMatches = xml.match(new RegExp('<wpml:gimbalPitchRotateAngle>[^<]+</wpml:gimbalPitchRotateAngle>', 'g')) || [];
+    assert.ok(pitchMatches.length >= 8, `Continuous helix must emit gimbalRotate across intermediate spiral waypoints (found ${pitchMatches.length})`);
+
+    // Ensure intermediate tapering pitches are present in XML
+    assert.ok(xml.includes('<wpml:gimbalPitchRotateAngle>-25</wpml:gimbalPitchRotateAngle>'), 'Must emit initial pitch -25');
+    assert.ok(xml.includes('<wpml:gimbalPitchRotateAngle>-29</wpml:gimbalPitchRotateAngle>'), 'Must emit progressive pitch -29');
+    assert.ok(xml.includes('<wpml:gimbalPitchRotateAngle>-37</wpml:gimbalPitchRotateAngle>'), 'Must emit progressive pitch -37');
   });
 });

@@ -307,15 +307,20 @@ const IrlVerifier = {
                                 maxYawError <= maxYawToleranceDeg;
 
     // Phase 5: Camera Shutter & Capture Dynamics (Ratio + Max Shutter Speed)
-    const plannedPhotos = wps.filter(w => !w.skipPhoto && !w.isTurnaroundPoint && !w.isExclusionDetour).length;
+    const isVideoMode = options.captureMode === 'video' ||
+      (options.flightLayers && options.flightLayers.some(l => l.pattern === options.patternId && l.captureMode === 'video')) ||
+      (typeof getActiveLayer === 'function' && getActiveLayer()?.captureMode === 'video') ||
+      Boolean(wps[0] && (wps[0].captureMode === 'video' || wps[0].layerCaptureMode === 'video'));
+
+    const plannedPhotos = isVideoMode ? 0 : wps.filter(w => !w.skipPhoto && !w.isTurnaroundPoint && !w.isExclusionDetour).length;
     const actualPhotos = pts.filter(p => p.isPhoto).length;
-    const photoRatio = plannedPhotos > 0 ? (actualPhotos / plannedPhotos) : (actualPhotos === 0 ? 1.0 : 0.8);
+    const photoRatio = isVideoMode ? 1.0 : (plannedPhotos > 0 ? (actualPhotos / plannedPhotos) : (actualPhotos === 0 ? 1.0 : 0.8));
     const photoRatioTolerance = options.photoRatioTolerance || 0.85;
 
     let shutterSettlingPassed = true;
     let maxShutterSpeedMps = 0;
     let medianShutterSpeedMps = 0;
-    if (options.captureMode === 'hover' || options.captureMode === 'stopAndShoot') {
+    if (!isVideoMode && (options.captureMode === 'hover' || options.captureMode === 'stopAndShoot')) {
       const photoPts = pts.filter(p => p.isPhoto && p.speed !== undefined);
       if (photoPts.length > 0) {
         const speeds = photoPts.map(p => parseFloat(p.speed) || 0).sort((a, b) => a - b);
@@ -326,7 +331,7 @@ const IrlVerifier = {
         }
       }
     }
-    const captureTriggerPassed = photoRatio >= photoRatioTolerance && shutterSettlingPassed;
+    const captureTriggerPassed = isVideoMode ? true : (photoRatio >= photoRatioTolerance && shutterSettlingPassed);
 
     // Phase 6: Safe Exit, Landing & RTH
     const wpLast = wpApproaches[wpApproaches.length - 1];
@@ -345,9 +350,34 @@ const IrlVerifier = {
       exit_rth: exitRthPassed
     };
 
-    const passedAll = Object.values(phases).every(Boolean);
+    const passedPhaseCount = Object.values(phases).filter(Boolean).length;
+    const totalPhaseCount = Object.keys(phases).length; // 6
+    const fidelityPct = Math.round((passedPhaseCount / totalPhaseCount) * 100);
+
+    let outcomeTier = 'CRITICAL_VARIANCE';
+    let tierCode = 'F';
+    let tierLabel = 'Critical Variance';
+
+    if (passedPhaseCount === totalPhaseCount) {
+      outcomeTier = 'VERIFIED';
+      tierCode = 'V';
+      tierLabel = 'All 6 Phases Passed';
+    } else if (passedPhaseCount >= 4) {
+      outcomeTier = 'OPERATIONAL_VARIANCE';
+      tierCode = 'O';
+      tierLabel = 'Operational Variance';
+    }
+
+    const passedAll = (passedPhaseCount === totalPhaseCount);
 
     const metrics = {
+      passedPhaseCount,
+      totalPhaseCount,
+      fidelityPct,
+      outcomeTier,
+      tierCode,
+      tierLabel,
+      isVideoMode,
       waypointCount: wps.length,
       visitedCount,
       waypointCompletionPct: Math.round(completionRatio * 100),
@@ -495,19 +525,52 @@ const IrlVerifier = {
       }
     }
 
-    // Update Outcome Badge
+    // Update Outcome Badge & 6-Phase Fidelity Gauge
     const outcomeBadge = document.getElementById('diag-irl-outcome-badge');
     if (outcomeBadge) {
       if (result.passedAll) {
-        outcomeBadge.textContent = '\u2705 ALL 6 PHASES PASSED';
+        outcomeBadge.textContent = '\u2705 6/6 PHASES PASSED • 100% NOMINAL';
         outcomeBadge.style.background = 'rgba(16, 185, 129, 0.2)';
         outcomeBadge.style.color = '#34d399';
         outcomeBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-      } else {
-        outcomeBadge.textContent = '\u26A0\uFE0F VARIANCE DETECTED';
+      } else if (result.metrics.passedPhaseCount >= 4) {
+        outcomeBadge.textContent = `\u26A0\uFE0F ${result.metrics.passedPhaseCount}/6 PHASES PASSED • ${result.metrics.fidelityPct}% OPERATIONAL VARIANCE`;
         outcomeBadge.style.background = 'rgba(245, 158, 11, 0.2)';
         outcomeBadge.style.color = '#fbbf24';
         outcomeBadge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+      } else {
+        outcomeBadge.textContent = `\u274C ${result.metrics.passedPhaseCount}/6 PHASES PASSED • ${result.metrics.fidelityPct}% CRITICAL VARIANCE`;
+        outcomeBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+        outcomeBadge.style.color = '#f87171';
+        outcomeBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+      }
+    }
+
+    // Render 6-Phase Fidelity Gauge Bar
+    const gaugeTierEl = document.getElementById('diag-irl-gauge-tier');
+    const gaugeRatioEl = document.getElementById('diag-irl-gauge-ratio');
+    const gaugeBarEl = document.getElementById('diag-irl-gauge-bar');
+    if (gaugeBarEl) {
+      gaugeBarEl.innerHTML = '';
+      const phaseKeys = Object.keys(PHASE_LABELS);
+      phaseKeys.forEach((key, idx) => {
+        const passed = Boolean(result.phases[key]);
+        const pip = document.createElement('div');
+        pip.className = 'diag-irl-gauge-pip';
+        pip.style.borderRadius = '3px';
+        pip.style.height = '100%';
+        pip.style.background = passed ? '#10b981' : (result.metrics.passedPhaseCount >= 4 ? '#f59e0b' : '#ef4444');
+        pip.style.boxShadow = passed ? '0 0 6px rgba(16, 185, 129, 0.4)' : 'none';
+        pip.title = `Phase ${idx + 1}: ${PHASE_LABELS[key]} — ${passed ? 'PASSED' : 'VARIANCE'}`;
+        gaugeBarEl.appendChild(pip);
+      });
+      if (gaugeTierEl) {
+        gaugeTierEl.textContent = result.metrics.tierLabel;
+        gaugeTierEl.style.color = result.passedAll ? '#34d399' : (result.metrics.passedPhaseCount >= 4 ? '#fbbf24' : '#f87171');
+      }
+      if (gaugeRatioEl) {
+        gaugeRatioEl.textContent = `${result.metrics.passedPhaseCount} / 6 (${result.metrics.fidelityPct}%)`;
+        gaugeRatioEl.style.color = result.passedAll ? '#34d399' : (result.metrics.passedPhaseCount >= 4 ? '#fbbf24' : '#f87171');
       }
     }
 
@@ -580,7 +643,8 @@ const IrlVerifier = {
         { label: 'Max Gimbal Pitch Error', val: `${result.metrics.maxPitchErrorDeg}° (WP ${result.metrics.maxPitchWpIndex !== null ? result.metrics.maxPitchWpIndex : '-'})`, tol: '≤ 15.0°' },
         { label: 'Mean Yaw Tracking Error', val: `${result.metrics.meanYawErrorDeg}°`, tol: '≤ 15.0°' },
         { label: 'Max Yaw Tracking Error', val: `${result.metrics.maxYawErrorDeg}° (WP ${result.metrics.maxYawWpIndex !== null ? result.metrics.maxYawWpIndex : '-'})`, tol: '≤ 25.0°' },
-        { label: 'Photo Shutter Triggers', val: `${result.metrics.photoCountActual} / ${result.metrics.photoCountPlanned} (${result.metrics.photoCaptureRatioPct}%)`, tol: '≥ 85%' },
+        { label: '6-Phase Fidelity Gauge', val: `${result.metrics.passedPhaseCount} / 6 (${result.metrics.fidelityPct}%)`, tol: result.metrics.tierLabel },
+        { label: 'Photo Shutter Triggers', val: result.metrics.isVideoMode ? 'Video Mode (0 photos)' : `${result.metrics.photoCountActual} / ${result.metrics.photoCountPlanned} (${result.metrics.photoCaptureRatioPct}%)`, tol: result.metrics.isVideoMode ? 'Video Flight' : '≥ 85%' },
         { label: 'Entry Drift (WP[0])', val: `H: ${result.metrics.entryDistH}m • Z: ${result.metrics.entryDistZ}m`, tol: 'H ≤ 4m, Z ≤ 2m' },
         { label: 'Battery Consumption', val: `${result.metrics.batteryStartPct}% → ${result.metrics.batteryEndPct}% (Used: ${result.metrics.batteryUsedPct}%)`, tol: 'End ≥ 15%' }
       ];
@@ -628,7 +692,7 @@ const IrlVerifier = {
 > **Non-Guarantee & Variation Notice:** Passing these field checks verifies nominal reference behavior on the tested hardware/firmware only and **does not guarantee** future flight performance under varying wind, GNSS, geomagnetic, terrain, or OEM firmware conditions. The RPIC retains sole responsibility for VLOS and flight safety.
 
 **Flight Log:** \`${this.currentFlightId}\`
-**Overall Outcome:** ${r.passedAll ? '\u2705 `VERIFIED` (All 6 Phases Passed)' : '\u26A0\uFE0F `VARIANCE DETECTED` (Review Needed)'}
+**Overall Outcome:** ${r.passedAll ? '\u2705 `VERIFIED` (All 6 Phases Passed • 100% Fidelity)' : (r.metrics.passedPhaseCount >= 4 ? `\u26A0\uFE0F \`OPERATIONAL VARIANCE\` (${r.metrics.passedPhaseCount}/6 Phases • ${r.metrics.fidelityPct}% Fidelity)` : `\u274C \`CRITICAL VARIANCE\` (${r.metrics.passedPhaseCount}/6 Phases • ${r.metrics.fidelityPct}% Fidelity)`)}
 
 #### Six-Phase Verification Checklist
 - [${r.phases.kmz_import ? 'x' : ' '}] **Phase 1: KMZ Import & Action Parsing** (${r.metrics.waypointCount} WPs, ${this.currentTelemetryData?.points?.length || 0} samples)
@@ -873,7 +937,7 @@ const IrlVerifier = {
         if (typeof updateActiveLayerIrlBadge === 'function') {
           if (window.AALAAPI_IRL_STATUS) {
             const activeVer = (typeof getAppVersion === 'function' ? getAppVersion() : ((typeof window !== 'undefined' && typeof window.getAppVersion === 'function') ? window.getAppVersion() : '1.216.0'));
-            window.AALAAPI_IRL_STATUS[patternId] = { s: data.status || (this.currentResult.passedAll ? 'V' : 'F'), v: activeVer };
+            window.AALAAPI_IRL_STATUS[patternId] = { s: data.status || this.currentResult.metrics?.tierCode || (this.currentResult.passedAll ? 'V' : 'F'), p: this.currentResult.metrics?.passedPhaseCount || (this.currentResult.passedAll ? 6 : 0), v: activeVer };
           }
           updateActiveLayerIrlBadge(patternId);
         }

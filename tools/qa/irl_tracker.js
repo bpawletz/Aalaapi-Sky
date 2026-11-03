@@ -1756,14 +1756,21 @@ function buildCompactClientStatusMap(statusPath = DEFAULT_STATUS_PATH) {
   };
   const codeMap = {
     VERIFIED: 'V',
+    OPERATIONAL_VARIANCE: 'O',
     NEEDS_RETEST: 'R',
     FAILED: 'F',
     UNTESTED: 'U'
   };
   for (const def of PATTERN_DEFINITIONS) {
     const p = state.patterns[def.id];
+    let score = null;
+    if (p && p.checklist) {
+      score = Object.values(p.checklist).filter(Boolean).length;
+    }
+    const statusCode = codeMap[p ? p.status : 'UNTESTED'] || 'U';
     compact[def.id] = {
-      s: codeMap[p ? p.status : 'UNTESTED'] || 'U',
+      s: statusCode,
+      p: score !== null ? score : (statusCode === 'V' ? 6 : (statusCode === 'U' ? 0 : null)),
       v: (p && p.lastTestedVersion) ? p.lastTestedVersion : null
     };
   }
