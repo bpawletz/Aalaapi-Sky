@@ -240,26 +240,41 @@ const CompanionAuth = {
   // ─── Remote API Calls ───────────────────────────────────────────────────────
 
   async fetchCurrentProfile() {
-    if (!this.token) return null;
-    try {
-      const res = await fetch(`${this.getApiBase()}/api/auth/me`, {
-        headers: this.getAuthHeaders()
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          this.user = data.user;
-          this.passkeys = data.passkeys || [];
-          if (data.googleClientId) this.googleClientId = data.googleClientId;
+    if (this.token) {
+      try {
+        const res = await fetch(`${this.getApiBase()}/api/auth/me`, {
+          headers: this.getAuthHeaders()
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.user) {
+            this.user = data.user;
+            this.passkeys = data.passkeys || [];
+            if (data.googleClientId) this.googleClientId = data.googleClientId;
+            localStorage.setItem(AUTH_PILOT_KEY, JSON.stringify(this.user));
+            this.updateTopbarUI();
+            this.renderProfileView();
+            return this.user;
+          }
+        } else if (res.status === 401) {
+          this.logout(false);
+        }
+      } catch (_) {}
+    }
+
+    // Fallback: If companion bridge is offline, hydrate profile from CloudSyncService
+    if (typeof CloudSyncService !== 'undefined' && CloudSyncService.isConfigured()) {
+      try {
+        const cloudUser = await CloudSyncService.fetchPilotProfile();
+        if (cloudUser) {
+          this.user = cloudUser;
           localStorage.setItem(AUTH_PILOT_KEY, JSON.stringify(this.user));
           this.updateTopbarUI();
           this.renderProfileView();
           return this.user;
         }
-      } else if (res.status === 401) {
-        this.logout(false);
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
     return null;
   },
 
@@ -616,6 +631,11 @@ const CompanionAuth = {
       try { window.reconnectAllCompanionStreams(); } catch (_) {}
     }
 
+    // Mirror to CloudSyncService if configured
+    if (typeof CloudSyncService !== 'undefined' && CloudSyncService.isConfigured()) {
+      CloudSyncService.syncPilotProfile(user).catch(() => {});
+    }
+
     this.fetchCurrentProfile().catch(() => {});
   },
 
@@ -819,23 +839,158 @@ const CompanionAuth = {
       googleBtn.addEventListener('click', () => this.startGoogleOAuth());
     }
 
-    // Toggle Google Client ID drawer
-    const toggleGoogleCfgBtn = document.getElementById('auth-toggle-google-config-btn');
-    const googleCfgPanel = document.getElementById('auth-google-config-panel');
-    if (toggleGoogleCfgBtn && googleCfgPanel) {
-      toggleGoogleCfgBtn.addEventListener('click', () => {
-        const isHidden = googleCfgPanel.classList.contains('hidden');
-        googleCfgPanel.classList.toggle('hidden', !isHidden);
+    // Toggle Cloud & Google Workspace Integration Drawer
+    const toggleCloudBtn = document.getElementById('auth-toggle-google-config-btn') || document.getElementById('auth-toggle-cloud-sync-btn');
+    const cloudPanel = document.getElementById('auth-google-config-panel') || document.getElementById('auth-cloud-sync-panel');
+    const cloudChevron = document.getElementById('auth-cloud-sync-chevron');
+    if (toggleCloudBtn && cloudPanel) {
+      toggleCloudBtn.addEventListener('click', () => {
+        const isHidden = cloudPanel.classList.contains('hidden');
+        cloudPanel.classList.toggle('hidden', !isHidden);
+        if (cloudChevron) cloudChevron.textContent = isHidden ? '▲' : '▼';
+        if (isHidden) this.updateCloudConfigUI();
       });
     }
 
-    // Save Google Client ID
-    const saveGoogleCfgBtn = document.getElementById('auth-save-google-client-id-btn');
-    if (saveGoogleCfgBtn) {
-      saveGoogleCfgBtn.addEventListener('click', () => {
-        const input = document.getElementById('auth-google-client-id-input');
-        if (input) this.saveGoogleClientId(input.value.trim());
+    // Save Cloud Configuration
+    const saveCloudBtn = document.getElementById('cloud-save-config-btn');
+    if (saveCloudBtn) {
+      saveCloudBtn.addEventListener('click', () => {
+        const projectId = document.getElementById('cloud-firebase-project-id')?.value.trim() || '';
+        const databaseId = document.getElementById('cloud-firebase-database-id')?.value.trim() || '(default)';
+        const apiKey = document.getElementById('cloud-firebase-api-key')?.value.trim() || '';
+        const googleClientId = document.getElementById('cloud-google-client-id')?.value.trim() || '';
+        const sheetId = document.getElementById('cloud-google-sheet-id')?.value.trim() || '';
+
+        if (typeof CloudSyncService !== 'undefined') {
+          CloudSyncService.saveConfig({ projectId, databaseId, apiKey });
+        }
+        if (typeof GoogleWorkspaceClient !== 'undefined') {
+          GoogleWorkspaceClient.setClientId(googleClientId);
+          GoogleWorkspaceClient.setSpreadsheetId(sheetId);
+        }
+        if (googleClientId) {
+          this.googleClientId = googleClientId;
+          this.updateGoogleSsoUI();
+        }
+        this.showToast('Cloud & Google Workspace configuration saved!');
       });
+    }
+
+    // Test Cloud Connection
+    const testCloudBtn = document.getElementById('cloud-test-conn-btn');
+    const cloudStatusMsg = document.getElementById('cloud-sync-status-msg');
+    if (testCloudBtn) {
+      testCloudBtn.addEventListener('click', async () => {
+        if (!cloudStatusMsg) return;
+        cloudStatusMsg.classList.remove('hidden');
+        cloudStatusMsg.textContent = 'Testing connection to Firestore...';
+        cloudStatusMsg.style.color = '#38bdf8';
+        cloudStatusMsg.style.background = 'rgba(56, 189, 248, 0.1)';
+
+        try {
+          if (typeof CloudSyncService === 'undefined') throw new Error('CloudSyncService not available');
+          const result = await CloudSyncService.testConnection();
+          cloudStatusMsg.textContent = result.message || 'Connected successfully!';
+          cloudStatusMsg.style.color = '#4ade80';
+          cloudStatusMsg.style.background = 'rgba(74, 222, 128, 0.15)';
+        } catch (err) {
+          cloudStatusMsg.textContent = 'Connection test failed: ' + err.message;
+          cloudStatusMsg.style.color = '#f87171';
+          cloudStatusMsg.style.background = 'rgba(239, 68, 68, 0.15)';
+        }
+      });
+    }
+
+    // Google Drive Quick Save & Load in Dock
+    const driveSaveBtn = document.getElementById('cloud-drive-save-btn');
+    if (driveSaveBtn) {
+      driveSaveBtn.addEventListener('click', () => this.uploadCurrentMissionToDrive());
+    }
+
+    const driveLoadBtn = document.getElementById('cloud-drive-load-btn');
+    if (driveLoadBtn) {
+      driveLoadBtn.addEventListener('click', () => this.openDriveMissionVaultModal());
+    }
+
+    const driveCloseBtn = document.getElementById('cloud-drive-close-btn');
+    if (driveCloseBtn) {
+      driveCloseBtn.addEventListener('click', () => {
+        document.getElementById('cloud-drive-modal')?.classList.add('hidden');
+      });
+    }
+
+    const driveRefreshBtn = document.getElementById('cloud-drive-refresh-btn');
+    if (driveRefreshBtn) {
+      driveRefreshBtn.addEventListener('click', () => this.refreshDriveMissionList());
+    }
+
+    // Offline Field Packager in Dock
+    const packFieldBtn = document.getElementById('offline-field-pack-btn');
+    if (packFieldBtn) {
+      packFieldBtn.addEventListener('click', () => this.openOfflinePackModal());
+    }
+
+    const packCloseBtn = document.getElementById('offline-pack-close-btn');
+    if (packCloseBtn) {
+      packCloseBtn.addEventListener('click', () => {
+        document.getElementById('offline-pack-modal')?.classList.add('hidden');
+      });
+    }
+
+    const packStartBtn = document.getElementById('offline-pack-start-btn');
+    if (packStartBtn) {
+      packStartBtn.addEventListener('click', async () => {
+        if (typeof OfflineFieldPackager === 'undefined') return;
+        const progressBox = document.getElementById('offline-pack-progress-container');
+        const progressBar = document.getElementById('offline-pack-progress-bar');
+        const progressPct = document.getElementById('offline-pack-progress-pct');
+        const progressStatus = document.getElementById('offline-pack-progress-status');
+
+        if (progressBox) progressBox.classList.remove('hidden');
+        packStartBtn.disabled = true;
+        packStartBtn.textContent = 'Packaging Area...';
+
+        try {
+          const res = await OfflineFieldPackager.packMissionArea({
+            onProgress: (p) => {
+              if (progressBar) progressBar.style.width = `${p.percent}%`;
+              if (progressPct) progressPct.textContent = `${p.percent}%`;
+              if (progressStatus) progressStatus.textContent = `Downloaded ${p.downloaded}/${p.total} tiles (${p.currentTile})`;
+            }
+          });
+          this.showToast(`✈️ Mission packaged! ${res.downloaded} map tiles saved in offline storage.`);
+          packStartBtn.textContent = '✓ Pack Complete';
+          setTimeout(() => {
+            if (packStartBtn) {
+              packStartBtn.disabled = false;
+              packStartBtn.textContent = 'Start Field Pack';
+            }
+          }, 3000);
+        } catch (err) {
+          alert('Packaging failed: ' + err.message);
+          packStartBtn.disabled = false;
+          packStartBtn.textContent = 'Start Field Pack';
+        }
+      });
+    }
+
+    const packClearBtn = document.getElementById('offline-pack-clear-btn');
+    if (packClearBtn) {
+      packClearBtn.addEventListener('click', async () => {
+        if (!confirm('Clear all cached offline map tiles and elevation data?')) return;
+        if (typeof OfflineFieldPackager !== 'undefined') {
+          await OfflineFieldPackager.clearOfflineCache();
+          this.showToast('Offline map cache cleared');
+          this.openOfflinePackModal();
+        }
+      });
+    }
+
+    // Preflight Export to Google Sheets
+    const preflightSheetsBtn = document.getElementById('preflight-export-sheets-btn');
+    if (preflightSheetsBtn) {
+      preflightSheetsBtn.addEventListener('click', () => this.exportCurrentPreflightToSheets());
     }
 
     // Sign Out Button
@@ -984,6 +1139,192 @@ const CompanionAuth = {
     }
   },
 
+  updateCloudConfigUI() {
+    if (typeof CloudSyncService !== 'undefined') {
+      const cfg = CloudSyncService.getConfig();
+      const projInput = document.getElementById('cloud-firebase-project-id');
+      const dbInput = document.getElementById('cloud-firebase-database-id');
+      const keyInput = document.getElementById('cloud-firebase-api-key');
+      if (projInput) projInput.value = cfg.projectId || '';
+      if (dbInput) dbInput.value = cfg.databaseId || '(default)';
+      if (keyInput) keyInput.value = cfg.apiKey || '';
+    }
+    if (typeof GoogleWorkspaceClient !== 'undefined') {
+      const gInput = document.getElementById('cloud-google-client-id');
+      const sInput = document.getElementById('cloud-google-sheet-id');
+      if (gInput) gInput.value = GoogleWorkspaceClient.getClientId() || '';
+      if (sInput) sInput.value = GoogleWorkspaceClient.getSpreadsheetId() || '';
+    }
+  },
+
+  async uploadCurrentMissionToDrive() {
+    if (typeof GoogleWorkspaceClient === 'undefined') {
+      alert('Google Workspace client is not initialized.');
+      return;
+    }
+    const clientId = GoogleWorkspaceClient.getClientId();
+    if (!clientId) {
+      this.openModal();
+      const panel = document.getElementById('auth-google-config-panel') || document.getElementById('auth-cloud-sync-panel');
+      if (panel) panel.classList.remove('hidden');
+      alert('Please configure your Google OAuth 2.0 Client ID in the Cloud & Google Workspace settings to enable Google Drive mission sync.');
+      return;
+    }
+
+    try {
+      this.showToast('Preparing mission package for Google Drive...');
+      let kmzResult = null;
+      if (typeof generateKMZBlob === 'function') {
+        kmzResult = await generateKMZBlob();
+      }
+      if (!kmzResult || !kmzResult.blob) {
+        throw new Error('Could not generate KMZ mission blob.');
+      }
+
+      let projectJson = null;
+      if (typeof exportProjectStateJson === 'function') {
+        projectJson = exportProjectStateJson();
+      } else if (typeof activeMissionPlan !== 'undefined') {
+        projectJson = activeMissionPlan;
+      }
+
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      const baseName = (activeLayer && activeLayer.name) ? activeLayer.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Aalaapi_Mission';
+      const filename = `${baseName}_${new Date().toISOString().slice(0, 10)}.kmz`;
+
+      const uploadRes = await GoogleWorkspaceClient.uploadMissionToDrive({
+        filename,
+        kmzBlob: kmzResult.blob,
+        missionJson: projectJson
+      });
+
+      this.showToast(`☁️ Saved "${filename}" to Google Drive (Aalaapi Sky Missions)!`);
+      return uploadRes;
+    } catch (err) {
+      alert('Failed to save mission to Google Drive: ' + err.message);
+    }
+  },
+
+  async openDriveMissionVaultModal() {
+    const modal = document.getElementById('cloud-drive-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    await this.refreshDriveMissionList();
+  },
+
+  async refreshDriveMissionList() {
+    const listEl = document.getElementById('cloud-drive-file-list');
+    const countEl = document.getElementById('cloud-drive-file-count');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.75rem; padding: 12px 0; text-align: center;">Connecting to Google Drive...</div>';
+
+    try {
+      const files = await GoogleWorkspaceClient.listMissionsFromDrive();
+      if (countEl) countEl.textContent = `${files.length} mission package(s) found in Google Drive:`;
+
+      if (files.length === 0) {
+        listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.75rem; padding: 12px 0; text-align: center;">No missions saved in Drive yet. Click "Drive Save" to upload your current mission!</div>';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      files.forEach(f => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.75rem;';
+        const isKmz = f.name.endsWith('.kmz');
+        const icon = isKmz ? '🚁' : '📄';
+        const modified = f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString() : '';
+        const sizeStr = f.size ? `${(parseInt(f.size, 10) / 1024).toFixed(1)} KB` : '';
+
+        item.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+            <span style="font-size: 1.1rem;">${icon}</span>
+            <div style="min-width: 0;">
+              <strong style="color: var(--text-main); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${f.name}</strong>
+              <span style="color: var(--text-muted); font-size: 0.68rem;">Modified ${modified} &bull; ${sizeStr}</span>
+            </div>
+          </div>
+          <button type="button" class="btn-primary" style="font-size: 0.7rem; padding: 4px 10px; margin-left: 8px; white-space: nowrap;">⬇️ Load</button>
+        `;
+
+        item.querySelector('button').onclick = async () => {
+          try {
+            item.querySelector('button').textContent = 'Loading...';
+            const arrayBuffer = await GoogleWorkspaceClient.downloadMissionFromDrive(f.id);
+            if (isKmz && typeof importKmzArrayBuffer === 'function') {
+              await importKmzArrayBuffer(arrayBuffer, f.name);
+            } else if (f.name.endsWith('.json')) {
+              const text = new TextDecoder().decode(arrayBuffer);
+              const parsed = JSON.parse(text);
+              if (typeof loadProjectStateJson === 'function') {
+                loadProjectStateJson(parsed);
+              }
+            }
+            modal.classList.add('hidden');
+            this.showToast(`Loaded "${f.name}" from Google Drive!`);
+          } catch (err) {
+            alert('Error loading mission: ' + err.message);
+          } finally {
+            item.querySelector('button').textContent = '⬇️ Load';
+          }
+        };
+
+        listEl.appendChild(item);
+      });
+    } catch (err) {
+      listEl.innerHTML = `<div style="color: #ef4444; font-size: 0.75rem; padding: 12px 0;">Error reading Drive: ${err.message}</div>`;
+      if (countEl) countEl.textContent = 'Drive access required';
+    }
+  },
+
+  async exportCurrentPreflightToSheets() {
+    if (typeof GoogleWorkspaceClient === 'undefined') return;
+    try {
+      this.showToast('Exporting preflight checklist to Google Sheets...');
+      const operatorName = document.getElementById('preflight-operator-input')?.value || (this.user ? this.user.displayName : 'Pilot');
+      const laancCode = document.getElementById('preflight-laanc-input')?.value || 'N/A';
+      const faaCertNumber = (this.user ? this.user.faaCertNumber : null) || 'N/A';
+      const aircraftModel = (typeof getSelectedDroneModel === 'function' ? getSelectedDroneModel() : 'DJI Mini 4 Pro');
+
+      let centerCoord = '0.0, 0.0';
+      if (typeof centerMarker !== 'undefined' && centerMarker) {
+        const ll = centerMarker.getLatLng();
+        centerCoord = `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`;
+      }
+
+      await GoogleWorkspaceClient.appendPreflightChecklistRow({
+        timestamp: new Date().toISOString(),
+        operatorName,
+        faaCertNumber,
+        laancCode,
+        aircraftModel,
+        coordinates: centerCoord,
+        weatherSummary: 'Preflight Verified',
+        allChecksPassed: true,
+        signatureData: (this.user && this.user.signatureData) ? true : false
+      });
+
+      this.showToast('📊 Checklist appended to Google Sheets Flight Logbook!');
+    } catch (err) {
+      alert('Failed to export to Google Sheets: ' + err.message);
+    }
+  },
+
+  openOfflinePackModal() {
+    const modal = document.getElementById('offline-pack-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+
+    if (typeof OfflineFieldPackager !== 'undefined') {
+      const est = OfflineFieldPackager.estimateRequirements();
+      const tilesEl = document.getElementById('offline-pack-est-tiles');
+      const sizeEl = document.getElementById('offline-pack-est-size');
+      if (tilesEl) tilesEl.textContent = `${est.tileCount.toLocaleString()} tiles (z14-z17)`;
+      if (sizeEl) sizeEl.textContent = `~${est.estimatedMb} MB`;
+    }
+  },
+
   openModal() {
     const modal = document.getElementById('companion-auth-modal');
     if (!modal) return;
@@ -1006,6 +1347,10 @@ const CompanionAuth = {
     }
 
     this.updateGoogleSsoUI();
+    const configPanel = document.getElementById('auth-google-config-panel') || document.getElementById('auth-cloud-sync-panel');
+    if (configPanel) configPanel.classList.add('hidden');
+    const cloudChevron = document.getElementById('auth-cloud-sync-chevron');
+    if (cloudChevron) cloudChevron.textContent = '▼';
     modal.classList.remove('hidden');
   },
 

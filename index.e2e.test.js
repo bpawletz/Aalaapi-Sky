@@ -11595,4 +11595,67 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
   });
 
+
+  describe('Hybrid Firebase Cloud Sync, Google Workspace & WebUSB Field Autonomy E2E Suite (v1.219.0, Issue #227)', () => {
+    test('Cloud Drive Save/Load and Field Pack buttons exist in sidebar export container', async () => {
+      const saveBtn = page.locator('#cloud-drive-save-btn');
+      const loadBtn = page.locator('#cloud-drive-load-btn');
+      const packBtn = page.locator('#offline-field-pack-btn');
+
+      assert.strictEqual(await saveBtn.isVisible(), true, '#cloud-drive-save-btn must be visible');
+      assert.strictEqual(await loadBtn.isVisible(), true, '#cloud-drive-load-btn must be visible');
+      assert.strictEqual(await packBtn.isVisible(), true, '#offline-field-pack-btn must be visible');
+    });
+
+    test('Offline Field Packager modal opens, calculates estimated tiles and storage, and closes', async () => {
+      // Click Field Pack button
+      await page.click('#offline-field-pack-btn');
+      await page.waitForTimeout(300);
+
+      const modal = page.locator('#offline-pack-modal');
+      const isVisible = await modal.evaluate(el => !el.classList.contains('hidden'));
+      assert.strictEqual(isVisible, true, '#offline-pack-modal must open on button click');
+
+      // Check estimated tiles
+      const estTiles = await page.locator('#offline-pack-est-tiles').textContent();
+      assert.ok(estTiles.length > 0, 'Estimated tiles must be displayed');
+
+      // Close modal
+      await page.click('#offline-pack-close-btn');
+      await page.waitForTimeout(200);
+
+      const isHidden = await modal.evaluate(el => el.classList.contains('hidden'));
+      assert.strictEqual(isHidden, true, '#offline-pack-modal must close when close button is clicked');
+    });
+
+    test('Cloud & Google Workspace configuration drawer exposes custom Firestore database ID and sheets settings', async () => {
+      // Open companion auth modal
+      await page.click('#header-pilot-btn');
+      await page.waitForTimeout(300);
+
+      const authModal = page.locator('#companion-auth-modal');
+      assert.strictEqual(await authModal.evaluate(el => !el.classList.contains('hidden')), true, 'Auth modal must open');
+
+      // Expand drawer if closed
+      const panel = page.locator('#auth-google-config-panel');
+      if (await panel.evaluate(el => el.classList.contains('hidden'))) {
+        await page.click('#auth-toggle-google-config-btn');
+        await page.waitForTimeout(200);
+      }
+      assert.strictEqual(await panel.evaluate(el => !el.classList.contains('hidden')), true, 'Cloud config panel must be visible');
+
+      // Verify custom Firestore database ID input defaults to (default)
+      const dbIdVal = await page.inputValue('#cloud-firebase-database-id');
+      assert.strictEqual(dbIdVal, '(default)', 'Firestore database ID must default to (default)');
+
+      // Verify Sheet ID input exists
+      const sheetInput = page.locator('#cloud-google-sheet-id');
+      assert.strictEqual(await sheetInput.isVisible(), true, 'Google Sheets ID input must be present');
+
+      // Close modal
+      await page.click('#companion-auth-close-btn');
+      await page.waitForTimeout(200);
+      assert.strictEqual(await authModal.evaluate(el => el.classList.contains('hidden')), true, 'Auth modal must close');
+    });
+  });
 });

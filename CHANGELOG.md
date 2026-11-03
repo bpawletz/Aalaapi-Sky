@@ -1,3 +1,32 @@
+## [1.219.0] - 2026-11-02
+
+Introduces a Hybrid Local-First Cloud & Google Workspace architecture with Firebase/Firestore cloud profile and mission synchronization, Google Drive mission vaulting, Google Sheets automated flight logbooks, and enhanced WebUSB MTP directory traversal for complete tablet field independence.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Cloud & Google Workspace Integration Hub (Closes #227)**:
+  - Added a dedicated Cloud & Google Workspace drawer inside the Pilot Profile modal supporting custom Firestore Database IDs (enabling shared use with AI Studio projects) and Google OAuth 2.0 Client IDs.
+  - 1-click **Drive Save** (`#cloud-drive-save-btn`) and **Drive Load** (`#cloud-drive-load-btn`) in the sidebar mission dock for seamless synchronization of `.kmz` flight packages and project state JSON via Google Drive (`Aalaapi Sky Missions`).
+  - Added 1-click **Export to Sheets** (`#preflight-export-sheets-btn`) in the Preflight Safety Checklist Gate to automatically append Part 107 compliance audits and signed checklist records into an automated Google Sheets Flight Logbook.
+- **Offline Field Packager (`#offline-pack-modal`) (Closes #227)**:
+  - Added 1-click **Field Pack** (`#offline-field-pack-btn`) to pre-cache map satellite tiles and terrain elevation grids for the active mission bounding box into browser IndexedDB storage, enabling autonomous field flights in rural areas with zero cellular connectivity or companion laptop.
+- **Enhanced WebUSB MTP Directory Traversal for Tablets (Closes #227)**:
+  - Upgraded client-side WebUSB MTP engine to dynamically resolve DJI RC 2 directory trees (`/Android/data/dji.go.v5/files/waypoint/` and `/FlightRecord/`), allowing pilots on Android and ChromeOS tablets to push `.kmz` packages directly to controller slots and pull raw flight logs without needing a desktop bridge.
+
+#### Under the Hood & Technical Details
+- **`src/bridge/GoogleWorkspaceClient.js`**:
+  - Implemented client-side OAuth 2.0 token management with `drive.file` and `spreadsheets` scopes.
+  - Implemented multipart Google Drive v3 file upload and query resolver for `Aalaapi Sky Missions`.
+  - Implemented Google Sheets v4 logbook creator and row appender for preflight checklists and telemetry replays.
+- **`src/bridge/CloudSyncService.js`**:
+  - Implemented lightweight, offline-first Firestore REST client supporting custom `databaseId` (defaulting to `(default)` and supporting AI Studio databases).
+  - Isolated collections under `aalaapi_` prefixes (`aalaapi_pilots`, `aalaapi_missions`, `aalaapi_checklists`) with offline queue persistence in `localStorage`.
+- **`src/bridge/WebUsbMtp.js`**:
+  - Added PTP Pascal string decoding (`decodePtpString`), ObjectInfo parser, and `resolvePathHandle()` directory walker for RC 2 controller storage.
+- **`src/map/OfflineFieldPackager.js`**:
+  - Implemented bounding box tile enumerator and IndexedDB tile/DEM caching with Leaflet tile load interceptor.
+
 ## [1.218.2] - 2026-11-01
 
 ### 🐛 Fixed

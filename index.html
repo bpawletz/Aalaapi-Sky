@@ -8353,7 +8353,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.218.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.219.0</span></h1>
         </div>
       </div>
 
@@ -11716,6 +11716,21 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             </svg>
             Export KMZ
           </button>
+          <!-- Cloud & Google Workspace Field Dock (v1.219.0, Issue #227) -->
+          <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <button id="cloud-drive-save-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 2px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.72rem; margin: 0; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); color: #38bdf8;" title="Save KMZ &amp; Project to Google Drive">
+              <span>☁️</span>
+              Drive Save
+            </button>
+            <button id="cloud-drive-load-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 2px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.72rem; margin: 0; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); color: #38bdf8;" title="Load Mission from Google Drive">
+              <span>📂</span>
+              Drive Load
+            </button>
+            <button id="offline-field-pack-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 2px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.72rem; margin: 0; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); color: #fbbf24;" title="Pack Mission Area for Offline Field Use (Cache Tiles &amp; Elevation)">
+              <span>📦</span>
+              Field Pack
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -12998,6 +13013,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>☁️</span>
+              Hybrid Firebase Cloud Sync, Google Workspace &amp; WebUSB Field Autonomy (v1.219.0) (Closes #227)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Enables complete tablet and mobile field independence! Connects directly to Google Cloud Firestore using custom Database IDs (for seamless AI Studio project sharing) with offline caching. Adds 1-click Google Drive mission vaulting, Google Sheets automated flight logbooks, an in-browser Offline Field Packager for rural map tile caching, and dynamic WebUSB MTP directory traversal for 1-click RC 2 slot syncing on tablets.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🛰️ Companion Server &amp; Bonjour (mDNS) Special Card in Useful Links (v1.218.0) (Closes #224)
@@ -14812,6 +14836,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <span>Require Preflight Checklist</span>
           </label>
           <button id="preflight-view-history-btn" type="button" class="btn-secondary" style="font-size: 0.68rem; padding: 4px 8px;" title="View past signed checklist logs">📜 Audit History</button>
+          <button id="preflight-export-sheets-btn" type="button" class="btn-secondary" style="font-size: 0.68rem; padding: 4px 8px; color: #34d399; border-color: rgba(52, 211, 153, 0.4);" title="Append Checklist Record to Google Sheets Logbook">📊 Export to Sheets</button>
         </div>
         <div style="display: flex; gap: 8px;">
           <button id="preflight-prev-btn" type="button" class="btn-secondary" style="font-size: 0.75rem; padding: 6px 12px;">Previous</button>
@@ -15533,7 +15558,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.218.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.219.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15694,6 +15719,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.219.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Hybrid Firebase Cloud Sync &amp; AI Studio Sharing (Closes #227):</strong> Connects directly to Google Cloud Firestore with custom Database ID support (defaulting to <code>(default)</code>) and <code>aalaapi_</code> collection prefixing, enabling shared use with AI Studio apps and offline-first profile/mission caching.</li>
+                <li><strong>Google Workspace Mission Vault &amp; Flight Logbook:</strong> 1-click Drive Save &amp; Load in the sidebar dock to sync <code>.kmz</code> packages and project JSON with Google Drive, plus automated Preflight Checklist appending to Google Sheets.</li>
+                <li><strong>Offline Field Packager:</strong> 1-click pre-caching of map imagery and terrain elevation for active mission bounding boxes into IndexedDB for zero-connectivity rural field flights.</li>
+                <li><strong>WebUSB MTP Directory Resolver for Tablets:</strong> Upgraded client-side PTP/MTP engine to walk DJI RC 2 directory trees on Android and ChromeOS tablets for direct controller slot syncing.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.218.2):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -21790,18 +21824,43 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <button id="auth-switch-to-signup-btn" type="button" style="background: none; border: none; color: #38bdf8; font-weight: 600; cursor: pointer; text-decoration: underline; margin-left: 4px;">Create One</button>
           </div>
 
-          <!-- Collapsible Google OAuth Config Section -->
-          <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 12px;">
-            <button id="auth-toggle-google-config-btn" type="button" style="background: none; border: none; color: var(--text-muted); font-size: 0.72rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-              <span>⚙️</span>
-              <span>Configure Google OAuth Client ID</span>
+          <!-- Cloud & Google Workspace Integration Drawer (v1.219.0, Issue #227) -->
+          <div style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+            <button id="auth-toggle-google-config-btn" type="button" style="width: 100%; display: flex; justify-content: space-between; align-items: center; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 7px 10px; color: #38bdf8; font-size: 0.74rem; font-weight: 600; cursor: pointer;">
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span>☁️</span>
+                <span>Cloud &amp; Google Workspace Settings</span>
+              </span>
+              <span id="auth-cloud-sync-chevron">▼</span>
             </button>
-            <div id="auth-google-config-panel" class="hidden" style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.25); border-radius: 6px; border: 1px solid var(--border-color);">
-              <label for="auth-google-client-id-input" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 4px;">Google Client ID (from Google Cloud Console)</label>
-              <div style="display: flex; gap: 6px;">
-                <input id="auth-google-client-id-input" type="text" placeholder="123456789-xyz.apps.googleusercontent.com" style="flex: 1; padding: 6px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
-                <button id="auth-save-google-client-id-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">Save</button>
+            <div id="auth-google-config-panel" class="hidden" style="margin-top: 8px; padding: 12px; background: rgba(0,0,0,0.35); border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px;">
+              <div>
+                <label for="cloud-firebase-project-id" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 3px;">Firebase / GCP Project ID (or AI Studio Project)</label>
+                <input id="cloud-firebase-project-id" type="text" placeholder="e.g. my-drone-project-123" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
               </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <label for="cloud-firebase-database-id" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 3px;">Firestore Database ID</label>
+                  <input id="cloud-firebase-database-id" type="text" placeholder="(default)" value="(default)" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
+                </div>
+                <div>
+                  <label for="cloud-firebase-api-key" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 3px;">Web API Key</label>
+                  <input id="cloud-firebase-api-key" type="password" placeholder="AIzaSy..." style="width: 100%; box-sizing: border-box; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
+                </div>
+              </div>
+              <div>
+                <label for="cloud-google-client-id" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 3px;">Google OAuth 2.0 Client ID (Drive &amp; Sheets)</label>
+                <input id="cloud-google-client-id" type="text" placeholder="123456789-xyz.apps.googleusercontent.com" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
+              </div>
+              <div>
+                <label for="cloud-google-sheet-id" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 3px;">Flight Logbook Spreadsheet ID (Optional)</label>
+                <input id="cloud-google-sheet-id" type="text" placeholder="Google Sheet ID from URL or leave blank to auto-create" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
+              </div>
+              <div style="display: flex; gap: 8px; margin-top: 4px;">
+                <button id="cloud-save-config-btn" type="button" class="btn-primary" style="flex: 1; padding: 6px 12px; font-size: 0.75rem;">Save Cloud Config</button>
+                <button id="cloud-test-conn-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">⚡ Test Connection</button>
+              </div>
+              <div id="cloud-sync-status-msg" class="hidden" style="font-size: 0.7rem; padding: 6px 8px; border-radius: 4px;"></div>
             </div>
           </div>
         </div>
@@ -21895,6 +21954,76 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Drive Mission Vault Modal (v1.219.0, Issue #227) -->
+  <div id="cloud-drive-modal" class="modal-overlay hidden" data-draggable-modal="true" style="z-index: 10056;">
+    <div class="modal glass cloud-drive-dialog" style="max-width: 580px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.85); border-radius: 14px;">
+      <div class="modal-header" data-modal-drag-handle="true" style="padding: 14px 20px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: grab;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem;">☁️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 0.95rem; color: var(--text-main); font-weight: 700;">Google Drive Mission Vault</h3>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Folder: Aalaapi Sky Missions</span>
+          </div>
+        </div>
+        <button id="cloud-drive-close-btn" type="button" class="close-btn" style="font-size: 1.2rem;">&times;</button>
+      </div>
+      <div style="padding: 16px; overflow-y: auto; flex: 1;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; color: var(--text-muted);" id="cloud-drive-file-count">Loading mission files...</span>
+          <button id="cloud-drive-refresh-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;">🔄 Refresh</button>
+        </div>
+        <div id="cloud-drive-file-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Items injected here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offline Field Packager Modal (v1.219.0, Issue #227) -->
+  <div id="offline-pack-modal" class="modal-overlay hidden" data-draggable-modal="true" style="z-index: 10057;">
+    <div class="modal glass offline-pack-dialog" style="max-width: 520px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid rgba(245, 158, 11, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.85); border-radius: 14px;">
+      <div class="modal-header" data-modal-drag-handle="true" style="padding: 14px 20px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: grab;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem;">📦</span>
+          <div>
+            <h3 style="margin: 0; font-size: 0.95rem; color: var(--text-main); font-weight: 700;">Offline Field Packager</h3>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Cache active mission area for rural field flights</span>
+          </div>
+        </div>
+        <button id="offline-pack-close-btn" type="button" class="close-btn" style="font-size: 1.2rem;">&times;</button>
+      </div>
+      <div style="padding: 18px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px;">
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+          <strong style="color: #fbbf24; display: block; margin-bottom: 4px;">✈️ Autonomous Field Operations:</strong>
+          Pre-caches map imagery and terrain elevation data directly in your browser's IndexedDB storage. Once packaged, you can take your tablet to the field with zero cellular signal or laptop and fly full 2D/3D missions.
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.78rem;">
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px;">
+            <span style="color: var(--text-muted); display: block; font-size: 0.7rem;">Estimated Tiles:</span>
+            <strong id="offline-pack-est-tiles" style="color: var(--text-main); font-size: 1rem;">Calculating...</strong>
+          </div>
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px;">
+            <span style="color: var(--text-muted); display: block; font-size: 0.7rem;">Estimated Storage:</span>
+            <strong id="offline-pack-est-size" style="color: var(--text-main); font-size: 1rem;">Calculating...</strong>
+          </div>
+        </div>
+        <div id="offline-pack-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.72rem;">
+            <span id="offline-pack-progress-status" style="color: #38bdf8;">Downloading tiles...</span>
+            <span id="offline-pack-progress-pct" style="color: var(--text-main); font-weight: 700;">0%</span>
+          </div>
+          <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+            <div id="offline-pack-progress-bar" style="width: 0%; height: 100%; background: #38bdf8; transition: width 0.2s;"></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <button id="offline-pack-start-btn" type="button" class="btn-primary" style="flex: 1; padding: 9px 16px; font-weight: 700; font-size: 0.82rem; background: #22c55e; border-color: #16a34a;">Start Field Pack</button>
+          <button id="offline-pack-clear-btn" type="button" class="btn-secondary" style="padding: 9px 14px; font-size: 0.78rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);">Clear Cache</button>
+        </div>
       </div>
     </div>
   </div>
@@ -43106,6 +43235,353 @@ function redrawCurrentMission() {
 }
 
 // Generate relative meter-offset grid points
+// -------------------- src/map/OfflineFieldPackager.js --------------------
+/**
+ * src/map/OfflineFieldPackager.js
+ *
+ * Client-Side Offline Field Packager for Aalaapi Sky.
+ * Pre-fetches and stores map tiles and DEM elevation grids in browser IndexedDB
+ * so pilots can plan missions at home or base, pack the area with 1 click, and
+ * fly autonomously in rural field locations without internet or a Companion Bridge.
+ */
+
+const OFFLINE_DB_NAME = 'aalaapi_offline_field_db';
+const OFFLINE_DB_VERSION = 1;
+const TILES_STORE_NAME = 'tiles';
+const ELEVATION_STORE_NAME = 'elevation';
+
+function openOfflineDb() {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      return reject(new Error('IndexedDB is not supported in this browser environment.'));
+    }
+    const req = indexedDB.open(OFFLINE_DB_NAME, OFFLINE_DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(TILES_STORE_NAME)) {
+        db.createObjectStore(TILES_STORE_NAME, { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains(ELEVATION_STORE_NAME)) {
+        db.createObjectStore(ELEVATION_STORE_NAME, { keyPath: 'coord' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function latLonToTile(lat, lon, zoom) {
+  const latRad = lat * Math.PI / 180;
+  const n = Math.pow(2, zoom);
+  const x = Math.floor((lon + 180) / 360 * n);
+  const y = Math.floor((1 - Math.asinh(Math.tan(latRad)) / Math.PI) / 2 * n);
+  return { x, y, z: zoom };
+}
+
+class OfflineFieldPackagerEngine {
+  constructor() {
+    this.isPacking = false;
+    this.abortController = null;
+    this.cachedTileCount = 0;
+  }
+
+  /**
+   * Calculate bounding box for active mission with buffer.
+   */
+  getMissionBoundingBox(bufferMeters = 500) {
+    let lats = [];
+    let lons = [];
+
+    if (typeof getCurrentWaypoints === 'function') {
+      const wps = getCurrentWaypoints();
+      if (wps && wps.length > 0) {
+        wps.forEach(wp => {
+          if (typeof wp.lat === 'number' && typeof wp.lon === 'number') {
+            lats.push(wp.lat);
+            lons.push(wp.lon);
+          }
+        });
+      }
+    }
+
+    if (lats.length === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
+      const ll = centerMarker.getLatLng();
+      lats.push(ll.lat);
+      lons.push(ll.lng);
+    }
+
+    if (lats.length === 0 && typeof map !== 'undefined' && map && map.getCenter) {
+      const ll = map.getCenter();
+      lats.push(ll.lat);
+      lons.push(ll.lng);
+    }
+
+    if (lats.length === 0) {
+      // Default fallback
+      lats = [41.3215];
+      lons = [-88.9950];
+    }
+
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLon = Math.min(...lons);
+    const maxLon = Math.max(...lons);
+
+    // Degree offsets for buffer meters
+    const latBufferDeg = bufferMeters / 111320;
+    const avgLat = (minLat + maxLat) / 2;
+    const lonBufferDeg = bufferMeters / (111320 * Math.cos(avgLat * Math.PI / 180));
+
+    return {
+      south: minLat - latBufferDeg,
+      north: maxLat + latBufferDeg,
+      west: minLon - lonBufferDeg,
+      east: maxLon + lonBufferDeg
+    };
+  }
+
+  /**
+   * Enumerate all tile coordinate keys inside bbox for specified zoom levels.
+   */
+  enumerateTileList(bbox, minZoom = 14, maxZoom = 17) {
+    const tiles = [];
+    for (let z = minZoom; z <= maxZoom; z++) {
+      const p1 = latLonToTile(bbox.north, bbox.west, z);
+      const p2 = latLonToTile(bbox.south, bbox.east, z);
+      const minX = Math.min(p1.x, p2.x);
+      const maxX = Math.max(p1.x, p2.x);
+      const minY = Math.min(p1.y, p2.y);
+      const maxY = Math.max(p1.y, p2.y);
+
+      for (let x = minX; x <= maxX; x++) {
+        for (let y = minY; y <= maxY; y++) {
+          tiles.push({ z, x, y, key: `${z}/${x}/${y}` });
+        }
+      }
+    }
+    return tiles;
+  }
+
+  estimateRequirements(minZoom = 14, maxZoom = 17, bufferMeters = 500) {
+    const bbox = this.getMissionBoundingBox(bufferMeters);
+    const tiles = this.enumerateTileList(bbox, minZoom, maxZoom);
+    const avgTileBytes = 25 * 1024; // ~25 KB per tile
+    const totalBytes = tiles.length * avgTileBytes;
+    const totalMb = (totalBytes / (1024 * 1024)).toFixed(1);
+    return {
+      tileCount: tiles.length,
+      estimatedMb: totalMb,
+      bbox,
+      minZoom,
+      maxZoom
+    };
+  }
+
+  /**
+   * Pack mission area into IndexedDB with real-time progress callbacks.
+   */
+  async packMissionArea({ minZoom = 14, maxZoom = 17, bufferMeters = 500, onProgress = null } = {}) {
+    if (this.isPacking) {
+      throw new Error('A field packaging job is already in progress.');
+    }
+
+    this.isPacking = true;
+    this.abortController = new AbortController();
+
+    const db = await openOfflineDb();
+    const bbox = this.getMissionBoundingBox(bufferMeters);
+    const tiles = this.enumerateTileList(bbox, minZoom, maxZoom);
+    const total = tiles.length;
+
+    let downloaded = 0;
+    let failed = 0;
+
+    // Use current tile template URL or standard Esri World Imagery fallback
+    let tileUrlTemplate = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    if (typeof map !== 'undefined' && map) {
+      map.eachLayer(layer => {
+        if (layer && layer._url && !layer._url.includes('proxy')) {
+          tileUrlTemplate = layer._url;
+        }
+      });
+    }
+
+    const concurrency = 4;
+    const queue = [...tiles];
+
+    const worker = async () => {
+      while (queue.length > 0 && !this.abortController.signal.aborted) {
+        const item = queue.shift();
+        if (!item) break;
+
+        const tileUrl = tileUrlTemplate
+          .replace('{z}', item.z)
+          .replace('{x}', item.x)
+          .replace('{y}', item.y)
+          .replace('{s}', 'a');
+
+        try {
+          const res = await fetch(tileUrl, { signal: this.abortController.signal });
+          if (res.ok) {
+            const blob = await res.blob();
+            await this.storeTile(db, item.key, blob);
+            downloaded++;
+          } else {
+            failed++;
+          }
+        } catch (_) {
+          failed++;
+        }
+
+        if (typeof onProgress === 'function') {
+          onProgress({
+            downloaded,
+            failed,
+            total,
+            percent: Math.round(((downloaded + failed) / total) * 100),
+            currentTile: item.key
+          });
+        }
+      }
+    };
+
+    const workers = Array.from({ length: concurrency }, () => worker());
+    await Promise.all(workers);
+
+    this.isPacking = false;
+    this.abortController = null;
+
+    return {
+      success: true,
+      downloaded,
+      failed,
+      total
+    };
+  }
+
+  cancelPackaging() {
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+    this.isPacking = false;
+  }
+
+  storeTile(db, key, blob) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(TILES_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(TILES_STORE_NAME);
+      const req = store.put({ key, blob, storedAt: Date.now() });
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getTileBlob(z, x, y) {
+    try {
+      const db = await openOfflineDb();
+      return new Promise((resolve) => {
+        const tx = db.transaction(TILES_STORE_NAME, 'readonly');
+        const store = tx.objectStore(TILES_STORE_NAME);
+        const req = store.get(`${z}/${x}/${y}`);
+        req.onsuccess = () => {
+          if (req.result && req.result.blob) {
+            resolve(req.result.blob);
+          } else {
+            resolve(null);
+          }
+        };
+        req.onerror = () => resolve(null);
+      });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async getCacheStats() {
+    try {
+      const db = await openOfflineDb();
+      return new Promise((resolve) => {
+        const tx = db.transaction(TILES_STORE_NAME, 'readonly');
+        const store = tx.objectStore(TILES_STORE_NAME);
+        const countReq = store.count();
+        countReq.onsuccess = () => {
+          resolve({ tileCount: countReq.result || 0 });
+        };
+        countReq.onerror = () => resolve({ tileCount: 0 });
+      });
+    } catch (_) {
+      return { tileCount: 0 };
+    }
+  }
+
+  async clearOfflineCache() {
+    try {
+      const db = await openOfflineDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(TILES_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(TILES_STORE_NAME);
+        const req = store.clear();
+        req.onsuccess = () => resolve({ success: true });
+        req.onerror = () => reject(req.error);
+      });
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * Intercept Leaflet tile loading so that if a tile exists in offline storage,
+   * it is loaded from an IndexedDB blob URL immediately.
+   */
+  installLeafletOfflineInterceptor() {
+    if (typeof L === 'undefined' || !L.TileLayer || L.TileLayer.prototype._aalaapiOfflineHooked) return;
+    L.TileLayer.prototype._aalaapiOfflineHooked = true;
+
+    const originalCreateTile = L.TileLayer.prototype.createTile;
+    const packager = this;
+
+    L.TileLayer.prototype.createTile = function (coords, done) {
+      const tile = originalCreateTile.call(this, coords, done);
+      const z = coords.z;
+      const x = coords.x;
+      const y = coords.y;
+
+      packager.getTileBlob(z, x, y).then(blob => {
+        if (blob) {
+          const blobUrl = URL.createObjectURL(blob);
+          tile.src = blobUrl;
+          tile.addEventListener('load', () => URL.revokeObjectURL(blobUrl), { once: true });
+        }
+      }).catch(() => {});
+
+      return tile;
+    };
+  }
+}
+
+const OfflineFieldPackager = new OfflineFieldPackagerEngine();
+
+if (typeof window !== 'undefined') {
+  window.OfflineFieldPackager = OfflineFieldPackager;
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => OfflineFieldPackager.installLeafletOfflineInterceptor());
+    } else {
+      OfflineFieldPackager.installLeafletOfflineInterceptor();
+    }
+  }
+}
+if (typeof global !== 'undefined') {
+  global.OfflineFieldPackager = OfflineFieldPackager;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    OfflineFieldPackagerEngine,
+    OfflineFieldPackager,
+    latLonToTile
+  };
+}
 // -------------------- src/patterns/PatternGenerators.js --------------------
 function generateGridCoordinates(width, height, rotation, gridType, captureMode, sLine, sPhoto, turnaroundOvershoot = 0) {
   const waypoints = [];
@@ -65988,6 +66464,993 @@ if (typeof global !== 'undefined') {
 
 
 
+// -------------------- src/bridge/GoogleWorkspaceClient.js --------------------
+/**
+ * src/bridge/GoogleWorkspaceClient.js
+ *
+ * Client-Side Google Workspace (Google Drive & Google Sheets) Integration
+ * for Aalaapi Sky.
+ *
+ * Provides:
+ * 1. OAuth 2.0 Token Client with granular scopes:
+ *    - https://www.googleapis.com/auth/drive.file (App-created files only)
+ *    - https://www.googleapis.com/auth/spreadsheets (Append/read flight logbooks)
+ * 2. Google Drive Mission Vault ("Aalaapi Sky Missions" folder):
+ *    - 1-Click Upload of compiled .kmz packages and project state .json
+ *    - Browse & Load mission packages on field tablets or desktop
+ *    - Backup of raw DJI flight logs (FlightRecord_*.txt)
+ * 3. Google Sheets Automated Flight Logbook:
+ *    - Append signed Pre-Flight Checklists (Part 107 compliance)
+ *    - Append Post-Flight Telemetry summaries (flight time, max alt, trajectory variance)
+ */
+
+class GoogleWorkspaceClientEngine {
+  constructor() {
+    this.clientId = null;
+    this.accessToken = null;
+    this.tokenExpiresAt = 0;
+    this.appFolderId = null;
+    this.spreadsheetId = null;
+    this.tokenClient = null;
+    this.scopes = [
+      'https://www.googleapis.com/auth/drive.file',
+      'https://www.googleapis.com/auth/spreadsheets'
+    ].join(' ');
+
+    this.initFromStorage();
+  }
+
+  initFromStorage() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      this.clientId = localStorage.getItem('aalaapi_google_client_id') || null;
+      this.spreadsheetId = localStorage.getItem('aalaapi_google_spreadsheet_id') || null;
+      this.appFolderId = localStorage.getItem('aalaapi_google_app_folder_id') || null;
+      const cachedToken = localStorage.getItem('aalaapi_google_access_token');
+      const cachedExpiry = parseInt(localStorage.getItem('aalaapi_google_token_expiry'), 10) || 0;
+      if (cachedToken && cachedExpiry > Date.now()) {
+        this.accessToken = cachedToken;
+        this.tokenExpiresAt = cachedExpiry;
+      }
+    } catch (_) {}
+  }
+
+  setClientId(clientId) {
+    this.clientId = (clientId || '').trim();
+    if (typeof localStorage !== 'undefined') {
+      try {
+        if (this.clientId) {
+          localStorage.setItem('aalaapi_google_client_id', this.clientId);
+        } else {
+          localStorage.removeItem('aalaapi_google_client_id');
+        }
+      } catch (_) {}
+    }
+  }
+
+  getClientId() {
+    if (this.clientId) return this.clientId;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        this.clientId = localStorage.getItem('aalaapi_google_client_id') || null;
+      } catch (_) {}
+    }
+    return this.clientId;
+  }
+
+  setSpreadsheetId(id) {
+    this.spreadsheetId = (id || '').trim();
+    if (typeof localStorage !== 'undefined') {
+      try {
+        if (this.spreadsheetId) {
+          localStorage.setItem('aalaapi_google_spreadsheet_id', this.spreadsheetId);
+        } else {
+          localStorage.removeItem('aalaapi_google_spreadsheet_id');
+        }
+      } catch (_) {}
+    }
+  }
+
+  getSpreadsheetId() {
+    if (this.spreadsheetId) return this.spreadsheetId;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        this.spreadsheetId = localStorage.getItem('aalaapi_google_spreadsheet_id') || null;
+      } catch (_) {}
+    }
+    return this.spreadsheetId;
+  }
+
+  isAuthorized() {
+    return Boolean(this.accessToken && this.tokenExpiresAt > Date.now());
+  }
+
+  /**
+   * Request an OAuth 2.0 Access Token via Google Identity Services (token client)
+   * or direct popup fallback with PKCE / Implicit token response.
+   */
+  async requestToken(prompt = '') {
+    const clientId = this.getClientId();
+    if (!clientId) {
+      throw new Error('Google OAuth 2.0 Client ID is not configured. Please add it in the Pilot Profile / Cloud Sync settings.');
+    }
+
+    if (this.isAuthorized() && !prompt) {
+      return this.accessToken;
+    }
+
+    // 1. Google Identity Services (GIS) Token Client if script loaded
+    if (typeof window !== 'undefined' && window.google && window.google.accounts && window.google.accounts.oauth2) {
+      return new Promise((resolve, reject) => {
+        try {
+          this.tokenClient = window.google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: this.scopes,
+            prompt: prompt || (this.accessToken ? '' : 'select_account'),
+            callback: (response) => {
+              if (response.error) {
+                return reject(new Error(response.error_description || response.error));
+              }
+              this.handleTokenSuccess(response.access_token, response.expires_in);
+              resolve(this.accessToken);
+            }
+          });
+          this.tokenClient.requestAccessToken();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }
+
+    // 2. Direct Popup OAuth Fallback
+    return new Promise((resolve, reject) => {
+      const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'http://localhost:8765';
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(this.scopes)}&include_granted_scopes=true&prompt=${encodeURIComponent(prompt || 'select_account')}`;
+
+      const width = 500;
+      const height = 650;
+      const left = (window.screenX || 0) + ((window.outerWidth || 800) - width) / 2;
+      const top = (window.screenY || 0) + ((window.outerHeight || 600) - height) / 2;
+      const popup = window.open(authUrl, 'aalaapi_google_auth_token', `width=${width},height=${height},left=${left},top=${top}`);
+
+      if (!popup) {
+        return reject(new Error('Popup blocked by browser. Please allow popups for Aalaapi Sky.'));
+      }
+
+      let checkInterval = setInterval(() => {
+        try {
+          if (!popup || popup.closed) {
+            clearInterval(checkInterval);
+            if (!this.isAuthorized()) {
+              reject(new Error('Google sign-in was closed before authorization completed.'));
+            }
+            return;
+          }
+
+          if (popup.location && popup.location.hash) {
+            const hash = popup.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const token = params.get('access_token');
+            const expiresIn = parseInt(params.get('expires_in'), 10) || 3600;
+            if (token) {
+              clearInterval(checkInterval);
+              popup.close();
+              this.handleTokenSuccess(token, expiresIn);
+              resolve(this.accessToken);
+            }
+          }
+        } catch (_) {
+          // Cross-origin access error while on accounts.google.com is expected until redirect
+        }
+      }, 500);
+    });
+  }
+
+  handleTokenSuccess(token, expiresIn = 3600) {
+    this.accessToken = token;
+    this.tokenExpiresAt = Date.now() + (expiresIn * 1000) - (60 * 1000); // 1 min buffer
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('aalaapi_google_access_token', token);
+        localStorage.setItem('aalaapi_google_token_expiry', String(this.tokenExpiresAt));
+      } catch (_) {}
+    }
+  }
+
+  signOut() {
+    this.accessToken = null;
+    this.tokenExpiresAt = 0;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.removeItem('aalaapi_google_access_token');
+        localStorage.removeItem('aalaapi_google_token_expiry');
+      } catch (_) {}
+    }
+  }
+
+  // ─── Google Drive API (v3) ──────────────────────────────────────────────────
+
+  /**
+   * Find or create the dedicated "Aalaapi Sky Missions" folder in Google Drive.
+   */
+  async ensureAppFolder() {
+    if (this.appFolderId) return this.appFolderId;
+    await this.requestToken();
+
+    const query = encodeURIComponent("name = 'Aalaapi Sky Missions' and mimeType = 'application/vnd.google-apps.folder' and trashed = false");
+    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, {
+      headers: { Authorization: `Bearer ${this.accessToken}` }
+    });
+
+    if (listRes.ok) {
+      const data = await listRes.json();
+      if (data.files && data.files.length > 0) {
+        this.appFolderId = data.files[0].id;
+        if (typeof localStorage !== 'undefined') {
+          try { localStorage.setItem('aalaapi_google_app_folder_id', this.appFolderId); } catch (_) {}
+        }
+        return this.appFolderId;
+      }
+    }
+
+    // Create new folder
+    const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: 'Aalaapi Sky Missions',
+        mimeType: 'application/vnd.google-apps.folder',
+        description: 'Automated repository for Aalaapi Sky drone waypoint flight plans, KMZs, and telemetry logs.'
+      })
+    });
+
+    if (!createRes.ok) {
+      const err = await createRes.json().catch(() => ({}));
+      throw new Error(`Failed to create Google Drive folder: ${err.error?.message || createRes.statusText}`);
+    }
+
+    const folderData = await createRes.json();
+    this.appFolderId = folderData.id;
+    if (typeof localStorage !== 'undefined') {
+      try { localStorage.setItem('aalaapi_google_app_folder_id', this.appFolderId); } catch (_) {}
+    }
+    return this.appFolderId;
+  }
+
+  /**
+   * Upload a compiled KMZ mission package and optional JSON project state to Google Drive.
+   */
+  async uploadMissionToDrive({ filename, kmzBlob, missionJson, previewJpgBlob }) {
+    await this.requestToken();
+    const folderId = await this.ensureAppFolder();
+
+    const cleanBase = (filename || 'mission').replace(/\.kmz$/i, '');
+    const kmzFilename = `${cleanBase}.kmz`;
+
+    // 1. Multipart Upload for KMZ package
+    const boundary = `-------AalaapiSkyBoundary${Date.now()}`;
+    const delimiter = `\r\n--${boundary}\r\n`;
+    const closeDelimiter = `\r\n--${boundary}--`;
+
+    const metadata = {
+      name: kmzFilename,
+      mimeType: 'application/vnd.google-earth.kmz',
+      parents: [folderId],
+      description: `Aalaapi Sky Drone Mission Package (${new Date().toISOString()})`
+    };
+
+    let kmzBuffer;
+    if (kmzBlob instanceof ArrayBuffer) kmzBuffer = kmzBlob;
+    else if (kmzBlob && typeof kmzBlob.arrayBuffer === 'function') kmzBuffer = await kmzBlob.arrayBuffer();
+    else if (ArrayBuffer.isView(kmzBlob)) kmzBuffer = kmzBlob.buffer;
+    else throw new Error('Invalid KMZ binary data provided for Google Drive upload.');
+
+    const kmzUint8 = new Uint8Array(kmzBuffer);
+
+    // Build multipart body
+    const metaPart = `${delimiter}Content-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`;
+    const dataHeader = `${delimiter}Content-Type: application/vnd.google-earth.kmz\r\nContent-Transfer-Encoding: binary\r\n\r\n`;
+
+    const metaPartBytes = new TextEncoder().encode(metaPart);
+    const dataHeaderBytes = new TextEncoder().encode(dataHeader);
+    const closeDelimBytes = new TextEncoder().encode(closeDelimiter);
+
+    const totalLen = metaPartBytes.byteLength + dataHeaderBytes.byteLength + kmzUint8.byteLength + closeDelimBytes.byteLength;
+    const bodyBuffer = new Uint8Array(totalLen);
+    let offset = 0;
+
+    bodyBuffer.set(metaPartBytes, offset); offset += metaPartBytes.byteLength;
+    bodyBuffer.set(dataHeaderBytes, offset); offset += dataHeaderBytes.byteLength;
+    bodyBuffer.set(kmzUint8, offset); offset += kmzUint8.byteLength;
+    bodyBuffer.set(closeDelimBytes, offset);
+
+    const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`
+      },
+      body: bodyBuffer
+    });
+
+    if (!uploadRes.ok) {
+      const err = await uploadRes.json().catch(() => ({}));
+      throw new Error(`Drive KMZ upload failed: ${err.error?.message || uploadRes.statusText}`);
+    }
+
+    const kmzFile = await uploadRes.json();
+
+    // 2. Upload editable project JSON if supplied
+    let jsonFile = null;
+    if (missionJson) {
+      const jsonContent = typeof missionJson === 'string' ? missionJson : JSON.stringify(missionJson, null, 2);
+      const jsonMeta = {
+        name: `${cleanBase}.json`,
+        mimeType: 'application/json',
+        parents: [folderId]
+      };
+      const jsonUploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': `multipart/related; boundary=${boundary}`
+        },
+        body: this.buildMultipartJson(boundary, jsonMeta, jsonContent, 'application/json')
+      });
+      if (jsonUploadRes.ok) {
+        jsonFile = await jsonUploadRes.json();
+      }
+    }
+
+    return {
+      success: true,
+      kmzFileId: kmzFile.id,
+      kmzFilename,
+      jsonFileId: jsonFile ? jsonFile.id : null,
+      folderId
+    };
+  }
+
+  buildMultipartJson(boundary, metadata, textContent, mimeType) {
+    const delimiter = `\r\n--${boundary}\r\n`;
+    const closeDelimiter = `\r\n--${boundary}--`;
+    const metaPart = `${delimiter}Content-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`;
+    const dataPart = `${delimiter}Content-Type: ${mimeType}\r\n\r\n${textContent}${closeDelimiter}`;
+    return new TextEncoder().encode(metaPart + dataPart);
+  }
+
+  /**
+   * List all missions saved in the Aalaapi Sky Missions Drive folder.
+   */
+  async listMissionsFromDrive() {
+    await this.requestToken();
+    const folderId = await this.ensureAppFolder();
+
+    const query = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=modifiedTime desc&fields=files(id,name,mimeType,size,modifiedTime,description)`, {
+      headers: { Authorization: `Bearer ${this.accessToken}` }
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Failed to list missions from Drive: ${err.error?.message || res.statusText}`);
+    }
+
+    const data = await res.json();
+    return data.files || [];
+  }
+
+  /**
+   * Download a mission file (.kmz or .json) from Drive as an ArrayBuffer.
+   */
+  async downloadMissionFromDrive(fileId) {
+    await this.requestToken();
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`, {
+      headers: { Authorization: `Bearer ${this.accessToken}` }
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to download mission file from Drive: ${res.statusText}`);
+    }
+
+    return await res.arrayBuffer();
+  }
+
+  // ─── Google Sheets API (v4) ────────────────────────────────────────────────
+
+  /**
+   * Create or bind an automated flight logbook Google Sheet.
+   */
+  async createFlightLogbookSpreadsheet(title = 'Aalaapi Sky Flight Logbook') {
+    await this.requestToken();
+
+    const resource = {
+      properties: { title },
+      sheets: [
+        {
+          properties: { title: 'Flight Logbook', gridProperties: { frozenRowCount: 1 } },
+          data: [{
+            startRow: 0,
+            startColumn: 0,
+            rowData: [{
+              values: [
+                { userEnteredValue: { stringValue: 'Timestamp' } },
+                { userEnteredValue: { stringValue: 'Pilot Name' } },
+                { userEnteredValue: { stringValue: 'Part 107 Cert #' } },
+                { userEnteredValue: { stringValue: 'Aircraft Model' } },
+                { userEnteredValue: { stringValue: 'Mission Pattern' } },
+                { userEnteredValue: { stringValue: 'Waypoints' } },
+                { userEnteredValue: { stringValue: 'Flight Duration (s)' } },
+                { userEnteredValue: { stringValue: 'Max Altitude (m)' } },
+                { userEnteredValue: { stringValue: 'Distance (m)' } },
+                { userEnteredValue: { stringValue: 'Status / Notes' } }
+              ]
+            }]
+          }]
+        },
+        {
+          properties: { title: 'Pre-Flight Checklists', gridProperties: { frozenRowCount: 1 } },
+          data: [{
+            startRow: 0,
+            startColumn: 0,
+            rowData: [{
+              values: [
+                { userEnteredValue: { stringValue: 'Timestamp' } },
+                { userEnteredValue: { stringValue: 'Operator' } },
+                { userEnteredValue: { stringValue: 'FAA Cert #' } },
+                { userEnteredValue: { stringValue: 'LAANC Code' } },
+                { userEnteredValue: { stringValue: 'Aircraft' } },
+                { userEnteredValue: { stringValue: 'Coordinates' } },
+                { userEnteredValue: { stringValue: 'Weather & Wind' } },
+                { userEnteredValue: { stringValue: 'All Checks Passed' } },
+                { userEnteredValue: { stringValue: 'Signature Status' } }
+              ]
+            }]
+          }]
+        }
+      ]
+    };
+
+    const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(resource)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Failed to create Google Sheet: ${err.error?.message || res.statusText}`);
+    }
+
+    const data = await res.json();
+    this.setSpreadsheetId(data.spreadsheetId);
+    return data;
+  }
+
+  /**
+   * Append a signed Pre-Flight Checklist row to the bound Google Sheet.
+   */
+  async appendPreflightChecklistRow(checklistData = {}) {
+    await this.requestToken();
+    const spreadsheetId = this.getSpreadsheetId();
+    if (!spreadsheetId) {
+      throw new Error('Google Spreadsheet ID not configured. Please create or link a logbook sheet first.');
+    }
+
+    const row = [
+      checklistData.timestamp || new Date().toISOString(),
+      checklistData.operatorName || 'Pilot',
+      checklistData.faaCertNumber || 'N/A',
+      checklistData.laancCode || 'N/A',
+      checklistData.aircraftModel || 'DJI Drone',
+      checklistData.coordinates || '0.0, 0.0',
+      checklistData.weatherSummary || 'Clear',
+      checklistData.allChecksPassed ? 'YES (PASSED)' : 'INCOMPLETE',
+      checklistData.signatureData ? 'DIGITALLY SIGNED' : 'UNSIGNED'
+    ];
+
+    const range = encodeURIComponent('Pre-Flight Checklists!A1');
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ values: [row] })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Failed to append checklist row to Sheets: ${err.error?.message || res.statusText}`);
+    }
+
+    return await res.json();
+  }
+
+  /**
+   * Append a completed flight telemetry summary row to the bound Google Sheet.
+   */
+  async appendFlightLogTelemetryRow(summary = {}) {
+    await this.requestToken();
+    const spreadsheetId = this.getSpreadsheetId();
+    if (!spreadsheetId) {
+      throw new Error('Google Spreadsheet ID not configured. Please create or link a logbook sheet first.');
+    }
+
+    const row = [
+      summary.timestamp || new Date().toISOString(),
+      summary.pilotName || 'Pilot',
+      summary.faaCertNumber || 'N/A',
+      summary.aircraftModel || 'DJI Drone',
+      summary.missionPattern || 'Grid',
+      summary.waypointCount || 0,
+      summary.durationSeconds || 0,
+      summary.maxAltitudeMeters || 0,
+      summary.totalDistanceMeters || 0,
+      summary.status || 'Completed'
+    ];
+
+    const range = encodeURIComponent('Flight Logbook!A1');
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ values: [row] })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Failed to append flight telemetry row to Sheets: ${err.error?.message || res.statusText}`);
+    }
+
+    return await res.json();
+  }
+}
+
+const GoogleWorkspaceClient = new GoogleWorkspaceClientEngine();
+
+if (typeof window !== 'undefined') {
+  window.GoogleWorkspaceClient = GoogleWorkspaceClient;
+}
+if (typeof global !== 'undefined') {
+  global.GoogleWorkspaceClient = GoogleWorkspaceClient;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { GoogleWorkspaceClientEngine, GoogleWorkspaceClient };
+}
+// -------------------- src/bridge/CloudSyncService.js --------------------
+/**
+ * src/bridge/CloudSyncService.js
+ *
+ * Lightweight, Offline-First Cloud Synchronization Engine for Aalaapi Sky.
+ * Backed by Google Cloud Firestore REST API with custom Database ID support
+ * (enabling seamless integration with AI Studio projects).
+ *
+ * Features:
+ * 1. AI Studio & Multi-App Sharing: Supports custom databaseId (defaulting to '(default)')
+ *    and isolates all documents under 'aalaapi_' collections (e.g., aalaapi_pilots, aalaapi_missions).
+ * 2. Field Independence: Operates directly in the browser via pure REST without requiring
+ *    external npm dependencies or a running Companion Bridge.
+ * 3. Offline Caching: Caches mutations and queries in localStorage / IndexedDB, auto-syncing
+ *    whenever network connectivity is detected.
+ */
+
+// ─── Firestore REST Type Conversion Helpers ───────────────────────────────────
+
+function encodeFirestoreValue(val) {
+  if (val === null || val === undefined) return { nullValue: null };
+  if (typeof val === 'boolean') return { booleanValue: val };
+  if (typeof val === 'number') {
+    if (Number.isInteger(val)) return { integerValue: String(val) };
+    return { doubleValue: val };
+  }
+  if (typeof val === 'string') return { stringValue: val };
+  if (Array.isArray(val)) {
+    return { arrayValue: { values: val.map(encodeFirestoreValue) } };
+  }
+  if (typeof val === 'object') {
+    const fields = {};
+    for (const [k, v] of Object.entries(val)) {
+      if (v !== undefined) {
+        fields[k] = encodeFirestoreValue(v);
+      }
+    }
+    return { mapValue: { fields } };
+  }
+  return { stringValue: String(val) };
+}
+
+function decodeFirestoreValue(valObj) {
+  if (!valObj || typeof valObj !== 'object') return null;
+  if ('nullValue' in valObj) return null;
+  if ('booleanValue' in valObj) return Boolean(valObj.booleanValue);
+  if ('integerValue' in valObj) return parseInt(valObj.integerValue, 10);
+  if ('doubleValue' in valObj) return parseFloat(valObj.doubleValue);
+  if ('stringValue' in valObj) return String(valObj.stringValue);
+  if ('timestampValue' in valObj) return String(valObj.timestampValue);
+  if ('arrayValue' in valObj) {
+    const arr = valObj.arrayValue.values || [];
+    return arr.map(decodeFirestoreValue);
+  }
+  if ('mapValue' in valObj) {
+    const fields = valObj.mapValue.fields || {};
+    const res = {};
+    for (const [k, v] of Object.entries(fields)) {
+      res[k] = decodeFirestoreValue(v);
+    }
+    return res;
+  }
+  return null;
+}
+
+function encodeFirestoreDocument(plainObj) {
+  const fields = {};
+  for (const [k, v] of Object.entries(plainObj)) {
+    if (v !== undefined) {
+      fields[k] = encodeFirestoreValue(v);
+    }
+  }
+  return { fields };
+}
+
+function decodeFirestoreDocument(doc) {
+  if (!doc || !doc.fields) return null;
+  const res = {};
+  for (const [k, v] of Object.entries(doc.fields)) {
+    res[k] = decodeFirestoreValue(v);
+  }
+  if (doc.createTime) res._createTime = doc.createTime;
+  if (doc.updateTime) res._updateTime = doc.updateTime;
+  if (doc.name) {
+    const parts = doc.name.split('/');
+    res._id = parts[parts.length - 1];
+  }
+  return res;
+}
+
+// ─── CloudSyncService Engine ──────────────────────────────────────────────────
+
+class CloudSyncServiceEngine {
+  constructor() {
+    this.projectId = '';
+    this.apiKey = '';
+    this.databaseId = '(default)';
+    this.appId = '';
+    this.isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+    this.syncQueue = [];
+    this.listeners = [];
+
+    this.init();
+  }
+
+  init() {
+    this.loadConfig();
+    this.loadSyncQueue();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        this.isOnline = true;
+        this.notifyStatusChange('online');
+        this.flushSyncQueue();
+      });
+      window.addEventListener('offline', () => {
+        this.isOnline = false;
+        this.notifyStatusChange('offline');
+      });
+    }
+  }
+
+  loadConfig() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const saved = localStorage.getItem('aalaapi_firebase_config');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.projectId) this.projectId = parsed.projectId.trim();
+        if (parsed.apiKey) this.apiKey = parsed.apiKey.trim();
+        if (parsed.databaseId) this.databaseId = parsed.databaseId.trim() || '(default)';
+        if (parsed.appId) this.appId = parsed.appId.trim();
+      }
+    } catch (_) {}
+  }
+
+  saveConfig({ projectId, apiKey, databaseId, appId } = {}) {
+    if (projectId !== undefined) this.projectId = (projectId || '').trim();
+    if (apiKey !== undefined) this.apiKey = (apiKey || '').trim();
+    if (databaseId !== undefined) this.databaseId = (databaseId || '').trim() || '(default)';
+    if (appId !== undefined) this.appId = (appId || '').trim();
+
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const cfg = {
+          projectId: this.projectId,
+          apiKey: this.apiKey,
+          databaseId: this.databaseId,
+          appId: this.appId
+        };
+        localStorage.setItem('aalaapi_firebase_config', JSON.stringify(cfg));
+      } catch (_) {}
+    }
+    this.notifyStatusChange('config_updated');
+  }
+
+  getConfig() {
+    return {
+      projectId: this.projectId,
+      apiKey: this.apiKey,
+      databaseId: this.databaseId || '(default)',
+      appId: this.appId,
+      isConfigured: Boolean(this.projectId && this.apiKey)
+    };
+  }
+
+  isConfigured() {
+    return Boolean(this.projectId && this.apiKey);
+  }
+
+  getFirestoreBaseUrl() {
+    const db = encodeURIComponent(this.databaseId || '(default)');
+    return `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(this.projectId)}/databases/${db}/documents`;
+  }
+
+  buildUrl(collectionName, docId = '') {
+    const base = this.getFirestoreBaseUrl();
+    const cleanDoc = docId ? `/${encodeURIComponent(docId)}` : '';
+    const keyParam = this.apiKey ? `?key=${encodeURIComponent(this.apiKey)}` : '';
+    return `${base}/${encodeURIComponent(collectionName)}${cleanDoc}${keyParam}`;
+  }
+
+  // ─── Status Listeners ───────────────────────────────────────────────────────
+
+  addStatusListener(fn) {
+    if (typeof fn === 'function' && !this.listeners.includes(fn)) {
+      this.listeners.push(fn);
+    }
+  }
+
+  removeStatusListener(fn) {
+    this.listeners = this.listeners.filter(l => l !== fn);
+  }
+
+  notifyStatusChange(status) {
+    this.listeners.forEach(fn => {
+      try { fn(status, this.getConfig()); } catch (_) {}
+    });
+  }
+
+  // ─── Offline Queue Management ───────────────────────────────────────────────
+
+  loadSyncQueue() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const q = localStorage.getItem('aalaapi_cloud_sync_queue');
+      if (q) this.syncQueue = JSON.parse(q) || [];
+    } catch (_) {
+      this.syncQueue = [];
+    }
+  }
+
+  saveSyncQueue() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem('aalaapi_cloud_sync_queue', JSON.stringify(this.syncQueue));
+    } catch (_) {}
+  }
+
+  queueMutation(collection, docId, data, method = 'PATCH') {
+    this.syncQueue.push({
+      id: `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      collection,
+      docId,
+      data,
+      method,
+      queuedAt: new Date().toISOString()
+    });
+    this.saveSyncQueue();
+  }
+
+  async flushSyncQueue() {
+    if (!this.isConfigured() || !this.isOnline || this.syncQueue.length === 0) return;
+
+    const remaining = [];
+    for (const item of this.syncQueue) {
+      try {
+        await this.writeDocument(item.collection, item.docId, item.data, false);
+      } catch (err) {
+        remaining.push(item);
+      }
+    }
+    this.syncQueue = remaining;
+    this.saveSyncQueue();
+    if (this.syncQueue.length === 0) {
+      this.notifyStatusChange('synced');
+    }
+  }
+
+  // ─── Core CRUD Operations ───────────────────────────────────────────────────
+
+  async writeDocument(collection, docId, data, allowQueue = true) {
+    if (!this.isConfigured()) {
+      throw new Error('Firebase Cloud configuration is missing (Project ID or API Key).');
+    }
+
+    // Always cache locally first (Offline-First)
+    const localKey = `aalaapi_cloud_cache_${collection}_${docId}`;
+    if (typeof localStorage !== 'undefined') {
+      try { localStorage.setItem(localKey, JSON.stringify(data)); } catch (_) {}
+    }
+
+    if (!this.isOnline && allowQueue) {
+      this.queueMutation(collection, docId, data);
+      return { success: true, queued: true };
+    }
+
+    const url = this.buildUrl(collection, docId);
+    const firestoreBody = encodeFirestoreDocument(data);
+
+    try {
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(firestoreBody)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`Firestore write error: ${err.error?.message || res.statusText}`);
+      }
+
+      const doc = await res.json();
+      return { success: true, doc: decodeFirestoreDocument(doc) };
+    } catch (err) {
+      if (allowQueue) {
+        this.queueMutation(collection, docId, data);
+        return { success: true, queued: true, error: err.message };
+      }
+      throw err;
+    }
+  }
+
+  async readDocument(collection, docId) {
+    // Check local offline cache first
+    const localKey = `aalaapi_cloud_cache_${collection}_${docId}`;
+    let cached = null;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(localKey);
+        if (raw) cached = JSON.parse(raw);
+      } catch (_) {}
+    }
+
+    if (!this.isConfigured() || !this.isOnline) {
+      return cached;
+    }
+
+    try {
+      const url = this.buildUrl(collection, docId);
+      const res = await fetch(url);
+      if (res.status === 404) return null;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`Firestore read error: ${err.error?.message || res.statusText}`);
+      }
+
+      const doc = await res.json();
+      const decoded = decodeFirestoreDocument(doc);
+      if (typeof localStorage !== 'undefined') {
+        try { localStorage.setItem(localKey, JSON.stringify(decoded)); } catch (_) {}
+      }
+      return decoded;
+    } catch (err) {
+      if (cached) return cached;
+      throw err;
+    }
+  }
+
+  async listDocuments(collection) {
+    if (!this.isConfigured() || !this.isOnline) return [];
+
+    const url = this.buildUrl(collection);
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Firestore list error: ${err.error?.message || res.statusText}`);
+    }
+
+    const data = await res.json();
+    const docs = data.documents || [];
+    return docs.map(decodeFirestoreDocument).filter(Boolean);
+  }
+
+  // ─── High-Level Domain Synchronizers ────────────────────────────────────────
+
+  async syncPilotProfile(profile) {
+    if (!profile) return;
+    const userId = profile.id || profile.username || 'active_pilot';
+    return await this.writeDocument('aalaapi_pilots', userId, {
+      ...profile,
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  async fetchPilotProfile(userId = 'active_pilot') {
+    return await this.readDocument('aalaapi_pilots', userId);
+  }
+
+  async syncMission(missionUuid, missionData) {
+    if (!missionUuid) return;
+    return await this.writeDocument('aalaapi_missions', missionUuid, {
+      ...missionData,
+      uuid: missionUuid,
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  async listMissions() {
+    return await this.listDocuments('aalaapi_missions');
+  }
+
+  async syncChecklistLog(logId, checklistLog) {
+    if (!logId) return;
+    return await this.writeDocument('aalaapi_checklists', logId, {
+      ...checklistLog,
+      logId,
+      timestamp: checklistLog.timestamp || new Date().toISOString()
+    });
+  }
+
+  async listChecklistLogs() {
+    return await this.listDocuments('aalaapi_checklists');
+  }
+
+  /**
+   * Test connection to Firebase project and database ID
+   */
+  async testConnection() {
+    if (!this.projectId || !this.apiKey) {
+      throw new Error('Project ID and Web API Key are required.');
+    }
+    const url = this.buildUrl('aalaapi_ping', '_test_conn');
+    const res = await fetch(url);
+    // 200 or 404 means the database endpoint is reachable and authenticates
+    if (res.status === 200 || res.status === 404) {
+      return { success: true, message: `Connected cleanly to Firestore database '${this.databaseId || '(default)'}' in project '${this.projectId}'` };
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}: ${res.statusText}`);
+  }
+}
+
+const CloudSyncService = new CloudSyncServiceEngine();
+
+if (typeof window !== 'undefined') {
+  window.CloudSyncService = CloudSyncService;
+}
+if (typeof global !== 'undefined') {
+  global.CloudSyncService = CloudSyncService;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    CloudSyncServiceEngine,
+    CloudSyncService,
+    encodeFirestoreValue,
+    decodeFirestoreValue,
+    encodeFirestoreDocument,
+    decodeFirestoreDocument
+  };
+}
 // -------------------- src/bridge/CompanionAuth.js --------------------
 /**
  * src/bridge/CompanionAuth.js
@@ -66231,26 +67694,41 @@ const CompanionAuth = {
   // ─── Remote API Calls ───────────────────────────────────────────────────────
 
   async fetchCurrentProfile() {
-    if (!this.token) return null;
-    try {
-      const res = await fetch(`${this.getApiBase()}/api/auth/me`, {
-        headers: this.getAuthHeaders()
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          this.user = data.user;
-          this.passkeys = data.passkeys || [];
-          if (data.googleClientId) this.googleClientId = data.googleClientId;
+    if (this.token) {
+      try {
+        const res = await fetch(`${this.getApiBase()}/api/auth/me`, {
+          headers: this.getAuthHeaders()
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.user) {
+            this.user = data.user;
+            this.passkeys = data.passkeys || [];
+            if (data.googleClientId) this.googleClientId = data.googleClientId;
+            localStorage.setItem(AUTH_PILOT_KEY, JSON.stringify(this.user));
+            this.updateTopbarUI();
+            this.renderProfileView();
+            return this.user;
+          }
+        } else if (res.status === 401) {
+          this.logout(false);
+        }
+      } catch (_) {}
+    }
+
+    // Fallback: If companion bridge is offline, hydrate profile from CloudSyncService
+    if (typeof CloudSyncService !== 'undefined' && CloudSyncService.isConfigured()) {
+      try {
+        const cloudUser = await CloudSyncService.fetchPilotProfile();
+        if (cloudUser) {
+          this.user = cloudUser;
           localStorage.setItem(AUTH_PILOT_KEY, JSON.stringify(this.user));
           this.updateTopbarUI();
           this.renderProfileView();
           return this.user;
         }
-      } else if (res.status === 401) {
-        this.logout(false);
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
     return null;
   },
 
@@ -66607,6 +68085,11 @@ const CompanionAuth = {
       try { window.reconnectAllCompanionStreams(); } catch (_) {}
     }
 
+    // Mirror to CloudSyncService if configured
+    if (typeof CloudSyncService !== 'undefined' && CloudSyncService.isConfigured()) {
+      CloudSyncService.syncPilotProfile(user).catch(() => {});
+    }
+
     this.fetchCurrentProfile().catch(() => {});
   },
 
@@ -66810,23 +68293,158 @@ const CompanionAuth = {
       googleBtn.addEventListener('click', () => this.startGoogleOAuth());
     }
 
-    // Toggle Google Client ID drawer
-    const toggleGoogleCfgBtn = document.getElementById('auth-toggle-google-config-btn');
-    const googleCfgPanel = document.getElementById('auth-google-config-panel');
-    if (toggleGoogleCfgBtn && googleCfgPanel) {
-      toggleGoogleCfgBtn.addEventListener('click', () => {
-        const isHidden = googleCfgPanel.classList.contains('hidden');
-        googleCfgPanel.classList.toggle('hidden', !isHidden);
+    // Toggle Cloud & Google Workspace Integration Drawer
+    const toggleCloudBtn = document.getElementById('auth-toggle-google-config-btn') || document.getElementById('auth-toggle-cloud-sync-btn');
+    const cloudPanel = document.getElementById('auth-google-config-panel') || document.getElementById('auth-cloud-sync-panel');
+    const cloudChevron = document.getElementById('auth-cloud-sync-chevron');
+    if (toggleCloudBtn && cloudPanel) {
+      toggleCloudBtn.addEventListener('click', () => {
+        const isHidden = cloudPanel.classList.contains('hidden');
+        cloudPanel.classList.toggle('hidden', !isHidden);
+        if (cloudChevron) cloudChevron.textContent = isHidden ? '▲' : '▼';
+        if (isHidden) this.updateCloudConfigUI();
       });
     }
 
-    // Save Google Client ID
-    const saveGoogleCfgBtn = document.getElementById('auth-save-google-client-id-btn');
-    if (saveGoogleCfgBtn) {
-      saveGoogleCfgBtn.addEventListener('click', () => {
-        const input = document.getElementById('auth-google-client-id-input');
-        if (input) this.saveGoogleClientId(input.value.trim());
+    // Save Cloud Configuration
+    const saveCloudBtn = document.getElementById('cloud-save-config-btn');
+    if (saveCloudBtn) {
+      saveCloudBtn.addEventListener('click', () => {
+        const projectId = document.getElementById('cloud-firebase-project-id')?.value.trim() || '';
+        const databaseId = document.getElementById('cloud-firebase-database-id')?.value.trim() || '(default)';
+        const apiKey = document.getElementById('cloud-firebase-api-key')?.value.trim() || '';
+        const googleClientId = document.getElementById('cloud-google-client-id')?.value.trim() || '';
+        const sheetId = document.getElementById('cloud-google-sheet-id')?.value.trim() || '';
+
+        if (typeof CloudSyncService !== 'undefined') {
+          CloudSyncService.saveConfig({ projectId, databaseId, apiKey });
+        }
+        if (typeof GoogleWorkspaceClient !== 'undefined') {
+          GoogleWorkspaceClient.setClientId(googleClientId);
+          GoogleWorkspaceClient.setSpreadsheetId(sheetId);
+        }
+        if (googleClientId) {
+          this.googleClientId = googleClientId;
+          this.updateGoogleSsoUI();
+        }
+        this.showToast('Cloud & Google Workspace configuration saved!');
       });
+    }
+
+    // Test Cloud Connection
+    const testCloudBtn = document.getElementById('cloud-test-conn-btn');
+    const cloudStatusMsg = document.getElementById('cloud-sync-status-msg');
+    if (testCloudBtn) {
+      testCloudBtn.addEventListener('click', async () => {
+        if (!cloudStatusMsg) return;
+        cloudStatusMsg.classList.remove('hidden');
+        cloudStatusMsg.textContent = 'Testing connection to Firestore...';
+        cloudStatusMsg.style.color = '#38bdf8';
+        cloudStatusMsg.style.background = 'rgba(56, 189, 248, 0.1)';
+
+        try {
+          if (typeof CloudSyncService === 'undefined') throw new Error('CloudSyncService not available');
+          const result = await CloudSyncService.testConnection();
+          cloudStatusMsg.textContent = result.message || 'Connected successfully!';
+          cloudStatusMsg.style.color = '#4ade80';
+          cloudStatusMsg.style.background = 'rgba(74, 222, 128, 0.15)';
+        } catch (err) {
+          cloudStatusMsg.textContent = 'Connection test failed: ' + err.message;
+          cloudStatusMsg.style.color = '#f87171';
+          cloudStatusMsg.style.background = 'rgba(239, 68, 68, 0.15)';
+        }
+      });
+    }
+
+    // Google Drive Quick Save & Load in Dock
+    const driveSaveBtn = document.getElementById('cloud-drive-save-btn');
+    if (driveSaveBtn) {
+      driveSaveBtn.addEventListener('click', () => this.uploadCurrentMissionToDrive());
+    }
+
+    const driveLoadBtn = document.getElementById('cloud-drive-load-btn');
+    if (driveLoadBtn) {
+      driveLoadBtn.addEventListener('click', () => this.openDriveMissionVaultModal());
+    }
+
+    const driveCloseBtn = document.getElementById('cloud-drive-close-btn');
+    if (driveCloseBtn) {
+      driveCloseBtn.addEventListener('click', () => {
+        document.getElementById('cloud-drive-modal')?.classList.add('hidden');
+      });
+    }
+
+    const driveRefreshBtn = document.getElementById('cloud-drive-refresh-btn');
+    if (driveRefreshBtn) {
+      driveRefreshBtn.addEventListener('click', () => this.refreshDriveMissionList());
+    }
+
+    // Offline Field Packager in Dock
+    const packFieldBtn = document.getElementById('offline-field-pack-btn');
+    if (packFieldBtn) {
+      packFieldBtn.addEventListener('click', () => this.openOfflinePackModal());
+    }
+
+    const packCloseBtn = document.getElementById('offline-pack-close-btn');
+    if (packCloseBtn) {
+      packCloseBtn.addEventListener('click', () => {
+        document.getElementById('offline-pack-modal')?.classList.add('hidden');
+      });
+    }
+
+    const packStartBtn = document.getElementById('offline-pack-start-btn');
+    if (packStartBtn) {
+      packStartBtn.addEventListener('click', async () => {
+        if (typeof OfflineFieldPackager === 'undefined') return;
+        const progressBox = document.getElementById('offline-pack-progress-container');
+        const progressBar = document.getElementById('offline-pack-progress-bar');
+        const progressPct = document.getElementById('offline-pack-progress-pct');
+        const progressStatus = document.getElementById('offline-pack-progress-status');
+
+        if (progressBox) progressBox.classList.remove('hidden');
+        packStartBtn.disabled = true;
+        packStartBtn.textContent = 'Packaging Area...';
+
+        try {
+          const res = await OfflineFieldPackager.packMissionArea({
+            onProgress: (p) => {
+              if (progressBar) progressBar.style.width = `${p.percent}%`;
+              if (progressPct) progressPct.textContent = `${p.percent}%`;
+              if (progressStatus) progressStatus.textContent = `Downloaded ${p.downloaded}/${p.total} tiles (${p.currentTile})`;
+            }
+          });
+          this.showToast(`✈️ Mission packaged! ${res.downloaded} map tiles saved in offline storage.`);
+          packStartBtn.textContent = '✓ Pack Complete';
+          setTimeout(() => {
+            if (packStartBtn) {
+              packStartBtn.disabled = false;
+              packStartBtn.textContent = 'Start Field Pack';
+            }
+          }, 3000);
+        } catch (err) {
+          alert('Packaging failed: ' + err.message);
+          packStartBtn.disabled = false;
+          packStartBtn.textContent = 'Start Field Pack';
+        }
+      });
+    }
+
+    const packClearBtn = document.getElementById('offline-pack-clear-btn');
+    if (packClearBtn) {
+      packClearBtn.addEventListener('click', async () => {
+        if (!confirm('Clear all cached offline map tiles and elevation data?')) return;
+        if (typeof OfflineFieldPackager !== 'undefined') {
+          await OfflineFieldPackager.clearOfflineCache();
+          this.showToast('Offline map cache cleared');
+          this.openOfflinePackModal();
+        }
+      });
+    }
+
+    // Preflight Export to Google Sheets
+    const preflightSheetsBtn = document.getElementById('preflight-export-sheets-btn');
+    if (preflightSheetsBtn) {
+      preflightSheetsBtn.addEventListener('click', () => this.exportCurrentPreflightToSheets());
     }
 
     // Sign Out Button
@@ -66975,6 +68593,192 @@ const CompanionAuth = {
     }
   },
 
+  updateCloudConfigUI() {
+    if (typeof CloudSyncService !== 'undefined') {
+      const cfg = CloudSyncService.getConfig();
+      const projInput = document.getElementById('cloud-firebase-project-id');
+      const dbInput = document.getElementById('cloud-firebase-database-id');
+      const keyInput = document.getElementById('cloud-firebase-api-key');
+      if (projInput) projInput.value = cfg.projectId || '';
+      if (dbInput) dbInput.value = cfg.databaseId || '(default)';
+      if (keyInput) keyInput.value = cfg.apiKey || '';
+    }
+    if (typeof GoogleWorkspaceClient !== 'undefined') {
+      const gInput = document.getElementById('cloud-google-client-id');
+      const sInput = document.getElementById('cloud-google-sheet-id');
+      if (gInput) gInput.value = GoogleWorkspaceClient.getClientId() || '';
+      if (sInput) sInput.value = GoogleWorkspaceClient.getSpreadsheetId() || '';
+    }
+  },
+
+  async uploadCurrentMissionToDrive() {
+    if (typeof GoogleWorkspaceClient === 'undefined') {
+      alert('Google Workspace client is not initialized.');
+      return;
+    }
+    const clientId = GoogleWorkspaceClient.getClientId();
+    if (!clientId) {
+      this.openModal();
+      const panel = document.getElementById('auth-google-config-panel') || document.getElementById('auth-cloud-sync-panel');
+      if (panel) panel.classList.remove('hidden');
+      alert('Please configure your Google OAuth 2.0 Client ID in the Cloud & Google Workspace settings to enable Google Drive mission sync.');
+      return;
+    }
+
+    try {
+      this.showToast('Preparing mission package for Google Drive...');
+      let kmzResult = null;
+      if (typeof generateKMZBlob === 'function') {
+        kmzResult = await generateKMZBlob();
+      }
+      if (!kmzResult || !kmzResult.blob) {
+        throw new Error('Could not generate KMZ mission blob.');
+      }
+
+      let projectJson = null;
+      if (typeof exportProjectStateJson === 'function') {
+        projectJson = exportProjectStateJson();
+      } else if (typeof activeMissionPlan !== 'undefined') {
+        projectJson = activeMissionPlan;
+      }
+
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      const baseName = (activeLayer && activeLayer.name) ? activeLayer.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Aalaapi_Mission';
+      const filename = `${baseName}_${new Date().toISOString().slice(0, 10)}.kmz`;
+
+      const uploadRes = await GoogleWorkspaceClient.uploadMissionToDrive({
+        filename,
+        kmzBlob: kmzResult.blob,
+        missionJson: projectJson
+      });
+
+      this.showToast(`☁️ Saved "${filename}" to Google Drive (Aalaapi Sky Missions)!`);
+      return uploadRes;
+    } catch (err) {
+      alert('Failed to save mission to Google Drive: ' + err.message);
+    }
+  },
+
+  async openDriveMissionVaultModal() {
+    const modal = document.getElementById('cloud-drive-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    await this.refreshDriveMissionList();
+  },
+
+  async refreshDriveMissionList() {
+    const listEl = document.getElementById('cloud-drive-file-list');
+    const countEl = document.getElementById('cloud-drive-file-count');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.75rem; padding: 12px 0; text-align: center;">Connecting to Google Drive...</div>';
+
+    try {
+      const files = await GoogleWorkspaceClient.listMissionsFromDrive();
+      if (countEl) countEl.textContent = `${files.length} mission package(s) found in Google Drive:`;
+
+      if (files.length === 0) {
+        listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.75rem; padding: 12px 0; text-align: center;">No missions saved in Drive yet. Click "Drive Save" to upload your current mission!</div>';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      files.forEach(f => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.75rem;';
+        const isKmz = f.name.endsWith('.kmz');
+        const icon = isKmz ? '🚁' : '📄';
+        const modified = f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString() : '';
+        const sizeStr = f.size ? `${(parseInt(f.size, 10) / 1024).toFixed(1)} KB` : '';
+
+        item.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+            <span style="font-size: 1.1rem;">${icon}</span>
+            <div style="min-width: 0;">
+              <strong style="color: var(--text-main); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${f.name}</strong>
+              <span style="color: var(--text-muted); font-size: 0.68rem;">Modified ${modified} &bull; ${sizeStr}</span>
+            </div>
+          </div>
+          <button type="button" class="btn-primary" style="font-size: 0.7rem; padding: 4px 10px; margin-left: 8px; white-space: nowrap;">⬇️ Load</button>
+        `;
+
+        item.querySelector('button').onclick = async () => {
+          try {
+            item.querySelector('button').textContent = 'Loading...';
+            const arrayBuffer = await GoogleWorkspaceClient.downloadMissionFromDrive(f.id);
+            if (isKmz && typeof importKmzArrayBuffer === 'function') {
+              await importKmzArrayBuffer(arrayBuffer, f.name);
+            } else if (f.name.endsWith('.json')) {
+              const text = new TextDecoder().decode(arrayBuffer);
+              const parsed = JSON.parse(text);
+              if (typeof loadProjectStateJson === 'function') {
+                loadProjectStateJson(parsed);
+              }
+            }
+            modal.classList.add('hidden');
+            this.showToast(`Loaded "${f.name}" from Google Drive!`);
+          } catch (err) {
+            alert('Error loading mission: ' + err.message);
+          } finally {
+            item.querySelector('button').textContent = '⬇️ Load';
+          }
+        };
+
+        listEl.appendChild(item);
+      });
+    } catch (err) {
+      listEl.innerHTML = `<div style="color: #ef4444; font-size: 0.75rem; padding: 12px 0;">Error reading Drive: ${err.message}</div>`;
+      if (countEl) countEl.textContent = 'Drive access required';
+    }
+  },
+
+  async exportCurrentPreflightToSheets() {
+    if (typeof GoogleWorkspaceClient === 'undefined') return;
+    try {
+      this.showToast('Exporting preflight checklist to Google Sheets...');
+      const operatorName = document.getElementById('preflight-operator-input')?.value || (this.user ? this.user.displayName : 'Pilot');
+      const laancCode = document.getElementById('preflight-laanc-input')?.value || 'N/A';
+      const faaCertNumber = (this.user ? this.user.faaCertNumber : null) || 'N/A';
+      const aircraftModel = (typeof getSelectedDroneModel === 'function' ? getSelectedDroneModel() : 'DJI Mini 4 Pro');
+
+      let centerCoord = '0.0, 0.0';
+      if (typeof centerMarker !== 'undefined' && centerMarker) {
+        const ll = centerMarker.getLatLng();
+        centerCoord = `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`;
+      }
+
+      await GoogleWorkspaceClient.appendPreflightChecklistRow({
+        timestamp: new Date().toISOString(),
+        operatorName,
+        faaCertNumber,
+        laancCode,
+        aircraftModel,
+        coordinates: centerCoord,
+        weatherSummary: 'Preflight Verified',
+        allChecksPassed: true,
+        signatureData: (this.user && this.user.signatureData) ? true : false
+      });
+
+      this.showToast('📊 Checklist appended to Google Sheets Flight Logbook!');
+    } catch (err) {
+      alert('Failed to export to Google Sheets: ' + err.message);
+    }
+  },
+
+  openOfflinePackModal() {
+    const modal = document.getElementById('offline-pack-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+
+    if (typeof OfflineFieldPackager !== 'undefined') {
+      const est = OfflineFieldPackager.estimateRequirements();
+      const tilesEl = document.getElementById('offline-pack-est-tiles');
+      const sizeEl = document.getElementById('offline-pack-est-size');
+      if (tilesEl) tilesEl.textContent = `${est.tileCount.toLocaleString()} tiles (z14-z17)`;
+      if (sizeEl) sizeEl.textContent = `~${est.estimatedMb} MB`;
+    }
+  },
+
   openModal() {
     const modal = document.getElementById('companion-auth-modal');
     if (!modal) return;
@@ -66997,6 +68801,10 @@ const CompanionAuth = {
     }
 
     this.updateGoogleSsoUI();
+    const configPanel = document.getElementById('auth-google-config-panel') || document.getElementById('auth-cloud-sync-panel');
+    if (configPanel) configPanel.classList.add('hidden');
+    const cloudChevron = document.getElementById('auth-cloud-sync-chevron');
+    if (cloudChevron) cloudChevron.textContent = '▼';
     modal.classList.remove('hidden');
   },
 
@@ -67134,6 +68942,21 @@ const PTP_RC_OK = 0x2001;
 const PTP_OFC_ASSOCIATION = 0x3001; // Folder
 const PTP_OFC_UNDEFINED = 0x3000;
 const PTP_OFC_TEXT = 0x3004;
+
+function decodePtpString(uint8Array, offset = 0) {
+  if (!uint8Array || uint8Array.byteLength <= offset) return { str: '', nextOffset: offset };
+  const numChars = uint8Array[offset];
+  if (numChars === 0) return { str: '', nextOffset: offset + 1 };
+  let str = '';
+  const start = offset + 1;
+  const view = new DataView(uint8Array.buffer, uint8Array.byteOffset, uint8Array.byteLength);
+  for (let i = 0; i < numChars - 1; i++) {
+    const charCode = view.getUint16(start + i * 2, true);
+    if (charCode === 0) break;
+    str += String.fromCharCode(charCode);
+  }
+  return { str, nextOffset: start + numChars * 2 };
+}
 
 class WebUsbMtpEngine {
   constructor() {
@@ -67521,6 +69344,155 @@ class WebUsbMtpEngine {
 
     return finalBuffer;
   }
+
+  /**
+   * Get object handles from storage, matching format code and parent handle.
+   */
+  async getObjectHandles(storageId = 0, formatCode = 0, parentHandle = 0) {
+    if (!this.isConnected) await this.connect();
+    const stId = storageId || this.selectedStorageId || 0x00010001;
+    const res = await this.sendCommand(PTP_OP_GET_OBJECT_HANDLES, [stId, formatCode, parentHandle]);
+    const handles = [];
+    if (res.payload && res.payload.byteLength >= 4) {
+      const view = new DataView(res.payload.buffer, res.payload.byteOffset, res.payload.byteLength);
+      const count = view.getUint32(0, true);
+      for (let i = 0; i < count; i++) {
+        if (4 + i * 4 + 4 <= res.payload.byteLength) {
+          handles.push(view.getUint32(4 + i * 4, true));
+        }
+      }
+    }
+    return handles;
+  }
+
+  /**
+   * Read ObjectInfo dataset for an object handle
+   */
+  async getObjectInfo(objectHandle) {
+    if (!this.isConnected) await this.connect();
+    const res = await this.sendCommand(PTP_OP_GET_OBJECT_INFO, [objectHandle]);
+    if (!res.payload || res.payload.byteLength < 52) {
+      return null;
+    }
+    const view = new DataView(res.payload.buffer, res.payload.byteOffset, res.payload.byteLength);
+    const storageId = view.getUint32(0, true);
+    const objectFormat = view.getUint16(4, true);
+    const protectionStatus = view.getUint16(6, true);
+    const objectCompressedSize = view.getUint32(8, true);
+    const parentObject = view.getUint32(38, true);
+    const associationType = view.getUint16(42, true);
+
+    const decoded = decodePtpString(res.payload, 52);
+    return {
+      handle: objectHandle,
+      storageId,
+      objectFormat,
+      isFolder: objectFormat === PTP_OFC_ASSOCIATION,
+      protectionStatus,
+      size: objectCompressedSize,
+      parentObject,
+      associationType,
+      filename: decoded.str
+    };
+  }
+
+  /**
+   * Walk directory tree from root to resolve path (e.g. 'Android/data/dji.go.v5/files/waypoint')
+   */
+  async resolvePathHandle(pathString, storageId = null) {
+    if (!pathString) return 0;
+    const stId = storageId || this.selectedStorageId || 0x00010001;
+    const parts = pathString.replace(/^[/\\]+|[/\\]+$/g, '').split(/[/\\]+/);
+    let currentHandle = 0;
+
+    for (const segment of parts) {
+      if (!segment) continue;
+      const handles = await this.getObjectHandles(stId, 0, currentHandle);
+      let matchFound = null;
+      for (const h of handles) {
+        try {
+          const info = await this.getObjectInfo(h);
+          if (info && info.filename && info.filename.toLowerCase() === segment.toLowerCase()) {
+            matchFound = h;
+            break;
+          }
+        } catch (_) {}
+      }
+      if (matchFound === null) {
+        return null;
+      }
+      currentHandle = matchFound;
+    }
+
+    return currentHandle;
+  }
+
+  /**
+   * List existing waypoint mission slots in DJI Fly folder
+   */
+  async listWaypointFolderSlots() {
+    const parentHandle = await this.resolvePathHandle('Android/data/dji.go.v5/files/waypoint');
+    if (!parentHandle) return [];
+    const handles = await this.getObjectHandles(0, PTP_OFC_ASSOCIATION, parentHandle);
+    const slots = [];
+    for (const h of handles) {
+      const info = await this.getObjectInfo(h);
+      if (info && info.filename) {
+        slots.push({
+          handle: h,
+          uuid: info.filename
+        });
+      }
+    }
+    return slots;
+  }
+
+  /**
+   * Sync a KMZ mission package to a designated DJI waypoint slot folder
+   */
+  async syncKmzToRc2Slot(filename, kmzArrayBuffer, previewJpgBuffer = null, slotUuid = null) {
+    const waypointDirHandle = await this.resolvePathHandle('Android/data/dji.go.v5/files/waypoint');
+    const targetParent = waypointDirHandle || 0;
+    const result = await this.pushKmz(filename, kmzArrayBuffer, targetParent);
+    if (previewJpgBuffer && filename) {
+      const jpgName = filename.replace(/\.kmz$/i, '.jpg');
+      try {
+        await this.pushKmz(jpgName, previewJpgBuffer, targetParent);
+      } catch (_) {}
+    }
+    return result;
+  }
+
+  /**
+   * List and pull newest flight records from /Android/data/dji.go.v5/files/FlightRecord
+   */
+  async listAndPullLatestFlightLogs(limit = 3) {
+    const flightRecordHandle = await this.resolvePathHandle('Android/data/dji.go.v5/files/FlightRecord');
+    if (!flightRecordHandle) return [];
+    const handles = await this.getObjectHandles(0, 0, flightRecordHandle);
+    const logs = [];
+    for (const h of handles) {
+      const info = await this.getObjectInfo(h);
+      if (info && info.filename && info.filename.endsWith('.txt')) {
+        logs.push(info);
+      }
+    }
+
+    logs.sort((a, b) => b.handle - a.handle);
+    const chosen = logs.slice(0, limit);
+    const results = [];
+    for (const logInfo of chosen) {
+      try {
+        const rawBytes = await this.getObject(logInfo.handle);
+        results.push({
+          filename: logInfo.filename,
+          size: logInfo.size,
+          bytes: rawBytes
+        });
+      } catch (_) {}
+    }
+    return results;
+  }
 }
 
 const WebUsbMtp = new WebUsbMtpEngine();
@@ -67529,9 +69501,12 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     WebUsbMtpEngine,
     WebUsbMtp,
+    decodePtpString,
     PTP_OP_OPEN_SESSION,
     PTP_OP_SEND_OBJECT,
-    PTP_OP_GET_OBJECT
+    PTP_OP_GET_OBJECT,
+    PTP_OP_GET_OBJECT_HANDLES,
+    PTP_OP_GET_OBJECT_INFO
   };
 }
 // -------------------- src/bridge/DjiLogDecryptor.js --------------------

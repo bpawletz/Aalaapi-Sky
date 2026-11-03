@@ -123,11 +123,11 @@ The following third-party software libraries and components are utilized in Aala
   ```
 
 
-### Google Identity Services (GIS)
-* **Project**: [Google Identity Services](https://developers.google.com/identity/gsi/web)
+### Google Identity Services (GIS), Google Workspace & Cloud Firestore
+* **Project**: [Google Identity Services](https://developers.google.com/identity/gsi/web), [Google Drive API](https://developers.google.com/drive), [Google Sheets API](https://developers.google.com/sheets), and [Cloud Firestore REST API](https://firebase.google.com/docs/firestore)
 * **Authors**: Google LLC
 * **License**: Apache 2.0 / Google APIs Terms of Service
-* **Usage**: Client-side library for Google Single Sign-On (SSO) and OpenID Connect (OIDC) ID token acquisition for pilot authentication and session management.
+* **Usage**: Client-side library for Google Single Sign-On (SSO), OAuth 2.0 token acquisition, automated mission storage in Google Drive, automated preflight and telemetry logbook sync in Google Sheets, and offline-first profile/mission sync with Firestore (including AI Studio-provisioned projects).
 
 ### Web Fonts: Outfit & Plus Jakarta Sans
 * **Outfit**: Designed by On caps and Rodrigo Fuenzalida. Licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/).
