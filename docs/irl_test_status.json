@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-03T04:52:58.447Z",
-  "currentAppVersion": "1.219.1",
+  "lastUpdated": "2026-11-03T22:49:27.252Z",
+  "currentAppVersion": "1.219.2",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "1974a16b75ae",
@@ -339,15 +339,15 @@
         "generateTowerCoordinates"
       ],
       "codeHash": "691c76eb56a7",
-      "verifiedCodeHash": null,
-      "status": "UNTESTED",
+      "verifiedCodeHash": "691c76eb56a7",
+      "status": "VERIFIED",
       "lastModifiedVersion": "1.209.0",
-      "lastTestedVersion": null,
-      "lastTestedDate": null,
-      "testedBy": null,
-      "droneModel": null,
-      "firmware": null,
-      "notes": "",
+      "lastTestedVersion": "1.219.2",
+      "lastTestedDate": "2026-11-03T21:51:24Z",
+      "testedBy": "RPIC Field QA (Verified FlightRecord_2026-11-03_[16-51-24].txt)",
+      "droneModel": "DJI Mini 4 Pro",
+      "firmware": "RC 2 / DJI Fly v1.21.18",
+      "notes": "Flown and verified via FlightRecord_2026-11-03_[16-51-24].txt. Executed 3 horizontal inspection tiers (22m, 19m, 16m) with 27 waypoints, 0.58m RMS XTE, 0.14m RMS alt variance, 0.0° pitch error, 0.6° mean yaw error, and 43 stop-and-shoot photos. Field note: low-sun solar flare/sunburst seen at WP 0 (270°) and WP 1 (230°) due to sunset azimuth 245° and elevation 5.8°-9.0° (Issue #229).",
       "testParams": {
         "centerCoords": [
           41.3215,
@@ -366,15 +366,77 @@
         "pathMode": "straight"
       },
       "checklist": {
-        "kmz_import": false,
-        "entry_altitude": false,
-        "geometry_path": false,
-        "heading_gimbal": false,
-        "capture_trigger": false,
-        "exit_rth": false
+        "kmz_import": true,
+        "entry_altitude": true,
+        "geometry_path": true,
+        "heading_gimbal": true,
+        "capture_trigger": true,
+        "exit_rth": true
       },
-      "lastTelemetryMetrics": null,
-      "history": []
+      "lastTelemetryMetrics": {
+        "waypointCount": 27,
+        "visitedCount": 27,
+        "waypointCompletionPct": 100,
+        "rmsXteM": 0.58,
+        "maxXteM": 0.77,
+        "rmsAltitudeErrorM": 0.14,
+        "maxAltitudeErrorM": 0.5,
+        "meanGimbalPitchErrorDeg": 0,
+        "maxPitchErrorDeg": 0,
+        "meanYawErrorDeg": 0.6,
+        "maxYawErrorDeg": 4.7,
+        "photoCountPlanned": 27,
+        "photoCountActual": 43,
+        "photoCaptureRatioPct": 159,
+        "medianShutterSpeedMps": 0,
+        "maxShutterSpeedMps": 0,
+        "batteryStartPct": 58,
+        "batteryEndPct": 36,
+        "batteryUsedPct": 22,
+        "flightLog": "FlightRecord_2026-11-03_[16-51-24].txt"
+      },
+      "history": [
+        {
+          "timestamp": "2026-11-03T21:51:24Z",
+          "version": "1.219.2",
+          "status": "VERIFIED",
+          "codeHash": "691c76eb56a7",
+          "testedBy": "RPIC Field QA (Verified FlightRecord_2026-11-03_[16-51-24].txt)",
+          "droneModel": "DJI Mini 4 Pro",
+          "firmware": "RC 2 / DJI Fly v1.21.18",
+          "notes": "Flown and verified via FlightRecord_2026-11-03_[16-51-24].txt. Executed 3 horizontal inspection tiers (22m, 19m, 16m) with 27 waypoints, 0.58m RMS XTE, 0.14m RMS alt variance, 0.0° pitch error, 0.6° mean yaw error, and 43 stop-and-shoot photos. Field note: low-sun solar flare/sunburst seen at WP 0 (270°) and WP 1 (230°) due to sunset azimuth 245° and elevation 5.8°-9.0° (Issue #229).",
+          "checklist": {
+            "kmz_import": true,
+            "entry_altitude": true,
+            "geometry_path": true,
+            "heading_gimbal": true,
+            "capture_trigger": true,
+            "exit_rth": true
+          },
+          "telemetryMetrics": {
+            "waypointCount": 27,
+            "visitedCount": 27,
+            "waypointCompletionPct": 100,
+            "rmsXteM": 0.58,
+            "maxXteM": 0.77,
+            "rmsAltitudeErrorM": 0.14,
+            "maxAltitudeErrorM": 0.5,
+            "meanGimbalPitchErrorDeg": 0,
+            "maxPitchErrorDeg": 0,
+            "meanYawErrorDeg": 0.6,
+            "maxYawErrorDeg": 4.7,
+            "photoCountPlanned": 27,
+            "photoCountActual": 43,
+            "photoCaptureRatioPct": 159,
+            "medianShutterSpeedMps": 0,
+            "maxShutterSpeedMps": 0,
+            "batteryStartPct": 58,
+            "batteryEndPct": 36,
+            "batteryUsedPct": 22,
+            "flightLog": "FlightRecord_2026-11-03_[16-51-24].txt"
+          }
+        }
+      ]
     },
     "vertical-facade": {
       "id": "vertical-facade",
@@ -1281,6 +1343,31 @@
     }
   },
   "releasePlans": [
+    {
+      "id": "rel-1.219.2-229",
+      "version": "1.219.2",
+      "issueNumber": 229,
+      "title": "Vertical Waypoint Stacking Telemetry Disambiguation in IRL Verifier",
+      "date": "2026-11-03",
+      "affectedPatterns": [
+        "tower"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Import Tower Audit KMZ into DJI Fly/RC 2",
+          "checked": false
+        },
+        {
+          "label": "Fly 3-tier inspection ring (22m, 19m, 16m)",
+          "checked": false
+        },
+        {
+          "label": "Verify IrlVerifier matches all 27 waypoints with 100% completion",
+          "checked": false
+        }
+      ]
+    },
     {
       "id": "rel-1.219.1-228",
       "version": "1.219.1",

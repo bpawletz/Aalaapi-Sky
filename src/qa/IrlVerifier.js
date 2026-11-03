@@ -100,7 +100,7 @@ const IrlVerifier = {
       for (let b = a + 1; b < wps.length; b++) {
         const distAB = haversineDistance(parseFloat(wps[a].lat), parseFloat(wps[a].lon), parseFloat(wps[b].lat), parseFloat(wps[b].lon));
         const altAB = Math.abs(parseFloat(wps[a].altitude ?? wps[a].alt ?? 50) - parseFloat(wps[b].altitude ?? wps[b].alt ?? 50));
-        if (distAB < 2.0 && altAB > 3.0) {
+        if (distAB < 2.0 && altAB >= 2.0) {
           hasVerticalStacking = true;
           break;
         }
@@ -150,7 +150,7 @@ const IrlVerifier = {
         isBetter = true;
       } else if (i === 0 && dH <= Math.min(2.0, horizontalToleranceM) && bestDistH <= Math.min(2.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined && (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)) {
         isBetter = true;
-      } else if (i === 0 && dH < 1.0 && bestDistH < 1.0 && j > 0 && dH <= bestDistH + 0.25 && (wpYaw === null || pt.yaw === undefined || angularDiffDeg(parseFloat(pt.yaw), wpYaw) <= maxYawToleranceDeg)) {
+      } else if (i === 0 && dH < 1.0 && bestDistH < 1.0 && j > 0 && (bestPtIndex < 0 || (j - bestPtIndex) <= 15) && dZCand <= Math.abs(parseFloat(bestPt.alt || 0) - wpAlt) + 1.0 && dH <= bestDistH + 0.25 && (wpYaw === null || pt.yaw === undefined || angularDiffDeg(parseFloat(pt.yaw), wpYaw) <= maxYawToleranceDeg)) {
         isBetter = true;
       } else if (isFinalWp && dH <= Math.min(1.0, horizontalToleranceM) && bestDistH <= Math.min(1.0, horizontalToleranceM) && wpPitch !== null && pt.pitch !== undefined && bestPt && bestPt.pitch !== undefined && (Math.abs(parseFloat(pt.pitch) - wpPitch) < Math.abs(parseFloat(bestPt.pitch) - wpPitch) - 5)) {
         isBetter = true;
