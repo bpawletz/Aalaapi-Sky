@@ -40157,5 +40157,37 @@ describe('Heading-Aware Photo Disambiguation on Crosshatch Grids (v1.218.2, Issu
     assert.strictEqual(wp2App.actualYaw, -91.7, 'WP 2 actualYaw must reflect evaluated photo at -91.7°');
     assert.strictEqual(res.phases.heading_gimbal, true, 'Heading & gimbal pitch lock phase must pass');
   });
-});
+  test('Issue #229: IrlVerifier correctly disambiguates vertically stacked waypoints without lower-tier sample aliasing at WP 0', () => {
+    const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
 
+    const plannedWps = [
+      { index: 0, lat: 41.3215, lon: -88.9950, alt: 22, heading: 270, pitch: -45, skipPhoto: false },
+      { index: 1, lat: 41.32154, lon: -88.99495, alt: 22, heading: 230, pitch: -45, skipPhoto: false },
+      { index: 2, lat: 41.3215, lon: -88.9950, alt: 19, heading: 270, pitch: -45, skipPhoto: false }
+    ];
+
+    const points = [];
+    for (let i = 0; i <= 60; i++) {
+      if (i >= 8 && i <= 12) {
+        // At WP 0
+        points.push({ lat: 41.3215, lon: -88.9950, alt: 22.0, speed: 0.1, pitch: -45, yaw: -90.2, isPhoto: i === 10, time: i });
+      } else if (i >= 18 && i <= 22) {
+        // At WP 1
+        points.push({ lat: 41.32154, lon: -88.99495, alt: 22.0, speed: 0.1, pitch: -45, yaw: -130.1, isPhoto: i === 20, time: i });
+      } else if (i >= 48 && i <= 52) {
+        // Lower tier sample at identical lat/lon as WP 0 but at alt 19m
+        points.push({ lat: 41.3215, lon: -88.9950, alt: 19.0, speed: 0.1, pitch: -45, yaw: -90.3, isPhoto: i === 50, time: i });
+      } else {
+        // In transit
+        points.push({ lat: 41.3216, lon: -88.9948, alt: 22.0, speed: 3.0, pitch: -45, yaw: -90, isPhoto: false, time: i });
+      }
+    }
+
+    const res = IrlVerifier.verifyFlightPlanAgainstLog(plannedWps, { points }, { pathMode: 'curved' });
+    assert.strictEqual(res.passedAll, true, 'All 6 verification phases must pass');
+    assert.ok(res.wpApproaches[0].bestPtIndex >= 8 && res.wpApproaches[0].bestPtIndex <= 12, 'WP 0 must match initial arrival cluster (8-12)');
+    assert.strictEqual(res.wpApproaches[0].dZ, 0, 'WP 0 dZ must be 0m');
+    assert.ok(res.wpApproaches[1].bestPtIndex >= 18 && res.wpApproaches[1].bestPtIndex <= 22, 'WP 1 must match cluster (18-22)');
+    assert.ok(res.wpApproaches[2].bestPtIndex >= 48 && res.wpApproaches[2].bestPtIndex <= 52, 'WP 2 must match lower tier cluster (48-52)');
+  });
+});

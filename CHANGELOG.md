@@ -1,3 +1,22 @@
+## [1.219.2] - 2026-11-03
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Vertical Waypoint Stacking Telemetry Disambiguation in IRL Verifier (Closes #229)**:
+  - Fixed a false-negative variance on multi-tier inspection flights (Tower Audit, Multi-Orbit, and Facade) where 3D waypoints sharing identical lateral coordinates were misattributed.
+  - Eliminated erroneous 78% completion and cross-track/yaw errors by constraining waypoint arrival settling to the initial arrival cluster and strictly validating altitude envelope agreement.
+  - Formally verified the 3D Structure (Tower Audit) pattern across all 6 phases of the IRL Field Flight Test Plan using actual flight telemetry (`FlightRecord_2026-11-03_[16-51-24].txt`).
+
+#### Under the Hood & Technical Details
+- **`src/qa/IrlVerifier.js`**:
+  - Lowered vertical stacking threshold in `hasVerticalStacking` from `altAB > 3.0` to `altAB >= 2.0` to detect standard 2m–3m inspection tiers.
+  - Guarded WP 0 arrival fine-tuning with cluster proximity horizon `(j - bestPtIndex) <= 15` and altitude delta check `dZCand <= Math.abs(bestPt.alt - wpAlt) + 1.0` to prevent lower-tier passes from overwriting initial waypoint arrivals.
+- **`index.test.js`**:
+  - Added dedicated regression test asserting proper multi-tier vertical waypoint disambiguation without lower-tier sample aliasing at WP 0.
+- **`docs/irl_test_status.json` & `docs/IRL_TEST_PLAN.md`**:
+  - Upgraded `tower` pattern status to `VERIFIED` (6/6 phases) with 0.58m RMS XTE, 0.14m RMS altitude error, 0.0° gimbal pitch variance, and 0.6° mean yaw tracking.
+
 ## [1.219.1] - 2026-11-03
 
 ### 🐛 Fixed

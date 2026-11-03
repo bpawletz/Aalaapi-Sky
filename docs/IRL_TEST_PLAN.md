@@ -3,9 +3,9 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.219.1` | **WPML Compiler Hash:** `1974a16b75ae` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.219.2` | **WPML Compiler Hash:** `1974a16b75ae` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
-**Summary Progress:** **5 / 26** Patterns Verified | **0** Needs Re-Test | **21** Untested | **0** Failed
+**Summary Progress:** **6 / 26** Patterns Verified | **0** Needs Re-Test | **20** Untested | **0** Failed
 
 ---
 
@@ -84,7 +84,7 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 | 3 | `target-splat` | **Target Splat (Frustum Grid)** | Mapping & 3D | ⬜ `UNTESTED` | `0ec37c04a3ff` | — | — | `0/6` |
 | 4 | `orbit` | **3D Object (Circular Orbit)** | Orbit & Structure | ✅ `VERIFIED` | `64011bf49858` | v1.215.0 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 5 | `multi-orbit` | **3D Object (Multi-Tiered Orbit)** | Orbit & Structure | ⬜ `UNTESTED` | `0d54cef3c772` | — | — | `0/6` |
-| 6 | `tower` | **3D Structure (Tower Audit)** | Orbit & Structure | ⬜ `UNTESTED` | `691c76eb56a7` | — | — | `0/6` |
+| 6 | `tower` | **3D Structure (Tower Audit)** | Orbit & Structure | ✅ `VERIFIED` | `691c76eb56a7` | v1.219.2 | DJI Mini 4 Pro (RC 2 / DJI Fly v1.21.18) | `6/6` |
 | 7 | `vertical-facade` | **Vertical Facade (Planar Infrastructure)** | Orbit & Structure | ⬜ `UNTESTED` | `d8232774e98a` | — | — | `0/6` |
 | 8 | `continuous-helix` | **Continuous Helix (Corkscrew Orbit)** | Orbit & Structure | ⬜ `UNTESTED` | `29e3be3b2fcb` | — | — | `0/6` |
 | 9 | `star-pass` | **Star Pass (Cross-Hatch POI Inspection)** | Orbit & Structure | ⬜ `UNTESTED` | `2a4cf7306d93` | — | — | `0/6` |
@@ -211,15 +211,15 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 - **Edge-Case & Safety Watchout:** Top-down (`max-to-min`) order avoids rotor downwash dust; verify RTH climbs vertically before horizontal transit from low tier.
 
 #### `tower` — 3D Structure (Tower Audit)
-- **Current Status:** ⬜ `UNTESTED` | **Generator Hash:** `691c76eb56a7` (`src/patterns/PatternGenerators.js` -> `generateTowerCoordinates`)
+- **Current Status:** ✅ `VERIFIED` | **Generator Hash:** `691c76eb56a7` (`src/patterns/PatternGenerators.js` -> `generateTowerCoordinates`)
 - **Recommended Safe Field Parameters:** Origin `[41.3215, -88.9950]`, `towerRadiusM: 15`, `guyWireBufferM: 10`, `minHeightM: 20`, `maxHeightM: 60`, `tiers: 3`, `direction: horizontal`, `speedMps: 2.5`, `gimbalPitchDeg: -15`, `captureMode: stopAndShoot`, `headingMode: towardCenter`, `pathMode: straight`
 - **6-Phase Field Verification Checklist:**
-  - [ ] **Phase 1: KMZ / WPML Export & RC 2 Import**: Load Tower Audit KMZ; verify total effective standoff equals Tower Radius (15m) + Guy-Wire Buffer (10m) = 25m.
-  - [ ] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Confirm entry at top tier (60m AGL) at full 25m buffered radial standoff.
-  - [ ] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify horizontal rings (or vertical columns) never encroach inside the 25m safety cylinder.
-  - [ ] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify inward `towardCenter` heading lock and -15° shallow inspection pitch.
-  - [ ] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Verify `stopAndShoot` halts aircraft completely (ground speed <= 0.5 m/s) and settles before firing each inspection photo.
-  - [ ] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Confirm vertical climb above `maxHeightM` (60m + buffer) before horizontal RTH transit.
+  - [x] **Phase 1: KMZ / WPML Export & RC 2 Import**: Load Tower Audit KMZ; verify total effective standoff equals Tower Radius (15m) + Guy-Wire Buffer (10m) = 25m.
+  - [x] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Confirm entry at top tier (60m AGL) at full 25m buffered radial standoff.
+  - [x] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify horizontal rings (or vertical columns) never encroach inside the 25m safety cylinder.
+  - [x] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify inward `towardCenter` heading lock and -15° shallow inspection pitch.
+  - [x] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Verify `stopAndShoot` halts aircraft completely (ground speed <= 0.5 m/s) and settles before firing each inspection photo.
+  - [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Confirm vertical climb above `maxHeightM` (60m + buffer) before horizontal RTH transit.
 - **Edge-Case & Safety Watchout:** CRITICAL: Never fly near real guyed towers without physically verifying guy-wire anchor radii and setting Guy-Wire Buffer >= 10m.
 
 #### `vertical-facade` — Vertical Facade (Planar Infrastructure)
@@ -435,6 +435,12 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ---
 
 ## 6. Post-Update Release IRL Test Plans Log
+
+### [v1.219.2] Vertical Waypoint Stacking Telemetry Disambiguation in IRL Verifier — 2026-11-03 ([Issue #229](https://github.com/bpawletz/Aalaapi-Sky/issues/229))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `tower`
+- [ ] Import Tower Audit KMZ into DJI Fly/RC 2
+- [ ] Fly 3-tier inspection ring (22m, 19m, 16m)
+- [ ] Verify IrlVerifier matches all 27 waypoints with 100% completion
 
 ### [v1.219.1] Google OAuth 2.0 Secure Response Handling Compliance — 2026-11-03 ([Issue #228](https://github.com/bpawletz/Aalaapi-Sky/issues/228))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `single`, `double`
