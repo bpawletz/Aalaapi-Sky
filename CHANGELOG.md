@@ -1,3 +1,17 @@
+## [1.219.1] - 2026-11-03
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Google OAuth 2.0 Secure Response Handling Compliance (Closes #228)**:
+  - Upgraded Google Sign-In and Google Workspace authorization to comply with Google's modern Secure Response Handling policy, resolving the `Error 400: invalid_request` authorization error.
+  - Replaced legacy Implicit Grant token flows (`response_type=token` and `response_type=id_token`) with the official Google Identity Services (GIS) SDK (`google.accounts.id` and `google.accounts.oauth2.initTokenClient`).
+
+#### Under the Hood & Technical Details
+- **`src/bridge/CompanionAuth.js`**: Replaced popup `response_type=id_token` URL flow in `startGoogleOAuth()` with `google.accounts.id` and `google.accounts.oauth2.initTokenClient`.
+- **`src/bridge/GoogleWorkspaceClient.js`**: Eliminated fallback `response_type=token` implicit popup flow in `requestToken()`, ensuring strict GIS token client execution with initialization polling.
+- **`tools/companion/cloud_workspace.test.js`**: Added unit test asserting GIS token client invocation and verifying compliance with Google's Secure Response Handling guidelines.
+
 ## [1.219.0] - 2026-11-02
 
 Introduces a Hybrid Local-First Cloud & Google Workspace architecture with Firebase/Firestore cloud profile and mission synchronization, Google Drive mission vaulting, Google Sheets automated flight logbooks, and enhanced WebUSB MTP directory traversal for complete tablet field independence.

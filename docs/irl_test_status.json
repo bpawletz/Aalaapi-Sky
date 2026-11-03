@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-03T03:40:05.853Z",
-  "currentAppVersion": "1.219.0",
+  "lastUpdated": "2026-11-03T04:52:58.447Z",
+  "currentAppVersion": "1.219.1",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "1974a16b75ae",
@@ -1281,6 +1281,36 @@
     }
   },
   "releasePlans": [
+    {
+      "id": "rel-1.219.1-228",
+      "version": "1.219.1",
+      "issueNumber": 228,
+      "title": "Google OAuth 2.0 Secure Response Handling Compliance",
+      "date": "2026-11-03",
+      "affectedPatterns": [
+        "single",
+        "double"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Open Companion Auth modal and click Configure Google Client ID",
+          "checked": false
+        },
+        {
+          "label": "Enter valid Google OAuth Client ID",
+          "checked": false
+        },
+        {
+          "label": "Initiate Google Sign In and verify GIS prompt or Token Client executes without Error 400",
+          "checked": false
+        },
+        {
+          "label": "Verify Google Drive save/load completes without Error 400",
+          "checked": false
+        }
+      ]
+    },
     {
       "id": "rel-1.219.0-227",
       "version": "1.219.0",

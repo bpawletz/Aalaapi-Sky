@@ -112,7 +112,21 @@ class GoogleWorkspaceClientEngine {
       return this.accessToken;
     }
 
-    // 1. Google Identity Services (GIS) Token Client if script loaded
+    // Await Google Identity Services (GIS) if still loading
+    if (typeof window !== 'undefined' && (!window.google || !window.google.accounts || !window.google.accounts.oauth2)) {
+      await new Promise(resolve => {
+        let attempts = 0;
+        const check = setInterval(() => {
+          attempts++;
+          if ((window.google && window.google.accounts && window.google.accounts.oauth2) || attempts >= 10) {
+            clearInterval(check);
+            resolve();
+          }
+        }, 150);
+      });
+    }
+
+    // Google Identity Services (GIS) Token Client (Secure Response Handling compliant)
     if (typeof window !== 'undefined' && window.google && window.google.accounts && window.google.accounts.oauth2) {
       return new Promise((resolve, reject) => {
         try {
@@ -135,48 +149,7 @@ class GoogleWorkspaceClientEngine {
       });
     }
 
-    // 2. Direct Popup OAuth Fallback
-    return new Promise((resolve, reject) => {
-      const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'http://localhost:8765';
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(this.scopes)}&include_granted_scopes=true&prompt=${encodeURIComponent(prompt || 'select_account')}`;
-
-      const width = 500;
-      const height = 650;
-      const left = (window.screenX || 0) + ((window.outerWidth || 800) - width) / 2;
-      const top = (window.screenY || 0) + ((window.outerHeight || 600) - height) / 2;
-      const popup = window.open(authUrl, 'aalaapi_google_auth_token', `width=${width},height=${height},left=${left},top=${top}`);
-
-      if (!popup) {
-        return reject(new Error('Popup blocked by browser. Please allow popups for Aalaapi Sky.'));
-      }
-
-      let checkInterval = setInterval(() => {
-        try {
-          if (!popup || popup.closed) {
-            clearInterval(checkInterval);
-            if (!this.isAuthorized()) {
-              reject(new Error('Google sign-in was closed before authorization completed.'));
-            }
-            return;
-          }
-
-          if (popup.location && popup.location.hash) {
-            const hash = popup.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
-            const token = params.get('access_token');
-            const expiresIn = parseInt(params.get('expires_in'), 10) || 3600;
-            if (token) {
-              clearInterval(checkInterval);
-              popup.close();
-              this.handleTokenSuccess(token, expiresIn);
-              resolve(this.accessToken);
-            }
-          }
-        } catch (_) {
-          // Cross-origin access error while on accounts.google.com is expected until redirect
-        }
-      }, 500);
-    });
+    throw new Error('Google Identity Services SDK is not available. Please ensure accounts.google.com is accessible and access the app via https://localhost:8766 or https://127.0.0.1:8766.');
   }
 
   handleTokenSuccess(token, expiresIn = 3600) {

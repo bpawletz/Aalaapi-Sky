@@ -1037,15 +1037,83 @@ const CompanionAuth = {
       return;
     }
 
-    const redirectUri = `${this.getApiBase()}/api/auth/google/callback`;
-    const scope = encodeURIComponent('openid profile email');
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=id_token&scope=${scope}&nonce=${Date.now()}`;
+    // Google Identity Services (GIS) Flow - Secure Response Handling compliant
+    if (typeof window !== 'undefined' && window.google && window.google.accounts) {
+      if (window.google.accounts.id) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response) => {
+            if (response && response.credential) {
+              await this.handleGoogleVerify(response.credential);
+            } else if (response && response.error) {
+              this.showAuthError('Google Sign-In error: ' + response.error);
+            }
+          }
+        });
+        window.google.accounts.id.prompt((notification) => {
+          if (notification && (notification.isNotDisplayed() || notification.isSkippedMoment())) {
+            this.startGoogleOAuthFallback(clientId);
+          }
+        });
+        return;
+      }
 
-    const width = 500;
-    const height = 650;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-    window.open(authUrl, 'aalaapi_google_auth', `width=${width},height=${height},left=${left},top=${top}`);
+      if (window.google.accounts.oauth2) {
+        this.startGoogleOAuthFallback(clientId);
+        return;
+      }
+    }
+
+    // Wait a brief moment if GIS script is still loading
+    setTimeout(() => {
+      if (typeof window !== 'undefined' && window.google && window.google.accounts) {
+        this.startGoogleOAuth();
+      } else {
+        this.startGoogleOAuthFallback(clientId);
+      }
+    }, 400);
+  },
+
+  startGoogleOAuthFallback(clientId) {
+    if (typeof window !== 'undefined' && window.google && window.google.accounts && window.google.accounts.oauth2) {
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'openid profile email',
+        callback: async (tokenResponse) => {
+          if (tokenResponse.error) {
+            this.showAuthError('Google OAuth error: ' + (tokenResponse.error_description || tokenResponse.error));
+            return;
+          }
+          if (tokenResponse.access_token) {
+            try {
+              const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+              });
+              const profile = await res.json();
+              if (profile && (profile.sub || profile.email)) {
+                const user = {
+                  id: profile.sub || ('google_' + Date.now()),
+                  googleSub: profile.sub,
+                  email: profile.email,
+                  displayName: profile.name || profile.given_name || 'Pilot',
+                  avatarUrl: profile.picture || null,
+                  authType: 'google'
+                };
+                this.setSession('google_oauth_' + (profile.sub || Date.now()), user);
+                this.showToast(`Signed in with Google as ${user.displayName}!`);
+                this.closeModal();
+              }
+            } catch (err) {
+              this.showAuthError('Failed to fetch Google profile: ' + err.message);
+            }
+          }
+        }
+      });
+      client.requestAccessToken();
+      return;
+    }
+
+    alert('Google Identity Services SDK is unavailable or blocked by your browser ad-blocker. Please allow accounts.google.com and access Aalaapi Sky via https://localhost:8766 or https://127.0.0.1:8766.');
   },
 
   updateTopbarUI() {
