@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-02T04:47:18.245Z",
-  "currentAppVersion": "1.218.2",
+  "lastUpdated": "2026-11-03T03:40:05.853Z",
+  "currentAppVersion": "1.219.0",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "1974a16b75ae",
@@ -1281,6 +1281,41 @@
     }
   },
   "releasePlans": [
+    {
+      "id": "rel-1.219.0-227",
+      "version": "1.219.0",
+      "issueNumber": 227,
+      "title": "Hybrid Firebase Cloud Sync, Google Workspace & WebUSB Field Autonomy",
+      "date": "2026-11-03",
+      "affectedPatterns": [
+        "single",
+        "double",
+        "corridor"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Configure Firebase Project ID and databaseId",
+          "checked": false
+        },
+        {
+          "label": "Connect Google OAuth and Save mission to Google Drive",
+          "checked": false
+        },
+        {
+          "label": "Preflight checklist append to Google Sheets",
+          "checked": false
+        },
+        {
+          "label": "Run Field Pack on mission area for offline caching",
+          "checked": false
+        },
+        {
+          "label": "Test WebUSB MTP slot sync on tablet",
+          "checked": false
+        }
+      ]
+    },
     {
       "id": "rel-1.218.2-226",
       "version": "1.218.2",

@@ -34,6 +34,21 @@ const PTP_OFC_ASSOCIATION = 0x3001; // Folder
 const PTP_OFC_UNDEFINED = 0x3000;
 const PTP_OFC_TEXT = 0x3004;
 
+function decodePtpString(uint8Array, offset = 0) {
+  if (!uint8Array || uint8Array.byteLength <= offset) return { str: '', nextOffset: offset };
+  const numChars = uint8Array[offset];
+  if (numChars === 0) return { str: '', nextOffset: offset + 1 };
+  let str = '';
+  const start = offset + 1;
+  const view = new DataView(uint8Array.buffer, uint8Array.byteOffset, uint8Array.byteLength);
+  for (let i = 0; i < numChars - 1; i++) {
+    const charCode = view.getUint16(start + i * 2, true);
+    if (charCode === 0) break;
+    str += String.fromCharCode(charCode);
+  }
+  return { str, nextOffset: start + numChars * 2 };
+}
+
 class WebUsbMtpEngine {
   constructor() {
     this.device = null;
@@ -420,6 +435,155 @@ class WebUsbMtpEngine {
 
     return finalBuffer;
   }
+
+  /**
+   * Get object handles from storage, matching format code and parent handle.
+   */
+  async getObjectHandles(storageId = 0, formatCode = 0, parentHandle = 0) {
+    if (!this.isConnected) await this.connect();
+    const stId = storageId || this.selectedStorageId || 0x00010001;
+    const res = await this.sendCommand(PTP_OP_GET_OBJECT_HANDLES, [stId, formatCode, parentHandle]);
+    const handles = [];
+    if (res.payload && res.payload.byteLength >= 4) {
+      const view = new DataView(res.payload.buffer, res.payload.byteOffset, res.payload.byteLength);
+      const count = view.getUint32(0, true);
+      for (let i = 0; i < count; i++) {
+        if (4 + i * 4 + 4 <= res.payload.byteLength) {
+          handles.push(view.getUint32(4 + i * 4, true));
+        }
+      }
+    }
+    return handles;
+  }
+
+  /**
+   * Read ObjectInfo dataset for an object handle
+   */
+  async getObjectInfo(objectHandle) {
+    if (!this.isConnected) await this.connect();
+    const res = await this.sendCommand(PTP_OP_GET_OBJECT_INFO, [objectHandle]);
+    if (!res.payload || res.payload.byteLength < 52) {
+      return null;
+    }
+    const view = new DataView(res.payload.buffer, res.payload.byteOffset, res.payload.byteLength);
+    const storageId = view.getUint32(0, true);
+    const objectFormat = view.getUint16(4, true);
+    const protectionStatus = view.getUint16(6, true);
+    const objectCompressedSize = view.getUint32(8, true);
+    const parentObject = view.getUint32(38, true);
+    const associationType = view.getUint16(42, true);
+
+    const decoded = decodePtpString(res.payload, 52);
+    return {
+      handle: objectHandle,
+      storageId,
+      objectFormat,
+      isFolder: objectFormat === PTP_OFC_ASSOCIATION,
+      protectionStatus,
+      size: objectCompressedSize,
+      parentObject,
+      associationType,
+      filename: decoded.str
+    };
+  }
+
+  /**
+   * Walk directory tree from root to resolve path (e.g. 'Android/data/dji.go.v5/files/waypoint')
+   */
+  async resolvePathHandle(pathString, storageId = null) {
+    if (!pathString) return 0;
+    const stId = storageId || this.selectedStorageId || 0x00010001;
+    const parts = pathString.replace(/^[/\\]+|[/\\]+$/g, '').split(/[/\\]+/);
+    let currentHandle = 0;
+
+    for (const segment of parts) {
+      if (!segment) continue;
+      const handles = await this.getObjectHandles(stId, 0, currentHandle);
+      let matchFound = null;
+      for (const h of handles) {
+        try {
+          const info = await this.getObjectInfo(h);
+          if (info && info.filename && info.filename.toLowerCase() === segment.toLowerCase()) {
+            matchFound = h;
+            break;
+          }
+        } catch (_) {}
+      }
+      if (matchFound === null) {
+        return null;
+      }
+      currentHandle = matchFound;
+    }
+
+    return currentHandle;
+  }
+
+  /**
+   * List existing waypoint mission slots in DJI Fly folder
+   */
+  async listWaypointFolderSlots() {
+    const parentHandle = await this.resolvePathHandle('Android/data/dji.go.v5/files/waypoint');
+    if (!parentHandle) return [];
+    const handles = await this.getObjectHandles(0, PTP_OFC_ASSOCIATION, parentHandle);
+    const slots = [];
+    for (const h of handles) {
+      const info = await this.getObjectInfo(h);
+      if (info && info.filename) {
+        slots.push({
+          handle: h,
+          uuid: info.filename
+        });
+      }
+    }
+    return slots;
+  }
+
+  /**
+   * Sync a KMZ mission package to a designated DJI waypoint slot folder
+   */
+  async syncKmzToRc2Slot(filename, kmzArrayBuffer, previewJpgBuffer = null, slotUuid = null) {
+    const waypointDirHandle = await this.resolvePathHandle('Android/data/dji.go.v5/files/waypoint');
+    const targetParent = waypointDirHandle || 0;
+    const result = await this.pushKmz(filename, kmzArrayBuffer, targetParent);
+    if (previewJpgBuffer && filename) {
+      const jpgName = filename.replace(/\.kmz$/i, '.jpg');
+      try {
+        await this.pushKmz(jpgName, previewJpgBuffer, targetParent);
+      } catch (_) {}
+    }
+    return result;
+  }
+
+  /**
+   * List and pull newest flight records from /Android/data/dji.go.v5/files/FlightRecord
+   */
+  async listAndPullLatestFlightLogs(limit = 3) {
+    const flightRecordHandle = await this.resolvePathHandle('Android/data/dji.go.v5/files/FlightRecord');
+    if (!flightRecordHandle) return [];
+    const handles = await this.getObjectHandles(0, 0, flightRecordHandle);
+    const logs = [];
+    for (const h of handles) {
+      const info = await this.getObjectInfo(h);
+      if (info && info.filename && info.filename.endsWith('.txt')) {
+        logs.push(info);
+      }
+    }
+
+    logs.sort((a, b) => b.handle - a.handle);
+    const chosen = logs.slice(0, limit);
+    const results = [];
+    for (const logInfo of chosen) {
+      try {
+        const rawBytes = await this.getObject(logInfo.handle);
+        results.push({
+          filename: logInfo.filename,
+          size: logInfo.size,
+          bytes: rawBytes
+        });
+      } catch (_) {}
+    }
+    return results;
+  }
 }
 
 const WebUsbMtp = new WebUsbMtpEngine();
@@ -428,8 +592,11 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     WebUsbMtpEngine,
     WebUsbMtp,
+    decodePtpString,
     PTP_OP_OPEN_SESSION,
     PTP_OP_SEND_OBJECT,
-    PTP_OP_GET_OBJECT
+    PTP_OP_GET_OBJECT,
+    PTP_OP_GET_OBJECT_HANDLES,
+    PTP_OP_GET_OBJECT_INFO
   };
 }

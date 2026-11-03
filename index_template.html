@@ -83,7 +83,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.218.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.219.0</span></h1>
         </div>
       </div>
 
@@ -3446,6 +3446,21 @@
             </svg>
             Export KMZ
           </button>
+          <!-- Cloud & Google Workspace Field Dock (v1.219.0, Issue #227) -->
+          <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <button id="cloud-drive-save-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 2px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.72rem; margin: 0; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); color: #38bdf8;" title="Save KMZ &amp; Project to Google Drive">
+              <span>☁️</span>
+              Drive Save
+            </button>
+            <button id="cloud-drive-load-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 2px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.72rem; margin: 0; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); color: #38bdf8;" title="Load Mission from Google Drive">
+              <span>📂</span>
+              Drive Load
+            </button>
+            <button id="offline-field-pack-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 2px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.72rem; margin: 0; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); color: #fbbf24;" title="Pack Mission Area for Offline Field Use (Cache Tiles &amp; Elevation)">
+              <span>📦</span>
+              Field Pack
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -4728,6 +4743,15 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>☁️</span>
+              Hybrid Firebase Cloud Sync, Google Workspace &amp; WebUSB Field Autonomy (v1.219.0) (Closes #227)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Enables complete tablet and mobile field independence! Connects directly to Google Cloud Firestore using custom Database IDs (for seamless AI Studio project sharing) with offline caching. Adds 1-click Google Drive mission vaulting, Google Sheets automated flight logbooks, an in-browser Offline Field Packager for rural map tile caching, and dynamic WebUSB MTP directory traversal for 1-click RC 2 slot syncing on tablets.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🛰️ Companion Server &amp; Bonjour (mDNS) Special Card in Useful Links (v1.218.0) (Closes #224)
@@ -6542,6 +6566,7 @@
             <span>Require Preflight Checklist</span>
           </label>
           <button id="preflight-view-history-btn" type="button" class="btn-secondary" style="font-size: 0.68rem; padding: 4px 8px;" title="View past signed checklist logs">📜 Audit History</button>
+          <button id="preflight-export-sheets-btn" type="button" class="btn-secondary" style="font-size: 0.68rem; padding: 4px 8px; color: #34d399; border-color: rgba(52, 211, 153, 0.4);" title="Append Checklist Record to Google Sheets Logbook">📊 Export to Sheets</button>
         </div>
         <div style="display: flex; gap: 8px;">
           <button id="preflight-prev-btn" type="button" class="btn-secondary" style="font-size: 0.75rem; padding: 6px 12px;">Previous</button>
@@ -7263,7 +7288,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.218.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.219.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7424,6 +7449,15 @@
                                     <li style="margin-bottom: 8px;">
                                                                                                                           <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.219.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Hybrid Firebase Cloud Sync &amp; AI Studio Sharing (Closes #227):</strong> Connects directly to Google Cloud Firestore with custom Database ID support (defaulting to <code>(default)</code>) and <code>aalaapi_</code> collection prefixing, enabling shared use with AI Studio apps and offline-first profile/mission caching.</li>
+                <li><strong>Google Workspace Mission Vault &amp; Flight Logbook:</strong> 1-click Drive Save &amp; Load in the sidebar dock to sync <code>.kmz</code> packages and project JSON with Google Drive, plus automated Preflight Checklist appending to Google Sheets.</li>
+                <li><strong>Offline Field Packager:</strong> 1-click pre-caching of map imagery and terrain elevation for active mission bounding boxes into IndexedDB for zero-connectivity rural field flights.</li>
+                <li><strong>WebUSB MTP Directory Resolver for Tablets:</strong> Upgraded client-side PTP/MTP engine to walk DJI RC 2 directory trees on Android and ChromeOS tablets for direct controller slot syncing.</li>
+              </ul>
+              <br>
               <li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.218.2):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -13520,18 +13554,43 @@
             <button id="auth-switch-to-signup-btn" type="button" style="background: none; border: none; color: #38bdf8; font-weight: 600; cursor: pointer; text-decoration: underline; margin-left: 4px;">Create One</button>
           </div>
 
-          <!-- Collapsible Google OAuth Config Section -->
-          <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 12px;">
-            <button id="auth-toggle-google-config-btn" type="button" style="background: none; border: none; color: var(--text-muted); font-size: 0.72rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-              <span>⚙️</span>
-              <span>Configure Google OAuth Client ID</span>
+          <!-- Cloud & Google Workspace Integration Drawer (v1.219.0, Issue #227) -->
+          <div style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+            <button id="auth-toggle-google-config-btn" type="button" style="width: 100%; display: flex; justify-content: space-between; align-items: center; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 7px 10px; color: #38bdf8; font-size: 0.74rem; font-weight: 600; cursor: pointer;">
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span>☁️</span>
+                <span>Cloud &amp; Google Workspace Settings</span>
+              </span>
+              <span id="auth-cloud-sync-chevron">▼</span>
             </button>
-            <div id="auth-google-config-panel" class="hidden" style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.25); border-radius: 6px; border: 1px solid var(--border-color);">
-              <label for="auth-google-client-id-input" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 4px;">Google Client ID (from Google Cloud Console)</label>
-              <div style="display: flex; gap: 6px;">
-                <input id="auth-google-client-id-input" type="text" placeholder="123456789-xyz.apps.googleusercontent.com" style="flex: 1; padding: 6px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
-                <button id="auth-save-google-client-id-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">Save</button>
+            <div id="auth-google-config-panel" class="hidden" style="margin-top: 8px; padding: 12px; background: rgba(0,0,0,0.35); border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px;">
+              <div>
+                <label for="cloud-firebase-project-id" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 3px;">Firebase / GCP Project ID (or AI Studio Project)</label>
+                <input id="cloud-firebase-project-id" type="text" placeholder="e.g. my-drone-project-123" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
               </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <label for="cloud-firebase-database-id" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 3px;">Firestore Database ID</label>
+                  <input id="cloud-firebase-database-id" type="text" placeholder="(default)" value="(default)" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
+                </div>
+                <div>
+                  <label for="cloud-firebase-api-key" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 3px;">Web API Key</label>
+                  <input id="cloud-firebase-api-key" type="password" placeholder="AIzaSy..." style="width: 100%; box-sizing: border-box; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
+                </div>
+              </div>
+              <div>
+                <label for="cloud-google-client-id" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 3px;">Google OAuth 2.0 Client ID (Drive &amp; Sheets)</label>
+                <input id="cloud-google-client-id" type="text" placeholder="123456789-xyz.apps.googleusercontent.com" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
+              </div>
+              <div>
+                <label for="cloud-google-sheet-id" style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-bottom: 3px;">Flight Logbook Spreadsheet ID (Optional)</label>
+                <input id="cloud-google-sheet-id" type="text" placeholder="Google Sheet ID from URL or leave blank to auto-create" style="width: 100%; box-sizing: border-box; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.75rem;" />
+              </div>
+              <div style="display: flex; gap: 8px; margin-top: 4px;">
+                <button id="cloud-save-config-btn" type="button" class="btn-primary" style="flex: 1; padding: 6px 12px; font-size: 0.75rem;">Save Cloud Config</button>
+                <button id="cloud-test-conn-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">⚡ Test Connection</button>
+              </div>
+              <div id="cloud-sync-status-msg" class="hidden" style="font-size: 0.7rem; padding: 6px 8px; border-radius: 4px;"></div>
             </div>
           </div>
         </div>
@@ -13625,6 +13684,76 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Drive Mission Vault Modal (v1.219.0, Issue #227) -->
+  <div id="cloud-drive-modal" class="modal-overlay hidden" data-draggable-modal="true" style="z-index: 10056;">
+    <div class="modal glass cloud-drive-dialog" style="max-width: 580px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.85); border-radius: 14px;">
+      <div class="modal-header" data-modal-drag-handle="true" style="padding: 14px 20px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: grab;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem;">☁️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 0.95rem; color: var(--text-main); font-weight: 700;">Google Drive Mission Vault</h3>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Folder: Aalaapi Sky Missions</span>
+          </div>
+        </div>
+        <button id="cloud-drive-close-btn" type="button" class="close-btn" style="font-size: 1.2rem;">&times;</button>
+      </div>
+      <div style="padding: 16px; overflow-y: auto; flex: 1;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; color: var(--text-muted);" id="cloud-drive-file-count">Loading mission files...</span>
+          <button id="cloud-drive-refresh-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;">🔄 Refresh</button>
+        </div>
+        <div id="cloud-drive-file-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Items injected here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offline Field Packager Modal (v1.219.0, Issue #227) -->
+  <div id="offline-pack-modal" class="modal-overlay hidden" data-draggable-modal="true" style="z-index: 10057;">
+    <div class="modal glass offline-pack-dialog" style="max-width: 520px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid rgba(245, 158, 11, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.85); border-radius: 14px;">
+      <div class="modal-header" data-modal-drag-handle="true" style="padding: 14px 20px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: grab;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem;">📦</span>
+          <div>
+            <h3 style="margin: 0; font-size: 0.95rem; color: var(--text-main); font-weight: 700;">Offline Field Packager</h3>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Cache active mission area for rural field flights</span>
+          </div>
+        </div>
+        <button id="offline-pack-close-btn" type="button" class="close-btn" style="font-size: 1.2rem;">&times;</button>
+      </div>
+      <div style="padding: 18px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px;">
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+          <strong style="color: #fbbf24; display: block; margin-bottom: 4px;">✈️ Autonomous Field Operations:</strong>
+          Pre-caches map imagery and terrain elevation data directly in your browser's IndexedDB storage. Once packaged, you can take your tablet to the field with zero cellular signal or laptop and fly full 2D/3D missions.
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.78rem;">
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px;">
+            <span style="color: var(--text-muted); display: block; font-size: 0.7rem;">Estimated Tiles:</span>
+            <strong id="offline-pack-est-tiles" style="color: var(--text-main); font-size: 1rem;">Calculating...</strong>
+          </div>
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px;">
+            <span style="color: var(--text-muted); display: block; font-size: 0.7rem;">Estimated Storage:</span>
+            <strong id="offline-pack-est-size" style="color: var(--text-main); font-size: 1rem;">Calculating...</strong>
+          </div>
+        </div>
+        <div id="offline-pack-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.72rem;">
+            <span id="offline-pack-progress-status" style="color: #38bdf8;">Downloading tiles...</span>
+            <span id="offline-pack-progress-pct" style="color: var(--text-main); font-weight: 700;">0%</span>
+          </div>
+          <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+            <div id="offline-pack-progress-bar" style="width: 0%; height: 100%; background: #38bdf8; transition: width 0.2s;"></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <button id="offline-pack-start-btn" type="button" class="btn-primary" style="flex: 1; padding: 9px 16px; font-weight: 700; font-size: 0.82rem; background: #22c55e; border-color: #16a34a;">Start Field Pack</button>
+          <button id="offline-pack-clear-btn" type="button" class="btn-secondary" style="padding: 9px 14px; font-size: 0.78rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);">Clear Cache</button>
+        </div>
       </div>
     </div>
   </div>
