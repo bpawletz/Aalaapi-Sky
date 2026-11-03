@@ -129,3 +129,44 @@ test('OfflineFieldPackager: Slippy map coordinate math and requirement estimatio
   assert.ok(est.tileCount > 0);
   assert.ok(parseFloat(est.estimatedMb) >= 0);
 });
+
+test('Google Identity Services (GIS): Secure Response Handling compliance (Issue #228)', async () => {
+  const client = new GoogleWorkspaceClientEngine();
+  client.setClientId('test-client-id-123.apps.googleusercontent.com');
+
+  let initTokenClientCalled = false;
+  let clientParams = null;
+  let requestTokenCalled = false;
+
+  // Mock GIS environment
+  const prevWindow = global.window;
+  global.window = {
+    google: {
+      accounts: {
+        oauth2: {
+          initTokenClient: (params) => {
+            initTokenClientCalled = true;
+            clientParams = params;
+            return {
+              requestAccessToken: () => {
+                requestTokenCalled = true;
+                params.callback({ access_token: 'mock-gis-access-token-abc', expires_in: 3599 });
+              }
+            };
+          }
+        }
+      }
+    }
+  };
+
+  try {
+    const token = await client.requestToken();
+    assert.strictEqual(initTokenClientCalled, true, 'GIS initTokenClient must be invoked');
+    assert.strictEqual(requestTokenCalled, true, 'requestAccessToken must be called');
+    assert.strictEqual(clientParams.client_id, 'test-client-id-123.apps.googleusercontent.com');
+    assert.strictEqual(token, 'mock-gis-access-token-abc');
+    assert.strictEqual(client.isAuthorized(), true);
+  } finally {
+    global.window = prevWindow;
+  }
+});
