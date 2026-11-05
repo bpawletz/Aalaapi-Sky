@@ -5,11 +5,13 @@ Transitioned the in-app IRL verification marker into an interactive 6-Phase Flig
 ### Added
 
 #### Pilot & Operational Features
+- **3D Object (Multi-Tiered Orbit) IRL Field Verification**: Formally promoted 3D Object (Multi-Tiered Orbit) (`multi-orbit`) to `VERIFIED` status (6/6 phases, 100% fidelity) in the IRL Field Flight Tracker following passing post-flight telemetry analysis of `FlightRecord_2026-11-05_[17-47-02].txt` flown on DJI Mini 4 Pro (100% waypoints completed, RMS cross-track error 0.28m, max XTE 1.40m [WP 0], RMS altitude error 0.06m, mean pitch error 0.2°, mean yaw tracking error 1.3°, 50/25 photos captured, and 52% ending battery).
 - **6-Phase Flight Fidelity Gauge (#active-layer-irl-badge)**: Upgraded the Section 2 Layer Properties status pill into a dynamic 6-phase fidelity gauge (e.g. `6/6 ✅ IRL`, `5/6 ⚠️ IRL`, `3/6 ❌ IRL`, `🧪 Re-Test`, `0/6 ⚪ IRL`) with detailed operational tolerance tooltips and direct navigation to Issue #202 (Fixes #231).
 - **Multi-Segment Scorecard Gauge Meter (#diag-irl-modal)**: Added an interactive 6-segment fidelity gauge bar and composite percentage readout (`#diag-irl-gauge-bar`, `#diag-irl-gauge-ratio`, `#diag-irl-gauge-tier`) inside the Flight Diagnostics Scorecard modal, clearly distinguishing nominal flights (`100%`), operational variances (`67%–83%`), and critical failures (`<67%`).
 - **Video Capture Mode Telemetry Evaluation**: Added automatic detection for continuous video capture missions (`captureMode: 'video'`) in `IrlVerifier`, preventing spurious photo count failures when no still photos are planned.
 
 #### Under the Hood & Technical Details
+- **`docs/irl_test_status.json` & `docs/IRL_TEST_PLAN.md`**: Updated `multi-orbit` status to `VERIFIED` (6/6 phases passed, 100% fidelity) with comprehensive telemetry scorecard and metrics from `FlightRecord_2026-11-05_[17-47-02].txt`.
 - **`src/export/WpmlCompiler.js`**: Emitted `gimbalRotate` actions along helical and progressive pitch sweeps (`isContinuousHelix || isHyperlapseSweep`), ensuring DJI Fly missions smoothly tilt the gimbal across multi-loop spirals rather than remaining locked at entry pitch.
 - **`src/qa/IrlVerifier.js`**: Calculated `passedPhaseCount`, `totalPhaseCount`, `fidelityPct`, and operational `tierCode` (`V`, `O`, `F`, `R`, `U`), serialized into `window.AALAAPI_IRL_STATUS`.
 - **`tools/qa/irl_tracker.js`**: Updated compact client status map builder with phase scores (`p: score`) and operational variance status codes.

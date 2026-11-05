@@ -40408,4 +40408,13 @@ describe('6-Phase Flight Fidelity Gauge & Continuous Helix Pitch Taper Fix (v1.2
     assert.ok(xml.includes('<wpml:gimbalPitchRotateAngle>-29</wpml:gimbalPitchRotateAngle>'), 'Must emit progressive pitch -29');
     assert.ok(xml.includes('<wpml:gimbalPitchRotateAngle>-37</wpml:gimbalPitchRotateAngle>'), 'Must emit progressive pitch -37');
   });
+
+  test('IRL status tracker formally marks multi-orbit as VERIFIED with all 6 checklist phases true', () => {
+    const statusData = JSON.parse(fs.readFileSync(path.join(__dirname, 'docs/irl_test_status.json'), 'utf8'));
+    assert.strictEqual(statusData.patterns['multi-orbit'].status, 'VERIFIED');
+    const chk = statusData.patterns['multi-orbit'].checklist;
+    assert.ok(chk.kmz_import && chk.entry_altitude && chk.geometry_path && chk.heading_gimbal && chk.capture_trigger && chk.exit_rth);
+    assert.strictEqual(statusData.patterns['multi-orbit'].lastTestedVersion, '1.220.0');
+    assert.strictEqual(statusData.patterns['multi-orbit'].lastTelemetryMetrics.waypointCompletionPct, 100);
+  });
 });

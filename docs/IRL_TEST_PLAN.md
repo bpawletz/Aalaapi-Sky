@@ -5,7 +5,7 @@
 
 **Document & Tracker Version:** `v1.220.0` | **WPML Compiler Hash:** `4ef03fbe9395` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
-**Summary Progress:** **6 / 26** Patterns Verified | **0** Needs Re-Test | **20** Untested | **0** Failed
+**Summary Progress:** **7 / 26** Patterns Verified | **0** Needs Re-Test | **19** Untested | **0** Failed
 
 ---
 
@@ -83,7 +83,7 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 | 2 | `double` | **3D Splat (Double Grid)** | Mapping & 3D | ✅ `VERIFIED` | `dd5cae736203` | v1.215.2 | DJI Mini 4 Pro (01.00.0600) | `6/6` |
 | 3 | `target-splat` | **Target Splat (Frustum Grid)** | Mapping & 3D | ⬜ `UNTESTED` | `0ec37c04a3ff` | — | — | `0/6` |
 | 4 | `orbit` | **3D Object (Circular Orbit)** | Orbit & Structure | ✅ `VERIFIED` | `64011bf49858` | v1.215.0 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
-| 5 | `multi-orbit` | **3D Object (Multi-Tiered Orbit)** | Orbit & Structure | ⬜ `UNTESTED` | `0d54cef3c772` | — | — | `0/6` |
+| 5 | `multi-orbit` | **3D Object (Multi-Tiered Orbit)** | Orbit & Structure | ✅ `VERIFIED` | `0d54cef3c772` | v1.220.0 | DJI Mini 4 Pro (68) (RC 2 / DJI Fly) | `6/6` |
 | 6 | `tower` | **3D Structure (Tower Audit)** | Orbit & Structure | ✅ `VERIFIED` | `691c76eb56a7` | v1.219.2 | DJI Mini 4 Pro (RC 2 / DJI Fly v1.21.18) | `6/6` |
 | 7 | `vertical-facade` | **Vertical Facade (Planar Infrastructure)** | Orbit & Structure | ⬜ `UNTESTED` | `d8232774e98a` | — | — | `0/6` |
 | 8 | `continuous-helix` | **Continuous Helix (Corkscrew Orbit)** | Orbit & Structure | ⬜ `UNTESTED` | `29e3be3b2fcb` | — | — | `0/6` |
@@ -199,15 +199,15 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 - **Edge-Case & Safety Watchout:** Check crosswind yaw crabbing: gimbal yaw compensation should keep the central POI centered within ±8°.
 
 #### `multi-orbit` — 3D Object (Multi-Tiered Orbit)
-- **Current Status:** ⬜ `UNTESTED` | **Generator Hash:** `0d54cef3c772` (`src/patterns/PatternGenerators.js` -> `generateMultiOrbitCoordinates`)
+- **Current Status:** ✅ `VERIFIED` | **Generator Hash:** `0d54cef3c772` (`src/patterns/PatternGenerators.js` -> `generateMultiOrbitCoordinates`)
 - **Recommended Safe Field Parameters:** Origin `[41.3215, -88.9950]`, `minAltitudeM: 25`, `maxAltitudeM: 55`, `tiers: 3`, `descentOrder: max-to-min`, `radiusM: 30`, `speedMps: 4`, `gimbalPitchDeg: -45`, `captureMode: continuous`, `headingMode: towardCenter`, `pathMode: curved`
 - **6-Phase Field Verification Checklist:**
-  - [ ] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export 3-tier Multi-Orbit (`max-to-min`) and verify 3 stacked elevation rings (55m, 40m, 25m) on RC 2.
-  - [ ] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Verify initial climb to top ring (55m AGL) before entering orbit.
-  - [ ] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Confirm smooth step-down altitude transitions (55m -> 40m -> 25m) between completed 360° rings.
-  - [ ] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify continuous inward `towardCenter` yaw lock and tier-adjusted pitch across all 3 rings.
-  - [ ] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Confirm photo capture across all 3 tiers without missed triggers during inter-tier descent.
-  - [ ] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Verify RTH climbs back to safe RTH ceiling from the lowest tier (25m) before returning home.
+  - [x] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export 3-tier Multi-Orbit (`max-to-min`) and verify 3 stacked elevation rings (55m, 40m, 25m) on RC 2.
+  - [x] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Verify initial climb to top ring (55m AGL) before entering orbit.
+  - [x] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Confirm smooth step-down altitude transitions (55m -> 40m -> 25m) between completed 360° rings.
+  - [x] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify continuous inward `towardCenter` yaw lock and tier-adjusted pitch across all 3 rings.
+  - [x] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Confirm photo capture across all 3 tiers without missed triggers during inter-tier descent.
+  - [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Verify RTH climbs back to safe RTH ceiling from the lowest tier (25m) before returning home.
 - **Edge-Case & Safety Watchout:** Top-down (`max-to-min`) order avoids rotor downwash dust; verify RTH climbs vertically before horizontal transit from low tier.
 
 #### `tower` — 3D Structure (Tower Audit)
