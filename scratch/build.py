@@ -133,6 +133,20 @@ def build(banners=True):
     with open(output_path, 'wb') as f:
         f.write(modified)
 
+    # Sync assets into Android app assets directory if android/ exists
+    android_www = os.path.join(project_dir, 'android', 'app', 'src', 'main', 'assets', 'www')
+    if os.path.exists(android_www):
+        import shutil
+        print(f"Syncing bundle and web assets to {android_www}...")
+        with open(os.path.join(android_www, 'index.html'), 'wb') as f:
+            f.write(modified)
+        icon_path = os.path.join(project_dir, 'icon.png')
+        if os.path.exists(icon_path):
+            shutil.copy2(icon_path, os.path.join(android_www, 'icon.png'))
+        manifest_path = os.path.join(project_dir, 'manifest.json')
+        if os.path.exists(manifest_path):
+            shutil.copy2(manifest_path, os.path.join(android_www, 'manifest.json'))
+
     nojekyll_path = os.path.join(project_dir, '.nojekyll')
     if not os.path.exists(nojekyll_path):
         with open(nojekyll_path, 'wb') as f:

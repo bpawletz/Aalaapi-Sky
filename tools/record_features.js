@@ -3788,6 +3788,45 @@ const scenarios = [
       await page.waitForTimeout(1000);
       await page.screenshot({ path: 'recordings/bonjour_served_links_preview.png' });
     }
+  },
+  {
+    id: 'target_splat_wp0_settling',
+    name: 'Waypoint 0 Takeoff Gimbal Slew Auto-Settling from Transit Horizon',
+    issueRef: 'Issue #232',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+      await selectPattern(page, 'target-splat');
+      await page.waitForTimeout(800);
+
+      // Verify stopAndShoot mode and auto-settling
+      await page.evaluate(() => {
+        const captureSelect = document.getElementById('capture-mode');
+        if (captureSelect) {
+          captureSelect.value = 'stopAndShoot';
+          captureSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (typeof updateGrid === 'function') updateGrid();
+      });
+      await page.waitForTimeout(1000);
+
+      // Open Pre-Flight Audit Modal to demonstrate 10/10 checks and WP0 dwell verification
+      await page.evaluate(() => {
+        const auditBtn = document.getElementById('audit-kmz-btn');
+        if (auditBtn) auditBtn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      await page.screenshot({ path: 'recordings/target_splat_wp0_settling_preview.png' });
+      await page.waitForTimeout(1000);
+
+      // Close modal
+      await page.evaluate(() => {
+        const closeBtn = document.getElementById('close-audit-modal-btn');
+        if (closeBtn) closeBtn.click();
+      });
+      await page.waitForTimeout(600);
+    }
   }
 ];
 

@@ -56,7 +56,8 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   const cameraZoom = zoomEl ? parseFloat(zoomEl.value) : 1.0;
 
   const globalHoverEl = document.getElementById('global-hover-time');
-  const globalHoverTime = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
+  const parsedGlobalHover = globalHoverEl ? parseInt(globalHoverEl.value, 10) : 0;
+  const globalHoverTime = (!isNaN(parsedGlobalHover) && parsedGlobalHover >= 0) ? parsedGlobalHover : 0;
 
   const altEl = typeof document !== 'undefined' ? document.getElementById('altitude') : null;
   const speedEl = typeof document !== 'undefined' ? document.getElementById('speed') : null;
@@ -395,11 +396,11 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     // Exact angular pitch delta:
     // At idx === 0: delta relative to default mission/layer gimbal pitch
     // At idx > 0: delta relative to previous waypoint pitch
-    const defaultPitch0 = (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit')
-      ? (typeof parseGimbalPitch === 'function' ? parseGimbalPitch(wpLayer.gimbalPitch, -60) : wpLayer.gimbalPitch)
-      : ((gimbalPitch !== undefined && gimbalPitch !== null && !isNaN(gimbalPitch)) ? gimbalPitch : -60);
+    // At idx === 0: aircraft arrives from takeoff transit with gimbal at nominal horizon (0.0°).
+    // Slew delta is measured from 0.0° to effectivePitch so initial downward tilts receive scaled settling (AGENTS.md Section 16).
+    const transitHorizonPitch = 0.0;
     const pitchDiff = (idx === 0)
-      ? Math.abs(effectivePitch - defaultPitch0)
+      ? Math.abs(effectivePitch - transitHorizonPitch)
       : Math.abs(effectivePitch - prevEffectivePitch);
     const isPitchSlew = (idx === 0) ? (pitchDiff >= 5.0) : (pitchDiff >= 5.0 || reposInfo.isGimbalChanged);
     prevEffectivePitch = effectivePitch;

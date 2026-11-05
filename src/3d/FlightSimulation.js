@@ -172,9 +172,9 @@ function checkNeedsReposition(idx, waypoints) {
   let pitchDiff = 0;
   
   if (idx === 0) {
-    // Takeoff: compare against default layer gimbal pitch. If WP 0 diverges by >= 5°, it is an active pitch slew.
-    const defPitch = (current.defaultPitch !== undefined) ? current.defaultPitch : current.pitch;
-    pitchDiff = Math.abs(current.pitch - defPitch);
+    // Takeoff: aircraft transits with gimbal at nominal horizon (0.0°). Downward tilt into initial survey angle is an active slew.
+    const transitHorizon = 0.0;
+    pitchDiff = Math.abs(current.pitch - transitHorizon);
     isGimbalChanged = pitchDiff >= 5.0;
     isHeadingChanged = false;
     headingDiff = 0;

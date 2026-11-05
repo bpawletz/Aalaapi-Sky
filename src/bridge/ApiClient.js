@@ -14,6 +14,8 @@
 
 function getSyncPlatform() {
 
+  if (typeof window !== 'undefined' && window.AalaapiAndroid) return 'android';
+
   if (typeof navigator === 'undefined') return 'desktop';
 
 
@@ -4663,7 +4665,10 @@ const RemoteIdRadar = {
 
     if (!badge) return;
 
-    if (this.streamMode === 'sse') {
+    if (this.streamMode === 'android-ble') {
+      badge.textContent = 'Android BLE/Wi-Fi (Native)';
+      badge.style.color = '#a78bfa';
+    } else if (this.streamMode === 'sse') {
 
       badge.textContent = 'SSE Stream (Sub-second)';
 
@@ -7154,7 +7159,10 @@ const AdsbAirspaceManager = {
 
     if (!badge) return;
 
-    if (this.streamMode === 'sse') {
+    if (this.streamMode === 'android-tcp') {
+      badge.textContent = 'Android TCP/RTL-SDR (Native)';
+      badge.style.color = '#a78bfa';
+    } else if (this.streamMode === 'sse') {
 
       badge.textContent = 'SSE Stream (Sub-second)';
 

@@ -1997,27 +1997,25 @@ function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
 
     if ((wpIsStopAndShoot || isPhotoSphere) && autoSettling && needsSettling && !wp.skipPhoto && !wp.isDetour && !wp.isTransition) {
       let settlingDelay = baseSettling;
-      if (i > 0) {
-        // 1. Yaw turn settling (extended settling on target-splat/photo-sphere)
-        if (isExtendedSettling) {
-          if (reposInfo.headingDiff >= 60) {
-            settlingDelay = Math.max(settlingDelay, majorTurnSettling);
-          } else if (reposInfo.headingDiff >= 25) {
-            settlingDelay = Math.max(settlingDelay, modTurnSettling);
-          }
+      // 1. Yaw turn settling (extended settling on target-splat/photo-sphere)
+      if (i > 0 && isExtendedSettling) {
+        if (reposInfo.headingDiff >= 60) {
+          settlingDelay = Math.max(settlingDelay, majorTurnSettling);
+        } else if (reposInfo.headingDiff >= 25) {
+          settlingDelay = Math.max(settlingDelay, modTurnSettling);
         }
-        // 2. Gimbal pitch slew settling across ALL patterns
-        if (isPitchSlew) {
-          if (pitchDiff >= 65.0) {
-            settlingDelay = Math.max(settlingDelay, majorTurnSettling, 5.0);
-          } else if (pitchDiff >= 35.0) {
-            settlingDelay = Math.max(settlingDelay, modTurnSettling, 4.0);
-          } else {
-            settlingDelay = Math.max(settlingDelay, pitchSettling);
-          }
-          if (isPhotoSphere) {
-            settlingDelay = Math.max(settlingDelay, modTurnSettling);
-          }
+      }
+      // 2. Gimbal pitch slew settling across ALL patterns and ALL waypoints (idx >= 0)
+      if (isPitchSlew) {
+        if (pitchDiff >= 65.0) {
+          settlingDelay = Math.max(settlingDelay, majorTurnSettling, 5.0);
+        } else if (pitchDiff >= 35.0) {
+          settlingDelay = Math.max(settlingDelay, modTurnSettling, 4.0);
+        } else {
+          settlingDelay = Math.max(settlingDelay, pitchSettling);
+        }
+        if (isPhotoSphere) {
+          settlingDelay = Math.max(settlingDelay, modTurnSettling);
         }
       }
       wpEffectiveHover = Math.max(wpEffectiveHover, settlingDelay);
