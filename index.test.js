@@ -952,10 +952,10 @@ describe('calculateStats Tests', () => {
     assert.strictEqual(statsHover.timeStr, '0m 50s');
 
     // Capture mode 'stopAndShoot'
-    // Flight time = 5 (distance/speed) + 3*4.5 (photos) + 45 (base) + 2 (auto-settling) = 65.5 seconds.
+    // Flight time = 5 (distance/speed) + 3*4.5 (photos) + 45 (base) + 4 (WP0 gimbal pitch slew auto-settling from transit horizon) = 67.5 seconds.
     const statsStop = calculateStats(waypoints, photoLocations, speed, 10, 10, 'stopAndShoot');
-    assert.strictEqual(statsStop.flightTimeSeconds, 65.5);
-    assert.strictEqual(statsStop.timeStr, '1m 6s'); // 65.5s -> 1m 6s (rounded)
+    assert.strictEqual(statsStop.flightTimeSeconds, 67.5);
+    assert.strictEqual(statsStop.timeStr, '1m 8s'); // 67.5s -> 1m 8s (rounded)
 
     // Change distance to 2000m (2000/10 = 200s + 45 = 245s).
     const waypointsLong = [
@@ -1023,7 +1023,7 @@ describe('getSubMissionFlightTime Tests', () => {
     const wps = [{x: 0, y: 0}, {x: 30, y: 40}, {x: 30, y: 80}];
     vm.runInThisContext(`global.wpsInput = ${JSON.stringify(wps)};`);
     const time = vm.runInThisContext(`getSubMissionFlightTime(global.wpsInput, 0, 2, 10, 'stopAndShoot')`);
-    assert.strictEqual(time, 71.5);
+    assert.strictEqual(time, 73.5); // 71.5s + 2.0s WP0 pitch slew settling from transit horizon
   });
 
   test('calculates time for 0 distance segments', async () => {
@@ -2188,7 +2188,7 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
       // WP 0: hoverTime null, global hover 2 → auto-inject triggers 2s
       const wp0Xml = placemarks[1];
       assert.ok(wp0Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 0 should auto-inject hover');
-      assert.ok(wp0Xml.includes('<wpml:hoverTime>2</wpml:hoverTime>'), 'WP 0 should have 2s hover delay');
+      assert.ok(wp0Xml.includes('<wpml:hoverTime>4</wpml:hoverTime>'), 'WP 0 should have 4s hover delay for -45 deg pitch slew');
       
       const hoverIndex0 = wp0Xml.indexOf('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>');
       const photoIndex0 = wp0Xml.indexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
@@ -2247,16 +2247,16 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
       // stopAndShoot photoCount * 4.5 = 3 * 4.5 = 13.5s
       // Buffer = 45s
       // Auto-settling hovers:
-      // WP 0: gimbal change from takeoff (0 -> -45) = 2s
+      // WP 0: gimbal change from takeoff transit horizon (0 -> -45) = 4s
       // WP 1: no change = 0s
       // WP 2: heading change (0 -> 90) = 2s
-      // Total hover = 4s
-      // Total flightTimeSeconds = 20 + 13.5 + 4 + 45 = 82.5 seconds
-      assert.strictEqual(Math.round(stats.flightTimeSeconds), 83);
+      // Total hover = 6s
+      // Total flightTimeSeconds = 20 + 13.5 + 6 + 45 = 84.5 seconds
+      assert.strictEqual(Math.round(stats.flightTimeSeconds), 85);
 
       // getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode)
       const subTime = vm.runInThisContext('getSubMissionFlightTime')(testWaypoints, 0, 2, 10, 'stopAndShoot');
-      assert.strictEqual(Math.round(subTime), 83);
+      assert.strictEqual(Math.round(subTime), 85);
 
     } finally {
       delete global._stubElements;
@@ -10367,7 +10367,7 @@ describe('Target Splat First Waypoint Stuck Fix & WPML Validation Tests (v1.77.7
       assert.ok(!xml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'),
         'Must not fall back to followWayline mode for target-splat');
 
-      const pms = xml.split('<Placemark>');
+          const pms = xml.split('<Placemark>');
       assert.strictEqual(pms.length - 1, 106, 'Must contain 106 placemarks');
 
       // Check Waypoint 0
@@ -10517,7 +10517,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       ];
 
       const xml = buildWaylinesWpml(waypoints, 16, 1, 'custom', 'goHome', -45, 'stopAndShoot', 'straight');
-      const pms = xml.split('<Placemark>');
+          const pms = xml.split('<Placemark>');
       assert.strictEqual(pms.length - 1, 5, 'Must contain 5 placemarks');
 
       const hovers = [];
@@ -10526,7 +10526,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         hovers.push(hMatch ? parseInt(hMatch[1], 10) : 0);
       }
 
-      assert.strictEqual(hovers[0], 2, 'Waypoint 0 should have base 2s hover');
+      assert.strictEqual(hovers[0], 4, 'Waypoint 0 should have 4s settling hover for -45 deg pitch slew');
       assert.strictEqual(hovers[1], 2, 'Waypoint 1 straight-line should have base 2s hover');
       assert.strictEqual(hovers[2], 5, 'Waypoint 2 180-deg turn must have at least 5s settling hover');
       assert.strictEqual(hovers[3], 4, 'Waypoint 3 35-deg turn must have at least 4s settling hover');
@@ -10560,7 +10560,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       ];
 
       const xml = buildWaylinesWpml(waypoints, 16, 1, 'custom', 'goHome', -45, 'stopAndShoot', 'straight');
-      const pms = xml.split('<Placemark>');
+          const pms = xml.split('<Placemark>');
       assert.strictEqual(pms.length - 1, 2);
 
       // Placemark 2 (WP 1) must have gimbalRotate with pitch -55 and hover >= 3s
@@ -10693,12 +10693,12 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       const photos = [{}, {}, {}];
       const stats = calculateStats(waypoints, photos, 1, 10, 10, 'stopAndShoot');
       assert.ok(stats, 'Should return flight stats');
-      // Hover time: WP0: 2s (reposition takeoff), WP1: 0s, WP2: 5s (180 turn) = 7s
+      // Hover time: WP0: 4s (pitch slew from takeoff transit horizon), WP1: 0s, WP2: 5s (180 turn) = 9s
       // Distance: 50 + 10 = 60m / 1m/s = 60s
       // Photos: 3 * 4.5 = 13.5s
       // Buffer: 45s
-      // Total: 60 + 13.5 + 7 + 45 = 125.5s -> round to 126s
-      assert.strictEqual(Math.round(stats.flightTimeSeconds), 126);
+      // Total: 60 + 13.5 + 9 + 45 = 127.5s -> round to 128s
+      assert.strictEqual(Math.round(stats.flightTimeSeconds), 128);
     } finally {
       global.document.getElementById = originalGetElementById;
     }
@@ -39748,7 +39748,7 @@ describe('Universal Gimbal Slew Auto-Settling & Node-RED Action Flow (v1.216.0, 
     const xml = buildWaylinesWpml(waypoints, 4, 1, 'followWayline', 'goHome', -45, 'stopAndShoot', 'curved', {
       flightLayers: [{ id: 'l1', captureMode: 'stopAndShoot', autoSettlingEnabled: true }]
     });
-    const pms = xml.split('<Placemark>');
+        const pms = xml.split('<Placemark>');
     const wp0Hover = parseInt(pms[1].match(/<wpml:hoverTime>(\d+)<\/wpml:hoverTime>/)[1], 10);
     assert.ok(wp0Hover >= 3, `Waypoint 0 with pitch slew must have at least 3s settling hover, got ${wp0Hover}s`);
   });
@@ -40265,8 +40265,8 @@ describe('6-Phase Flight Fidelity Gauge & Continuous Helix Pitch Taper Fix (v1.2
 
     const htmlText = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
     assert.ok(htmlText.includes('Changelog (v1.220.0):'), 'index.html must include v1.220.0 changelog header');
-    assert.ok(htmlText.includes('Version 1.220.0'), 'index.html must display Version 1.220.0');
-    assert.ok(htmlText.includes('v1.220.0'), 'index.html must include v1.220.0 badge');
+    assert.ok(htmlText.includes('Version '), 'index.html must display Version tag');
+    assert.ok(htmlText.includes('header-version-badge'), 'index.html must include header-version-badge');
   });
 
   test('DOM Architecture: #diag-irl-gauge-container and gauge elements exist in template and index.html', () => {
@@ -40416,5 +40416,79 @@ describe('6-Phase Flight Fidelity Gauge & Continuous Helix Pitch Taper Fix (v1.2
     assert.ok(chk.kmz_import && chk.entry_altitude && chk.geometry_path && chk.heading_gimbal && chk.capture_trigger && chk.exit_rth);
     assert.strictEqual(statusData.patterns['multi-orbit'].lastTestedVersion, '1.220.0');
     assert.strictEqual(statusData.patterns['multi-orbit'].lastTelemetryMetrics.waypointCompletionPct, 100);
+  });
+});
+describe('Waypoint 0 Takeoff Gimbal Slew Auto-Settling from Transit Horizon (v1.220.1, Issue #232)', () => {
+  test('Version consistency: v1.220.1 across package.json, changelog, index_template.html, and index.html', () => {
+    assertVersionConsistency('1.220.1');
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.220.1] - 2026-11-05'));
+    const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('Changelog (v1.220.1):'));
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('Changelog (v1.220.1):'));
+  });
+
+  test('Waypoint 0 with -45 deg oblique pitch compiles with >= 4.0s settling hover in stopAndShoot mode (Target Splat / Oblique)', () => {
+    const waypoints = [
+      { lat: 41.3211, lon: -88.9950, alt: 30, pitch: -45, heading: 0, gridType: 'target-splat', layerId: 'l1', hoverTime: null },
+      { lat: 41.3212, lon: -88.9950, alt: 30, pitch: -45, heading: 0, gridType: 'target-splat', layerId: 'l1', hoverTime: null }
+    ];
+    const xml = buildWaylinesWpml(waypoints, 30, 4, 'followWayline', 'goHome', -45, 'stopAndShoot', 'curved', {
+      flightLayers: [{ id: 'l1', captureMode: 'stopAndShoot', autoSettlingEnabled: true }]
+    });
+    const pms = xml.split('<Placemark>');
+    const wp0Hover = parseInt(pms[1].match(/<wpml:hoverTime>(\d+)<\/wpml:hoverTime>/)[1], 10);
+    assert.ok(wp0Hover >= 4, 'Waypoint 0 with -45 deg pitch slew must have at least 4s settling hover, got ' + wp0Hover + 's');
+  });
+
+  test('Waypoint 0 with -90 deg nadir pitch compiles with >= 5.0s full-travel slew settling', () => {
+    const waypoints = [
+      { lat: 41.3215, lon: -88.9950, alt: 50, pitch: -90, heading: 0, gridType: 'single', layerId: 'l1', hoverTime: null },
+      { lat: 41.3220, lon: -88.9950, alt: 50, pitch: -90, heading: 0, gridType: 'single', layerId: 'l1', hoverTime: null }
+    ];
+    const xml = buildWaylinesWpml(waypoints, 50, 5, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight', {
+      flightLayers: [{ id: 'l1', captureMode: 'stopAndShoot', autoSettlingEnabled: true }]
+    });
+    const pms = xml.split('<Placemark>');
+    const wp0Hover = parseInt(pms[1].match(/<wpml:hoverTime>(\d+)<\/wpml:hoverTime>/)[1], 10);
+    assert.ok(wp0Hover >= 5, 'Waypoint 0 with -90 deg nadir slew must have at least 5s settling hover, got ' + wp0Hover + 's');
+  });
+
+  test('Waypoint 0 in continuous capture mode emits no hover actions', () => {
+    const waypoints = [
+      { lat: 41.3215, lon: -88.9950, alt: 50, pitch: -90, heading: 0, gridType: 'single', layerId: 'l1', hoverTime: null },
+      { lat: 41.3220, lon: -88.9950, alt: 50, pitch: -90, heading: 0, gridType: 'single', layerId: 'l1', hoverTime: null }
+    ];
+    const xml = buildWaylinesWpml(waypoints, 50, 5, 'followWayline', 'goHome', -90, 'continuous', 'straight', {
+      flightLayers: [{ id: 'l1', captureMode: 'continuous', autoSettlingEnabled: true }]
+    });
+    const pms = xml.split('<Placemark>');
+    assert.ok(!pms[1].includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'Continuous mode must not emit hover actions');
+  });
+
+  test('Waypoint 0 with skipPhoto: true bypasses auto-settling dwell', () => {
+    const waypoints = [
+      { lat: 41.3210, lon: -88.9950, alt: 50, pitch: -90, heading: 0, gridType: 'single', layerId: 'l1', skipPhoto: true, isTurnaroundPoint: true, hoverTime: null },
+      { lat: 41.3215, lon: -88.9950, alt: 50, pitch: -90, heading: 0, gridType: 'single', layerId: 'l1', hoverTime: null }
+    ];
+    const xml = buildWaylinesWpml(waypoints, 50, 5, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight', {
+      flightLayers: [{ id: 'l1', captureMode: 'stopAndShoot', autoSettlingEnabled: true }]
+    });
+    const pms = xml.split('<Placemark>');
+    assert.ok(!pms[1].includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'Turnaround overshoot waypoint 0 must not emit hover action');
+  });
+
+  test('Waypoint 0 at horizon (0 deg, e.g. vertical-facade) retains baseline 2.0s dwell without pitch slew delay', () => {
+    const waypoints = [
+      { lat: 41.3215, lon: -88.9950, alt: 20, pitch: 0, heading: 90, gridType: 'vertical-facade', layerId: 'l1', hoverTime: null },
+      { lat: 41.3215, lon: -88.9950, alt: 25, pitch: 0, heading: 90, gridType: 'vertical-facade', layerId: 'l1', hoverTime: null }
+    ];
+    const xml = buildWaylinesWpml(waypoints, 20, 3, 'followWayline', 'goHome', 0, 'stopAndShoot', 'straight', {
+      flightLayers: [{ id: 'l1', captureMode: 'stopAndShoot', autoSettlingEnabled: true }]
+    });
+    const pms = xml.split('<Placemark>');
+    const wp0Hover = parseInt(pms[1].match(/<wpml:hoverTime>(\d+)<\/wpml:hoverTime>/)[1], 10);
+    assert.strictEqual(wp0Hover, 2, 'Waypoint 0 at horizon must retain baseline 2s dwell, got ' + wp0Hover + 's');
   });
 });

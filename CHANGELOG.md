@@ -1,3 +1,23 @@
+## [1.220.1] - 2026-11-05
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Waypoint 0 Takeoff Gimbal Slew Auto-Settling (Closes #232)**:
+  - Fixed an operational variance where aircraft taking off at nominal transit horizon (0.0°) fired premature, mid-slew photos at Waypoint 0 before stabilizing at the intended survey pitch.
+  - Waypoint 0 now automatically receives scaled kinematic settling (>= 4.0s for obliques and >= 5.0s for nadir) in stopAndShoot mode, ensuring zero motion blur and nominal gimbal lock on the first survey capture.
+
+#### Under the Hood & Technical Details
+- **src/export/WpmlCompiler.js**:
+  - Measured pitchDiff at idx === 0 against nominal transit horizon (0.0°) rather than layer default pitch, preventing down-tilt slew deltas from evaluating to 0.0°.
+  - Protected globalHoverTime against NaN evaluations when #global-hover-time is empty.
+- **src/3d/FlightSimulation.js**:
+  - Updated checkNeedsReposition at idx === 0 to evaluate pitchDiff against 0.0°.
+- **src/geo/MathUtils.js & src/ui/TelemetryHud.js**:
+  - Allowed gimbal pitch slew auto-settling calculations to apply across all waypoints including idx === 0 (removing the i > 0 barrier for pitch slews).
+- **index.test.js**:
+  - Added dedicated unit tests asserting Waypoint 0 takeoff slew settling across oblique and nadir configurations.
+
 ## [1.220.0] - 2026-11-03
 
 Transitioned the in-app IRL verification marker into an interactive 6-Phase Flight Fidelity Gauge and resolved continuous helix gimbal pitch locking.
