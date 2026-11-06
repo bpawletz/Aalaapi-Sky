@@ -2358,25 +2358,71 @@ async function pullFlightLogFromRC2(targetBtn = null) {
   try {
 
     if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLatestLogFromRc2 === 'function') {
-      const logBase64 = window.AalaapiAndroid.pullLatestLogFromRc2();
-      if (!logBase64) {
+      const rawRes = window.AalaapiAndroid.pullLatestLogFromRc2();
+      if (!rawRes) {
         throw new Error('No flight logs found on connected RC 2');
       }
-      if (typeof atob === 'function') {
-        const rawText = atob(logBase64);
-        if (typeof DjiLogDecryptor !== 'undefined' && DjiLogDecryptor.parseLogText) {
-          DjiLogDecryptor.parseLogText(rawText);
+      let logPayload = null;
+      let logBase64 = null;
+      let logFilename = 'FlightRecord_latest.txt';
+
+      try {
+        logPayload = JSON.parse(rawRes);
+      } catch (_) {
+        logBase64 = rawRes;
+      }
+
+      if (logPayload) {
+        if (!logPayload.success) {
+          const errCode = logPayload.error || 'UNKNOWN';
+          const errMsg = logPayload.message || 'RC 2 flight log pull failed';
+          if (errCode === 'NO_RC2_CONNECTED') {
+            if (typeof showToast === 'function') {
+              showToast('🔌 No RC 2 controller detected via USB-C. Connect RC 2 or use "Load File".', 'warning', 6000);
+            }
+          } else if (errCode === 'RC2_PERMISSION_REQUIRED') {
+            if (typeof showToast === 'function') {
+              showToast('🔒 USB MTP permission required to access RC 2 logs.', 'warning', 6000);
+            }
+          } else {
+            if (typeof showToast === 'function') {
+              showToast(`⚠️ ${errMsg}`, 'warning', 5000);
+            }
+          }
+          throw new Error(errMsg);
         }
+        logBase64 = logPayload.data;
+        logFilename = logPayload.filename || logFilename;
       }
-      buttonsToUpdate.forEach(b => {
-        b.innerHTML = `<span>✅ Log Pulled!</span>`;
-        b.style.color = '#4ade80';
-      });
-      if (typeof showToast === 'function') {
-        showToast('📥 Flight log pulled from DJI RC 2', 'success');
+
+      if (logBase64) {
+        if (typeof DigitalTwin !== 'undefined' && typeof DigitalTwin.loadFlightLogData === 'function') {
+          await DigitalTwin.loadFlightLogData(logFilename, logBase64);
+        } else if (typeof atob === 'function' && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.parseLogText === 'function') {
+          const rawText = atob(logBase64);
+          DjiLogDecryptor.parseLogText(rawText, logFilename);
+        }
+
+        buttonsToUpdate.forEach(b => {
+          b.innerHTML = `<span>✅ Log Pulled!</span>`;
+          b.style.color = '#4ade80';
+        });
+
+        if (typeof showToast === 'function') {
+          showToast(`📥 Flight log pulled from DJI RC 2 (${logFilename})`, 'success');
+        }
+
+        try {
+          if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+            await FlightDiagnostics.open('3d', logFilename);
+          }
+        } catch (e) {
+          console.warn('FlightDiagnostics open error:', e);
+        }
+
+        resetButtonStates(3500);
+        return { success: true, logName: logFilename };
       }
-      resetButtonStates(3500);
-      return { success: true };
     }
 
     const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-06T22:52:27.606Z",
-  "currentAppVersion": "1.226.1",
+  "lastUpdated": "2026-11-06T23:38:19.940Z",
+  "currentAppVersion": "1.227.0",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "eb2417f42275",
@@ -1413,6 +1413,37 @@
     }
   },
   "releasePlans": [
+    {
+      "id": "rel-1.227.0-252",
+      "version": "1.227.0",
+      "issueNumber": 252,
+      "title": "Android USB MTP RC 2 Flight Log Extraction & Mobile Debug Console",
+      "date": "2026-11-06",
+      "affectedPatterns": [
+        "single",
+        "double",
+        "orbit"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Connect DJI RC 2 via USB-C OTG cable",
+          "checked": false
+        },
+        {
+          "label": "Tap Pull from RC 2 in Flight Diagnostics",
+          "checked": false
+        },
+        {
+          "label": "Verify latest FlightRecord loads into 3D replay",
+          "checked": false
+        },
+        {
+          "label": "Triple-tap version badge in sidebar header to verify Mobile Debug Console",
+          "checked": false
+        }
+      ]
+    },
     {
       "id": "rel-1.226.1-251",
       "version": "1.226.1",
