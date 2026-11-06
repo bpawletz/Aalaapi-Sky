@@ -1,3 +1,51 @@
+## [1.221.1] - 2026-11-05
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Ambient ADS-B Flight Replay Synchronization (Closes #233)**:
+  - Ambient ADS-B manned traffic (e.g. low-altitude aircraft encounters like Ohio State Highway Patrol `N72HP`) and Remote ID drones recorded during flight now render accurately and dynamically in both 2D Leaflet and 3D Digital Twin replays.
+  - Displays directional aircraft icons with track headings, callsigns, flight altitudes (in both feet and meters), ground speed (knots), and real-time horizontal proximity distance vectors.
+
+#### Under the Hood & Technical Details
+- **src/core/TelemetryInterpolator.js**:
+  - Fixed `_interpolateTrackState` property resolution to read `latitude`, `longitude`, `altitude`, `alt`, and `track`, and filter out non-position frames, eliminating `NaN` coordinates and ensuring smooth linear interpolation between ADS-B observations.
+- **tools/companion/log_decoder.js & src/import/TelemetryParsers.js**:
+  - Corrected telemetry parser start time evaluation to resolve true UTC timestamps from file creation metadata and timestamps rather than appending `.000Z` to local RC wall-clock time, ensuring accurate 4D synchronization with UTC-stamped ADS-B and Remote ID observations.
+- **tools/companion/diagnostics_db.js**:
+  - Expanded `getEnvironmentalReplay` with multi-strategy resolution: checks mission UUID, actual flight log name, linked diagnostic records, overlapping temporal windows `[start_utc_ms, end_utc_ms]`, and proximity windows.
+- **tools/companion/server.js**:
+  - Connected `/api/flight-telemetry` to load environmental replay dataset slices and return `environmentalReplay` in response payloads.
+- **src/ui/SidebarManager.js & src/3d/DigitalTwin.js**:
+  - Wired 2D and 3D flight loaders to pass environmental replay data directly into `PlaybackManager.loadFlight()` and synchronize `this.environmentalReplay`.
+
+## [1.221.0] - 2026-11-05
+
+Generates a standalone Native Android Application (`android/` Gradle project) and PWA with concurrent BLE/Wi-Fi Remote ID detection, multi-source ADS-B tracking, and a 1-tap USB-C DJI RC 2 mission sync confirmation bar.
+
+### Added
+
+#### Pilot & Operational Features
+- **Native Android Application (`android/`) & PWA Support (Closes #234)**:
+  - Generates a standalone, buildable Android Studio / Gradle project in `android/` bundling the compiled single-file web app in a hardware-accelerated WebView with native Kotlin hardware bridges (`window.AalaapiAndroid`).
+  - Added an installable Progressive Web App Manifest (`manifest.json`) for standalone Chrome on Android deployment.
+- **Concurrent Tri-Link Field Operation**:
+  - **Broadcast Remote ID Radar**: Scans ASTM F3411 Remote ID via native BLE 5.0 (UUID `0xFFFA`) and Wi-Fi Beacon (OUI `FA:0B:BC`), decoding Basic ID, Drone GPS/Altitude, Speed, and Pilot/Takeoff coordinates directly on the phone into `RemoteIdRadar`.
+  - **Multi-Source ADS-B Airspace Tracking**: Concurrently connects to raw TCP SBS-1 (`port 30003`, e.g. dump1090/Stratux), USB OTG RTL-SDR dongles, HTTP `aircraft.json` / `adsb.lol`, or Aalaapi Companion Bridge SSE over Wi-Fi LAN into `AdsbAirspaceManager` with directional audio alerts.
+  - **DJI RC 2 USB-C Auto-Detection & 1-Tap Sync Bar (`#android-rc2-sync-bar`)**: Automatically detects when a DJI RC 2 controller is plugged into the Android phone via USB-C, auto-enumerates waypoint mission slots, and provides a 1-tap `⚡ Sync KMZ to RC 2` button with overwrite confirmation protection and a `📥 Pull Latest Log` button.
+
+#### Under the Hood & Technical Details
+- **src/bridge/AndroidNativeBridge.js**:
+  - Implemented pure-JS client-side ASTM F3411 binary decoder (`ClientRemoteIdDecoder`) supporting 25-byte ODID messages and MessagePack (`0xF`).
+  - Implemented client-side Mode S SBS-1 CSV parser and spatial deconfliction tracker (`ClientAdsbProcessor`) with Haversine distance and relative bearing calculations.
+  - Created `window.AalaapiAndroidBridge` controller linking Android Kotlin callbacks (`onRemoteIdFrame`, `onAdsbSbsLine`, `onRc2Connected`) directly into DOM overlays and state engines.
+- **android/**:
+  - Created complete Android Gradle project targeting Android 15 (API 35, minSdk 26) with `MainActivity.kt`, `AndroidRemoteIdScanner.kt`, `AndroidAdsbBridge.kt`, `AndroidMtpBridge.kt`, and USB device filter for DJI Vendor ID `0x2CA3`.
+- **scratch/build.py**:
+  - Updated build pipeline to automatically synchronize compiled `index.html`, `icon.png`, and `manifest.json` into `android/app/src/main/assets/www/`.
+- **docs/ANDROID_APP_AND_FIELD_OPERATIONS_GUIDE.md**:
+  - Published comprehensive field operations and APK building guide.
+
 ## [1.220.1] - 2026-11-05
 
 ### 🐛 Fixed

@@ -11714,4 +11714,100 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       await page.waitForTimeout(200);
     });
   });
+
+  describe('Native Android App, Tri-Link & USB-C RC 2 Sync Bar E2E Tests (v1.221.0, Issue #234)', () => {
+    test('Simulated USB-C RC 2 connection displays #android-rc2-sync-bar and populates slot select', async () => {
+      await page.evaluate(() => {
+        window.onRc2UsbConnected({
+          deviceName: 'DJI RC 2 Enterprise',
+          vendorId: 11427,
+          slots: [
+            { uuid: '354A8F93-759C-42C3-A8D5-746F79C7622A', name: 'Slot 1 (Survey A)' },
+            { uuid: 'CE0D7948-AB09-40AB-A749-C0169AB5F9AD', name: 'Slot 2 (Orbit B)' }
+          ]
+        });
+      });
+
+      await page.waitForTimeout(300);
+
+      const syncBar = page.locator('#android-rc2-sync-bar');
+      assert.ok(await syncBar.isVisible(), '#android-rc2-sync-bar must become visible upon RC 2 connection');
+
+      const devName = await page.locator('#android-rc2-device-name').textContent();
+      assert.strictEqual(devName, 'DJI RC 2 Enterprise');
+
+      const slotSelect = page.locator('#android-rc2-slot-select');
+      const optCount = await slotSelect.locator('option').count();
+      assert.strictEqual(optCount, 2, 'Must populate exactly 2 slots in dropdown');
+    });
+
+    test('Clicking 1-Tap Sync KMZ triggers overwrite confirmation dialog', async () => {
+      const syncBtn = page.locator('#android-rc2-sync-btn');
+      await syncBtn.click();
+
+      await page.waitForTimeout(300);
+
+      const confirmModal = page.locator('#android-rc2-confirm-modal');
+      assert.ok(await confirmModal.isVisible(), '#android-rc2-confirm-modal must be visible');
+
+      const targetUuid = await page.locator('#android-rc2-modal-target-uuid').textContent();
+      assert.strictEqual(targetUuid, '354A8F93-759C-42C3-A8D5-746F79C7622A');
+
+      // Click Cancel Overwrite
+      const cancelBtn = page.locator('#android-rc2-cancel-overwrite-btn');
+      await cancelBtn.click();
+
+      await page.waitForTimeout(200);
+      assert.ok(!(await confirmModal.isVisible()), '#android-rc2-confirm-modal must close on cancel');
+    });
+
+    test('Simultaneous Remote ID and ADS-B ingestion updates transport badges and airspace state', async () => {
+      await page.evaluate(() => {
+        if (typeof AdsbAirspaceManager !== 'undefined') {
+          AdsbAirspaceManager.enabled = true;
+          AdsbAirspaceManager.streamMode = 'android-tcp';
+          if (typeof AdsbAirspaceManager.updateStreamTransportUI === 'function') {
+            AdsbAirspaceManager.updateStreamTransportUI();
+          }
+        }
+        // 1. Ingest Remote ID frame
+        const buf = new Uint8Array(25);
+        buf[0] = 0x01; // MsgType 0 Basic ID
+        buf[1] = 0x12; // Serial, Multirotor
+        const id = 'RID-MINI4P-99';
+        for (let i = 0; i < id.length; i++) buf[2 + i] = id.charCodeAt(i);
+        let b64 = '';
+        for (let i = 0; i < buf.length; i++) b64 += String.fromCharCode(buf[i]);
+        window.ingestRemoteIdFrame(btoa(b64), -68, 'ble');
+
+        // 2. Ingest ADS-B SBS-1 CSV line
+        window.ingestAdsbSbsLine('MSG,3,1,1,AC9999,1,2026/11/05,18:00:00.000,2026/11/05,18:00:00.000,,1200,,,41.3250,-88.9950,,,0,0,0,0');
+      });
+
+      await page.waitForTimeout(400);
+
+      const ridBadge = page.locator('#remote-id-transport-badge');
+      if (await ridBadge.count() > 0) {
+        const text = await ridBadge.textContent();
+        assert.ok(text.includes('Android BLE') || text.includes('Native') || text.includes('Sub-second'), 'RID badge must reflect live native stream');
+      }
+
+      const adsbBadge = page.locator('#adsb-transport-badge');
+      if (await adsbBadge.count() > 0) {
+        const text = await adsbBadge.textContent();
+        assert.ok(text.includes('Android TCP') || text.includes('Native') || text.includes('Sub-second'), 'ADS-B badge must reflect live native stream');
+      }
+    });
+
+    test('Disconnecting RC 2 hides sync bar', async () => {
+      await page.evaluate(() => {
+        window.onRc2UsbDisconnected();
+      });
+
+      await page.waitForTimeout(300);
+
+      const syncBar = page.locator('#android-rc2-sync-bar');
+      assert.ok(!(await syncBar.isVisible()), '#android-rc2-sync-bar must hide after disconnection');
+    });
+  });
 });

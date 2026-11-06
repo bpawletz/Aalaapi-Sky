@@ -40492,3 +40492,283 @@ describe('Waypoint 0 Takeoff Gimbal Slew Auto-Settling from Transit Horizon (v1.
     assert.strictEqual(wp0Hover, 2, 'Waypoint 0 at horizon must retain baseline 2s dwell, got ' + wp0Hover + 's');
   });
 });
+
+
+describe('Native Android App, Tri-Link Field Bridge & USB-C RC 2 Auto-Sync (v1.221.0, Issue #234)', () => {
+  const { ClientRemoteIdDecoder, ClientAdsbProcessor, AndroidNativeBridge } = require('./src/bridge/AndroidNativeBridge.js');
+
+  test('Version consistency: package.json, CHANGELOG, templates match v1.221.0', () => {
+    assertVersionConsistency('1.221.0');
+  });
+
+  test('ClientRemoteIdDecoder decodes ASTM F3411 Basic ID (Type 0x0) payload', () => {
+    // 25-byte block: [0]=header (msgType 0 << 4 | proto 1), [1]=idType & uaType, [2..21]=UAS ID string
+    const buf = new Uint8Array(25);
+    buf[0] = 0x01; // MsgType 0, ProtoVersion 1
+    buf[1] = (0x01 << 4) | 0x02; // ID Type 1 (Serial), UA Type 2 (Helicopter/Multirotor)
+    const idStr = '1581F4TEST123456';
+    for (let i = 0; i < idStr.length; i++) buf[2 + i] = idStr.charCodeAt(i);
+
+    const decoded = ClientRemoteIdDecoder.decode(buf, -72, 'ble');
+    assert.ok(decoded, 'Decoded object must exist');
+    assert.strictEqual(decoded.msgType, 'BasicID');
+    assert.strictEqual(decoded.uasId, '1581F4TEST123456');
+    assert.strictEqual(decoded.uaType, 'Helicopter (Multirotor)');
+    assert.strictEqual(decoded.rssi, -72);
+    assert.strictEqual(decoded.transport, 'ble');
+  });
+
+  test('ClientRemoteIdDecoder decodes ASTM F3411 Location (Type 0x1) payload', () => {
+    const buf = new Uint8Array(25);
+    buf[0] = 0x11; // MsgType 1, Proto 1
+    buf[1] = 0x20; // Airborne status
+    buf[2] = 45;   // Track direction (45 * 2 = 90 deg East)
+    buf[3] = 40;   // Speed (40 * 0.25 = 10.0 m/s)
+
+    const view = new DataView(buf.buffer);
+    const testLat = 41.3215;
+    const testLon = -88.9950;
+    view.setInt32(5, Math.round(testLat * 1e7), true);
+    view.setInt32(9, Math.round(testLon * 1e7), true);
+    // altGeo = (geoAltRaw * 0.5) - 1000 => for 120m, geoAltRaw = (120 + 1000) * 2 = 2240
+    view.setUint16(15, 2240, true);
+
+    const decoded = ClientRemoteIdDecoder.decode(buf, -65, 'ble');
+    assert.ok(decoded, 'Location payload must decode');
+    assert.strictEqual(decoded.msgType, 'Location');
+    assert.strictEqual(decoded.status, 'Airborne');
+    assert.strictEqual(decoded.trackDirection, 90);
+    assert.strictEqual(decoded.speedMps, 10.0);
+    assert.ok(Math.abs(decoded.latitude - 41.3215) < 0.0001);
+    assert.ok(Math.abs(decoded.longitude - (-88.9950)) < 0.0001);
+    assert.strictEqual(decoded.altitude, 120);
+  });
+
+  test('ClientRemoteIdDecoder decodes ASTM F3411 MessagePack (Type 0xF) multi-message frames', () => {
+    // MessagePack header (0xF1), count 2, followed by two 25-byte blocks (52 bytes total)
+    const pack = new Uint8Array(52);
+    pack[0] = 0xF1;
+    pack[1] = 2;
+
+    // Block 1: Basic ID
+    pack[2] = 0x01;
+    pack[3] = (0x01 << 4) | 0x02;
+    const id = 'DRONEPACK99';
+    for (let i = 0; i < id.length; i++) pack[4 + i] = id.charCodeAt(i);
+
+    // Block 2: Location
+    pack[27] = 0x11;
+    pack[28] = 0x20;
+    const view = new DataView(pack.buffer);
+    view.setInt32(32, Math.round(41.3215 * 1e7), true);
+    view.setInt32(36, Math.round(-88.9950 * 1e7), true);
+
+    const decoded = ClientRemoteIdDecoder.decode(pack, -68, 'wifi');
+    assert.ok(decoded, 'MessagePack should decode');
+    assert.strictEqual(decoded.msgType, 'MessagePack');
+    assert.strictEqual(decoded.count, 2);
+    assert.strictEqual(decoded.messages[0].uasId, 'DRONEPACK99');
+    assert.strictEqual(decoded.messages[1].msgType, 'Location');
+  });
+
+  test('ClientAdsbProcessor parses Mode S SBS-1 MSG lines and computes spatial relative bearings', () => {
+    // MSG,3 airborne position
+    const sbsMsg3 = 'MSG,3,1,1,A4B2C1,1,2026/11/05,18:00:00.000,2026/11/05,18:00:00.000,,1500,,,41.3300,-88.9950,,,0,0,0,0';
+    const parsed3 = ClientAdsbProcessor.parseSbsLine(sbsMsg3);
+    assert.ok(parsed3, 'MSG,3 must parse');
+    assert.strictEqual(parsed3.hex, 'A4B2C1');
+    assert.strictEqual(parsed3.altitude, 1500);
+    assert.strictEqual(parsed3.latitude, 41.3300);
+    assert.strictEqual(parsed3.longitude, -88.9950);
+
+    // MSG,1 callsign
+    const sbsMsg1 = 'MSG,1,1,1,A4B2C1,1,2026/11/05,18:00:00.000,2026/11/05,18:00:00.000,MEDEVAC1,,,,,,,,0,0,0,0';
+    const parsed1 = ClientAdsbProcessor.parseSbsLine(sbsMsg1);
+    assert.strictEqual(parsed1.callsign, 'MEDEVAC1');
+
+    // MSG,4 velocity
+    const sbsMsg4 = 'MSG,4,1,1,A4B2C1,1,2026/11/05,18:00:00.000,2026/11/05,18:00:00.000,,,120,180,,,0,0,0,0';
+    const parsed4 = ClientAdsbProcessor.parseSbsLine(sbsMsg4);
+    assert.strictEqual(parsed4.speed, 120);
+    assert.strictEqual(parsed4.track, 180);
+
+    // Haversine distance and bearing:
+    const dist = ClientAdsbProcessor.calculateHaversineDistance(41.3215, -88.9950, 41.3300, -88.9950);
+    assert.ok(dist > 900 && dist < 1000, 'Distance north should be ~945m, got ' + dist);
+    const bearing = ClientAdsbProcessor.calculateBearing(41.3215, -88.9950, 41.3300, -88.9950);
+    assert.strictEqual(bearing, 0, 'Bearing directly north must be 0 deg');
+    const cardinal = ClientAdsbProcessor.degreesToCardinal(bearing);
+    assert.strictEqual(cardinal, 'N');
+  });
+
+  test('AndroidNativeBridge handles DJI RC 2 USB connect, slot dropdown, and overwrite confirmation modal', () => {
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>
+      <div id="android-rc2-sync-bar" class="android-rc2-sync-bar hidden">
+        <span id="android-rc2-device-name">--</span>
+        <select id="android-rc2-slot-select"></select>
+        <button id="android-rc2-sync-btn">Sync</button>
+        <button id="android-rc2-pull-log-btn">Log</button>
+        <button id="android-rc2-bar-close">X</button>
+      </div>
+      <div id="android-rc2-confirm-modal" class="modal-overlay hidden">
+        <strong id="android-rc2-modal-mission-name">--</strong>
+        <code id="android-rc2-modal-target-uuid">--</code>
+        <button id="android-rc2-confirm-overwrite-btn">Confirm</button>
+        <button id="android-rc2-cancel-overwrite-btn">Cancel</button>
+      </div>
+      <input id="mission-name-input" value="Solar Farm Alpha" />
+    </body></html>`);
+
+    global.document = dom.window.document;
+    global.window = dom.window;
+
+    AndroidNativeBridge.init();
+
+    // 1. Simulate RC 2 USB Connection
+    AndroidNativeBridge.handleRc2Connected({
+      deviceName: 'DJI RC 2 Enterprise',
+      slots: [
+        { uuid: 'SLOT-AAA-111', name: 'Slot 1' },
+        { uuid: 'SLOT-BBB-222', name: 'Slot 2' }
+      ]
+    });
+
+    const bar = dom.window.document.getElementById('android-rc2-sync-bar');
+    const devName = dom.window.document.getElementById('android-rc2-device-name');
+    const select = dom.window.document.getElementById('android-rc2-slot-select');
+
+    assert.ok(!bar.classList.contains('hidden'), 'Sync bar must be revealed');
+    assert.strictEqual(devName.textContent, 'DJI RC 2 Enterprise');
+    assert.strictEqual(select.children.length, 2);
+    assert.strictEqual(select.value, 'SLOT-AAA-111');
+
+    // 2. Click Sync KMZ button -> should open Overwrite Confirmation Modal
+    const syncBtn = dom.window.document.getElementById('android-rc2-sync-btn');
+    syncBtn.click();
+
+    const modal = dom.window.document.getElementById('android-rc2-confirm-modal');
+    const modalMission = dom.window.document.getElementById('android-rc2-modal-mission-name');
+    const modalUuid = dom.window.document.getElementById('android-rc2-modal-target-uuid');
+
+    assert.ok(!modal.classList.contains('hidden'), 'Confirmation modal must be displayed before overwriting');
+    assert.strictEqual(modalMission.textContent, 'Solar Farm Alpha');
+    assert.strictEqual(modalUuid.textContent, 'SLOT-AAA-111');
+
+    // 3. Click Cancel -> should hide modal
+    const cancelBtn = dom.window.document.getElementById('android-rc2-cancel-overwrite-btn');
+    cancelBtn.click();
+    assert.ok(modal.classList.contains('hidden'), 'Confirmation modal must close on cancel');
+
+    // 4. Disconnect RC 2 -> should hide bar and modal
+    AndroidNativeBridge.handleRc2Disconnected();
+    assert.ok(bar.classList.contains('hidden'), 'Sync bar must be hidden on disconnect');
+  });
+
+  test('Android project files and PWA manifest are present and valid', () => {
+    // 1. PWA manifest
+    const manifestPath = path.join(__dirname, 'manifest.json');
+    assert.ok(fs.existsSync(manifestPath), 'manifest.json must exist');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    assert.strictEqual(manifest.display, 'standalone');
+    assert.ok(manifest.icons && manifest.icons.length > 0);
+
+    // 2. Android build files
+    const androidRoot = path.join(__dirname, 'android');
+    assert.ok(fs.existsSync(path.join(androidRoot, 'settings.gradle.kts')), 'settings.gradle.kts must exist');
+    assert.ok(fs.existsSync(path.join(androidRoot, 'app', 'build.gradle.kts')), 'app/build.gradle.kts must exist');
+    assert.ok(fs.existsSync(path.join(androidRoot, 'app', 'src', 'main', 'AndroidManifest.xml')), 'AndroidManifest.xml must exist');
+    assert.ok(fs.existsSync(path.join(androidRoot, 'app', 'src', 'main', 'res', 'xml', 'usb_device_filter.xml')), 'usb_device_filter.xml must exist');
+
+    // 3. Kotlin bridge classes
+    const ktDir = path.join(androidRoot, 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky');
+    assert.ok(fs.existsSync(path.join(ktDir, 'MainActivity.kt')), 'MainActivity.kt must exist');
+    assert.ok(fs.existsSync(path.join(ktDir, 'AndroidRemoteIdScanner.kt')), 'AndroidRemoteIdScanner.kt must exist');
+    assert.ok(fs.existsSync(path.join(ktDir, 'AndroidAdsbBridge.kt')), 'AndroidAdsbBridge.kt must exist');
+    assert.ok(fs.existsSync(path.join(ktDir, 'AndroidMtpBridge.kt')), 'AndroidMtpBridge.kt must exist');
+
+    // 4. Synced assets
+    assert.ok(fs.existsSync(path.join(androidRoot, 'app', 'src', 'main', 'assets', 'www', 'index.html')), 'assets/www/index.html must exist');
+    assert.ok(fs.existsSync(path.join(androidRoot, 'app', 'src', 'main', 'assets', 'www', 'icon.png')), 'assets/www/icon.png must exist');
+    assert.ok(fs.existsSync(path.join(androidRoot, 'app', 'src', 'main', 'assets', 'www', 'manifest.json')), 'assets/www/manifest.json must exist');
+  });
+});
+
+describe('Issue #233 & v1.221.1: Ambient ADS-B Replay Synchronization & Spatial Interpolator Hardening Suite', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.221.1', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.221.1', 'package.json must be 1.221.1');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.221.1] - 2026-11-05'), 'CHANGELOG.md must contain 1.221.1 header');
+
+    const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tmpl.includes('Version 1.221.1'), 'index_template.html must contain Version 1.221.1');
+    assert.ok(tmpl.includes('v1.221.1'), 'index_template.html must contain header badge v1.221.1');
+    assert.ok(tmpl.includes('Changelog (v1.221.1):'), 'index_template.html must contain Changelog (v1.221.1)');
+  });
+
+  test('TelemetryInterpolator._interpolateTrackState extracts latitude/longitude/altitude/track without producing NaN', () => {
+    const TelemetryInterpolator = require('./src/core/TelemetryInterpolator.js');
+    assert.ok(TelemetryInterpolator, 'TelemetryInterpolator must be defined');
+
+    const now = 1793919700000;
+    // Synthetic frames mimicking SBS-1 / dump1090 output (first frame without coords, subsequent with latitude/longitude)
+    const rawFrames = [
+      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now - 10000, latitude: null, longitude: null, altitude: null },
+      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now - 5000, latitude: 40.0100, longitude: -83.1850, altitude: 2200, speed: 140, track: 54 },
+      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now + 5000, latitude: 40.0200, longitude: -83.1750, altitude: 2250, speed: 140, track: 54 }
+    ];
+
+    const interpolated = TelemetryInterpolator._interpolateTrackState(now, rawFrames);
+    assert.ok(interpolated, 'Interpolated state must not be null');
+    assert.ok(!isNaN(interpolated.lat), 'lat must not be NaN');
+    assert.ok(!isNaN(interpolated.lon), 'lon must not be NaN');
+    assert.strictEqual(Number(interpolated.lat.toFixed(4)), 40.0150);
+    assert.strictEqual(Number(interpolated.lon.toFixed(4)), -83.1800);
+    assert.strictEqual(Math.round(interpolated.alt), 2225);
+    assert.strictEqual(interpolated.track, 54);
+    assert.strictEqual(interpolated.callsign, 'N72HP');
+  });
+
+  test('TelemetryInterpolator.interpolateAirspace computes active ADS-B traffic and distance relative to drone point', () => {
+    const TelemetryInterpolator = require('./src/core/TelemetryInterpolator.js');
+
+    const now = 1793919700000;
+    const dronePt = { lat: 40.0128, lon: -83.1769, alt: 10, timestamp: new Date(now).toISOString() };
+    const adsbFrames = [
+      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now - 2000, latitude: 40.0161, longitude: -83.1802, altitude: 2275, speed: 138, track: 56 },
+      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now + 2000, latitude: 40.0175, longitude: -83.1780, altitude: 2275, speed: 138, track: 56 }
+    ];
+
+    const result = TelemetryInterpolator.interpolateAirspace(now, dronePt, adsbFrames, []);
+    assert.ok(result, 'Airspace result must be defined');
+    assert.strictEqual(result.activeAdsb.length, 1, 'Must have 1 active ADS-B craft');
+
+    const craft = result.activeAdsb[0];
+    assert.strictEqual(craft.callsign, 'N72HP');
+    assert.ok(craft.distanceMeters > 300 && craft.distanceMeters < 800, 'Distance should be roughly 400-600m');
+    assert.ok(!isNaN(craft.lat) && !isNaN(craft.lon), 'Coordinates must be valid numbers');
+  });
+
+  test('DiagnosticsDatabase.getEnvironmentalReplay retrieves record by temporal overlap window', () => {
+    const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
+    const dbPath = path.resolve(__dirname, 'scratch/missions.db');
+    if (!fs.existsSync(dbPath)) return; // Skip if sqlite db not present in environment
+
+    const diagDb = new DiagnosticsDatabase(dbPath);
+    // Target flight start/end time window
+    const startUtcMs = 1793919525000;
+    const endUtcMs = 1793919868000;
+
+    const envData = diagDb.getEnvironmentalReplay('FlightRecord_2026-11-05_[17-58-48].txt', {
+      startUtcMs,
+      endUtcMs
+    });
+
+    assert.ok(envData, 'Must resolve environmental replay via temporal window match');
+    assert.ok(Array.isArray(envData.adsb), 'Must contain adsb array');
+    assert.ok(envData.adsb.length > 0, 'ADS-B records must not be empty');
+    const hasN72HP = envData.adsb.some(a => (a.hex && a.hex.toLowerCase() === 'a9a1f0') || (a.callsign && a.callsign.includes('HP')));
+    assert.ok(hasN72HP, 'Environmental replay dataset must contain N72HP / A9A1F0');
+  });
+});

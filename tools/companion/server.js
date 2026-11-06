@@ -507,7 +507,7 @@ function decryptFlightRecordWithDjiCli(rawLogPath, apiKey) {
         try {
           const csvText = fs.readFileSync(cachedCsvPath, 'utf8');
           const { parseCsvTelemetry } = require('./log_decoder.js');
-          const telemetry = parseCsvTelemetry(csvText, path.basename(rawLogPath));
+          const telemetry = parseCsvTelemetry(csvText, path.basename(rawLogPath), { filePath: rawLogPath });
           if (telemetry && Array.isArray(telemetry.points) && telemetry.points.length > 0) {
             telemetry.isDecrypted = true;
             telemetry.decryptedVia = 'DJI Cloud API';
@@ -3064,7 +3064,7 @@ if ($copied.Count -eq 0 -and $thisPC) {
         try {
           if (cand.endsWith('.csv')) {
             const csvText = fs.readFileSync(cand, 'utf8');
-            const parsed = parseCsvTelemetry(csvText, path.basename(cand));
+            const parsed = parseCsvTelemetry(csvText, path.basename(cand), { filePath: cand });
             if (parsed && Array.isArray(parsed.points) && parsed.points.length > 0) {
               telemetry = parsed;
               logSuccess('[MEDIA TELEM DISK FALLBACK]', `Loaded ${parsed.points.length} telemetry points from: ${path.basename(cand)}`);
@@ -5019,7 +5019,7 @@ const handleHttpRequest = async (req, res) => {
               if (!forceDecrypt && fs.existsSync(cachedCsv)) {
                 try {
                   const csvData = fs.readFileSync(cachedCsv, 'utf8');
-                  const parsed = parseCsvTelemetry(csvData, path.basename(candidateLogPath));
+                  const parsed = parseCsvTelemetry(csvData, path.basename(candidateLogPath), { filePath: candidateLogPath, startTimeUtcMs: options.startTimeUtcMs });
                   if (parsed && Array.isArray(parsed.points) && parsed.points.length > 0) {
                     telemetry = parsed;
                     telemetry.isDecrypted = true;
@@ -5270,10 +5270,37 @@ const handleHttpRequest = async (req, res) => {
             logInfo('[TELEMETRY API]', `Solved synthetic flight track for "${flightId || 'Active Mission'}" (${telemetry.points.length} pts, ${telemetry.durationFormatted}, ${telemetry.photoCount} photos)`);
           }
 
+          // 3. Resolve ambient environmental replay (ADS-B, Remote ID, Radar)
+          let environmentalReplay = null;
+          if (telemetry) {
+            const flightStartUtc = telemetry.startTimeUtcMs || (telemetry.flightDate ? new Date(telemetry.flightDate).getTime() : null);
+            const flightEndUtc = flightStartUtc ? flightStartUtc + (telemetry.durationSec || 600) * 1000 : null;
+
+            if (diagDb && typeof diagDb.getEnvironmentalReplay === 'function') {
+              environmentalReplay = diagDb.getEnvironmentalReplay(matchedMissionPayload?.uuid, {
+                flightId,
+                startUtcMs: flightStartUtc,
+                endUtcMs: flightEndUtc
+              });
+            }
+
+            if (!environmentalReplay && telemetryBuffer && flightStartUtc && flightEndUtc) {
+              const slice = telemetryBuffer.sliceFlightWindow(flightStartUtc - 60000, flightEndUtc + 60000);
+              if (slice && (slice.remoteId.length > 0 || slice.adsb.length > 0 || slice.radar.length > 0)) {
+                environmentalReplay = slice;
+              }
+            }
+
+            if (environmentalReplay) {
+              telemetry.environmentalReplay = environmentalReplay;
+            }
+          }
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
             success: true,
             telemetry,
+            environmentalReplay: environmentalReplay || telemetry?.environmentalReplay || null,
             comparison,
             isDecrypted,
             needsDjiApiKey: !isDecrypted && !getDjiApiKey() && Boolean(candidateLogPath),

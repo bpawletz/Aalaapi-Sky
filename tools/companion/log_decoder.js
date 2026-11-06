@@ -1723,7 +1723,7 @@ function parseGeoJsonTelemetry(geojson, flightId = 'Imported_Flight.geojson') {
   };
 }
 
-function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
+function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv', options = {}) {
   if (!csvText || typeof csvText !== 'string') return null;
   const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (lines.length < 2) return null;
@@ -1822,13 +1822,46 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
   let durationSec = Math.max(1, Math.round(lastTime - firstTime));
   
   let flightDate = new Date().toISOString();
-  if (typeof flightId === 'string') {
+  let flightStartMs = NaN;
+
+  if (options && options.startTimeUtcMs) {
+    flightStartMs = Number(options.startTimeUtcMs);
+    flightDate = new Date(flightStartMs).toISOString();
+  } else if (options && options.matchedMission && options.matchedMission.created_at) {
+    flightStartMs = new Date(options.matchedMission.created_at).getTime();
+    flightDate = new Date(flightStartMs).toISOString();
+  } else if (typeof flightId === 'string') {
     const match = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
     if (match) {
-      flightDate = `${match[1]}T${match[2].replace(/-/g, ':')}.000Z`;
+      // Check if file on disk has mtime to verify UTC offset
+      let resolvedDiskFile = (options && options.filePath) ? options.filePath : null;
+      if (!resolvedDiskFile && options && options.searchDisk && _path && _fs) {
+        const baseDir = typeof __dirname !== 'undefined' ? __dirname : '.';
+        const candidates = [
+          _path.join(baseDir, '../../scratch/latest_flight', flightId),
+          _path.join(baseDir, '../../scratch/latest_flight', flightId.replace(/\.csv$/, '.txt')),
+          _path.join(baseDir, '../../scratch/rc2_flight_logs', flightId),
+          _path.join(baseDir, '../../scratch/rc2_flight_logs', flightId.replace(/\.csv$/, '.txt'))
+        ];
+        resolvedDiskFile = candidates.find(c => _fs.existsSync(c));
+      }
+
+      if (resolvedDiskFile && _fs) {
+        try {
+          const st = _fs.statSync(resolvedDiskFile);
+          if (st && st.mtimeMs) {
+            flightStartMs = Math.round(st.mtimeMs - durationSec * 1000);
+            flightDate = new Date(flightStartMs).toISOString();
+          }
+        } catch (_) {}
+      }
+
+      if (isNaN(flightStartMs)) {
+        flightDate = `${match[1]}T${match[2].replace(/-/g, ':')}.000Z`;
+        flightStartMs = new Date(flightDate).getTime();
+      }
     }
   }
-  const flightStartMs = new Date(flightDate).getTime();
 
   // Downsample high-frequency telemetry (e.g. 10 Hz) to ~1 Hz for smooth 3D replay
   const points = [];
@@ -1907,6 +1940,7 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
   return {
     flightId,
     flightDate,
+    startTimeUtcMs: !isNaN(flightStartMs) ? flightStartMs : null,
     droneModel: detectedDroneModel,
     durationSec: finalDuration,
     durationFormatted: formatTime(finalDuration),

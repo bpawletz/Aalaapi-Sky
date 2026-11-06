@@ -8416,6 +8416,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='12' cy='12' r='9' stroke='%2306b6d4' stroke-width='0.5' stroke-dasharray='2 2' opacity='0.25'/%3E%3Ccircle cx='12' cy='12' r='6' stroke='%2306b6d4' stroke-width='0.75' opacity='0.4'/%3E%3Cline x1='12' y1='12' x2='6.5' y2='6.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='17.5' y2='6.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='6.5' y2='17.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='17.5' y2='17.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cpolygon points='10,9 11,10 10,11 9,10' fill='%23f5f0e8'/%3E%3Cpolygon points='8,7 9,8 8,9 7,8' fill='%23f5f0e8'/%3E%3Cpolygon points='14,9 15,10 14,11 13,10' fill='%23f5f0e8'/%3E%3Cpolygon points='16,7 17,8 16,9 15,8' fill='%23f5f0e8'/%3E%3Cpolygon points='10,15 11,14 10,13 9,14' fill='%23f5f0e8'/%3E%3Cpolygon points='8,17 9,16 8,15 7,16' fill='%23f5f0e8'/%3E%3Cpolygon points='14,15 15,14 14,13 13,14' fill='%23f5f0e8'/%3E%3Cpolygon points='16,17 17,16 16,15 15,16' fill='%23f5f0e8'/%3E%3Ccircle cx='5.5' cy='5.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='18.5' cy='5.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='5.5' cy='18.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='18.5' cy='18.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Cpolygon points='12,7 17,12 12,17 7,12' fill='%23c2622d' stroke='%23f5f0e8' stroke-width='0.75'/%3E%3Cpolygon points='12,9.5 14.5,12 12,14.5 9.5,12' fill='%2306b6d4'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%23f5f0e8'/%3E%3C/svg%3E">
+  <!-- Progressive Web App (PWA) & Android Mobile Tags -->
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+
   <!-- Google Identity Services (GIS) for Google SSO (v1.200.0, Issue #190) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -8479,7 +8486,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.220.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.221.1</span></h1>
         </div>
       </div>
 
@@ -11980,6 +11987,35 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         </div>
       </div>
 
+      <!-- Android USB-C DJI RC 2 Auto-Detected 1-Tap Sync Bar (Issue #234) -->
+      <div id="android-rc2-sync-bar" class="android-rc2-sync-bar hidden" role="region" aria-label="DJI RC 2 USB Sync Bar">
+        <div class="android-rc2-sync-inner">
+          <div class="android-rc2-status-pill">
+            <span class="android-rc2-dot"></span>
+            <span class="android-rc2-icon">🎮</span>
+            <span id="android-rc2-device-name" class="android-rc2-name">DJI RC 2</span>
+            <span class="android-rc2-badge">USB-C Linked</span>
+          </div>
+
+          <div class="android-rc2-controls">
+            <label for="android-rc2-slot-select" class="android-rc2-label">Slot:</label>
+            <select id="android-rc2-slot-select" class="form-select android-rc2-select" title="Target Mission Slot on RC 2">
+              <option value="354A8F93-759C-42C3-A8D5-746F79C7622A">Mission Slot 1 (354A8F93...)</option>
+            </select>
+
+            <button id="android-rc2-sync-btn" type="button" class="btn-primary android-rc2-btn" title="Sync current mission KMZ to RC 2">
+              ⚡ Sync KMZ to RC 2
+            </button>
+
+            <button id="android-rc2-pull-log-btn" type="button" class="btn-secondary android-rc2-btn" title="Pull latest flight log from RC 2">
+              📥 Pull Latest Log
+            </button>
+
+            <button id="android-rc2-bar-close" type="button" class="close-btn android-rc2-close" aria-label="Dismiss bar">&times;</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Floating Flashing Visual ADS-B Traffic Alert Banner (Issue #92) -->
       <div id="adsb-alert-banner" class="adsb-alert-banner hidden" role="alert" aria-live="assertive">
         <div class="adsb-alert-banner-content">
@@ -13139,6 +13175,16 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>🤖</span>
+              Native Android App, Tri-Link Field Bridge &amp; USB-C RC 2 Auto-Sync (v1.221.0) (Closes #234)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Generate a buildable Android APK directly from the project! Features concurrent tri-link hardware support: scans ASTM F3411 Broadcast Remote ID over native Bluetooth LE (UUID 0xFFFA) and Wi-Fi, tracks manned aircraft via raw TCP port 30003 SBS-1 feeds (dump1090/Stratux) or USB OTG RTL-SDR dongles, and auto-detects DJI RC 2 controllers plugged via USB-C with a 1-tap confirmation sync bar.
+            </p>
+          </div>
+
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>☁️</span>
@@ -15435,6 +15481,39 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       </footer>
     </div>
   </div>
+  <!-- Android RC 2 Mission Overwrite Confirmation Modal (Issue #234) -->
+  <div id="android-rc2-confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="android-rc2-modal-title">
+    <div class="modal glass" style="max-width: 480px;">
+      <header class="modal-header">
+        <h2 id="android-rc2-modal-title" style="color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+          <span>🎮</span> Confirm DJI RC 2 Mission Sync
+        </h2>
+        <button id="android-rc2-cancel-overwrite-btn" class="close-btn" type="button" aria-label="Close dialog">&times;</button>
+      </header>
+      <div class="modal-content" style="display: flex; flex-direction: column; gap: 14px; font-size: 0.85rem; line-height: 1.45;">
+        <p style="margin: 0; color: #cbd5e1;">
+          You are about to overwrite an existing waypoint mission slot on your connected <strong>DJI RC 2</strong> with the currently planned route:
+        </p>
+
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <div><span style="color: var(--text-muted);">Mission Name:</span> <strong id="android-rc2-modal-mission-name" style="color: #38bdf8;">Aalaapi Mission</strong></div>
+          <div><span style="color: var(--text-muted);">Target Slot UUID:</span> <code id="android-rc2-modal-target-uuid" style="color: #facc15; font-size: 0.76rem;">354A8F93-759C-42C3-A8D5-746F79C7622A</code></div>
+          <div><span style="color: var(--text-muted);">Target Path:</span> <code style="font-size: 0.74rem; color: #94a3b8;">Android/data/dji.go.v5/files/waypoint/&lt;UUID&gt;/</code></div>
+        </div>
+
+        <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 10px 12px; color: #fbbf24; font-size: 0.78rem;">
+          ⚠️ <strong>Field Safety Protection:</strong> Overwriting this slot replaces the route stored on the controller. Make sure this matches your intended flight plan before takeoff.
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px;">
+          <button id="android-rc2-confirm-overwrite-btn" type="button" class="btn-primary" style="background: linear-gradient(135deg, #0284c7, #0369a1); font-weight: 700; padding: 8px 16px;">
+            ✅ Confirm &amp; Overwrite Slot
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Links Modal -->
   <div id="links-modal" class="modal-overlay hidden">
     <div class="modal glass">
@@ -15684,7 +15763,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.220.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.221.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15842,7 +15921,21 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
-                            <li style="margin-bottom: 8px;">
+                                                        <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.221.1):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Ambient ADS-B Flight Replay Synchronization (Closes #233):</strong> Ambient ADS-B manned traffic (e.g. low-altitude aircraft encounters like Ohio State Highway Patrol <code>N72HP</code>) and Remote ID drones recorded during flight now render accurately in both 2D Leaflet and 3D Digital Twin replays.</li>
+                <li><strong>Spatial Telemetry Interpolator Hardening:</strong> Corrected property extraction for <code>latitude</code>, <code>longitude</code>, <code>altitude</code>, and <code>track</code> in <code>TelemetryInterpolator</code> to eliminate NaN coordinates, with true UTC timestamp resolution from flight logs.</li>
+              </ul>
+              <br>
+              <strong style="color: var(--text-main);">Changelog (v1.221.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Native Android App &amp; PWA Package (Closes #234):</strong> Generates a standalone, buildable Android Studio / Gradle project in <code>android/</code> with WebView hardware acceleration and Kotlin hardware bridges (<code>window.AalaapiAndroid</code>).</li>
+                <li><strong>Tri-Link Field Operation:</strong> Real-time Broadcast Remote ID radar (BLE 0xFFFA + Wi-Fi), multi-source ADS-B (raw TCP 30003 SBS-1 / Stratux / USB RTL-SDR / Companion LAN), and USB-C DJI RC 2 auto-detection with 1-tap mission sync and log pull.</li>
+              </ul>
+              <br>
+<li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.220.1):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>Waypoint 0 Takeoff Gimbal Slew Auto-Settling (Closes #232):</strong> Enforces full mechanical gimbal slew auto-settling (&ge; 4.0s for obliques and &ge; 5.0s for nadir) when aircraft transit from 0.0&deg; takeoff horizon into survey pitch at Waypoint 0, eliminating premature mid-slew shutter fires and motion blur.</li>
@@ -26147,53 +26240,87 @@ const TelemetryInterpolator = {
    */
   _interpolateTrackState(targetUtcMs, sortedFrames) {
     if (!sortedFrames || sortedFrames.length === 0) return null;
-    const firstTs = sortedFrames[0].timestamp || sortedFrames[0]._receivedAt || 0;
-    const lastTs = sortedFrames[sortedFrames.length - 1].timestamp || sortedFrames[sortedFrames.length - 1]._receivedAt || 0;
+
+    const getLat = f => (f && f.lat !== undefined && f.lat !== null) ? Number(f.lat) : ((f && f.latitude !== undefined && f.latitude !== null) ? Number(f.latitude) : null);
+    const getLon = f => (f && f.lon !== undefined && f.lon !== null) ? Number(f.lon) : ((f && f.longitude !== undefined && f.longitude !== null) ? Number(f.longitude) : (f && f.lng !== undefined && f.lng !== null ? Number(f.lng) : null));
+    const getAlt = f => (f && f.alt !== undefined && f.alt !== null) ? Number(f.alt) : ((f && f.altitude !== undefined && f.altitude !== null) ? Number(f.altitude) : 0);
+
+    const validFrames = sortedFrames.filter(f => getLat(f) !== null && getLon(f) !== null && !isNaN(getLat(f)) && !isNaN(getLon(f)));
+    if (validFrames.length === 0) return null;
+
+    const firstTs = validFrames[0].timestamp || validFrames[0]._receivedAt || 0;
+    const lastTs = validFrames[validFrames.length - 1].timestamp || validFrames[validFrames.length - 1]._receivedAt || 0;
 
     // Reject frames if target time is more than 3 minutes away from track bounds
     if (targetUtcMs < firstTs - 180000 || targetUtcMs > lastTs + 180000) {
       return null;
     }
 
-    if (targetUtcMs <= firstTs) return { ...sortedFrames[0] };
-    if (targetUtcMs >= lastTs) return { ...sortedFrames[sortedFrames.length - 1] };
+    const wrapResult = (f, lat, lon, alt, speed, track, interpolated) => ({
+      ...f,
+      lat,
+      latitude: lat,
+      lon,
+      longitude: lon,
+      alt,
+      altitude: alt,
+      speed,
+      track,
+      interpolated
+    });
+
+    if (targetUtcMs <= firstTs) {
+      const f = validFrames[0];
+      return wrapResult(f, getLat(f), getLon(f), getAlt(f), f.speed || 0, f.track !== undefined ? f.track : (f.heading || 0), false);
+    }
+    if (targetUtcMs >= lastTs) {
+      const f = validFrames[validFrames.length - 1];
+      return wrapResult(f, getLat(f), getLon(f), getAlt(f), f.speed || 0, f.track !== undefined ? f.track : (f.heading || 0), false);
+    }
 
     // Binary search for surrounding frames
     let low = 0;
-    let high = sortedFrames.length - 1;
+    let high = validFrames.length - 1;
     while (low <= high) {
       const mid = Math.floor((low + high) / 2);
-      const midTs = sortedFrames[mid].timestamp || sortedFrames[mid]._receivedAt || 0;
-      if (midTs === targetUtcMs) return { ...sortedFrames[mid] };
+      const midTs = validFrames[mid].timestamp || validFrames[mid]._receivedAt || 0;
+      if (midTs === targetUtcMs) {
+        const f = validFrames[mid];
+        return wrapResult(f, getLat(f), getLon(f), getAlt(f), f.speed || 0, f.track !== undefined ? f.track : (f.heading || 0), false);
+      }
       if (midTs < targetUtcMs) low = mid + 1;
       else high = mid - 1;
     }
 
     const idx0 = Math.max(0, high);
-    const idx1 = Math.min(sortedFrames.length - 1, low);
-    const f0 = sortedFrames[idx0];
-    const f1 = sortedFrames[idx1];
+    const idx1 = Math.min(validFrames.length - 1, low);
+    const f0 = validFrames[idx0];
+    const f1 = validFrames[idx1];
     const t0 = f0.timestamp || f0._receivedAt || 0;
     const t1 = f1.timestamp || f1._receivedAt || 0;
 
-    if (t0 === t1 || !f1) return { ...f0 };
+    const lat0 = getLat(f0);
+    const lon0 = getLon(f0);
+    const alt0 = getAlt(f0);
+    const speed0 = f0.speed || 0;
+    const track0 = f0.track !== undefined ? f0.track : (f0.heading || 0);
+
+    if (t0 === t1 || !f1) {
+      return wrapResult(f0, lat0, lon0, alt0, speed0, track0, false);
+    }
+
+    const lat1 = getLat(f1);
+    const lon1 = getLon(f1);
+    const alt1 = getAlt(f1);
+    const speed1 = f1.speed || 0;
+
     const alpha = (targetUtcMs - t0) / (t1 - t0);
+    const lat = lat0 + (lat1 - lat0) * alpha;
+    const lon = lon0 + (lon1 - lon0) * alpha;
+    const alt = alt0 + (alt1 - alt0) * alpha;
+    const speed = speed0 + (speed1 - speed0) * alpha;
 
-    const lat = f0.lat + (f1.lat - f0.lat) * alpha;
-    const lon = f0.lon + (f1.lon - f0.lon) * alpha;
-    const alt = (f0.alt || 0) + ((f1.alt || 0) - (f0.alt || 0)) * alpha;
-    const speed = (f0.speed || 0) + ((f1.speed || 0) - (f0.speed || 0)) * alpha;
-    const track = f0.track !== undefined ? f0.track : (f0.heading || 0);
-
-    return {
-      ...f0,
-      lat,
-      lon,
-      alt,
-      speed,
-      track,
-      interpolated: true
-    };
+    return wrapResult(f0, lat, lon, alt, speed, track0, true);
   },
 
   /**
@@ -33120,16 +33247,20 @@ function update2dDronePosition(point, airspace, crossTrackDriftMeters, crossTrac
       const adsbList = airspace.activeAdsb || [];
       adsbList.forEach(craft => {
         if (typeof craft.lat === 'number' && typeof craft.lon === 'number') {
+          const hdg = craft.track !== undefined ? craft.track : (craft.heading || 0);
           const planeIcon = L.divIcon({
             className: 'historical-traffic-plane-icon',
-            html: `<div style="transform: rotate(${Math.round(craft.heading || 0)}deg); font-size: 16px; filter: drop-shadow(0 0 3px #f59e0b);">✈️</div>`,
+            html: `<div style="transform: rotate(${Math.round(hdg)}deg); font-size: 16px; filter: drop-shadow(0 0 3px #f59e0b);">✈️</div>`,
             iconSize: [20, 20],
             iconAnchor: [10, 10]
           });
           const m = L.marker([craft.lat, craft.lon], { icon: planeIcon }).addTo(historicalTrafficGroup);
-          const callsign = craft.callsign || craft.icao || 'ADS-B';
+          const callsign = craft.callsign || craft.icao || craft.hex || 'ADS-B';
           const distKm = (craft.distanceMeters / 1000).toFixed(2);
-          m.bindTooltip(`<b>✈️ ${callsign}</b><br>Alt: ${Math.round(craft.alt)}m<br>Dist: ${distKm} km<br>Speed: ${Math.round(craft.speed || 0)} kts`, { direction: 'top' });
+          const altText = (typeof craft.alt === 'number')
+            ? (craft.alt > 500 ? `${Math.round(craft.alt)} ft (${Math.round(craft.alt * 0.3048)}m)` : `${Math.round(craft.alt)}m`)
+            : 'N/A';
+          m.bindTooltip(`<b>✈️ ${callsign}</b><br>Alt: ${altText}<br>Dist: ${distKm} km<br>Speed: ${Math.round(craft.speed || 0)} kts`, { direction: 'top' });
         }
       });
 
@@ -41811,10 +41942,13 @@ async function loadFlightFor2dReplay(flightId) {
     const telem = FlightDiagnostics.telemetryData;
     const planned = FlightDiagnostics.plannedWaypoints;
 
+    const envData = FlightDiagnostics.environmentalReplay || telem?.environmentalReplay || null;
+
     if (typeof PlaybackManager !== 'undefined') {
       PlaybackManager.loadFlight(flightId, telem, {
         plannedWaypoints: planned,
-        isHistorical: (flightId !== 'active-mission')
+        isHistorical: (flightId !== 'active-mission'),
+        environmentalData: envData
       });
       PlaybackManager.set2dReplayActive(true);
     }
@@ -70279,8 +70413,12 @@ if (typeof module !== 'undefined' && module.exports) {
       // Feed into global AdsbAirspaceManager in ApiClient.js
       if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
         const aircraftList = Array.from(this.adsbAircraft.values()).filter(a => a.latitude !== null);
+        AdsbAirspaceManager.enabled = true;
         AdsbAirspaceManager.streamMode = 'android-tcp';
         AdsbAirspaceManager.streamConnected = true;
+        if (typeof AdsbAirspaceManager.updateStreamTransportUI === 'function') {
+          AdsbAirspaceManager.updateStreamTransportUI();
+        }
         if (typeof AdsbAirspaceManager.processAirspaceData === 'function') {
           AdsbAirspaceManager.processAirspaceData({
             success: true,
@@ -73900,6 +74038,7 @@ const FlightDiagnostics = {
             }
           }
           this.telemetryData = telem;
+          this.environmentalReplay = data.environmentalReplay || telem?.environmentalReplay || null;
           this.comparisonData = data.comparison;
           // Use planned waypoints returned by the companion (from the log's matched mission),
           // falling back to null so buildTrajectoryMeshes uses the active workspace only as a last resort.
@@ -73986,6 +74125,21 @@ const FlightDiagnostics = {
 
     this.updateStatsUI();
     this.renderInspectionPhotosUI();
+
+    // Synchronize 4D environmental data with PlaybackManager
+    if (typeof PlaybackManager !== 'undefined') {
+      const envData = this.environmentalReplay || this.telemetryData?.environmentalReplay || null;
+      if (PlaybackManager.activeFlightId !== this.selectedFlightId) {
+        PlaybackManager.loadFlight(this.selectedFlightId, this.telemetryData, {
+          plannedWaypoints: this.plannedWaypoints,
+          isHistorical: (this.selectedFlightId !== 'active-mission'),
+          environmentalData: envData
+        });
+      } else if (envData) {
+        PlaybackManager.loadEnvironmentalData(envData);
+      }
+    }
+
     this.init3DScene();
     const resumeIdx = (typeof PlaybackManager !== 'undefined' && PlaybackManager.activeFlightId === this.selectedFlightId && PlaybackManager.currentIndex > 0)
       ? PlaybackManager.currentIndex : 0;
@@ -75900,7 +76054,7 @@ const FlightDiagnostics = {
     }
 
     if (typeof TelemetryInterpolator === 'undefined' || typeof PlaybackManager === 'undefined') return;
-    const envData = PlaybackManager.environmentalData;
+    const envData = this.environmentalReplay || PlaybackManager.environmentalData;
     if (!envData || (!envData.adsb?.length && !envData.remoteId?.length)) return;
 
     let currentUtcMs = null;
@@ -75919,7 +76073,7 @@ const FlightDiagnostics = {
     // Render active ADS-B aircraft as orange cones
     (airspace.activeAdsb || []).forEach(craft => {
       if (typeof craft.lat === 'number' && typeof craft.lon === 'number') {
-        const altMsl = craft.altitudeMsl || craft.alt || 100;
+        const altMsl = (typeof craft.alt === 'number') ? (craft.alt > 500 ? craft.alt * 0.3048 : craft.alt) : (craft.altitudeMsl || 100);
         const craftPos = this.projectToWorld(craft.lat, craft.lon, altMsl);
         const craftGeo = new THREE.ConeGeometry(3, 8, 8);
         craftGeo.rotateX(-Math.PI / 2);
@@ -75929,7 +76083,7 @@ const FlightDiagnostics = {
         });
         const mesh = new THREE.Mesh(craftGeo, craftMat);
         mesh.position.copy(craftPos);
-        const hdg = craft.heading || 0;
+        const hdg = craft.track !== undefined ? craft.track : (craft.heading || 0);
         mesh.rotation.y = - (hdg * Math.PI) / 180;
         this.replayedTraffic3DGroup.add(mesh);
       }
@@ -77561,7 +77715,7 @@ function parseGeoJsonTelemetry(geojson, flightId = 'Imported_Flight.geojson') {
   };
 }
 
-function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
+function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv', options = {}) {
   if (!csvText || typeof csvText !== 'string') return null;
   const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (lines.length < 2) return null;
@@ -77650,6 +77804,23 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
   let lastTime = rawRows[rawRows.length - 1].rowTime !== null ? rawRows[rawRows.length - 1].rowTime : rawRows.length;
   let durationSec = Math.max(1, Math.round(lastTime - firstTime));
 
+  let flightDate = new Date().toISOString();
+  let flightStartMs = NaN;
+
+  if (options && options.startTimeUtcMs) {
+    flightStartMs = Number(options.startTimeUtcMs);
+    flightDate = new Date(flightStartMs).toISOString();
+  } else if (options && options.matchedMission && options.matchedMission.created_at) {
+    flightStartMs = new Date(options.matchedMission.created_at).getTime();
+    flightDate = new Date(flightStartMs).toISOString();
+  } else if (typeof flightId === 'string') {
+    const match = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
+    if (match) {
+      flightDate = `${match[1]}T${match[2].replace(/-/g, ':')}.000Z`;
+      flightStartMs = new Date(flightDate).getTime();
+    }
+  }
+
   const points = [];
   let totalDistance = 0;
   let maxAlt = 0;
@@ -77676,9 +77847,12 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
         totalDistance += d;
       }
 
+      const ptTimestamp = !isNaN(flightStartMs) ? new Date(flightStartMs + sec * 1000).toISOString() : null;
+
       points.push({
         time: sec,
         timeStr: formatTime(sec),
+        timestamp: ptTimestamp,
         lat: row.lat,
         lon: row.lon,
         alt: Math.round(row.alt * 10) / 10,
@@ -77703,7 +77877,8 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
 
   return {
     flightId,
-    flightDate: new Date().toISOString(),
+    flightDate,
+    startTimeUtcMs: !isNaN(flightStartMs) ? flightStartMs : null,
     droneModel: 'DJI Mini 4 Pro',
     durationSec: finalDuration,
     durationFormatted: formatTime(finalDuration),
