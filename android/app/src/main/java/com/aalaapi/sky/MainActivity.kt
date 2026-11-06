@@ -15,6 +15,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -23,6 +24,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var rootLayout: FrameLayout
     private lateinit var webView: WebView
     private lateinit var remoteIdScanner: AndroidRemoteIdScanner
     private lateinit var adsbBridge: AndroidAdsbBridge
@@ -59,6 +61,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun getStatusBarHeightFallback(): Int {
+        val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
+        val dimenPx = if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else 0
+        val minFallbackPx = (28 * resources.displayMetrics.density).toInt()
+        return maxOf(dimenPx, minFallbackPx)
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,17 +80,36 @@ class MainActivity : AppCompatActivity() {
         controller.isAppearanceLightStatusBars = false
         controller.isAppearanceLightNavigationBars = false
 
+        // Wrap WebView inside a FrameLayout container because android.webkit.WebView
+        // ignores View.setPadding() when drawing its native Chromium canvas.
+        val initialTopInset = getStatusBarHeightFallback()
+        rootLayout = FrameLayout(this).apply {
+            setBackgroundColor(Color.parseColor("#0f172a"))
+            setPadding(0, initialTopInset, 0, 0)
+        }
         webView = WebView(this)
-        setContentView(webView)
-
-        // Apply window insets to webView so topbar and navigation bar do not collide with system bars
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, windowInsets ->
-            val insets = windowInsets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+        rootLayout.addView(
+            webView,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
             )
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+        )
+        setContentView(rootLayout)
+
+        // Apply window insets to rootLayout so FrameLayout physically positions webView
+        // below the status bar / camera cutout and above the navigation bar / taskbar.
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { view, windowInsets ->
+            val insets = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or
+                    WindowInsetsCompat.Type.displayCutout() or
+                    WindowInsetsCompat.Type.ime()
+            )
+            val topInset = maxOf(insets.top, getStatusBarHeightFallback())
+            view.setPadding(insets.left, topInset, insets.right, insets.bottom)
             WindowInsetsCompat.CONSUMED
         }
+        ViewCompat.requestApplyInsets(rootLayout)
 
         remoteIdScanner = AndroidRemoteIdScanner(this, webView)
         adsbBridge = AndroidAdsbBridge(webView)

@@ -1,3 +1,34 @@
+## [1.222.6] - 2026-11-05
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Android Top Status Bar & Bottom Taskbar Physical Inset Clearance (Closes #243)**:
+  - Fixed the Android app top navigation header overlapping with the Android system status bar, clock, notification icons, and front camera cutout on Android 14/15 tablets and phones.
+  - Wrapped the Android `WebView` inside a native `FrameLayout` container (`rootLayout`) that applies `WindowInsetsCompat` padding (`systemBars() | displayCutout() | ime()`) with a guaranteed minimum status bar height fallback (`status_bar_height` system resource / 28dp minimum), physically positioning the WebView below the top status bar and above the bottom taskbar.
+  - Synchronized the About modal version tag, topbar version badge, and Android APK `versionName` to `v1.222.6`.
+
+#### Under the Hood & Technical Details
+- **android/app/src/main/java/com/aalaapi/sky/MainActivity.kt**:
+  - Replaced direct `setContentView(webView)` (where `android.webkit.WebView` ignores `View.setPadding()` during native Chromium surface rendering) with `rootLayout = FrameLayout(this)` containing `webView` and padded via `ViewCompat.setOnApplyWindowInsetsListener(rootLayout)` and `getStatusBarHeightFallback()`.
+- **index.test.js (GitHub Actions Hermetic CI Fix)**:
+  - Fixed 4 unit tests in `index.test.js` that depended on local gitignored `scratch/missions.db` and `scratch/mission_archives/` files, converting `DiagnosticsDatabase` regression tests to seeded `:memory:` SQLite instances and guarding local archive file checks so GitHub Actions `Auto-Build and Test` runs cleanly on fresh Ubuntu runners.
+
+## [1.222.4] - 2026-11-05
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Standalone Android Native Companion Bridge Unification (Closes #241)**:
+  - Enabled 1-Tap RC 2 Mission Sync, Pull from RC 2, and Flight Log Extraction directly inside the standalone Android app over USB-C OTG (`window.AalaapiAndroid`) without requiring an external Node.js companion server.
+  - Added automatic Android USB host permission prompt (`ACTION_USB_PERMISSION`) when a DJI RC 2 controller is connected via USB-C.
+
+#### Under the Hood & Technical Details
+- **src/bridge/ApiClient.js & src/bridge/AndroidNativeBridge.js**:
+  - Added `setNativeRc2Connection()` and routed `sendDirectlyToRC2`, `pullFromRC2`, and `pullFlightLogFromRC2` through `window.AalaapiAndroid` when running natively on Android.
+- **android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt**:
+  - Added `UsbManager.requestPermission()` with `PendingIntent.FLAG_MUTABLE` and broadcast receiver handling in `MainActivity.kt`.
+
 ## [1.222.5] - 2026-11-05
 
 ### 🐛 Fixed
