@@ -400,6 +400,16 @@ const PlaybackManager = {
     const gimbalPitch = (p0.gimbalPitch !== undefined ? p0.gimbalPitch : -60) +
       (((p1.gimbalPitch !== undefined ? p1.gimbalPitch : -60) - (p0.gimbalPitch !== undefined ? p0.gimbalPitch : -60)) * alpha);
 
+    let interpolatedTs = p0.timestamp || null;
+    if (p0.timestamp && p1.timestamp) {
+      const t0 = typeof p0.timestamp === 'number' ? p0.timestamp : new Date(p0.timestamp).getTime();
+      const t1 = typeof p1.timestamp === 'number' ? p1.timestamp : new Date(p1.timestamp).getTime();
+      if (!isNaN(t0) && !isNaN(t1)) {
+        const lerpTs = t0 + (t1 - t0) * alpha;
+        interpolatedTs = typeof p0.timestamp === 'number' ? Math.round(lerpTs) : new Date(lerpTs).toISOString();
+      }
+    }
+
     return {
       lat,
       lon,
@@ -409,7 +419,7 @@ const PlaybackManager = {
       heading,
       gimbalPitch,
       isPhoto: p0.isPhoto || false,
-      timestamp: p0.timestamp || null
+      timestamp: interpolatedTs
     };
   },
 

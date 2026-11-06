@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.222.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.222.5</span></h1>
         </div>
       </div>
 
@@ -7386,7 +7386,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.222.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.222.5</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7546,7 +7546,12 @@
                               <div>
                                                         <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
-              <strong style="color: var(--text-main);">Changelog (v1.222.3):</strong>
+                            <strong style="color: var(--text-main);">Changelog (v1.222.5):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Pre-Discovery ADS-B Scrubbing Pruning (Closes #242):</strong> Fixed stationary aircraft persisting on 2D and 3D maps when scrubbing playback prior to an aircraft's first observed observation timestamp, and shortened stale signal drop timeout to 15s.</li>
+              </ul>
+              <br>
+<strong style="color: var(--text-main);">Changelog (v1.222.3):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>Continuous 2D Playback Traffic &amp; Chrono Theme (Closes #238):</strong> Synchronizes 4D environmental telemetry during playback loop ticks so ADS-B aircraft stay visible and animate smoothly when clicking Play. Styles historical replay traffic with dashed violet/chrono rings and <code>⏳ Recorded Flight Replay</code> badging.</li>
               </ul>

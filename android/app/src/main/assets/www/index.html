@@ -8543,7 +8543,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.222.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.222.5</span></h1>
         </div>
       </div>
 
@@ -15839,7 +15839,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.222.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.222.5</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15999,7 +15999,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                                         <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
-              <strong style="color: var(--text-main);">Changelog (v1.222.3):</strong>
+                            <strong style="color: var(--text-main);">Changelog (v1.222.5):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Pre-Discovery ADS-B Scrubbing Pruning (Closes #242):</strong> Fixed stationary aircraft persisting on 2D and 3D maps when scrubbing playback prior to an aircraft's first observed observation timestamp, and shortened stale signal drop timeout to 15s.</li>
+              </ul>
+              <br>
+<strong style="color: var(--text-main);">Changelog (v1.222.3):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>Continuous 2D Playback Traffic &amp; Chrono Theme (Closes #238):</strong> Synchronizes 4D environmental telemetry during playback loop ticks so ADS-B aircraft stay visible and animate smoothly when clicking Play. Styles historical replay traffic with dashed violet/chrono rings and <code>⏳ Recorded Flight Replay</code> badging.</li>
               </ul>
@@ -26086,6 +26091,16 @@ const PlaybackManager = {
     const gimbalPitch = (p0.gimbalPitch !== undefined ? p0.gimbalPitch : -60) +
       (((p1.gimbalPitch !== undefined ? p1.gimbalPitch : -60) - (p0.gimbalPitch !== undefined ? p0.gimbalPitch : -60)) * alpha);
 
+    let interpolatedTs = p0.timestamp || null;
+    if (p0.timestamp && p1.timestamp) {
+      const t0 = typeof p0.timestamp === 'number' ? p0.timestamp : new Date(p0.timestamp).getTime();
+      const t1 = typeof p1.timestamp === 'number' ? p1.timestamp : new Date(p1.timestamp).getTime();
+      if (!isNaN(t0) && !isNaN(t1)) {
+        const lerpTs = t0 + (t1 - t0) * alpha;
+        interpolatedTs = typeof p0.timestamp === 'number' ? Math.round(lerpTs) : new Date(lerpTs).toISOString();
+      }
+    }
+
     return {
       lat,
       lon,
@@ -26095,7 +26110,7 @@ const PlaybackManager = {
       heading,
       gimbalPitch,
       isPhoto: p0.isPhoto || false,
-      timestamp: p0.timestamp || null
+      timestamp: interpolatedTs
     };
   },
 
@@ -26354,8 +26369,13 @@ const TelemetryInterpolator = {
     const firstTs = validFrames[0].timestamp || validFrames[0]._receivedAt || 0;
     const lastTs = validFrames[validFrames.length - 1].timestamp || validFrames[validFrames.length - 1]._receivedAt || 0;
 
-    // Reject frames if target time is more than 3 minutes away from track bounds
-    if (targetUtcMs < firstTs - 180000 || targetUtcMs > lastTs + 180000) {
+    // Reject frame if target time is before track discovery or past realistic stale timeout (15s)
+    if (targetUtcMs < firstTs) {
+      return null;
+    }
+
+    const STALE_TIMEOUT_MS = 15000;
+    if (targetUtcMs > lastTs + STALE_TIMEOUT_MS) {
       return null;
     }
 
@@ -26372,7 +26392,7 @@ const TelemetryInterpolator = {
       interpolated
     });
 
-    if (targetUtcMs <= firstTs) {
+    if (targetUtcMs === firstTs) {
       const f = validFrames[0];
       return wrapResult(f, getLat(f), getLon(f), getAlt(f), f.speed || 0, f.track !== undefined ? f.track : (f.heading || 0), false);
     }
