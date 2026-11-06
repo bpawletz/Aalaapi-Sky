@@ -143,6 +143,15 @@ def build(banners=True):
         icon_path = os.path.join(project_dir, 'icon.png')
         if os.path.exists(icon_path):
             shutil.copy2(icon_path, os.path.join(android_www, 'icon.png'))
+
+            # Ensure launcher mipmaps are synchronized
+            res_dir = os.path.normpath(os.path.join(android_www, '..', '..', 'res'))
+            for d in ['mipmap-mdpi', 'mipmap-hdpi', 'mipmap-xhdpi', 'mipmap-xxhdpi', 'mipmap-xxxhdpi']:
+                target_dir = os.path.join(res_dir, d)
+                os.makedirs(target_dir, exist_ok=True)
+                shutil.copy2(icon_path, os.path.join(target_dir, 'ic_launcher.png'))
+                shutil.copy2(icon_path, os.path.join(target_dir, 'ic_launcher_round.png'))
+                shutil.copy2(icon_path, os.path.join(target_dir, 'ic_launcher_foreground.png'))
         manifest_path = os.path.join(project_dir, 'manifest.json')
         if os.path.exists(manifest_path):
             shutil.copy2(manifest_path, os.path.join(android_www, 'manifest.json'))

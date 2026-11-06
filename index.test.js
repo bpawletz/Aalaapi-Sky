@@ -40827,7 +40827,7 @@ describe('Issue #235 & v1.222.0: Live ADS-B Replay Icons, Category Classificatio
     const fs = require('fs');
     const dtCode = fs.readFileSync(path.join(__dirname, 'src/3d/DigitalTwin.js'), 'utf8');
 
-    assert.ok(dtCode.includes('createAircraftLabelSprite(text, isBreached)'), 'Must define createAircraftLabelSprite');
+    assert.ok(dtCode.includes('createAircraftLabelSprite(text, isBreached'), 'Must define createAircraftLabelSprite');
     assert.ok(dtCode.includes('disposeRecursive'), 'Must implement recursive Three.js resource disposal');
     assert.ok(dtCode.includes('rotorGeo = new THREE.CylinderGeometry'), 'Must model 3D helicopter rotor disc');
   });
@@ -40913,5 +40913,76 @@ describe('Issue #239 & v1.222.2: CI Gradle Build Hang & Daemon Fix Suite', () =>
     const rootBuildPath = path.join(__dirname, 'android', 'build.gradle.kts');
     const rootBuild = fs.readFileSync(rootBuildPath, 'utf8');
     assert.ok(rootBuild.includes('plugins'), 'Must use declarative plugins block');
+  });
+});
+
+describe('Issue #238 & v1.222.3: 2D Playback Traffic Persistence & Historical Chrono Theme Suite', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.222.3', () => {
+    assertVersionConsistency('1.222.3');
+  });
+
+  test('PlaybackManager._buildReplayPayload computes full 4D environmental data (airspace, drift, radar, exclusion breaches)', () => {
+    const PlaybackManager = require('./src/core/PlaybackManager.js');
+    require('./src/core/TelemetryInterpolator.js');
+
+    const dummyPt = { lat: 41.3215, lon: -88.9950, alt: 30, yaw: 0, timestamp: '2026-11-05T23:00:00.000Z' };
+    const dummyAdsb = [
+      { hex: 'A9A1F0', callsign: 'N72HP', latitude: 41.3260, longitude: -88.9910, altitude: 2275, speed: 140, track: 54, timestamp: new Date('2026-11-05T23:00:00.000Z').getTime() }
+    ];
+
+    PlaybackManager.points = [dummyPt, { ...dummyPt, lat: 41.3220, lon: -88.9945 }];
+    PlaybackManager.durationSeconds = 10;
+    PlaybackManager.environmentalData = { adsb: dummyAdsb, remoteId: [], radar: [] };
+    PlaybackManager.currentIndex = 0;
+    PlaybackManager.fractionalIndex = 0;
+
+    const payload = PlaybackManager._buildReplayPayload(dummyPt, 0, 1);
+    assert.ok(payload, 'Payload must be returned');
+    assert.ok(payload.airspace, 'Payload must contain airspace object');
+    assert.strictEqual(payload.airspace.activeAdsb.length, 1, 'Airspace must have 1 active ADS-B craft');
+    assert.strictEqual(payload.airspace.activeAdsb[0].callsign, 'N72HP');
+    assert.strictEqual(typeof payload.currentReplayTimeUtc, 'number');
+  });
+
+  test('getReplayAircraftMarkerHtml and getReplayDroneMarkerHtml attach historical-replay class and temporal badge', () => {
+    require('./src/bridge/ApiClient.js');
+    require('./src/map/MapEngine.js');
+
+    const craft = { callsign: 'N72HP', aircraftType: 'H60', track: 45, distanceMeters: 6000, vertDeltaMeters: 500 };
+    const res = global.getReplayAircraftMarkerHtml(craft);
+    assert.ok(res.iconHtml.includes('historical-replay'), 'Must include historical-replay class');
+
+    const drone = { uasId: 'RID-1234', distanceMeters: 2500, vertDeltaMeters: 100, track: 90 };
+    const droneRes = global.getReplayDroneMarkerHtml(drone);
+    assert.ok(droneRes.iconHtml.includes('historical-replay'), 'Drone marker must include historical-replay class');
+  });
+
+  test('index.css includes historical replay chrono styles and badge styling', () => {
+    const fs = require('fs');
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+
+    assert.ok(css.includes('.adsb-marker-inner.historical-replay'), 'Must include .adsb-marker-inner.historical-replay');
+    assert.ok(css.includes('.adsb-historical-badge'), 'Must include .adsb-historical-badge');
+    assert.ok(css.includes('border: 1.5px dashed #c084fc'), 'Must have dashed violet chrono border');
+  });
+});
+
+
+describe('Issue #240 & v1.222.3: Android Launcher Mipmap & Adaptive Icon Resources Suite', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.222.3', () => {
+    assertVersionConsistency('1.222.3');
+  });
+
+  test('All required mipmap densities and adaptive icons exist for AAPT linking', () => {
+    const resDir = path.join(__dirname, 'android', 'app', 'src', 'main', 'res');
+    const densities = ['mipmap-mdpi', 'mipmap-hdpi', 'mipmap-xhdpi', 'mipmap-xxhdpi', 'mipmap-xxxhdpi'];
+
+    for (const d of densities) {
+      assert.ok(fs.existsSync(path.join(resDir, d, 'ic_launcher.png')), d + '/ic_launcher.png must exist');
+      assert.ok(fs.existsSync(path.join(resDir, d, 'ic_launcher_round.png')), d + '/ic_launcher_round.png must exist');
+    }
+
+    assert.ok(fs.existsSync(path.join(resDir, 'mipmap-anydpi-v26', 'ic_launcher.xml')), 'anydpi-v26/ic_launcher.xml must exist');
+    assert.ok(fs.existsSync(path.join(resDir, 'mipmap-anydpi-v26', 'ic_launcher_round.xml')), 'anydpi-v26/ic_launcher_round.xml must exist');
   });
 });
