@@ -33700,8 +33700,12 @@ describe('v1.177.1 Dedicated ADS-B Working Connection File Persistence Suite', (
     const companion = require('./tools/companion/server.js');
     const testFile = path.resolve(__dirname, 'adsb_connection.json');
     const originalContent = fs.existsSync(testFile) ? fs.readFileSync(testFile, 'utf8') : null;
+    const prevUpdate = (companion.adsbTracker && typeof companion.adsbTracker.updateServerConfig === 'function')
+      ? companion.adsbTracker.updateServerConfig
+      : null;
 
     try {
+      if (companion.adsbTracker) companion.adsbTracker.updateServerConfig = () => {};
       companion.saveAdsbConfig('10.0.0.99', 30002);
       assert.ok(fs.existsSync(testFile), 'adsb_connection.json must exist after saveAdsbConfig');
 
@@ -33710,6 +33714,7 @@ describe('v1.177.1 Dedicated ADS-B Working Connection File Persistence Suite', (
       assert.strictEqual(data.port, 30002, 'Saved port must match');
       assert.ok(data.lastConnected, 'Timestamp must be recorded');
     } finally {
+      if (companion.adsbTracker && prevUpdate) companion.adsbTracker.updateServerConfig = prevUpdate;
       if (originalContent !== null) {
         fs.writeFileSync(testFile, originalContent, 'utf8');
       } else if (fs.existsSync(testFile)) {
