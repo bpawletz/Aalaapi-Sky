@@ -36631,7 +36631,9 @@ $mockPC = @{ Items = { return @() } }
 $res = Find-FlightDevice $mockPC
 if ($res -ne $null) { exit 1 } else { exit 0 }
 `;
-    const res = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', testScript], { encoding: 'utf8' });
+    const psCmd = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
+    const res = spawnSync(psCmd, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', testScript], { encoding: 'utf8' });
+    if (res.error && res.error.code === 'ENOENT') return; // Skip on runners without PowerShell
     assert.strictEqual(res.status, 0, `PowerShell helper syntax error: ${res.stderr || res.stdout}`);
   });
 
@@ -36671,7 +36673,9 @@ if ($res.IsLocked -ne $false) { exit 3 }
 if ($res.IsRc -ne $false) { exit 4 }
 exit 0
 `;
-    const res = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', testScript], { encoding: 'utf8' });
+    const psCmd = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
+    const res = spawnSync(psCmd, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', testScript], { encoding: 'utf8' });
+    if (res.error && res.error.code === 'ENOENT') return; // Skip on runners without PowerShell
     assert.strictEqual(res.status, 0, `Android device resolution failed: ${res.stderr || res.stdout}`);
   });
 
@@ -36705,7 +36709,9 @@ if ($res.IsLocked -ne $true) { exit 2 }
 if ($res.Device.Name -ne "Brian's S25 Ultra") { exit 3 }
 exit 0
 `;
-    const res = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', testScript], { encoding: 'utf8' });
+    const psCmd = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
+    const res = spawnSync(psCmd, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', testScript], { encoding: 'utf8' });
+    if (res.error && res.error.code === 'ENOENT') return; // Skip on runners without PowerShell
     assert.strictEqual(res.status, 0, `Locked device resolution failed: ${res.stderr || res.stdout}`);
   });
 

@@ -33,7 +33,7 @@ jobs:
         python-version: '3.x'
 
     - name: Install Python Dependencies
-      run: pip install xmlschema
+      run: pip install xmlschema numpy
 
     - name: Run Build Script
       run: python scratch/build.py
