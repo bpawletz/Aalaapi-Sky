@@ -1,5 +1,19 @@
 [
   {
+    "notam_id": "6/6149",
+    "facility": "ZAB",
+    "state": "NM",
+    "type": "SECURITY",
+    "description": "Socorro, NM, Monday, November 9, 2026 Local",
+    "mod_date": "11/06/2026 12:56:00",
+    "mod_abs_time": "202611061256",
+    "is_new": "Y",
+    "gid": "6/6149",
+    "start_utc": "2026-11-09T12:45:00.000Z",
+    "end_utc": "2026-11-09T15:30:59.000Z",
+    "exact_time": true
+  },
+  {
     "notam_id": "6/6066",
     "facility": "ZAB",
     "state": "AZ",

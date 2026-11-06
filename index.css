@@ -6401,6 +6401,55 @@ body.modal-drag-active {
   letter-spacing: 0.02em;
 }
 
+.adsb-vrate-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.adsb-vrate-badge.climbing {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.adsb-vrate-badge.descending-mild {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.adsb-vrate-badge.descending-moderate {
+  background: rgba(234, 88, 12, 0.18);
+  color: #fb923c;
+  border: 1px solid rgba(234, 88, 12, 0.4);
+}
+
+.adsb-vrate-badge.descending-severe {
+  background: rgba(239, 68, 68, 0.22);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  animation: adsbVratePulse 1.2s infinite ease-in-out;
+}
+
+@keyframes adsbVratePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.04); }
+}
+
+.adsb-cone-polygon.descent-gradient {
+  filter: drop-shadow(0 0 6px rgba(234, 88, 12, 0.35));
+}
+
+.adsb-cone-polygon.descent-gradient.severe {
+  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.55));
+}
+
 @keyframes adsbStrobe {
   0%, 100% {
     border-color: #ef4444;
