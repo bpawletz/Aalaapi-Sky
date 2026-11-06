@@ -7730,6 +7730,9 @@ const AdsbAirspaceManager = {
     if (this.streamMode === 'android-tcp') {
       badge.textContent = 'Android TCP/RTL-SDR (Native)';
       badge.style.color = '#a78bfa';
+    } else if (this.streamMode === 'android-http') {
+      badge.textContent = 'Android HTTP / JSON (Native)';
+      badge.style.color = '#34d399';
     } else if (this.streamMode === 'sse') {
 
       badge.textContent = 'SSE Stream (Sub-second)';
@@ -9909,12 +9912,16 @@ const AdsbAirspaceManager = {
 
 
     try {
-
-      const res = await fetch(directUrl);
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = await res.json();
+      let data;
+      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.fetchHttp === 'function') {
+        const raw = window.AalaapiAndroid.fetchHttp(directUrl);
+        data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (data && data.error) throw new Error(data.error);
+      } else {
+        const res = await fetch(directUrl);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        data = await res.json();
+      }
 
       const list = Array.isArray(data.ac) ? data.ac : (Array.isArray(data.aircraft) ? data.aircraft : []);
 
@@ -10669,6 +10676,14 @@ const AdsbAirspaceManager = {
 
 
         try {
+          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setAdsbServer === 'function') {
+            window.AalaapiAndroid.setAdsbServer(hostVal, parsedPortVal);
+            this.serverHost = hostVal;
+            this.serverPort = parsedPortVal;
+            this.saveSettings();
+            serverSaveBtn.textContent = 'Saved!';
+            return;
+          }
 
           const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
@@ -10833,14 +10848,16 @@ const AdsbAirspaceManager = {
 
 
         try {
-
-          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-
-          const res = await fetch(`${apiBase}/api/config/adsb/probe?host=${encodeURIComponent(targetHost)}`);
-
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-          const data = await res.json();
+          let data;
+          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.probeAdsbHost === 'function') {
+            const raw = window.AalaapiAndroid.probeAdsbHost(targetHost);
+            data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          } else {
+            const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+            const res = await fetch(`${apiBase}/api/config/adsb/probe?host=${encodeURIComponent(targetHost)}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            data = await res.json();
+          }
 
           if (data && data.success && data.ports) {
 
@@ -10946,9 +10963,15 @@ const AdsbAirspaceManager = {
         discoverBtn.disabled = true;
         discoverBtn.textContent = 'Scanning...';
         try {
-          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-          const res = await fetch(`${apiBase}/api/airspace/discover?timeout=2000`);
-          const data = await res.json();
+          let data;
+          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.discoverMdnsServers === 'function') {
+            const raw = window.AalaapiAndroid.discoverMdnsServers(2000);
+            data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          } else {
+            const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+            const res = await fetch(`${apiBase}/api/airspace/discover?timeout=2000`);
+            data = await res.json();
+          }
           if (data && data.servers && data.servers.length > 0) {
             let html = '<div style="font-weight: 600; color: #4ade80; margin-bottom: 4px;">✨ Found ' + data.servers.length + ' SBS Server(s) via Bonjour:</div>';
             data.servers.forEach((s) => {

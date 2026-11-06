@@ -436,6 +436,14 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 
 ## 6. Post-Update Release IRL Test Plans Log
 
+### [v1.223.0] Native Android ADS-B, Cloud Feed & Bonjour Discovery — 2026-11-06 ([Issue #245](https://github.com/bpawletz/Aalaapi-Sky/issues/245))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `grid`
+- [ ] Open ADS-B Settings on Android and connect to local dump1090 (ports 30003 or 8080)
+- [ ] Verify live CONNECTED status badge
+- [ ] Tap Start Watching for adsb.lol and verify online cloud feed populates traffic without CORS errors
+- [ ] Tap Bonjour Scan and verify local receiver discovery
+- [ ] Tap Probe Host on receiver IP and verify detected open ports
+
 ### [v1.223.0] Smart predictive ADS-B trajectory cone alerting with perimeter ETA — 2026-11-06 ([Issue #244](https://github.com/bpawletz/Aalaapi-Sky/issues/244))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `single`, `orbit`
 - [ ] Launch drone at safe rural field

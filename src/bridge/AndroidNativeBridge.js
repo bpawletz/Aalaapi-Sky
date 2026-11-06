@@ -558,6 +558,138 @@
       }
     },
 
+    // ─── ADS-B JSON Ingestion (dump1090 / readsb / tar1090 HTTP /data/aircraft.json) ───
+    ingestAdsbJson(jsonPayload) {
+      if (!jsonPayload) return;
+      let data = jsonPayload;
+      if (typeof jsonPayload === 'string') {
+        try {
+          data = JSON.parse(jsonPayload);
+        } catch (_) {
+          return;
+        }
+      }
+      const rawList = Array.isArray(data) ? data : (Array.isArray(data.ac) ? data.ac : (Array.isArray(data.aircraft) ? data.aircraft : []));
+      if (!rawList.length) return;
+
+      let refLat = 41.3215;
+      let refLon = -88.9950;
+      if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+        const cll = centerMarker.getLatLng();
+        refLat = cll.lat;
+        refLon = cll.lng;
+      }
+
+      const now = Date.now();
+      for (const item of rawList) {
+        const hex = (item.hex || item.hex_ident || '').toString().toUpperCase();
+        if (!hex) continue;
+
+        let ac = this.adsbAircraft.get(hex);
+        if (!ac) {
+          ac = {
+            hex,
+            callsign: (item.flight || item.callsign || hex).trim(),
+            latitude: null,
+            longitude: null,
+            altitude: null,
+            speed: null,
+            track: null,
+            onGround: false,
+            lastSeen: now
+          };
+          this.adsbAircraft.set(hex, ac);
+        }
+
+        if (item.flight || item.callsign) ac.callsign = (item.flight || item.callsign).trim();
+        const lat = item.lat !== undefined ? item.lat : item.latitude;
+        const lon = item.lon !== undefined ? item.lon : item.longitude;
+        if (lat !== undefined && lon !== undefined && !isNaN(lat) && !isNaN(lon)) {
+          ac.latitude = lat;
+          ac.longitude = lon;
+        }
+        const alt = item.alt_baro !== undefined ? item.alt_baro : (item.alt !== undefined ? item.alt : item.altitude);
+        if (alt !== undefined && !isNaN(alt)) ac.altitude = alt;
+        const spd = item.gs !== undefined ? item.gs : item.speed;
+        if (spd !== undefined && !isNaN(spd)) ac.speed = spd;
+        const trk = item.track !== undefined ? item.track : item.heading;
+        if (trk !== undefined && !isNaN(trk)) ac.track = trk;
+        ac.lastSeen = now;
+
+        if (ac.latitude !== null && ac.longitude !== null) {
+          const distM = ClientAdsbProcessor.calculateHaversineDistance(refLat, refLon, ac.latitude, ac.longitude);
+          ac.distanceMeters = distM;
+          ac.distanceMiles = Math.round((distM / 1609.344) * 10) / 10;
+          const bearing = ClientAdsbProcessor.calculateBearing(refLat, refLon, ac.latitude, ac.longitude);
+          ac.bearing = bearing;
+          ac.bearingCardinal = ClientAdsbProcessor.degreesToCardinal(bearing);
+        }
+      }
+
+      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+        const aircraftList = Array.from(this.adsbAircraft.values()).filter(a => a.latitude !== null);
+        AdsbAirspaceManager.enabled = true;
+        AdsbAirspaceManager.streamMode = 'android-http';
+        AdsbAirspaceManager.streamConnected = true;
+        if (typeof AdsbAirspaceManager.updateStreamTransportUI === 'function') {
+          AdsbAirspaceManager.updateStreamTransportUI();
+        }
+        if (typeof AdsbAirspaceManager.processAirspaceData === 'function') {
+          AdsbAirspaceManager.processAirspaceData({
+            success: true,
+            source: 'android-http-json',
+            aircraft: aircraftList,
+            total: aircraftList.length
+          });
+        }
+      }
+    },
+
+    // ─── Connection Status Notification Handler ─────────────────────────────
+    onAdsbStatusChanged(status, host, port, errorMsg) {
+      if (typeof document === 'undefined') return;
+      const hwBadge = document.getElementById('adsb-hardware-badge');
+      const trBadge = document.getElementById('adsb-transport-badge');
+
+      if (status === 'connected') {
+        if (hwBadge) {
+          hwBadge.textContent = 'CONNECTED';
+          hwBadge.style.color = '#34d399';
+        }
+        if (trBadge) {
+          trBadge.textContent = `Android Native (${host}:${port})`;
+          trBadge.style.color = '#34d399';
+        }
+      } else if (status === 'connecting') {
+        if (hwBadge) {
+          hwBadge.textContent = 'CONNECTING...';
+          hwBadge.style.color = '#38bdf8';
+        }
+        if (trBadge) {
+          trBadge.textContent = `Connecting to ${host}:${port}...`;
+          trBadge.style.color = '#38bdf8';
+        }
+      } else if (status === 'error') {
+        if (hwBadge) {
+          hwBadge.textContent = 'ERROR';
+          hwBadge.style.color = '#f87171';
+        }
+        if (trBadge) {
+          trBadge.textContent = `Error (${errorMsg || 'Failed'})`;
+          trBadge.style.color = '#f87171';
+        }
+      } else if (status === 'disconnected') {
+        if (hwBadge) {
+          hwBadge.textContent = 'READY';
+          hwBadge.style.color = '#94a3b8';
+        }
+        if (trBadge) {
+          trBadge.textContent = 'Disconnected';
+          trBadge.style.color = '#94a3b8';
+        }
+      }
+    },
+
     // ─── DJI RC 2 USB Auto-Detection & 1-Tap Sync Bar ────────────────────────
     handleRc2Connected(deviceData = {}) {
       this.rc2Device = deviceData;
@@ -757,6 +889,8 @@
     window.AalaapiAndroidBridge = AndroidNativeBridge;
     window.ingestRemoteIdFrame = (payload, rssi, transport) => AndroidNativeBridge.ingestRemoteIdFrame(payload, rssi, transport);
     window.ingestAdsbSbsLine = (line) => AndroidNativeBridge.ingestAdsbSbsLine(line);
+    window.ingestAdsbJson = (jsonPayload) => AndroidNativeBridge.ingestAdsbJson(jsonPayload);
+    window.onAdsbStatusChanged = (status, host, port, error) => AndroidNativeBridge.onAdsbStatusChanged(status, host, port, error);
     window.onRc2UsbConnected = (dev) => AndroidNativeBridge.handleRc2Connected(dev);
     window.onRc2UsbDisconnected = () => AndroidNativeBridge.handleRc2Disconnected();
 

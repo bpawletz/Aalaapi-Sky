@@ -21,6 +21,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : AppCompatActivity() {
 
@@ -28,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var remoteIdScanner: AndroidRemoteIdScanner
     private lateinit var adsbBridge: AndroidAdsbBridge
+    private lateinit var mdnsDiscovery: AndroidMdnsDiscovery
     private lateinit var mtpBridge: AndroidMtpBridge
 
     private val usbReceiver = object : BroadcastReceiver() {
@@ -112,7 +118,8 @@ class MainActivity : AppCompatActivity() {
         ViewCompat.requestApplyInsets(rootLayout)
 
         remoteIdScanner = AndroidRemoteIdScanner(this, webView)
-        adsbBridge = AndroidAdsbBridge(webView)
+        adsbBridge = AndroidAdsbBridge(this, webView)
+        mdnsDiscovery = AndroidMdnsDiscovery(this)
         mtpBridge = AndroidMtpBridge(this, webView)
 
         setupWebView()
@@ -142,13 +149,15 @@ class MainActivity : AppCompatActivity() {
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             useWideViewPort = true
             loadWithOverviewMode = true
+            allowFileAccessFromFileURLs = true
+            allowUniversalAccessFromFileURLs = true
         }
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 remoteIdScanner.startScan()
-                adsbBridge.start()
+                adsbBridge.start(adsbBridge.getSavedHost(), adsbBridge.getSavedPort())
                 mtpBridge.checkConnectedDevices()
             }
         }
@@ -168,8 +177,57 @@ class MainActivity : AppCompatActivity() {
             }
 
             @JavascriptInterface
-            fun setAdsbServer(host: String, port: Int) {
+            fun setAdsbServer(host: String, port: Int): Boolean {
                 adsbBridge.start(host, port)
+                return true
+            }
+
+            @JavascriptInterface
+            fun getAdsbStatus(): String {
+                return adsbBridge.getStatusJson()
+            }
+
+            @JavascriptInterface
+            fun probeAdsbHost(host: String): String {
+                return runBlocking {
+                    mdnsDiscovery.probeHost(host)
+                }
+            }
+
+            @JavascriptInterface
+            fun discoverMdnsServers(timeoutMs: Long): String {
+                return runBlocking {
+                    mdnsDiscovery.discoverAdsb(if (timeoutMs > 0) timeoutMs else 2000L)
+                }
+            }
+
+            @JavascriptInterface
+            fun fetchHttp(urlStr: String): String {
+                return runBlocking(Dispatchers.IO) {
+                    try {
+                        val url = URL(urlStr)
+                        val conn = (url.openConnection() as HttpURLConnection).apply {
+                            connectTimeout = 6000
+                            readTimeout = 6000
+                            requestMethod = "GET"
+                            setRequestProperty("User-Agent", "Mozilla/5.0 (Android; AalaapiSky/1.0)")
+                        }
+                        val code = conn.responseCode
+                        if (code in 200..299) {
+                            conn.inputStream.bufferedReader().use { it.readText() }
+                        } else {
+                            val err = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "HTTP $code"
+                            JSONObject().apply {
+                                put("error", err)
+                                put("status", code)
+                            }.toString()
+                        }
+                    } catch (e: Exception) {
+                        JSONObject().apply {
+                            put("error", e.message ?: "Network error")
+                        }.toString()
+                    }
+                }
             }
         }, "AalaapiAndroid")
     }

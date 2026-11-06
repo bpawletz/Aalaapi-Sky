@@ -41333,3 +41333,76 @@ describe('Issue #244 & v1.223.0: Smart Predictive ADS-B Trajectory Cones & Early
   });
 });
 
+describe('Issue #245 & v1.223.0: Native Android ADS-B, Cloud Feed & Bonjour Discovery Suite', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.223.0', () => {
+    assertVersionConsistency('1.223.0');
+  });
+
+  test('AndroidManifest.xml includes CHANGE_WIFI_MULTICAST_STATE for mDNS discovery', () => {
+    const manifest = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/AndroidManifest.xml'), 'utf8');
+    assert.ok(manifest.includes('android.permission.CHANGE_WIFI_MULTICAST_STATE'), 'Manifest must include CHANGE_WIFI_MULTICAST_STATE');
+  });
+
+  test('AndroidMdnsDiscovery.kt exists and implements probeHost and discoverAdsb with mDNS UDP query', () => {
+    const mdnsKt = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/java/com/aalaapi/sky/AndroidMdnsDiscovery.kt'), 'utf8');
+    assert.ok(mdnsKt.includes('class AndroidMdnsDiscovery'), 'Must define AndroidMdnsDiscovery class');
+    assert.ok(mdnsKt.includes('suspend fun probeHost'), 'Must define suspend fun probeHost');
+    assert.ok(mdnsKt.includes('suspend fun discoverAdsb'), 'Must define suspend fun discoverAdsb');
+    assert.ok(mdnsKt.includes('createMulticastLock'), 'Must acquire MulticastLock via WifiManager');
+    assert.ok(mdnsKt.includes('224.0.0.251'), 'Must query mDNS multicast group 224.0.0.251');
+    assert.ok(mdnsKt.includes('5353'), 'Must query mDNS port 5353');
+  });
+
+  test('AndroidAdsbBridge.kt supports dual-mode TCP SBS and HTTP JSON with SharedPreferences and status reporting', () => {
+    const adsbKt = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/java/com/aalaapi/sky/AndroidAdsbBridge.kt'), 'utf8');
+    assert.ok(adsbKt.includes('aalaapi_adsb_prefs'), 'Must persist settings in aalaapi_adsb_prefs');
+    assert.ok(adsbKt.includes('runHttpPollingLoop'), 'Must implement runHttpPollingLoop for HTTP JSON mode');
+    assert.ok(adsbKt.includes('/data/aircraft.json'), 'Must poll /data/aircraft.json path');
+    assert.ok(adsbKt.includes('window.ingestAdsbJson'), 'Must dispatch JSON to window.ingestAdsbJson');
+    assert.ok(adsbKt.includes('window.onAdsbStatusChanged'), 'Must dispatch status updates to window.onAdsbStatusChanged');
+    assert.ok(adsbKt.includes('fun getStatusJson()'), 'Must provide getStatusJson()');
+  });
+
+  test('MainActivity.kt exposes ADS-B, Bonjour, and CORS-free HTTP fetcher to window.AalaapiAndroid', () => {
+    const mainKt = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/java/com/aalaapi/sky/MainActivity.kt'), 'utf8');
+    assert.ok(mainKt.includes('allowUniversalAccessFromFileURLs = true'), 'Must enable allowUniversalAccessFromFileURLs in WebView');
+    assert.ok(mainKt.includes('fun setAdsbServer(host: String, port: Int): Boolean'), 'Must expose setAdsbServer');
+    assert.ok(mainKt.includes('fun getAdsbStatus(): String'), 'Must expose getAdsbStatus');
+    assert.ok(mainKt.includes('fun probeAdsbHost(host: String): String'), 'Must expose probeAdsbHost');
+    assert.ok(mainKt.includes('fun discoverMdnsServers(timeoutMs: Long): String'), 'Must expose discoverMdnsServers');
+    assert.ok(mainKt.includes('fun fetchHttp(urlStr: String): String'), 'Must expose CORS-free fetchHttp');
+  });
+
+  test('AndroidNativeBridge.js exports ingestAdsbJson and parses dump1090 / readsb HTTP payloads', () => {
+    const { AndroidNativeBridge } = require('./src/bridge/AndroidNativeBridge.js');
+    assert.strictEqual(typeof AndroidNativeBridge.ingestAdsbJson, 'function');
+    assert.strictEqual(typeof AndroidNativeBridge.onAdsbStatusChanged, 'function');
+
+    // Test ingestion of dump1090 JSON
+    AndroidNativeBridge.ingestAdsbJson({
+      ac: [
+        { hex: 'A9A1F0', flight: 'N72HP', lat: 40.016, lon: -83.180, alt_baro: 2275, gs: 138, track: 56 }
+      ]
+    });
+
+    const ac = AndroidNativeBridge.adsbAircraft.get('A9A1F0');
+    assert.ok(ac, 'Aircraft A9A1F0 must be present in map');
+    assert.strictEqual(ac.callsign, 'N72HP');
+    assert.strictEqual(ac.latitude, 40.016);
+    assert.strictEqual(ac.longitude, -83.180);
+    assert.strictEqual(ac.altitude, 2275);
+    assert.strictEqual(ac.speed, 138);
+    assert.strictEqual(ac.track, 56);
+    assert.ok(ac.distanceMeters > 0, 'Must compute distance from center');
+  });
+
+  test('ApiClient.js routes connect, probe, discovery, and cloud feed fallback to window.AalaapiAndroid', () => {
+    const apiJs = fs.readFileSync(path.resolve(__dirname, 'src/bridge/ApiClient.js'), 'utf8');
+    assert.ok(apiJs.includes('window.AalaapiAndroid.setAdsbServer(hostVal, parsedPortVal)'), 'serverSaveBtn must route to setAdsbServer');
+    assert.ok(apiJs.includes('window.AalaapiAndroid.probeAdsbHost(targetHost)'), 'probeBtn must route to probeAdsbHost');
+    assert.ok(apiJs.includes('window.AalaapiAndroid.discoverMdnsServers(2000)'), 'discoverBtn must route to discoverMdnsServers');
+    assert.ok(apiJs.includes('window.AalaapiAndroid.fetchHttp(directUrl)'), 'fetchExternalDirectFallback must route to fetchHttp');
+    assert.ok(apiJs.includes("'Android HTTP / JSON (Native)'"), 'updateStreamTransportUI must support android-http mode');
+  });
+});
+

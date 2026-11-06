@@ -1,5 +1,37 @@
 ## [1.223.0] - 2026-11-06
 
+Standalone Android ADS-B, Cloud Feed & Bonjour Discovery Release.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Standalone Native Android ADS-B Receiver Integration (Closes #245)**:
+  - Pilots can now connect directly to local dump1090, readsb, or Stratux ADS-B receivers on Wi-Fi directly from the Android app without needing a desktop Node.js companion server.
+  - Supports both Mode S SBS-1 BaseStation TCP streams (ports 30003, 30002) and dump1090 HTTP Web JSON polling (ports 8080, 80 `/data/aircraft.json`).
+  - Added live hardware connection status badge reporting (`CONNECTING...`, `CONNECTED`, `ERROR`, `READY`) and receiver settings persistence across app restarts via Android `SharedPreferences`.
+- **CORS-Free Native Online Cloud ADS-B Feed**:
+  - Unlocked public online cloud feed watching (`adsb.lol`) on Android using a native background HTTP transport, eliminating browser CORS/Cloudflare blocks (`⚠️ Companion bridge offline. (Direct API blocked by CORS/Cloudflare)`).
+- **Native Android Bonjour (mDNS) Discovery & Host Prober**:
+  - Tapping **✨ Bonjour Scan** on Android now scans the local Wi-Fi network using Android's native `NsdManager` with Wi-Fi `MulticastLock` and UDP mDNS fallback to automatically detect advertised `_sbs._tcp` and `_dump1090._tcp` receivers.
+  - Tapping **🔍 Probe Host** natively probes ports 30003, 30002, 30005, 8080, and 80 to auto-detect open ADS-B ports on any specified IP address.
+
+#### Under the Hood & Technical Details
+- **android/app/src/main/AndroidManifest.xml**:
+  - Added `CHANGE_WIFI_MULTICAST_STATE` permission to permit mDNS multicast packet reception on Android Wi-Fi.
+- **android/app/src/main/java/com/aalaapi/sky/AndroidMdnsDiscovery.kt**:
+  - Created native discovery and port probing engine with `WifiManager.MulticastLock`, `NsdManager`, and UDP multicast fallback queries to `224.0.0.251:5353`.
+- **android/app/src/main/java/com/aalaapi/sky/AndroidAdsbBridge.kt**:
+  - Added `SharedPreferences` persistence, dual TCP SBS / HTTP `/data/aircraft.json` polling loops, and real-time status callbacks (`window.onAdsbStatusChanged`).
+- **android/app/src/main/java/com/aalaapi/sky/MainActivity.kt**:
+  - Enabled `allowUniversalAccessFromFileURLs` and `allowFileAccessFromFileURLs` in WebView settings.
+  - Exposed `setAdsbServer`, `getAdsbStatus`, `probeAdsbHost`, `discoverMdnsServers`, and `fetchHttp` to `window.AalaapiAndroid`.
+- **src/bridge/AndroidNativeBridge.js**:
+  - Added `ingestAdsbJson` to ingest dump1090/readsb HTTP JSON payloads and `onAdsbStatusChanged` to update UI badges.
+- **src/bridge/ApiClient.js**:
+  - Routed receiver connect, host probe, Bonjour discovery, and cloud feed direct fallback to `window.AalaapiAndroid` when running natively on Android.
+
+## [1.223.0] - 2026-11-06
+
 Introduces smart predictive forward trajectory cone deconfliction for ADS-B manned aircraft, calculating perimeter breach ETAs and providing Amber Stage-1 early warnings with 2D map trajectory cones and contact hover previews.
 
 ### 🚀 Added
