@@ -1,3 +1,50 @@
+## [1.224.1] - 2026-11-06
+
+Android APK Coroutine Receiver Build Fix.
+
+### 🐛 Fixed
+
+#### Under the Hood & Technical Details
+- **AndroidAdsbBridge (`android/app/src/main/java/com/aalaapi/sky/AndroidAdsbBridge.kt`)**: Added `CoroutineScope` receiver to `runTcpStreamingLoop` and `runHttpPollingLoop` suspend functions, resolving Kotlin compiler errors on `isActive` and unblocking the GitHub Actions debug APK cloud build. (Closes #247)
+
+## [1.224.0] - 2026-11-06
+
+Airport Airspace Traffic Pattern Detection, Cone Suppression & Vertical Ascent/Descent Modeling Release.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Airport Airspace Traffic Pattern Detection & Cone Suppression (Closes #246)**:
+  - Automatically identifies manned aircraft operating within airport terminal airspace ($D \le 4.0\text{ NM}$ and altitude $\le 3,000\text{ ft AGL}$) as landing or flying standard traffic patterns.
+  - Automatically suppresses forward predictive trajectory cones and nuisance Stage-1 amber alarms ("cone not needed") for landing aircraft while retaining the Stage-2 proximity breach failsafe.
+  - Displays a dedicated `🛬 LANDING ({ICAO})` status badge on aircraft cards and map markers with aerodrome distance and landing confirmation.
+  - Added **Suppress Cones for Airport Traffic** toggle (`#adsb-airport-landing-toggle`, default enabled) and **Airport Airspace Radius** slider (`#adsb-airport-radius-slider`, 2.0 to 6.0 NM, default 4.0 NM) in the ADS-B Control Drawer.
+  - Added **Simulate Airport Landing** button (`#adsb-sim-landing-btn`) in the ADS-B Control Drawer for 1-click pre-flight verification.
+- **Bidirectional Rate of Ascent & Descent Accounting**:
+  - **Climb-Out Suppression**: If a departing aircraft is climbing rapidly ($v_{\text{vert}} > 0$) such that its projected arrival altitude exceeds the mission ceiling ($Alt_{\text{proj}} > \text{Ceiling}$), approaching alarms are suppressed because the aircraft will pass safely overhead.
+  - **Descent Threat Detection**: If an aircraft is cruising above the mission ceiling but descending into it ($Alt_{\text{proj}} \le \text{Ceiling}$), an early alert is issued before entry.
+- **Layer Control Grouping & Alignment**:
+  - In Leaflet's map layer control, the predictive cones option is renamed to `Manned Aircraft (Predictive Cones)` and placed directly next to `Manned Aircraft (ADS-B Airspace)`.
+
+#### Under the Hood & Technical Details
+- **tools/companion/adsb_tracker.js**:
+  - Implemented `checkAirportAirspace(ac, airports, maxLandingAltitudeFt, airportRadiusNm)` calculating geodesic distance to aerodromes.
+  - Enhanced `evaluatePredictiveCone()` with climb-out projected ceiling suppression and airport landing suppression flags.
+  - Updated `getAirspaceBounds(criteria)` to accept `airports`, `suppressAirportLanding`, and `airportRadiusNm`.
+- **tools/companion/server.js**:
+  - Updated `/api/airspace/stream` and `/api/airspace/bounds` query parsers to accept `suppressAirportLanding`, `airportRadiusNm`, and `airports`.
+- **src/map/MapEngine.js**:
+  - Grouped `Manned Aircraft (Predictive Cones)` adjacent to `Manned Aircraft (ADS-B Airspace)` in `overlays`.
+  - Updated overlay event listeners to support both new and legacy layer names.
+  - Registered aerodromes dynamically from FAA/NWS data feeds.
+- **src/bridge/ApiClient.js**:
+  - Added `airports` registry, `suppressAirportLanding`, and `airportRadiusNm` to `AdsbAirspaceManager` with `localStorage` persistence.
+  - Updated `evaluateAircraftCone()` to factor in climb-out ceiling clearance and airport pattern landing suppression.
+  - Updated `updateMapMarkers()`, `updateVisualBanner()`, and `updateDrawerAircraftList()` to render `🛬 LANDING` badges and omit cones for landing traffic.
+  - Added `simulateAircraft('landing')` handler and drawer controls.
+- **src/ui/EventBindings.js**:
+  - Registered `#adsb-airport-landing-toggle` and `#adsb-airport-radius-slider` in `wireUndoPropertyTracking()` and `getControlPropertyLabel()` for bidirectional undo/redo.
+
 ## [1.223.0] - 2026-11-06
 
 Standalone Android ADS-B, Cloud Feed & Bonjour Discovery Release.

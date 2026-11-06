@@ -12153,5 +12153,90 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       });
       await page.waitForTimeout(200);
     });
+
+  test('v1.224.0: Airport Airspace Traffic Pattern Detection & Cone Suppression E2E Controls', async () => {
+    // 1. Open ADS-B control drawer
+    await page.evaluate(() => {
+      const btn = document.getElementById('adsb-topbar-btn');
+      if (btn) btn.click();
+    });
+    await page.waitForTimeout(300);
+
+    // 2. Verify controls exist
+    const landingToggle = page.locator('#adsb-airport-landing-toggle');
+    const radiusSlider = page.locator('#adsb-airport-radius-slider');
+    const simLandingBtn = page.locator('#adsb-sim-landing-btn');
+
+    assert.strictEqual(await landingToggle.count(), 1, '#adsb-airport-landing-toggle should exist');
+    assert.strictEqual(await radiusSlider.count(), 1, '#adsb-airport-radius-slider should exist');
+    assert.strictEqual(await simLandingBtn.count(), 1, '#adsb-sim-landing-btn should exist');
+
+    // 3. Test airport radius slider interaction
+    await page.evaluate(() => {
+      const slider = document.getElementById('adsb-airport-radius-slider');
+      slider.value = '5.0';
+      slider.dispatchEvent(new Event('input'));
+    });
+    await page.waitForTimeout(100);
+    const radiusValText = await page.locator('#adsb-airport-radius-val').textContent();
+    assert.ok(radiusValText.includes('5.0 NM') || radiusValText.includes('5 NM'), `Expected 5.0 NM display, got: ${radiusValText}`);
+    const managerRadius = await page.evaluate(() => AdsbAirspaceManager.airportRadiusNm);
+    assert.strictEqual(managerRadius, 5.0, 'AdsbAirspaceManager.airportRadiusNm should update to 5.0');
+
+    // 4. Test airport landing toggle
+    await page.evaluate(() => {
+      const toggle = document.getElementById('adsb-airport-landing-toggle');
+      toggle.checked = false;
+      toggle.dispatchEvent(new Event('change'));
+    });
+    let managerSuppress = await page.evaluate(() => AdsbAirspaceManager.suppressAirportLanding);
+    assert.strictEqual(managerSuppress, false, 'suppressAirportLanding should be false after unchecked');
+
+    await page.evaluate(() => {
+      const toggle = document.getElementById('adsb-airport-landing-toggle');
+      toggle.checked = true;
+      toggle.dispatchEvent(new Event('change'));
+    });
+    managerSuppress = await page.evaluate(() => AdsbAirspaceManager.suppressAirportLanding);
+    assert.strictEqual(managerSuppress, true, 'suppressAirportLanding should be true after checked');
+
+    // 5. Test Simulate Airport Landing button
+    await page.evaluate(async () => {
+      await AdsbAirspaceManager.simulateAircraft('landing');
+    });
+    await page.waitForTimeout(400);
+
+    // Verify landing aircraft card rendered in drawer with landing chip
+    const landingCard = page.locator('.adsb-aircraft-card.landing');
+    assert.ok(await landingCard.count() >= 1, 'Should render .adsb-aircraft-card.landing card in drawer');
+    const cardContent = await landingCard.first().textContent();
+    assert.ok(cardContent.includes('LANDING'), `Card should contain LANDING badge, got: ${cardContent}`);
+    assert.ok(cardContent.includes('Cone Suppressed'), `Card should indicate Cone Suppressed, got: ${cardContent}`);
+
+    // Verify alert banner is NOT triggered (cone suppressed, no breach)
+    const alertBanner = page.locator('#adsb-alert-banner');
+    const isVisible = await alertBanner.isVisible();
+    assert.strictEqual(isVisible, false, 'Alert banner should NOT be visible for landing traffic');
+
+    // 6. Verify Leaflet map layer control naming
+    const hasLayerOption = await page.evaluate(() => {
+      const labels = Array.from(document.querySelectorAll('.leaflet-control-layers-overlays label span'));
+      return labels.some(span => span.textContent.includes('Manned Aircraft (Predictive Cones)'));
+    });
+    assert.ok(hasLayerOption, 'Leaflet overlay control should include "Manned Aircraft (Predictive Cones)"');
+
+    // Cleanup
+    await page.evaluate(() => {
+      if (typeof AdsbAirspaceManager !== 'undefined') {
+        AdsbAirspaceManager.aircraft = [];
+        AdsbAirspaceManager.breachedAircraft = [];
+        AdsbAirspaceManager.approachingAircraft = [];
+        AdsbAirspaceManager.updateVisualBanner();
+        AdsbAirspaceManager.updateMapMarkers();
+        AdsbAirspaceManager.updateDrawerAircraftList();
+      }
+    });
+    await page.waitForTimeout(200);
+  });
   });
 });

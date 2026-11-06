@@ -3984,6 +3984,68 @@ const scenarios = [
       });
       await page.waitForTimeout(600);
     }
+  },
+  {
+    id: 'feature_adsb_airport_landing',
+    name: 'Airport Airspace Traffic Pattern Detection & Cone Suppression',
+    description: 'Demonstrates suppression of forward trajectory cones for landing aircraft in airport airspace and landing status chips.',
+    issueRef: 'Issue #246',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // Open ADS-B drawer
+      await page.evaluate(() => {
+        const topbarBtn = document.getElementById('adsb-topbar-btn');
+        if (topbarBtn) topbarBtn.click();
+        const drawer = document.getElementById('adsb-control-drawer');
+        if (drawer) drawer.classList.remove('hidden', 'drawer-closed');
+      });
+      await page.waitForTimeout(800);
+
+      // Adjust airport radius slider
+      await page.evaluate(() => {
+        const slider = document.getElementById('adsb-airport-radius-slider');
+        if (slider) {
+          slider.value = '4.5';
+          slider.dispatchEvent(new Event('input'));
+          slider.dispatchEvent(new Event('change'));
+        }
+      });
+      await page.waitForTimeout(600);
+
+      // Simulate landing aircraft
+      await page.evaluate(async () => {
+        if (typeof AdsbAirspaceManager !== 'undefined') {
+          await AdsbAirspaceManager.simulateAircraft('landing');
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // Capture screenshot preview
+      await page.screenshot({ path: 'recordings/feature_adsb_airport_landing_preview.png' });
+      await page.waitForTimeout(1000);
+
+      // Clean up simulated aircraft and close drawer
+      await page.evaluate(() => {
+        if (typeof AdsbAirspaceManager !== 'undefined') {
+          AdsbAirspaceManager.aircraft = [];
+          AdsbAirspaceManager.breachedAircraft = [];
+          AdsbAirspaceManager.approachingAircraft = [];
+          AdsbAirspaceManager.updateVisualBanner();
+          AdsbAirspaceManager.updateMapMarkers();
+          AdsbAirspaceManager.updateDrawerAircraftList();
+        }
+        const close = document.getElementById('adsb-drawer-close-btn') || document.querySelector('#adsb-control-drawer .popover-close-btn');
+        if (close) {
+          close.click();
+        } else {
+          const drawer = document.getElementById('adsb-control-drawer');
+          if (drawer) drawer.classList.add('hidden');
+        }
+      });
+      await page.waitForTimeout(600);
+    }
   }
 ];
 

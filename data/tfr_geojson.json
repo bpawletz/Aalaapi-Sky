@@ -8031,47 +8031,6 @@
     },
     {
       "type": "Feature",
-      "id": "V_TFR_LOC.6/6047",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              -155.35944444,
-              19.38777778
-            ],
-            [
-              -155.265,
-              19.34027778
-            ],
-            [
-              -155.22527778,
-              19.42138889
-            ],
-            [
-              -155.2825,
-              19.44972222
-            ],
-            [
-              -155.35944444,
-              19.38777778
-            ]
-          ]
-        ]
-      },
-      "geometry_name": "SHAPE",
-      "properties": {
-        "GID": 235516,
-        "CNS_LOCATION_ID": "ZHN",
-        "NOTAM_KEY": "6/6047-1-FDC-F",
-        "TITLE": "HAWAII VOLCANOES NATIONAL PARK, HI, Thursday, November 5, 2026 through Friday, November 6, 2026 UTC",
-        "LAST_MODIFICATION_DATETIME": "202611052326",
-        "STATE": "HI",
-        "LEGAL": "HAZARDS"
-      }
-    },
-    {
-      "type": "Feature",
       "id": "V_TFR_LOC.6/6066",
       "geometry": {
         "type": "Polygon",
@@ -10149,10 +10108,10 @@
       }
     }
   ],
-  "totalFeatures": 66,
-  "numberMatched": 66,
-  "numberReturned": 66,
-  "timeStamp": "2026-11-06T05:43:04.759Z",
+  "totalFeatures": 65,
+  "numberMatched": 65,
+  "numberReturned": 65,
+  "timeStamp": "2026-11-06T12:25:09.556Z",
   "crs": {
     "type": "name",
     "properties": {

@@ -6333,6 +6333,15 @@ const handleHttpRequest = async (req, res) => {
       const includeSafeParam = url.searchParams.get('includeSafe');
       const warningMinParam = url.searchParams.get('warningMinutes') || url.searchParams.get('warnMinutes');
       const coneDevParam = url.searchParams.get('coneDeviationDeg') || url.searchParams.get('coneDev');
+      const suppressAirportParam = url.searchParams.get('suppressAirportLanding');
+      const suppressAirportLanding = suppressAirportParam !== 'false' && suppressAirportParam !== '0';
+      const airportRadiusParam = url.searchParams.get('airportRadiusNm');
+      const airportRadiusNm = airportRadiusParam !== null ? (parseFloat(airportRadiusParam) || 4.0) : 4.0;
+      let airports = [];
+      const airportsParam = url.searchParams.get('airports');
+      if (airportsParam) {
+        try { airports = JSON.parse(airportsParam); } catch (e) {}
+      }
 
       const homeLat = latParam !== null ? parseFloat(latParam) : 0;
       const homeLon = lonParam !== null ? parseFloat(lonParam) : 0;
@@ -6390,7 +6399,10 @@ const handleHttpRequest = async (req, res) => {
           maxCeilingFeet,
           includeSafe,
           warningMinutes,
-          coneDeviationDeg
+          coneDeviationDeg,
+          suppressAirportLanding,
+          airportRadiusNm,
+          airports
         }
       };
 
@@ -6416,6 +6428,15 @@ const handleHttpRequest = async (req, res) => {
       const includeSafeParam = url.searchParams.get('includeSafe');
       const warningMinParam = url.searchParams.get('warningMinutes') || url.searchParams.get('warnMinutes');
       const coneDevParam = url.searchParams.get('coneDeviationDeg') || url.searchParams.get('coneDev');
+      const suppressAirportParam = url.searchParams.get('suppressAirportLanding');
+      const suppressAirportLanding = suppressAirportParam !== 'false' && suppressAirportParam !== '0';
+      const airportRadiusParam = url.searchParams.get('airportRadiusNm');
+      const airportRadiusNm = airportRadiusParam !== null ? (parseFloat(airportRadiusParam) || 4.0) : 4.0;
+      let airports = [];
+      const airportsParam = url.searchParams.get('airports');
+      if (airportsParam) {
+        try { airports = JSON.parse(airportsParam); } catch (e) {}
+      }
 
       const homeLat = latParam !== null ? parseFloat(latParam) : 0;
       const homeLon = lonParam !== null ? parseFloat(lonParam) : 0;
@@ -6461,7 +6482,10 @@ const handleHttpRequest = async (req, res) => {
         maxCeilingFeet,
         includeSafe,
         warningMinutes,
-        coneDeviationDeg
+        coneDeviationDeg,
+        suppressAirportLanding,
+        airportRadiusNm,
+        airports
       });
 
       res.writeHead(200, { 'Content-Type': 'application/json' });

@@ -14,20 +14,6 @@
     "exact_time": true
   },
   {
-    "notam_id": "6/6047",
-    "facility": "ZHN",
-    "state": "HI",
-    "type": "HAZARDS",
-    "description": "HAWAII VOLCANOES NATIONAL PARK, HI, Thursday, November 5, 2026 through Friday, November 6, 2026 UTC",
-    "mod_date": "11/05/2026 23:26:00",
-    "mod_abs_time": "202611052326",
-    "is_new": "Y",
-    "gid": "6/6047",
-    "start_utc": "2026-11-05T23:20:00.000Z",
-    "end_utc": "2026-11-06T10:00:59.000Z",
-    "exact_time": true
-  },
-  {
     "notam_id": "6/5999",
     "facility": "ZJX",
     "state": "FL",

@@ -641,13 +641,13 @@ function initMap() {
     AdsbAirspaceManager.layerGroup = adsbAirspaceLayer;
   }
 
-  // Predictive Trajectory Cones Overlay (ADS-B 2D)
+  // Predictive Trajectory Cones Overlay (ADS-B 2D) - positioned next to Manned Aircraft (ADS-B Airspace)
   const adsbConeLayer = L.layerGroup();
   const savedShowCones = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_adsb_show_cones') : null;
   if (savedShowCones !== 'false') {
     adsbConeLayer.addTo(map);
   }
-  overlays["✈️ ADS-B Predictive Trajectory Cones (2D)"] = adsbConeLayer;
+  overlays["Manned Aircraft (Predictive Cones)"] = adsbConeLayer;
   if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
     AdsbAirspaceManager.coneLayerGroup = adsbConeLayer;
     AdsbAirspaceManager.showCones = (savedShowCones !== 'false');
@@ -799,8 +799,8 @@ function initMap() {
       }
     }
 
-    // Track ADS-B Predictive Trajectory Cones (2D) state (v1.223.0 - Issue #244)
-    if (e.name === '✈️ ADS-B Predictive Trajectory Cones (2D)' || (typeof adsbConeLayer !== 'undefined' && e.layer === adsbConeLayer)) {
+    // Track ADS-B Predictive Trajectory Cones (2D) state (v1.223.0 - Issue #244, v1.224.0 - Issue #246)
+    if (e.name === 'Manned Aircraft (Predictive Cones)' || e.name === '✈️ ADS-B Predictive Trajectory Cones (2D)' || (typeof adsbConeLayer !== 'undefined' && e.layer === adsbConeLayer)) {
       const isAdd = e.type === 'overlayadd';
       if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
         AdsbAirspaceManager.showCones = isAdd;

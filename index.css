@@ -6368,11 +6368,37 @@ body.modal-drag-active {
   border-color: rgba(245, 158, 11, 0.45);
 }
 
+.adsb-aircraft-card.landing {
+  background: rgba(56, 189, 248, 0.06);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
 .adsb-marker-inner.approaching {
   border-color: #f59e0b !important;
   background: rgba(245, 158, 11, 0.25) !important;
   color: #fbbf24 !important;
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+
+.adsb-marker-inner.landing {
+  border-color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.2) !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}
+
+.adsb-landing-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  letter-spacing: 0.02em;
 }
 
 @keyframes adsbStrobe {
