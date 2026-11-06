@@ -11837,9 +11837,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const planeMarker = page.locator('.historical-traffic-plane-icon');
       assert.ok(await planeMarker.count() > 0, '.historical-traffic-plane-icon marker must be rendered on Leaflet map');
 
-      // Verify text inside plane icon
-      const text = await planeMarker.first().textContent();
-      assert.ok(text.includes('✈️'), 'Plane marker must contain plane emoji');
+      // Verify live ADS-B SVG marker structure (v1.222.0, Issue #235)
+      const adsbSvg = planeMarker.locator('.adsb-map-aircraft-marker svg');
+      assert.ok(await adsbSvg.count() > 0, 'Plane marker must contain live ADS-B SVG vector graphic');
 
       // Clean up replay
       await page.evaluate(() => {
@@ -11850,4 +11850,59 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       await page.waitForTimeout(200);
     });
   });
+
+  describe('Live ADS-B Aircraft Replay Icons & Classification E2E Tests (v1.222.0, Issue #235)', () => {
+    test('Historical traffic renders live SVG icons, aircraft classifications, and proximity breach styling', async () => {
+      await page.evaluate(() => {
+        const dummyPt = { lat: 41.3215, lon: -88.9950, alt: 30, time: 0, yaw: 0, timestamp: '2026-11-05T23:00:00.000Z' };
+        // Low altitude helicopter (e.g. N72HP / EC35) within proximity breach range
+        const breachHeli = {
+          hex: 'A9A1F0',
+          callsign: 'N72HP',
+          aircraftType: 'H60',
+          latitude: 41.3230,
+          longitude: -88.9940,
+          altitude: 800,
+          speed: 130,
+          track: 65,
+          timestamp: new Date('2026-11-05T23:00:00.000Z').getTime()
+        };
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.loadFlight('FlightRecord_2026-11-05_[17-58-48].csv', {
+            flightId: 'FlightRecord_2026-11-05_[17-58-48].csv',
+            points: [dummyPt, { ...dummyPt, lat: 41.3216, lon: -88.9949, time: 5 }],
+            durationSec: 5,
+            homePoint: dummyPt
+          }, {
+            environmentalData: { adsb: [breachHeli], remoteId: [], radar: [] },
+            isHistorical: true
+          });
+          PlaybackManager.set2dReplayActive(true);
+        }
+      });
+
+      await page.waitForTimeout(300);
+
+      const marker = page.locator('.historical-traffic-plane-icon .adsb-map-aircraft-marker');
+      assert.ok(await marker.count() > 0, 'ADS-B marker container must be rendered');
+
+      const dataType = await marker.first().getAttribute('data-type');
+      assert.strictEqual(dataType, 'helicopter', 'H60 aircraft must have data-type="helicopter"');
+
+      const isBreachedInner = await marker.locator('.adsb-marker-inner.breached').count();
+      assert.ok(isBreachedInner > 0, 'Marker inner container must have breached styling for close encounter');
+
+      const svg = marker.locator('svg');
+      assert.ok(await svg.count() > 0, 'Must contain SVG icon');
+
+      // Clean up replay
+      await page.evaluate(() => {
+        if (typeof restoreActiveWorkspacePlanning === 'function') {
+          restoreActiveWorkspacePlanning();
+        }
+      });
+      await page.waitForTimeout(200);
+    });
+  });
+
 });

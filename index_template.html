@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.221.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.222.0</span></h1>
         </div>
       </div>
 
@@ -4781,6 +4781,25 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>✈️</span>
+              Live ADS-B Aircraft SVG Icons &amp; 3D Rotorcraft Visualizer (v1.222.0) (Closes #235)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Replaces generic text emojis in 2D and 3D flight replays with authentic live ADS-B aircraft SVG vector graphics and category classification (helicopters, jets, props, gliders, and drones). Features realistic 3D rotorcraft models with spinning rotor discs, high-contrast floating billboard callsign labels, and pulsing crimson proximity breach indicators for low-level encounters.
+            </p>
+          </div>
+
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>📦</span>
+              Automated Zero-Cost Android APK Cloud Compilation (v1.222.0) (Closes #236)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Compile the native Android app directly in GitHub's cloud with zero software installed on your computer. Download the installable debug APK directly from GitHub Actions to install onto Android phones, tablets, or the DJI RC 2.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>🤖</span>
               Native Android App, Tri-Link Field Bridge &amp; USB-C RC 2 Auto-Sync (v1.221.0) (Closes #234)
             </strong>
@@ -7367,7 +7386,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.221.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.222.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7527,6 +7546,13 @@
                               <div>
                                                         <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.222.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Live ADS-B Aircraft SVG Icons &amp; Classification in Flight Replay (Closes #235):</strong> Replaces generic emojis with authentic live ADS-B aircraft SVG vector graphics, categorized into helicopters, jets, props, gliders, and drones, with pulsing red proximity breach markers for low-level encounters.</li>
+                <li><strong>3D Rotorcraft Visualizer &amp; Floating Billboard Sprites:</strong> Renders realistic 3D helicopter models with spinning rotor discs, color-coded categories, dynamic canvas billboard callsign/altitude tags, and recursive Three.js memory leak cleanup.</li>
+                <li><strong>Automated Zero-Cost Android APK Cloud Compilation (Closes #236):</strong> GitHub Actions cloud build workflow (<code>.github/workflows/android-build.yml</code>) compiles the native Android app into an installable APK on demand or commit with zero local tool installation.</li>
+              </ul>
+              <br>
               <strong style="color: var(--text-main);">Changelog (v1.221.1):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>Ambient ADS-B Flight Replay Synchronization (Closes #233):</strong> Ambient ADS-B manned traffic (e.g. low-altitude aircraft encounters like Ohio State Highway Patrol <code>N72HP</code>) and Remote ID drones recorded during flight now render accurately in both 2D Leaflet and 3D Digital Twin replays.</li>

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-06T00:08:33.774Z",
-  "currentAppVersion": "1.221.1",
+  "lastUpdated": "2026-11-06T00:34:43.270Z",
+  "currentAppVersion": "1.222.0",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "eb2417f42275",
@@ -1413,6 +1413,65 @@
     }
   },
   "releasePlans": [
+    {
+      "id": "rel-1.222.0-235",
+      "version": "1.222.0",
+      "issueNumber": 235,
+      "title": "Live ADS-B Aircraft SVG Icons and 3D Rotorcraft Visualizer in Flight Replay",
+      "date": "2026-11-06",
+      "affectedPatterns": [
+        "all"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Import historical flight log with concurrent ADS-B data",
+          "checked": false
+        },
+        {
+          "label": "Verify 2D replay displays authentic SVG aircraft icons matching live airspace",
+          "checked": false
+        },
+        {
+          "label": "Verify helicopters display distinct dual-component fuselage and rotor disc in 3D replay",
+          "checked": false
+        },
+        {
+          "label": "Verify low-level proximity breach (<3NM/<1000ft) triggers crimson pulsing rings",
+          "checked": false
+        }
+      ]
+    },
+    {
+      "id": "rel-1.222.0-236",
+      "version": "1.222.0",
+      "issueNumber": 236,
+      "title": "Automated Zero-Cost Android APK Cloud Compilation",
+      "date": "2026-11-06",
+      "affectedPatterns": [
+        "single-grid",
+        "double-grid"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Open GitHub repository Actions tab",
+          "checked": false
+        },
+        {
+          "label": "Trigger Build Android APK workflow via workflow_dispatch",
+          "checked": false
+        },
+        {
+          "label": "Verify Gradle assembleDebug builds app-debug.apk",
+          "checked": false
+        },
+        {
+          "label": "Download AalaapiSky-debug-apk artifact and verify install on Android",
+          "checked": false
+        }
+      ]
+    },
     {
       "id": "rel-1.221.0-234",
       "version": "1.221.0",

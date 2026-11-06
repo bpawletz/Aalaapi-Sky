@@ -1,3 +1,35 @@
+## [1.222.0] - 2026-11-05
+
+Brings live ADS-B aircraft SVG vector graphics, category-specific models, dynamic 3D rotorcraft visualization with spinning rotor discs, billboard callsign labels, and collision proximity breach indicators to 2D and 3D flight replays.
+
+### Added
+
+#### Pilot & Operational Features
+- **Live ADS-B Aircraft SVG Icons & Classification in Flight Replay (Closes #235)**:
+  - Replaced generic text emojis (`✈️` / `🛸`) in 2D Leaflet and 3D Digital Twin flight replays with authentic live ADS-B aircraft SVG vector graphics matching the live map HUD.
+  - Automatically classifies replayed aircraft into categories (`helicopter`, `jet`, `prop`, `glider`, `drone`, and `aircraft`) using ICAO registration patterns and ADS-B type descriptions.
+  - Highlights proximity breach encounters (horizontal separation < 3 NM / 5,556 m and vertical separation < 1,000 ft / 300 m, such as Ohio State Highway Patrol low-level operations) with pulsing crimson markers and red breach alert tooltips.
+  - Enriched aircraft tooltips to display callsign, aircraft model/category, altitude (in both feet and meters), ground speed in knots, and distance (in miles and kilometers).
+- **3D Rotorcraft Visualizer & Floating Billboard Sprites**:
+  - Distinguishes rotorcraft from fixed-wing traffic in the 3D Digital Twin: helicopters render a dual-component fuselage cone and spinning cyan rotor disc, while fixed-wing aircraft render streamlined aerodynamic fuselages.
+  - Floats high-contrast 2D canvas billboard callsign and altitude tags above each aircraft in the 3D scene, dynamically color-coded by category (Yellow for helicopters, Emerald for props, Sky Blue for jets, Crimson for proximity breach).
+- **Automated Zero-Cost Android APK Cloud Compilation (Closes #236)**:
+  - Added GitHub Actions cloud build workflow (`.github/workflows/android-build.yml`) that compiles the native Android app into an installable `.apk` on demand or on commit with zero local tool installation required.
+  - Generates downloadable `AalaapiSky-debug-apk` artifacts directly from GitHub Actions with a 30-day retention policy.
+
+#### Under the Hood & Technical Details
+- **.github/workflows/android-build.yml & android/app/proguard-rules.pro**:
+  - Configured automated Ubuntu runner workflow with Temurin JDK 17, Android SDK 35, and Gradle 8.9 provisioning, bundling web assets via `python scratch/build.py` prior to `gradle assembleDebug`.
+  - Added ProGuard / R8 rules preserving native WebView JavaScript interfaces (`@JavascriptInterface`).
+- **src/map/MapEngine.js**:
+  - Implemented `getReplayAircraftMarkerHtml(craft)` and `getReplayDroneMarkerHtml(drone)` integrating with `AdsbAirspaceManager.getAircraftMeta` and `AdsbAirspaceManager.getAircraftMarkerSvg` with embedded standalone SVG fallbacks.
+  - Added `.adsb-map-aircraft-marker` container wrapping with track rotation and proximity breach styling (`.adsb-marker-inner.breached`).
+  - Added dual class `.historical-traffic-plane-icon.adsb-leaflet-marker-container` to Leaflet markers with rich HTML tooltips (`adsb-plane-tooltip`).
+- **src/3d/DigitalTwin.js**:
+  - Added `createAircraftLabelSprite(text, isBreached)` to generate dynamic Three.js canvas texture billboard sprites.
+  - Updated `updateReplayedTraffic3D` with recursive disposal of child geometries, materials, and textures across groups to eliminate memory leaks during scrubbing.
+  - Enhanced 3D aircraft geometry generation to construct grouped models with rotor discs and category-specific materials.
+
 ## [1.221.1] - 2026-11-05
 
 ### 🐛 Fixed

@@ -40695,16 +40695,7 @@ describe('Native Android App, Tri-Link Field Bridge & USB-C RC 2 Auto-Sync (v1.2
 
 describe('Issue #233 & v1.221.1: Ambient ADS-B Replay Synchronization & Spatial Interpolator Hardening Suite', () => {
   test('Version consistency: package.json, CHANGELOG, templates match v1.221.1', () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.221.1', 'package.json must be 1.221.1');
-
-    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.221.1] - 2026-11-05'), 'CHANGELOG.md must contain 1.221.1 header');
-
-    const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(tmpl.includes('Version 1.221.1'), 'index_template.html must contain Version 1.221.1');
-    assert.ok(tmpl.includes('v1.221.1'), 'index_template.html must contain header badge v1.221.1');
-    assert.ok(tmpl.includes('Changelog (v1.221.1):'), 'index_template.html must contain Changelog (v1.221.1)');
+    assertVersionConsistency('1.221.1');
   });
 
   test('TelemetryInterpolator._interpolateTrackState extracts latitude/longitude/altitude/track without producing NaN', () => {
@@ -40770,5 +40761,106 @@ describe('Issue #233 & v1.221.1: Ambient ADS-B Replay Synchronization & Spatial 
     assert.ok(envData.adsb.length > 0, 'ADS-B records must not be empty');
     const hasN72HP = envData.adsb.some(a => (a.hex && a.hex.toLowerCase() === 'a9a1f0') || (a.callsign && a.callsign.includes('HP')));
     assert.ok(hasN72HP, 'Environmental replay dataset must contain N72HP / A9A1F0');
+  });
+});
+
+
+describe('Issue #235 & v1.222.0: Live ADS-B Replay Icons, Category Classification & 3D Rotorcraft Suite', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.222.0', () => {
+    assertVersionConsistency('1.222.0');
+  });
+
+  test('getReplayAircraftMarkerHtml generates authentic SVG and classifies categories accurately', () => {
+    require('./src/bridge/ApiClient.js');
+    require('./src/map/MapEngine.js');
+
+    assert.strictEqual(typeof global.getReplayAircraftMarkerHtml, 'function', 'getReplayAircraftMarkerHtml must be a function');
+
+    // Test 1: Helicopter (e.g. EC35 / H60 / Ohio State Highway Patrol N72HP)
+    const heliCraft = { callsign: 'N72HP', aircraftType: 'H60', track: 45, distanceMeters: 6000, vertDeltaMeters: 500 };
+    const heliRes = global.getReplayAircraftMarkerHtml(heliCraft);
+    assert.ok(heliRes.iconHtml.includes('<svg'), 'Must produce SVG markup');
+    assert.ok(heliRes.iconHtml.includes('adsb-map-aircraft-marker'), 'Must contain adsb-map-aircraft-marker container');
+    assert.ok(heliRes.iconHtml.includes('rotate(45deg)'), 'Must rotate to track heading');
+    assert.strictEqual(heliRes.classified.type, 'helicopter', 'H60 must be classified as helicopter');
+    assert.strictEqual(heliRes.isBreached, false, '6km distance must not trigger breach');
+
+    // Test 2: Low-altitude Proximity Breach encounter
+    const breachCraft = { callsign: 'N72HP', aircraftType: 'EC35', track: 90, distanceMeters: 1200, vertDeltaMeters: 150 };
+    const breachRes = global.getReplayAircraftMarkerHtml(breachCraft);
+    assert.strictEqual(breachRes.isBreached, true, 'Distance < 3NM and alt < 1000ft must be flagged as breach');
+    assert.ok(breachRes.iconHtml.includes('breached'), 'Marker inner must include breached CSS class');
+
+    // Test 3: Commercial Jet (e.g. B738 / A320)
+    const jetCraft = { callsign: 'UAL123', aircraftType: 'B738', track: 270, distanceMeters: 15000, vertDeltaMeters: 5000 };
+    const jetRes = global.getReplayAircraftMarkerHtml(jetCraft);
+    assert.strictEqual(jetRes.classified.type, 'jet', 'B738 must be classified as jet');
+    assert.strictEqual(jetRes.isBreached, false);
+
+    // Test 4: General Aviation Prop (e.g. C172 / PA28)
+    const propCraft = { callsign: 'N172SP', aircraftType: 'C172', track: 180, distanceMeters: 8000, vertDeltaMeters: 800 };
+    const propRes = global.getReplayAircraftMarkerHtml(propCraft);
+    assert.strictEqual(propRes.classified.type, 'prop', 'C172 must be classified as prop');
+  });
+
+  test('getReplayDroneMarkerHtml generates authentic quadcopter SVG and detects drone breaches', () => {
+    require('./src/bridge/ApiClient.js');
+    require('./src/map/MapEngine.js');
+
+    assert.strictEqual(typeof global.getReplayDroneMarkerHtml, 'function', 'getReplayDroneMarkerHtml must be a function');
+
+    // Distant drone
+    const safeDrone = { uasId: 'RID-1234', distanceMeters: 2500, vertDeltaMeters: 100, track: 90 };
+    const safeRes = global.getReplayDroneMarkerHtml(safeDrone);
+    assert.ok(safeRes.iconHtml.includes('data-type="drone"'), 'Must set drone data-type');
+    assert.ok(safeRes.iconHtml.includes('<svg'), 'Must render SVG');
+    assert.strictEqual(safeRes.isBreached, false);
+
+    // Close drone breach (< 500m)
+    const closeDrone = { uasId: 'RID-5678', distanceMeters: 200, vertDeltaMeters: 30, track: 120 };
+    const closeRes = global.getReplayDroneMarkerHtml(closeDrone);
+    assert.strictEqual(closeRes.isBreached, true, 'Drone within 500m horizontally and 150m vertically must be breached');
+    assert.ok(closeRes.iconHtml.includes('breached'), 'Inner marker must contain breached class');
+  });
+
+  test('DigitalTwin FlightDiagnostics includes createAircraftLabelSprite helper and recursive group disposal', () => {
+    const fs = require('fs');
+    const dtCode = fs.readFileSync(path.join(__dirname, 'src/3d/DigitalTwin.js'), 'utf8');
+
+    assert.ok(dtCode.includes('createAircraftLabelSprite(text, isBreached)'), 'Must define createAircraftLabelSprite');
+    assert.ok(dtCode.includes('disposeRecursive'), 'Must implement recursive Three.js resource disposal');
+    assert.ok(dtCode.includes('rotorGeo = new THREE.CylinderGeometry'), 'Must model 3D helicopter rotor disc');
+  });
+});
+
+
+describe('Issue #236 & v1.222.0: Automated Zero-Cost Android APK Cloud Compilation Suite', () => {
+  test('GitHub Actions android-build.yml workflow exists and specifies valid cloud build pipeline', () => {
+    const workflowPath = path.join(__dirname, '.github', 'workflows', 'android-build.yml');
+    assert.ok(fs.existsSync(workflowPath), '.github/workflows/android-build.yml must exist');
+    const content = fs.readFileSync(workflowPath, 'utf8');
+
+    assert.ok(content.includes('workflow_dispatch:'), 'Must support manual workflow_dispatch trigger');
+    assert.ok(content.includes('actions/setup-java@v4'), 'Must setup Java 17');
+    assert.ok(content.includes('android-actions/setup-android@v3'), 'Must setup Android SDK');
+    assert.ok(content.includes('gradle/actions/setup-gradle@v4'), 'Must setup Gradle 8.9');
+    assert.ok(content.includes('gradle assembleDebug'), 'Must execute assembleDebug');
+    assert.ok(content.includes('actions/upload-artifact@v4'), 'Must upload APK artifact');
+    assert.ok(content.includes('app-debug.apk'), 'Must capture app-debug.apk');
+  });
+
+  test('Android ProGuard rules file exists and protects WebView JavascriptInterfaces', () => {
+    const proguardPath = path.join(__dirname, 'android', 'app', 'proguard-rules.pro');
+    assert.ok(fs.existsSync(proguardPath), 'android/app/proguard-rules.pro must exist');
+    const content = fs.readFileSync(proguardPath, 'utf8');
+    assert.ok(content.includes('JavascriptInterface'), 'Must preserve @JavascriptInterface methods');
+  });
+
+  test('Android Field Operations Guide documents zero-install GitHub Actions cloud build steps', () => {
+    const guidePath = path.join(__dirname, 'docs', 'ANDROID_APP_AND_FIELD_OPERATIONS_GUIDE.md');
+    assert.ok(fs.existsSync(guidePath), 'ANDROID_APP_AND_FIELD_OPERATIONS_GUIDE.md must exist');
+    const content = fs.readFileSync(guidePath, 'utf8');
+    assert.ok(content.includes('Zero-Install Cloud Build via GitHub Actions'), 'Must include GitHub Actions cloud build instructions');
+    assert.ok(content.includes('AalaapiSky-debug-apk'), 'Must document artifact download');
   });
 });
