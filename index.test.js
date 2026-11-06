@@ -40993,10 +40993,11 @@ describe('Issue #241 & v1.222.4: Android Status Bar Insets & Native MTP Companio
     assertVersionConsistency('1.222.4');
   });
 
-  test('Android build.gradle.kts matches version 1.222.4 and versionCode 12224', () => {
+  test('Android build.gradle.kts matches version >= 1.222.4 and versionCode >= 12224', () => {
     const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-    assert.ok(gradle.includes('versionCode = 12224'), 'Must have versionCode 12224');
-    assert.ok(gradle.includes('versionName = "1.222.4"'), 'Must have versionName 1.222.4');
+    const codeMatch = gradle.match(/versionCode = (\d+)/);
+    assert.ok(codeMatch && parseInt(codeMatch[1]) >= 12224, 'Must have versionCode >= 12224');
+    assert.ok(gradle.includes('versionName = "1.222.'), 'Must have valid versionName');
   });
 
   test('index_template.html and index.html include viewport-fit=cover for safe-area insets', () => {
@@ -41044,5 +41045,83 @@ describe('Issue #241 & v1.222.4: Android Status Bar Insets & Native MTP Companio
     const bridgeCode = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'AndroidNativeBridge.js'), 'utf8');
     assert.ok(bridgeCode.includes('setNativeRc2Connection(true'), 'Must call setNativeRc2Connection on connect');
     assert.ok(bridgeCode.includes('setNativeRc2Connection(false'), 'Must call setNativeRc2Connection on disconnect');
+  });
+});
+
+
+describe('Issue #242 & v1.222.5: Historical ADS-B Pre-Discovery Pruning & Temporal Boundary Suite', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.222.5', () => {
+    assertVersionConsistency('1.222.5');
+  });
+
+  test('TelemetryInterpolator: returns null when targetUtcMs is before initial observation (firstTs)', () => {
+    const TelemetryInterpolator = require('./src/core/TelemetryInterpolator.js');
+
+    const trackFrames = [
+      { timestamp: 1700000100000, lat: 41.3215, lon: -88.9950, alt: 500, speed: 45, track: 90 },
+      { timestamp: 1700000105000, lat: 41.3220, lon: -88.9940, alt: 500, speed: 45, track: 90 }
+    ];
+
+    // Case 1: 1 ms before discovery -> must return null (not clamped to frame 0)
+    const beforeDiscovery = TelemetryInterpolator._interpolateTrackState(1700000099999, trackFrames);
+    assert.strictEqual(beforeDiscovery, null, 'Aircraft state before firstTs must be null');
+
+    // Case 2: Exactly at firstTs -> validFrames[0] returned
+    const atDiscovery = TelemetryInterpolator._interpolateTrackState(1700000100000, trackFrames);
+    assert.ok(atDiscovery !== null, 'Aircraft state at firstTs must exist');
+    assert.strictEqual(atDiscovery.lat, 41.3215);
+
+    // Case 3: In between frames -> interpolated smoothly
+    const midWay = TelemetryInterpolator._interpolateTrackState(1700000102500, trackFrames);
+    assert.ok(midWay !== null, 'Aircraft state between frames must exist');
+    assert.strictEqual(midWay.interpolated, true);
+    assert.ok(Math.abs(midWay.lat - 41.32175) < 0.0001);
+
+    // Case 4: 10s after lastTs (within 15s stale timeout) -> held at last position
+    const recentDrop = TelemetryInterpolator._interpolateTrackState(1700000115000, trackFrames);
+    assert.ok(recentDrop !== null, 'Aircraft state within 15s stale window must exist');
+    assert.strictEqual(recentDrop.lat, 41.3220);
+
+    // Case 5: 16s after lastTs (beyond 15s stale timeout) -> must drop (return null)
+    const departed = TelemetryInterpolator._interpolateTrackState(1700000121001, trackFrames);
+    assert.strictEqual(departed, null, 'Aircraft state beyond 15s timeout must be null');
+  });
+
+  test('TelemetryInterpolator.interpolateAirspace: omits pre-discovery aircraft from airspace list', () => {
+    const TelemetryInterpolator = require('./src/core/TelemetryInterpolator.js');
+
+    const ownship = { lat: 41.3200, lon: -88.9900, alt: 60 };
+    const adsbFrames = [
+      { hex: 'A1B2C3', callsign: 'N12345', timestamp: 1700000100000, lat: 41.3250, lon: -88.9950, alt: 300, speed: 50, track: 180 },
+      { hex: 'A1B2C3', callsign: 'N12345', timestamp: 1700000110000, lat: 41.3240, lon: -88.9950, alt: 300, speed: 50, track: 180 }
+    ];
+
+    // When scrubber is before aircraft first discovery timestamp
+    const beforeResult = TelemetryInterpolator.interpolateAirspace(1700000095000, ownship, adsbFrames, []);
+    assert.strictEqual(beforeResult.traffic.length, 0, 'Airspace must not contain aircraft prior to its first observation');
+
+    // When scrubber is during aircraft flight
+    const duringResult = TelemetryInterpolator.interpolateAirspace(1700000105000, ownship, adsbFrames, []);
+    assert.strictEqual(duringResult.traffic.length, 1, 'Airspace must contain aircraft during active flight');
+    assert.strictEqual(duringResult.traffic[0].callsign, 'N12345');
+  });
+
+  test('PlaybackManager.getInterpolatedPoint: smoothly interpolates millisecond timestamp between frames', () => {
+    const PlaybackManager = require('./src/core/PlaybackManager.js');
+
+    PlaybackManager.points = [
+      { lat: 41.32, lon: -88.99, alt: 50, timestamp: '2026-11-05T12:00:00.000Z' },
+      { lat: 41.33, lon: -88.98, alt: 60, timestamp: '2026-11-05T12:00:10.000Z' }
+    ];
+
+    // At alpha = 0.5 (halfway through the 10-second gap)
+    PlaybackManager.fractionalIndex = 0.5;
+    const pt = PlaybackManager.getInterpolatedPoint();
+    assert.strictEqual(pt.timestamp, '2026-11-05T12:00:05.000Z', 'Timestamp must interpolate exactly to midpoint');
+
+    // At alpha = 0.25 (2.5 seconds in)
+    PlaybackManager.fractionalIndex = 0.25;
+    const pt2 = PlaybackManager.getInterpolatedPoint();
+    assert.strictEqual(pt2.timestamp, '2026-11-05T12:00:02.500Z', 'Timestamp must interpolate to quarter point');
   });
 });

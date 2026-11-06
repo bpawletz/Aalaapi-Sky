@@ -177,8 +177,13 @@ const TelemetryInterpolator = {
     const firstTs = validFrames[0].timestamp || validFrames[0]._receivedAt || 0;
     const lastTs = validFrames[validFrames.length - 1].timestamp || validFrames[validFrames.length - 1]._receivedAt || 0;
 
-    // Reject frames if target time is more than 3 minutes away from track bounds
-    if (targetUtcMs < firstTs - 180000 || targetUtcMs > lastTs + 180000) {
+    // Reject frame if target time is before track discovery or past realistic stale timeout (15s)
+    if (targetUtcMs < firstTs) {
+      return null;
+    }
+
+    const STALE_TIMEOUT_MS = 15000;
+    if (targetUtcMs > lastTs + STALE_TIMEOUT_MS) {
       return null;
     }
 
@@ -195,7 +200,7 @@ const TelemetryInterpolator = {
       interpolated
     });
 
-    if (targetUtcMs <= firstTs) {
+    if (targetUtcMs === firstTs) {
       const f = validFrames[0];
       return wrapResult(f, getLat(f), getLon(f), getAlt(f), f.speed || 0, f.track !== undefined ? f.track : (f.heading || 0), false);
     }

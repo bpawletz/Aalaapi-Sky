@@ -11973,5 +11973,84 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       });
       await page.waitForTimeout(200);
     });
+
+    test('E2E: Historical ADS-B traffic prunes markers when scrubbing prior to initial observation timestamp (Issue #242)', async () => {
+      await page.evaluate(() => {
+        const dummyAdsb = [
+          {
+            hex: 'N999XX',
+            callsign: 'N999XX',
+            aircraftType: 'B738',
+            latitude: 41.3300,
+            longitude: -88.9900,
+            altitude: 1000,
+            speed: 120,
+            track: 180,
+            timestamp: 1700000050000
+          },
+          {
+            hex: 'N999XX',
+            callsign: 'N999XX',
+            aircraftType: 'B738',
+            latitude: 41.3250,
+            longitude: -88.9900,
+            altitude: 1000,
+            speed: 120,
+            track: 180,
+            timestamp: 1700000080000
+          }
+        ];
+
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.loadFlight('test-flight-pre-discovery-242', {
+            flightId: 'test-flight-pre-discovery-242',
+            points: [
+              { lat: 41.3215, lon: -88.9950, alt: 40, speed: 5, yaw: 0, heading: 0, timestamp: 1700000000000 },
+              { lat: 41.3225, lon: -88.9940, alt: 40, speed: 5, yaw: 0, heading: 0, timestamp: 1700000100000 }
+            ],
+            durationSec: 100
+          }, {
+            environmentalData: { adsb: dummyAdsb, remoteId: [], radar: [] },
+            isHistorical: true
+          });
+          PlaybackManager.set2dReplayActive(true);
+        }
+      });
+
+      await page.waitForTimeout(300);
+
+      // Seek to fraction 0.7 (timestamp 1700000070000, after aircraft first observed at 1700000050000)
+      await page.evaluate(() => {
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.seekTo(0.7, { isFraction: true });
+        }
+      });
+      await page.waitForTimeout(300);
+
+      let markerCount = await page.locator('.historical-traffic-plane-icon .adsb-map-aircraft-marker svg').count();
+      assert.strictEqual(markerCount, 1, 'ADS-B marker must be visible when scrubber is past discovery timestamp (1700000070000 > 1700000050000)');
+
+      // Now seek back before discovery timestamp: fraction 0.2 (timestamp 1700000020000 < 1700000050000)
+      await page.evaluate(() => {
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.seekTo(0.2, { isFraction: true });
+        }
+      });
+      await page.waitForTimeout(300);
+
+      markerCount = await page.locator('.historical-traffic-plane-icon .adsb-map-aircraft-marker svg').count();
+      assert.strictEqual(markerCount, 0, 'ADS-B marker must be cleanly pruned when scrubber is before discovery timestamp (Issue #242)');
+
+      // Clean up
+      await page.evaluate(() => {
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.pause();
+        }
+        if (typeof restoreActiveWorkspacePlanning === 'function') {
+          restoreActiveWorkspacePlanning();
+        }
+      });
+      await page.waitForTimeout(200);
+    });
   });
 });

@@ -1,3 +1,20 @@
+## [1.222.5] - 2026-11-05
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Historical ADS-B Traffic Scrubbing & Pre-Discovery Pruning (Closes #242)**:
+  - Eliminated phantom stationary aircraft remaining on the map when scrubbing the flight replay timeline backward to times prior to the aircraft's initial discovery timestamp.
+  - Aircraft now cleanly disappear from both the 2D Leaflet map and 3D Digital Twin when seeking before their first observed observation.
+  - Added realistic 15-second stale signal timeout after last known contact so departed aircraft do not linger frozen indefinitely.
+
+#### Under the Hood & Technical Details
+- **src/core/TelemetryInterpolator.js**:
+  - In `_interpolateTrackState`, strictly enforce `targetUtcMs < firstTs => null` rather than clamping pre-discovery times to `validFrames[0]`.
+  - Replaced legacy 180-second linger window with `STALE_TIMEOUT_MS = 15000` (15s) drop threshold after `lastTs`.
+- **src/core/PlaybackManager.js**:
+  - In `getInterpolatedPoint()`, smoothly interpolate timestamps (`interpolatedTs = t0 + (t1 - t0) * alpha`) between consecutive telemetry frames during fractional scrubbing to ensure fluid sub-second temporal reconciliation across environmental tracks.
+
 ## [1.222.3] - 2026-11-05
 
 ### 🐛 Fixed
