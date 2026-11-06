@@ -1,3 +1,13 @@
+## [1.222.2] - 2026-11-05
+
+### 🐛 Fixed
+
+#### Under the Hood & Technical Details
+- **.github/workflows/android-build.yml & android/gradle.properties (Closes #239)**:
+  - Eliminated GitHub Actions Gradle hang at `Starting a Gradle Daemon` by setting `org.gradle.daemon=false` and adding `--no-daemon` and `--max-workers=2` flags to `assembleDebug`.
+  - Disabled legacy Jetifier dependency scanning (`android.enableJetifier=false`) to prevent heavy CPU and memory locking on runner containers.
+  - Modernized `android/settings.gradle.kts` and `android/build.gradle.kts` with declarative `pluginManagement` and Gradle 8.9 `plugins` blocks to streamline dependency resolution.
+
 ## [1.222.1] - 2026-11-05
 
 ### 🐛 Fixed

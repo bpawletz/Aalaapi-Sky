@@ -40880,3 +40880,38 @@ describe('Issue #237 & v1.222.1: GitHub Actions Android Cloud Build sdkmanager E
     assert.ok(content.includes('gradle/actions/setup-gradle@v4'), 'Must setup Gradle 8.9');
   });
 });
+
+
+describe('Issue #239 & v1.222.2: CI Gradle Build Hang & Daemon Fix Suite', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.222.2', () => {
+    assertVersionConsistency('1.222.2');
+  });
+
+  test('android-build.yml passes --no-daemon, sets GRADLE_OPTS, and limits workers', () => {
+    const workflowPath = path.join(__dirname, '.github', 'workflows', 'android-build.yml');
+    const content = fs.readFileSync(workflowPath, 'utf8');
+
+    assert.ok(content.includes('--no-daemon'), 'Must specify --no-daemon flag');
+    assert.ok(content.includes('org.gradle.daemon=false'), 'Must set org.gradle.daemon=false');
+    assert.ok(content.includes('--max-workers='), 'Must limit worker concurrency');
+  });
+
+  test('gradle.properties disables daemon and jetifier', () => {
+    const propsPath = path.join(__dirname, 'android', 'gradle.properties');
+    const content = fs.readFileSync(propsPath, 'utf8');
+
+    assert.ok(content.includes('org.gradle.daemon=false'), 'Must disable daemon in gradle.properties');
+    assert.ok(content.includes('android.enableJetifier=false'), 'Must disable legacy jetifier');
+  });
+
+  test('settings.gradle.kts and build.gradle.kts use modern declarative pluginManagement', () => {
+    const settingsPath = path.join(__dirname, 'android', 'settings.gradle.kts');
+    const settings = fs.readFileSync(settingsPath, 'utf8');
+    assert.ok(settings.includes('pluginManagement'), 'Must define pluginManagement');
+    assert.ok(settings.includes('dependencyResolutionManagement'), 'Must define dependencyResolutionManagement');
+
+    const rootBuildPath = path.join(__dirname, 'android', 'build.gradle.kts');
+    const rootBuild = fs.readFileSync(rootBuildPath, 'utf8');
+    assert.ok(rootBuild.includes('plugins'), 'Must use declarative plugins block');
+  });
+});

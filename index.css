@@ -6850,6 +6850,57 @@ body.modal-drag-active {
   animation: adsbPulseRing 1.5s infinite ease-out;
 }
 
+/* Historical Replay ADS-B Marker Theme (Temporal Violet / Chrono) - Issue #238 */
+.adsb-marker-inner.historical-replay {
+  background: rgba(28, 18, 52, 0.92);
+  border: 1.5px dashed #c084fc;
+  color: #d8b4fe;
+  box-shadow: 0 4px 12px rgba(126, 34, 206, 0.35);
+}
+
+.adsb-marker-inner.historical-replay.helicopter {
+  border-color: #f59e0b;
+  color: #fde047;
+}
+
+.adsb-marker-inner.historical-replay.jet {
+  border-color: #c084fc;
+  color: #e9d5ff;
+}
+
+.adsb-marker-inner.historical-replay.prop {
+  border-color: #34d399;
+  color: #a7f3d0;
+}
+
+.adsb-marker-inner.historical-replay.breached {
+  border: 2px solid #ef4444 !important;
+  color: #f87171 !important;
+  background: rgba(45, 10, 25, 0.95);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.6), 0 0 10px rgba(192, 132, 252, 0.5);
+  animation: adsbPulseRing 1.5s infinite ease-out;
+}
+
+/* Historical Tooltip & Badge Styling */
+.adsb-plane-tooltip.historical-replay {
+  border-color: rgba(192, 132, 252, 0.6) !important;
+  background: rgba(18, 10, 32, 0.94) !important;
+}
+
+.adsb-historical-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.15);
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-bottom: 2px;
+}
+
 /* ADS-B Aircraft Type Badges & Chips */
 .adsb-type-chip {
   display: inline-flex;

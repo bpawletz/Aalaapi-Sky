@@ -1,6 +1,6 @@
 plugins {
     id("com.android.application")
-    id("kotlin-android")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
@@ -11,8 +11,8 @@ android {
         applicationId = "com.aalaapi.sky"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12221
-        versionName = "1.222.1"
+        versionCode = 12222
+        versionName = "1.222.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

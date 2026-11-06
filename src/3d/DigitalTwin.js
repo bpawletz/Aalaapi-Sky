@@ -4128,7 +4128,7 @@ const FlightDiagnostics = {
     }
   },
 
-  createAircraftLabelSprite(text, isBreached) {
+  createAircraftLabelSprite(text, isBreached, isHistorical = true) {
     if (typeof document === 'undefined' || !document.createElement || typeof THREE === 'undefined' || !THREE.CanvasTexture || !THREE.Sprite) return null;
     try {
       const canvas = document.createElement('canvas');
@@ -4137,8 +4137,8 @@ const FlightDiagnostics = {
       const ctx = canvas.getContext('2d');
       if (!ctx) return null;
 
-      ctx.fillStyle = isBreached ? 'rgba(239, 68, 68, 0.9)' : 'rgba(15, 23, 42, 0.85)';
-      ctx.strokeStyle = isBreached ? '#f87171' : '#38bdf8';
+      ctx.fillStyle = isBreached ? 'rgba(239, 68, 68, 0.92)' : (isHistorical ? 'rgba(28, 18, 52, 0.92)' : 'rgba(15, 23, 42, 0.85)');
+      ctx.strokeStyle = isBreached ? '#f87171' : (isHistorical ? '#c084fc' : '#38bdf8');
       ctx.lineWidth = 4;
       if (typeof ctx.roundRect === 'function') {
         ctx.beginPath();
@@ -4243,7 +4243,7 @@ const FlightDiagnostics = {
           (craft.distanceMeters && craft.distanceMeters < 5556 && craft.vertDeltaMeters !== undefined && craft.vertDeltaMeters < 300)
         );
 
-        const craftColor = isBreached ? 0xef4444 : (classified.type === 'helicopter' ? 0xeab308 : (classified.type === 'prop' ? 0x10b981 : 0x38bdf8));
+        const craftColor = isBreached ? 0xef4444 : (classified.type === 'helicopter' ? 0xf59e0b : (classified.type === 'prop' ? 0x34d399 : 0xc084fc));
 
         const craftGroup = new THREE.Group();
         craftGroup.position.copy(craftPos);
@@ -4283,11 +4283,11 @@ const FlightDiagnostics = {
 
         this.replayedTraffic3DGroup.add(craftGroup);
 
-        // Billboard text sprite label
+        // Billboard text sprite label with historical marker prefix (Issue #238)
         const callsign = craft.callsign || craft.icao || craft.hex || 'ADS-B';
         const altFt = (typeof craft.alt === 'number') ? (craft.alt > 500 ? Math.round(craft.alt) : Math.round(craft.alt * 3.28084)) : null;
-        const labelText = altFt !== null ? `${callsign} • ${altFt}ft` : callsign;
-        const sprite = this.createAircraftLabelSprite(labelText, isBreached);
+        const labelText = altFt !== null ? `⏳ ${callsign} • ${altFt}ft` : `⏳ ${callsign}`;
+        const sprite = this.createAircraftLabelSprite(labelText, isBreached, true);
         if (sprite) {
           sprite.position.set(craftPos.x, craftPos.y + 6.5, craftPos.z);
           this.replayedTraffic3DGroup.add(sprite);
