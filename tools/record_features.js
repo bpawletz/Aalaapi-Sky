@@ -3880,6 +3880,44 @@ const scenarios = [
         if (cancelBtn) cancelBtn.click();
       });
       await page.waitForTimeout(600);
+    }  },
+  {
+    id: 'feature_adsb_flight_replay',
+    name: 'Ambient ADS-B & Airspace Traffic in 2D and 3D Flight Replay',
+    issueRef: 'Issue #233',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      await page.evaluate(() => {
+        const dummyPt = { lat: 41.3215, lon: -88.9950, alt: 30, time: 0, yaw: 0, timestamp: '2026-11-05T23:00:00.000Z' };
+        const dummyAdsb = [
+          { hex: 'A9A1F0', callsign: 'N72HP', latitude: 41.3260, longitude: -88.9910, altitude: 2275, speed: 140, track: 54, timestamp: new Date('2026-11-05T23:00:00.000Z').getTime() }
+        ];
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.loadFlight('FlightRecord_2026-11-05_[17-58-48].csv', {
+            flightId: 'FlightRecord_2026-11-05_[17-58-48].csv',
+            points: [dummyPt, { ...dummyPt, lat: 41.3216, lon: -88.9949, time: 5 }],
+            durationSec: 5,
+            homePoint: dummyPt
+          }, {
+            environmentalData: { adsb: dummyAdsb, remoteId: [], radar: [] },
+            isHistorical: true
+          });
+          PlaybackManager.set2dReplayActive(true);
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      await page.screenshot({ path: 'recordings/feature_adsb_replay_preview.png' });
+      await page.waitForTimeout(800);
+
+      await page.evaluate(() => {
+        if (typeof restoreActiveWorkspacePlanning === 'function') {
+          restoreActiveWorkspacePlanning();
+        }
+      });
+      await page.waitForTimeout(600);
     }
   }
 ];

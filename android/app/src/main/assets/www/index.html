@@ -33209,6 +33209,11 @@ function render2dHistoricalTracks() {
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
     } catch (_) {}
   }
+
+  // 5. Initial position update for drone marker & ambient traffic
+  if (typeof PlaybackManager !== 'undefined' && typeof PlaybackManager.seekTo === 'function') {
+    PlaybackManager.seekTo(PlaybackManager.currentIndex || 0);
+  }
 }
 
 function clear2dHistoricalTracks() {
