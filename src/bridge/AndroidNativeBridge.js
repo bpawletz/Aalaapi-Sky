@@ -336,6 +336,25 @@
     adsbAircraft: new Map(), // hex -> aircraft record
     remoteIdDrones: new Map(), // uasId -> drone record
 
+    // Unlock Web Audio on the first user gesture so ADS-B chimes can play later (Issue #249)
+    installAudioUnlock() {
+      if (typeof document === 'undefined' || this._audioUnlockInstalled) return;
+      this._audioUnlockInstalled = true;
+      const unlock = () => {
+        try {
+          if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager && typeof AdsbAirspaceManager.initAudioContext === 'function') {
+            AdsbAirspaceManager.initAudioContext();
+          }
+        } catch (_) { /* ignore */ }
+        document.removeEventListener('pointerdown', unlock, true);
+        document.removeEventListener('touchend', unlock, true);
+        document.removeEventListener('keydown', unlock, true);
+      };
+      document.addEventListener('pointerdown', unlock, true);
+      document.addEventListener('touchend', unlock, true);
+      document.addEventListener('keydown', unlock, true);
+    },
+
     init() {
       // 1. Detect if running inside the Native Android container (window.AalaapiAndroid)
       if (typeof window !== 'undefined' && window.AalaapiAndroid) {
@@ -344,6 +363,7 @@
       }
 
       this.bindUiElements();
+      this.installAudioUnlock();
 
       // Listen for browser/PWA WebUSB connect/disconnect events
       if (typeof navigator !== 'undefined' && navigator.usb) {
@@ -891,6 +911,9 @@
     window.ingestAdsbSbsLine = (line) => AndroidNativeBridge.ingestAdsbSbsLine(line);
     window.ingestAdsbJson = (jsonPayload) => AndroidNativeBridge.ingestAdsbJson(jsonPayload);
     window.onAdsbStatusChanged = (status, host, port, error) => AndroidNativeBridge.onAdsbStatusChanged(status, host, port, error);
+    window.onNativeTtsError = (message) => {
+      if (typeof showToast === 'function') showToast('🔇 ' + (message || 'Voice advisory unavailable'), 'error');
+    };
     window.onRc2UsbConnected = (dev) => AndroidNativeBridge.handleRc2Connected(dev);
     window.onRc2UsbDisconnected = () => AndroidNativeBridge.handleRc2Disconnected();
 

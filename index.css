@@ -7097,6 +7097,48 @@ body.modal-drag-active {
   filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.8));
 }
 
+/* ADS-B Proximity Boundary Ring (Issue #250) */
+.adsb-proximity-ring {
+  pointer-events: none;
+  stroke-dasharray: 6 6;
+  filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.4));
+  transition: stroke 0.3s ease, stroke-width 0.3s ease, fill 0.3s ease, filter 0.3s ease;
+}
+
+.adsb-proximity-ring.approaching {
+  stroke-dasharray: 8 4;
+  animation: adsbRingApproachingPulse 2s infinite ease-in-out;
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+}
+
+.adsb-proximity-ring.breached {
+  stroke-dasharray: 4 4;
+  animation: adsbRingBreachedPulse 1.2s infinite ease-in-out;
+  filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.8));
+}
+
+@keyframes adsbRingApproachingPulse {
+  0%, 100% {
+    stroke-opacity: 0.85;
+    fill-opacity: 0.04;
+  }
+  50% {
+    stroke-opacity: 0.45;
+    fill-opacity: 0.08;
+  }
+}
+
+@keyframes adsbRingBreachedPulse {
+  0%, 100% {
+    stroke-opacity: 0.95;
+    fill-opacity: 0.06;
+  }
+  50% {
+    stroke-opacity: 0.55;
+    fill-opacity: 0.12;
+  }
+}
+
 /* MCP Node Monitor Grid (Issue #94) */
 .mcp-monitor-section {
   transition: border-color 0.2s, background 0.2s;

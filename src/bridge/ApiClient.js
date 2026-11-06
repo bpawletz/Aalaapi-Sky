@@ -5755,6 +5755,16 @@ const AdsbAirspaceManager = {
 
   descentGradientEnabled: true,
 
+  alertAnchorMode: 'auto', // 'auto' | 'mission' | 'pilot' | 'drone'
+
+  showProximityRing: true,
+
+  proximityCircleLayer: null,
+
+  lastResolvedOrigin: null,
+
+  _reanchorDebounceTimer: null,
+
   suppressAirportLanding: true,
 
   airportRadiusNm: 4.0,
@@ -6177,27 +6187,11 @@ const AdsbAirspaceManager = {
 
     this.initAudioContext();
 
-    let homeLat = 40.0130;
+    const origin = this.getAlertOrigin();
 
-    let homeLon = -83.1765;
+    const homeLat = origin.lat;
 
-    if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
-
-      const ll = centerMarker.getLatLng();
-
-      homeLat = ll.lat;
-
-      homeLon = ll.lng;
-
-    } else if (typeof map !== 'undefined' && map && map.getCenter) {
-
-      const ll = map.getCenter();
-
-      homeLat = ll.lat;
-
-      homeLon = ll.lng;
-
-    }
+    const homeLon = origin.lon;
 
 
 
@@ -6265,7 +6259,7 @@ const AdsbAirspaceManager = {
 
         lat: homeLat + 0.055,
 
-        lon: homeLon + 0.055,
+        lon: homeLon + 0.072,
 
         alt: 1800,
 
@@ -6478,6 +6472,14 @@ const AdsbAirspaceManager = {
 
         if (savedDescentGrad !== null) this.descentGradientEnabled = savedDescentGrad !== 'false';
 
+        const savedAnchorMode = localStorage.getItem('aalaapi_adsb_anchor_mode');
+
+        if (savedAnchorMode) this.alertAnchorMode = savedAnchorMode;
+
+        const savedShowRing = localStorage.getItem('aalaapi_adsb_show_proximity_ring');
+
+        if (savedShowRing !== null) this.showProximityRing = savedShowRing !== 'false';
+
         const savedSuppressLanding = localStorage.getItem('aalaapi_adsb_suppress_airport_landing');
 
         if (savedSuppressLanding !== null) this.suppressAirportLanding = savedSuppressLanding !== 'false';
@@ -6558,6 +6560,10 @@ const AdsbAirspaceManager = {
 
         localStorage.setItem('aalaapi_adsb_descent_gradient', String(this.descentGradientEnabled));
 
+        localStorage.setItem('aalaapi_adsb_anchor_mode', this.alertAnchorMode || 'auto');
+
+        localStorage.setItem('aalaapi_adsb_show_proximity_ring', String(this.showProximityRing));
+
         localStorage.setItem('aalaapi_adsb_suppress_airport_landing', String(this.suppressAirportLanding));
 
         localStorage.setItem('aalaapi_adsb_airport_radius_nm', String(this.airportRadiusNm || 4.0));
@@ -6622,7 +6628,12 @@ const AdsbAirspaceManager = {
 
     if (leaflet && m && !this.layerGroup && m.addLayer && leaflet.layerGroup) {
 
-      this.layerGroup = leaflet.layerGroup().addTo(m);
+      const lg = leaflet.layerGroup();
+      if (lg && typeof lg.addTo === 'function') {
+        this.layerGroup = lg.addTo(m);
+      } else if (lg) {
+        this.layerGroup = lg;
+      }
 
     }
 
@@ -6630,10 +6641,8 @@ const AdsbAirspaceManager = {
 
       this.coneLayerGroup = leaflet.layerGroup();
 
-      if (this.showCones) {
-
+      if (this.showCones && this.coneLayerGroup && typeof this.coneLayerGroup.addTo === 'function') {
         this.coneLayerGroup.addTo(m);
-
       }
 
         if (m.on && !this._adsbGradientMapBound) {
@@ -6749,6 +6758,198 @@ const AdsbAirspaceManager = {
       lon: Number(lon),
       elevationFt: apt.elevationFt || apt.elevation || 0
     });
+  },
+
+  getAlertOrigin() {
+    const mode = this.alertAnchorMode || 'auto';
+    let origin = null;
+
+    const cm = (typeof centerMarker !== 'undefined' && centerMarker) || (typeof window !== 'undefined' && window.centerMarker) || (typeof global !== 'undefined' && global.centerMarker) || null;
+    const uLoc = (typeof userLocation !== 'undefined' && userLocation) || (typeof window !== 'undefined' && window.userLocation) || (typeof global !== 'undefined' && global.userLocation) || null;
+    const mapInst = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map) || null;
+
+    if (mode === 'pilot') {
+      if (uLoc && typeof uLoc.lat === 'number') {
+        origin = { lat: uLoc.lat, lon: uLoc.lon, source: 'pilot', label: 'Pilot (Device GPS)' };
+      }
+    } else if (mode === 'drone') {
+      const drone = this.getActiveDroneCoordinates();
+      if (drone) {
+        origin = { lat: drone.lat, lon: drone.lon, source: 'drone', label: `Live Drone (${drone.id || 'Active'})` };
+      }
+    } else if (mode === 'mission') {
+      if (cm && typeof cm.getLatLng === 'function') {
+        const ll = cm.getLatLng();
+        origin = { lat: ll.lat, lon: ll.lng, source: 'mission', label: 'Mission Center' };
+      }
+    }
+
+    // Auto sequence: Mission Center -> Pilot Location -> Active Drone -> Map Center -> Default Fallback
+    if (!origin) {
+      if (cm && typeof cm.getLatLng === 'function') {
+        const ll = cm.getLatLng();
+        origin = { lat: ll.lat, lon: ll.lng, source: 'mission', label: 'Mission Center' };
+      } else if (uLoc && typeof uLoc.lat === 'number') {
+        origin = { lat: uLoc.lat, lon: uLoc.lon, source: 'pilot', label: 'Pilot (Device GPS)' };
+      } else {
+        const drone = this.getActiveDroneCoordinates();
+        if (drone) {
+          origin = { lat: drone.lat, lon: drone.lon, source: 'drone', label: `Live Drone (${drone.id || 'Active'})` };
+        } else if (mapInst && typeof mapInst.getCenter === 'function') {
+          const ll = mapInst.getCenter();
+          origin = { lat: ll.lat, lon: ll.lng, source: 'map', label: 'Map Center' };
+        } else {
+          origin = { lat: 41.3215, lon: -88.9950, source: 'default', label: 'Default (Utica, IL)' };
+        }
+      }
+    }
+
+    this.lastResolvedOrigin = origin;
+    return origin;
+  },
+
+  getActiveDroneCoordinates() {
+    if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar && Array.isArray(RemoteIdRadar.activeDrones)) {
+      const d = RemoteIdRadar.activeDrones.find(x => x.latitude && x.longitude && !x.signalLost) ||
+                RemoteIdRadar.activeDrones.find(x => x.latitude && x.longitude);
+      if (d) return { lat: d.latitude, lon: d.longitude, id: d.callsign || d.id };
+    }
+    if (typeof currentDronePos !== 'undefined' && currentDronePos && typeof currentDronePos.lat === 'number') {
+      return { lat: currentDronePos.lat, lon: currentDronePos.lng || currentDronePos.lon, id: 'Telemetry' };
+    }
+    return null;
+  },
+
+  updateProximityRing() {
+    const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L) || null;
+    if (!leaflet || !this.layerGroup || typeof leaflet.circle !== 'function') return;
+
+    if (!this.showProximityRing || !this.enabled) {
+      if (this.proximityCircleLayer) {
+        try { this.layerGroup.removeLayer(this.proximityCircleLayer); } catch (_) {}
+        this.proximityCircleLayer = null;
+      }
+      return;
+    }
+
+    const origin = this.getAlertOrigin();
+    const radiusMeters = this.radiusMiles * 1609.344;
+    const hasBreach = !!this.hasActiveThreat || (Array.isArray(this.breachedAircraft) && this.breachedAircraft.length > 0);
+    const hasApproaching = !!this.hasActiveConeWarning || (Array.isArray(this.approachingAircraft) && this.approachingAircraft.length > 0);
+
+    const strokeColor = hasBreach ? '#ef4444' : (hasApproaching ? '#f59e0b' : '#38bdf8');
+    const fillColor = hasBreach ? '#ef4444' : (hasApproaching ? '#f59e0b' : '#38bdf8');
+    const fillOpacity = hasBreach ? 0.08 : (hasApproaching ? 0.05 : 0.03);
+
+    if (!this.proximityCircleLayer) {
+      this.proximityCircleLayer = leaflet.circle([origin.lat, origin.lon], {
+        radius: radiusMeters,
+        color: strokeColor,
+        weight: hasBreach ? 2.5 : (hasApproaching ? 2.0 : 1.5),
+        dashArray: '6, 6',
+        fillColor: fillColor,
+        fillOpacity: fillOpacity,
+        className: `adsb-proximity-ring ${hasBreach ? 'breached' : (hasApproaching ? 'approaching' : '')}`
+      });
+      if (this.proximityCircleLayer && typeof this.proximityCircleLayer.addTo === 'function') {
+        this.proximityCircleLayer.addTo(this.layerGroup);
+      } else if (this.layerGroup && typeof this.layerGroup.addLayer === 'function') {
+        this.layerGroup.addLayer(this.proximityCircleLayer);
+      }
+    } else {
+      if (typeof this.proximityCircleLayer.setLatLng === 'function') {
+        this.proximityCircleLayer.setLatLng([origin.lat, origin.lon]);
+      }
+      if (typeof this.proximityCircleLayer.setRadius === 'function') {
+        this.proximityCircleLayer.setRadius(radiusMeters);
+      }
+      if (typeof this.proximityCircleLayer.setStyle === 'function') {
+        this.proximityCircleLayer.setStyle({
+          color: strokeColor,
+          weight: hasBreach ? 2.5 : (hasApproaching ? 2.0 : 1.5),
+          dashArray: '6, 6',
+          fillColor: fillColor,
+          fillOpacity: fillOpacity,
+          className: `adsb-proximity-ring ${hasBreach ? 'breached' : (hasApproaching ? 'approaching' : '')}`
+        });
+      }
+    }
+
+    const ringEl = (this.proximityCircleLayer && typeof this.proximityCircleLayer.getElement === 'function') ? this.proximityCircleLayer.getElement() : null;
+    if (ringEl && ringEl.classList) {
+      if (hasBreach) {
+        ringEl.classList.add('breached');
+        ringEl.classList.remove('approaching');
+      } else if (hasApproaching) {
+        ringEl.classList.add('approaching');
+        ringEl.classList.remove('breached');
+      } else {
+        ringEl.classList.remove('breached');
+        ringEl.classList.remove('approaching');
+      }
+    }
+  },
+
+  onOriginMoved() {
+    const origin = this.getAlertOrigin();
+    const homeLat = origin.lat;
+    const homeLon = origin.lon;
+
+    const rProx = this.radiusMiles * 1609.344;
+    const maxCeiling = this.ceilingFeet || 2500;
+
+    for (const ac of this.aircraft) {
+      if (ac.latitude !== null && ac.longitude !== null && typeof ac.latitude === 'number') {
+        const toRad = Math.PI / 180;
+        const dLat = (homeLat - ac.latitude) * toRad;
+        const dLon = (homeLon - ac.longitude) * toRad;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(ac.latitude * toRad) * Math.cos(homeLat * toRad) * Math.sin(dLon / 2) ** 2;
+        const d = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        ac.distanceMeters = Math.round(d);
+        ac.distanceMiles = parseFloat((d / 1609.344).toFixed(2));
+        ac.distanceNm = parseFloat((d / 1852).toFixed(2));
+
+        const y = Math.sin((homeLon - ac.longitude) * toRad) * Math.cos(homeLat * toRad);
+        const x = Math.cos(ac.latitude * toRad) * Math.sin(homeLat * toRad) - Math.sin(ac.latitude * toRad) * Math.cos(homeLat * toRad) * Math.cos((homeLon - ac.longitude) * toRad);
+        ac.bearingDeg = Math.round((Math.atan2(y, x) * 180 / Math.PI + 360) % 360);
+        const CARDINALS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+        ac.bearingCardinal = CARDINALS[Math.round(ac.bearingDeg / 22.5) % 16];
+
+        if (!ac.isLanding && !ac.coneSuppressed) {
+          const coneEval = this.evaluateAircraftCone(ac, homeLat, homeLon);
+          ac.coneLengthMeters = coneEval.coneLengthMeters;
+          ac.offBoresightDeg = coneEval.offBoresightDeg;
+          ac.isConeWarning = coneEval.isConeWarning;
+          ac.etaSeconds = coneEval.etaSeconds;
+          ac.closingSpeedKts = coneEval.closingSpeedKts;
+          ac.entryDistanceMeters = coneEval.entryDistanceMeters;
+        }
+
+        const alt = ac.altitude !== null ? ac.altitude : (ac.altitudeGeometric !== null ? ac.altitudeGeometric : null);
+        ac.isWithinRadius = (d <= rProx);
+        ac.isBreached = ac.isWithinRadius && !ac.isLanding && !ac.coneSuppressed && (alt === null || alt <= maxCeiling);
+        ac.status = ac.isBreached ? 'breached' : (ac.isConeWarning ? 'approaching' : (ac.isLanding ? 'landing' : 'safe'));
+      }
+    }
+
+    this.breachedAircraft = this.aircraft.filter(a => a.isBreached);
+    this.approachingAircraft = this.aircraft.filter(a => !a.isBreached && (a.isConeWarning || a.status === 'approaching'));
+
+    this.updateVisualBanner();
+    this.renderAirspaceOverlays();
+    this.updateDrawerAircraftList();
+    this.updateControlsUI();
+
+    // Debounced stream re-subscription if coordinates moved > 25 meters (~0.00025 deg)
+    if (this.streamConnected && this.streamLat !== null && this.streamLon !== null) {
+      const distDelta = Math.hypot(homeLat - this.streamLat, homeLon - this.streamLon);
+      if (distDelta > 0.00025 || this.streamRadius !== this.radiusMiles) {
+        if (this._reanchorDebounceTimer) clearTimeout(this._reanchorDebounceTimer);
+        this._reanchorDebounceTimer = setTimeout(() => {
+          this.connectStream();
+        }, 350);
+      }
+    }
   },
 
   ensureSvgDefs(m) {
@@ -7227,11 +7428,18 @@ const AdsbAirspaceManager = {
 
   playVoiceAdvisory(aircraft, alertStage = 'breached') {
 
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    if (typeof window === 'undefined') return;
+
+    const nativeTts = !!(window.AalaapiAndroid && typeof window.AalaapiAndroid.speak === 'function');
+
+    if (!nativeTts && !window.speechSynthesis) {
+      if (typeof console !== 'undefined') console.warn('Voice advisory unavailable: no speech engine');
+      return;
+    }
 
     try {
 
-      window.speechSynthesis.cancel();
+      if (!nativeTts) window.speechSynthesis.cancel();
 
       const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
 
@@ -7291,6 +7499,14 @@ const AdsbAirspaceManager = {
 
 
 
+      if (nativeTts) {
+
+        window.AalaapiAndroid.speak(text, 1.05, 1.0);
+
+        return;
+
+      }
+
       const utterance = new SpeechSynthesisUtterance(text);
 
       utterance.rate = 1.05;
@@ -7301,7 +7517,9 @@ const AdsbAirspaceManager = {
 
       window.speechSynthesis.speak(utterance);
 
-    } catch (e) {}
+    } catch (e) {
+      if (typeof console !== 'undefined') console.warn('Voice advisory failed:', e);
+    }
 
   },
 
@@ -8050,27 +8268,11 @@ const AdsbAirspaceManager = {
 
 
 
-    let homeLat = 40.0130;
+    const origin = this.getAlertOrigin();
 
-    let homeLon = -83.1765;
+    const homeLat = origin.lat;
 
-    if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
-
-      const ll = centerMarker.getLatLng();
-
-      homeLat = ll.lat;
-
-      homeLon = ll.lng;
-
-    } else if (typeof map !== 'undefined' && map && map.getCenter) {
-
-      const ll = map.getCenter();
-
-      homeLat = ll.lat;
-
-      homeLon = ll.lng;
-
-    }
+    const homeLon = origin.lon;
 
 
 
@@ -8240,31 +8442,9 @@ const AdsbAirspaceManager = {
 
       } else if (this.streamLat !== null && this.streamMode !== 'android-tcp' && this.streamMode !== 'android-http') {
 
-        // Check if home point moved significantly (> ~500m) or radius changed
+        const curOrigin = this.getAlertOrigin();
 
-        let curLat = 40.0130;
-
-        let curLon = -83.1765;
-
-        if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
-
-          const ll = centerMarker.getLatLng();
-
-          curLat = ll.lat;
-
-          curLon = ll.lng;
-
-        } else if (typeof map !== 'undefined' && map && map.getCenter) {
-
-          const ll = map.getCenter();
-
-          curLat = ll.lat;
-
-          curLon = ll.lng;
-
-        }
-
-        if (Math.abs(curLat - this.streamLat) > 0.005 || Math.abs(curLon - this.streamLon) > 0.005 || this.streamRadius !== this.radiusMiles) {
+        if (Math.abs(curOrigin.lat - this.streamLat) > 0.00025 || Math.abs(curOrigin.lon - this.streamLon) > 0.00025 || this.streamRadius !== this.radiusMiles) {
 
           this.connectStream();
 
@@ -8316,27 +8496,11 @@ const AdsbAirspaceManager = {
 
 
 
-    let homeLat = 40.0130;
+    const origin = this.getAlertOrigin();
 
-    let homeLon = -83.1765;
+    const homeLat = origin.lat;
 
-    if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
-
-      const ll = centerMarker.getLatLng();
-
-      homeLat = ll.lat;
-
-      homeLon = ll.lng;
-
-    } else if (typeof map !== 'undefined' && map && map.getCenter) {
-
-      const ll = map.getCenter();
-
-      homeLat = ll.lat;
-
-      homeLon = ll.lng;
-
-    }
+    const homeLon = origin.lon;
 
 
 
@@ -8475,27 +8639,11 @@ const AdsbAirspaceManager = {
 
     try {
 
-      let homeLat = 40.0130;
+      const origin = this.getAlertOrigin();
 
-      let homeLon = -83.1765;
+    const homeLat = origin.lat;
 
-      if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
-
-        const ll = centerMarker.getLatLng();
-
-        homeLat = ll.lat;
-
-        homeLon = ll.lng;
-
-      } else if (typeof map !== 'undefined' && map && map.getCenter) {
-
-        const ll = map.getCenter();
-
-        homeLat = ll.lat;
-
-        homeLon = ll.lng;
-
-      }
+    const homeLon = origin.lon;
 
 
 
@@ -8534,6 +8682,11 @@ const AdsbAirspaceManager = {
   },
 
 
+
+  renderAirspaceOverlays() {
+    this.updateMapMarkers();
+    this.updateProximityRing();
+  },
 
   updateVisualBanner() {
 
@@ -9654,6 +9807,21 @@ const AdsbAirspaceManager = {
 
     if (descentGradToggle) descentGradToggle.checked = this.descentGradientEnabled;
 
+    const anchorSelect = document.getElementById('adsb-anchor-mode-select');
+
+    if (anchorSelect) anchorSelect.value = this.alertAnchorMode || 'auto';
+
+    const ringToggle = document.getElementById('adsb-show-proximity-ring-toggle');
+
+    if (ringToggle) ringToggle.checked = this.showProximityRing;
+
+    const anchorBadge = document.getElementById('adsb-active-anchor-badge');
+
+    if (anchorBadge) {
+      const orig = this.getAlertOrigin();
+      anchorBadge.textContent = `📍 Anchor: ${orig.label}`;
+    }
+
     const landingToggle = document.getElementById('adsb-airport-landing-toggle');
 
     if (landingToggle) landingToggle.checked = this.suppressAirportLanding;
@@ -10197,27 +10365,11 @@ const AdsbAirspaceManager = {
 
 
 
-    let homeLat = 40.0130;
+    const origin = this.getAlertOrigin();
 
-    let homeLon = -83.1765;
+    const homeLat = origin.lat;
 
-    if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
-
-      const ll = centerMarker.getLatLng();
-
-      homeLat = ll.lat;
-
-      homeLon = ll.lng;
-
-    } else if (typeof map !== 'undefined' && map && map.getCenter) {
-
-      const ll = map.getCenter();
-
-      homeLat = ll.lat;
-
-      homeLon = ll.lng;
-
-    }
+    const homeLon = origin.lon;
 
 
 
@@ -10921,6 +11073,38 @@ const AdsbAirspaceManager = {
 
     }
 
+    const anchorSelect = document.getElementById('adsb-anchor-mode-select');
+
+    if (anchorSelect) {
+
+      anchorSelect.addEventListener('change', (e) => {
+
+        this.alertAnchorMode = e.target.value || 'auto';
+
+        this.saveSettings();
+
+        this.onOriginMoved();
+
+      });
+
+    }
+
+    const ringToggle = document.getElementById('adsb-show-proximity-ring-toggle');
+
+    if (ringToggle) {
+
+      ringToggle.addEventListener('change', (e) => {
+
+        this.showProximityRing = !!e.target.checked;
+
+        this.saveSettings();
+
+        this.updateProximityRing();
+
+      });
+
+    }
+
 
 
     const conesToggle = document.getElementById('adsb-cones-toggle');
@@ -11506,7 +11690,8 @@ const AdsbAirspaceManager = {
 
       alertCloseBtn.addEventListener('click', () => {
 
-        const banner = document.getElementById('adsb-alert-banner');
+        this.updateProximityRing();
+    const banner = document.getElementById('adsb-alert-banner');
 
         if (banner) banner.classList.add('hidden');
 
