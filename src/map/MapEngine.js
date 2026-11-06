@@ -1088,6 +1088,7 @@ let historicalDroneMarker = null;
 let historicalPlannedLine = null;
 let historicalActualLine = null;
 let historicalTrafficGroup = null;
+let historicalTrafficMarkers = new Map();
 let historicalDriftLine = null;
 
 function createDroneSvgHtml(headingDeg = 0) {
@@ -1251,6 +1252,7 @@ function clear2dHistoricalTracks() {
   historicalPlannedLine = null;
   historicalActualLine = null;
   historicalTrafficGroup = null;
+  historicalTrafficMarkers.clear();
   historicalDriftLine = null;
 }
 
@@ -1296,8 +1298,8 @@ function getReplayAircraftMarkerHtml(craft) {
   );
 
   const innerClass = isBreached
-    ? `adsb-marker-inner breached ${classified.type}`
-    : `adsb-marker-inner ${classified.type}`;
+    ? `adsb-marker-inner historical-replay breached ${classified.type}`
+    : `adsb-marker-inner historical-replay ${classified.type}`;
 
   const track = Math.round(craft.track !== undefined ? craft.track : (craft.heading || 0));
 
@@ -1320,8 +1322,8 @@ function getReplayDroneMarkerHtml(drone) {
   );
 
   const innerClass = isBreached
-    ? 'adsb-marker-inner breached drone'
-    : 'adsb-marker-inner drone';
+    ? 'adsb-marker-inner historical-replay breached drone'
+    : 'adsb-marker-inner historical-replay drone';
 
   const track = Math.round(drone.track !== undefined ? drone.track : (drone.heading || 0));
 
@@ -1352,25 +1354,21 @@ function update2dDronePosition(point, airspace, crossTrackDriftMeters, crossTrac
     }
   }
 
-  // 4D Synchronized Airspace Traffic (Issue #142)
-  if (historicalReplayGroup) {
+  // 4D Synchronized Airspace Traffic (Issue #142, Issue #235, Issue #238)
+  if (historicalReplayGroup && airspace !== undefined) {
     if (!historicalTrafficGroup) {
       historicalTrafficGroup = L.layerGroup().addTo(historicalReplayGroup);
     }
-    historicalTrafficGroup.clearLayers();
 
     if (airspace) {
+      const activeKeys = new Set();
       const adsbList = airspace.activeAdsb || [];
       adsbList.forEach(craft => {
         if (typeof craft.lat === 'number' && typeof craft.lon === 'number') {
-          const { iconHtml, classified, isBreached } = getReplayAircraftMarkerHtml(craft);
-          const planeIcon = L.divIcon({
-            className: 'historical-traffic-plane-icon adsb-leaflet-marker-container',
-            html: iconHtml,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
-          });
-          const m = L.marker([craft.lat, craft.lon], { icon: planeIcon }).addTo(historicalTrafficGroup);
+          const craftKey = 'adsb_' + (craft.hex || craft.icao || craft.callsign || `${craft.lat}_${craft.lon}`);
+          activeKeys.add(craftKey);
+
+          const { iconHtml, classified, isBreached, track } = getReplayAircraftMarkerHtml(craft);
           const callsign = craft.callsign || craft.icao || craft.hex || 'ADS-B';
           const distKm = (craft.distanceMeters / 1000).toFixed(2);
           const distMi = (craft.distanceMeters * 0.000621371).toFixed(2);
@@ -1380,37 +1378,98 @@ function update2dDronePosition(point, airspace, crossTrackDriftMeters, crossTrac
           const speedStr = craft.speed ? `${Math.round(craft.speed)} kts` : '';
           const typeStr = craft.aircraftType ? ` [${craft.aircraftType}]` : '';
 
-          const tooltipContent = `<strong>${callsign}</strong>${typeStr}<br><span style="font-weight: 600; color: #38bdf8;">${classified.emoji} ${classified.label}</span><br>Alt: ${altStr} • ${speedStr}<br>Dist: ${distMi} mi (${distKm} km)`;
-          m.bindTooltip(tooltipContent, {
-            className: `adsb-plane-tooltip ${isBreached ? 'breached' : ''}`,
-            direction: 'top',
-            offset: [0, -12]
-          });
+          const tooltipContent = `<div class="adsb-historical-badge">⏳ Recorded Flight Replay</div><br><strong>${callsign} (Recorded)</strong>${typeStr}<br><span style="font-weight: 600; color: #c084fc;">${classified.emoji} ${classified.label} • Historical</span><br>Alt: ${altStr} • ${speedStr}<br>Dist: ${distMi} mi (${distKm} km)`;
+
+          let m = historicalTrafficMarkers.get(craftKey);
+          if (m) {
+            m.setLatLng([craft.lat, craft.lon]);
+            const mEl = m.getElement();
+            if (mEl) {
+              const rotContainer = mEl.querySelector('.adsb-map-aircraft-marker');
+              if (rotContainer) rotContainer.style.transform = `rotate(${track}deg)`;
+              const innerEl = mEl.querySelector('.adsb-marker-inner');
+              if (innerEl) {
+                if (isBreached) innerEl.classList.add('breached');
+                else innerEl.classList.remove('breached');
+              }
+            }
+            if (m.getTooltip()) {
+              m.setTooltipContent(tooltipContent);
+            }
+          } else {
+            const planeIcon = L.divIcon({
+              className: 'historical-traffic-plane-icon adsb-leaflet-marker-container',
+              html: iconHtml,
+              iconSize: [32, 32],
+              iconAnchor: [16, 16]
+            });
+            m = L.marker([craft.lat, craft.lon], { icon: planeIcon }).addTo(historicalTrafficGroup);
+            m.bindTooltip(tooltipContent, {
+              className: `adsb-plane-tooltip historical-replay ${isBreached ? 'breached' : ''}`,
+              direction: 'top',
+              offset: [0, -12]
+            });
+            historicalTrafficMarkers.set(craftKey, m);
+          }
         }
       });
 
       const ridList = airspace.activeRemoteId || [];
       ridList.forEach(drone => {
         if (typeof drone.lat === 'number' && typeof drone.lon === 'number') {
-          const { iconHtml, isBreached } = getReplayDroneMarkerHtml(drone);
-          const droneIcon = L.divIcon({
-            className: 'historical-traffic-drone-icon adsb-leaflet-marker-container',
-            html: iconHtml,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
-          });
-          const m = L.marker([drone.lat, drone.lon], { icon: droneIcon }).addTo(historicalTrafficGroup);
+          const droneKey = 'rid_' + (drone.uasId || drone.id || `${drone.lat}_${drone.lon}`);
+          activeKeys.add(droneKey);
+
+          const { iconHtml, isBreached, track } = getReplayDroneMarkerHtml(drone);
           const droneId = drone.uasId || drone.id || 'RemoteID Drone';
           const distM = Math.round(drone.distanceMeters || 0);
           const altM = Math.round(drone.alt || drone.altitude || 0);
-          const tooltipContent = `<strong>🛸 ${droneId}</strong><br><span style="font-weight: 600; color: #38bdf8;">Broadcast Remote ID</span><br>Alt: ${altM} m (${Math.round(altM * 3.28084)} ft)<br>Dist: ${distM} m`;
-          m.bindTooltip(tooltipContent, {
-            className: `adsb-plane-tooltip ${isBreached ? 'breached' : ''}`,
-            direction: 'top',
-            offset: [0, -12]
-          });
+          const tooltipContent = `<div class="adsb-historical-badge">⏳ Recorded Remote ID</div><br><strong>🛸 ${droneId} (Recorded)</strong><br><span style="font-weight: 600; color: #c084fc;">Broadcast Remote ID • Historical</span><br>Alt: ${altM} m (${Math.round(altM * 3.28084)} ft)<br>Dist: ${distM} m`;
+
+          let m = historicalTrafficMarkers.get(droneKey);
+          if (m) {
+            m.setLatLng([drone.lat, drone.lon]);
+            const mEl = m.getElement();
+            if (mEl) {
+              const rotContainer = mEl.querySelector('.adsb-map-aircraft-marker');
+              if (rotContainer) rotContainer.style.transform = `rotate(${track}deg)`;
+              const innerEl = mEl.querySelector('.adsb-marker-inner');
+              if (innerEl) {
+                if (isBreached) innerEl.classList.add('breached');
+                else innerEl.classList.remove('breached');
+              }
+            }
+            if (m.getTooltip()) {
+              m.setTooltipContent(tooltipContent);
+            }
+          } else {
+            const droneIcon = L.divIcon({
+              className: 'historical-traffic-drone-icon adsb-leaflet-marker-container',
+              html: iconHtml,
+              iconSize: [32, 32],
+              iconAnchor: [16, 16]
+            });
+            m = L.marker([drone.lat, drone.lon], { icon: droneIcon }).addTo(historicalTrafficGroup);
+            m.bindTooltip(tooltipContent, {
+              className: `adsb-plane-tooltip historical-replay ${isBreached ? 'breached' : ''}`,
+              direction: 'top',
+              offset: [0, -12]
+            });
+            historicalTrafficMarkers.set(droneKey, m);
+          }
         }
       });
+
+      // Remove inactive markers
+      for (const [key, marker] of historicalTrafficMarkers.entries()) {
+        if (!activeKeys.has(key)) {
+          historicalTrafficGroup.removeLayer(marker);
+          historicalTrafficMarkers.delete(key);
+        }
+      }
+    } else {
+      historicalTrafficGroup.clearLayers();
+      historicalTrafficMarkers.clear();
     }
 
     // Dynamic Elastic Cross-Track Drift Vector (Issue #142)

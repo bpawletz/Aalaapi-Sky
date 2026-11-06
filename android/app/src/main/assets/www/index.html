@@ -6867,6 +6867,57 @@ body.modal-drag-active {
   animation: adsbPulseRing 1.5s infinite ease-out;
 }
 
+/* Historical Replay ADS-B Marker Theme (Temporal Violet / Chrono) - Issue #238 */
+.adsb-marker-inner.historical-replay {
+  background: rgba(28, 18, 52, 0.92);
+  border: 1.5px dashed #c084fc;
+  color: #d8b4fe;
+  box-shadow: 0 4px 12px rgba(126, 34, 206, 0.35);
+}
+
+.adsb-marker-inner.historical-replay.helicopter {
+  border-color: #f59e0b;
+  color: #fde047;
+}
+
+.adsb-marker-inner.historical-replay.jet {
+  border-color: #c084fc;
+  color: #e9d5ff;
+}
+
+.adsb-marker-inner.historical-replay.prop {
+  border-color: #34d399;
+  color: #a7f3d0;
+}
+
+.adsb-marker-inner.historical-replay.breached {
+  border: 2px solid #ef4444 !important;
+  color: #f87171 !important;
+  background: rgba(45, 10, 25, 0.95);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.6), 0 0 10px rgba(192, 132, 252, 0.5);
+  animation: adsbPulseRing 1.5s infinite ease-out;
+}
+
+/* Historical Tooltip & Badge Styling */
+.adsb-plane-tooltip.historical-replay {
+  border-color: rgba(192, 132, 252, 0.6) !important;
+  background: rgba(18, 10, 32, 0.94) !important;
+}
+
+.adsb-historical-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.15);
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-bottom: 2px;
+}
+
 /* ADS-B Aircraft Type Badges & Chips */
 .adsb-type-chip {
   display: inline-flex;
@@ -8486,7 +8537,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.222.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.222.2</span></h1>
         </div>
       </div>
 
@@ -15782,7 +15833,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.222.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.222.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15942,6 +15993,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                                         <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.222.2):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>CI Android Build Hang Fix (Closes #239):</strong> Disabled Gradle daemon and legacy Jetifier scanning to eliminate stalls on GitHub Actions runners, enabling fast and reliable APK compilation.</li>
+              </ul>
+              <br>
               <strong style="color: var(--text-main);">Changelog (v1.222.1):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>GitHub Actions Android Cloud Build Fix (Closes #237):</strong> Resolved <code>sdkmanager</code> exit code 1 failure in GitHub Actions by removing redundant setup-android action and using runner's native Android SDK.</li>
@@ -25889,29 +25945,12 @@ const PlaybackManager = {
   },
 
   /**
-   * Seek to a specific index or fractional progress (0.0 to 1.0)
+   * Build complete 4D replay frame payload (airspace, radar, drift vectors, exclusion breaches)
+   * Unified between seekTo and real-time playback loop ticks (Issue #238)
    */
-  seekTo(target, options = {}) {
-    if (!this.points || this.points.length === 0) return;
-    const maxIdx = this.points.length - 1;
-
-    let targetIdx;
-    if (typeof target === 'number') {
-      if (options.isFraction) {
-        targetIdx = Math.max(0, Math.min(target * maxIdx, maxIdx));
-      } else {
-        targetIdx = Math.max(0, Math.min(target, maxIdx));
-      }
-    } else {
-      targetIdx = 0;
-    }
-
-    this.fractionalIndex = targetIdx;
-    this.currentIndex = Math.min(Math.floor(targetIdx), maxIdx);
-
-    const pt = this.getInterpolatedPoint();
+  _buildReplayPayload(pt, fractionalIdx, maxIdx) {
     if (this.durationSeconds > 0 && maxIdx > 0) {
-      this.elapsedSeconds = (targetIdx / maxIdx) * this.durationSeconds;
+      this.elapsedSeconds = (fractionalIdx / maxIdx) * this.durationSeconds;
     }
 
     // Determine current UTC millisecond epoch
@@ -25949,10 +25988,10 @@ const PlaybackManager = {
       this.activeExclusionBreach = TelemetryInterpolator.checkExclusionZoneBreach(pt, exclusionZones);
     }
 
-    const payload = {
+    return {
       index: this.currentIndex,
-      fractionalIndex: this.fractionalIndex,
-      progress: maxIdx > 0 ? (targetIdx / maxIdx) : 0,
+      fractionalIndex: fractionalIdx,
+      progress: maxIdx > 0 ? (fractionalIdx / maxIdx) : 0,
       point: pt,
       elapsedSeconds: this.elapsedSeconds,
       currentReplayTimeUtc: this.currentReplayTimeUtc,
@@ -25963,6 +26002,31 @@ const PlaybackManager = {
       crossTrackDriftPoint: this.crossTrackDriftPoint,
       exclusionBreach: this.activeExclusionBreach
     };
+  },
+
+  /**
+   * Seek to a specific index or fractional progress (0.0 to 1.0)
+   */
+  seekTo(target, options = {}) {
+    if (!this.points || this.points.length === 0) return;
+    const maxIdx = this.points.length - 1;
+
+    let targetIdx;
+    if (typeof target === 'number') {
+      if (options.isFraction) {
+        targetIdx = Math.max(0, Math.min(target * maxIdx, maxIdx));
+      } else {
+        targetIdx = Math.max(0, Math.min(target, maxIdx));
+      }
+    } else {
+      targetIdx = 0;
+    }
+
+    this.fractionalIndex = targetIdx;
+    this.currentIndex = Math.min(Math.floor(targetIdx), maxIdx);
+
+    const pt = this.getInterpolatedPoint();
+    const payload = this._buildReplayPayload(pt, this.fractionalIndex, maxIdx);
 
     this.emit('seek', payload);
     this.emit('timeupdate', payload);
@@ -26059,17 +26123,9 @@ const PlaybackManager = {
         }
 
         const pt = this.getInterpolatedPoint();
-        if (this.durationSeconds > 0) {
-          this.elapsedSeconds = (this.fractionalIndex / maxIdx) * this.durationSeconds;
-        }
+        const payload = this._buildReplayPayload(pt, this.fractionalIndex, maxIdx);
 
-        this.emit('timeupdate', {
-          index: this.currentIndex,
-          fractionalIndex: this.fractionalIndex,
-          progress: this.fractionalIndex / maxIdx,
-          point: pt,
-          elapsedSeconds: this.elapsedSeconds
-        });
+        this.emit('timeupdate', payload);
       }
 
       if (this.isPlaying) {
@@ -33092,6 +33148,7 @@ let historicalDroneMarker = null;
 let historicalPlannedLine = null;
 let historicalActualLine = null;
 let historicalTrafficGroup = null;
+let historicalTrafficMarkers = new Map();
 let historicalDriftLine = null;
 
 function createDroneSvgHtml(headingDeg = 0) {
@@ -33255,6 +33312,7 @@ function clear2dHistoricalTracks() {
   historicalPlannedLine = null;
   historicalActualLine = null;
   historicalTrafficGroup = null;
+  historicalTrafficMarkers.clear();
   historicalDriftLine = null;
 }
 
@@ -33300,8 +33358,8 @@ function getReplayAircraftMarkerHtml(craft) {
   );
 
   const innerClass = isBreached
-    ? `adsb-marker-inner breached ${classified.type}`
-    : `adsb-marker-inner ${classified.type}`;
+    ? `adsb-marker-inner historical-replay breached ${classified.type}`
+    : `adsb-marker-inner historical-replay ${classified.type}`;
 
   const track = Math.round(craft.track !== undefined ? craft.track : (craft.heading || 0));
 
@@ -33324,8 +33382,8 @@ function getReplayDroneMarkerHtml(drone) {
   );
 
   const innerClass = isBreached
-    ? 'adsb-marker-inner breached drone'
-    : 'adsb-marker-inner drone';
+    ? 'adsb-marker-inner historical-replay breached drone'
+    : 'adsb-marker-inner historical-replay drone';
 
   const track = Math.round(drone.track !== undefined ? drone.track : (drone.heading || 0));
 
@@ -33356,25 +33414,21 @@ function update2dDronePosition(point, airspace, crossTrackDriftMeters, crossTrac
     }
   }
 
-  // 4D Synchronized Airspace Traffic (Issue #142)
-  if (historicalReplayGroup) {
+  // 4D Synchronized Airspace Traffic (Issue #142, Issue #235, Issue #238)
+  if (historicalReplayGroup && airspace !== undefined) {
     if (!historicalTrafficGroup) {
       historicalTrafficGroup = L.layerGroup().addTo(historicalReplayGroup);
     }
-    historicalTrafficGroup.clearLayers();
 
     if (airspace) {
+      const activeKeys = new Set();
       const adsbList = airspace.activeAdsb || [];
       adsbList.forEach(craft => {
         if (typeof craft.lat === 'number' && typeof craft.lon === 'number') {
-          const { iconHtml, classified, isBreached } = getReplayAircraftMarkerHtml(craft);
-          const planeIcon = L.divIcon({
-            className: 'historical-traffic-plane-icon adsb-leaflet-marker-container',
-            html: iconHtml,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
-          });
-          const m = L.marker([craft.lat, craft.lon], { icon: planeIcon }).addTo(historicalTrafficGroup);
+          const craftKey = 'adsb_' + (craft.hex || craft.icao || craft.callsign || `${craft.lat}_${craft.lon}`);
+          activeKeys.add(craftKey);
+
+          const { iconHtml, classified, isBreached, track } = getReplayAircraftMarkerHtml(craft);
           const callsign = craft.callsign || craft.icao || craft.hex || 'ADS-B';
           const distKm = (craft.distanceMeters / 1000).toFixed(2);
           const distMi = (craft.distanceMeters * 0.000621371).toFixed(2);
@@ -33384,37 +33438,98 @@ function update2dDronePosition(point, airspace, crossTrackDriftMeters, crossTrac
           const speedStr = craft.speed ? `${Math.round(craft.speed)} kts` : '';
           const typeStr = craft.aircraftType ? ` [${craft.aircraftType}]` : '';
 
-          const tooltipContent = `<strong>${callsign}</strong>${typeStr}<br><span style="font-weight: 600; color: #38bdf8;">${classified.emoji} ${classified.label}</span><br>Alt: ${altStr} • ${speedStr}<br>Dist: ${distMi} mi (${distKm} km)`;
-          m.bindTooltip(tooltipContent, {
-            className: `adsb-plane-tooltip ${isBreached ? 'breached' : ''}`,
-            direction: 'top',
-            offset: [0, -12]
-          });
+          const tooltipContent = `<div class="adsb-historical-badge">⏳ Recorded Flight Replay</div><br><strong>${callsign} (Recorded)</strong>${typeStr}<br><span style="font-weight: 600; color: #c084fc;">${classified.emoji} ${classified.label} • Historical</span><br>Alt: ${altStr} • ${speedStr}<br>Dist: ${distMi} mi (${distKm} km)`;
+
+          let m = historicalTrafficMarkers.get(craftKey);
+          if (m) {
+            m.setLatLng([craft.lat, craft.lon]);
+            const mEl = m.getElement();
+            if (mEl) {
+              const rotContainer = mEl.querySelector('.adsb-map-aircraft-marker');
+              if (rotContainer) rotContainer.style.transform = `rotate(${track}deg)`;
+              const innerEl = mEl.querySelector('.adsb-marker-inner');
+              if (innerEl) {
+                if (isBreached) innerEl.classList.add('breached');
+                else innerEl.classList.remove('breached');
+              }
+            }
+            if (m.getTooltip()) {
+              m.setTooltipContent(tooltipContent);
+            }
+          } else {
+            const planeIcon = L.divIcon({
+              className: 'historical-traffic-plane-icon adsb-leaflet-marker-container',
+              html: iconHtml,
+              iconSize: [32, 32],
+              iconAnchor: [16, 16]
+            });
+            m = L.marker([craft.lat, craft.lon], { icon: planeIcon }).addTo(historicalTrafficGroup);
+            m.bindTooltip(tooltipContent, {
+              className: `adsb-plane-tooltip historical-replay ${isBreached ? 'breached' : ''}`,
+              direction: 'top',
+              offset: [0, -12]
+            });
+            historicalTrafficMarkers.set(craftKey, m);
+          }
         }
       });
 
       const ridList = airspace.activeRemoteId || [];
       ridList.forEach(drone => {
         if (typeof drone.lat === 'number' && typeof drone.lon === 'number') {
-          const { iconHtml, isBreached } = getReplayDroneMarkerHtml(drone);
-          const droneIcon = L.divIcon({
-            className: 'historical-traffic-drone-icon adsb-leaflet-marker-container',
-            html: iconHtml,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
-          });
-          const m = L.marker([drone.lat, drone.lon], { icon: droneIcon }).addTo(historicalTrafficGroup);
+          const droneKey = 'rid_' + (drone.uasId || drone.id || `${drone.lat}_${drone.lon}`);
+          activeKeys.add(droneKey);
+
+          const { iconHtml, isBreached, track } = getReplayDroneMarkerHtml(drone);
           const droneId = drone.uasId || drone.id || 'RemoteID Drone';
           const distM = Math.round(drone.distanceMeters || 0);
           const altM = Math.round(drone.alt || drone.altitude || 0);
-          const tooltipContent = `<strong>🛸 ${droneId}</strong><br><span style="font-weight: 600; color: #38bdf8;">Broadcast Remote ID</span><br>Alt: ${altM} m (${Math.round(altM * 3.28084)} ft)<br>Dist: ${distM} m`;
-          m.bindTooltip(tooltipContent, {
-            className: `adsb-plane-tooltip ${isBreached ? 'breached' : ''}`,
-            direction: 'top',
-            offset: [0, -12]
-          });
+          const tooltipContent = `<div class="adsb-historical-badge">⏳ Recorded Remote ID</div><br><strong>🛸 ${droneId} (Recorded)</strong><br><span style="font-weight: 600; color: #c084fc;">Broadcast Remote ID • Historical</span><br>Alt: ${altM} m (${Math.round(altM * 3.28084)} ft)<br>Dist: ${distM} m`;
+
+          let m = historicalTrafficMarkers.get(droneKey);
+          if (m) {
+            m.setLatLng([drone.lat, drone.lon]);
+            const mEl = m.getElement();
+            if (mEl) {
+              const rotContainer = mEl.querySelector('.adsb-map-aircraft-marker');
+              if (rotContainer) rotContainer.style.transform = `rotate(${track}deg)`;
+              const innerEl = mEl.querySelector('.adsb-marker-inner');
+              if (innerEl) {
+                if (isBreached) innerEl.classList.add('breached');
+                else innerEl.classList.remove('breached');
+              }
+            }
+            if (m.getTooltip()) {
+              m.setTooltipContent(tooltipContent);
+            }
+          } else {
+            const droneIcon = L.divIcon({
+              className: 'historical-traffic-drone-icon adsb-leaflet-marker-container',
+              html: iconHtml,
+              iconSize: [32, 32],
+              iconAnchor: [16, 16]
+            });
+            m = L.marker([drone.lat, drone.lon], { icon: droneIcon }).addTo(historicalTrafficGroup);
+            m.bindTooltip(tooltipContent, {
+              className: `adsb-plane-tooltip historical-replay ${isBreached ? 'breached' : ''}`,
+              direction: 'top',
+              offset: [0, -12]
+            });
+            historicalTrafficMarkers.set(droneKey, m);
+          }
         }
       });
+
+      // Remove inactive markers
+      for (const [key, marker] of historicalTrafficMarkers.entries()) {
+        if (!activeKeys.has(key)) {
+          historicalTrafficGroup.removeLayer(marker);
+          historicalTrafficMarkers.delete(key);
+        }
+      }
+    } else {
+      historicalTrafficGroup.clearLayers();
+      historicalTrafficMarkers.clear();
     }
 
     // Dynamic Elastic Cross-Track Drift Vector (Issue #142)

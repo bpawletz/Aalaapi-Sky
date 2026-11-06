@@ -50,8 +50,10 @@ jobs:
 
       - name: Build Debug APK
         working-directory: ./android
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
         run: |
-          gradle assembleDebug --stacktrace
+          gradle assembleDebug --no-daemon --max-workers=2 --stacktrace
 
       - name: Verify APK Generated
         run: |

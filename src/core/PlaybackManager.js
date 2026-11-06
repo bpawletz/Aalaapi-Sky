@@ -275,29 +275,12 @@ const PlaybackManager = {
   },
 
   /**
-   * Seek to a specific index or fractional progress (0.0 to 1.0)
+   * Build complete 4D replay frame payload (airspace, radar, drift vectors, exclusion breaches)
+   * Unified between seekTo and real-time playback loop ticks (Issue #238)
    */
-  seekTo(target, options = {}) {
-    if (!this.points || this.points.length === 0) return;
-    const maxIdx = this.points.length - 1;
-
-    let targetIdx;
-    if (typeof target === 'number') {
-      if (options.isFraction) {
-        targetIdx = Math.max(0, Math.min(target * maxIdx, maxIdx));
-      } else {
-        targetIdx = Math.max(0, Math.min(target, maxIdx));
-      }
-    } else {
-      targetIdx = 0;
-    }
-
-    this.fractionalIndex = targetIdx;
-    this.currentIndex = Math.min(Math.floor(targetIdx), maxIdx);
-
-    const pt = this.getInterpolatedPoint();
+  _buildReplayPayload(pt, fractionalIdx, maxIdx) {
     if (this.durationSeconds > 0 && maxIdx > 0) {
-      this.elapsedSeconds = (targetIdx / maxIdx) * this.durationSeconds;
+      this.elapsedSeconds = (fractionalIdx / maxIdx) * this.durationSeconds;
     }
 
     // Determine current UTC millisecond epoch
@@ -335,10 +318,10 @@ const PlaybackManager = {
       this.activeExclusionBreach = TelemetryInterpolator.checkExclusionZoneBreach(pt, exclusionZones);
     }
 
-    const payload = {
+    return {
       index: this.currentIndex,
-      fractionalIndex: this.fractionalIndex,
-      progress: maxIdx > 0 ? (targetIdx / maxIdx) : 0,
+      fractionalIndex: fractionalIdx,
+      progress: maxIdx > 0 ? (fractionalIdx / maxIdx) : 0,
       point: pt,
       elapsedSeconds: this.elapsedSeconds,
       currentReplayTimeUtc: this.currentReplayTimeUtc,
@@ -349,6 +332,31 @@ const PlaybackManager = {
       crossTrackDriftPoint: this.crossTrackDriftPoint,
       exclusionBreach: this.activeExclusionBreach
     };
+  },
+
+  /**
+   * Seek to a specific index or fractional progress (0.0 to 1.0)
+   */
+  seekTo(target, options = {}) {
+    if (!this.points || this.points.length === 0) return;
+    const maxIdx = this.points.length - 1;
+
+    let targetIdx;
+    if (typeof target === 'number') {
+      if (options.isFraction) {
+        targetIdx = Math.max(0, Math.min(target * maxIdx, maxIdx));
+      } else {
+        targetIdx = Math.max(0, Math.min(target, maxIdx));
+      }
+    } else {
+      targetIdx = 0;
+    }
+
+    this.fractionalIndex = targetIdx;
+    this.currentIndex = Math.min(Math.floor(targetIdx), maxIdx);
+
+    const pt = this.getInterpolatedPoint();
+    const payload = this._buildReplayPayload(pt, this.fractionalIndex, maxIdx);
 
     this.emit('seek', payload);
     this.emit('timeupdate', payload);
@@ -445,17 +453,9 @@ const PlaybackManager = {
         }
 
         const pt = this.getInterpolatedPoint();
-        if (this.durationSeconds > 0) {
-          this.elapsedSeconds = (this.fractionalIndex / maxIdx) * this.durationSeconds;
-        }
+        const payload = this._buildReplayPayload(pt, this.fractionalIndex, maxIdx);
 
-        this.emit('timeupdate', {
-          index: this.currentIndex,
-          fractionalIndex: this.fractionalIndex,
-          progress: this.fractionalIndex / maxIdx,
-          point: pt,
-          elapsedSeconds: this.elapsedSeconds
-        });
+        this.emit('timeupdate', payload);
       }
 
       if (this.isPlaying) {
