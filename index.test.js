@@ -40769,13 +40769,18 @@ describe('Issue #233 & v1.221.1: Ambient ADS-B Replay Synchronization & Spatial 
 
   test('DiagnosticsDatabase.getEnvironmentalReplay retrieves record by temporal overlap window', () => {
     const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
-    const dbPath = path.resolve(__dirname, 'scratch/missions.db');
-    if (!fs.existsSync(dbPath)) return; // Skip if sqlite db not present in environment
+    const diagDb = new DiagnosticsDatabase(':memory:');
 
-    const diagDb = new DiagnosticsDatabase(dbPath);
     // Target flight start/end time window
     const startUtcMs = 1793919525000;
     const endUtcMs = 1793919868000;
+
+    diagDb.saveEnvironmentalReplay('FlightRecord_2026-11-05_[17-58-48].txt', {
+      window: { from: startUtcMs, to: endUtcMs },
+      adsb: [
+        { hex: 'a9a1f0', callsign: 'N72HP', timestamp: startUtcMs + 1000 }
+      ]
+    });
 
     const envData = diagDb.getEnvironmentalReplay('FlightRecord_2026-11-05_[17-58-48].txt', {
       startUtcMs,
@@ -41152,9 +41157,9 @@ describe('Issue #242 & v1.222.5: Historical ADS-B Pre-Discovery Pruning & Tempor
   });
 });
 
-describe('Issue #243 & v1.222.6: Android FrameLayout Window Inset Clearance & Hermetic CI Suite', () => {
-  test('Version consistency: package.json, CHANGELOG, templates match v1.222.6', () => {
-    assertVersionConsistency('1.222.6');
+describe('Issue #243 & v1.222.7: Android FrameLayout Window Inset Clearance & Hermetic CI Suite', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.222.7', () => {
+    assertVersionConsistency('1.222.7');
   });
 
   test('MainActivity.kt wraps WebView in FrameLayout with getStatusBarHeightFallback and WindowInsets padding', () => {
@@ -41169,15 +41174,15 @@ describe('Issue #243 & v1.222.6: Android FrameLayout Window Inset Clearance & He
     assert.ok(mainActivity.includes('ViewCompat.requestApplyInsets(rootLayout)'), 'MainActivity must request initial insets application');
   });
 
-  test('Android Gradle build config matches v1.222.6 (versionCode 12226) and APK assets match v1.222.6', () => {
+  test('Android Gradle build config matches v1.222.7 (versionCode 12227) and APK assets match v1.222.7', () => {
     const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
-    assert.ok(gradleKts.includes('versionCode = 12226'), 'build.gradle.kts must have versionCode = 12226');
-    assert.ok(gradleKts.includes('versionName = "1.222.6"'), 'build.gradle.kts must have versionName = "1.222.6"');
+    assert.ok(gradleKts.includes('versionCode = 12227'), 'build.gradle.kts must have versionCode = 12227');
+    assert.ok(gradleKts.includes('versionName = "1.222.7"'), 'build.gradle.kts must have versionName = "1.222.7"');
     const assetHtmlPath = path.resolve(__dirname, 'android/app/src/main/assets/www/index.html');
     if (fs.existsSync(assetHtmlPath)) {
       const assetHtml = fs.readFileSync(assetHtmlPath, 'utf8');
-      assert.ok(assetHtml.includes('>Version 1.222.6</span>'), 'Android asset index.html must contain Version 1.222.6 in About modal');
-      assert.ok(assetHtml.includes('>v1.222.6</span>'), 'Android asset index.html must contain v1.222.6 in header version badge');
+      assert.ok(assetHtml.includes('>Version 1.222.7</span>'), 'Android asset index.html must contain Version 1.222.7 in About modal');
+      assert.ok(assetHtml.includes('>v1.222.7</span>'), 'Android asset index.html must contain v1.222.7 in header version badge');
     }
   });
 });

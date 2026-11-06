@@ -1,3 +1,12 @@
+## [1.222.7] - 2026-11-06
+
+### 🐛 Fixed
+
+#### Under the Hood & Technical Details
+- **index.test.js (Hermetic CI Environmental Replay Fixture — Closes #243)**:
+  - Fixed test failure in GitHub Actions build 540 (`DiagnosticsDatabase.getEnvironmentalReplay retrieves record by temporal overlap window`).
+  - Switched test instance to an isolated `:memory:` SQLite database and seeded a hermetic environmental replay fixture, eliminating reliance on local gitignored `scratch/missions.db` when auto-created empty on CI runners.
+
 ## [1.222.6] - 2026-11-05
 
 ### 🐛 Fixed
