@@ -118,8 +118,8 @@ global.localStorage = {
 };
 global.navigator = {};
 global.L = {
-  layerGroup: () => ({ clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {} }),
-  featureGroup: () => ({ clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {} }),
+  layerGroup: () => ({ clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {}, addTo: function() { return this; }, remove: function() { return this; } }),
+  featureGroup: () => ({ clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {}, addTo: function() { return this; }, remove: function() { return this; } }),
   icon: () => ({}),
   divIcon: () => ({}),
   marker: (latlng) => {
@@ -41028,7 +41028,7 @@ describe('Issue #241 & v1.222.4: Android Status Bar Insets & Native MTP Companio
     const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
     const codeMatch = gradle.match(/versionCode = (\d+)/);
     assert.ok(codeMatch && parseInt(codeMatch[1]) >= 12224, 'Must have versionCode >= 12224');
-    assert.ok(gradle.includes('versionName = "1.222.'), 'Must have valid versionName');
+    assert.ok(gradle.match(/versionName = "1\.\d+\.\d+"/) || gradle.includes('versionName = "1.22'), 'Must have valid versionName');
   });
 
   test('index_template.html and index.html include viewport-fit=cover for safe-area insets', () => {
@@ -41158,10 +41158,6 @@ describe('Issue #242 & v1.222.5: Historical ADS-B Pre-Discovery Pruning & Tempor
 });
 
 describe('Issue #243 & v1.222.7: Android FrameLayout Window Inset Clearance & Hermetic CI Suite', () => {
-  test('Version consistency: package.json, CHANGELOG, templates match v1.222.7', () => {
-    assertVersionConsistency('1.222.7');
-  });
-
   test('MainActivity.kt wraps WebView in FrameLayout with getStatusBarHeightFallback and WindowInsets padding', () => {
     const mainActivity = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/java/com/aalaapi/sky/MainActivity.kt'), 'utf8');
     assert.ok(mainActivity.includes('private lateinit var rootLayout: FrameLayout'), 'MainActivity must declare rootLayout: FrameLayout');
@@ -41173,17 +41169,167 @@ describe('Issue #243 & v1.222.7: Android FrameLayout Window Inset Clearance & He
     assert.ok(mainActivity.includes('val topInset = maxOf(insets.top, getStatusBarHeightFallback())'), 'Top inset must enforce fallback status bar clearance');
     assert.ok(mainActivity.includes('ViewCompat.requestApplyInsets(rootLayout)'), 'MainActivity must request initial insets application');
   });
+});
 
-  test('Android Gradle build config matches v1.222.7 (versionCode 12227) and APK assets match v1.222.7', () => {
+describe('Issue #244 & v1.223.0: Smart Predictive ADS-B Trajectory Cones & Early Alerting', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.223.0', () => {
+    assertVersionConsistency('1.223.0');
+  });
+
+  test('Android Gradle build config matches v1.223.0 (versionCode 12230) and APK assets match v1.223.0', () => {
     const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
-    assert.ok(gradleKts.includes('versionCode = 12227'), 'build.gradle.kts must have versionCode = 12227');
-    assert.ok(gradleKts.includes('versionName = "1.222.7"'), 'build.gradle.kts must have versionName = "1.222.7"');
+    assert.ok(gradleKts.includes('versionCode = 12230'), 'build.gradle.kts must have versionCode = 12230');
+    assert.ok(gradleKts.includes('versionName = "1.223.0"'), 'build.gradle.kts must have versionName = "1.223.0"');
     const assetHtmlPath = path.resolve(__dirname, 'android/app/src/main/assets/www/index.html');
     if (fs.existsSync(assetHtmlPath)) {
       const assetHtml = fs.readFileSync(assetHtmlPath, 'utf8');
-      assert.ok(assetHtml.includes('>Version 1.222.7</span>'), 'Android asset index.html must contain Version 1.222.7 in About modal');
-      assert.ok(assetHtml.includes('>v1.222.7</span>'), 'Android asset index.html must contain v1.222.7 in header version badge');
+      assert.ok(assetHtml.includes('>Version 1.223.0</span>'), 'Android asset index.html must contain Version 1.223.0 in About modal');
+      assert.ok(assetHtml.includes('>v1.223.0</span>'), 'Android asset index.html must contain v1.223.0 in header version badge');
     }
+  });
+
+  test('AdsbAirspaceManager calculates destination points, angular differences, and cone polygons', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+    assert.ok(AdsbAirspaceManager, 'AdsbAirspaceManager must be exported from ApiClient.js');
+
+    // Test spherical destination projection
+    const dest = AdsbAirspaceManager.calculateDestinationPoint(41.3215, -88.9950, 90, 5000);
+    assert.ok(dest.lat !== undefined && dest.lon !== undefined);
+    assert.ok(dest.lon > -88.9950, 'Heading 90 (East) should increase longitude');
+
+    // Test angular difference
+    assert.strictEqual(AdsbAirspaceManager.shortestAngularDifference(10, 350), 20);
+    assert.strictEqual(AdsbAirspaceManager.shortestAngularDifference(350, 10), -20);
+
+    // Test cone polygon coordinates
+    const coneGeom = AdsbAirspaceManager.computeConePolygonLatLngs(41.3215, -88.9950, 225, 6000, 15);
+    assert.ok(Array.isArray(coneGeom.polygonLatLngs), 'Must return polygon coordinates');
+    assert.ok(coneGeom.polygonLatLngs.length >= 8, 'Polygon must include apex, arc, and close ring');
+    assert.deepStrictEqual(coneGeom.polygonLatLngs[0], [41.3215, -88.9950], 'Polygon apex must be aircraft position');
+    assert.ok(Array.isArray(coneGeom.centerLineLatLngs) && coneGeom.centerLineLatLngs.length === 2);
+  });
+
+  test('AdsbAirspaceManager.evaluateAircraftCone detects approaching traffic with perimeter ETA and ignores safe traffic', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+    AdsbAirspaceManager.warningMinutes = 2.0;
+    AdsbAirspaceManager.coneDeviationDeg = 15;
+    AdsbAirspaceManager.radiusMiles = 3.0; // 4828 m
+    AdsbAirspaceManager.ceilingFeet = 2500;
+
+    const homeLat = 41.3215;
+    const homeLon = -88.9950;
+
+    // Aircraft placed ~5.2 mi NE (lat +0.055, lon +0.055, ~8.3 km distance), track 225 SW directly toward home, 120 kts
+    const acInbound = {
+      hex: 'A55555',
+      callsign: 'INBOUND',
+      latitude: homeLat + 0.055,
+      longitude: homeLon + 0.055,
+      altitude: 1800,
+      speed: 120,
+      track: 225,
+      verticalRate: 0
+    };
+
+    const resInbound = AdsbAirspaceManager.evaluateAircraftCone(acInbound, homeLat, homeLon);
+    assert.strictEqual(resInbound.isConeWarning, true, 'Direct inbound aircraft must trigger cone warning');
+    assert.ok(resInbound.etaSeconds > 0 && resInbound.etaSeconds <= 120, 'ETA must be within lookahead window');
+    assert.ok(resInbound.closingSpeedKts >= 110, 'Closing speed must be positive and near ground speed');
+
+    // Departing aircraft (track 45 NE away from home)
+    const acOutbound = { ...acInbound, track: 45 };
+    const resOutbound = AdsbAirspaceManager.evaluateAircraftCone(acOutbound, homeLat, homeLon);
+    assert.strictEqual(resOutbound.isConeWarning, false, 'Outbound aircraft must NOT trigger cone warning');
+
+    // High altitude cruise (5000 ft) with level flight above 2500 ft ceiling
+    const acHigh = { ...acInbound, altitude: 5000, verticalRate: 0 };
+    const resHigh = AdsbAirspaceManager.evaluateAircraftCone(acHigh, homeLat, homeLon);
+    assert.strictEqual(resHigh.isConeWarning, false, 'Level flight above ceiling must NOT trigger cone warning');
+
+    // Descending aircraft (3200 ft descending at -1500 fpm) enters ceiling before arrival
+    const acDesc = { ...acInbound, altitude: 3200, verticalRate: -1500 };
+    const resDesc = AdsbAirspaceManager.evaluateAircraftCone(acDesc, homeLat, homeLon);
+    assert.strictEqual(resDesc.isConeWarning, true, 'Descending aircraft entering ceiling must trigger cone warning');
+  });
+
+  test('AdsbAirspaceManager performs two-stage state transitions (safe -> approaching -> breached)', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+    AdsbAirspaceManager.enabled = true;
+    AdsbAirspaceManager.soundEnabled = false; // Mute sound during test
+    AdsbAirspaceManager.previousStatus.clear();
+    AdsbAirspaceManager.lastAlertTimes.clear();
+    AdsbAirspaceManager.lastApproachingAlertTimes.clear();
+
+    const alertsTriggered = [];
+    AdsbAirspaceManager.triggerAudioAlert = (ac, stage) => {
+      alertsTriggered.push({ hex: ac.hex, stage });
+    };
+
+    const homeLat = 41.3215;
+    const homeLon = -88.9950;
+
+    // Stage 1: Approaching traffic outside proximity ring
+    const dataApproaching = {
+      success: true,
+      aircraft: [
+        {
+          hex: 'A55555',
+          callsign: 'APPR101',
+          latitude: homeLat + 0.055,
+          longitude: homeLon + 0.055,
+          altitude: 1800,
+          speed: 120,
+          track: 225,
+          isBreached: false,
+          isConeWarning: true,
+          status: 'approaching',
+          etaSeconds: 52
+        }
+      ]
+    };
+
+    AdsbAirspaceManager.processAirspaceData(dataApproaching);
+    assert.strictEqual(AdsbAirspaceManager.approachingAircraft.length, 1);
+    assert.strictEqual(AdsbAirspaceManager.breachedAircraft.length, 0);
+    assert.strictEqual(alertsTriggered.length, 1);
+    assert.strictEqual(alertsTriggered[0].stage, 'approaching');
+
+    // Stage 2: Aircraft breaches proximity radius
+    const dataBreached = {
+      success: true,
+      aircraft: [
+        {
+          hex: 'A55555',
+          callsign: 'APPR101',
+          latitude: homeLat + 0.010,
+          longitude: homeLon + 0.010,
+          altitude: 1800,
+          speed: 120,
+          track: 225,
+          isBreached: true,
+          status: 'breached'
+        }
+      ]
+    };
+
+    AdsbAirspaceManager.processAirspaceData(dataBreached);
+    assert.strictEqual(AdsbAirspaceManager.breachedAircraft.length, 1);
+    assert.strictEqual(alertsTriggered.length, 2);
+    assert.strictEqual(alertsTriggered[1].stage, 'breached', 'Escalation to breached must immediately trigger breach alert');
+  });
+
+  test('Undo/Redo integration registers ADS-B sliders and toggle controls', () => {
+    const eventBindingsSource = fs.readFileSync(path.resolve(__dirname, 'src/ui/EventBindings.js'), 'utf8');
+    assert.ok(eventBindingsSource.includes("'adsb-warning-min-slider': 'ADS-B Predictive Warning Time'"), 'Must define label for warning time slider');
+    assert.ok(eventBindingsSource.includes("'adsb-cone-dev-slider': 'ADS-B Heading Deviation Half-Angle'"), 'Must define label for cone deviation slider');
+    assert.ok(eventBindingsSource.includes("'adsb-cones-toggle': 'ADS-B Predictive Heading Cones'"), 'Must define label for cones toggle');
+    assert.ok(eventBindingsSource.includes("'adsb-warning-min-slider', 'adsb-cone-dev-slider', 'adsb-cones-toggle'"), 'Must register ADS-B controls in additionalLayerControls');
+  });
+
+  test('MapEngine registers 2D Predictive Trajectory Cones overlay', () => {
+    const mapEngineSource = fs.readFileSync(path.resolve(__dirname, 'src/map/MapEngine.js'), 'utf8');
+    assert.ok(mapEngineSource.includes('overlays["✈️ ADS-B Predictive Trajectory Cones (2D)"] = adsbConeLayer'), 'MapEngine must register Predictive Cones overlay');
+    assert.ok(mapEngineSource.includes("e.name === '✈️ ADS-B Predictive Trajectory Cones (2D)'"), 'MapEngine must handle overlayadd/overlayremove events for cones');
   });
 });
 

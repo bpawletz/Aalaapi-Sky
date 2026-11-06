@@ -1,3 +1,31 @@
+## [1.223.0] - 2026-11-06
+
+Introduces smart predictive forward trajectory cone deconfliction for ADS-B manned aircraft, calculating perimeter breach ETAs and providing Amber Stage-1 early warnings with 2D map trajectory cones and contact hover previews.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Smart Predictive ADS-B Trajectory Cones & Early Warning Alerting (Closes #244)**:
+  - Models forward predictive flight cones based on aircraft heading (`track`), ground speed (`speed`), heading deviation half-angle uncertainty (`±deviation°`), and lookahead warning time (`X min`).
+  - Evaluates geodesic ray-circle intersection against the RPIC's horizontal proximity radius and vertical ceiling buffer.
+  - Implements two-stage alerting: Amber Stage 1 (`APPROACHING`) with live perimeter breach countdown (`ETA Xm Ys`) and closing speed readout, escalating to Red Stage 2 (`BREACH`) when inside the proximity ring.
+  - Adds dedicated 2D map overlay layer (`✈️ ADS-B Predictive Trajectory Cones (2D)`) and contact hover preview (hovering over an aircraft displays its forward cone and ETA even when the map layer is toggled off).
+  - Configurable UI drawer controls: Early Warning Time slider (0.5 to 5.0 min), Heading Deviation slider (5° to 45°), Cones Toggle, and "Simulate Approaching (Cone)" preflight testing button.
+  - Voice advisory announces: *"Traffic approaching! [Callsign], [Dist] [Cardinal], perimeter ETA [Xm Ys]."* with distinct amber double chime.
+
+#### Under the Hood & Technical Details
+- **tools/companion/adsb_tracker.js & tools/companion/server.js**:
+  - Implemented spherical forward projection `calculateDestinationPoint()`, signed angular difference `shortestAngularDifference()`, and geodesic ray-circle intersection `evaluatePredictiveCone()`.
+  - Updated `getAirspaceBounds()` to accept `warningMinutes` and `coneDeviationDeg`, calculate `isConeWarning`, `etaSeconds`, `entryDistanceMeters`, `closingSpeedKts`, and prioritize approaching aircraft in sorting and summary counts.
+  - Updated `/api/airspace/stream` (SSE) and `/api/airspace/bounds` (REST) endpoints to accept `warningMinutes` and `coneDeviationDeg` query parameters.
+- **src/bridge/ApiClient.js & src/map/MapEngine.js**:
+  - Added `AdsbAirspaceManager.evaluateAircraftCone()` and `computeConePolygonLatLngs()` for companion and client-side/offline feeds.
+  - Added `playApproachingChime()` (587 Hz -> 740 Hz amber chime) and updated `playVoiceAdvisory()` & `triggerAudioAlert()` with two-stage severity escalation.
+  - Wired Leaflet cone polygons into `adsbConeLayer` (`✈️ ADS-B Predictive Trajectory Cones (2D)`) with marker hover preview layer.
+- **src/ui/EventBindings.js & index.css**:
+  - Registered `#adsb-warning-min-slider`, `#adsb-cone-dev-slider`, and `#adsb-cones-toggle` with `wireUndoPropertyTracking` per Rule 14.
+  - Added amber Stage-1 styles `.adsb-alert-banner.is-approaching`, `.adsb-aircraft-card.approaching`, and `.adsb-marker-inner.approaching`.
+
 ## [1.222.7] - 2026-11-06
 
 ### 🐛 Fixed

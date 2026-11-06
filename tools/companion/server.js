@@ -6331,6 +6331,8 @@ const handleHttpRequest = async (req, res) => {
       const radiusParam = url.searchParams.get('radius') || url.searchParams.get('range');
       const ceilingParam = url.searchParams.get('ceiling') || url.searchParams.get('altitude');
       const includeSafeParam = url.searchParams.get('includeSafe');
+      const warningMinParam = url.searchParams.get('warningMinutes') || url.searchParams.get('warnMinutes');
+      const coneDevParam = url.searchParams.get('coneDeviationDeg') || url.searchParams.get('coneDev');
 
       const homeLat = latParam !== null ? parseFloat(latParam) : 0;
       const homeLon = lonParam !== null ? parseFloat(lonParam) : 0;
@@ -6353,6 +6355,22 @@ const handleHttpRequest = async (req, res) => {
 
       const includeSafe = includeSafeParam !== 'false' && includeSafeParam !== '0';
 
+      let warningMinutes = 2.0;
+      if (warningMinParam !== null) {
+        const parsedWarn = parseFloat(warningMinParam);
+        if (!isNaN(parsedWarn) && parsedWarn > 0) {
+          warningMinutes = parsedWarn;
+        }
+      }
+
+      let coneDeviationDeg = 15;
+      if (coneDevParam !== null) {
+        const parsedDev = parseFloat(coneDevParam);
+        if (!isNaN(parsedDev) && parsedDev > 0) {
+          coneDeviationDeg = parsedDev;
+        }
+      }
+
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
@@ -6370,7 +6388,9 @@ const handleHttpRequest = async (req, res) => {
           homeLon,
           radiusMeters,
           maxCeilingFeet,
-          includeSafe
+          includeSafe,
+          warningMinutes,
+          coneDeviationDeg
         }
       };
 
@@ -6394,6 +6414,8 @@ const handleHttpRequest = async (req, res) => {
       const radiusParam = url.searchParams.get('radius') || url.searchParams.get('range');
       const ceilingParam = url.searchParams.get('ceiling') || url.searchParams.get('altitude');
       const includeSafeParam = url.searchParams.get('includeSafe');
+      const warningMinParam = url.searchParams.get('warningMinutes') || url.searchParams.get('warnMinutes');
+      const coneDevParam = url.searchParams.get('coneDeviationDeg') || url.searchParams.get('coneDev');
 
       const homeLat = latParam !== null ? parseFloat(latParam) : 0;
       const homeLon = lonParam !== null ? parseFloat(lonParam) : 0;
@@ -6416,12 +6438,30 @@ const handleHttpRequest = async (req, res) => {
 
       const includeSafe = includeSafeParam !== 'false' && includeSafeParam !== '0';
 
+      let warningMinutes = 2.0;
+      if (warningMinParam !== null) {
+        const parsedWarn = parseFloat(warningMinParam);
+        if (!isNaN(parsedWarn) && parsedWarn > 0) {
+          warningMinutes = parsedWarn;
+        }
+      }
+
+      let coneDeviationDeg = 15;
+      if (coneDevParam !== null) {
+        const parsedDev = parseFloat(coneDevParam);
+        if (!isNaN(parsedDev) && parsedDev > 0) {
+          coneDeviationDeg = parsedDev;
+        }
+      }
+
       const boundsResult = adsbTracker.getAirspaceBounds({
         homeLat,
         homeLon,
         radiusMeters,
         maxCeilingFeet,
-        includeSafe
+        includeSafe,
+        warningMinutes,
+        coneDeviationDeg
       });
 
       res.writeHead(200, { 'Content-Type': 'application/json' });

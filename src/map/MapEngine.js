@@ -641,6 +641,18 @@ function initMap() {
     AdsbAirspaceManager.layerGroup = adsbAirspaceLayer;
   }
 
+  // Predictive Trajectory Cones Overlay (ADS-B 2D)
+  const adsbConeLayer = L.layerGroup();
+  const savedShowCones = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_adsb_show_cones') : null;
+  if (savedShowCones !== 'false') {
+    adsbConeLayer.addTo(map);
+  }
+  overlays["✈️ ADS-B Predictive Trajectory Cones (2D)"] = adsbConeLayer;
+  if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+    AdsbAirspaceManager.coneLayerGroup = adsbConeLayer;
+    AdsbAirspaceManager.showCones = (savedShowCones !== 'false');
+  }
+
   // Photo Inspection & Ground Coverage Footprint Overlays (2D)
   if (!photoFootprintsGroup) {
     photoFootprintsGroup = L.layerGroup();
@@ -783,6 +795,25 @@ function initMap() {
           elevationServiceInstance.generateDemGridOverlay(map, null, demGridOverlayGroup);
         } else {
           elevationServiceInstance.clearDemGridOverlay(map);
+        }
+      }
+    }
+
+    // Track ADS-B Predictive Trajectory Cones (2D) state (v1.223.0 - Issue #244)
+    if (e.name === '✈️ ADS-B Predictive Trajectory Cones (2D)' || (typeof adsbConeLayer !== 'undefined' && e.layer === adsbConeLayer)) {
+      const isAdd = e.type === 'overlayadd';
+      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+        AdsbAirspaceManager.showCones = isAdd;
+        const toggleEl = document.getElementById('adsb-cones-toggle');
+        if (toggleEl) toggleEl.checked = isAdd;
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('aalaapi_adsb_show_cones', isAdd ? 'true' : 'false');
+        }
+        if (isAdd) {
+          AdsbAirspaceManager.updateMapMarkers();
+        } else {
+          if (AdsbAirspaceManager.coneLayerGroup) AdsbAirspaceManager.coneLayerGroup.clearLayers();
+          if (AdsbAirspaceManager.mapCones) AdsbAirspaceManager.mapCones.clear();
         }
       }
     }

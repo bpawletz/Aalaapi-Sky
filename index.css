@@ -6326,6 +6326,55 @@ body.modal-drag-active {
   display: none !important;
 }
 
+/* Amber Stage 1 Approaching Alert Banner (Issue #244) */
+.adsb-alert-banner.is-approaching {
+  background: rgba(30, 20, 10, 0.95);
+  border: 2px solid #f59e0b;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(245, 158, 11, 0.45);
+  animation: adsbApproachingStrobe 1.8s infinite ease-in-out, adsbSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.adsb-alert-banner.is-approaching .adsb-alert-strobe-icon {
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.adsb-alert-banner.is-approaching .adsb-pulse-ring {
+  border-color: #f59e0b;
+}
+
+.adsb-alert-banner.is-approaching .adsb-alert-title {
+  color: #fbbf24;
+}
+
+.adsb-alert-banner.is-approaching .adsb-alert-badge {
+  background: rgba(245, 158, 11, 0.3);
+  border-color: rgba(245, 158, 11, 0.7);
+  color: #fde68a;
+}
+
+@keyframes adsbApproachingStrobe {
+  0%, 100% {
+    border-color: #f59e0b;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 22px rgba(245, 158, 11, 0.55);
+  }
+  50% {
+    border-color: #d97706;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 14px rgba(217, 119, 6, 0.45);
+  }
+}
+
+.adsb-aircraft-card.approaching {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.adsb-marker-inner.approaching {
+  border-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.25) !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+
 @keyframes adsbStrobe {
   0%, 100% {
     border-color: #ef4444;

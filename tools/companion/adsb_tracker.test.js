@@ -648,4 +648,104 @@ describe('AdsbAirspaceTracker Tests', () => {
       await new Promise((resolve) => server.close(resolve));
     }
   });
+
+  test('calculateDestinationPoint and shortestAngularDifference calculate spherical projection & angular deltas', () => {
+    const { calculateDestinationPoint, shortestAngularDifference, calculateBearing } = require('./adsb_tracker.js');
+    
+    // Project north from 40.0, -83.0 by 10,000 meters (~10 km)
+    const destNorth = calculateDestinationPoint(40.0, -83.0, 0, 10000);
+    assert.ok(destNorth.lat > 40.0, 'Projecting north should increase latitude');
+    assert.ok(Math.abs(destNorth.lon - (-83.0)) < 0.001, 'Projecting north should maintain longitude');
+
+    // Angular differences
+    assert.strictEqual(shortestAngularDifference(10, 350), 20);
+    assert.strictEqual(shortestAngularDifference(350, 10), -20);
+    assert.strictEqual(shortestAngularDifference(180, 0), 180);
+    assert.strictEqual(shortestAngularDifference(45, 45), 0);
+  });
+
+  test('evaluatePredictiveCone flags approaching aircraft on trajectory toward proximity radius with perimeter ETA', () => {
+    const { evaluatePredictiveCone, AdsbAirspaceTracker } = require('./adsb_tracker.js');
+
+    const homeLat = 40.0130;
+    const homeLon = -83.1765;
+    const radiusMeters = 4828.03; // 3.0 miles
+
+    // Aircraft placed ~5.2 miles NE (distance ~8368 m) heading 225° SW (directly toward home) at 120 kts, alt 1800 ft
+    const acApproaching = {
+      hex: 'A55555',
+      callsign: 'APPR101',
+      latitude: homeLat + 0.055,
+      longitude: homeLon + 0.055,
+      altitude: 1800,
+      speed: 120, // 120 kts = 61.73 m/s
+      track: 225,
+      verticalRate: 0
+    };
+
+    // 2-minute lookahead: reach is 120 * 0.51444 * 120 = 7408m. Distance to perimeter entry (8368 - 4828 = 3540m) <= 7408m
+    const evalAppr = evaluatePredictiveCone(acApproaching, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15);
+    assert.strictEqual(evalAppr.isConeWarning, true, 'Aircraft heading directly toward proximity radius should be flagged as warning');
+    assert.ok(evalAppr.etaSeconds > 0 && evalAppr.etaSeconds < 120, 'ETA should be within the 2-minute lookahead window');
+    assert.ok(evalAppr.closingSpeedKts >= 110, 'Closing speed should be near 120 kts for direct inbound track');
+
+    // Same aircraft heading 45° NE (flying away) should NOT trigger cone warning
+    const acDeparting = { ...acApproaching, track: 45 };
+    const evalDep = evaluatePredictiveCone(acDeparting, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15);
+    assert.strictEqual(evalDep.isConeWarning, false, 'Departing aircraft must not trigger forward cone warning');
+
+    // Aircraft heading perpendicular (track 315° NW) outside deviation cone should NOT trigger cone warning
+    const acPerp = { ...acApproaching, track: 315 };
+    const evalPerp = evaluatePredictiveCone(acPerp, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15);
+    assert.strictEqual(evalPerp.isConeWarning, false, 'Perpendicular flight path missing proximity radius should not trigger cone warning');
+
+    // Aircraft above ceiling (4000 ft) descending at -1500 fpm should enter ceiling within ETA
+    const acDescending = { ...acApproaching, altitude: 3200, verticalRate: -1500 };
+    const evalDesc = evaluatePredictiveCone(acDescending, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15);
+    assert.strictEqual(evalDesc.isConeWarning, true, 'Aircraft descending into ceiling before arrival should trigger warning');
+
+    // Aircraft above ceiling (6000 ft) cruising level should NOT trigger warning
+    const acHighCruise = { ...acApproaching, altitude: 6000, verticalRate: 0 };
+    const evalHigh = evaluatePredictiveCone(acHighCruise, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15);
+    assert.strictEqual(evalHigh.isConeWarning, false, 'High altitude cruise above ceiling must not trigger warning');
+
+    // Test getAirspaceBounds integration and sorting
+    const tracker = new AdsbAirspaceTracker({ autoConnect: false, silent: true });
+    tracker.injectSimulatedAircraft({
+      hex: 'A55555',
+      callsign: 'APPR101',
+      lat: homeLat + 0.055,
+      lon: homeLon + 0.055,
+      alt: 1800,
+      speed: 120,
+      track: 225
+    });
+    // Add safe departing aircraft
+    tracker.injectSimulatedAircraft({
+      hex: 'A66666',
+      callsign: 'SAFE202',
+      lat: homeLat + 0.050,
+      lon: homeLon - 0.050,
+      alt: 1800,
+      speed: 120,
+      track: 315
+    });
+
+    const bounds = tracker.getAirspaceBounds({
+      homeLat,
+      homeLon,
+      radiusMeters,
+      maxCeilingFeet: 2500,
+      warningMinutes: 2.0,
+      coneDeviationDeg: 15
+    });
+
+    assert.strictEqual(bounds.summary.approachingCount, 1, 'Summary should report 1 approaching aircraft');
+    assert.strictEqual(bounds.summary.hasApproaching, true, 'hasApproaching should be true');
+    assert.strictEqual(bounds.aircraft[0].hex, 'A55555', 'Approaching aircraft should be sorted before safe departing aircraft');
+    assert.strictEqual(bounds.aircraft[0].status, 'approaching');
+    assert.strictEqual(bounds.aircraft[0].isConeWarning, true);
+    assert.ok(bounds.aircraft[0].etaSeconds !== null);
+    tracker.destroy();
+  });
 });

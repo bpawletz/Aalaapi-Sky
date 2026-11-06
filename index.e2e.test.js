@@ -12053,4 +12053,105 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       await page.waitForTimeout(200);
     });
   });
+
+  describe('Issue #244: Predictive Trajectory Cones & Approaching Traffic Alerting', () => {
+    test('ADS-B drawer controls exist and update warning time and cone deviation', async () => {
+      // Ensure controls exist in DOM
+      const warnSlider = page.locator('#adsb-warning-min-slider');
+      const devSlider = page.locator('#adsb-cone-dev-slider');
+      const conesToggle = page.locator('#adsb-cones-toggle');
+      const simBtn = page.locator('#adsb-sim-approaching-btn');
+
+      assert.strictEqual(await warnSlider.count(), 1, '#adsb-warning-min-slider should exist');
+      assert.strictEqual(await devSlider.count(), 1, '#adsb-cone-dev-slider should exist');
+      assert.strictEqual(await conesToggle.count(), 1, '#adsb-cones-toggle should exist');
+      assert.strictEqual(await simBtn.count(), 1, '#adsb-sim-approaching-btn should exist');
+
+      // Change warning slider
+      await page.evaluate(() => {
+        const slider = document.getElementById('adsb-warning-min-slider');
+        slider.value = '3.0';
+        slider.dispatchEvent(new Event('input'));
+        slider.dispatchEvent(new Event('change'));
+      });
+
+      const warnValText = await page.locator('#adsb-warning-min-val').textContent();
+      assert.ok(warnValText.includes('3.0 min') || warnValText.includes('3 min'), `Expected 3.0 min display, got: ${warnValText}`);
+
+      const managerWarnMin = await page.evaluate(() => AdsbAirspaceManager.warningMinutes);
+      assert.strictEqual(managerWarnMin, 3.0, 'AdsbAirspaceManager.warningMinutes should update to 3.0');
+
+      // Toggle cones
+      await page.evaluate(() => {
+        const toggle = document.getElementById('adsb-cones-toggle');
+        toggle.checked = false;
+        toggle.dispatchEvent(new Event('change'));
+      });
+      let managerShowCones = await page.evaluate(() => AdsbAirspaceManager.showCones);
+      assert.strictEqual(managerShowCones, false, 'AdsbAirspaceManager.showCones should be false after unchecked');
+
+      await page.evaluate(() => {
+        const toggle = document.getElementById('adsb-cones-toggle');
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change'));
+      });
+      managerShowCones = await page.evaluate(() => AdsbAirspaceManager.showCones);
+      assert.strictEqual(managerShowCones, true, 'AdsbAirspaceManager.showCones should be true after checked');
+    });
+
+    test('Simulating approaching traffic triggers Stage-1 amber alert with perimeter ETA and renders trajectory cone', async () => {
+      // Ensure default home position is set
+      await page.evaluate(() => {
+        if (typeof setGridCenter === 'function') {
+          setGridCenter(41.3215, -88.9950);
+        }
+      });
+
+      // Open ADS-B drawer if hidden and simulate approaching aircraft
+      await page.evaluate(async () => {
+        const drawer = document.getElementById('adsb-control-drawer');
+        if (drawer) drawer.classList.remove('hidden');
+        await AdsbAirspaceManager.simulateAircraft('approaching');
+      });
+      await page.waitForTimeout(400);
+
+      // Verify alert banner is visible with amber .is-approaching styling
+      const alertBanner = page.locator('#adsb-alert-banner');
+      assert.ok(await alertBanner.isVisible(), 'ADS-B alert banner should be visible');
+      const bannerClass = await alertBanner.getAttribute('class');
+      assert.ok(bannerClass.includes('is-approaching'), `Banner should have is-approaching class, got: ${bannerClass}`);
+
+      const bannerText = await alertBanner.textContent();
+      assert.ok(bannerText.includes('APPROACHING') || bannerText.includes('ETA'), `Banner text should indicate approaching traffic with ETA: ${bannerText}`);
+
+      // Verify aircraft card in drawer
+      const approachingCard = page.locator('.adsb-aircraft-card.approaching');
+      assert.ok(await approachingCard.count() >= 1, 'Should have at least one approaching aircraft card in drawer');
+      const cardText = await approachingCard.first().textContent();
+      assert.ok(cardText.includes('ETA') || cardText.includes('APPROACHING'), `Card should display perimeter ETA: ${cardText}`);
+
+      // Verify cone polygon layer has elements in MapEngine.adsbConeLayer or AdsbAirspaceManager.coneLayerGroup
+      const coneCount = await page.evaluate(() => {
+        const grp = AdsbAirspaceManager.coneLayerGroup || (typeof MapEngine !== 'undefined' ? MapEngine.adsbConeLayer : null);
+        if (grp && grp._layers) {
+          return Object.keys(grp._layers).length;
+        }
+        return 0;
+      });
+      assert.ok(coneCount >= 1, `ADS-B cone layer should contain at least 1 rendered cone polygon, got: ${coneCount}`);
+
+      // Clean up simulated aircraft
+      await page.evaluate(() => {
+        if (typeof AdsbAirspaceManager !== 'undefined') {
+          AdsbAirspaceManager.aircraft = [];
+          AdsbAirspaceManager.breachedAircraft = [];
+          AdsbAirspaceManager.approachingAircraft = [];
+          AdsbAirspaceManager.updateVisualBanner();
+          AdsbAirspaceManager.updateMapMarkers();
+          AdsbAirspaceManager.updateDrawerAircraftList();
+        }
+      });
+      await page.waitForTimeout(200);
+    });
+  });
 });

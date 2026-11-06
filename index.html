@@ -6343,6 +6343,55 @@ body.modal-drag-active {
   display: none !important;
 }
 
+/* Amber Stage 1 Approaching Alert Banner (Issue #244) */
+.adsb-alert-banner.is-approaching {
+  background: rgba(30, 20, 10, 0.95);
+  border: 2px solid #f59e0b;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(245, 158, 11, 0.45);
+  animation: adsbApproachingStrobe 1.8s infinite ease-in-out, adsbSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.adsb-alert-banner.is-approaching .adsb-alert-strobe-icon {
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.adsb-alert-banner.is-approaching .adsb-pulse-ring {
+  border-color: #f59e0b;
+}
+
+.adsb-alert-banner.is-approaching .adsb-alert-title {
+  color: #fbbf24;
+}
+
+.adsb-alert-banner.is-approaching .adsb-alert-badge {
+  background: rgba(245, 158, 11, 0.3);
+  border-color: rgba(245, 158, 11, 0.7);
+  color: #fde68a;
+}
+
+@keyframes adsbApproachingStrobe {
+  0%, 100% {
+    border-color: #f59e0b;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 22px rgba(245, 158, 11, 0.55);
+  }
+  50% {
+    border-color: #d97706;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 14px rgba(217, 119, 6, 0.45);
+  }
+}
+
+.adsb-aircraft-card.approaching {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.adsb-marker-inner.approaching {
+  border-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.25) !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+
 @keyframes adsbStrobe {
   0%, 100% {
     border-color: #ef4444;
@@ -8543,7 +8592,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.222.7</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.223.0</span></h1>
         </div>
       </div>
 
@@ -12734,6 +12783,34 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                   <span>5,000 ft</span>
                 </div>
               </div>
+
+              <!-- Predictive Warning Lookahead Time Slider (Issue #244) -->
+              <div class="adsb-slider-group" style="margin-top: 8px;">
+                <div class="adsb-slider-header">
+                  <label for="adsb-warning-min-slider" style="font-size: 0.72rem; color: var(--text-muted);">Predictive Early Warning Time:</label>
+                  <span id="adsb-warning-min-val" style="font-size: 0.75rem; font-weight: 700; color: #f59e0b;">2.0 min</span>
+                </div>
+                <input type="range" id="adsb-warning-min-slider" min="0.5" max="5.0" step="0.5" value="2.0" style="width: 100%; cursor: pointer;">
+                <div class="adsb-slider-range-labels">
+                  <span>0.5 min</span>
+                  <span>2.5 min</span>
+                  <span>5.0 min</span>
+                </div>
+              </div>
+
+              <!-- Heading Deviation Uncertainty Cone Slider (Issue #244) -->
+              <div class="adsb-slider-group" style="margin-top: 8px;">
+                <div class="adsb-slider-header">
+                  <label for="adsb-cone-dev-slider" style="font-size: 0.72rem; color: var(--text-muted);">Heading Deviation Half-Angle:</label>
+                  <span id="adsb-cone-dev-val" style="font-size: 0.75rem; font-weight: 700; color: #38bdf8;">±15°</span>
+                </div>
+                <input type="range" id="adsb-cone-dev-slider" min="5" max="45" step="5" value="15" style="width: 100%; cursor: pointer;">
+                <div class="adsb-slider-range-labels">
+                  <span>±5°</span>
+                  <span>±25°</span>
+                  <span>±45°</span>
+                </div>
+              </div>
             </div>
 
             <!-- Master Airspace & Auditory Alert Controls Card -->
@@ -12770,6 +12847,17 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               </div>
 
               <div class="adsb-card-row" style="margin-top: 10px; align-items: center;">
+                <label for="adsb-cones-toggle" class="adsb-control-label">
+                  <span style="font-weight: 600;">Predictive Trajectory Cones (2D)</span>
+                  <span class="adsb-control-sub">Heading fan on map (always visible on hover)</span>
+                </label>
+                <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0; margin: 0;">
+                  <input type="checkbox" id="adsb-cones-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                  <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+                </label>
+              </div>
+
+              <div class="adsb-card-row" style="margin-top: 10px; align-items: center;">
                 <label for="adsb-trail-duration-select" class="adsb-control-label">
                   <span style="font-weight: 600;">Flight History Trails</span>
                   <span class="adsb-control-sub">Breadcrumb track vectors on map</span>
@@ -12800,7 +12888,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                     <span>🔊</span> Test Audio
                   </button>
                   <button id="adsb-sim-trigger-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); cursor: pointer;" title="Simulate Approaching Aircraft Breach">
-                    <span>⚠️</span> Simulate Traffic
+                    <span>⚠️</span> Breach
+                  </button>
+                  <button id="adsb-sim-approaching-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(245, 158, 11, 0.16); color: #f59e0b; border-color: rgba(245, 158, 11, 0.45); cursor: pointer;" title="Simulate Approaching Trajectory Cone Warning">
+                    <span>📐</span> Approaching
                   </button>
                 </div>
                 <div style="display: flex; gap: 4px;">
@@ -13232,6 +13323,16 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>📐</span>
+              Smart Predictive ADS-B Trajectory Cones &amp; Early Alerting (v1.223.0) (Closes #244)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Enhances manned aircraft collision avoidance with forward trajectory cone modeling using aircraft heading (track), ground speed, heading deviation uncertainty (&plusmn;deg), and lookahead warning time (X minutes). Intersects the RPIC's horizontal proximity ring and vertical ceiling buffer to provide Amber Stage-1 early warning (&ldquo;Traffic Approaching&rdquo;) with live perimeter breach ETA countdowns before escalating to Red Stage-2 alerts. Includes a dedicated 2D map trajectory cone layer and contact hover previews.
+            </p>
+          </div>
+
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>✈️</span>
@@ -15839,7 +15940,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.222.7</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.223.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15999,7 +16100,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                                         <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
-                            <strong style="color: var(--text-main);">Changelog (v1.222.7):</strong>
+                            <strong style="color: var(--text-main);">Changelog (v1.223.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Smart Predictive ADS-B Trajectory Cone Alerting &amp; Perimeter ETA (Closes #244):</strong> Adds forward predictive trajectory cone deconfliction using aircraft heading (track), speed, heading deviation uncertainty (&plusmn;&deg;), and lookahead warning time (X min). Provides Amber Stage-1 early warning (&ldquo;Traffic Approaching&rdquo;) with live perimeter ETA countdowns, dedicated 2D trajectory cone map overlay with contact hover preview, drawer control sliders, and preflight simulation.</li>
+              </ul>
+              <br>
+              <strong style="color: var(--text-main);">Changelog (v1.222.7):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>Hermetic CI Test Suite Fix (Closes #243):</strong> Replaced environmental replay database lookup with in-memory fixture seeding, resolving build 540 failure on GitHub Actions runners.</li>
               </ul>
@@ -32747,6 +32853,18 @@ function initMap() {
     AdsbAirspaceManager.layerGroup = adsbAirspaceLayer;
   }
 
+  // Predictive Trajectory Cones Overlay (ADS-B 2D)
+  const adsbConeLayer = L.layerGroup();
+  const savedShowCones = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_adsb_show_cones') : null;
+  if (savedShowCones !== 'false') {
+    adsbConeLayer.addTo(map);
+  }
+  overlays["✈️ ADS-B Predictive Trajectory Cones (2D)"] = adsbConeLayer;
+  if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+    AdsbAirspaceManager.coneLayerGroup = adsbConeLayer;
+    AdsbAirspaceManager.showCones = (savedShowCones !== 'false');
+  }
+
   // Photo Inspection & Ground Coverage Footprint Overlays (2D)
   if (!photoFootprintsGroup) {
     photoFootprintsGroup = L.layerGroup();
@@ -32889,6 +33007,25 @@ function initMap() {
           elevationServiceInstance.generateDemGridOverlay(map, null, demGridOverlayGroup);
         } else {
           elevationServiceInstance.clearDemGridOverlay(map);
+        }
+      }
+    }
+
+    // Track ADS-B Predictive Trajectory Cones (2D) state (v1.223.0 - Issue #244)
+    if (e.name === '✈️ ADS-B Predictive Trajectory Cones (2D)' || (typeof adsbConeLayer !== 'undefined' && e.layer === adsbConeLayer)) {
+      const isAdd = e.type === 'overlayadd';
+      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+        AdsbAirspaceManager.showCones = isAdd;
+        const toggleEl = document.getElementById('adsb-cones-toggle');
+        if (toggleEl) toggleEl.checked = isAdd;
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('aalaapi_adsb_show_cones', isAdd ? 'true' : 'false');
+        }
+        if (isAdd) {
+          AdsbAirspaceManager.updateMapMarkers();
+        } else {
+          if (AdsbAirspaceManager.coneLayerGroup) AdsbAirspaceManager.coneLayerGroup.clearLayers();
+          if (AdsbAirspaceManager.mapCones) AdsbAirspaceManager.mapCones.clear();
         }
       }
     }
@@ -34749,7 +34886,12 @@ function initUIEventListeners() {
       'exclusion-detour-mode': 'Exclusion Detour Mode',
       'boundary-layer-name': 'Boundary Layer Name',
       'fiducial-layer-name': 'Fiducial Layer Name',
-      'fiducial-show-range-rings': 'Fiducial Range Rings'
+      'fiducial-show-range-rings': 'Fiducial Range Rings',
+      'adsb-radius-slider': 'ADS-B Proximity Radius',
+      'adsb-ceiling-slider': 'ADS-B Ceiling Buffer',
+      'adsb-warning-min-slider': 'ADS-B Predictive Warning Time',
+      'adsb-cone-dev-slider': 'ADS-B Heading Deviation Half-Angle',
+      'adsb-cones-toggle': 'ADS-B Predictive Heading Cones'
     };
     return map[id] || id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
@@ -34939,7 +35081,8 @@ function initUIEventListeners() {
     'global-custom-heading', 'global-terrain-follow', 'global-target-agl', 'global-max-slope-angle', 'global-terrain-source',
     'global-max-altitude', 'global-rth-altitude', 'rc2-uuid',
     'acoustic-ambient-preset', 'acoustic-contour-display-mode', 'acoustic-map-overlay-toggle', 'acoustic-3d-overlay-toggle',
-    'sun-sky-condition-select'
+    'sun-sky-condition-select',
+    'adsb-radius-slider', 'adsb-ceiling-slider', 'adsb-warning-min-slider', 'adsb-cone-dev-slider', 'adsb-cones-toggle'
   ];
   additionalLayerControls.forEach(id => {
     const el = document.getElementById(id);
@@ -62911,6 +63054,12 @@ const AdsbAirspaceManager = {
 
   ceilingFeet: 2500,
 
+  warningMinutes: 2.0,
+
+  coneDeviationDeg: 15,
+
+  showCones: true,
+
   customEndpoint: '',
 
   serverHost: '127.0.0.1',
@@ -62947,13 +63096,25 @@ const AdsbAirspaceManager = {
 
   breachedAircraft: [],
 
-  lastAlertTimes: new Map(), // hex -> timestamp (30s cooldown)
+  approachingAircraft: [],
 
-  previousStatus: new Map(), // hex -> 'safe' | 'breached'
+  lastAlertTimes: new Map(), // hex -> timestamp (30s cooldown for breached)
+
+  lastApproachingAlertTimes: new Map(), // hex -> timestamp (45s cooldown for approaching)
+
+  previousStatus: new Map(), // hex -> 'safe' | 'approaching' | 'breached'
 
   layerGroup: null,
 
+  coneLayerGroup: null,
+
   mapMarkers: new Map(), // hex -> Leaflet marker
+
+  mapCones: new Map(), // hex -> Leaflet polygon / layerGroup
+
+  hoverConeLayer: null,
+
+  hoveredHex: null,
 
   showTrails: true,
 
@@ -63387,6 +63548,30 @@ const AdsbAirspaceManager = {
 
       };
 
+    } else if (targetType === 'approaching') {
+
+      simAircraft = {
+
+        hex: 'A55555',
+
+        callsign: 'APPR101',
+
+        aircraftType: 'SR22',
+
+        category: 'A1',
+
+        lat: homeLat + 0.055,
+
+        lon: homeLon + 0.055,
+
+        alt: 1800,
+
+        speed: 135,
+
+        track: 225
+
+      };
+
     } else {
 
       // Propeller (C172)
@@ -63418,71 +63603,47 @@ const AdsbAirspaceManager = {
 
 
     try {
-
       const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-
-      await fetch(`${apiBase}/api/airspace/simulate`, {
-
+      const authHeaders = (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {};
+      const res = await fetch(`${apiBase}/api/airspace/simulate`, {
         method: 'POST',
-
-        headers: { 'Content-Type': 'application/json' },
-
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(simAircraft)
-
       });
-
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await this.pollAirspace();
     } catch (e) {
-
-      // If offline, inject directly into manager
-
-      simAircraft.distanceMeters = 1500;
-
-      simAircraft.distanceMiles = 0.93;
-
+      // If offline or unauthorized, inject directly into manager
+      const isApproaching = targetType === 'approaching';
+      simAircraft.distanceMeters = isApproaching ? 8368 : 1500;
+      simAircraft.distanceMiles = isApproaching ? 5.2 : 0.93;
       simAircraft.bearingDeg = 45;
-
       simAircraft.bearingCardinal = 'NE';
-
-      simAircraft.isBreached = true;
-
-      simAircraft.status = 'breached';
-
+      simAircraft.isBreached = !isApproaching;
+      simAircraft.isConeWarning = isApproaching;
+      simAircraft.status = isApproaching ? 'approaching' : 'breached';
+      simAircraft.etaSeconds = isApproaching ? 51 : null;
+      simAircraft.closingSpeedKts = isApproaching ? 135 : null;
+      simAircraft.coneLengthMeters = isApproaching ? 8334 : 0;
       simAircraft.source = 'simulated';
-
       simAircraft.latitude = simAircraft.lat;
-
       simAircraft.longitude = simAircraft.lon;
-
       simAircraft.altitude = simAircraft.alt;
 
       const existingIdx = this.aircraft.findIndex(a => a.hex === simAircraft.hex);
-
       if (existingIdx >= 0) {
-
         this.aircraft[existingIdx] = simAircraft;
-
       } else {
-
         this.aircraft.push(simAircraft);
-
       }
-
       this.breachedAircraft = this.aircraft.filter(a => a.isBreached);
-
-      this.triggerAudioAlert(simAircraft);
-
+      this.approachingAircraft = this.aircraft.filter(a => !a.isBreached && (a.isConeWarning || a.status === 'approaching'));
+      this.triggerAudioAlert(simAircraft, isApproaching ? 'approaching' : 'breached');
       this.updateVisualBanner();
-
       this.updateTopbarAndHud();
-
       this.updateMapMarkers();
-
       this.updateDrawerAircraftList();
-
     }
-
-    await this.pollAirspace();
-
   },
 
 
@@ -63538,6 +63699,24 @@ const AdsbAirspaceManager = {
         const savedCeiling = localStorage.getItem('aalaapi_adsb_ceiling_ft');
 
         if (savedCeiling) this.ceilingFeet = parseInt(savedCeiling, 10) || 2500;
+
+
+
+        const savedWarnMin = localStorage.getItem('aalaapi_adsb_warning_min');
+
+        if (savedWarnMin) this.warningMinutes = parseFloat(savedWarnMin) || 2.0;
+
+
+
+        const savedConeDev = localStorage.getItem('aalaapi_adsb_cone_dev_deg');
+
+        if (savedConeDev) this.coneDeviationDeg = parseInt(savedConeDev, 10) || 15;
+
+
+
+        const savedShowCones = localStorage.getItem('aalaapi_adsb_show_cones');
+
+        if (savedShowCones !== null) this.showCones = savedShowCones !== 'false';
 
 
 
@@ -63603,6 +63782,12 @@ const AdsbAirspaceManager = {
 
         localStorage.setItem('aalaapi_adsb_ceiling_ft', String(this.ceilingFeet));
 
+        localStorage.setItem('aalaapi_adsb_warning_min', String(this.warningMinutes || 2.0));
+
+        localStorage.setItem('aalaapi_adsb_cone_dev_deg', String(this.coneDeviationDeg || 15));
+
+        localStorage.setItem('aalaapi_adsb_show_cones', String(this.showCones));
+
         localStorage.setItem('aalaapi_adsb_custom_endpoint', this.customEndpoint || '');
 
         localStorage.setItem('aalaapi_adsb_host', this.serverHost || '127.0.0.1');
@@ -63667,6 +63852,233 @@ const AdsbAirspaceManager = {
 
     }
 
+    if (leaflet && m && !this.coneLayerGroup && m.addLayer && leaflet.layerGroup) {
+
+      this.coneLayerGroup = leaflet.layerGroup();
+
+      if (this.showCones) {
+
+        this.coneLayerGroup.addTo(m);
+
+      }
+
+    }
+
+  },
+
+
+
+  calculateDestinationPoint(lat, lon, bearingDeg, distanceMeters) {
+
+    const EARTH_RADIUS = 6371000;
+
+    const toRad = Math.PI / 180;
+
+    const toDeg = 180 / Math.PI;
+
+    const phi1 = lat * toRad;
+
+    const lambda1 = lon * toRad;
+
+    const theta = ((bearingDeg % 360 + 360) % 360) * toRad;
+
+    const delta = distanceMeters / EARTH_RADIUS;
+
+
+
+    const sinPhi2 = Math.sin(phi1) * Math.cos(delta) + Math.cos(phi1) * Math.sin(delta) * Math.cos(theta);
+
+    const phi2 = Math.asin(Math.max(-1, Math.min(1, sinPhi2)));
+
+    const y = Math.sin(theta) * Math.sin(delta) * Math.cos(phi1);
+
+    const x = Math.cos(delta) - Math.sin(phi1) * Math.sin(phi2);
+
+    const lambda2 = lambda1 + Math.atan2(y, x);
+
+
+
+    const destLat = phi2 * toDeg;
+
+    const destLon = ((lambda2 * toDeg + 540) % 360) - 180;
+
+    return { lat: destLat, lon: destLon };
+
+  },
+
+
+
+  shortestAngularDifference(deg1, deg2) {
+
+    let diff = (deg1 - deg2) % 360;
+
+    if (diff > 180) diff -= 360;
+
+    if (diff < -180) diff += 360;
+
+    return diff;
+
+  },
+
+
+
+  computeConePolygonLatLngs(lat, lon, track, coneLengthMeters, deviationDeg = 15) {
+
+    const length = Math.max(50, coneLengthMeters || 1000);
+
+    const dev = Math.max(2, deviationDeg || 15);
+
+    const leftBearing = track - dev;
+
+    const rightBearing = track + dev;
+
+    const arcPoints = [];
+
+    const steps = 6;
+
+    for (let i = 0; i <= steps; i++) {
+
+      const b = leftBearing + (i / steps) * (rightBearing - leftBearing);
+
+      const pt = this.calculateDestinationPoint(lat, lon, b, length);
+
+      arcPoints.push([pt.lat, pt.lon]);
+
+    }
+
+    const centerDest = this.calculateDestinationPoint(lat, lon, track, length);
+
+    return {
+
+      polygonLatLngs: [[lat, lon], ...arcPoints, [lat, lon]],
+
+      centerLineLatLngs: [[lat, lon], [centerDest.lat, centerDest.lon]]
+
+    };
+
+  },
+
+
+
+  evaluateAircraftCone(ac, homeLat, homeLon) {
+
+    const result = {
+
+      isConeWarning: false,
+
+      etaSeconds: null,
+
+      entryDistanceMeters: null,
+
+      closingSpeedKts: null,
+
+      coneLengthMeters: 0,
+
+      offBoresightDeg: null
+
+    };
+
+    if (!ac || ac.latitude === null || ac.longitude === null) return result;
+
+    const speedKts = typeof ac.speed === 'number' && !isNaN(ac.speed) ? ac.speed : 0;
+
+    const trackDeg = typeof ac.track === 'number' && !isNaN(ac.track) ? ac.track : null;
+
+    if (speedKts <= 0 || trackDeg === null) return result;
+
+
+
+    const warnMin = this.warningMinutes > 0 ? this.warningMinutes : 2.0;
+
+    const devDeg = this.coneDeviationDeg >= 0 ? this.coneDeviationDeg : 15;
+
+    const vMps = speedKts * 0.51444444;
+
+    const coneLengthMeters = Math.round(vMps * (warnMin * 60));
+
+    result.coneLengthMeters = coneLengthMeters;
+
+
+
+    const rProx = this.radiusMiles * 1609.344;
+    const toRad = Math.PI / 180;
+    const dLat = (homeLat - ac.latitude) * toRad;
+    const dLon = (homeLon - ac.longitude) * toRad;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(ac.latitude * toRad) * Math.cos(homeLat * toRad) * Math.sin(dLon / 2) ** 2;
+    const d = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    if (d <= rProx) return result;
+
+    const y = Math.sin((homeLon - ac.longitude) * toRad) * Math.cos(homeLat * toRad);
+
+    const x = Math.cos(ac.latitude * toRad) * Math.sin(homeLat * toRad) - Math.sin(ac.latitude * toRad) * Math.cos(homeLat * toRad) * Math.cos((homeLon - ac.longitude) * toRad);
+
+    const bearingToHome = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+
+
+
+    const offBoresight = Math.abs(this.shortestAngularDifference(trackDeg, bearingToHome));
+
+    result.offBoresightDeg = Math.round(offBoresight);
+
+
+
+    const alphaEff = Math.max(0, offBoresight - devDeg);
+
+    if (alphaEff >= 90) return result;
+
+
+
+    const alphaEffRad = alphaEff * (Math.PI / 180);
+
+    const dPerp = d * Math.sin(alphaEffRad);
+
+    if (dPerp > rProx) return result;
+
+
+
+    const dEntry = d * Math.cos(alphaEffRad) - Math.sqrt(Math.max(0, (rProx * rProx) - (dPerp * dPerp)));
+
+    if (dEntry > coneLengthMeters) return result;
+
+
+
+    const etaSeconds = Math.max(1, Math.round(dEntry / vMps));
+
+    const ceilingFt = this.ceilingFeet || 2500;
+
+    const alt = ac.altitude !== null && ac.altitude !== undefined 
+
+      ? ac.altitude 
+
+      : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
+
+
+
+    if (alt !== null) {
+
+      const vRate = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : 0;
+
+      const projectedAlt = alt + (vRate * (etaSeconds / 60));
+
+      if (alt > ceilingFt && projectedAlt > ceilingFt) return result;
+
+    }
+
+
+
+    const closingSpeedKts = Math.max(0, Math.round(speedKts * Math.cos(offBoresight * (Math.PI / 180))));
+
+    result.isConeWarning = true;
+
+    result.etaSeconds = etaSeconds;
+
+    result.entryDistanceMeters = Math.round(dEntry);
+
+    result.closingSpeedKts = closingSpeedKts;
+
+    return result;
+
   },
 
 
@@ -63694,6 +64106,80 @@ const AdsbAirspaceManager = {
       this.audioContext.resume().catch(() => {});
 
     }
+
+  },
+
+
+
+  playApproachingChime() {
+
+    try {
+
+      this.initAudioContext();
+
+      if (!this.audioContext) return;
+
+      const ctx = this.audioContext;
+
+      const now = ctx.currentTime;
+
+
+
+      const masterGain = ctx.createGain();
+
+      masterGain.connect(ctx.destination);
+
+      masterGain.gain.setValueAtTime(0.25, now);
+
+
+
+      // Amber Stage 1 Tone 1: 587 Hz (D5)
+
+      const osc1 = ctx.createOscillator();
+
+      const gain1 = ctx.createGain();
+
+      osc1.type = 'sine';
+
+      osc1.frequency.setValueAtTime(587, now);
+
+      gain1.gain.setValueAtTime(0.28, now);
+
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+      osc1.connect(gain1);
+
+      gain1.connect(masterGain);
+
+      osc1.start(now);
+
+      osc1.stop(now + 0.16);
+
+
+
+      // Amber Stage 1 Tone 2: 740 Hz (F#5)
+
+      const osc2 = ctx.createOscillator();
+
+      const gain2 = ctx.createGain();
+
+      osc2.type = 'sine';
+
+      osc2.frequency.setValueAtTime(740, now + 0.17);
+
+      gain2.gain.setValueAtTime(0.28, now + 0.17);
+
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+      osc2.connect(gain2);
+
+      gain2.connect(masterGain);
+
+      osc2.start(now + 0.17);
+
+      osc2.stop(now + 0.38);
+
+    } catch (e) {}
 
   },
 
@@ -63773,7 +64259,7 @@ const AdsbAirspaceManager = {
 
 
 
-  playVoiceAdvisory(aircraft) {
+  playVoiceAdvisory(aircraft, alertStage = 'breached') {
 
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
@@ -63801,9 +64287,9 @@ const AdsbAirspaceManager = {
 
       } else {
 
-        const mi = aircraft.distanceMiles !== null ? aircraft.distanceMiles : 'unknown';
+        const mi = aircraft.distanceMiles !== null && aircraft.distanceMiles !== undefined ? aircraft.distanceMiles : 'unknown';
 
-        const ft = aircraft.altitude !== null ? aircraft.altitude : 'unknown';
+        const ft = aircraft.altitude !== null && aircraft.altitude !== undefined ? aircraft.altitude : 'unknown';
 
         distText = `${mi} miles`;
 
@@ -63813,7 +64299,31 @@ const AdsbAirspaceManager = {
 
       const cardinal = aircraft.bearingCardinal ? ` ${aircraft.bearingCardinal}` : '';
 
-      const text = `Traffic alert! ${callsign}, ${distText}${cardinal}, ${altText}.`;
+      let text = '';
+
+      if (alertStage === 'approaching') {
+
+        let etaText = 'soon';
+
+        if (typeof aircraft.etaSeconds === 'number' && aircraft.etaSeconds > 0) {
+
+          const etaMin = Math.floor(aircraft.etaSeconds / 60);
+
+          const etaSec = aircraft.etaSeconds % 60;
+
+          etaText = etaMin > 0 ? `${etaMin} minute${etaMin > 1 ? 's' : ''} ${etaSec} seconds` : `${etaSec} seconds`;
+
+        }
+
+        text = `Traffic approaching! ${callsign}, ${distText}${cardinal}, perimeter ETA ${etaText}.`;
+
+      } else {
+
+        text = `Traffic alert! ${callsign}, ${distText}${cardinal}, ${altText}.`;
+
+      }
+
+
 
       const utterance = new SpeechSynthesisUtterance(text);
 
@@ -63831,7 +64341,7 @@ const AdsbAirspaceManager = {
 
 
 
-  triggerAudioAlert(aircraft) {
+  triggerAudioAlert(aircraft, alertStage = 'breached') {
 
     if (!this.soundEnabled) return;
 
@@ -63849,33 +64359,57 @@ const AdsbAirspaceManager = {
 
     const hex = aircraft.hex;
 
-    const lastTime = this.lastAlertTimes.get(hex) || 0;
+    if (alertStage === 'approaching') {
 
-    if (now - lastTime < 30000) {
+      const lastTime = this.lastApproachingAlertTimes.get(hex) || 0;
 
-      // Cooldown active (<30s)
+      if (now - lastTime < 45000) return;
 
-      return;
-
-    }
-
-    this.lastAlertTimes.set(hex, now);
+      this.lastApproachingAlertTimes.set(hex, now);
 
 
 
-    if (this.soundType === 'chime' || this.soundType === 'both') {
+      if (this.soundType === 'chime' || this.soundType === 'both') {
 
-      this.playWarningChime();
+        this.playApproachingChime();
 
-    }
+      }
 
-    if (this.soundType === 'voice' || this.soundType === 'both') {
+      if (this.soundType === 'voice' || this.soundType === 'both') {
 
-      setTimeout(() => {
+        setTimeout(() => {
 
-        this.playVoiceAdvisory(aircraft);
+          this.playVoiceAdvisory(aircraft, 'approaching');
 
-      }, 220);
+        }, 220);
+
+      }
+
+    } else {
+
+      const lastTime = this.lastAlertTimes.get(hex) || 0;
+
+      if (now - lastTime < 30000) return;
+
+      this.lastAlertTimes.set(hex, now);
+
+
+
+      if (this.soundType === 'chime' || this.soundType === 'both') {
+
+        this.playWarningChime();
+
+      }
+
+      if (this.soundType === 'voice' || this.soundType === 'both') {
+
+        setTimeout(() => {
+
+          this.playVoiceAdvisory(aircraft, 'breached');
+
+        }, 220);
+
+      }
 
     }
 
@@ -64573,7 +65107,7 @@ const AdsbAirspaceManager = {
 
     const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
     const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
-    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true${tokenParam}`;
+    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true${tokenParam}`;
 
 
 
@@ -64805,11 +65339,73 @@ const AdsbAirspaceManager = {
 
     this.aircraft = Array.isArray(data.aircraft) ? data.aircraft : [];
 
+
+
+    let homeLat = 40.0130;
+
+    let homeLon = -83.1765;
+
+    if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+
+      const ll = centerMarker.getLatLng();
+
+      homeLat = ll.lat;
+
+      homeLon = ll.lng;
+
+    } else if (typeof map !== 'undefined' && map && map.getCenter) {
+
+      const ll = map.getCenter();
+
+      homeLat = ll.lat;
+
+      homeLon = ll.lng;
+
+    }
+
+
+
+    // Evaluate client-side predictive cone if not already computed
+
+    for (const ac of this.aircraft) {
+
+      if (!ac.isBreached && ac.isConeWarning === undefined && ac.latitude !== null && ac.longitude !== null && ac.latitude !== undefined && ac.longitude !== undefined) {
+
+        const coneEval = this.evaluateAircraftCone(ac, homeLat, homeLon);
+
+        ac.coneLengthMeters = coneEval.coneLengthMeters;
+
+        ac.offBoresightDeg = coneEval.offBoresightDeg;
+
+        if (coneEval.isConeWarning) {
+
+          ac.isConeWarning = true;
+
+          ac.status = 'approaching';
+
+          ac.etaSeconds = coneEval.etaSeconds;
+
+          ac.entryDistanceMeters = coneEval.entryDistanceMeters;
+
+          ac.closingSpeedKts = coneEval.closingSpeedKts;
+
+        }
+
+      }
+
+    }
+
+
+
     this.breachedAircraft = this.aircraft.filter(a => a.isBreached);
 
+    this.approachingAircraft = this.aircraft.filter(a => !a.isBreached && (a.isConeWarning || a.status === 'approaching'));
 
 
-    // State transition detection & 30s audio throttling
+
+    // State transition detection & two-stage audio alerting
+
+    const now = Date.now();
 
     for (const ac of this.aircraft) {
 
@@ -64817,23 +65413,33 @@ const AdsbAirspaceManager = {
 
       if (ac.isBreached) {
 
-        if (prev === 'safe') {
+        // Escalation to breach immediately triggers alert
 
-          this.triggerAudioAlert(ac);
+        if (prev !== 'breached') {
 
-        } else {
+          this.triggerAudioAlert(ac, 'breached');
 
-          const now = Date.now();
+        } else if (now - (this.lastAlertTimes.get(ac.hex) || 0) >= 30000) {
 
-          if (now - (this.lastAlertTimes.get(ac.hex) || 0) >= 30000) {
-
-            this.triggerAudioAlert(ac);
-
-          }
+          this.triggerAudioAlert(ac, 'breached');
 
         }
 
         this.previousStatus.set(ac.hex, 'breached');
+
+      } else if (ac.isConeWarning || ac.status === 'approaching') {
+
+        if (prev === 'safe') {
+
+          this.triggerAudioAlert(ac, 'approaching');
+
+        } else if (prev === 'approaching' && (now - (this.lastApproachingAlertTimes.get(ac.hex) || 0) >= 45000)) {
+
+          this.triggerAudioAlert(ac, 'approaching');
+
+        }
+
+        this.previousStatus.set(ac.hex, 'approaching');
 
       } else {
 
@@ -64910,7 +65516,7 @@ const AdsbAirspaceManager = {
       const endpoint = this.getEffectiveEndpoint();
       const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
       const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
-      const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true${tokenParam}`;
+      const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true${tokenParam}`;
 
       const res = await fetch(url, {
         headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
@@ -64981,7 +65587,7 @@ const AdsbAirspaceManager = {
 
         const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
 
-        if (primary.altitude !== null) {
+        if (primary.altitude !== null && primary.altitude !== undefined) {
 
           altEl.textContent = isMetric 
 
@@ -65039,11 +65645,121 @@ const AdsbAirspaceManager = {
 
 
 
-      banner.classList.remove('hidden');
+      banner.classList.remove('hidden', 'is-approaching');
+
+      banner.classList.add('is-breached');
+
+    } else if (this.approachingAircraft.length > 0 && this.enabled) {
+
+      const primary = this.approachingAircraft[0];
+
+      const classified = this.getAircraftMeta(primary);
+
+      const emojiEl = banner.querySelector('.adsb-alert-emoji');
+
+      if (emojiEl) emojiEl.textContent = classified.emoji;
+
+
+
+      const callsignEl = document.getElementById('adsb-alert-callsign');
+
+      const altEl = document.getElementById('adsb-alert-altitude');
+
+      const distEl = document.getElementById('adsb-alert-distance');
+
+      const speedEl = document.getElementById('adsb-alert-speed');
+
+      const badgeEl = document.getElementById('adsb-alert-badge');
+
+
+
+      if (callsignEl) callsignEl.textContent = primary.callsign || `HEX:${primary.hex}`;
+
+      if (altEl) {
+
+        const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+
+        if (primary.altitude !== null && primary.altitude !== undefined) {
+
+          altEl.textContent = isMetric 
+
+            ? `${Math.round(primary.altitude * 0.3048)} m AGL` 
+
+            : `${primary.altitude.toLocaleString()} ft AGL`;
+
+        } else {
+
+          altEl.textContent = 'Alt N/A';
+
+        }
+
+      }
+
+      if (distEl) {
+
+        const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+
+        const cardinal = primary.bearingCardinal ? ` ${primary.bearingCardinal}` : '';
+
+        const deg = (typeof primary.bearingDeg === 'number') ? ` (${String(primary.bearingDeg).padStart(3, '0')}°)` : '';
+
+        if (isMetric) {
+
+          const km = (typeof primary.distanceMeters === 'number') ? (primary.distanceMeters / 1000).toFixed(1) : '--';
+
+          distEl.textContent = `${km} km${cardinal}${deg}`;
+
+        } else {
+
+          const mi = (typeof primary.distanceMiles === 'number') ? primary.distanceMiles.toFixed(1) : '--';
+
+          distEl.textContent = `${mi} mi${cardinal}${deg}`;
+
+        }
+
+      }
+
+      if (speedEl) {
+
+        const closing = primary.closingSpeedKts !== null && primary.closingSpeedKts !== undefined ? primary.closingSpeedKts : primary.speed;
+
+        speedEl.textContent = closing ? `Closing: ${closing} kts` : '-- kts';
+
+      }
+
+      if (badgeEl) {
+
+        let etaLabel = 'TRAFFIC APPROACHING';
+
+        if (typeof primary.etaSeconds === 'number' && primary.etaSeconds > 0) {
+
+          const etaMin = Math.floor(primary.etaSeconds / 60);
+
+          const etaSec = primary.etaSeconds % 60;
+
+          etaLabel = `APPROACHING (${etaMin}m ${etaSec}s)`;
+
+        }
+
+        badgeEl.textContent = this.approachingAircraft.length > 1 
+
+          ? `${etaLabel} +${this.approachingAircraft.length - 1}` 
+
+          : etaLabel;
+
+      }
+
+
+
+      banner.classList.remove('hidden', 'is-breached');
+
+      banner.classList.add('is-approaching');
 
     } else {
 
       banner.classList.add('hidden');
+
+      banner.classList.remove('is-breached', 'is-approaching');
 
     }
 
@@ -65069,6 +65785,8 @@ const AdsbAirspaceManager = {
 
     const breachedCount = this.breachedAircraft.length;
 
+    const approachingCount = this.approachingAircraft.length;
+
     const totalCount = this.aircraft.length;
 
 
@@ -65082,6 +65800,16 @@ const AdsbAirspaceManager = {
         topbarBadge.style.background = 'rgba(239, 68, 68, 0.4)';
 
         topbarBadge.style.color = '#fff';
+
+        topbarBadge.classList.remove('hidden');
+
+      } else if (approachingCount > 0) {
+
+        topbarBadge.textContent = `${approachingCount} NEAR`;
+
+        topbarBadge.style.background = 'rgba(245, 158, 11, 0.35)';
+
+        topbarBadge.style.color = '#fbbf24';
 
         topbarBadge.classList.remove('hidden');
 
@@ -65121,6 +65849,20 @@ const AdsbAirspaceManager = {
 
         }
 
+      } else if (approachingCount > 0) {
+
+        mapPill.classList.remove('hidden');
+
+        if (mapPillText) mapPillText.textContent = `⚠️ ${approachingCount} Approaching`;
+
+        if (beaconDot) {
+
+          beaconDot.style.background = '#f59e0b';
+
+          beaconDot.classList.remove('pulsing-beacon-dot');
+
+        }
+
       } else if (totalCount > 0) {
 
         mapPill.classList.remove('hidden');
@@ -65130,6 +65872,8 @@ const AdsbAirspaceManager = {
         if (beaconDot) {
 
           beaconDot.style.background = '#38bdf8';
+
+          beaconDot.classList.remove('pulsing-beacon-dot');
 
         }
 
@@ -65291,6 +66035,8 @@ const AdsbAirspaceManager = {
 
       const isBreached = ac.isBreached;
 
+      const isApproaching = !isBreached && (ac.isConeWarning || ac.status === 'approaching');
+
       const track = ac.track || 0;
 
       const altStr = ac.altitude ? `${ac.altitude} ft` : 'Alt N/A';
@@ -65303,7 +66049,153 @@ const AdsbAirspaceManager = {
 
       const classified = this.getAircraftMeta(ac);
 
-      const tooltipContent = `<strong>${ac.callsign || ac.hex}</strong>${typeStr}<br><span style="font-weight: 600; color: #38bdf8;">${classified.emoji} ${classified.label}</span><br>Alt: ${altStr} • ${speedStr}<br>Dist: ${ac.distanceMiles || '--'} mi ${ac.bearingCardinal || ''}<br><span style="font-size: 0.64rem; color: #94a3b8;">Source: ${srcStr}</span>`;
+
+
+      let alertBadgeTooltip = '';
+
+      if (isBreached) {
+
+        alertBadgeTooltip = '<br><span style="font-weight: 700; color: #ef4444;">🚨 PERIMETER BREACH</span>';
+
+      } else if (isApproaching) {
+
+        const etaMin = Math.floor((ac.etaSeconds || 0) / 60);
+
+        const etaSec = (ac.etaSeconds || 0) % 60;
+
+        const closing = ac.closingSpeedKts ? ` • Closing: ${ac.closingSpeedKts} kt` : '';
+
+        alertBadgeTooltip = `<br><span style="font-weight: 700; color: #f59e0b;">⚠️ APPROACHING PERIMETER</span><br><span style="font-size: 0.68rem; color: #fbbf24;">ETA: ${etaMin}m ${etaSec}s${closing}</span>`;
+
+      }
+
+
+
+      const tooltipContent = `<strong>${ac.callsign || ac.hex}</strong>${typeStr}<br><span style="font-weight: 600; color: #38bdf8;">${classified.emoji} ${classified.label}</span><br>Alt: ${altStr} • ${speedStr}<br>Dist: ${ac.distanceMiles || '--'} mi ${ac.bearingCardinal || ''}${alertBadgeTooltip}<br><span style="font-size: 0.64rem; color: #94a3b8;">Source: ${srcStr}</span>`;
+
+
+
+      // Render/Update Predictive Trajectory Cone
+
+      const hasSpeedAndTrack = typeof ac.speed === 'number' && ac.speed > 0 && typeof ac.track === 'number' && !isNaN(ac.track);
+
+      if (hasSpeedAndTrack && ac.latitude !== null && ac.longitude !== null) {
+
+        const coneLen = ac.coneLengthMeters || Math.round((ac.speed * 0.51444444) * (this.warningMinutes * 60));
+
+        const coneDev = this.coneDeviationDeg || 15;
+
+        const coneGeom = this.computeConePolygonLatLngs(ac.latitude, ac.longitude, ac.track, coneLen, coneDev);
+
+        const coneColor = isBreached ? '#ef4444' : (isApproaching ? '#f59e0b' : '#38bdf8');
+
+        const coneFillOpacity = isBreached ? 0.12 : (isApproaching ? 0.20 : 0.08);
+
+
+
+        if (this.showCones && this.coneLayerGroup) {
+
+          let coneEntry = this.mapCones.get(ac.hex);
+
+          if (!coneEntry) {
+
+            if (leaflet.polygon && leaflet.polyline && leaflet.layerGroup) {
+
+              const poly = leaflet.polygon(coneGeom.polygonLatLngs, {
+
+                color: coneColor,
+
+                weight: isApproaching ? 2 : 1,
+
+                fillColor: coneColor,
+
+                fillOpacity: coneFillOpacity,
+
+                dashArray: isApproaching ? '4, 4' : null,
+
+                className: `adsb-cone-polygon ${isBreached ? 'breached' : (isApproaching ? 'approaching' : '')}`
+
+              });
+
+              const centerLine = leaflet.polyline(coneGeom.centerLineLatLngs, {
+
+                color: coneColor,
+
+                weight: isApproaching ? 1.5 : 1,
+
+                dashArray: '3, 4',
+
+                opacity: 0.7
+
+              });
+
+              const grp = leaflet.layerGroup([poly, centerLine]);
+              if (this.coneLayerGroup && typeof this.coneLayerGroup.addLayer === 'function') {
+                this.coneLayerGroup.addLayer(grp);
+              } else if (grp && typeof grp.addTo === 'function') {
+                grp.addTo(this.coneLayerGroup);
+              }
+              this.mapCones.set(ac.hex, { group: grp, poly, centerLine });
+
+            }
+
+          } else {
+
+            if (coneEntry.poly && coneEntry.poly.setLatLngs) {
+
+              coneEntry.poly.setLatLngs(coneGeom.polygonLatLngs);
+
+              coneEntry.poly.setStyle({
+
+                color: coneColor,
+
+                weight: isApproaching ? 2 : 1,
+
+                fillColor: coneColor,
+
+                fillOpacity: coneFillOpacity,
+
+                dashArray: isApproaching ? '4, 4' : null
+
+              });
+
+            }
+
+            if (coneEntry.centerLine && coneEntry.centerLine.setLatLngs) {
+
+              coneEntry.centerLine.setLatLngs(coneGeom.centerLineLatLngs);
+
+              coneEntry.centerLine.setStyle({
+
+                color: coneColor,
+
+                weight: isApproaching ? 1.5 : 1
+
+              });
+
+            }
+
+          }
+
+        } else if (!this.showCones) {
+
+          const coneEntry = this.mapCones.get(ac.hex);
+
+          if (coneEntry) {
+
+            if (this.coneLayerGroup && this.coneLayerGroup.removeLayer && coneEntry.group) {
+
+              this.coneLayerGroup.removeLayer(coneEntry.group);
+
+            }
+
+            this.mapCones.delete(ac.hex);
+
+          }
+
+        }
+
+      }
 
 
 
@@ -65315,7 +66207,7 @@ const AdsbAirspaceManager = {
 
           ? `adsb-marker-inner breached ${classified.type}` 
 
-          : `adsb-marker-inner ${classified.type}`;
+          : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : `adsb-marker-inner ${classified.type}`);
 
         const markerSvg = this.getAircraftMarkerSvg(classified.type);
 
@@ -65353,11 +66245,13 @@ const AdsbAirspaceManager = {
 
         marker._isBreached = isBreached;
 
+        marker._isApproaching = isApproaching;
+
         if (marker.bindTooltip) {
 
           marker.bindTooltip(tooltipContent, {
 
-            className: `adsb-plane-tooltip ${isBreached ? 'breached' : ''}`,
+            className: `adsb-plane-tooltip ${isBreached ? 'breached' : (isApproaching ? 'approaching' : '')}`,
 
             direction: 'top',
 
@@ -65366,6 +66260,88 @@ const AdsbAirspaceManager = {
           });
 
         }
+
+
+
+        // Bind hover preview for trajectory cone when layer toggle is off
+
+        if (marker.on) {
+
+          marker.on('mouseover', () => {
+
+            this.hoveredHex = ac.hex;
+
+            if (!this.showCones && this.layerGroup && leaflet.polygon && leaflet.polyline && leaflet.layerGroup) {
+
+              if (this.hoverConeLayer) {
+
+                try { this.layerGroup.removeLayer(this.hoverConeLayer); } catch (_) {}
+
+                this.hoverConeLayer = null;
+
+              }
+
+              const hLen = ac.coneLengthMeters || Math.round(((ac.speed || 100) * 0.51444444) * (this.warningMinutes * 60));
+
+              const hDev = this.coneDeviationDeg || 15;
+
+              const hTrack = typeof ac.track === 'number' ? ac.track : 0;
+
+              const hGeom = this.computeConePolygonLatLngs(ac.latitude, ac.longitude, hTrack, hLen, hDev);
+
+              const hColor = ac.isBreached ? '#ef4444' : (isApproaching ? '#f59e0b' : '#38bdf8');
+
+              const poly = leaflet.polygon(hGeom.polygonLatLngs, {
+
+                color: hColor,
+
+                weight: 2,
+
+                fillColor: hColor,
+
+                fillOpacity: 0.22,
+
+                dashArray: '3, 3'
+
+              });
+
+              const centerLine = leaflet.polyline(hGeom.centerLineLatLngs, {
+
+                color: hColor,
+
+                weight: 1.5,
+
+                dashArray: '4, 4'
+
+              });
+
+              const grp = leaflet.layerGroup([poly, centerLine]);
+
+              grp.addTo(this.layerGroup);
+
+              this.hoverConeLayer = grp;
+
+            }
+
+          });
+
+          marker.on('mouseout', () => {
+
+            this.hoveredHex = null;
+
+            if (this.hoverConeLayer && this.layerGroup) {
+
+              try { this.layerGroup.removeLayer(this.hoverConeLayer); } catch (_) {}
+
+              this.hoverConeLayer = null;
+
+            }
+
+          });
+
+        }
+
+
 
         marker.addTo(this.layerGroup);
 
@@ -65391,7 +66367,7 @@ const AdsbAirspaceManager = {
 
               ? `adsb-marker-inner breached ${classified.type}` 
 
-              : `adsb-marker-inner ${classified.type}`;
+              : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : `adsb-marker-inner ${classified.type}`);
 
             if (marker._aircraftTypeClass !== classified.type) {
 
@@ -65406,6 +66382,8 @@ const AdsbAirspaceManager = {
         }
 
         marker._isBreached = isBreached;
+
+        marker._isApproaching = isApproaching;
 
         if (marker.setTooltipContent) {
 
@@ -65439,6 +66417,20 @@ const AdsbAirspaceManager = {
 
         }
 
+        const coneEntry = this.mapCones.get(hex);
+
+        if (coneEntry) {
+
+          if (this.coneLayerGroup && this.coneLayerGroup.removeLayer && coneEntry.group) {
+
+            this.coneLayerGroup.removeLayer(coneEntry.group);
+
+          }
+
+          this.mapCones.delete(hex);
+
+        }
+
         this.acHistory.delete(hex);
 
       }
@@ -65455,7 +66447,13 @@ const AdsbAirspaceManager = {
 
     this.breachedAircraft = [];
 
+    this.approachingAircraft = [];
+
     this.previousStatus.clear();
+
+    this.lastAlertTimes.clear();
+
+    this.lastApproachingAlertTimes.clear();
 
     this.updateVisualBanner();
 
@@ -65467,9 +66465,25 @@ const AdsbAirspaceManager = {
 
     }
 
+    if (this.coneLayerGroup && this.coneLayerGroup.clearLayers) {
+
+      this.coneLayerGroup.clearLayers();
+
+    }
+
+    if (this.hoverConeLayer && this.layerGroup) {
+
+      try { this.layerGroup.removeLayer(this.hoverConeLayer); } catch (_) {}
+
+      this.hoverConeLayer = null;
+
+    }
+
     this.mapMarkers.clear();
 
     this.mapTrails.clear();
+
+    this.mapCones.clear();
 
     this.acHistory.clear();
 
@@ -65572,6 +66586,40 @@ const AdsbAirspaceManager = {
         : `${this.ceilingFeet.toLocaleString()} ft (${m.toLocaleString()} m)`;
 
     }
+
+
+
+    const warningMinSlider = document.getElementById('adsb-warning-min-slider');
+
+    const warningMinVal = document.getElementById('adsb-warning-min-val');
+
+    if (warningMinSlider) warningMinSlider.value = this.warningMinutes;
+
+    if (warningMinVal) {
+
+      warningMinVal.textContent = `${Number(this.warningMinutes).toFixed(1)} min`;
+
+    }
+
+
+
+    const coneDevSlider = document.getElementById('adsb-cone-dev-slider');
+
+    const coneDevVal = document.getElementById('adsb-cone-dev-val');
+
+    if (coneDevSlider) coneDevSlider.value = this.coneDeviationDeg;
+
+    if (coneDevVal) {
+
+      coneDevVal.textContent = `±${this.coneDeviationDeg}°`;
+
+    }
+
+
+
+    const conesToggle = document.getElementById('adsb-cones-toggle');
+
+    if (conesToggle) conesToggle.checked = this.showCones;
 
 
 
@@ -65737,6 +66785,8 @@ const AdsbAirspaceManager = {
 
       const isBreached = ac.isBreached;
 
+      const isApproaching = !isBreached && (ac.isConeWarning || ac.status === 'approaching');
+
       const hasPos = ac.latitude !== null && ac.longitude !== null;
 
       const altStr = ac.altitude !== null ? (isMetric ? `${Math.round(ac.altitude * 0.3048)}m` : `${ac.altitude}ft`) : 'Alt N/A';
@@ -65797,6 +66847,16 @@ const AdsbAirspaceManager = {
 
         distDisplay = `<span style="font-size: 0.68rem; font-weight: 600; color: #fbbf24;">${distStr} ${ac.bearingCardinal || ''}</span>`;
 
+      } else if (isApproaching) {
+
+        const etaMin = Math.floor((ac.etaSeconds || 0) / 60);
+
+        const etaSec = (ac.etaSeconds || 0) % 60;
+
+        statusChip = `<span style="font-size: 0.62rem; font-weight: 700; background: rgba(245, 158, 11, 0.25); border: 1px solid rgba(245, 158, 11, 0.6); color: #fbbf24; padding: 1px 6px; border-radius: 8px;">APPROACHING (${etaMin}m ${etaSec}s)</span>`;
+
+        distDisplay = `<span style="font-size: 0.68rem; font-weight: 600; color: #fbbf24;">${distStr} ${ac.bearingCardinal || ''}</span><span style="font-size: 0.62rem; color: #f59e0b; font-weight: 600;">ETA ${etaMin}m ${etaSec}s</span>`;
+
       } else {
 
         statusChip = '<span style="font-size: 0.62rem; font-weight: 600; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 1px 6px; border-radius: 8px;">SAFE</span>';
@@ -65817,7 +66877,7 @@ const AdsbAirspaceManager = {
 
       html += `
 
-        <div class="adsb-aircraft-card ${isBreached ? 'breached' : ''} ${!hasPos ? 'mode-s-pending' : ''}" data-aircraft-type="${classified.type}">
+        <div class="adsb-aircraft-card ${isBreached ? 'breached' : ''} ${isApproaching ? 'approaching' : ''} ${!hasPos ? 'mode-s-pending' : ''}" data-aircraft-type="${classified.type}">
 
           <div style="display: flex; flex-direction: column; gap: 2px;">
 
@@ -66744,6 +67804,104 @@ const AdsbAirspaceManager = {
     if (simJetBtn) {
 
       simJetBtn.addEventListener('click', () => this.simulateAircraft('jet'));
+
+    }
+
+
+
+    const simApproachingBtn = document.getElementById('adsb-sim-approaching-btn');
+
+    if (simApproachingBtn) {
+
+      simApproachingBtn.addEventListener('click', () => this.simulateAircraft('approaching'));
+
+    }
+
+
+
+    const conesToggle = document.getElementById('adsb-cones-toggle');
+
+    if (conesToggle) {
+
+      conesToggle.addEventListener('change', (e) => {
+
+        this.showCones = !!e.target.checked;
+
+        this.saveSettings();
+
+        const m = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || null;
+
+        if (this.coneLayerGroup && m) {
+
+          if (this.showCones) {
+
+            if (!m.hasLayer(this.coneLayerGroup)) this.coneLayerGroup.addTo(m);
+
+          } else {
+
+            if (m.hasLayer(this.coneLayerGroup)) m.removeLayer(this.coneLayerGroup);
+
+          }
+
+        }
+
+        if (this.showCones) {
+
+          this.updateMapMarkers();
+
+        } else {
+
+          if (this.coneLayerGroup && this.coneLayerGroup.clearLayers) this.coneLayerGroup.clearLayers();
+
+          this.mapCones.clear();
+
+        }
+
+      });
+
+    }
+
+
+
+    const warningMinSlider = document.getElementById('adsb-warning-min-slider');
+
+    if (warningMinSlider) {
+
+      warningMinSlider.addEventListener('input', (e) => {
+
+        this.warningMinutes = parseFloat(e.target.value) || 2.0;
+
+        this.saveSettings();
+
+        this.updateControlsUI();
+
+        if (this.showCones) this.updateMapMarkers();
+
+        this.pollAirspace();
+
+      });
+
+    }
+
+
+
+    const coneDevSlider = document.getElementById('adsb-cone-dev-slider');
+
+    if (coneDevSlider) {
+
+      coneDevSlider.addEventListener('input', (e) => {
+
+        this.coneDeviationDeg = parseInt(e.target.value, 10) || 15;
+
+        this.saveSettings();
+
+        this.updateControlsUI();
+
+        if (this.showCones) this.updateMapMarkers();
+
+        this.pollAirspace();
+
+      });
 
     }
 

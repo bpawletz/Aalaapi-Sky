@@ -144,7 +144,12 @@ function initUIEventListeners() {
       'exclusion-detour-mode': 'Exclusion Detour Mode',
       'boundary-layer-name': 'Boundary Layer Name',
       'fiducial-layer-name': 'Fiducial Layer Name',
-      'fiducial-show-range-rings': 'Fiducial Range Rings'
+      'fiducial-show-range-rings': 'Fiducial Range Rings',
+      'adsb-radius-slider': 'ADS-B Proximity Radius',
+      'adsb-ceiling-slider': 'ADS-B Ceiling Buffer',
+      'adsb-warning-min-slider': 'ADS-B Predictive Warning Time',
+      'adsb-cone-dev-slider': 'ADS-B Heading Deviation Half-Angle',
+      'adsb-cones-toggle': 'ADS-B Predictive Heading Cones'
     };
     return map[id] || id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
@@ -334,7 +339,8 @@ function initUIEventListeners() {
     'global-custom-heading', 'global-terrain-follow', 'global-target-agl', 'global-max-slope-angle', 'global-terrain-source',
     'global-max-altitude', 'global-rth-altitude', 'rc2-uuid',
     'acoustic-ambient-preset', 'acoustic-contour-display-mode', 'acoustic-map-overlay-toggle', 'acoustic-3d-overlay-toggle',
-    'sun-sky-condition-select'
+    'sun-sky-condition-select',
+    'adsb-radius-slider', 'adsb-ceiling-slider', 'adsb-warning-min-slider', 'adsb-cone-dev-slider', 'adsb-cones-toggle'
   ];
   additionalLayerControls.forEach(id => {
     const el = document.getElementById(id);

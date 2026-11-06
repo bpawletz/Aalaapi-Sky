@@ -433,34 +433,6 @@
     "exact_time": true
   },
   {
-    "notam_id": "6/1671",
-    "facility": "ZHU",
-    "state": "TX",
-    "type": "HAZARDS",
-    "description": "BROWNSVILLE, TX, Friday, October 23, 2026 through Friday, November 6, 2026 UTC",
-    "mod_date": "10/22/2026 14:42:00",
-    "mod_abs_time": "202610221442",
-    "is_new": "N",
-    "gid": "6/1671",
-    "start_utc": "2026-10-23T05:00:00.000Z",
-    "end_utc": "2026-11-06T05:00:59.000Z",
-    "exact_time": true
-  },
-  {
-    "notam_id": "6/1666",
-    "facility": "ZHU",
-    "state": "TX",
-    "type": "HAZARDS",
-    "description": "BROWNSVILLE, TX, Friday, October 23, 2026 through Friday, November 6, 2026 UTC",
-    "mod_date": "10/22/2026 14:32:00",
-    "mod_abs_time": "202610221432",
-    "is_new": "N",
-    "gid": "6/1666",
-    "start_utc": "2026-10-23T05:00:00.000Z",
-    "end_utc": "2026-11-06T05:00:59.000Z",
-    "exact_time": true
-  },
-  {
     "notam_id": "6/0100",
     "facility": "ZMA",
     "state": "FL",
