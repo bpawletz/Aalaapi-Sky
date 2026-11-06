@@ -1,3 +1,38 @@
+## [1.226.1] - 2026-11-06
+
+Native Android File Picker, Public Downloads Exporter & DJI Developer API Key Persistence.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **File Choosers & Import Dialogs on Android (Closes #251)**:
+  - Tapping **Import KMZ**, **Load Flight Record**, **Import DEM GeoTIFF**, or **Import GCP CSV** now opens the native Android file selector (`ACTION_GET_CONTENT` / `ACTION_OPEN_DOCUMENT`) instead of failing silently.
+  - Pilots can browse local device storage, Downloads, and cloud drives directly from the WebView container.
+- **Direct Downloads to Device Storage on Android (Closes #251)**:
+  - Exporting KMZ mission plans (`GridMission_*.kmz`), QGC plans (`Mission_QGC_*.plan`), Autel plans (`Mission_Autel_*.kml`), or flight diagnostics (`*_diag.json`) now saves directly to the device's public **Downloads** directory with a confirmation toast.
+  - Bypasses WebView blob URL restrictions on Android 10+ using `MediaStore.Downloads` and external public storage fallback.
+- **DJI Developer API Key Persistence & Decryption on Android (Closes #251)**:
+  - Entering and saving a 32-character DJI Developer API Key in `#dji-key-modal` now persists natively in Android `SharedPreferences` as well as `localStorage`.
+  - Disconnecting from or operating without a desktop companion bridge no longer throws `❌ Failed to fetch` or wipes configured keys.
+  - Decryption key requests to DJI Cloud Keychain (`https://api.dji.com/v1/log/key`) route through native Android HTTP POST stack, bypassing WebView CORS restrictions.
+- **Bluetooth Remote ID Scanning Permission (Closes #251)**:
+  - Requests `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT` permissions at runtime on Android 12+ (API 31+), preventing silent security exceptions and activating BLE ASTM F3411 Remote ID scanning.
+
+#### Under the Hood & Technical Details
+- **android/app/src/main/java/com/aalaapi/sky/MainActivity.kt**:
+  - Implemented `WebChromeClient.onShowFileChooser()` with `ActivityResultContracts.StartActivityForResult()` for native file picking.
+  - Implemented `@JavascriptInterface fun saveFile(base64Data, filename, mimeType)` writing bytes to `MediaStore.Downloads` (Android 10+) or `Environment.DIRECTORY_DOWNLOADS`.
+  - Implemented `@JavascriptInterface fun getDjiApiKey()`, `setDjiApiKey(key)`, and `postHttp(urlStr, bodyStr, headersJson)` with `SharedPreferences` persistence.
+  - Added `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT` to `locationPermissionLauncher`.
+- **src/export/Packager.js**:
+  - Implemented `triggerFileDownload(blobOrData, filename, mimeType)` detecting `window.AalaapiAndroid.saveFile()` and converting blobs/strings to Base64 chunks before saving.
+  - Integrated `triggerFileDownload` into `exportKMZ()`, `exportQgcPlan()`, `exportAutelKml()`, `exportPlanJson()`, and `exportDiagnosticReport()`.
+- **src/3d/DigitalTwin.js**:
+  - Updated `checkDjiApiKeyStatus()`, `saveDjiApiKey()`, and `clearDjiApiKey()` to check `window.AalaapiAndroid` and `localStorage`, with graceful offline handling for desktop companion bridge calls.
+- **src/bridge/DjiLogDecryptor.js**:
+  - Tied `setApiKey()` and `getApiKey()` to `window.AalaapiAndroid`.
+  - Updated `fetchDecryptionKeyFromDjiCloud()` to route requests through `window.AalaapiAndroid.postHttp()` when available.
+
 ## [1.226.0] - 2026-11-06
 
 Configurable Alert Reference Anchor, Real-Time Re-Anchoring & Visual Proximity Boundary Ring.

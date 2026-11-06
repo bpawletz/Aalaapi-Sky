@@ -2,7 +2,9 @@ package com.aalaapi.sky
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.BroadcastReceiver
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -14,17 +16,23 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.media.AudioAttributes
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Looper
+import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
+import android.util.Base64
 import android.webkit.GeolocationPermissions
 import android.webkit.JavascriptInterface
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -35,6 +43,8 @@ import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
@@ -48,7 +58,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mdnsDiscovery: AndroidMdnsDiscovery
     private lateinit var mtpBridge: AndroidMtpBridge
 
-    // ── Location (Issue #249) ──
+    // ── Location & Hardware Permissions (Issue #249, #251) ──
     private var pendingGeoCallback: GeolocationPermissions.Callback? = null
     private var pendingGeoOrigin: String? = null
     private var pendingNativeLocation = false
@@ -61,10 +71,35 @@ class MainActivity : AppCompatActivity() {
         pendingGeoCallback?.invoke(pendingGeoOrigin, granted, false)
         pendingGeoCallback = null
         pendingGeoOrigin = null
+        if (result[Manifest.permission.BLUETOOTH_SCAN] == true) {
+            remoteIdScanner.startScan()
+        }
         if (pendingNativeLocation) {
             pendingNativeLocation = false
             if (granted) fetchNativeLocation() else notifyLocationError("Location permission denied")
         }
+    }
+
+    // ── File Chooser for <input type="file"> (Issue #251) ──
+    private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
+    private val fileChooserLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val intent = result.data
+            val uris = when {
+                intent?.clipData != null -> {
+                    val clip = intent.clipData!!
+                    Array(clip.itemCount) { i -> clip.getItemAt(i).uri }
+                }
+                intent?.data != null -> arrayOf(intent.data!!)
+                else -> null
+            }
+            fileChooserCallback?.onReceiveValue(uris)
+        } else {
+            fileChooserCallback?.onReceiveValue(null)
+        }
+        fileChooserCallback = null
     }
 
     // ── Text-to-speech (Issue #249) ──
@@ -108,9 +143,15 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     private fun requestLocationPermissions() {
-        locationPermissionLauncher.launch(
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+        val perms = mutableListOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
         )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            perms.add(Manifest.permission.BLUETOOTH_SCAN)
+            perms.add(Manifest.permission.BLUETOOTH_CONNECT)
+        }
+        locationPermissionLauncher.launch(perms.toTypedArray())
     }
 
     private fun notifyLocation(loc: Location) {
@@ -317,10 +358,94 @@ class MainActivity : AppCompatActivity() {
                     requestLocationPermissions()
                 }
             }
+
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                fileChooserCallback?.onReceiveValue(null)
+                fileChooserCallback = filePathCallback
+
+                val intent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                    type = "*/*"
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                }
+                return try {
+                    fileChooserLauncher.launch(intent)
+                    true
+                } catch (e: Exception) {
+                    fileChooserCallback?.onReceiveValue(null)
+                    fileChooserCallback = null
+                    false
+                }
+            }
         }
 
         // Register Javascript Interface: window.AalaapiAndroid
         webView.addJavascriptInterface(object {
+            @JavascriptInterface
+            fun getDjiApiKey(): String {
+                val prefs = getSharedPreferences("aalaapi_prefs", Context.MODE_PRIVATE)
+                return prefs.getString("dji_developer_key", "") ?: ""
+            }
+
+            @JavascriptInterface
+            fun setDjiApiKey(key: String): Boolean {
+                val prefs = getSharedPreferences("aalaapi_prefs", Context.MODE_PRIVATE)
+                prefs.edit().putString("dji_developer_key", key.trim()).apply()
+                return true
+            }
+
+            @JavascriptInterface
+            fun saveFile(base64Data: String, filename: String, mimeType: String): String {
+                return try {
+                    val bytes = Base64.decode(base64Data, Base64.DEFAULT)
+                    val cleanName = filename.replace("[^a-zA-Z0-9._-]".toRegex(), "_")
+                    val mime = if (mimeType.isBlank()) "application/octet-stream" else mimeType
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val values = ContentValues().apply {
+                            put(MediaStore.MediaColumns.DISPLAY_NAME, cleanName)
+                            put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                        }
+                        val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                            ?: return JSONObject().apply {
+                                put("success", false)
+                                put("error", "Failed to create MediaStore entry")
+                            }.toString()
+                        contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "Saved to Downloads: $cleanName", Toast.LENGTH_LONG).show()
+                        }
+                        JSONObject().apply {
+                            put("success", true)
+                            put("filename", cleanName)
+                            put("path", "Downloads/$cleanName")
+                        }.toString()
+                    } else {
+                        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        dir.mkdirs()
+                        val file = File(dir, cleanName)
+                        FileOutputStream(file).use { it.write(bytes) }
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "Saved to Downloads: $cleanName", Toast.LENGTH_LONG).show()
+                        }
+                        JSONObject().apply {
+                            put("success", true)
+                            put("filename", cleanName)
+                            put("path", file.absolutePath)
+                        }.toString()
+                    }
+                } catch (e: Exception) {
+                    JSONObject().apply {
+                        put("success", false)
+                        put("error", e.message ?: "Failed to save file")
+                    }.toString()
+                }
+            }
+
             @JavascriptInterface
             fun pushKmzToRc2(base64Kmz: String, targetUuid: String): Boolean {
                 return mtpBridge.writeKmzToRc2(base64Kmz, targetUuid)
@@ -390,6 +515,47 @@ class MainActivity : AppCompatActivity() {
                             requestMethod = "GET"
                             setRequestProperty("User-Agent", "Mozilla/5.0 (Android; AalaapiSky/1.0)")
                         }
+                        val code = conn.responseCode
+                        if (code in 200..299) {
+                            conn.inputStream.bufferedReader().use { it.readText() }
+                        } else {
+                            val err = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "HTTP $code"
+                            JSONObject().apply {
+                                put("error", err)
+                                put("status", code)
+                            }.toString()
+                        }
+                    } catch (e: Exception) {
+                        JSONObject().apply {
+                            put("error", e.message ?: "Network error")
+                        }.toString()
+                    }
+                }
+            }
+
+            @JavascriptInterface
+            fun postHttp(urlStr: String, bodyStr: String, headersJson: String): String {
+                return runBlocking(Dispatchers.IO) {
+                    try {
+                        val url = URL(urlStr)
+                        val conn = (url.openConnection() as HttpURLConnection).apply {
+                            connectTimeout = 8000
+                            readTimeout = 8000
+                            requestMethod = "POST"
+                            doOutput = true
+                            setRequestProperty("User-Agent", "Mozilla/5.0 (Android; AalaapiSky/1.0)")
+                            try {
+                                if (headersJson.isNotBlank()) {
+                                    val hdrs = JSONObject(headersJson)
+                                    val keys = hdrs.keys()
+                                    while (keys.hasNext()) {
+                                        val k = keys.next()
+                                        setRequestProperty(k, hdrs.getString(k))
+                                    }
+                                }
+                            } catch (_: Exception) {}
+                        }
+                        conn.outputStream.bufferedWriter().use { it.write(bodyStr) }
                         val code = conn.responseCode
                         if (code in 200..299) {
                             conn.inputStream.bufferedReader().use { it.readText() }

@@ -1,3 +1,64 @@
+async function triggerFileDownload(blobOrData, filename, mimeType = 'application/octet-stream') {
+  if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.saveFile === 'function') {
+    try {
+      let base64 = '';
+      if (typeof blobOrData === 'string') {
+        base64 = btoa(unescape(encodeURIComponent(blobOrData)));
+      } else if (blobOrData instanceof Blob) {
+        const buffer = await blobOrData.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        const chunk = 8192;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          const sub = bytes.subarray(i, i + chunk);
+          binary += String.fromCharCode.apply(null, sub);
+        }
+        base64 = btoa(binary);
+      } else if (blobOrData instanceof Uint8Array || blobOrData instanceof ArrayBuffer) {
+        const bytes = blobOrData instanceof ArrayBuffer ? new Uint8Array(blobOrData) : blobOrData;
+        let binary = '';
+        const chunk = 8192;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          const sub = bytes.subarray(i, i + chunk);
+          binary += String.fromCharCode.apply(null, sub);
+        }
+        base64 = btoa(binary);
+      }
+      const rawRes = window.AalaapiAndroid.saveFile(base64, filename, mimeType);
+      try {
+        const parsed = JSON.parse(rawRes);
+        if (parsed.success && typeof showToast === 'function') {
+          showToast(`💾 Saved to Downloads: ${filename}`, 'success');
+        }
+      } catch (_) {
+        if (typeof showToast === 'function') {
+          showToast(`💾 Saved to Downloads: ${filename}`, 'success');
+        }
+      }
+      return;
+    } catch (err) {
+      console.warn('[Packager] Native saveFile failed, falling back to browser anchor click:', err);
+    }
+  }
+
+  if (typeof document === 'undefined' || !document.createElement) return;
+  const blob = blobOrData instanceof Blob ? blobOrData : new Blob([blobOrData], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    if (link.parentNode) link.parentNode.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 150);
+}
+
+if (typeof window !== 'undefined') {
+  window.triggerFileDownload = triggerFileDownload;
+}
+
 function exportKMZ() {
   if (!centerMarker) {
     alert("Please select a flight mission center on the map first.");
@@ -151,7 +212,7 @@ function exportKMZ() {
       link.download = `GridMission_Alt${altitude}m_${isoTimestamp}.kmz`;
       downloadBase = `GridMission_Alt${altitude}m_${isoTimestamp}`;
     }
-    link.click();
+    triggerFileDownload(result.blob, link.download, "application/vnd.google-earth.kmz");
 
     // Also auto-export comprehensive Flight Diagnostics JSON (User Agent, 3D Simulation, Plan, & Camera)
     try {
@@ -192,10 +253,7 @@ function exportKMZ() {
 
       if (diagData && typeof Blob !== 'undefined' && typeof document !== 'undefined') {
         const jsonBlob = new Blob([JSON.stringify(diagData, null, 2)], { type: "application/json" });
-        const jsonLink = document.createElement("a");
-        jsonLink.href = URL.createObjectURL(jsonBlob);
-        jsonLink.download = `${downloadBase}_diag.json`;
-        jsonLink.click();
+        triggerFileDownload(jsonBlob, `${downloadBase}_diag.json`, "application/json");
       }
 
       // Automatically archive diagnostics to local Companion SQLite service if running
@@ -382,14 +440,8 @@ function exportQgcPlan() {
   const plan = buildQgcMissionPlan(currentWps, { speed, altitude, gimbalPitch });
   const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
   const ts = typeof formatISO8601ForFilename === 'function' ? formatISO8601ForFilename() : new Date().toISOString().replace(/:/g, '-');
-  a.download = `Mission_QGC_${ts}.plan`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  triggerFileDownload(blob, `Mission_QGC_${ts}.plan`, 'application/json');
 }
 
 function exportAutelKml() {
@@ -405,14 +457,8 @@ function exportAutelKml() {
   const kml = buildAutelMissionKml(currentWps, { speed, altitude, gimbalPitch });
   const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
   const ts = typeof formatISO8601ForFilename === 'function' ? formatISO8601ForFilename() : new Date().toISOString().replace(/:/g, '-');
-  a.download = `Mission_Autel_${ts}.kml`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  triggerFileDownload(blob, `Mission_Autel_${ts}.kml`, 'application/vnd.google-earth.kml+xml');
 }
 
 function initMultiVendorToggle() {
@@ -759,10 +805,7 @@ function exportMissionPlanJSON(customWps = null) {
   }
 
   if (blob && typeof document !== 'undefined' && document.createElement) {
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${downloadBase}_plan.json`;
-    link.click();
+    triggerFileDownload(blob, `${downloadBase}_plan.json`, "application/json");
   }
 
   return { plan, blob, jsonStr };
@@ -926,10 +969,7 @@ function exportFlightDiagnosticsJSON(customWps = null, options = {}) {
   }
 
   if (blob && typeof document !== 'undefined' && document.createElement) {
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${downloadBase}_diag.json`;
-    link.click();
+    triggerFileDownload(blob, `${downloadBase}_diag.json`, "application/json");
   }
 
   // Also notify companion archive service

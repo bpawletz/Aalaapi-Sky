@@ -42055,4 +42055,108 @@ describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time 
     assert.ok(templateSrc.includes('id="adsb-show-proximity-ring-toggle"'), 'Template includes adsb-show-proximity-ring-toggle');
     assert.ok(templateSrc.includes('id="adsb-active-anchor-badge"'), 'Template includes adsb-active-anchor-badge');
   });
+
+  describe('Android Native Services & Bridge Suite (Issue #251)', () => {
+    test('MainActivity.kt exposes file chooser, Downloads file saver, and DJI key persistence', () => {
+      const ktSrc = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/java/com/aalaapi/sky/MainActivity.kt'), 'utf8');
+      
+      // 1. File Chooser
+      assert.ok(ktSrc.includes('onShowFileChooser'), 'WebChromeClient must implement onShowFileChooser');
+      assert.ok(ktSrc.includes('fileChooserLauncher'), 'MainActivity must register fileChooserLauncher');
+      assert.ok(ktSrc.includes('fileChooserCallback'), 'MainActivity must store fileChooserCallback');
+
+      // 2. File Saver (Public Downloads)
+      assert.ok(ktSrc.includes('fun saveFile(base64Data: String, filename: String, mimeType: String): String'), 'saveFile JS interface defined');
+      assert.ok(ktSrc.includes('MediaStore.Downloads.EXTERNAL_CONTENT_URI'), 'Uses MediaStore Downloads API on Android 10+');
+      assert.ok(ktSrc.includes('Environment.DIRECTORY_DOWNLOADS'), 'Targets public DIRECTORY_DOWNLOADS');
+
+      // 3. DJI Developer API Key persistence
+      assert.ok(ktSrc.includes('fun getDjiApiKey(): String'), 'getDjiApiKey JS interface defined');
+      assert.ok(ktSrc.includes('fun setDjiApiKey(key: String): Boolean'), 'setDjiApiKey JS interface defined');
+      assert.ok(ktSrc.includes('dji_developer_key'), 'Key persisted under dji_developer_key preference');
+
+      // 4. Native HTTP POST bridge
+      assert.ok(ktSrc.includes('fun postHttp(urlStr: String, bodyStr: String, headersJson: String): String'), 'postHttp JS interface defined');
+
+      // 5. Bluetooth Scan runtime permission request
+      assert.ok(ktSrc.includes('Manifest.permission.BLUETOOTH_SCAN'), 'BLUETOOTH_SCAN requested at runtime on Android 12+');
+    });
+
+    test('DjiLogDecryptor syncs with window.AalaapiAndroid and routes POST requests via native bridge', async () => {
+      const { DjiLogDecryptor } = require('./src/bridge/DjiLogDecryptor.js');
+      
+      const prevAndroid = global.window ? global.window.AalaapiAndroid : undefined;
+      let savedNativeKey = '';
+      let postedUrl = '';
+      let postedBody = '';
+
+      if (!global.window) global.window = {};
+      global.window.AalaapiAndroid = {
+        getDjiApiKey: () => savedNativeKey,
+        setDjiApiKey: (k) => { savedNativeKey = k; return true; },
+        postHttp: (url, body, headersJson) => {
+          postedUrl = url;
+          postedBody = body;
+          return JSON.stringify({ key: 'decrypted-session-aes-key-from-cloud' });
+        }
+      };
+
+      try {
+        DjiLogDecryptor.setApiKey('test-dji-app-key-1234567890abcdef');
+        assert.strictEqual(savedNativeKey, 'test-dji-app-key-1234567890abcdef', 'Key must be passed to native setDjiApiKey');
+        assert.strictEqual(DjiLogDecryptor.getApiKey(), 'test-dji-app-key-1234567890abcdef', 'Key must be retrieved from native bridge');
+
+        const sessionKey = await DjiLogDecryptor.fetchDecryptionKeyFromDjiCloud('wrapped-rsa-key-base64');
+        assert.strictEqual(sessionKey, 'decrypted-session-aes-key-from-cloud');
+        assert.strictEqual(postedUrl, 'https://api.dji.com/v1/log/key');
+        assert.ok(postedBody.includes('wrapped-rsa-key-base64'), 'Request body must contain wrapped key');
+      } finally {
+        if (prevAndroid === undefined) delete global.window.AalaapiAndroid;
+        else global.window.AalaapiAndroid = prevAndroid;
+      }
+    });
+
+    test('Packager.triggerFileDownload delegates to window.AalaapiAndroid.saveFile on Android', async () => {
+      const packagerSrc = fs.readFileSync(path.resolve(__dirname, 'src/export/Packager.js'), 'utf8');
+      assert.ok(packagerSrc.includes('window.AalaapiAndroid.saveFile'), 'Packager must check window.AalaapiAndroid.saveFile');
+      assert.ok(packagerSrc.includes('triggerFileDownload'), 'Packager exports triggerFileDownload');
+
+      let savedBase64 = '';
+      let savedFilename = '';
+      let savedMime = '';
+
+      const prevAndroid = global.window ? global.window.AalaapiAndroid : undefined;
+      if (!global.window) global.window = {};
+      global.window.AalaapiAndroid = {
+        saveFile: (base64, filename, mime) => {
+          savedBase64 = base64;
+          savedFilename = filename;
+          savedMime = mime;
+          return JSON.stringify({ success: true, filename, path: 'Downloads/' + filename });
+        }
+      };
+
+      try {
+        const fn = new Function('blobOrData', 'filename', 'mimeType',
+          packagerSrc.slice(packagerSrc.indexOf('async function triggerFileDownload'), packagerSrc.indexOf("if (typeof window !== 'undefined') {")) +
+          '\nreturn triggerFileDownload(blobOrData, filename, mimeType);'
+        );
+
+        await fn('Mission content test data', 'TestMission.kmz', 'application/vnd.google-earth.kmz');
+        assert.strictEqual(savedFilename, 'TestMission.kmz');
+        assert.strictEqual(savedMime, 'application/vnd.google-earth.kmz');
+        assert.ok(savedBase64.length > 0, 'Base64 data must be delivered to native saveFile');
+      } finally {
+        if (prevAndroid === undefined) delete global.window.AalaapiAndroid;
+        else global.window.AalaapiAndroid = prevAndroid;
+      }
+    });
+
+    test('DigitalTwin checkDjiApiKeyStatus, saveDjiApiKey, and clearDjiApiKey operate gracefully on Android without desktop bridge', async () => {
+      const dtSrc = fs.readFileSync(path.resolve(__dirname, 'src/3d/DigitalTwin.js'), 'utf8');
+      assert.ok(dtSrc.includes('window.AalaapiAndroid.getDjiApiKey'), 'DigitalTwin must read native DJI key');
+      assert.ok(dtSrc.includes('window.AalaapiAndroid.setDjiApiKey'), 'DigitalTwin must write native DJI key');
+      assert.ok(dtSrc.includes("Saved successfully"), 'Status indicates success when saved locally');
+    });
+  });
 });
