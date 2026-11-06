@@ -541,8 +541,12 @@
       // Feed into global AdsbAirspaceManager in ApiClient.js
       if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
         const aircraftList = Array.from(this.adsbAircraft.values()).filter(a => a.latitude !== null);
+        AdsbAirspaceManager.enabled = true;
         AdsbAirspaceManager.streamMode = 'android-tcp';
         AdsbAirspaceManager.streamConnected = true;
+        if (typeof AdsbAirspaceManager.updateStreamTransportUI === 'function') {
+          AdsbAirspaceManager.updateStreamTransportUI();
+        }
         if (typeof AdsbAirspaceManager.processAirspaceData === 'function') {
           AdsbAirspaceManager.processAirspaceData({
             success: true,

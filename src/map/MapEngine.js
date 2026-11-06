@@ -1274,16 +1274,20 @@ function update2dDronePosition(point, airspace, crossTrackDriftMeters, crossTrac
       const adsbList = airspace.activeAdsb || [];
       adsbList.forEach(craft => {
         if (typeof craft.lat === 'number' && typeof craft.lon === 'number') {
+          const hdg = craft.track !== undefined ? craft.track : (craft.heading || 0);
           const planeIcon = L.divIcon({
             className: 'historical-traffic-plane-icon',
-            html: `<div style="transform: rotate(${Math.round(craft.heading || 0)}deg); font-size: 16px; filter: drop-shadow(0 0 3px #f59e0b);">✈️</div>`,
+            html: `<div style="transform: rotate(${Math.round(hdg)}deg); font-size: 16px; filter: drop-shadow(0 0 3px #f59e0b);">✈️</div>`,
             iconSize: [20, 20],
             iconAnchor: [10, 10]
           });
           const m = L.marker([craft.lat, craft.lon], { icon: planeIcon }).addTo(historicalTrafficGroup);
-          const callsign = craft.callsign || craft.icao || 'ADS-B';
+          const callsign = craft.callsign || craft.icao || craft.hex || 'ADS-B';
           const distKm = (craft.distanceMeters / 1000).toFixed(2);
-          m.bindTooltip(`<b>✈️ ${callsign}</b><br>Alt: ${Math.round(craft.alt)}m<br>Dist: ${distKm} km<br>Speed: ${Math.round(craft.speed || 0)} kts`, { direction: 'top' });
+          const altText = (typeof craft.alt === 'number')
+            ? (craft.alt > 500 ? `${Math.round(craft.alt)} ft (${Math.round(craft.alt * 0.3048)}m)` : `${Math.round(craft.alt)}m`)
+            : 'N/A';
+          m.bindTooltip(`<b>✈️ ${callsign}</b><br>Alt: ${altText}<br>Dist: ${distKm} km<br>Speed: ${Math.round(craft.speed || 0)} kts`, { direction: 'top' });
         }
       });
 

@@ -2982,10 +2982,13 @@ async function loadFlightFor2dReplay(flightId) {
     const telem = FlightDiagnostics.telemetryData;
     const planned = FlightDiagnostics.plannedWaypoints;
 
+    const envData = FlightDiagnostics.environmentalReplay || telem?.environmentalReplay || null;
+
     if (typeof PlaybackManager !== 'undefined') {
       PlaybackManager.loadFlight(flightId, telem, {
         plannedWaypoints: planned,
-        isHistorical: (flightId !== 'active-mission')
+        isHistorical: (flightId !== 'active-mission'),
+        environmentalData: envData
       });
       PlaybackManager.set2dReplayActive(true);
     }

@@ -3827,6 +3827,60 @@ const scenarios = [
       });
       await page.waitForTimeout(600);
     }
+  },
+  {
+    id: 'feature_android_tri_link',
+    name: 'Native Android App, Tri-Link Field Bridge & USB-C RC 2 Auto-Sync',
+    issueRef: 'Issue #234',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 1. Simulate USB-C RC 2 connection
+      await page.evaluate(() => {
+        window.onRc2UsbConnected({
+          deviceName: 'DJI RC 2 Enterprise',
+          vendorId: 11427,
+          slots: [
+            { uuid: '354A8F93-759C-42C3-A8D5-746F79C7622A', name: 'Slot 1 (Field Grid)' },
+            { uuid: 'CE0D7948-AB09-40AB-A749-C0169AB5F9AD', name: 'Slot 2 (Tower Scan)' }
+          ]
+        });
+      });
+      await page.waitForTimeout(1000);
+
+      // 2. Simulate simultaneous Remote ID and ADS-B ingestion
+      await page.evaluate(() => {
+        const buf = new Uint8Array(25);
+        buf[0] = 0x01;
+        buf[1] = 0x12;
+        const id = 'RID-MINI4P-99';
+        for (let i = 0; i < id.length; i++) buf[2 + i] = id.charCodeAt(i);
+        let b64 = '';
+        for (let i = 0; i < buf.length; i++) b64 += String.fromCharCode(buf[i]);
+        window.ingestRemoteIdFrame(btoa(b64), -68, 'ble');
+
+        window.ingestAdsbSbsLine('MSG,3,1,1,AC9999,1,2026/11/05,18:00:00.000,2026/11/05,18:00:00.000,,1200,,,41.3250,-88.9950,,,0,0,0,0');
+      });
+      await page.waitForTimeout(1200);
+
+      // 3. Click 1-Tap Sync KMZ to trigger overwrite confirmation dialog
+      await page.evaluate(() => {
+        const syncBtn = document.getElementById('android-rc2-sync-btn');
+        if (syncBtn) syncBtn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      await page.screenshot({ path: 'recordings/feature_android_tri_link_preview.png' });
+      await page.waitForTimeout(1000);
+
+      // 4. Dismiss modal
+      await page.evaluate(() => {
+        const cancelBtn = document.getElementById('android-rc2-cancel-overwrite-btn');
+        if (cancelBtn) cancelBtn.click();
+      });
+      await page.waitForTimeout(600);
+    }
   }
 ];
 

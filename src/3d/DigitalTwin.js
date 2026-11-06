@@ -2142,6 +2142,7 @@ const FlightDiagnostics = {
             }
           }
           this.telemetryData = telem;
+          this.environmentalReplay = data.environmentalReplay || telem?.environmentalReplay || null;
           this.comparisonData = data.comparison;
           // Use planned waypoints returned by the companion (from the log's matched mission),
           // falling back to null so buildTrajectoryMeshes uses the active workspace only as a last resort.
@@ -2228,6 +2229,21 @@ const FlightDiagnostics = {
 
     this.updateStatsUI();
     this.renderInspectionPhotosUI();
+
+    // Synchronize 4D environmental data with PlaybackManager
+    if (typeof PlaybackManager !== 'undefined') {
+      const envData = this.environmentalReplay || this.telemetryData?.environmentalReplay || null;
+      if (PlaybackManager.activeFlightId !== this.selectedFlightId) {
+        PlaybackManager.loadFlight(this.selectedFlightId, this.telemetryData, {
+          plannedWaypoints: this.plannedWaypoints,
+          isHistorical: (this.selectedFlightId !== 'active-mission'),
+          environmentalData: envData
+        });
+      } else if (envData) {
+        PlaybackManager.loadEnvironmentalData(envData);
+      }
+    }
+
     this.init3DScene();
     const resumeIdx = (typeof PlaybackManager !== 'undefined' && PlaybackManager.activeFlightId === this.selectedFlightId && PlaybackManager.currentIndex > 0)
       ? PlaybackManager.currentIndex : 0;
@@ -4142,7 +4158,7 @@ const FlightDiagnostics = {
     }
 
     if (typeof TelemetryInterpolator === 'undefined' || typeof PlaybackManager === 'undefined') return;
-    const envData = PlaybackManager.environmentalData;
+    const envData = this.environmentalReplay || PlaybackManager.environmentalData;
     if (!envData || (!envData.adsb?.length && !envData.remoteId?.length)) return;
 
     let currentUtcMs = null;
@@ -4161,7 +4177,7 @@ const FlightDiagnostics = {
     // Render active ADS-B aircraft as orange cones
     (airspace.activeAdsb || []).forEach(craft => {
       if (typeof craft.lat === 'number' && typeof craft.lon === 'number') {
-        const altMsl = craft.altitudeMsl || craft.alt || 100;
+        const altMsl = (typeof craft.alt === 'number') ? (craft.alt > 500 ? craft.alt * 0.3048 : craft.alt) : (craft.altitudeMsl || 100);
         const craftPos = this.projectToWorld(craft.lat, craft.lon, altMsl);
         const craftGeo = new THREE.ConeGeometry(3, 8, 8);
         craftGeo.rotateX(-Math.PI / 2);
@@ -4171,7 +4187,7 @@ const FlightDiagnostics = {
         });
         const mesh = new THREE.Mesh(craftGeo, craftMat);
         mesh.position.copy(craftPos);
-        const hdg = craft.heading || 0;
+        const hdg = craft.track !== undefined ? craft.track : (craft.heading || 0);
         mesh.rotation.y = - (hdg * Math.PI) / 180;
         this.replayedTraffic3DGroup.add(mesh);
       }

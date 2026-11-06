@@ -20,6 +20,13 @@
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='12' cy='12' r='9' stroke='%2306b6d4' stroke-width='0.5' stroke-dasharray='2 2' opacity='0.25'/%3E%3Ccircle cx='12' cy='12' r='6' stroke='%2306b6d4' stroke-width='0.75' opacity='0.4'/%3E%3Cline x1='12' y1='12' x2='6.5' y2='6.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='17.5' y2='6.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='6.5' y2='17.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='17.5' y2='17.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cpolygon points='10,9 11,10 10,11 9,10' fill='%23f5f0e8'/%3E%3Cpolygon points='8,7 9,8 8,9 7,8' fill='%23f5f0e8'/%3E%3Cpolygon points='14,9 15,10 14,11 13,10' fill='%23f5f0e8'/%3E%3Cpolygon points='16,7 17,8 16,9 15,8' fill='%23f5f0e8'/%3E%3Cpolygon points='10,15 11,14 10,13 9,14' fill='%23f5f0e8'/%3E%3Cpolygon points='8,17 9,16 8,15 7,16' fill='%23f5f0e8'/%3E%3Cpolygon points='14,15 15,14 14,13 13,14' fill='%23f5f0e8'/%3E%3Cpolygon points='16,17 17,16 16,15 15,16' fill='%23f5f0e8'/%3E%3Ccircle cx='5.5' cy='5.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='18.5' cy='5.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='5.5' cy='18.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='18.5' cy='18.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Cpolygon points='12,7 17,12 12,17 7,12' fill='%23c2622d' stroke='%23f5f0e8' stroke-width='0.75'/%3E%3Cpolygon points='12,9.5 14.5,12 12,14.5 9.5,12' fill='%2306b6d4'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%23f5f0e8'/%3E%3C/svg%3E">
+  <!-- Progressive Web App (PWA) & Android Mobile Tags -->
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+
   <!-- Google Identity Services (GIS) for Google SSO (v1.200.0, Issue #190) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -83,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.220.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.221.1</span></h1>
         </div>
       </div>
 
@@ -3584,6 +3591,35 @@
         </div>
       </div>
 
+      <!-- Android USB-C DJI RC 2 Auto-Detected 1-Tap Sync Bar (Issue #234) -->
+      <div id="android-rc2-sync-bar" class="android-rc2-sync-bar hidden" role="region" aria-label="DJI RC 2 USB Sync Bar">
+        <div class="android-rc2-sync-inner">
+          <div class="android-rc2-status-pill">
+            <span class="android-rc2-dot"></span>
+            <span class="android-rc2-icon">🎮</span>
+            <span id="android-rc2-device-name" class="android-rc2-name">DJI RC 2</span>
+            <span class="android-rc2-badge">USB-C Linked</span>
+          </div>
+
+          <div class="android-rc2-controls">
+            <label for="android-rc2-slot-select" class="android-rc2-label">Slot:</label>
+            <select id="android-rc2-slot-select" class="form-select android-rc2-select" title="Target Mission Slot on RC 2">
+              <option value="354A8F93-759C-42C3-A8D5-746F79C7622A">Mission Slot 1 (354A8F93...)</option>
+            </select>
+
+            <button id="android-rc2-sync-btn" type="button" class="btn-primary android-rc2-btn" title="Sync current mission KMZ to RC 2">
+              ⚡ Sync KMZ to RC 2
+            </button>
+
+            <button id="android-rc2-pull-log-btn" type="button" class="btn-secondary android-rc2-btn" title="Pull latest flight log from RC 2">
+              📥 Pull Latest Log
+            </button>
+
+            <button id="android-rc2-bar-close" type="button" class="close-btn android-rc2-close" aria-label="Dismiss bar">&times;</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Floating Flashing Visual ADS-B Traffic Alert Banner (Issue #92) -->
       <div id="adsb-alert-banner" class="adsb-alert-banner hidden" role="alert" aria-live="assertive">
         <div class="adsb-alert-banner-content">
@@ -4743,6 +4779,16 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>🤖</span>
+              Native Android App, Tri-Link Field Bridge &amp; USB-C RC 2 Auto-Sync (v1.221.0) (Closes #234)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Generate a buildable Android APK directly from the project! Features concurrent tri-link hardware support: scans ASTM F3411 Broadcast Remote ID over native Bluetooth LE (UUID 0xFFFA) and Wi-Fi, tracks manned aircraft via raw TCP port 30003 SBS-1 feeds (dump1090/Stratux) or USB OTG RTL-SDR dongles, and auto-detects DJI RC 2 controllers plugged via USB-C with a 1-tap confirmation sync bar.
+            </p>
+          </div>
+
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>☁️</span>
@@ -7039,6 +7085,39 @@
       </footer>
     </div>
   </div>
+  <!-- Android RC 2 Mission Overwrite Confirmation Modal (Issue #234) -->
+  <div id="android-rc2-confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="android-rc2-modal-title">
+    <div class="modal glass" style="max-width: 480px;">
+      <header class="modal-header">
+        <h2 id="android-rc2-modal-title" style="color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+          <span>🎮</span> Confirm DJI RC 2 Mission Sync
+        </h2>
+        <button id="android-rc2-cancel-overwrite-btn" class="close-btn" type="button" aria-label="Close dialog">&times;</button>
+      </header>
+      <div class="modal-content" style="display: flex; flex-direction: column; gap: 14px; font-size: 0.85rem; line-height: 1.45;">
+        <p style="margin: 0; color: #cbd5e1;">
+          You are about to overwrite an existing waypoint mission slot on your connected <strong>DJI RC 2</strong> with the currently planned route:
+        </p>
+
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <div><span style="color: var(--text-muted);">Mission Name:</span> <strong id="android-rc2-modal-mission-name" style="color: #38bdf8;">Aalaapi Mission</strong></div>
+          <div><span style="color: var(--text-muted);">Target Slot UUID:</span> <code id="android-rc2-modal-target-uuid" style="color: #facc15; font-size: 0.76rem;">354A8F93-759C-42C3-A8D5-746F79C7622A</code></div>
+          <div><span style="color: var(--text-muted);">Target Path:</span> <code style="font-size: 0.74rem; color: #94a3b8;">Android/data/dji.go.v5/files/waypoint/&lt;UUID&gt;/</code></div>
+        </div>
+
+        <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 10px 12px; color: #fbbf24; font-size: 0.78rem;">
+          ⚠️ <strong>Field Safety Protection:</strong> Overwriting this slot replaces the route stored on the controller. Make sure this matches your intended flight plan before takeoff.
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px;">
+          <button id="android-rc2-confirm-overwrite-btn" type="button" class="btn-primary" style="background: linear-gradient(135deg, #0284c7, #0369a1); font-weight: 700; padding: 8px 16px;">
+            ✅ Confirm &amp; Overwrite Slot
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Links Modal -->
   <div id="links-modal" class="modal-overlay hidden">
     <div class="modal glass">
@@ -7288,7 +7367,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.220.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.221.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7446,7 +7525,21 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
-                            <li style="margin-bottom: 8px;">
+                                                        <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.221.1):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Ambient ADS-B Flight Replay Synchronization (Closes #233):</strong> Ambient ADS-B manned traffic (e.g. low-altitude aircraft encounters like Ohio State Highway Patrol <code>N72HP</code>) and Remote ID drones recorded during flight now render accurately in both 2D Leaflet and 3D Digital Twin replays.</li>
+                <li><strong>Spatial Telemetry Interpolator Hardening:</strong> Corrected property extraction for <code>latitude</code>, <code>longitude</code>, <code>altitude</code>, and <code>track</code> in <code>TelemetryInterpolator</code> to eliminate NaN coordinates, with true UTC timestamp resolution from flight logs.</li>
+              </ul>
+              <br>
+              <strong style="color: var(--text-main);">Changelog (v1.221.0):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Native Android App &amp; PWA Package (Closes #234):</strong> Generates a standalone, buildable Android Studio / Gradle project in <code>android/</code> with WebView hardware acceleration and Kotlin hardware bridges (<code>window.AalaapiAndroid</code>).</li>
+                <li><strong>Tri-Link Field Operation:</strong> Real-time Broadcast Remote ID radar (BLE 0xFFFA + Wi-Fi), multi-source ADS-B (raw TCP 30003 SBS-1 / Stratux / USB RTL-SDR / Companion LAN), and USB-C DJI RC 2 auto-detection with 1-tap mission sync and log pull.</li>
+              </ul>
+              <br>
+<li style="margin-bottom: 8px;">
               <strong style="color: var(--text-main);">Changelog (v1.220.1):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>Waypoint 0 Takeoff Gimbal Slew Auto-Settling (Closes #232):</strong> Enforces full mechanical gimbal slew auto-settling (&ge; 4.0s for obliques and &ge; 5.0s for nadir) when aircraft transit from 0.0&deg; takeoff horizon into survey pitch at Waypoint 0, eliminating premature mid-slew shutter fires and motion blur.</li>

@@ -166,53 +166,87 @@ const TelemetryInterpolator = {
    */
   _interpolateTrackState(targetUtcMs, sortedFrames) {
     if (!sortedFrames || sortedFrames.length === 0) return null;
-    const firstTs = sortedFrames[0].timestamp || sortedFrames[0]._receivedAt || 0;
-    const lastTs = sortedFrames[sortedFrames.length - 1].timestamp || sortedFrames[sortedFrames.length - 1]._receivedAt || 0;
+
+    const getLat = f => (f && f.lat !== undefined && f.lat !== null) ? Number(f.lat) : ((f && f.latitude !== undefined && f.latitude !== null) ? Number(f.latitude) : null);
+    const getLon = f => (f && f.lon !== undefined && f.lon !== null) ? Number(f.lon) : ((f && f.longitude !== undefined && f.longitude !== null) ? Number(f.longitude) : (f && f.lng !== undefined && f.lng !== null ? Number(f.lng) : null));
+    const getAlt = f => (f && f.alt !== undefined && f.alt !== null) ? Number(f.alt) : ((f && f.altitude !== undefined && f.altitude !== null) ? Number(f.altitude) : 0);
+
+    const validFrames = sortedFrames.filter(f => getLat(f) !== null && getLon(f) !== null && !isNaN(getLat(f)) && !isNaN(getLon(f)));
+    if (validFrames.length === 0) return null;
+
+    const firstTs = validFrames[0].timestamp || validFrames[0]._receivedAt || 0;
+    const lastTs = validFrames[validFrames.length - 1].timestamp || validFrames[validFrames.length - 1]._receivedAt || 0;
 
     // Reject frames if target time is more than 3 minutes away from track bounds
     if (targetUtcMs < firstTs - 180000 || targetUtcMs > lastTs + 180000) {
       return null;
     }
 
-    if (targetUtcMs <= firstTs) return { ...sortedFrames[0] };
-    if (targetUtcMs >= lastTs) return { ...sortedFrames[sortedFrames.length - 1] };
+    const wrapResult = (f, lat, lon, alt, speed, track, interpolated) => ({
+      ...f,
+      lat,
+      latitude: lat,
+      lon,
+      longitude: lon,
+      alt,
+      altitude: alt,
+      speed,
+      track,
+      interpolated
+    });
+
+    if (targetUtcMs <= firstTs) {
+      const f = validFrames[0];
+      return wrapResult(f, getLat(f), getLon(f), getAlt(f), f.speed || 0, f.track !== undefined ? f.track : (f.heading || 0), false);
+    }
+    if (targetUtcMs >= lastTs) {
+      const f = validFrames[validFrames.length - 1];
+      return wrapResult(f, getLat(f), getLon(f), getAlt(f), f.speed || 0, f.track !== undefined ? f.track : (f.heading || 0), false);
+    }
 
     // Binary search for surrounding frames
     let low = 0;
-    let high = sortedFrames.length - 1;
+    let high = validFrames.length - 1;
     while (low <= high) {
       const mid = Math.floor((low + high) / 2);
-      const midTs = sortedFrames[mid].timestamp || sortedFrames[mid]._receivedAt || 0;
-      if (midTs === targetUtcMs) return { ...sortedFrames[mid] };
+      const midTs = validFrames[mid].timestamp || validFrames[mid]._receivedAt || 0;
+      if (midTs === targetUtcMs) {
+        const f = validFrames[mid];
+        return wrapResult(f, getLat(f), getLon(f), getAlt(f), f.speed || 0, f.track !== undefined ? f.track : (f.heading || 0), false);
+      }
       if (midTs < targetUtcMs) low = mid + 1;
       else high = mid - 1;
     }
 
     const idx0 = Math.max(0, high);
-    const idx1 = Math.min(sortedFrames.length - 1, low);
-    const f0 = sortedFrames[idx0];
-    const f1 = sortedFrames[idx1];
+    const idx1 = Math.min(validFrames.length - 1, low);
+    const f0 = validFrames[idx0];
+    const f1 = validFrames[idx1];
     const t0 = f0.timestamp || f0._receivedAt || 0;
     const t1 = f1.timestamp || f1._receivedAt || 0;
 
-    if (t0 === t1 || !f1) return { ...f0 };
+    const lat0 = getLat(f0);
+    const lon0 = getLon(f0);
+    const alt0 = getAlt(f0);
+    const speed0 = f0.speed || 0;
+    const track0 = f0.track !== undefined ? f0.track : (f0.heading || 0);
+
+    if (t0 === t1 || !f1) {
+      return wrapResult(f0, lat0, lon0, alt0, speed0, track0, false);
+    }
+
+    const lat1 = getLat(f1);
+    const lon1 = getLon(f1);
+    const alt1 = getAlt(f1);
+    const speed1 = f1.speed || 0;
+
     const alpha = (targetUtcMs - t0) / (t1 - t0);
+    const lat = lat0 + (lat1 - lat0) * alpha;
+    const lon = lon0 + (lon1 - lon0) * alpha;
+    const alt = alt0 + (alt1 - alt0) * alpha;
+    const speed = speed0 + (speed1 - speed0) * alpha;
 
-    const lat = f0.lat + (f1.lat - f0.lat) * alpha;
-    const lon = f0.lon + (f1.lon - f0.lon) * alpha;
-    const alt = (f0.alt || 0) + ((f1.alt || 0) - (f0.alt || 0)) * alpha;
-    const speed = (f0.speed || 0) + ((f1.speed || 0) - (f0.speed || 0)) * alpha;
-    const track = f0.track !== undefined ? f0.track : (f0.heading || 0);
-
-    return {
-      ...f0,
-      lat,
-      lon,
-      alt,
-      speed,
-      track,
-      interpolated: true
-    };
+    return wrapResult(f0, lat, lon, alt, speed, track0, true);
   },
 
   /**

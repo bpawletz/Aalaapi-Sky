@@ -86,7 +86,7 @@ function parseGeoJsonTelemetry(geojson, flightId = 'Imported_Flight.geojson') {
   };
 }
 
-function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
+function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv', options = {}) {
   if (!csvText || typeof csvText !== 'string') return null;
   const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (lines.length < 2) return null;
@@ -175,6 +175,23 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
   let lastTime = rawRows[rawRows.length - 1].rowTime !== null ? rawRows[rawRows.length - 1].rowTime : rawRows.length;
   let durationSec = Math.max(1, Math.round(lastTime - firstTime));
 
+  let flightDate = new Date().toISOString();
+  let flightStartMs = NaN;
+
+  if (options && options.startTimeUtcMs) {
+    flightStartMs = Number(options.startTimeUtcMs);
+    flightDate = new Date(flightStartMs).toISOString();
+  } else if (options && options.matchedMission && options.matchedMission.created_at) {
+    flightStartMs = new Date(options.matchedMission.created_at).getTime();
+    flightDate = new Date(flightStartMs).toISOString();
+  } else if (typeof flightId === 'string') {
+    const match = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
+    if (match) {
+      flightDate = `${match[1]}T${match[2].replace(/-/g, ':')}.000Z`;
+      flightStartMs = new Date(flightDate).getTime();
+    }
+  }
+
   const points = [];
   let totalDistance = 0;
   let maxAlt = 0;
@@ -201,9 +218,12 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
         totalDistance += d;
       }
 
+      const ptTimestamp = !isNaN(flightStartMs) ? new Date(flightStartMs + sec * 1000).toISOString() : null;
+
       points.push({
         time: sec,
         timeStr: formatTime(sec),
+        timestamp: ptTimestamp,
         lat: row.lat,
         lon: row.lon,
         alt: Math.round(row.alt * 10) / 10,
@@ -228,7 +248,8 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
 
   return {
     flightId,
-    flightDate: new Date().toISOString(),
+    flightDate,
+    startTimeUtcMs: !isNaN(flightStartMs) ? flightStartMs : null,
     droneModel: 'DJI Mini 4 Pro',
     durationSec: finalDuration,
     durationFormatted: formatTime(finalDuration),

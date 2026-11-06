@@ -773,19 +773,98 @@ class DiagnosticsDatabase {
     }
   }
 
-  getEnvironmentalReplay(missionUuid) {
-    if (!this.db || !missionUuid) return null;
+  getEnvironmentalReplay(missionUuid, options = {}) {
+    if (!this.db) return null;
+    if (typeof options === 'number') options = { startUtcMs: options };
 
     try {
-      const row = this.db.prepare(`
-        SELECT payload_json, created_at FROM environmental_replay
-        WHERE mission_uuid = ?
-        ORDER BY id DESC LIMIT 1
-      `).get(missionUuid);
+      // 1. Direct match by missionUuid
+      if (missionUuid) {
+        const row = this.db.prepare(`
+          SELECT payload_json, created_at FROM environmental_replay
+          WHERE mission_uuid = ?
+          ORDER BY id DESC LIMIT 1
+        `).get(missionUuid);
 
-      if (row && row.payload_json) {
-        return JSON.parse(row.payload_json);
+        if (row && row.payload_json) {
+          return JSON.parse(row.payload_json);
+        }
       }
+
+      // 2. Direct match by options.flightId if different
+      if (options.flightId && options.flightId !== missionUuid) {
+        const row = this.db.prepare(`
+          SELECT payload_json, created_at FROM environmental_replay
+          WHERE mission_uuid = ?
+          ORDER BY id DESC LIMIT 1
+        `).get(options.flightId);
+
+        if (row && row.payload_json) {
+          return JSON.parse(row.payload_json);
+        }
+      }
+
+      // 3. Search via mission_diagnostics table for linked flight record or uuid
+      const searchKeys = [missionUuid, options.flightId].filter(Boolean);
+      for (const key of searchKeys) {
+        try {
+          const diagRow = this.db.prepare(`
+            SELECT uuid, actual_flight_file, diag_json FROM mission_diagnostics
+            WHERE uuid = ? OR actual_flight_file = ?
+            ORDER BY id DESC LIMIT 1
+          `).get(key, key);
+
+          if (diagRow) {
+            if (diagRow.diag_json) {
+              const parsed = JSON.parse(diagRow.diag_json);
+              if (parsed && parsed.environmentalReplay) {
+                return parsed.environmentalReplay;
+              }
+            }
+            if (diagRow.uuid && diagRow.uuid !== key) {
+              const row = this.db.prepare(`
+                SELECT payload_json FROM environmental_replay
+                WHERE mission_uuid = ?
+                ORDER BY id DESC LIMIT 1
+              `).get(diagRow.uuid);
+              if (row && row.payload_json) {
+                return JSON.parse(row.payload_json);
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      // 4. Overlapping temporal window match
+      const startMs = options.startUtcMs ? Number(options.startUtcMs) : null;
+      const endMs = options.endUtcMs ? Number(options.endUtcMs) : (startMs ? startMs + 600000 : null);
+      if (startMs && endMs) {
+        const row = this.db.prepare(`
+          SELECT payload_json, start_utc_ms, end_utc_ms FROM environmental_replay
+          WHERE (start_utc_ms <= ? AND end_utc_ms >= ?)
+             OR (start_utc_ms <= ? AND end_utc_ms >= ?)
+          ORDER BY id DESC LIMIT 1
+        `).get(endMs, startMs, startMs, startMs);
+
+        if (row && row.payload_json) {
+          return JSON.parse(row.payload_json);
+        }
+      }
+
+      // 5. If startMs is known, find closest slice within 2 hours
+      if (startMs) {
+        const twoHours = 2 * 60 * 60 * 1000;
+        const row = this.db.prepare(`
+          SELECT payload_json FROM environmental_replay
+          WHERE (start_utc_ms BETWEEN ? AND ?) OR (end_utc_ms BETWEEN ? AND ?)
+          ORDER BY id DESC LIMIT 1
+        `).get(startMs - twoHours, startMs + twoHours, startMs - twoHours, startMs + twoHours);
+
+        if (row && row.payload_json) {
+          return JSON.parse(row.payload_json);
+        }
+      }
+
       return null;
     } catch (err) {
       console.error('[DIAG DB ERROR] Failed to get environmental replay:', err.message);
