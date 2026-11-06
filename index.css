@@ -126,13 +126,16 @@ html, body {
 }
 
 .studio-topbar {
-  height: 52px;
-  min-height: 52px;
+  height: calc(52px + env(safe-area-inset-top, 0px));
+  min-height: calc(52px + env(safe-area-inset-top, 0px));
   width: 100vw;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-sidebar);
   backdrop-filter: blur(16px);
@@ -2109,10 +2112,13 @@ body.modal-drag-active {
 /* Mobile Responsive Adjustments */
 @media (max-width: 768px) {
   .studio-topbar {
-    padding: 0 8px;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: 0;
+    padding-left: max(8px, env(safe-area-inset-left, 0px));
+    padding-right: max(8px, env(safe-area-inset-right, 0px));
     gap: 6px;
-    height: 48px;
-    min-height: 48px;
+    height: calc(48px + env(safe-area-inset-top, 0px));
+    min-height: calc(48px + env(safe-area-inset-top, 0px));
     position: relative;
     max-width: 100vw;
   }

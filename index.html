@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Aalaapi Sky - Drone Waypoint Mission Planner</title>
   
   <!-- Modern Fonts -->
@@ -143,13 +143,16 @@ html, body {
 }
 
 .studio-topbar {
-  height: 52px;
-  min-height: 52px;
+  height: calc(52px + env(safe-area-inset-top, 0px));
+  min-height: calc(52px + env(safe-area-inset-top, 0px));
   width: 100vw;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-sidebar);
   backdrop-filter: blur(16px);
@@ -2126,10 +2129,13 @@ body.modal-drag-active {
 /* Mobile Responsive Adjustments */
 @media (max-width: 768px) {
   .studio-topbar {
-    padding: 0 8px;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: 0;
+    padding-left: max(8px, env(safe-area-inset-left, 0px));
+    padding-right: max(8px, env(safe-area-inset-right, 0px));
     gap: 6px;
-    height: 48px;
-    min-height: 48px;
+    height: calc(48px + env(safe-area-inset-top, 0px));
+    min-height: calc(48px + env(safe-area-inset-top, 0px));
     position: relative;
     max-width: 100vw;
   }
@@ -57403,6 +57409,120 @@ let isCompanionOnline = false;
 
 let isRc2MtpConnected = false;
 
+function setNativeRc2Connection(connected, deviceData) {
+  isRc2MtpConnected = Boolean(connected);
+  if (connected) {
+    lastDetectedFlightDevice = getDeviceDisplayInfo(deviceData || { deviceName: 'DJI RC 2' });
+    if (deviceData && deviceData.slots && deviceData.slots.length > 0) {
+      rc2MtpActiveUUID = deviceData.slots[0].uuid;
+      if (typeof setRC2UUID === 'function' && !getRC2UUID()) {
+        setRC2UUID(rc2MtpActiveUUID);
+      }
+    }
+  }
+  updateNativeAndroidStatusUI();
+}
+
+function updateNativeAndroidStatusUI() {
+  if (typeof document === 'undefined') return;
+
+  const headerPill = document.getElementById('header-bridge-pill');
+  const headerDot = document.getElementById('header-bridge-dot');
+  const headerSummary = document.getElementById('header-bridge-summary');
+  const headerRc2Badge = document.getElementById('header-rc2-summary-badge');
+  const sidebarBar = document.getElementById('sidebar-bridge-summary-bar');
+  const sidebarDot = document.getElementById('sidebar-bridge-mini-dot');
+  const sidebarLabel = document.getElementById('sidebar-bridge-mini-label');
+  const sidebarRc2Badge = document.getElementById('sidebar-rc2-mini-badge');
+  const sidebarQuickActions = document.getElementById('sidebar-rc2-quick-actions');
+
+  const sDot = document.getElementById('companion-service-dot');
+  const sText = document.getElementById('companion-service-text');
+  const sLabel = document.getElementById('companion-service-label');
+  const uDot = document.getElementById('companion-usb-dot');
+  const uText = document.getElementById('companion-usb-text');
+  const uLabel = document.getElementById('companion-usb-label');
+  const container = document.getElementById('companion-sync-container');
+  const hint = document.getElementById('companion-offline-hint');
+
+  const directActions = document.getElementById('rc2-direct-actions');
+  const directBtn = document.getElementById('direct-rc2-sync-btn');
+  const pullBtn = document.getElementById('direct-rc2-pull-btn');
+  const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
+  const diagBrowseBtn = document.getElementById('diag-browse-rc2-logs-btn');
+
+  // 1. Android Field Link Status
+  if (headerPill) {
+    headerPill.classList.remove('is-offline', 'is-mismatch');
+    headerPill.classList.add('is-online');
+    headerPill.title = isRc2MtpConnected
+      ? 'Android Field Link: DJI RC 2 Connected over USB-C (Ready to sync)'
+      : 'Android Field Link: Online (Ready for DJI RC 2 USB-C connection)';
+  }
+  if (headerDot) headerDot.style.background = '#22c55e';
+  if (headerSummary) headerSummary.textContent = isRc2MtpConnected ? 'Android: RC 2 OK' : 'Android Link';
+
+  if (headerRc2Badge) {
+    headerRc2Badge.textContent = isRc2MtpConnected ? 'RC 2: OK' : 'RC 2';
+    headerRc2Badge.className = isRc2MtpConnected ? 'header-rc2-badge is-connected' : 'header-rc2-badge';
+  }
+
+  if (sidebarBar) {
+    sidebarBar.classList.remove('is-offline');
+    sidebarBar.classList.add('is-online');
+  }
+  if (sidebarDot) sidebarDot.style.background = '#22c55e';
+  if (sidebarLabel) sidebarLabel.textContent = isRc2MtpConnected ? 'Android: RC 2 Linked' : 'Android Field Link: Online';
+
+  if (sidebarRc2Badge) {
+    sidebarRc2Badge.textContent = isRc2MtpConnected ? 'RC 2: OK' : 'RC 2';
+    sidebarRc2Badge.style.background = isRc2MtpConnected ? 'rgba(34, 197, 94, 0.2)' : 'rgba(100, 116, 139, 0.2)';
+    sidebarRc2Badge.style.color = isRc2MtpConnected ? '#4ade80' : '#94a3b8';
+  }
+
+  // 2. Drawer Popover Details
+  if (sDot) sDot.style.background = '#22c55e';
+  if (sText) {
+    sText.textContent = 'Android Field Link: Active';
+    sText.style.color = '#22c55e';
+  }
+  if (sLabel) sLabel.textContent = 'Native Hardware Bridge';
+
+  if (uDot) uDot.style.background = isRc2MtpConnected ? '#22c55e' : '#64748b';
+  if (uText) {
+    uText.textContent = isRc2MtpConnected ? 'DJI RC 2: Connected' : 'RC 2 USB Link: Waiting';
+    uText.style.color = isRc2MtpConnected ? '#22c55e' : 'var(--text-muted)';
+  }
+  if (uLabel) uLabel.textContent = isRc2MtpConnected ? 'USB-C MTP' : 'Plug in USB-C';
+
+  // 3. Quick Action Buttons Visibility
+  if (isRc2MtpConnected) {
+    if (sidebarQuickActions) sidebarQuickActions.style.display = 'flex';
+    if (directActions) directActions.style.display = 'flex';
+    if (directBtn) directBtn.style.display = 'inline-flex';
+    if (pullBtn) pullBtn.style.display = 'inline-flex';
+    if (diagPullBtn) diagPullBtn.style.display = 'inline-flex';
+    if (diagBrowseBtn) diagBrowseBtn.style.display = 'inline-flex';
+    if (container && container.classList) container.classList.remove('is-offline');
+    if (hint && hint.style) hint.style.display = 'none';
+  } else {
+    if (sidebarQuickActions) sidebarQuickActions.style.display = 'none';
+    if (directActions) directActions.style.display = 'none';
+    if (directBtn) directBtn.style.display = 'none';
+    if (pullBtn) pullBtn.style.display = 'none';
+    if (diagPullBtn) diagPullBtn.style.display = 'none';
+    if (diagBrowseBtn) diagBrowseBtn.style.display = 'none';
+    if (container && container.classList) container.classList.add('is-offline');
+    if (hint && hint.style) hint.style.display = 'flex';
+    const labelSpan = (hint && typeof hint.querySelector === 'function') ? hint.querySelector('span:first-child') : null;
+    if (labelSpan) {
+      labelSpan.innerHTML = `
+        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        Connect DJI RC 2 via USB-C to sync missions`;
+    }
+  }
+}
+
 let rc2MtpActiveUUID = '';
 
 let lastDetectedFlightDevice = null;
@@ -58980,6 +59100,11 @@ async function pollCompanionStatus() {
 
   } catch (e) {
 
+    if (typeof window !== 'undefined' && window.AalaapiAndroid) {
+      updateNativeAndroidStatusUI();
+      return;
+    }
+
     const wasMissionDbOnline = (typeof getIsMissionDbOnline === 'function') ? getIsMissionDbOnline() : (typeof isMissionDbOnline !== 'undefined' ? isMissionDbOnline : false);
 
     consecutiveStatusFailures++;
@@ -59204,6 +59329,22 @@ async function pullFromRC2() {
 
   try {
 
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLatestLogFromRc2 === 'function') {
+      const logBase64 = window.AalaapiAndroid.pullLatestLogFromRc2();
+      if (logBase64 && typeof atob === 'function') {
+        const rawText = atob(logBase64);
+        if (typeof DjiLogDecryptor !== 'undefined' && DjiLogDecryptor.parseLogText) {
+          DjiLogDecryptor.parseLogText(rawText);
+        }
+      }
+      if (typeof showToast === 'function') {
+        showToast('📥 Flight log pulled from DJI RC 2', 'success');
+      }
+      pullBtn.disabled = false;
+      pullBtn.innerHTML = originalContent;
+      return;
+    }
+
     const targetUuid = getRC2UUID() || rc2MtpActiveUUID || '';
 
     const query = targetUuid ? `?uuid=${encodeURIComponent(targetUuid)}` : '';
@@ -59351,6 +59492,28 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
 
   try {
+
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLatestLogFromRc2 === 'function') {
+      const logBase64 = window.AalaapiAndroid.pullLatestLogFromRc2();
+      if (!logBase64) {
+        throw new Error('No flight logs found on connected RC 2');
+      }
+      if (typeof atob === 'function') {
+        const rawText = atob(logBase64);
+        if (typeof DjiLogDecryptor !== 'undefined' && DjiLogDecryptor.parseLogText) {
+          DjiLogDecryptor.parseLogText(rawText);
+        }
+      }
+      buttonsToUpdate.forEach(b => {
+        b.innerHTML = `<span>✅ Log Pulled!</span>`;
+        b.style.color = '#4ade80';
+      });
+      if (typeof showToast === 'function') {
+        showToast('📥 Flight log pulled from DJI RC 2', 'success');
+      }
+      resetButtonStates(3500);
+      return { success: true };
+    }
 
     const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
 
@@ -59532,6 +59695,26 @@ async function sendDirectlyToRC2() {
     const uuid = getRC2UUID() || rc2MtpActiveUUID || '354A8F93-759C-42C3-A8D5-746F79C7622A';
 
     const kmzBase64 = await blobToBase64(result.blob);
+
+    // If running inside Native Android container, transfer directly via window.AalaapiAndroid
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pushKmzToRc2 === 'function') {
+      const ok = window.AalaapiAndroid.pushKmzToRc2(kmzBase64, uuid);
+      if (!ok) {
+        throw new Error('Native Android MTP transfer rejected.');
+      }
+      buttonsToUpdate.forEach(b => {
+        const activeDev = getDeviceDisplayInfo(lastDetectedFlightDevice || {});
+        b.innerHTML = (activeDev.shortName === 'RC 2') ? `<span>✅ Synced to DJI RC 2! Re-open in DJI Fly</span>` : `<span>✅ Synced to ${activeDev.shortName}! Re-open in DJI Fly</span>`;
+        b.style.background = 'rgba(34, 197, 94, 0.2)';
+        b.style.borderColor = 'rgba(34, 197, 94, 0.5)';
+        b.style.color = '#4ade80';
+      });
+      if (typeof showToast === 'function') {
+        showToast(`✅ Synced to DJI RC 2 slot ${uuid}! Re-open in DJI Fly.`, 'success');
+      }
+      resetButtonStates(4000);
+      return { success: true, slotUuid: uuid };
+    }
 
 
 
@@ -67024,7 +67207,9 @@ if (typeof module !== 'undefined' && module.exports) {
     applyCompanionStatusUI,
     getDeviceDisplayInfo,
     getLastDetectedFlightDevice,
-    updateServedLinksModalUI
+    updateServedLinksModalUI,
+    setNativeRc2Connection,
+    updateNativeAndroidStatusUI
   };
 }
 
@@ -67033,6 +67218,8 @@ if (typeof window !== 'undefined') {
   window.getDeviceDisplayInfo = getDeviceDisplayInfo;
   window.getLastDetectedFlightDevice = getLastDetectedFlightDevice;
   window.updateServedLinksModalUI = updateServedLinksModalUI;
+  window.setNativeRc2Connection = setNativeRc2Connection;
+  window.updateNativeAndroidStatusUI = updateNativeAndroidStatusUI;
 }
 
 if (typeof global !== 'undefined') {
@@ -70736,6 +70923,11 @@ if (typeof module !== 'undefined' && module.exports) {
       if (typeof showToast === 'function') {
         showToast(`🎮 ${deviceData.deviceName || 'DJI RC 2'} linked via USB-C. Ready to sync.`, 'info');
       }
+      if (typeof setNativeRc2Connection === 'function') {
+        setNativeRc2Connection(true, deviceData);
+      } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.setNativeRc2Connection === 'function') {
+        ApiClient.setNativeRc2Connection(true, deviceData);
+      }
     },
 
     handleRc2Disconnected() {
@@ -70752,6 +70944,12 @@ if (typeof module !== 'undefined' && module.exports) {
 
       if (typeof showToast === 'function') {
         showToast('DJI RC 2 Disconnected', 'neutral');
+      
+      if (typeof setNativeRc2Connection === 'function') {
+        setNativeRc2Connection(false, null);
+      } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.setNativeRc2Connection === 'function') {
+        ApiClient.setNativeRc2Connection(false, null);
+      }
       }
     },
 

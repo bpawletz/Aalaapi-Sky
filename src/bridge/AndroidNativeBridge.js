@@ -599,6 +599,11 @@
       if (typeof showToast === 'function') {
         showToast(`🎮 ${deviceData.deviceName || 'DJI RC 2'} linked via USB-C. Ready to sync.`, 'info');
       }
+      if (typeof setNativeRc2Connection === 'function') {
+        setNativeRc2Connection(true, deviceData);
+      } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.setNativeRc2Connection === 'function') {
+        ApiClient.setNativeRc2Connection(true, deviceData);
+      }
     },
 
     handleRc2Disconnected() {
@@ -615,6 +620,12 @@
 
       if (typeof showToast === 'function') {
         showToast('DJI RC 2 Disconnected', 'neutral');
+      
+      if (typeof setNativeRc2Connection === 'function') {
+        setNativeRc2Connection(false, null);
+      } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.setNativeRc2Connection === 'function') {
+        ApiClient.setNativeRc2Connection(false, null);
+      }
       }
     },
 

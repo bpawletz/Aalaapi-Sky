@@ -40986,3 +40986,63 @@ describe('Issue #240 & v1.222.3: Android Launcher Mipmap & Adaptive Icon Resourc
     assert.ok(fs.existsSync(path.join(resDir, 'mipmap-anydpi-v26', 'ic_launcher_round.xml')), 'anydpi-v26/ic_launcher_round.xml must exist');
   });
 });
+
+
+describe('Issue #241 & v1.222.4: Android Status Bar Insets & Native MTP Companion Bridge Suite', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.222.4', () => {
+    assertVersionConsistency('1.222.4');
+  });
+
+  test('Android build.gradle.kts matches version 1.222.4 and versionCode 12224', () => {
+    const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+    assert.ok(gradle.includes('versionCode = 12224'), 'Must have versionCode 12224');
+    assert.ok(gradle.includes('versionName = "1.222.4"'), 'Must have versionName 1.222.4');
+  });
+
+  test('index_template.html and index.html include viewport-fit=cover for safe-area insets', () => {
+    const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const idx = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(tmpl.includes('viewport-fit=cover'), 'index_template.html must include viewport-fit=cover');
+    assert.ok(idx.includes('viewport-fit=cover'), 'index.html must include viewport-fit=cover');
+  });
+
+  test('index.css implements safe-area-inset-top padding and height on .studio-topbar', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('env(safe-area-inset-top, 0px)'), 'Must include env(safe-area-inset-top, 0px)');
+    assert.ok(css.includes('calc(52px + env(safe-area-inset-top, 0px))'), 'Must calculate topbar height with insets');
+  });
+
+  test('MainActivity.kt registers window insets listener and USB permission broadcast receiver', () => {
+    const mainActivity = fs.readFileSync(path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'MainActivity.kt'), 'utf8');
+    assert.ok(mainActivity.includes('setOnApplyWindowInsetsListener'), 'Must register setOnApplyWindowInsetsListener');
+    assert.ok(mainActivity.includes('displayCutout()'), 'Must include displayCutout insets');
+    assert.ok(mainActivity.includes('ACTION_USB_PERMISSION'), 'Must handle ACTION_USB_PERMISSION');
+  });
+
+  test('AndroidMtpBridge.kt requests explicit USB permission before opening MTP connection', () => {
+    const mtpBridge = fs.readFileSync(path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'AndroidMtpBridge.kt'), 'utf8');
+    assert.ok(mtpBridge.includes('ACTION_USB_PERMISSION = "com.aalaapi.sky.USB_PERMISSION"'), 'Must define ACTION_USB_PERMISSION');
+    assert.ok(mtpBridge.includes('hasPermission(device)'), 'Must check hasPermission');
+    assert.ok(mtpBridge.includes('requestPermission(device, permissionIntent)'), 'Must request USB permission');
+    assert.ok(mtpBridge.includes('writeKmzToRc2'), 'Must implement writeKmzToRc2');
+    assert.ok(mtpBridge.includes('pullLatestLog'), 'Must implement pullLatestLog');
+  });
+
+  test('ApiClient.js exports setNativeRc2Connection and updateNativeAndroidStatusUI', () => {
+    const ApiClient = require('./src/bridge/ApiClient.js');
+    assert.strictEqual(typeof ApiClient.setNativeRc2Connection, 'function', 'Must export setNativeRc2Connection');
+    assert.strictEqual(typeof ApiClient.updateNativeAndroidStatusUI, 'function', 'Must export updateNativeAndroidStatusUI');
+  });
+
+  test('ApiClient.js routes KMZ sync and flight logs to window.AalaapiAndroid when present', () => {
+    const apiCode = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
+    assert.ok(apiCode.includes('window.AalaapiAndroid.pushKmzToRc2'), 'sendDirectlyToRC2 must delegate to window.AalaapiAndroid.pushKmzToRc2');
+    assert.ok(apiCode.includes('window.AalaapiAndroid.pullLatestLogFromRc2'), 'pullFromRC2 must delegate to window.AalaapiAndroid.pullLatestLogFromRc2');
+  });
+
+  test('AndroidNativeBridge.js updates ApiClient upon RC 2 USB connect and disconnect', () => {
+    const bridgeCode = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'AndroidNativeBridge.js'), 'utf8');
+    assert.ok(bridgeCode.includes('setNativeRc2Connection(true'), 'Must call setNativeRc2Connection on connect');
+    assert.ok(bridgeCode.includes('setNativeRc2Connection(false'), 'Must call setNativeRc2Connection on disconnect');
+  });
+});
