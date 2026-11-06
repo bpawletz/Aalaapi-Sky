@@ -2558,26 +2558,26 @@ async function sendDirectlyToRC2() {
 
     const uuid = getRC2UUID() || rc2MtpActiveUUID || '354A8F93-759C-42C3-A8D5-746F79C7622A';
 
-    const kmzBase64 = await blobToBase64(result.blob);
-
-    // If running inside Native Android container, transfer directly via window.AalaapiAndroid
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pushKmzToRc2 === 'function') {
-      const ok = window.AalaapiAndroid.pushKmzToRc2(kmzBase64, uuid);
-      if (!ok) {
-        throw new Error('Native Android MTP transfer rejected.');
-      }
-      buttonsToUpdate.forEach(b => {
-        const activeDev = getDeviceDisplayInfo(lastDetectedFlightDevice || {});
-        b.innerHTML = (activeDev.shortName === 'RC 2') ? `<span>✅ Synced to DJI RC 2! Re-open in DJI Fly</span>` : `<span>✅ Synced to ${activeDev.shortName}! Re-open in DJI Fly</span>`;
-        b.style.background = 'rgba(34, 197, 94, 0.2)';
-        b.style.borderColor = 'rgba(34, 197, 94, 0.5)';
-        b.style.color = '#4ade80';
-      });
-      if (typeof showToast === 'function') {
-        showToast(`✅ Synced to DJI RC 2 slot ${uuid}! Re-open in DJI Fly.`, 'success');
-      }
-      resetButtonStates(4000);
-      return { success: true, slotUuid: uuid };
+    const kmzBase64 = await blobToBase64(result.blob);
+
+    // If running inside Native Android container, transfer directly via window.AalaapiAndroid
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pushKmzToRc2 === 'function') {
+      const ok = window.AalaapiAndroid.pushKmzToRc2(kmzBase64, uuid);
+      if (!ok) {
+        throw new Error('Native Android MTP transfer rejected.');
+      }
+      buttonsToUpdate.forEach(b => {
+        const activeDev = getDeviceDisplayInfo(lastDetectedFlightDevice || {});
+        b.innerHTML = (activeDev.shortName === 'RC 2') ? `<span>✅ Synced to DJI RC 2! Re-open in DJI Fly</span>` : `<span>✅ Synced to ${activeDev.shortName}! Re-open in DJI Fly</span>`;
+        b.style.background = 'rgba(34, 197, 94, 0.2)';
+        b.style.borderColor = 'rgba(34, 197, 94, 0.5)';
+        b.style.color = '#4ade80';
+      });
+      if (typeof showToast === 'function') {
+        showToast(`✅ Synced to DJI RC 2 slot ${uuid}! Re-open in DJI Fly.`, 'success');
+      }
+      resetButtonStates(4000);
+      return { success: true, slotUuid: uuid };
     }
 
 

@@ -71,6 +71,137 @@ function degreesToCardinal(deg) {
   return CARDINAL_POINTS[index];
 }
 
+/**
+ * Calculates destination point given starting lat/lon, initial bearing, and distance along a great circle.
+ * @param {number} lat Latitude in degrees
+ * @param {number} lon Longitude in degrees
+ * @param {number} bearingDeg Initial bearing in degrees
+ * @param {number} distanceMeters Distance to project in meters
+ * @returns {{lat: number, lon: number}}
+ */
+function calculateDestinationPoint(lat, lon, bearingDeg, distanceMeters) {
+  const toRad = Math.PI / 180;
+  const toDeg = 180 / Math.PI;
+  const phi1 = lat * toRad;
+  const lambda1 = lon * toRad;
+  const theta = (bearingDeg % 360 + 360) % 360 * toRad;
+  const delta = distanceMeters / EARTH_RADIUS_METERS;
+
+  const sinPhi2 = Math.sin(phi1) * Math.cos(delta) + Math.cos(phi1) * Math.sin(delta) * Math.cos(theta);
+  const phi2 = Math.asin(Math.max(-1, Math.min(1, sinPhi2)));
+  const y = Math.sin(theta) * Math.sin(delta) * Math.cos(phi1);
+  const x = Math.cos(delta) - Math.sin(phi1) * Math.sin(phi2);
+  const lambda2 = lambda1 + Math.atan2(y, x);
+
+  const destLat = phi2 * toDeg;
+  const destLon = ((lambda2 * toDeg + 540) % 360) - 180;
+  return { lat: destLat, lon: destLon };
+}
+
+/**
+ * Returns shortest signed angular difference (deg1 - deg2) in range [-180, 180].
+ * @param {number} deg1
+ * @param {number} deg2
+ * @returns {number}
+ */
+function shortestAngularDifference(deg1, deg2) {
+  let diff = (deg1 - deg2) % 360;
+  if (diff > 180) diff -= 360;
+  if (diff < -180) diff += 360;
+  return diff;
+}
+
+/**
+ * Evaluates whether an aircraft outside the proximity radius is on a forward trajectory cone
+ * that will breach the RPIC's horizontal proximity radius and vertical ceiling within warningMinutes.
+ * 
+ * @param {object} ac Aircraft state object
+ * @param {number} homeLat RPIC latitude
+ * @param {number} homeLon RPIC longitude
+ * @param {number} [distanceMeters] Distance from aircraft to RPIC (computed if omitted)
+ * @param {number} [radiusMeters] Proximity radius in meters
+ * @param {number} [maxCeilingFeet] Maximum warning ceiling in feet
+ * @param {number} [warningMinutes=2.0] Lookahead time in minutes
+ * @param {number} [coneDeviationDeg=15] Angular half-spread cone deviation in degrees
+ * @returns {{isConeWarning: boolean, etaSeconds: number|null, entryDistanceMeters: number|null, closingSpeedKts: number|null, coneLengthMeters: number, offBoresightDeg: number|null}}
+ */
+function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMeters, maxCeilingFeet, warningMinutes = 2.0, coneDeviationDeg = 15) {
+  const result = {
+    isConeWarning: false,
+    etaSeconds: null,
+    entryDistanceMeters: null,
+    closingSpeedKts: null,
+    coneLengthMeters: 0,
+    offBoresightDeg: null
+  };
+
+  if (!ac || ac.latitude === null || ac.longitude === null) return result;
+  const speedKts = typeof ac.speed === 'number' && !isNaN(ac.speed) ? ac.speed : 0;
+  const trackDeg = typeof ac.track === 'number' && !isNaN(ac.track) ? ac.track : null;
+  if (speedKts <= 0 || trackDeg === null) return result;
+
+  const warnMin = typeof warningMinutes === 'number' && warningMinutes > 0 ? warningMinutes : 2.0;
+  const devDeg = typeof coneDeviationDeg === 'number' && coneDeviationDeg >= 0 ? coneDeviationDeg : 15;
+  const vMps = speedKts * 0.51444444;
+  const coneLengthMeters = Math.round(vMps * (warnMin * 60));
+  result.coneLengthMeters = coneLengthMeters;
+
+  const d = typeof distanceMeters === 'number' 
+    ? distanceMeters 
+    : calculateHaversineDistance(ac.latitude, ac.longitude, homeLat, homeLon);
+  const rProx = typeof radiusMeters === 'number' && radiusMeters > 0 ? radiusMeters : (3.0 * METERS_PER_STATUTE_MILE);
+
+  // If already within proximity ring, this is handled by breach detection, not approaching cone
+  if (d <= rProx) return result;
+
+  const bearingToHome = calculateBearing(ac.latitude, ac.longitude, homeLat, homeLon);
+  const offBoresight = Math.abs(shortestAngularDifference(trackDeg, bearingToHome));
+  result.offBoresightDeg = Math.round(offBoresight);
+
+  // Smallest angle between any ray inside [track - dev, track + dev] and vector to home
+  const alphaEff = Math.max(0, offBoresight - devDeg);
+
+  // Aircraft must be generally heading toward the hemisphere of the home point
+  if (alphaEff >= 90) return result;
+
+  const alphaEffRad = alphaEff * (Math.PI / 180);
+  const dPerp = d * Math.sin(alphaEffRad);
+
+  // Check if ray enters the proximity circle
+  if (dPerp > rProx) return result;
+
+  // Forward distance along ray to proximity perimeter entry
+  const dEntry = d * Math.cos(alphaEffRad) - Math.sqrt(Math.max(0, (rProx * rProx) - (dPerp * dPerp)));
+
+  if (dEntry > coneLengthMeters) return result;
+
+  const etaSeconds = Math.max(1, Math.round(dEntry / vMps));
+
+  // Ceiling evaluation
+  const ceilingFt = typeof maxCeilingFeet === 'number' && maxCeilingFeet > 0 ? maxCeilingFeet : 2500;
+  const alt = ac.altitude !== null && ac.altitude !== undefined 
+    ? ac.altitude 
+    : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
+
+  if (alt !== null) {
+    const vRate = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : 0;
+    const projectedAlt = alt + (vRate * (etaSeconds / 60));
+    // Must be either below ceiling now or descending into ceiling by arrival
+    if (alt > ceilingFt && projectedAlt > ceilingFt) {
+      return result;
+    }
+  }
+
+  const closingSpeedKts = Math.max(0, Math.round(speedKts * Math.cos(offBoresight * (Math.PI / 180))));
+
+  result.isConeWarning = true;
+  result.etaSeconds = etaSeconds;
+  result.entryDistanceMeters = Math.round(dEntry);
+  result.closingSpeedKts = closingSpeedKts;
+
+  return result;
+}
+
 class AdsbAirspaceTracker extends EventEmitter {
   /**
    * @param {object} options
@@ -531,6 +662,8 @@ class AdsbAirspaceTracker extends EventEmitter {
    * @param {number} criteria.homeLon Drone pilot / home longitude
    * @param {number} [criteria.radiusMeters=4828.03] Proximity radius in meters (default 3 statute miles)
    * @param {number} [criteria.maxCeilingFeet=2500] Maximum warning ceiling in feet AGL/MSL (default 2500 ft)
+   * @param {number} [criteria.warningMinutes=2.0] Lookahead time in minutes for predictive cone (default 2.0 min)
+   * @param {number} [criteria.coneDeviationDeg=15] Angular half-spread for trajectory cone in degrees (default 15 deg)
    * @param {boolean} [criteria.includeSafe=true] Whether to include safe aircraft in the result list
    * @returns {object} Filtered results with vector calculations and breach status
    */
@@ -543,6 +676,12 @@ class AdsbAirspaceTracker extends EventEmitter {
     const maxCeilingFeet = typeof criteria.maxCeilingFeet === 'number' && criteria.maxCeilingFeet > 0 
       ? criteria.maxCeilingFeet 
       : 2500;
+    const warningMinutes = typeof criteria.warningMinutes === 'number' && criteria.warningMinutes > 0
+      ? criteria.warningMinutes
+      : 2.0;
+    const coneDeviationDeg = typeof criteria.coneDeviationDeg === 'number' && criteria.coneDeviationDeg >= 0
+      ? criteria.coneDeviationDeg
+      : 15;
     const includeSafe = criteria.includeSafe !== false;
 
     const hasValidHome = (homeLat !== 0 || homeLon !== 0) && Math.abs(homeLat) <= 90 && Math.abs(homeLon) <= 180;
@@ -550,6 +689,7 @@ class AdsbAirspaceTracker extends EventEmitter {
 
     const activeList = [];
     let breachedCount = 0;
+    let approachingCount = 0;
     let withinRadiusCount = 0;
 
     for (const [hex, ac] of this.aircraft.entries()) {
@@ -563,7 +703,13 @@ class AdsbAirspaceTracker extends EventEmitter {
       let bearingCardinal = null;
       let isWithinRadius = false;
       let isBreached = false;
+      let isConeWarning = false;
       let breachReason = 'safe';
+      let etaSeconds = null;
+      let entryDistanceMeters = null;
+      let closingSpeedKts = null;
+      let coneLengthMeters = 0;
+      let offBoresightDeg = null;
 
       if (hasValidHome && ac.latitude !== null && ac.longitude !== null) {
         distanceMeters = Math.round(calculateHaversineDistance(homeLat, homeLon, ac.latitude, ac.longitude));
@@ -589,10 +735,33 @@ class AdsbAirspaceTracker extends EventEmitter {
           } else {
             breachReason = 'proximity_above_ceiling';
           }
+        } else {
+          // Outside proximity radius: evaluate forward predictive trajectory cone
+          const coneEval = evaluatePredictiveCone(
+            ac,
+            homeLat,
+            homeLon,
+            distanceMeters,
+            radiusMeters,
+            maxCeilingFeet,
+            warningMinutes,
+            coneDeviationDeg
+          );
+          coneLengthMeters = coneEval.coneLengthMeters;
+          offBoresightDeg = coneEval.offBoresightDeg;
+
+          if (coneEval.isConeWarning) {
+            isConeWarning = true;
+            approachingCount++;
+            breachReason = 'predictive_cone_approaching';
+            etaSeconds = coneEval.etaSeconds;
+            entryDistanceMeters = coneEval.entryDistanceMeters;
+            closingSpeedKts = coneEval.closingSpeedKts;
+          }
         }
       }
 
-      if (isBreached || includeSafe) {
+      if (isBreached || isConeWarning || includeSafe) {
         activeList.push({
           hex: ac.hex,
           callsign: ac.callsign || `HEX:${ac.hex}`,
@@ -622,17 +791,30 @@ class AdsbAirspaceTracker extends EventEmitter {
           bearingCardinal,
           isWithinRadius,
           isBreached,
+          isConeWarning,
+          etaSeconds,
+          entryDistanceMeters,
+          closingSpeedKts,
+          coneLengthMeters,
+          offBoresightDeg,
           breachReason,
-          status: isBreached ? 'breached' : 'safe',
+          status: isBreached ? 'breached' : (isConeWarning ? 'approaching' : 'safe'),
           history: Array.isArray(ac.history) ? ac.history : []
         });
       }
     }
 
-    // Sort: Breached aircraft first, then closest distance, with position-having aircraft prioritized
+    // Sort: Breached aircraft first, then approaching cone warnings (by shortest ETA), then position-having, then closest distance
     activeList.sort((a, b) => {
       if (a.isBreached && !b.isBreached) return -1;
       if (!a.isBreached && b.isBreached) return 1;
+      if (a.isConeWarning && !b.isConeWarning) return -1;
+      if (!a.isConeWarning && b.isConeWarning) return 1;
+      if (a.isConeWarning && b.isConeWarning) {
+        const etaA = a.etaSeconds !== null ? a.etaSeconds : Infinity;
+        const etaB = b.etaSeconds !== null ? b.etaSeconds : Infinity;
+        if (etaA !== etaB) return etaA - etaB;
+      }
       if (a.hasPosition && !b.hasPosition) return -1;
       if (!a.hasPosition && b.hasPosition) return 1;
       const distA = a.distanceMeters !== null ? a.distanceMeters : Infinity;
@@ -648,7 +830,9 @@ class AdsbAirspaceTracker extends EventEmitter {
         homeLon,
         radiusMeters,
         radiusMiles: parseFloat((radiusMeters / METERS_PER_STATUTE_MILE).toFixed(2)),
-        maxCeilingFeet
+        maxCeilingFeet,
+        warningMinutes,
+        coneDeviationDeg
       },
       summary: {
         totalTracked: this.aircraft.size,
@@ -657,7 +841,9 @@ class AdsbAirspaceTracker extends EventEmitter {
         positionPending: activeList.filter(a => !a.hasPosition).length,
         withinRadius: withinRadiusCount,
         breachedCount,
-        hasBreach: breachedCount > 0
+        approachingCount,
+        hasBreach: breachedCount > 0,
+        hasApproaching: approachingCount > 0
       },
       aircraft: activeList
     };
@@ -1014,6 +1200,9 @@ module.exports = {
   calculateHaversineDistance,
   calculateBearing,
   degreesToCardinal,
+  calculateDestinationPoint,
+  shortestAngularDifference,
+  evaluatePredictiveCone,
   EARTH_RADIUS_METERS,
   METERS_PER_STATUTE_MILE,
   METERS_PER_NAUTICAL_MILE
