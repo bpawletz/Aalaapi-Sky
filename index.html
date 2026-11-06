@@ -8537,7 +8537,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.222.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.222.3</span></h1>
         </div>
       </div>
 
@@ -15833,7 +15833,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.222.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.222.3</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -15993,6 +15993,16 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                               <div>
                                                         <li style="margin-bottom: 8px;">
               <li style="margin-bottom: 8px;">
+              <strong style="color: var(--text-main);">Changelog (v1.222.3):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Continuous 2D Playback Traffic &amp; Chrono Theme (Closes #238):</strong> Synchronizes 4D environmental telemetry during playback loop ticks so ADS-B aircraft stay visible and animate smoothly when clicking Play. Styles historical replay traffic with dashed violet/chrono rings and <code>⏳ Recorded Flight Replay</code> badging.</li>
+              </ul>
+              <br>
+              <strong style="color: var(--text-main);">Changelog (v1.222.3):</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                <li><strong>Android Launcher Mipmap Icons Fix (Closes #240):</strong> Generated complete set of high-res launcher and adaptive icons across all screen densities, eliminating AAPT resource linking failure during APK compilation.</li>
+              </ul>
+              <br>
               <strong style="color: var(--text-main);">Changelog (v1.222.2):</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                 <li><strong>CI Android Build Hang Fix (Closes #239):</strong> Disabled Gradle daemon and legacy Jetifier scanning to eliminate stalls on GitHub Actions runners, enabling fast and reliable APK compilation.</li>
@@ -76279,7 +76289,7 @@ const FlightDiagnostics = {
     }
   },
 
-  createAircraftLabelSprite(text, isBreached) {
+  createAircraftLabelSprite(text, isBreached, isHistorical = true) {
     if (typeof document === 'undefined' || !document.createElement || typeof THREE === 'undefined' || !THREE.CanvasTexture || !THREE.Sprite) return null;
     try {
       const canvas = document.createElement('canvas');
@@ -76288,8 +76298,8 @@ const FlightDiagnostics = {
       const ctx = canvas.getContext('2d');
       if (!ctx) return null;
 
-      ctx.fillStyle = isBreached ? 'rgba(239, 68, 68, 0.9)' : 'rgba(15, 23, 42, 0.85)';
-      ctx.strokeStyle = isBreached ? '#f87171' : '#38bdf8';
+      ctx.fillStyle = isBreached ? 'rgba(239, 68, 68, 0.92)' : (isHistorical ? 'rgba(28, 18, 52, 0.92)' : 'rgba(15, 23, 42, 0.85)');
+      ctx.strokeStyle = isBreached ? '#f87171' : (isHistorical ? '#c084fc' : '#38bdf8');
       ctx.lineWidth = 4;
       if (typeof ctx.roundRect === 'function') {
         ctx.beginPath();
@@ -76394,7 +76404,7 @@ const FlightDiagnostics = {
           (craft.distanceMeters && craft.distanceMeters < 5556 && craft.vertDeltaMeters !== undefined && craft.vertDeltaMeters < 300)
         );
 
-        const craftColor = isBreached ? 0xef4444 : (classified.type === 'helicopter' ? 0xeab308 : (classified.type === 'prop' ? 0x10b981 : 0x38bdf8));
+        const craftColor = isBreached ? 0xef4444 : (classified.type === 'helicopter' ? 0xf59e0b : (classified.type === 'prop' ? 0x34d399 : 0xc084fc));
 
         const craftGroup = new THREE.Group();
         craftGroup.position.copy(craftPos);
@@ -76434,11 +76444,11 @@ const FlightDiagnostics = {
 
         this.replayedTraffic3DGroup.add(craftGroup);
 
-        // Billboard text sprite label
+        // Billboard text sprite label with historical marker prefix (Issue #238)
         const callsign = craft.callsign || craft.icao || craft.hex || 'ADS-B';
         const altFt = (typeof craft.alt === 'number') ? (craft.alt > 500 ? Math.round(craft.alt) : Math.round(craft.alt * 3.28084)) : null;
-        const labelText = altFt !== null ? `${callsign} • ${altFt}ft` : callsign;
-        const sprite = this.createAircraftLabelSprite(labelText, isBreached);
+        const labelText = altFt !== null ? `⏳ ${callsign} • ${altFt}ft` : `⏳ ${callsign}`;
+        const sprite = this.createAircraftLabelSprite(labelText, isBreached, true);
         if (sprite) {
           sprite.position.set(craftPos.x, craftPos.y + 6.5, craftPos.z);
           this.replayedTraffic3DGroup.add(sprite);

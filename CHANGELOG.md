@@ -1,3 +1,33 @@
+## [1.222.3] - 2026-11-05
+
+### 🐛 Fixed
+
+#### Under the Hood & Technical Details
+- **android/app/src/main/res/ (Closes #240)**:
+  - Added missing Android app launcher mipmap icon resources (`ic_launcher.png`, `ic_launcher_round.png`, `ic_launcher_foreground.png`) across all standard density buckets (`mipmap-mdpi`, `mipmap-hdpi`, `mipmap-xhdpi`, `mipmap-xxhdpi`, `mipmap-xxxhdpi`) and adaptive XML definitions in `mipmap-anydpi-v26/`, eliminating AAPT resource linking errors (`resource mipmap/ic_launcher not found`).
+  - Updated `scratch/build.py` to auto-synchronize launcher mipmaps from `icon.png` during build.
+
+## [1.222.3] - 2026-11-05
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Continuous 2D Playback Traffic Animation & Historical Chrono Theme (Closes #238)**:
+  - Fixed disappearing ADS-B manned traffic and Remote ID drone markers when clicking the 2D Play button (`#replay-2d-play-btn`) by synchronizing 4D environmental calculations across animation ticks in `PlaybackManager`.
+  - Added distinct visual styling for historical replayed traffic using a Temporal Violet & Amber Chrono radar palette with dashed outer rings (`.adsb-marker-inner.historical-replay`) and `⏳ Recorded Flight Replay` tooltips to ensure pilots immediately distinguish past recorded traffic from active real-time airspace.
+  - In 3D Digital Twin replays, badged floating billboard callsign labels with `⏳ REC` and chrono violet / amber borders.
+
+#### Under the Hood & Technical Details
+- **src/core/PlaybackManager.js**:
+  - Unified frame payload generation via `_buildReplayPayload()` across both `seekTo()` and `_startLoop()`'s `tick()` loop, broadcasting `airspace`, cross-track drift vectors, exclusion breaches, and radar snapshots on every animation tick.
+- **src/map/MapEngine.js**:
+  - Upgraded 2D historical traffic rendering with non-destructive marker reconciliation (`historicalTrafficMarkers`), updating Leaflet marker coordinates and CSS rotations dynamically without DOM thrashing or closing active tooltips.
+  - Added defensive guards so `historicalTrafficGroup` is preserved if `airspace` is omitted.
+- **index.css**:
+  - Added `.adsb-marker-inner.historical-replay` and category variants (`.helicopter`, `.jet`, `.prop`, `.breached`), `.adsb-plane-tooltip.historical-replay`, and `.adsb-historical-badge`.
+- **src/3d/DigitalTwin.js**:
+  - Updated `createAircraftLabelSprite` to support `isHistorical` chrono styling.
+
 ## [1.222.2] - 2026-11-05
 
 ### 🐛 Fixed

@@ -11905,4 +11905,73 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
   });
 
+
+  describe('Continuous 2D Playback Traffic Persistence & Chrono Theme E2E Tests (v1.222.3, Issue #238)', () => {
+    test('ADS-B traffic markers persist and animate during continuous 2D playback loop', async () => {
+      await page.evaluate(() => {
+        const dummyPt = { lat: 41.3215, lon: -88.9950, alt: 30, time: 0, yaw: 0, timestamp: '2026-11-05T23:00:00.000Z' };
+        const dummyAdsb = [
+          {
+            hex: 'A9A1F0',
+            callsign: 'N72HP',
+            aircraftType: 'H60',
+            latitude: 41.3230,
+            longitude: -88.9940,
+            altitude: 800,
+            speed: 130,
+            track: 65,
+            timestamp: new Date('2026-11-05T23:00:00.000Z').getTime()
+          }
+        ];
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.loadFlight('FlightRecord_2026-11-05_[17-58-48].csv', {
+            flightId: 'FlightRecord_2026-11-05_[17-58-48].csv',
+            points: [
+              dummyPt,
+              { ...dummyPt, lat: 41.3216, lon: -88.9949, time: 2 },
+              { ...dummyPt, lat: 41.3218, lon: -88.9947, time: 5 }
+            ],
+            durationSec: 5,
+            homePoint: dummyPt
+          }, {
+            environmentalData: { adsb: dummyAdsb, remoteId: [], radar: [] },
+            isHistorical: true
+          });
+          PlaybackManager.set2dReplayActive(true);
+        }
+      });
+
+      await page.waitForTimeout(300);
+
+      const marker = page.locator('.historical-traffic-plane-icon .adsb-marker-inner');
+      assert.ok(await marker.count() > 0, 'ADS-B marker must initially render');
+      const innerClasses = await marker.first().getAttribute('class');
+      assert.ok(innerClasses.includes('historical-replay'), 'Marker must have historical-replay chrono styling');
+
+      // Now start playback (simulating clicking Play)
+      await page.evaluate(() => {
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.play();
+        }
+      });
+
+      // Wait across multiple animation frame ticks
+      await page.waitForTimeout(500);
+
+      // Verify that the marker is STILL present and not wiped by playback ticks!
+      const playingMarkerCount = await page.locator('.historical-traffic-plane-icon .adsb-map-aircraft-marker svg').count();
+      assert.ok(playingMarkerCount > 0, 'ADS-B marker must remain rendered during active playback (Issue #238)');
+
+      // Pause and clean up
+      await page.evaluate(() => {
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.pause();
+        }
+        if (typeof restoreActiveWorkspacePlanning === 'function') {
+          restoreActiveWorkspacePlanning();
+        }
+      });
+      await page.waitForTimeout(200);
+    });
+  });
 });

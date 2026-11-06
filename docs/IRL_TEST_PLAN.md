@@ -3,7 +3,7 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.222.2` | **WPML Compiler Hash:** `eb2417f42275` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.222.3` | **WPML Compiler Hash:** `eb2417f42275` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
 **Summary Progress:** **7 / 26** Patterns Verified | **0** Needs Re-Test | **19** Untested | **0** Failed
 
@@ -435,6 +435,20 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ---
 
 ## 6. Post-Update Release IRL Test Plans Log
+
+### [v1.222.3] Continuous 2D Playback Traffic Persistence and Historical Chrono Theme — 2026-11-06 ([Issue #238](https://github.com/bpawletz/Aalaapi-Sky/issues/238))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `all`
+- [ ] Load historical flight log with concurrent ADS-B data
+- [ ] Open 2D Replay and click Play
+- [ ] Verify ADS-B and Remote ID aircraft markers remain visible and animate along track
+- [ ] Verify aircraft display dashed violet chrono ring and Recorded Flight Replay badge
+
+### [v1.222.3] Android Launcher Mipmap and Adaptive Icon Resources Fix — 2026-11-06 ([Issue #240](https://github.com/bpawletz/Aalaapi-Sky/issues/240))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `single-grid`, `double-grid`
+- [ ] Run Build Android APK workflow
+- [ ] Verify AAPT resource linking passes without mipmap/ic_launcher error
+- [ ] Verify app-debug.apk compiles cleanly
+- [ ] Download and install AalaapiSky-debug-apk
 
 ### [v1.222.2] CI Gradle Build Hang and Daemon Fix — 2026-11-06 ([Issue #239](https://github.com/bpawletz/Aalaapi-Sky/issues/239))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `single-grid`, `double-grid`
