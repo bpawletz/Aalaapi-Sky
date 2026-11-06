@@ -1494,6 +1494,46 @@ const FlightDiagnostics = {
   },
 
   async checkDjiApiKeyStatus() {
+    let localKey = '';
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getDjiApiKey === 'function') {
+      try {
+        localKey = window.AalaapiAndroid.getDjiApiKey() || '';
+      } catch (_) {}
+    }
+    if (!localKey && typeof localStorage !== 'undefined') {
+      try {
+        localKey = localStorage.getItem('aalaapi_dji_api_key') || '';
+      } catch (_) {}
+    }
+    if (!localKey && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.getApiKey === 'function') {
+      try {
+        localKey = DjiLogDecryptor.getApiKey() || '';
+      } catch (_) {}
+    }
+
+    const keyBtn = typeof document !== 'undefined' ? document.getElementById('diag-dji-key-btn') : null;
+    const statusMsg = typeof document !== 'undefined' ? document.getElementById('dji-key-status-msg') : null;
+    const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
+
+    if (localKey) {
+      this.djiApiKeyConfigured = true;
+      const maskedKey = localKey.length > 8
+        ? `${localKey.slice(0, 4)}••••••••${localKey.slice(-4)}`
+        : '••••••••••••••••••••••••••••••••';
+      if (keyBtn) {
+        keyBtn.classList.add('has-key');
+        keyBtn.title = `DJI Cloud API Key Configured (${maskedKey})`;
+      }
+      if (input && !input.value) {
+        input.placeholder = maskedKey;
+      }
+      if (statusMsg) {
+        statusMsg.textContent = `Active Key: ${maskedKey}`;
+        statusMsg.style.color = '#34d399';
+      }
+      return { hasKey: true, maskedKey };
+    }
+
     try {
       const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
       const res = await fetch(`${apiBase}/api/config/dji`, {
@@ -1501,9 +1541,6 @@ const FlightDiagnostics = {
       });
       if (res.ok) {
         const data = await res.json();
-        const keyBtn = typeof document !== 'undefined' ? document.getElementById('diag-dji-key-btn') : null;
-        const statusMsg = typeof document !== 'undefined' ? document.getElementById('dji-key-status-msg') : null;
-        const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
         if (data.hasKey) {
           this.djiApiKeyConfigured = true;
           if (keyBtn) {
@@ -1517,24 +1554,24 @@ const FlightDiagnostics = {
             statusMsg.textContent = `Active Key: ${data.maskedKey || 'Configured'}`;
             statusMsg.style.color = '#34d399';
           }
-        } else {
-          this.djiApiKeyConfigured = false;
-          if (keyBtn) {
-            keyBtn.classList.remove('has-key');
-            keyBtn.title = 'DJI Developer Cloud API Key for Decrypting Native Flight Logs';
-          }
-          if (input && !input.value) {
-            input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
-          }
-          if (statusMsg) {
-            statusMsg.textContent = 'No DJI key configured. Encrypted logs fall back to synthetic KMZ modeling.';
-            statusMsg.style.color = 'var(--text-muted)';
-          }
+          return data;
         }
-        return data;
       }
     } catch (e) {
       // Companion server offline or unreachable
+    }
+
+    this.djiApiKeyConfigured = false;
+    if (keyBtn) {
+      keyBtn.classList.remove('has-key');
+      keyBtn.title = 'DJI Developer Cloud API Key for Decrypting Native Flight Logs';
+    }
+    if (input && !input.value) {
+      input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
+    }
+    if (statusMsg) {
+      statusMsg.textContent = 'No DJI key configured. Encrypted logs fall back to synthetic KMZ modeling.';
+      statusMsg.style.color = 'var(--text-muted)';
     }
     return { hasKey: false };
   },
@@ -1578,45 +1615,73 @@ const FlightDiagnostics = {
       saveBtn.textContent = 'Saving...';
     }
 
+    let savedLocally = false;
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setDjiApiKey === 'function') {
+      try {
+        window.AalaapiAndroid.setDjiApiKey(key);
+        savedLocally = true;
+      } catch (err) {
+        console.warn('[DigitalTwin] Native setDjiApiKey error:', err);
+      }
+    }
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('aalaapi_dji_api_key', key);
+        savedLocally = true;
+      } catch (_) {}
+    }
+    if (typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.setApiKey === 'function') {
+      DjiLogDecryptor.setApiKey(key);
+      savedLocally = true;
+    }
+
+    const masked = key.length > 8 ? `${key.slice(0, 4)}••••••••${key.slice(-4)}` : '••••••••';
+
+    // Also sync to Companion Bridge if running
+    let bridgeOk = false;
     try {
       const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
       const res = await fetch(`${apiBase}/api/config/dji`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(5000) : undefined,
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(3000) : undefined,
         body: JSON.stringify({ apiKey: key })
       });
-      const data = await res.json();
-      if (data.success) {
-        if (statusMsg) {
-          statusMsg.textContent = `✅ Saved successfully (${data.maskedKey || 'Active'}).`;
-          statusMsg.style.color = '#34d399';
-        }
-        await this.checkDjiApiKeyStatus();
-        setTimeout(() => {
-          this.closeDjiKeyModal();
-          if (this.selectedFlightId && this.selectedFlightId !== 'active-mission') {
-            this.loadSelectedFlight(this.selectedFlightId);
-          } else {
-            const flightSel = document.getElementById('diag-flight-selector');
-            if (flightSel && flightSel.value && flightSel.value !== 'active-mission') {
-              this.loadSelectedFlight(flightSel.value);
-            }
-          }
-        }, 800);
-      } else {
-        throw new Error(data.error || 'Failed to save key');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) bridgeOk = true;
       }
-    } catch (err) {
+    } catch (_) {
+      // Bridge is offline, which is standard on Android standalone
+    }
+
+    if (savedLocally || bridgeOk) {
       if (statusMsg) {
-        statusMsg.textContent = `❌ ${err.message}`;
+        statusMsg.textContent = `✅ Saved successfully (${masked}).`;
+        statusMsg.style.color = '#34d399';
+      }
+      await this.checkDjiApiKeyStatus();
+      setTimeout(() => {
+        this.closeDjiKeyModal();
+        if (this.selectedFlightId && this.selectedFlightId !== 'active-mission') {
+          this.loadSelectedFlight(this.selectedFlightId);
+        } else {
+          const flightSel = document.getElementById('diag-flight-selector');
+          if (flightSel && flightSel.value && flightSel.value !== 'active-mission') {
+            this.loadSelectedFlight(flightSel.value);
+          }
+        }
+      }, 800);
+    } else {
+      if (statusMsg) {
+        statusMsg.textContent = '❌ Failed to persist key in storage.';
         statusMsg.style.color = '#f87171';
       }
-    } finally {
-      if (saveBtn) {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save & Decrypt';
-      }
+    }
+
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save & Decrypt';
     }
   },
 
@@ -1627,37 +1692,43 @@ const FlightDiagnostics = {
 
     if (clearBtn) clearBtn.disabled = true;
 
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setDjiApiKey === 'function') {
+      try {
+        window.AalaapiAndroid.setDjiApiKey('');
+      } catch (_) {}
+    }
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.removeItem('aalaapi_dji_api_key');
+      } catch (_) {}
+    }
+    if (typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.setApiKey === 'function') {
+      DjiLogDecryptor.setApiKey('');
+    }
+
     try {
       const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-      const res = await fetch(`${apiBase}/api/config/dji`, {
+      await fetch(`${apiBase}/api/config/dji`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(5000) : undefined,
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(3000) : undefined,
         body: JSON.stringify({ apiKey: '' })
       });
-      const data = await res.json();
-      if (data.success) {
-        if (input) {
-          input.value = '';
-          input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
-        }
-        if (statusMsg) {
-          statusMsg.textContent = 'Key removed. Flight logs will use synthetic KMZ mode.';
-          statusMsg.style.color = 'var(--text-muted)';
-        }
-        await this.checkDjiApiKeyStatus();
-        if (this.selectedFlightId) {
-          this.loadSelectedFlight(this.selectedFlightId);
-        }
-      }
-    } catch (err) {
-      if (statusMsg) {
-        statusMsg.textContent = `❌ ${err.message}`;
-        statusMsg.style.color = '#f87171';
-      }
-    } finally {
-      if (clearBtn) clearBtn.disabled = false;
+    } catch (_) {}
+
+    if (input) {
+      input.value = '';
+      input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
     }
+    if (statusMsg) {
+      statusMsg.textContent = 'Key removed. Flight logs will use synthetic KMZ mode.';
+      statusMsg.style.color = 'var(--text-muted)';
+    }
+    await this.checkDjiApiKeyStatus();
+    if (this.selectedFlightId) {
+      this.loadSelectedFlight(this.selectedFlightId);
+    }
+    if (clearBtn) clearBtn.disabled = false;
   },
 
   copyAntigravityPrompt() {

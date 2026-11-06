@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-06T17:19:59.165Z",
-  "currentAppVersion": "1.226.0",
+  "lastUpdated": "2026-11-06T22:52:27.606Z",
+  "currentAppVersion": "1.226.1",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "eb2417f42275",
@@ -1413,6 +1413,35 @@
     }
   },
   "releasePlans": [
+    {
+      "id": "rel-1.226.1-251",
+      "version": "1.226.1",
+      "issueNumber": 251,
+      "title": "Android DJI Key, File Picker, and Public Downloads Exporter",
+      "date": "2026-11-06",
+      "affectedPatterns": [
+        "none"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Open #dji-key-modal on Android, enter 32-char key, tap Save & Decrypt",
+          "checked": false
+        },
+        {
+          "label": "Verify key is saved to native SharedPreferences and active status shown",
+          "checked": false
+        },
+        {
+          "label": "Tap Import KMZ or Import DEM, verify system document picker opens",
+          "checked": false
+        },
+        {
+          "label": "Export a KMZ flight plan, verify it saves into public Downloads directory",
+          "checked": false
+        }
+      ]
+    },
     {
       "id": "rel-1.226.0-250",
       "version": "1.226.0",

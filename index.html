@@ -8709,7 +8709,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.226.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.226.1</span></h1>
         </div>
       </div>
 
@@ -16156,7 +16156,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.226.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.226.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -16315,6 +16315,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+                <strong style="color: var(--text-main);">Changelog (v1.226.1):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Native Android File Picker, File Downloader &amp; DJI Key Persistence (Closes #251):</strong> Enabled Android system file chooser for importing KMZ, DEM GeoTIFF, and flight records. Added native public Downloads file saver for mission/diagnostics export. Persisted DJI Developer API Key in native SharedPreferences with offline fallback and native POST cloud decryption bridge.</li>
+                </ul>
+              </li>
+              <br>
               <li style="margin-bottom: 8px;">
                 <strong style="color: var(--text-main);">Changelog (v1.226.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -56436,6 +56443,67 @@ if (typeof module !== 'undefined' && module.exports) {
   };
 }
 // -------------------- src/export/Packager.js --------------------
+async function triggerFileDownload(blobOrData, filename, mimeType = 'application/octet-stream') {
+  if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.saveFile === 'function') {
+    try {
+      let base64 = '';
+      if (typeof blobOrData === 'string') {
+        base64 = btoa(unescape(encodeURIComponent(blobOrData)));
+      } else if (blobOrData instanceof Blob) {
+        const buffer = await blobOrData.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        const chunk = 8192;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          const sub = bytes.subarray(i, i + chunk);
+          binary += String.fromCharCode.apply(null, sub);
+        }
+        base64 = btoa(binary);
+      } else if (blobOrData instanceof Uint8Array || blobOrData instanceof ArrayBuffer) {
+        const bytes = blobOrData instanceof ArrayBuffer ? new Uint8Array(blobOrData) : blobOrData;
+        let binary = '';
+        const chunk = 8192;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          const sub = bytes.subarray(i, i + chunk);
+          binary += String.fromCharCode.apply(null, sub);
+        }
+        base64 = btoa(binary);
+      }
+      const rawRes = window.AalaapiAndroid.saveFile(base64, filename, mimeType);
+      try {
+        const parsed = JSON.parse(rawRes);
+        if (parsed.success && typeof showToast === 'function') {
+          showToast(`💾 Saved to Downloads: ${filename}`, 'success');
+        }
+      } catch (_) {
+        if (typeof showToast === 'function') {
+          showToast(`💾 Saved to Downloads: ${filename}`, 'success');
+        }
+      }
+      return;
+    } catch (err) {
+      console.warn('[Packager] Native saveFile failed, falling back to browser anchor click:', err);
+    }
+  }
+
+  if (typeof document === 'undefined' || !document.createElement) return;
+  const blob = blobOrData instanceof Blob ? blobOrData : new Blob([blobOrData], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    if (link.parentNode) link.parentNode.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 150);
+}
+
+if (typeof window !== 'undefined') {
+  window.triggerFileDownload = triggerFileDownload;
+}
+
 function exportKMZ() {
   if (!centerMarker) {
     alert("Please select a flight mission center on the map first.");
@@ -56589,7 +56657,7 @@ function exportKMZ() {
       link.download = `GridMission_Alt${altitude}m_${isoTimestamp}.kmz`;
       downloadBase = `GridMission_Alt${altitude}m_${isoTimestamp}`;
     }
-    link.click();
+    triggerFileDownload(result.blob, link.download, "application/vnd.google-earth.kmz");
 
     // Also auto-export comprehensive Flight Diagnostics JSON (User Agent, 3D Simulation, Plan, & Camera)
     try {
@@ -56630,10 +56698,7 @@ function exportKMZ() {
 
       if (diagData && typeof Blob !== 'undefined' && typeof document !== 'undefined') {
         const jsonBlob = new Blob([JSON.stringify(diagData, null, 2)], { type: "application/json" });
-        const jsonLink = document.createElement("a");
-        jsonLink.href = URL.createObjectURL(jsonBlob);
-        jsonLink.download = `${downloadBase}_diag.json`;
-        jsonLink.click();
+        triggerFileDownload(jsonBlob, `${downloadBase}_diag.json`, "application/json");
       }
 
       // Automatically archive diagnostics to local Companion SQLite service if running
@@ -56820,14 +56885,8 @@ function exportQgcPlan() {
   const plan = buildQgcMissionPlan(currentWps, { speed, altitude, gimbalPitch });
   const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
   const ts = typeof formatISO8601ForFilename === 'function' ? formatISO8601ForFilename() : new Date().toISOString().replace(/:/g, '-');
-  a.download = `Mission_QGC_${ts}.plan`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  triggerFileDownload(blob, `Mission_QGC_${ts}.plan`, 'application/json');
 }
 
 function exportAutelKml() {
@@ -56843,14 +56902,8 @@ function exportAutelKml() {
   const kml = buildAutelMissionKml(currentWps, { speed, altitude, gimbalPitch });
   const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
   const ts = typeof formatISO8601ForFilename === 'function' ? formatISO8601ForFilename() : new Date().toISOString().replace(/:/g, '-');
-  a.download = `Mission_Autel_${ts}.kml`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  triggerFileDownload(blob, `Mission_Autel_${ts}.kml`, 'application/vnd.google-earth.kml+xml');
 }
 
 function initMultiVendorToggle() {
@@ -57197,10 +57250,7 @@ function exportMissionPlanJSON(customWps = null) {
   }
 
   if (blob && typeof document !== 'undefined' && document.createElement) {
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${downloadBase}_plan.json`;
-    link.click();
+    triggerFileDownload(blob, `${downloadBase}_plan.json`, "application/json");
   }
 
   return { plan, blob, jsonStr };
@@ -57364,10 +57414,7 @@ function exportFlightDiagnosticsJSON(customWps = null, options = {}) {
   }
 
   if (blob && typeof document !== 'undefined' && document.createElement) {
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${downloadBase}_diag.json`;
-    link.click();
+    triggerFileDownload(blob, `${downloadBase}_diag.json`, "application/json");
   }
 
   // Also notify companion archive service
@@ -73418,6 +73465,11 @@ class DjiLogDecryptorEngine {
 
   setApiKey(key) {
     this.apiKey = (key || '').trim();
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setDjiApiKey === 'function') {
+      try {
+        window.AalaapiAndroid.setDjiApiKey(this.apiKey);
+      } catch (_) {}
+    }
     if (typeof localStorage !== 'undefined') {
       try {
         localStorage.setItem('aalaapi_dji_api_key', this.apiKey);
@@ -73427,6 +73479,15 @@ class DjiLogDecryptorEngine {
 
   getApiKey() {
     if (this.apiKey) return this.apiKey;
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getDjiApiKey === 'function') {
+      try {
+        const nativeKey = window.AalaapiAndroid.getDjiApiKey();
+        if (nativeKey) {
+          this.apiKey = nativeKey.trim();
+          return this.apiKey;
+        }
+      } catch (_) {}
+    }
     if (typeof localStorage !== 'undefined') {
       try {
         this.apiKey = localStorage.getItem('aalaapi_dji_api_key') || null;
@@ -73502,6 +73563,26 @@ class DjiLogDecryptorEngine {
       'Content-Type': 'application/json',
       'Api-Key': keyToUse
     };
+
+    // If running in Android container, route via native postHttp bridge (bypasses WebView CORS)
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.postHttp === 'function') {
+      try {
+        const rawRes = window.AalaapiAndroid.postHttp(endpoint, requestBody, JSON.stringify(headers));
+        const parsed = JSON.parse(rawRes);
+        if (parsed.error) {
+          throw new Error(`DJI Cloud Keychain API error: ${parsed.error} (${parsed.status || 'unknown'})`);
+        }
+        if (parsed.key) {
+          return parsed.key;
+        }
+        throw new Error('DJI Cloud returned empty or invalid decryption key.');
+      } catch (nativeErr) {
+        if (nativeErr.message.includes('DJI Cloud')) {
+          throw nativeErr;
+        }
+        console.warn('[DjiLogDecryptor] Native postHttp failed, falling back to fetch:', nativeErr);
+      }
+    }
 
     let response = null;
     try {
@@ -76157,6 +76238,46 @@ const FlightDiagnostics = {
   },
 
   async checkDjiApiKeyStatus() {
+    let localKey = '';
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getDjiApiKey === 'function') {
+      try {
+        localKey = window.AalaapiAndroid.getDjiApiKey() || '';
+      } catch (_) {}
+    }
+    if (!localKey && typeof localStorage !== 'undefined') {
+      try {
+        localKey = localStorage.getItem('aalaapi_dji_api_key') || '';
+      } catch (_) {}
+    }
+    if (!localKey && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.getApiKey === 'function') {
+      try {
+        localKey = DjiLogDecryptor.getApiKey() || '';
+      } catch (_) {}
+    }
+
+    const keyBtn = typeof document !== 'undefined' ? document.getElementById('diag-dji-key-btn') : null;
+    const statusMsg = typeof document !== 'undefined' ? document.getElementById('dji-key-status-msg') : null;
+    const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
+
+    if (localKey) {
+      this.djiApiKeyConfigured = true;
+      const maskedKey = localKey.length > 8
+        ? `${localKey.slice(0, 4)}••••••••${localKey.slice(-4)}`
+        : '••••••••••••••••••••••••••••••••';
+      if (keyBtn) {
+        keyBtn.classList.add('has-key');
+        keyBtn.title = `DJI Cloud API Key Configured (${maskedKey})`;
+      }
+      if (input && !input.value) {
+        input.placeholder = maskedKey;
+      }
+      if (statusMsg) {
+        statusMsg.textContent = `Active Key: ${maskedKey}`;
+        statusMsg.style.color = '#34d399';
+      }
+      return { hasKey: true, maskedKey };
+    }
+
     try {
       const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
       const res = await fetch(`${apiBase}/api/config/dji`, {
@@ -76164,9 +76285,6 @@ const FlightDiagnostics = {
       });
       if (res.ok) {
         const data = await res.json();
-        const keyBtn = typeof document !== 'undefined' ? document.getElementById('diag-dji-key-btn') : null;
-        const statusMsg = typeof document !== 'undefined' ? document.getElementById('dji-key-status-msg') : null;
-        const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
         if (data.hasKey) {
           this.djiApiKeyConfigured = true;
           if (keyBtn) {
@@ -76180,24 +76298,24 @@ const FlightDiagnostics = {
             statusMsg.textContent = `Active Key: ${data.maskedKey || 'Configured'}`;
             statusMsg.style.color = '#34d399';
           }
-        } else {
-          this.djiApiKeyConfigured = false;
-          if (keyBtn) {
-            keyBtn.classList.remove('has-key');
-            keyBtn.title = 'DJI Developer Cloud API Key for Decrypting Native Flight Logs';
-          }
-          if (input && !input.value) {
-            input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
-          }
-          if (statusMsg) {
-            statusMsg.textContent = 'No DJI key configured. Encrypted logs fall back to synthetic KMZ modeling.';
-            statusMsg.style.color = 'var(--text-muted)';
-          }
+          return data;
         }
-        return data;
       }
     } catch (e) {
       // Companion server offline or unreachable
+    }
+
+    this.djiApiKeyConfigured = false;
+    if (keyBtn) {
+      keyBtn.classList.remove('has-key');
+      keyBtn.title = 'DJI Developer Cloud API Key for Decrypting Native Flight Logs';
+    }
+    if (input && !input.value) {
+      input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
+    }
+    if (statusMsg) {
+      statusMsg.textContent = 'No DJI key configured. Encrypted logs fall back to synthetic KMZ modeling.';
+      statusMsg.style.color = 'var(--text-muted)';
     }
     return { hasKey: false };
   },
@@ -76241,45 +76359,73 @@ const FlightDiagnostics = {
       saveBtn.textContent = 'Saving...';
     }
 
+    let savedLocally = false;
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setDjiApiKey === 'function') {
+      try {
+        window.AalaapiAndroid.setDjiApiKey(key);
+        savedLocally = true;
+      } catch (err) {
+        console.warn('[DigitalTwin] Native setDjiApiKey error:', err);
+      }
+    }
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('aalaapi_dji_api_key', key);
+        savedLocally = true;
+      } catch (_) {}
+    }
+    if (typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.setApiKey === 'function') {
+      DjiLogDecryptor.setApiKey(key);
+      savedLocally = true;
+    }
+
+    const masked = key.length > 8 ? `${key.slice(0, 4)}••••••••${key.slice(-4)}` : '••••••••';
+
+    // Also sync to Companion Bridge if running
+    let bridgeOk = false;
     try {
       const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
       const res = await fetch(`${apiBase}/api/config/dji`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(5000) : undefined,
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(3000) : undefined,
         body: JSON.stringify({ apiKey: key })
       });
-      const data = await res.json();
-      if (data.success) {
-        if (statusMsg) {
-          statusMsg.textContent = `✅ Saved successfully (${data.maskedKey || 'Active'}).`;
-          statusMsg.style.color = '#34d399';
-        }
-        await this.checkDjiApiKeyStatus();
-        setTimeout(() => {
-          this.closeDjiKeyModal();
-          if (this.selectedFlightId && this.selectedFlightId !== 'active-mission') {
-            this.loadSelectedFlight(this.selectedFlightId);
-          } else {
-            const flightSel = document.getElementById('diag-flight-selector');
-            if (flightSel && flightSel.value && flightSel.value !== 'active-mission') {
-              this.loadSelectedFlight(flightSel.value);
-            }
-          }
-        }, 800);
-      } else {
-        throw new Error(data.error || 'Failed to save key');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) bridgeOk = true;
       }
-    } catch (err) {
+    } catch (_) {
+      // Bridge is offline, which is standard on Android standalone
+    }
+
+    if (savedLocally || bridgeOk) {
       if (statusMsg) {
-        statusMsg.textContent = `❌ ${err.message}`;
+        statusMsg.textContent = `✅ Saved successfully (${masked}).`;
+        statusMsg.style.color = '#34d399';
+      }
+      await this.checkDjiApiKeyStatus();
+      setTimeout(() => {
+        this.closeDjiKeyModal();
+        if (this.selectedFlightId && this.selectedFlightId !== 'active-mission') {
+          this.loadSelectedFlight(this.selectedFlightId);
+        } else {
+          const flightSel = document.getElementById('diag-flight-selector');
+          if (flightSel && flightSel.value && flightSel.value !== 'active-mission') {
+            this.loadSelectedFlight(flightSel.value);
+          }
+        }
+      }, 800);
+    } else {
+      if (statusMsg) {
+        statusMsg.textContent = '❌ Failed to persist key in storage.';
         statusMsg.style.color = '#f87171';
       }
-    } finally {
-      if (saveBtn) {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save & Decrypt';
-      }
+    }
+
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save & Decrypt';
     }
   },
 
@@ -76290,37 +76436,43 @@ const FlightDiagnostics = {
 
     if (clearBtn) clearBtn.disabled = true;
 
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setDjiApiKey === 'function') {
+      try {
+        window.AalaapiAndroid.setDjiApiKey('');
+      } catch (_) {}
+    }
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.removeItem('aalaapi_dji_api_key');
+      } catch (_) {}
+    }
+    if (typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.setApiKey === 'function') {
+      DjiLogDecryptor.setApiKey('');
+    }
+
     try {
       const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-      const res = await fetch(`${apiBase}/api/config/dji`, {
+      await fetch(`${apiBase}/api/config/dji`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(5000) : undefined,
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(3000) : undefined,
         body: JSON.stringify({ apiKey: '' })
       });
-      const data = await res.json();
-      if (data.success) {
-        if (input) {
-          input.value = '';
-          input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
-        }
-        if (statusMsg) {
-          statusMsg.textContent = 'Key removed. Flight logs will use synthetic KMZ mode.';
-          statusMsg.style.color = 'var(--text-muted)';
-        }
-        await this.checkDjiApiKeyStatus();
-        if (this.selectedFlightId) {
-          this.loadSelectedFlight(this.selectedFlightId);
-        }
-      }
-    } catch (err) {
-      if (statusMsg) {
-        statusMsg.textContent = `❌ ${err.message}`;
-        statusMsg.style.color = '#f87171';
-      }
-    } finally {
-      if (clearBtn) clearBtn.disabled = false;
+    } catch (_) {}
+
+    if (input) {
+      input.value = '';
+      input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
     }
+    if (statusMsg) {
+      statusMsg.textContent = 'Key removed. Flight logs will use synthetic KMZ mode.';
+      statusMsg.style.color = 'var(--text-muted)';
+    }
+    await this.checkDjiApiKeyStatus();
+    if (this.selectedFlightId) {
+      this.loadSelectedFlight(this.selectedFlightId);
+    }
+    if (clearBtn) clearBtn.disabled = false;
   },
 
   copyAntigravityPrompt() {
