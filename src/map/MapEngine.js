@@ -1254,6 +1254,90 @@ function clear2dHistoricalTracks() {
   historicalDriftLine = null;
 }
 
+function getReplayAircraftMarkerHtml(craft) {
+  let classified = { type: 'aircraft', label: 'Aircraft', emoji: '✈️' };
+  let markerSvg = null;
+
+  if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+    if (typeof AdsbAirspaceManager.getAircraftMeta === 'function') {
+      classified = AdsbAirspaceManager.getAircraftMeta(craft);
+    }
+    if (typeof AdsbAirspaceManager.getAircraftMarkerSvg === 'function') {
+      markerSvg = AdsbAirspaceManager.getAircraftMarkerSvg(classified.type);
+    }
+  }
+
+  if (!markerSvg) {
+    switch (classified.type) {
+      case 'helicopter':
+        markerSvg = '<svg viewBox="0 0 32 32" width="20" height="20" fill="currentColor"><path d="M4 8h24v1.5H4z" opacity="0.9" stroke-linecap="round"/><path d="M15 8h2v3h-2z"/><path d="M13 11 C11 13 11 18 12.5 20.5 L15 20.5 L15 28 L17 28 L17 20.5 L19.5 20.5 C21 18 21 13 19 11 Z"/><path d="M17 26 L21 25 L21 30 L17 29 Z"/><path d="M9 15 h2 v5 H9 z M21 15 h2 v5 H21 z M11 18 h10 v1.2 H11 z" stroke-linecap="round"/></svg>';
+        break;
+      case 'jet':
+        markerSvg = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2 C11.3 2 10.7 3.5 10.7 6 L10.7 9.8 L1.5 15.2 L1.5 17.5 L10.7 14.5 L10.7 19.2 L7.8 21.2 L7.8 23 L12 21.8 L16.2 23 L16.2 21.2 L13.3 19.2 L13.3 14.5 L22.5 17.5 L22.5 15.2 L13.3 9.8 L13.3 6 C13.3 3.5 12.7 2 12 2 Z"/><path d="M7 12.5 h1.8 v3.5 H7 z M15.2 12.5 h1.8 v3.5 H15.2 z"/></svg>';
+        break;
+      case 'prop':
+        markerSvg = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7 3.2 h10 v1.2 H7 z" opacity="0.9"/><path d="M12 3.8 C11.2 3.8 10.8 5 10.8 7 L10.8 9 L1 9.5 L1 12.2 L10.8 11.8 L10.8 18.5 L6.8 19.2 L6.8 21.2 L12 20.6 L17.2 21.2 L17.2 19.2 L13.2 18.5 L13.2 11.8 L23 12.2 L23 9.5 L13.2 9 L13.2 7 C13.2 5 12.8 3.8 12 3.8 Z"/></svg>';
+        break;
+      case 'glider':
+        markerSvg = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2.5 C11.4 2.5 11 3.5 11 5.5 L11 9.5 L0.5 10 L0.5 11.2 L11 11 L11 20.5 L8.5 21 L8.5 22.2 L12 21.8 L15.5 22.2 L15.5 21 L13 20.5 L13 11 L23.5 11.2 L23.5 10 L13 9.5 L13 5.5 C13 3.5 12.6 2.5 12 2.5 Z"/></svg>';
+        break;
+      case 'drone':
+        markerSvg = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="19" cy="5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="5" cy="19" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="19" cy="19" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 7.5 L16.5 16.5 M16.5 7.5 L7.5 16.5" stroke="currentColor" stroke-width="1.5"/></svg>';
+        break;
+      default:
+        markerSvg = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
+    }
+  }
+
+  const isBreached = Boolean(
+    craft.isBreach ||
+    craft.isBreached ||
+    (craft.distanceMeters && craft.distanceMeters <= 5556 && craft.vertDeltaMeters !== undefined && craft.vertDeltaMeters <= 300)
+  );
+
+  const innerClass = isBreached
+    ? `adsb-marker-inner breached ${classified.type}`
+    : `adsb-marker-inner ${classified.type}`;
+
+  const track = Math.round(craft.track !== undefined ? craft.track : (craft.heading || 0));
+
+  const iconHtml = `
+    <div class="adsb-map-aircraft-marker" data-type="${classified.type}" style="transform: rotate(${track}deg);">
+      <div class="${innerClass}">
+        ${markerSvg}
+      </div>
+    </div>
+  `;
+
+  return { iconHtml, classified, isBreached, track };
+}
+
+function getReplayDroneMarkerHtml(drone) {
+  const isBreached = Boolean(
+    drone.isBreach ||
+    drone.isBreached ||
+    (drone.distanceMeters && drone.distanceMeters <= 1000 && drone.vertDeltaMeters !== undefined && drone.vertDeltaMeters <= 150)
+  );
+
+  const innerClass = isBreached
+    ? 'adsb-marker-inner breached drone'
+    : 'adsb-marker-inner drone';
+
+  const track = Math.round(drone.track !== undefined ? drone.track : (drone.heading || 0));
+
+  const markerSvg = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="19" cy="5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="5" cy="19" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="19" cy="19" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 7.5 L16.5 16.5 M16.5 7.5 L7.5 16.5" stroke="currentColor" stroke-width="1.5"/></svg>';
+
+  const iconHtml = `
+    <div class="adsb-map-aircraft-marker" data-type="drone" style="transform: rotate(${track}deg);">
+      <div class="${innerClass}">
+        ${markerSvg}
+      </div>
+    </div>
+  `;
+
+  return { iconHtml, isBreached, track };
+}
+
 function update2dDronePosition(point, airspace, crossTrackDriftMeters, crossTrackDriftPoint) {
   if (!point || !historicalDroneMarker) return;
   if (typeof point.lat !== 'number' || typeof point.lon !== 'number') return;
@@ -1279,36 +1363,52 @@ function update2dDronePosition(point, airspace, crossTrackDriftMeters, crossTrac
       const adsbList = airspace.activeAdsb || [];
       adsbList.forEach(craft => {
         if (typeof craft.lat === 'number' && typeof craft.lon === 'number') {
-          const hdg = craft.track !== undefined ? craft.track : (craft.heading || 0);
+          const { iconHtml, classified, isBreached } = getReplayAircraftMarkerHtml(craft);
           const planeIcon = L.divIcon({
-            className: 'historical-traffic-plane-icon',
-            html: `<div style="transform: rotate(${Math.round(hdg)}deg); font-size: 16px; filter: drop-shadow(0 0 3px #f59e0b);">✈️</div>`,
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
+            className: 'historical-traffic-plane-icon adsb-leaflet-marker-container',
+            html: iconHtml,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
           });
           const m = L.marker([craft.lat, craft.lon], { icon: planeIcon }).addTo(historicalTrafficGroup);
           const callsign = craft.callsign || craft.icao || craft.hex || 'ADS-B';
           const distKm = (craft.distanceMeters / 1000).toFixed(2);
-          const altText = (typeof craft.alt === 'number')
-            ? (craft.alt > 500 ? `${Math.round(craft.alt)} ft (${Math.round(craft.alt * 0.3048)}m)` : `${Math.round(craft.alt)}m`)
-            : 'N/A';
-          m.bindTooltip(`<b>✈️ ${callsign}</b><br>Alt: ${altText}<br>Dist: ${distKm} km<br>Speed: ${Math.round(craft.speed || 0)} kts`, { direction: 'top' });
+          const distMi = (craft.distanceMeters * 0.000621371).toFixed(2);
+          const altFt = (typeof craft.alt === 'number') ? (craft.alt > 500 ? Math.round(craft.alt) : Math.round(craft.alt * 3.28084)) : null;
+          const altM = altFt !== null ? Math.round(altFt * 0.3048) : null;
+          const altStr = altFt !== null ? `${altFt} ft (${altM} m)` : 'Alt N/A';
+          const speedStr = craft.speed ? `${Math.round(craft.speed)} kts` : '';
+          const typeStr = craft.aircraftType ? ` [${craft.aircraftType}]` : '';
+
+          const tooltipContent = `<strong>${callsign}</strong>${typeStr}<br><span style="font-weight: 600; color: #38bdf8;">${classified.emoji} ${classified.label}</span><br>Alt: ${altStr} • ${speedStr}<br>Dist: ${distMi} mi (${distKm} km)`;
+          m.bindTooltip(tooltipContent, {
+            className: `adsb-plane-tooltip ${isBreached ? 'breached' : ''}`,
+            direction: 'top',
+            offset: [0, -12]
+          });
         }
       });
 
       const ridList = airspace.activeRemoteId || [];
       ridList.forEach(drone => {
         if (typeof drone.lat === 'number' && typeof drone.lon === 'number') {
+          const { iconHtml, isBreached } = getReplayDroneMarkerHtml(drone);
           const droneIcon = L.divIcon({
-            className: 'historical-traffic-drone-icon',
-            html: `<div style="font-size: 14px; filter: drop-shadow(0 0 3px #38bdf8);">🛸</div>`,
-            iconSize: [18, 18],
-            iconAnchor: [9, 9]
+            className: 'historical-traffic-drone-icon adsb-leaflet-marker-container',
+            html: iconHtml,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
           });
           const m = L.marker([drone.lat, drone.lon], { icon: droneIcon }).addTo(historicalTrafficGroup);
-          const droneId = drone.id || 'RemoteID Drone';
-          const distKm = (drone.distanceMeters / 1000).toFixed(2);
-          m.bindTooltip(`<b>🛸 ${droneId}</b><br>Alt: ${Math.round(drone.alt)}m<br>Dist: ${distKm} km`, { direction: 'top' });
+          const droneId = drone.uasId || drone.id || 'RemoteID Drone';
+          const distM = Math.round(drone.distanceMeters || 0);
+          const altM = Math.round(drone.alt || drone.altitude || 0);
+          const tooltipContent = `<strong>🛸 ${droneId}</strong><br><span style="font-weight: 600; color: #38bdf8;">Broadcast Remote ID</span><br>Alt: ${altM} m (${Math.round(altM * 3.28084)} ft)<br>Dist: ${distM} m`;
+          m.bindTooltip(tooltipContent, {
+            className: `adsb-plane-tooltip ${isBreached ? 'breached' : ''}`,
+            direction: 'top',
+            offset: [0, -12]
+          });
         }
       });
     }
@@ -1489,8 +1589,12 @@ function initReplay2dBarListeners() {
 if (typeof window !== 'undefined') {
   window.nasaNightLightsLayer = nasaNightLightsLayer;
   window.cloudCoverLayer = cloudCoverLayer;
+  window.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
+  window.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
 }
 if (typeof global !== 'undefined') {
   global.nasaNightLightsLayer = nasaNightLightsLayer;
   global.cloudCoverLayer = cloudCoverLayer;
+  global.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
+  global.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
 }

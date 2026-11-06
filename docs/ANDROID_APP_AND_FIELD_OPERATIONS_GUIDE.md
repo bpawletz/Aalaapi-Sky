@@ -30,7 +30,21 @@ The Android app provides complete field autonomy without requiring a laptop or c
 
 ## 🛠️ Building & Installing the Android APK
 
-### Prerequisites
+### Option 1: Zero-Install Cloud Build via GitHub Actions (Recommended — 100% Free)
+You do **not** need Android Studio, the Android SDK, or Java installed on your computer. GitHub compiles the APK automatically in the cloud for free:
+
+1. Open your repository on GitHub: [`https://github.com/bpawletz/Aalaapi-Sky`](https://github.com/bpawletz/Aalaapi-Sky).
+2. Click the **Actions** tab at the top.
+3. Select **"Build Android APK"** from the left workflow sidebar.
+4. Click the **"Run workflow"** button on the right and select the `main` branch.
+5. In ~2–3 minutes, the run completes. Click on the completed run and scroll down to **Artifacts** to download `AalaapiSky-debug-apk.zip` (containing `app-debug.apk`).
+6. Unzip and tap `app-debug.apk` directly on your Android phone, tablet, or DJI RC 2 to install.
+
+---
+
+### Option 2: Local Android Studio Build (For Developers)
+
+#### Prerequisites
 - Android Studio Ladybug / Meerkat (or newer) OR Android SDK command-line tools.
 - JDK 17 or higher.
 

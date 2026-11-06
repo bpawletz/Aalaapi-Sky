@@ -3,7 +3,7 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.221.1` | **WPML Compiler Hash:** `eb2417f42275` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.222.0` | **WPML Compiler Hash:** `eb2417f42275` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
 **Summary Progress:** **7 / 26** Patterns Verified | **0** Needs Re-Test | **19** Untested | **0** Failed
 
@@ -435,6 +435,20 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ---
 
 ## 6. Post-Update Release IRL Test Plans Log
+
+### [v1.222.0] Live ADS-B Aircraft SVG Icons and 3D Rotorcraft Visualizer in Flight Replay — 2026-11-06 ([Issue #235](https://github.com/bpawletz/Aalaapi-Sky/issues/235))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `all`
+- [ ] Import historical flight log with concurrent ADS-B data
+- [ ] Verify 2D replay displays authentic SVG aircraft icons matching live airspace
+- [ ] Verify helicopters display distinct dual-component fuselage and rotor disc in 3D replay
+- [ ] Verify low-level proximity breach (<3NM/<1000ft) triggers crimson pulsing rings
+
+### [v1.222.0] Automated Zero-Cost Android APK Cloud Compilation — 2026-11-06 ([Issue #236](https://github.com/bpawletz/Aalaapi-Sky/issues/236))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `single-grid`, `double-grid`
+- [ ] Open GitHub repository Actions tab
+- [ ] Trigger Build Android APK workflow via workflow_dispatch
+- [ ] Verify Gradle assembleDebug builds app-debug.apk
+- [ ] Download AalaapiSky-debug-apk artifact and verify install on Android
 
 ### [v1.221.0] Native Android App & Tri-Link Field Bridge — 2026-11-06 ([Issue #234](https://github.com/bpawletz/Aalaapi-Sky/issues/234))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `single-grid`, `double-grid`, `crosshatch`

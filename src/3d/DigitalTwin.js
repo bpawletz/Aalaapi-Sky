@@ -4128,6 +4128,44 @@ const FlightDiagnostics = {
     }
   },
 
+  createAircraftLabelSprite(text, isBreached) {
+    if (typeof document === 'undefined' || !document.createElement || typeof THREE === 'undefined' || !THREE.CanvasTexture || !THREE.Sprite) return null;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+
+      ctx.fillStyle = isBreached ? 'rgba(239, 68, 68, 0.9)' : 'rgba(15, 23, 42, 0.85)';
+      ctx.strokeStyle = isBreached ? '#f87171' : '#38bdf8';
+      ctx.lineWidth = 4;
+      if (typeof ctx.roundRect === 'function') {
+        ctx.beginPath();
+        ctx.roundRect(4, 4, 248, 56, 12);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.fillRect(4, 4, 248, 56);
+        ctx.strokeRect(4, 4, 248, 56);
+      }
+
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 128, 32);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(16, 4, 1);
+      return sprite;
+    } catch (_) {
+      return null;
+    }
+  },
+
   updateReplayedTraffic3D(pt, safeIdx) {
     if (!this.threeScene || typeof THREE === 'undefined' || typeof THREE.Group !== 'function') return;
     if (!this.replayedTraffic3DGroup) {
@@ -4142,7 +4180,24 @@ const FlightDiagnostics = {
     }
     if (!this.replayedTraffic3DGroup || !this.replayedTraffic3DGroup.children) return;
 
-    // Clear existing replayed traffic meshes
+    // Clear existing replayed traffic meshes recursively
+    const disposeRecursive = (obj) => {
+      if (!obj) return;
+      if (obj.children) {
+        while (obj.children.length > 0) {
+          disposeRecursive(obj.children.shift());
+        }
+      }
+      if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
+      if (obj.material) {
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach(m => {
+          if (m && m.map && m.map.dispose) m.map.dispose();
+          if (m && m.dispose) m.dispose();
+        });
+      }
+    };
+
     while (this.replayedTraffic3DGroup.children.length > 0) {
       const obj = this.replayedTraffic3DGroup.children[0];
       if (this.replayedTraffic3DGroup.remove) {
@@ -4150,11 +4205,7 @@ const FlightDiagnostics = {
       } else {
         this.replayedTraffic3DGroup.children.shift();
       }
-      if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
-      if (obj.material) {
-        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose && m.dispose());
-        else if (obj.material.dispose) obj.material.dispose();
-      }
+      disposeRecursive(obj);
     }
 
     if (typeof TelemetryInterpolator === 'undefined' || typeof PlaybackManager === 'undefined') return;
@@ -4174,22 +4225,73 @@ const FlightDiagnostics = {
     const airspace = TelemetryInterpolator.interpolateAirspace(currentUtcMs, pt, envData.adsb || [], envData.remoteId || []);
     if (!airspace) return;
 
-    // Render active ADS-B aircraft as orange cones
+    // Render active ADS-B aircraft with category shapes, dynamic colors, and callsign labels
     (airspace.activeAdsb || []).forEach(craft => {
       if (typeof craft.lat === 'number' && typeof craft.lon === 'number') {
         const altMsl = (typeof craft.alt === 'number') ? (craft.alt > 500 ? craft.alt * 0.3048 : craft.alt) : (craft.altitudeMsl || 100);
         const craftPos = this.projectToWorld(craft.lat, craft.lon, altMsl);
-        const craftGeo = new THREE.ConeGeometry(3, 8, 8);
-        craftGeo.rotateX(-Math.PI / 2);
+        const hdg = craft.track !== undefined ? craft.track : (craft.heading || 0);
+
+        let classified = { type: 'aircraft', label: 'Aircraft', emoji: '✈️' };
+        if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager && typeof AdsbAirspaceManager.getAircraftMeta === 'function') {
+          classified = AdsbAirspaceManager.getAircraftMeta(craft);
+        }
+
+        const isBreached = Boolean(
+          craft.isBreach ||
+          craft.isBreached ||
+          (craft.distanceMeters && craft.distanceMeters < 5556 && craft.vertDeltaMeters !== undefined && craft.vertDeltaMeters < 300)
+        );
+
+        const craftColor = isBreached ? 0xef4444 : (classified.type === 'helicopter' ? 0xeab308 : (classified.type === 'prop' ? 0x10b981 : 0x38bdf8));
+
+        const craftGroup = new THREE.Group();
+        craftGroup.position.copy(craftPos);
+        craftGroup.rotation.y = - (hdg * Math.PI) / 180;
+
         const craftMat = new THREE.MeshStandardMaterial({
-          color: craft.distanceMeters < 5556 ? 0xef4444 : 0xf59e0b,
+          color: craftColor,
           roughness: 0.4
         });
-        const mesh = new THREE.Mesh(craftGeo, craftMat);
-        mesh.position.copy(craftPos);
-        const hdg = craft.track !== undefined ? craft.track : (craft.heading || 0);
-        mesh.rotation.y = - (hdg * Math.PI) / 180;
-        this.replayedTraffic3DGroup.add(mesh);
+
+        if (classified.type === 'helicopter') {
+          // Fuselage cone
+          const fuseGeo = new THREE.ConeGeometry(2.5, 7, 8);
+          fuseGeo.rotateX(-Math.PI / 2);
+          const fuseMesh = new THREE.Mesh(fuseGeo, craftMat);
+          craftGroup.add(fuseMesh);
+
+          // Rotor disc
+          if (THREE.CylinderGeometry) {
+            const rotorGeo = new THREE.CylinderGeometry(5.5, 5.5, 0.2, 16);
+            const rotorMat = new THREE.MeshStandardMaterial({
+              color: isBreached ? 0xf87171 : 0xfef08a,
+              transparent: true,
+              opacity: 0.65
+            });
+            const rotorMesh = new THREE.Mesh(rotorGeo, rotorMat);
+            rotorMesh.position.y = 1.8;
+            craftGroup.add(rotorMesh);
+          }
+        } else {
+          // Streamlined fixed-wing cone
+          const craftGeo = new THREE.ConeGeometry(3, 9, 8);
+          craftGeo.rotateX(-Math.PI / 2);
+          const mesh = new THREE.Mesh(craftGeo, craftMat);
+          craftGroup.add(mesh);
+        }
+
+        this.replayedTraffic3DGroup.add(craftGroup);
+
+        // Billboard text sprite label
+        const callsign = craft.callsign || craft.icao || craft.hex || 'ADS-B';
+        const altFt = (typeof craft.alt === 'number') ? (craft.alt > 500 ? Math.round(craft.alt) : Math.round(craft.alt * 3.28084)) : null;
+        const labelText = altFt !== null ? `${callsign} • ${altFt}ft` : callsign;
+        const sprite = this.createAircraftLabelSprite(labelText, isBreached);
+        if (sprite) {
+          sprite.position.set(craftPos.x, craftPos.y + 6.5, craftPos.z);
+          this.replayedTraffic3DGroup.add(sprite);
+        }
       }
     });
 
