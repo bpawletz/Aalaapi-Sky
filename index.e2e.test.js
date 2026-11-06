@@ -11810,4 +11810,44 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.ok(!(await syncBar.isVisible()), '#android-rc2-sync-bar must hide after disconnection');
     });
   });
+  describe('Ambient ADS-B Flight Replay Synchronization E2E Tests (v1.221.1, Issue #233)', () => {
+    test('PlaybackManager with environmentalData renders historical traffic marker on 2D map', async () => {
+      await page.evaluate(() => {
+        const dummyPt = { lat: 41.3215, lon: -88.9950, alt: 30, time: 0, yaw: 0, timestamp: '2026-11-05T23:00:00.000Z' };
+        const dummyAdsb = [
+          { hex: 'A9A1F0', callsign: 'N72HP', latitude: 41.3260, longitude: -88.9910, altitude: 2275, speed: 140, track: 54, timestamp: new Date('2026-11-05T23:00:00.000Z').getTime() }
+        ];
+        if (typeof PlaybackManager !== 'undefined') {
+          PlaybackManager.loadFlight('FlightRecord_2026-11-05_[17-58-48].csv', {
+            flightId: 'FlightRecord_2026-11-05_[17-58-48].csv',
+            points: [dummyPt, { ...dummyPt, lat: 41.3216, lon: -88.9949, time: 5 }],
+            durationSec: 5,
+            homePoint: dummyPt
+          }, {
+            environmentalData: { adsb: dummyAdsb, remoteId: [], radar: [] },
+            isHistorical: true
+          });
+          PlaybackManager.set2dReplayActive(true);
+        }
+      });
+
+      await page.waitForTimeout(300);
+
+      // Verify that the historical traffic plane marker was created in DOM
+      const planeMarker = page.locator('.historical-traffic-plane-icon');
+      assert.ok(await planeMarker.count() > 0, '.historical-traffic-plane-icon marker must be rendered on Leaflet map');
+
+      // Verify text inside plane icon
+      const text = await planeMarker.first().textContent();
+      assert.ok(text.includes('✈️'), 'Plane marker must contain plane emoji');
+
+      // Clean up replay
+      await page.evaluate(() => {
+        if (typeof restoreActiveWorkspacePlanning === 'function') {
+          restoreActiveWorkspacePlanning();
+        }
+      });
+      await page.waitForTimeout(200);
+    });
+  });
 });
