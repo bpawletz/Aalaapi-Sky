@@ -12459,5 +12459,66 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
     await page.waitForTimeout(200);
   });
+
+  test('Mobile Debug Console opens via triple-tap on header badge or About button, captures logs, and filters categories (Issue #252)', async () => {
+    // 1. Triple-tap header-version-badge via DOM events
+    await page.evaluate(() => {
+      const badge = document.querySelector('.header-version-badge');
+      if (badge) {
+        badge.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        badge.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        badge.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      }
+    });
+    await page.waitForTimeout(300);
+
+    // Verify debug console modal is visible
+    const isModalOpen = await page.evaluate(() => {
+      const modal = document.getElementById('debug-console-modal');
+      return modal && !modal.classList.contains('hidden') && modal.style.display !== 'none';
+    });
+    assert.strictEqual(isModalOpen, true, 'Triple-tapping header badge must open debug console modal');
+
+    // 2. Log test entries and verify rendering
+    await page.evaluate(() => {
+      console.log('E2E Test info message for mobile console');
+      console.warn('E2E Test warning message');
+      console.error('E2E Test error message');
+      DebugConsole.renderLogs();
+    });
+    await page.waitForTimeout(100);
+
+    const logCountText = await page.evaluate(() => {
+      const badge = document.getElementById('debug-console-count-badge');
+      return badge ? badge.textContent : '';
+    });
+    assert.ok(logCountText.includes('logs'), 'Badge should show log count');
+
+    // 3. Test filtering by Error
+    await page.evaluate(() => {
+      const errBtn = document.getElementById('debug-filter-error');
+      if (errBtn) errBtn.click();
+    });
+    await page.waitForTimeout(100);
+
+    const hasErrorLog = await page.evaluate(() => {
+      const out = document.getElementById('debug-console-output');
+      return out && out.textContent.includes('E2E Test error message') && !out.textContent.includes('E2E Test info message');
+    });
+    assert.strictEqual(hasErrorLog, true, 'Error filter should only display error messages');
+
+    // 4. Close modal
+    await page.evaluate(() => {
+      const closeBtn = document.getElementById('close-debug-console-btn');
+      if (closeBtn) closeBtn.click();
+    });
+    await page.waitForTimeout(200);
+
+    const isModalClosed = await page.evaluate(() => {
+      const modal = document.getElementById('debug-console-modal');
+      return modal && (modal.classList.contains('hidden') || modal.style.display === 'none');
+    });
+    assert.strictEqual(isModalClosed, true, 'Close button should hide debug console modal');
+  });
   });
 });

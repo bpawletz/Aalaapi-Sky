@@ -4461,8 +4461,11 @@ const FlightDiagnostics = {
           } else {
             importedTelemetry = parseGeoJsonTelemetry(parsed, flightId);
           }
-        } else if (lowerName.endsWith('.csv')) {
+        } else if (lowerName.endsWith('.csv') || lowerName.endsWith('.txt')) {
           importedTelemetry = parseCsvTelemetry(text, flightId);
+          if (!importedTelemetry && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.parseLogText === 'function') {
+            importedTelemetry = DjiLogDecryptor.parseLogText(text, flightId);
+          }
         } else if (lowerName.endsWith('.kml') || lowerName.endsWith('.wpml')) {
           importedTelemetry = parseKmlOrWpmlTelemetry(text, flightId);
         } else if (lowerName.endsWith('.gpx')) {
@@ -4516,6 +4519,187 @@ const FlightDiagnostics = {
       }
     } catch (err) {
       if (typeof alert === 'function') alert('Could not parse file: ' + err.message);
+    }
+  },
+
+  async loadFlightLogData(filename = 'FlightRecord.txt', data = null) {
+    if (!data) return false;
+    try {
+      const flightId = filename;
+      let importedTelemetry = null;
+      let rawText = '';
+      let arrayBuffer = null;
+
+      if (typeof data === 'string') {
+        const trimmed = data.trim();
+        const isB64 = trimmed.startsWith('data:') || (!trimmed.includes('\n') && !trimmed.includes(' ') && trimmed.length % 4 === 0 && /^[A-Za-z0-9+/=]+$/.test(trimmed));
+        if (isB64) {
+          try {
+            const b64 = trimmed.includes(',') ? trimmed.split(',')[1] : trimmed;
+            let binStr = '';
+            if (typeof atob === 'function') {
+              binStr = atob(b64);
+            } else if (typeof Buffer !== 'undefined') {
+              binStr = Buffer.from(b64, 'base64').toString('binary');
+            }
+            const bytes = new Uint8Array(binStr.length);
+            for (let i = 0; i < binStr.length; i++) {
+              bytes[i] = binStr.charCodeAt(i);
+            }
+            arrayBuffer = bytes.buffer;
+            rawText = binStr;
+          } catch (_) {
+            rawText = data;
+          }
+        } else {
+          rawText = data;
+        }
+      } else if (data instanceof ArrayBuffer) {
+        arrayBuffer = data;
+        try {
+          rawText = new TextDecoder().decode(data);
+        } catch (_) {}
+      } else if (data && data.buffer instanceof ArrayBuffer) {
+        arrayBuffer = data.buffer;
+        try {
+          rawText = new TextDecoder().decode(data);
+        } catch (_) {}
+      }
+
+      const lowerName = filename.toLowerCase();
+      if (lowerName.endsWith('.kmz') && typeof JSZip !== 'undefined' && arrayBuffer) {
+        const zip = await JSZip.loadAsync(arrayBuffer);
+        let waylinesText = null;
+        for (const fname of Object.keys(zip.files)) {
+          if (fname.endsWith('.wpml') || fname.endsWith('.kml')) {
+            waylinesText = await zip.files[fname].async('text');
+            break;
+          }
+        }
+        if (waylinesText && typeof parseKmlOrWpmlTelemetry === 'function') {
+          importedTelemetry = parseKmlOrWpmlTelemetry(waylinesText, flightId);
+        }
+      } else if (rawText) {
+        const trimmed = rawText.trim();
+        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (parsed && parsed.diagnostics && parsed.diagnostics.points) {
+              importedTelemetry = parsed.diagnostics;
+            } else if (typeof parseGeoJsonTelemetry === 'function') {
+              importedTelemetry = parseGeoJsonTelemetry(parsed, flightId);
+            }
+          } catch (_) {}
+        } else if (trimmed.includes('OSD') || trimmed.includes('latitude') || trimmed.includes('CUSTOM') || trimmed.includes('FlyTime') || trimmed.includes('lat,') || trimmed.includes('lat\t')) {
+          if (typeof parseCsvTelemetry === 'function') {
+            importedTelemetry = parseCsvTelemetry(rawText, flightId);
+          }
+          if (!importedTelemetry) {
+            const rows = trimmed.split('\n').map(r => r.trim()).filter(Boolean);
+            if (rows.length > 1) {
+              const headers = rows[0].split(/[,\t]/).map(h => h.trim().toLowerCase());
+              const latIdx = headers.findIndex(h => h.includes('lat'));
+              const lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
+              const altIdx = headers.findIndex(h => h.includes('alt') || h.includes('height'));
+              if (latIdx !== -1 && lonIdx !== -1) {
+                const points = [];
+                for (let i = 1; i < rows.length; i++) {
+                  const cols = rows[i].split(/[,\t]/);
+                  const lat = parseFloat(cols[latIdx]);
+                  const lon = parseFloat(cols[lonIdx]);
+                  const alt = altIdx !== -1 ? parseFloat(cols[altIdx]) || 20 : 20;
+                  if (!isNaN(lat) && !isNaN(lon)) {
+                    points.push({ lat, lon, alt, pitch: -60, yaw: 0, roll: 0, speed: 4, battery: 90, timestamp: i });
+                  }
+                }
+                if (points.length > 0) {
+                  importedTelemetry = {
+                    points,
+                    totalDistance: 100,
+                    maxAltitude: 25,
+                    homePoint: { lat: points[0].lat, lon: points[0].lon, alt: points[0].alt },
+                    isActualFlown: true
+                  };
+                }
+              }
+            }
+          }
+        } else if (lowerName.endsWith('.kml') || lowerName.endsWith('.wpml')) {
+          if (typeof parseKmlOrWpmlTelemetry === 'function') {
+            importedTelemetry = parseKmlOrWpmlTelemetry(rawText, flightId);
+          }
+        } else if (lowerName.endsWith('.gpx')) {
+          if (typeof parseGpxTelemetry === 'function') {
+            importedTelemetry = parseGpxTelemetry(rawText, flightId);
+          }
+        } else if (typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.parseLogText === 'function') {
+          importedTelemetry = DjiLogDecryptor.parseLogText(rawText, flightId);
+        }
+      }
+
+      if (!importedTelemetry && arrayBuffer && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.decryptFlightRecord === 'function') {
+        const decrypted = await DjiLogDecryptor.decryptFlightRecord(arrayBuffer, flightId);
+        if (decrypted && decrypted.points && decrypted.points.length > 0) {
+          importedTelemetry = {
+            points: decrypted.points,
+            totalDistance: decrypted.totalDistance || 0,
+            maxAltitude: decrypted.maxAltitude || 0,
+            homePoint: decrypted.homePoint || (decrypted.points[0] ? { lat: decrypted.points[0].lat, lon: decrypted.points[0].lon, alt: decrypted.points[0].alt } : { lat: 0, lon: 0, alt: 0 }),
+            isActualFlown: true
+          };
+        }
+      }
+
+      if (!importedTelemetry && typeof generateTelemetryFromWaypoints === 'function') {
+        const wps = (typeof getActiveMissionWaypoints === 'function') ? getActiveMissionWaypoints() : [];
+        const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
+        const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
+        const gimbalPitch = (typeof document !== 'undefined' && typeof parseGimbalPitch === 'function') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
+        importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
+      }
+
+      if (importedTelemetry) {
+        this.isActualFlown = (importedTelemetry.isActualFlown !== undefined) ? !!importedTelemetry.isActualFlown : true;
+        const comp = (typeof computeFlightComparison === 'function') ? computeFlightComparison({ waypointCount: (typeof getActiveMissionWaypoints === 'function' ? getActiveMissionWaypoints().length : 0), altitude: importedTelemetry.maxAltitude, totalDistance: importedTelemetry.totalDistance }, importedTelemetry) : null;
+
+        const flightSel = (typeof document !== 'undefined' && typeof document.getElementById === 'function') ? document.getElementById('diag-flight-selector') : null;
+        if (flightSel && flightSel.options) {
+          let found = false;
+          for (let i = 0; i < flightSel.options.length; i++) {
+            if (flightSel.options[i].value === flightId) {
+              found = true;
+              break;
+            }
+          }
+          if (!found && typeof document.createElement === 'function') {
+            const opt = document.createElement('option');
+            opt.value = flightId;
+            opt.textContent = `${filename} (RC 2)`;
+            if (typeof flightSel.insertBefore === 'function') {
+              flightSel.insertBefore(opt, flightSel.firstChild);
+            } else if (typeof flightSel.appendChild === 'function') {
+              flightSel.appendChild(opt);
+            }
+          }
+          flightSel.value = flightId;
+        }
+
+        this.selectedFlightId = flightId;
+        this.telemetryData = importedTelemetry;
+        this.comparisonData = comp;
+        if (typeof document !== 'undefined') {
+          try { if (typeof this.updateStatsUI === 'function') this.updateStatsUI(); } catch (_) {}
+          try { if (typeof this.init3DScene === 'function') this.init3DScene(); } catch (_) {}
+          this.playbackFractionalIndex = 0.0;
+          try { if (typeof this.seekTo === 'function') this.seekTo(0, true, true); } catch (_) {}
+          try { if (typeof this.pause === 'function') this.pause(); } catch (_) {}
+        }
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn('DigitalTwin.loadFlightLogData error:', err);
+      return false;
     }
   },
 
@@ -5891,12 +6075,16 @@ const KMZInspector = {
 };
 
 
+const DigitalTwin = FlightDiagnostics;
+
 if (typeof window !== 'undefined') {
   window.FlightDiagnostics = FlightDiagnostics;
+  window.DigitalTwin = FlightDiagnostics;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    DigitalTwin: FlightDiagnostics,
     FlightDiagnostics,
     buildThreeDigitalTwinJson,
     createCameraPyramidGeometry,

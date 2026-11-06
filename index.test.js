@@ -42159,4 +42159,93 @@ describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time 
       assert.ok(dtSrc.includes("Saved successfully"), 'Status indicates success when saved locally');
     });
   });
+
+  describe('Android USB MTP RC 2 Flight Log Extraction & Debugging Suite (Issue #252)', () => {
+    test('MainActivity enables Chrome DevTools remote debugging and Logcat forwarding', () => {
+      const ktSrc = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/java/com/aalaapi/sky/MainActivity.kt'), 'utf8');
+      assert.ok(ktSrc.includes('WebView.setWebContentsDebuggingEnabled(true)'), 'Must enable remote debugging');
+      assert.ok(ktSrc.includes('onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean'), 'Must implement onConsoleMessage');
+      assert.ok(ktSrc.includes('"AalaapiWeb"'), 'Must forward JS logs to Logcat under AalaapiWeb');
+      assert.ok(ktSrc.includes('fun getMtpStatus(): String'), 'MainActivity exposes getMtpStatus JS interface');
+    });
+
+    test('AndroidMtpBridge implements structured JSON status and recursive MTP flight log scanning', () => {
+      const bridgeSrc = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt'), 'utf8');
+      assert.ok(bridgeSrc.includes('fun getStatusJson(): String'), 'AndroidMtpBridge implements getStatusJson');
+      assert.ok(bridgeSrc.includes('fun scanMtpForFlightRecords('), 'AndroidMtpBridge implements recursive scanMtpForFlightRecords');
+      assert.ok(bridgeSrc.includes('"NO_RC2_CONNECTED"'), 'Defines NO_RC2_CONNECTED error code');
+      assert.ok(bridgeSrc.includes('"RC2_PERMISSION_REQUIRED"'), 'Defines RC2_PERMISSION_REQUIRED error code');
+      assert.ok(bridgeSrc.includes('mtp.importFile('), 'Imports MTP file using native importFile');
+    });
+
+    test('ApiClient.pullFlightLogFromRC2 handles structured MTP responses and warns on NO_RC2_CONNECTED', async () => {
+      const apiSrc = fs.readFileSync(path.resolve(__dirname, 'src/bridge/ApiClient.js'), 'utf8');
+      assert.ok(apiSrc.includes('pullLatestLogFromRc2'), 'ApiClient calls pullLatestLogFromRc2');
+      assert.ok(apiSrc.includes('NO_RC2_CONNECTED'), 'ApiClient handles NO_RC2_CONNECTED');
+      assert.ok(apiSrc.includes('RC2_PERMISSION_REQUIRED'), 'ApiClient handles RC2_PERMISSION_REQUIRED');
+      assert.ok(apiSrc.includes('DigitalTwin.loadFlightLogData'), 'ApiClient invokes DigitalTwin.loadFlightLogData');
+    });
+
+    test('DigitalTwin.loadFlightLogData parses Base64, CSV, and text records', async () => {
+      const { DigitalTwin } = require('./src/3d/DigitalTwin.js');
+      assert.ok(typeof DigitalTwin.loadFlightLogData === 'function', 'DigitalTwin must export loadFlightLogData method');
+
+      // Test with plain CSV text in Base64
+      const csvContent = 'FlyTime,latitude,longitude,altitude\n1,41.3215,-88.9950,25.0\n2,41.3216,-88.9951,26.0';
+      const b64Data = Buffer.from(csvContent).toString('base64');
+      const loaded = await DigitalTwin.loadFlightLogData('FlightRecord_test.txt', b64Data);
+      assert.strictEqual(loaded, true, 'Must successfully parse and load base64 encoded telemetry');
+      assert.ok(DigitalTwin.telemetryData, 'Telemetry data must be populated');
+      assert.strictEqual(DigitalTwin.telemetryData.points.length, 2, 'Should have parsed 2 points');
+    });
+
+    test('DjiLogDecryptor.parseLogText parses plaintext CSV and JSON logs', () => {
+      const { DjiLogDecryptor } = require('./src/bridge/DjiLogDecryptor.js');
+      assert.ok(typeof DjiLogDecryptor.parseLogText === 'function', 'DjiLogDecryptor must export parseLogText');
+
+      const csvData = 'FlyTime,latitude,longitude,altitude\n1,41.3215,-88.9950,25.0';
+      const parsed = DjiLogDecryptor.parseLogText(csvData, 'FlightRecord_sample.txt');
+      assert.ok(parsed, 'parseLogText must parse valid CSV data');
+      assert.strictEqual(parsed.points.length, 1);
+      assert.strictEqual(parsed.isActualFlown, true);
+    });
+
+    test('DebugConsoleManager captures logs, caps 200 entries, filters categories, and copies text', async () => {
+      const { DebugConsoleManager } = require('./src/ui/DebugConsole.js');
+      const debugMgr = new DebugConsoleManager();
+      debugMgr.init();
+
+      // Test capture
+      debugMgr.captureLog('info', ['Test info message']);
+      debugMgr.captureLog('warn', ['Test warning message']);
+      debugMgr.captureLog('error', ['Test error message']);
+
+      assert.strictEqual(debugMgr.logs.length, 3, 'Should hold 3 captured entries');
+      assert.strictEqual(debugMgr.logs[0].level, 'info');
+      assert.strictEqual(debugMgr.logs[1].level, 'warn');
+      assert.strictEqual(debugMgr.logs[2].level, 'error');
+
+      // Test filtering
+      debugMgr.activeFilter = 'error';
+      const errorLogs = debugMgr.getFilteredLogs();
+      assert.strictEqual(errorLogs.length, 1);
+      assert.strictEqual(errorLogs[0].level, 'error');
+
+      debugMgr.activeFilter = 'all';
+      debugMgr.searchTerm = 'warning';
+      const searchLogs = debugMgr.getFilteredLogs();
+      assert.strictEqual(searchLogs.length, 1);
+      assert.ok(searchLogs[0].message.includes('warning'));
+
+      // Test circular buffer max cap
+      for (let i = 0; i < 250; i++) {
+        debugMgr.captureLog('info', ['Burst log ' + i]);
+      }
+      assert.strictEqual(debugMgr.logs.length, 200, 'Must cap circular buffer at 200 entries');
+
+      // Test clear
+      debugMgr.clearLogs();
+      assert.strictEqual(debugMgr.logs.length, 0, 'clearLogs must empty buffer');
+    });
+  });
 });

@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.226.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.227.0</span></h1>
         </div>
       </div>
 
@@ -4892,6 +4892,15 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>🔌</span>
+              Android RC 2 USB MTP Log Extraction &amp; Mobile Debug Console (v1.227.0) (Closes #252)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Pull flight records directly from the DJI RC 2 controller over USB-C OTG using native MTP protocol scanning. Extracted logs immediately load into 3D Flight Diagnostics for instant field review. Includes an On-Device Mobile Debug Console (triple-tap header badge or open via About modal) with real-time log capturing, category filtering, and one-tap log copying, alongside PC Chrome DevTools remote debugging (<code>chrome://inspect/#devices</code>).
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>📍</span>
               Configurable Alert Reference Anchor &amp; Visual Proximity Ring (v1.226.0) (Closes #250)
             </strong>
@@ -7537,7 +7546,8 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.226.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.227.0</span>
+              <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7696,6 +7706,13 @@
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+                <strong style="color: var(--text-main);">Changelog (v1.227.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Android USB MTP RC 2 Flight Log Extraction, Chrome Remote Debugging &amp; Mobile Debug Console (Closes #252):</strong> Extract and replay DJI RC 2 flight logs over USB-C MTP directly on Android devices. Inspect WebView via PC Chrome DevTools (<code>chrome://inspect/#devices</code>) and view real-time logcat logs. Added on-device Mobile Debug Console (triple-tap header badge or tap Console in About) with live filtering and copying.</li>
+                </ul>
+              </li>
+              <br>
               <li style="margin-bottom: 8px;">
                 <strong style="color: var(--text-main);">Changelog (v1.226.1):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -13002,6 +13019,42 @@
         <div style="display: flex; gap: 8px;">
           <button id="cancel-dji-key-btn" type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem;">Cancel</button>
           <button id="save-dji-key-btn" type="button" class="btn-primary" style="padding: 6px 16px; font-size: 0.8rem; font-weight: 600;">Save &amp; Decrypt</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Mobile & On-Device Debug Console Modal -->
+  <div id="debug-console-modal" class="modal-overlay hidden" style="z-index: 10070;">
+    <div class="modal glass" style="max-width: 680px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+      <header class="modal-header" style="padding: 12px 18px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.95);">
+        <h2 style="display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0; color: var(--text-main);">
+          <span>🛠️ Mobile Debug Console</span>
+          <span id="debug-console-count-badge" class="badge" style="background: rgba(56, 189, 248, 0.2); color: var(--accent-cyan); font-size: 0.72rem; padding: 2px 7px; border-radius: 10px;">0 logs</span>
+        </h2>
+        <button id="close-debug-console-btn" class="close-btn" type="button" aria-label="Close">&times;</button>
+      </header>
+      <div style="padding: 10px 16px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;">
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button id="debug-filter-all" type="button" class="btn-secondary active" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 4px;">All</button>
+          <button id="debug-filter-error" type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; color: #f87171;">Errors</button>
+          <button id="debug-filter-warn" type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; color: #fbbf24;">Warns</button>
+          <button id="debug-filter-info" type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; color: #38bdf8;">Logs</button>
+        </div>
+        <div style="display: flex; gap: 6px; align-items: center; flex: 1; max-width: 240px;">
+          <input type="text" id="debug-console-search" placeholder="Filter logs..." style="width: 100%; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main);" />
+        </div>
+      </div>
+      <div id="debug-console-output" class="modal-content" style="padding: 12px; font-family: monospace; font-size: 0.75rem; line-height: 1.45; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 4px; background: rgba(5, 8, 16, 0.95); min-height: 240px; max-height: 52vh;">
+        <!-- Log entries populated dynamically -->
+      </div>
+      <footer class="modal-footer" style="padding: 10px 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; background: rgba(15, 23, 42, 0.95);">
+        <div style="display: flex; gap: 8px;">
+          <button id="debug-copy-logs-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.78rem;">📋 Copy Logs</button>
+          <button id="debug-clear-logs-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.78rem;">🗑️ Clear</button>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-muted);">
+          <span>Tip: Remote inspect via <code>chrome://inspect/#devices</code></span>
         </div>
       </footer>
     </div>

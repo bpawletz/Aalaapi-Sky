@@ -7,9 +7,13 @@ import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbManager
 import android.mtp.MtpDevice
+import android.mtp.MtpObjectInfo
 import android.os.Build
+import android.os.Environment
 import android.util.Base64
+import android.util.Log
 import android.webkit.WebView
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 
@@ -110,17 +114,128 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
         }
     }
 
-    fun pullLatestLog(): String {
-        try {
-            val dir = File(context.getExternalFilesDir(null), "FlightRecord")
-            if (dir.exists()) {
-                val files = dir.listFiles()?.sortedByDescending { it.lastModified() }
-                if (!files.isNullOrEmpty()) {
-                    val bytes = files[0].readBytes()
-                    return Base64.encodeToString(bytes, Base64.NO_WRAP)
+    fun getStatusJson(): String {
+        val mtp = mtpDevice
+        val dev = connectedDevice
+        return JSONObject().apply {
+            put("connected", dev != null)
+            put("deviceName", dev?.productName ?: if (dev != null) "DJI USB Device" else "")
+            put("mtpReady", mtp != null)
+            put("vendorId", dev?.vendorId ?: 0)
+        }.toString()
+    }
+
+    private fun scanMtpForFlightRecords(
+        mtp: MtpDevice,
+        storageId: Int,
+        parentHandle: Int,
+        candidates: MutableList<Pair<Int, MtpObjectInfo>>,
+        depth: Int
+    ) {
+        if (depth > 6) return
+        val handles = mtp.getObjectHandles(storageId, 0, parentHandle) ?: return
+        for (handle in handles) {
+            val info = mtp.getObjectInfo(handle) ?: continue
+            val name = info.name ?: ""
+            if (info.format == 0x3001) { // MTP Association / Directory
+                val lower = name.lowercase()
+                if (depth == 0 || lower in listOf("android", "data", "dji.go.v5", "files", "flightrecord", "dji")) {
+                    scanMtpForFlightRecords(mtp, storageId, handle, candidates, depth + 1)
                 }
+            } else if (name.startsWith("FlightRecord_") && (name.endsWith(".txt") || name.endsWith(".csv"))) {
+                candidates.add(Pair(handle, info))
             }
-        } catch (_: Exception) {}
-        return ""
+        }
+    }
+
+    fun pullLatestLog(): String {
+        // 1. Check connected USB MTP device
+        val mtp = mtpDevice
+        if (mtp != null) {
+            try {
+                val candidateHandles = mutableListOf<Pair<Int, MtpObjectInfo>>()
+                val storageIds = mtp.storageIds
+                if (storageIds != null) {
+                    for (storageId in storageIds) {
+                        scanMtpForFlightRecords(mtp, storageId, 0, candidateHandles, depth = 0)
+                    }
+                }
+
+                if (candidateHandles.isNotEmpty()) {
+                    candidateHandles.sortByDescending { it.second.dateModified }
+                    val newest = candidateHandles.first()
+                    val tempFile = File(context.cacheDir, newest.second.name)
+                    if (tempFile.exists()) tempFile.delete()
+
+                    val imported = mtp.importFile(newest.first, tempFile.absolutePath)
+                    if (imported && tempFile.exists() && tempFile.length() > 0) {
+                        val bytes = tempFile.readBytes()
+                        val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                        tempFile.delete()
+                        return JSONObject().apply {
+                            put("success", true)
+                            put("filename", newest.second.name)
+                            put("source", "usb_mtp")
+                            put("size", bytes.size)
+                            put("base64", b64)
+                        }.toString()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("AalaapiMtp", "Error extracting flight record via MTP: ${e.message}", e)
+            }
+        }
+
+        // 2. Check local directories on device
+        val candidateDirs = listOf(
+            File("/storage/emulated/0/Android/data/dji.go.v5/files/FlightRecord"),
+            File("/sdcard/Android/data/dji.go.v5/files/FlightRecord"),
+            File("/storage/emulated/0/DJI/dji.go.v5/FlightRecord"),
+            File("/sdcard/DJI/dji.go.v5/FlightRecord"),
+            File("/storage/emulated/0/DJI/FlightRecord"),
+            File("/sdcard/DJI/FlightRecord"),
+            File(context.getExternalFilesDir(null), "FlightRecord"),
+            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "FlightRecord"),
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        )
+
+        for (dir in candidateDirs) {
+            try {
+                if (dir.exists() && dir.isDirectory) {
+                    val logFiles = dir.listFiles { f ->
+                        f.isFile && f.name.startsWith("FlightRecord_") && (f.name.endsWith(".txt") || f.name.endsWith(".csv"))
+                    }?.sortedByDescending { it.lastModified() }
+
+                    if (!logFiles.isNullOrEmpty()) {
+                        val latest = logFiles[0]
+                        val bytes = latest.readBytes()
+                        val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                        return JSONObject().apply {
+                            put("success", true)
+                            put("filename", latest.name)
+                            put("source", "local_storage")
+                            put("path", latest.absolutePath)
+                            put("size", bytes.size)
+                            put("base64", b64)
+                        }.toString()
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+
+        // 3. Return structured error reason
+        return JSONObject().apply {
+            put("success", false)
+            if (mtp == null && connectedDevice == null) {
+                put("error", "NO_RC2_CONNECTED")
+                put("message", "No DJI RC 2 controller detected over USB OTG. Connect via USB-C cable or tap 'Load File' to pick a log.")
+            } else if (mtp == null && connectedDevice != null) {
+                put("error", "RC2_PERMISSION_REQUIRED")
+                put("message", "USB controller detected but USB permission was not granted. Reconnect cable and allow permission.")
+            } else {
+                put("error", "NO_LOGS_FOUND")
+                put("message", "No FlightRecord_*.txt logs found on connected RC 2 storage.")
+            }
+        }.toString()
     }
 }

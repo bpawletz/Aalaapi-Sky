@@ -11,6 +11,7 @@ import './core/TelemetryInterpolator.js';
 import './core/MissionClock.js';
 import './ui/ThemeManager.js';
 import './ui/ModalDragManager.js';
+import './ui/DebugConsole.js';
 import './layers/LayerManager.js';
 import './map/MapEngine.js';
 import './ui/ResetManager.js';

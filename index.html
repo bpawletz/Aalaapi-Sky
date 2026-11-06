@@ -8709,7 +8709,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.226.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.227.0</span></h1>
         </div>
       </div>
 
@@ -13511,6 +13511,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>🔌</span>
+              Android RC 2 USB MTP Log Extraction &amp; Mobile Debug Console (v1.227.0) (Closes #252)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Pull flight records directly from the DJI RC 2 controller over USB-C OTG using native MTP protocol scanning. Extracted logs immediately load into 3D Flight Diagnostics for instant field review. Includes an On-Device Mobile Debug Console (triple-tap header badge or open via About modal) with real-time log capturing, category filtering, and one-tap log copying, alongside PC Chrome DevTools remote debugging (<code>chrome://inspect/#devices</code>).
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>📍</span>
               Configurable Alert Reference Anchor &amp; Visual Proximity Ring (v1.226.0) (Closes #250)
             </strong>
@@ -16156,7 +16165,8 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.226.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.227.0</span>
+              <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -16315,6 +16325,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
+              <li style="margin-bottom: 8px;">
+                <strong style="color: var(--text-main);">Changelog (v1.227.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Android USB MTP RC 2 Flight Log Extraction, Chrome Remote Debugging &amp; Mobile Debug Console (Closes #252):</strong> Extract and replay DJI RC 2 flight logs over USB-C MTP directly on Android devices. Inspect WebView via PC Chrome DevTools (<code>chrome://inspect/#devices</code>) and view real-time logcat logs. Added on-device Mobile Debug Console (triple-tap header badge or tap Console in About) with live filtering and copying.</li>
+                </ul>
+              </li>
+              <br>
               <li style="margin-bottom: 8px;">
                 <strong style="color: var(--text-main);">Changelog (v1.226.1):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -21621,6 +21638,42 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="display: flex; gap: 8px;">
           <button id="cancel-dji-key-btn" type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem;">Cancel</button>
           <button id="save-dji-key-btn" type="button" class="btn-primary" style="padding: 6px 16px; font-size: 0.8rem; font-weight: 600;">Save &amp; Decrypt</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Mobile & On-Device Debug Console Modal -->
+  <div id="debug-console-modal" class="modal-overlay hidden" style="z-index: 10070;">
+    <div class="modal glass" style="max-width: 680px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+      <header class="modal-header" style="padding: 12px 18px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.95);">
+        <h2 style="display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0; color: var(--text-main);">
+          <span>🛠️ Mobile Debug Console</span>
+          <span id="debug-console-count-badge" class="badge" style="background: rgba(56, 189, 248, 0.2); color: var(--accent-cyan); font-size: 0.72rem; padding: 2px 7px; border-radius: 10px;">0 logs</span>
+        </h2>
+        <button id="close-debug-console-btn" class="close-btn" type="button" aria-label="Close">&times;</button>
+      </header>
+      <div style="padding: 10px 16px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;">
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button id="debug-filter-all" type="button" class="btn-secondary active" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 4px;">All</button>
+          <button id="debug-filter-error" type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; color: #f87171;">Errors</button>
+          <button id="debug-filter-warn" type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; color: #fbbf24;">Warns</button>
+          <button id="debug-filter-info" type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; color: #38bdf8;">Logs</button>
+        </div>
+        <div style="display: flex; gap: 6px; align-items: center; flex: 1; max-width: 240px;">
+          <input type="text" id="debug-console-search" placeholder="Filter logs..." style="width: 100%; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main);" />
+        </div>
+      </div>
+      <div id="debug-console-output" class="modal-content" style="padding: 12px; font-family: monospace; font-size: 0.75rem; line-height: 1.45; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 4px; background: rgba(5, 8, 16, 0.95); min-height: 240px; max-height: 52vh;">
+        <!-- Log entries populated dynamically -->
+      </div>
+      <footer class="modal-footer" style="padding: 10px 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; background: rgba(15, 23, 42, 0.95);">
+        <div style="display: flex; gap: 8px;">
+          <button id="debug-copy-logs-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.78rem;">📋 Copy Logs</button>
+          <button id="debug-clear-logs-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.78rem;">🗑️ Clear</button>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-muted);">
+          <span>Tip: Remote inspect via <code>chrome://inspect/#devices</code></span>
         </div>
       </footer>
     </div>
@@ -28733,6 +28786,379 @@ if (typeof window !== 'undefined') {
   } else {
     initAllModalsDraggable();
   }
+}
+// -------------------- src/ui/DebugConsole.js --------------------
+/**
+ * Aalaapi Sky - On-Device Mobile Debug Console
+ *
+ * Captures in-browser and native webview logs, warnings, and errors in a lightweight
+ * circular buffer (last 200 entries) accessible directly on Android and touch devices
+ * by triple-tapping the version badge in the sidebar header, or via the About modal.
+ */
+
+class DebugConsoleManager {
+  constructor() {
+    this.logs = [];
+    this.maxLogs = 200;
+    this.activeFilter = 'all';
+    this.searchTerm = '';
+    this.isOpen = false;
+    this._originalConsole = null;
+    this._tapCount = 0;
+    this._lastTapTime = 0;
+  }
+
+  init() {
+    this.hookConsole();
+    this.bindEvents();
+  }
+
+  hookConsole() {
+    if (this._originalConsole || typeof console === 'undefined') return;
+
+    this._originalConsole = {
+      log: console.log.bind(console),
+      info: (console.info || console.log).bind(console),
+      warn: (console.warn || console.log).bind(console),
+      error: (console.error || console.log).bind(console)
+    };
+
+    const self = this;
+
+    console.log = function (...args) {
+      self._originalConsole.log(...args);
+      self.captureLog('info', args);
+    };
+
+    console.info = function (...args) {
+      self._originalConsole.info(...args);
+      self.captureLog('info', args);
+    };
+
+    console.warn = function (...args) {
+      self._originalConsole.warn(...args);
+      self.captureLog('warn', args);
+    };
+
+    console.error = function (...args) {
+      self._originalConsole.error(...args);
+      self.captureLog('error', args);
+    };
+
+    // Also capture unhandled errors and promise rejections
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('error', (event) => {
+        self.captureLog('error', [event.message || 'Script error', `${event.filename || ''}:${event.lineno || 0}:${event.colno || 0}`]);
+      });
+
+      window.addEventListener('unhandledrejection', (event) => {
+        self.captureLog('error', ['Unhandled Promise Rejection:', event.reason]);
+      });
+    }
+  }
+
+  captureLog(level, args) {
+    try {
+      const formatted = args.map(arg => {
+        if (arg === null) return 'null';
+        if (arg === undefined) return 'undefined';
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg);
+          } catch (_) {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+
+      const entry = {
+        id: Date.now() + Math.random(),
+        time: new Date(),
+        level: level, // 'info', 'warn', 'error'
+        message: formatted
+      };
+
+      this.logs.push(entry);
+      if (this.logs.length > this.maxLogs) {
+        this.logs.shift();
+      }
+
+      if (this.isOpen) {
+        this.renderLogs();
+      }
+    } catch (_) {}
+  }
+
+  bindEvents() {
+    if (typeof document === 'undefined') return;
+
+    // Triple-tap listener on version badges (.header-version-badge and .version-tag)
+    const attachTripleTap = (elem) => {
+      if (!elem) return;
+      elem.style = elem.style || {};
+      elem.style.cursor = 'pointer';
+      if (typeof elem.setAttribute === 'function') {
+        elem.setAttribute('title', 'Triple-tap to open Mobile Debug Console');
+      }
+
+      if (typeof elem.addEventListener === 'function') {
+        elem.addEventListener('click', (e) => {
+          const now = Date.now();
+          if (now - this._lastTapTime < 600) {
+            this._tapCount++;
+          } else {
+            this._tapCount = 1;
+          }
+          this._lastTapTime = now;
+
+          if (this._tapCount >= 3) {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+            if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+            this._tapCount = 0;
+            this.open();
+          }
+        });
+      }
+    };
+
+    if (typeof document.querySelector === 'function') {
+      const headerBadge = document.querySelector('.header-version-badge');
+      if (headerBadge) attachTripleTap(headerBadge);
+
+      const versionTag = document.querySelector('.version-tag');
+      if (versionTag) attachTripleTap(versionTag);
+    }
+
+    // Direct button in About modal
+    if (typeof document.getElementById === 'function') {
+      const aboutDebugBtn = document.getElementById('about-open-debug-console-btn');
+      if (aboutDebugBtn && typeof aboutDebugBtn.addEventListener === 'function') {
+        aboutDebugBtn.addEventListener('click', () => this.open());
+      }
+
+      // Modal controls
+      const closeBtn = document.getElementById('close-debug-console-btn');
+      if (closeBtn && typeof closeBtn.addEventListener === 'function') {
+        closeBtn.addEventListener('click', () => this.close());
+      }
+
+      const modal = document.getElementById('debug-console-modal');
+      if (modal && typeof modal.addEventListener === 'function') {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) this.close();
+        });
+      }
+
+      // Filter tabs
+      const filterAll = document.getElementById('debug-filter-all');
+      const filterError = document.getElementById('debug-filter-error');
+      const filterWarn = document.getElementById('debug-filter-warn');
+      const filterInfo = document.getElementById('debug-filter-info');
+
+      const setFilter = (lvl, btn) => {
+        this.activeFilter = lvl;
+        [filterAll, filterError, filterWarn, filterInfo].forEach(b => {
+          if (b && b.classList) b.classList.remove('active');
+        });
+        if (btn && btn.classList) btn.classList.add('active');
+        this.renderLogs();
+      };
+
+      if (filterAll && typeof filterAll.addEventListener === 'function') filterAll.addEventListener('click', () => setFilter('all', filterAll));
+      if (filterError && typeof filterError.addEventListener === 'function') filterError.addEventListener('click', () => setFilter('error', filterError));
+      if (filterWarn && typeof filterWarn.addEventListener === 'function') filterWarn.addEventListener('click', () => setFilter('warn', filterWarn));
+      if (filterInfo && typeof filterInfo.addEventListener === 'function') filterInfo.addEventListener('click', () => setFilter('info', filterInfo));
+
+      // Search input
+      const searchInput = document.getElementById('debug-console-search');
+      if (searchInput && typeof searchInput.addEventListener === 'function') {
+        searchInput.addEventListener('input', (e) => {
+          this.searchTerm = (e.target.value || '').toLowerCase().trim();
+          this.renderLogs();
+        });
+      }
+
+      // Copy logs button
+      const copyBtn = document.getElementById('debug-copy-logs-btn');
+      if (copyBtn && typeof copyBtn.addEventListener === 'function') {
+        copyBtn.addEventListener('click', () => this.copyLogs());
+      }
+
+      // Clear logs button
+      const clearBtn = document.getElementById('debug-clear-logs-btn');
+      if (clearBtn && typeof clearBtn.addEventListener === 'function') {
+        clearBtn.addEventListener('click', () => this.clearLogs());
+      }
+    }
+  }
+
+  open() {
+    this.isOpen = true;
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    const modal = document.getElementById('debug-console-modal');
+    if (modal) {
+      if (modal.classList) modal.classList.remove('hidden');
+      modal.style = modal.style || {};
+      modal.style.display = 'flex';
+      this.renderLogs();
+      const output = document.getElementById('debug-console-output');
+      if (output) {
+        output.scrollTop = output.scrollHeight;
+      }
+    }
+  }
+
+  close() {
+    this.isOpen = false;
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    const modal = document.getElementById('debug-console-modal');
+    if (modal) {
+      if (modal.classList) modal.classList.add('hidden');
+      modal.style = modal.style || {};
+      modal.style.display = 'none';
+    }
+  }
+
+  getFilteredLogs() {
+    return this.logs.filter(entry => {
+      if (this.activeFilter !== 'all' && entry.level !== this.activeFilter) {
+        return false;
+      }
+      if (this.searchTerm && !entry.message.toLowerCase().includes(this.searchTerm)) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  renderLogs() {
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    const output = document.getElementById('debug-console-output');
+    const badge = document.getElementById('debug-console-count-badge');
+    const filtered = this.getFilteredLogs();
+
+    if (badge) {
+      badge.textContent = `${filtered.length} / ${this.logs.length} logs`;
+    }
+
+    if (!output) return;
+
+    if (filtered.length === 0) {
+      output.innerHTML = `
+        <div style="color: var(--text-muted); text-align: center; padding: 30px 0; font-size: 0.82rem;">
+          No log entries matching filter.
+        </div>
+      `;
+      return;
+    }
+
+    const html = filtered.map(entry => {
+      const timeStr = entry.time.toTimeString().split(' ')[0] + '.' + String(entry.time.getMilliseconds()).padStart(3, '0');
+      let color = '#94a3b8'; // info
+      let icon = 'ℹ️';
+      let bg = 'rgba(255, 255, 255, 0.02)';
+
+      if (entry.level === 'warn') {
+        color = '#fbbf24';
+        icon = '⚠️';
+        bg = 'rgba(251, 191, 36, 0.08)';
+      } else if (entry.level === 'error') {
+        color = '#f87171';
+        icon = '❌';
+        bg = 'rgba(248, 113, 113, 0.12)';
+      }
+
+      // Escape HTML
+      const escaped = entry.message
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      return `
+        <div style="padding: 4px 8px; border-radius: 4px; background: ${bg}; border-left: 3px solid ${color}; word-break: break-all; margin-bottom: 2px;">
+          <span style="color: var(--text-muted); font-size: 0.68rem; margin-right: 6px;">[${timeStr}]</span>
+          <span style="margin-right: 4px;">${icon}</span>
+          <span style="color: ${color};">${escaped}</span>
+        </div>
+      `;
+    }).join('');
+
+    output.innerHTML = html;
+  }
+
+  async copyLogs() {
+    const lines = this.getFilteredLogs().map(e => {
+      const timeStr = e.time.toISOString();
+      return `[${timeStr}] [${e.level.toUpperCase()}] ${e.message}`;
+    });
+
+    const textToCopy = lines.join('\n');
+    let success = false;
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        success = true;
+      } catch (_) {}
+    }
+
+    if (!success && typeof document !== 'undefined') {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = textToCopy;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        success = true;
+      } catch (_) {}
+    }
+
+    const copyBtn = (typeof document !== 'undefined' && typeof document.getElementById === 'function') ? document.getElementById('debug-copy-logs-btn') : null;
+    if (copyBtn) {
+      const origText = copyBtn.innerHTML;
+      copyBtn.innerHTML = `<span>✅ Copied ${lines.length} lines!</span>`;
+      setTimeout(() => {
+        copyBtn.innerHTML = origText;
+      }, 2000);
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`📋 Copied ${lines.length} log lines to clipboard`, 'success');
+    }
+  }
+
+  clearLogs() {
+    this.logs = [];
+    this.renderLogs();
+    if (typeof showToast === 'function') {
+      showToast('🗑️ Debug console logs cleared', 'info');
+    }
+  }
+}
+
+const DebugConsole = new DebugConsoleManager();
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => DebugConsole.init());
+  } else {
+    DebugConsole.init();
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.DebugConsole = DebugConsole;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    DebugConsoleManager,
+    DebugConsole
+  };
 }
 // -------------------- src/layers/LayerManager.js --------------------
 const LAYER_COLORS = [
@@ -60019,25 +60445,71 @@ async function pullFlightLogFromRC2(targetBtn = null) {
   try {
 
     if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLatestLogFromRc2 === 'function') {
-      const logBase64 = window.AalaapiAndroid.pullLatestLogFromRc2();
-      if (!logBase64) {
+      const rawRes = window.AalaapiAndroid.pullLatestLogFromRc2();
+      if (!rawRes) {
         throw new Error('No flight logs found on connected RC 2');
       }
-      if (typeof atob === 'function') {
-        const rawText = atob(logBase64);
-        if (typeof DjiLogDecryptor !== 'undefined' && DjiLogDecryptor.parseLogText) {
-          DjiLogDecryptor.parseLogText(rawText);
+      let logPayload = null;
+      let logBase64 = null;
+      let logFilename = 'FlightRecord_latest.txt';
+
+      try {
+        logPayload = JSON.parse(rawRes);
+      } catch (_) {
+        logBase64 = rawRes;
+      }
+
+      if (logPayload) {
+        if (!logPayload.success) {
+          const errCode = logPayload.error || 'UNKNOWN';
+          const errMsg = logPayload.message || 'RC 2 flight log pull failed';
+          if (errCode === 'NO_RC2_CONNECTED') {
+            if (typeof showToast === 'function') {
+              showToast('🔌 No RC 2 controller detected via USB-C. Connect RC 2 or use "Load File".', 'warning', 6000);
+            }
+          } else if (errCode === 'RC2_PERMISSION_REQUIRED') {
+            if (typeof showToast === 'function') {
+              showToast('🔒 USB MTP permission required to access RC 2 logs.', 'warning', 6000);
+            }
+          } else {
+            if (typeof showToast === 'function') {
+              showToast(`⚠️ ${errMsg}`, 'warning', 5000);
+            }
+          }
+          throw new Error(errMsg);
         }
+        logBase64 = logPayload.data;
+        logFilename = logPayload.filename || logFilename;
       }
-      buttonsToUpdate.forEach(b => {
-        b.innerHTML = `<span>✅ Log Pulled!</span>`;
-        b.style.color = '#4ade80';
-      });
-      if (typeof showToast === 'function') {
-        showToast('📥 Flight log pulled from DJI RC 2', 'success');
+
+      if (logBase64) {
+        if (typeof DigitalTwin !== 'undefined' && typeof DigitalTwin.loadFlightLogData === 'function') {
+          await DigitalTwin.loadFlightLogData(logFilename, logBase64);
+        } else if (typeof atob === 'function' && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.parseLogText === 'function') {
+          const rawText = atob(logBase64);
+          DjiLogDecryptor.parseLogText(rawText, logFilename);
+        }
+
+        buttonsToUpdate.forEach(b => {
+          b.innerHTML = `<span>✅ Log Pulled!</span>`;
+          b.style.color = '#4ade80';
+        });
+
+        if (typeof showToast === 'function') {
+          showToast(`📥 Flight log pulled from DJI RC 2 (${logFilename})`, 'success');
+        }
+
+        try {
+          if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+            await FlightDiagnostics.open('3d', logFilename);
+          }
+        } catch (e) {
+          console.warn('FlightDiagnostics open error:', e);
+        }
+
+        resetButtonStates(3500);
+        return { success: true, logName: logFilename };
       }
-      resetButtonStates(3500);
-      return { success: true };
     }
 
     const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
@@ -73640,7 +74112,69 @@ class DjiLogDecryptorEngine {
       decryptedVia: 'Client-Side WebCrypto'
     };
   }
-}
+
+  /**
+   * Parse plain text, CSV, or GeoJSON flight logs directly into structured telemetry
+   */
+  parseLogText(rawText, filename = 'FlightRecord.txt') {
+    if (!rawText) return null;
+    let text = rawText;
+    if (typeof text !== 'string') {
+      try {
+        text = new TextDecoder().decode(text);
+      } catch (_) {
+        return null;
+      }
+    }
+    const trimmed = text.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        const obj = JSON.parse(trimmed);
+        if (obj && obj.diagnostics && obj.diagnostics.points) return obj.diagnostics;
+        if (typeof parseGeoJsonTelemetry === 'function') {
+          return parseGeoJsonTelemetry(obj, filename);
+        }
+      } catch (_) {}
+    }
+    if (trimmed.includes(',') || trimmed.includes('\t')) {
+      if (typeof parseCsvTelemetry === 'function') {
+        const parsed = parseCsvTelemetry(trimmed, filename);
+        if (parsed && parsed.points && parsed.points.length > 0) {
+          parsed.isActualFlown = true;
+          return parsed;
+        }
+      }
+      const rows = trimmed.split('\n').map(r => r.trim()).filter(Boolean);
+      if (rows.length > 1) {
+        const headers = rows[0].split(/[,\t]/).map(h => h.trim().toLowerCase());
+        const latIdx = headers.findIndex(h => h.includes('lat'));
+        const lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
+        const altIdx = headers.findIndex(h => h.includes('alt') || h.includes('height'));
+        if (latIdx !== -1 && lonIdx !== -1) {
+          const points = [];
+          for (let i = 1; i < rows.length; i++) {
+            const cols = rows[i].split(/[,\t]/);
+            const lat = parseFloat(cols[latIdx]);
+            const lon = parseFloat(cols[lonIdx]);
+            const alt = altIdx !== -1 ? parseFloat(cols[altIdx]) || 20 : 20;
+            if (!isNaN(lat) && !isNaN(lon)) {
+              points.push({ lat, lon, alt, pitch: -60, yaw: 0, roll: 0, speed: 4, battery: 90, timestamp: i });
+            }
+          }
+          if (points.length > 0) {
+            return {
+              points,
+              totalDistance: 100,
+              maxAltitude: 25,
+              homePoint: { lat: points[0].lat, lon: points[0].lon, alt: points[0].alt },
+              isActualFlown: true
+            };
+          }
+        }
+      }
+    }
+    return null;
+  }}
 
 const DjiLogDecryptor = new DjiLogDecryptorEngine();
 
@@ -79205,8 +79739,11 @@ const FlightDiagnostics = {
           } else {
             importedTelemetry = parseGeoJsonTelemetry(parsed, flightId);
           }
-        } else if (lowerName.endsWith('.csv')) {
+        } else if (lowerName.endsWith('.csv') || lowerName.endsWith('.txt')) {
           importedTelemetry = parseCsvTelemetry(text, flightId);
+          if (!importedTelemetry && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.parseLogText === 'function') {
+            importedTelemetry = DjiLogDecryptor.parseLogText(text, flightId);
+          }
         } else if (lowerName.endsWith('.kml') || lowerName.endsWith('.wpml')) {
           importedTelemetry = parseKmlOrWpmlTelemetry(text, flightId);
         } else if (lowerName.endsWith('.gpx')) {
@@ -79260,6 +79797,187 @@ const FlightDiagnostics = {
       }
     } catch (err) {
       if (typeof alert === 'function') alert('Could not parse file: ' + err.message);
+    }
+  },
+
+  async loadFlightLogData(filename = 'FlightRecord.txt', data = null) {
+    if (!data) return false;
+    try {
+      const flightId = filename;
+      let importedTelemetry = null;
+      let rawText = '';
+      let arrayBuffer = null;
+
+      if (typeof data === 'string') {
+        const trimmed = data.trim();
+        const isB64 = trimmed.startsWith('data:') || (!trimmed.includes('\n') && !trimmed.includes(' ') && trimmed.length % 4 === 0 && /^[A-Za-z0-9+/=]+$/.test(trimmed));
+        if (isB64) {
+          try {
+            const b64 = trimmed.includes(',') ? trimmed.split(',')[1] : trimmed;
+            let binStr = '';
+            if (typeof atob === 'function') {
+              binStr = atob(b64);
+            } else if (typeof Buffer !== 'undefined') {
+              binStr = Buffer.from(b64, 'base64').toString('binary');
+            }
+            const bytes = new Uint8Array(binStr.length);
+            for (let i = 0; i < binStr.length; i++) {
+              bytes[i] = binStr.charCodeAt(i);
+            }
+            arrayBuffer = bytes.buffer;
+            rawText = binStr;
+          } catch (_) {
+            rawText = data;
+          }
+        } else {
+          rawText = data;
+        }
+      } else if (data instanceof ArrayBuffer) {
+        arrayBuffer = data;
+        try {
+          rawText = new TextDecoder().decode(data);
+        } catch (_) {}
+      } else if (data && data.buffer instanceof ArrayBuffer) {
+        arrayBuffer = data.buffer;
+        try {
+          rawText = new TextDecoder().decode(data);
+        } catch (_) {}
+      }
+
+      const lowerName = filename.toLowerCase();
+      if (lowerName.endsWith('.kmz') && typeof JSZip !== 'undefined' && arrayBuffer) {
+        const zip = await JSZip.loadAsync(arrayBuffer);
+        let waylinesText = null;
+        for (const fname of Object.keys(zip.files)) {
+          if (fname.endsWith('.wpml') || fname.endsWith('.kml')) {
+            waylinesText = await zip.files[fname].async('text');
+            break;
+          }
+        }
+        if (waylinesText && typeof parseKmlOrWpmlTelemetry === 'function') {
+          importedTelemetry = parseKmlOrWpmlTelemetry(waylinesText, flightId);
+        }
+      } else if (rawText) {
+        const trimmed = rawText.trim();
+        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (parsed && parsed.diagnostics && parsed.diagnostics.points) {
+              importedTelemetry = parsed.diagnostics;
+            } else if (typeof parseGeoJsonTelemetry === 'function') {
+              importedTelemetry = parseGeoJsonTelemetry(parsed, flightId);
+            }
+          } catch (_) {}
+        } else if (trimmed.includes('OSD') || trimmed.includes('latitude') || trimmed.includes('CUSTOM') || trimmed.includes('FlyTime') || trimmed.includes('lat,') || trimmed.includes('lat\t')) {
+          if (typeof parseCsvTelemetry === 'function') {
+            importedTelemetry = parseCsvTelemetry(rawText, flightId);
+          }
+          if (!importedTelemetry) {
+            const rows = trimmed.split('\n').map(r => r.trim()).filter(Boolean);
+            if (rows.length > 1) {
+              const headers = rows[0].split(/[,\t]/).map(h => h.trim().toLowerCase());
+              const latIdx = headers.findIndex(h => h.includes('lat'));
+              const lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
+              const altIdx = headers.findIndex(h => h.includes('alt') || h.includes('height'));
+              if (latIdx !== -1 && lonIdx !== -1) {
+                const points = [];
+                for (let i = 1; i < rows.length; i++) {
+                  const cols = rows[i].split(/[,\t]/);
+                  const lat = parseFloat(cols[latIdx]);
+                  const lon = parseFloat(cols[lonIdx]);
+                  const alt = altIdx !== -1 ? parseFloat(cols[altIdx]) || 20 : 20;
+                  if (!isNaN(lat) && !isNaN(lon)) {
+                    points.push({ lat, lon, alt, pitch: -60, yaw: 0, roll: 0, speed: 4, battery: 90, timestamp: i });
+                  }
+                }
+                if (points.length > 0) {
+                  importedTelemetry = {
+                    points,
+                    totalDistance: 100,
+                    maxAltitude: 25,
+                    homePoint: { lat: points[0].lat, lon: points[0].lon, alt: points[0].alt },
+                    isActualFlown: true
+                  };
+                }
+              }
+            }
+          }
+        } else if (lowerName.endsWith('.kml') || lowerName.endsWith('.wpml')) {
+          if (typeof parseKmlOrWpmlTelemetry === 'function') {
+            importedTelemetry = parseKmlOrWpmlTelemetry(rawText, flightId);
+          }
+        } else if (lowerName.endsWith('.gpx')) {
+          if (typeof parseGpxTelemetry === 'function') {
+            importedTelemetry = parseGpxTelemetry(rawText, flightId);
+          }
+        } else if (typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.parseLogText === 'function') {
+          importedTelemetry = DjiLogDecryptor.parseLogText(rawText, flightId);
+        }
+      }
+
+      if (!importedTelemetry && arrayBuffer && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.decryptFlightRecord === 'function') {
+        const decrypted = await DjiLogDecryptor.decryptFlightRecord(arrayBuffer, flightId);
+        if (decrypted && decrypted.points && decrypted.points.length > 0) {
+          importedTelemetry = {
+            points: decrypted.points,
+            totalDistance: decrypted.totalDistance || 0,
+            maxAltitude: decrypted.maxAltitude || 0,
+            homePoint: decrypted.homePoint || (decrypted.points[0] ? { lat: decrypted.points[0].lat, lon: decrypted.points[0].lon, alt: decrypted.points[0].alt } : { lat: 0, lon: 0, alt: 0 }),
+            isActualFlown: true
+          };
+        }
+      }
+
+      if (!importedTelemetry && typeof generateTelemetryFromWaypoints === 'function') {
+        const wps = (typeof getActiveMissionWaypoints === 'function') ? getActiveMissionWaypoints() : [];
+        const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
+        const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
+        const gimbalPitch = (typeof document !== 'undefined' && typeof parseGimbalPitch === 'function') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
+        importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
+      }
+
+      if (importedTelemetry) {
+        this.isActualFlown = (importedTelemetry.isActualFlown !== undefined) ? !!importedTelemetry.isActualFlown : true;
+        const comp = (typeof computeFlightComparison === 'function') ? computeFlightComparison({ waypointCount: (typeof getActiveMissionWaypoints === 'function' ? getActiveMissionWaypoints().length : 0), altitude: importedTelemetry.maxAltitude, totalDistance: importedTelemetry.totalDistance }, importedTelemetry) : null;
+
+        const flightSel = (typeof document !== 'undefined' && typeof document.getElementById === 'function') ? document.getElementById('diag-flight-selector') : null;
+        if (flightSel && flightSel.options) {
+          let found = false;
+          for (let i = 0; i < flightSel.options.length; i++) {
+            if (flightSel.options[i].value === flightId) {
+              found = true;
+              break;
+            }
+          }
+          if (!found && typeof document.createElement === 'function') {
+            const opt = document.createElement('option');
+            opt.value = flightId;
+            opt.textContent = `${filename} (RC 2)`;
+            if (typeof flightSel.insertBefore === 'function') {
+              flightSel.insertBefore(opt, flightSel.firstChild);
+            } else if (typeof flightSel.appendChild === 'function') {
+              flightSel.appendChild(opt);
+            }
+          }
+          flightSel.value = flightId;
+        }
+
+        this.selectedFlightId = flightId;
+        this.telemetryData = importedTelemetry;
+        this.comparisonData = comp;
+        if (typeof document !== 'undefined') {
+          try { if (typeof this.updateStatsUI === 'function') this.updateStatsUI(); } catch (_) {}
+          try { if (typeof this.init3DScene === 'function') this.init3DScene(); } catch (_) {}
+          this.playbackFractionalIndex = 0.0;
+          try { if (typeof this.seekTo === 'function') this.seekTo(0, true, true); } catch (_) {}
+          try { if (typeof this.pause === 'function') this.pause(); } catch (_) {}
+        }
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn('DigitalTwin.loadFlightLogData error:', err);
+      return false;
     }
   },
 
@@ -80635,12 +81353,16 @@ const KMZInspector = {
 };
 
 
+const DigitalTwin = FlightDiagnostics;
+
 if (typeof window !== 'undefined') {
   window.FlightDiagnostics = FlightDiagnostics;
+  window.DigitalTwin = FlightDiagnostics;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    DigitalTwin: FlightDiagnostics,
     FlightDiagnostics,
     buildThreeDigitalTwinJson,
     createCameraPyramidGeometry,

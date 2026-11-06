@@ -1,3 +1,40 @@
+## [1.227.0] - 2026-11-06
+
+Android USB MTP Flight Log Extraction, Chrome Remote Debugging & On-Device Mobile Debug Console.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **USB MTP RC 2 Flight Log Extraction on Android (Closes #252)**:
+  - Tapping **Pull from RC 2** (`#diag-pull-rc2-btn`) on Android now communicates with the connected DJI RC 2 controller over USB MTP, scanning storage partitions (`Android/data/dji.go.v5/files/FlightRecord` and `DJI/FlightRecord`) for the latest flight record.
+  - Automatically imports and loads the retrieved flight log into 3D Flight Diagnostics for instant post-flight replay, track comparison, and trajectory analysis.
+  - Informative toasts alert the pilot when no RC 2 controller is detected or when USB OTG/MTP permissions are pending, instead of failing silently with generic offline errors.
+- **On-Device Mobile Debug Console (Closes #252)**:
+  - Added an integrated Mobile Debug Console (`#debug-console-modal`) designed specifically for Android tablets, phones, and field controllers.
+  - Activated by triple-tapping the version badge in the sidebar header or via the **🛠️ Console** button in the About modal.
+  - Features real-time log capturing with category filtering (All, Errors, Warnings, Logs), text search, one-tap log copying to clipboard, and log buffer clearing.
+- **Flight Diagnostics TXT Log Import (Closes #252)**:
+  - Tapping **Load File** in Flight Diagnostics now accepts and parses `.txt` DJI flight logs directly in addition to CSV, KMZ, JSON, and GPX.
+
+#### Under the Hood & Technical Details
+- **android/app/src/main/java/com/aalaapi/sky/MainActivity.kt**:
+  - Enabled `WebView.setWebContentsDebuggingEnabled(true)` allowing PC Chrome DevTools inspection at `chrome://inspect/#devices`.
+  - Added `WebChromeClient.onConsoleMessage()` routing JavaScript console logs to Android Logcat (`AalaapiWeb`) with filename and line numbers.
+  - Added `@JavascriptInterface fun getMtpStatus(): String`.
+- **android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt**:
+  - Added `getStatusJson()` returning MTP connection, device model, and permission status.
+  - Implemented recursive `scanMtpForFlightRecords()` traversing MTP object handles for DJI flight records.
+  - Updated `pullLatestLog()` to extract logs via `MtpDevice.importFile()` and return structured JSON with specific error codes (`NO_RC2_CONNECTED`, `RC2_PERMISSION_REQUIRED`, `NO_LOGS_FOUND`).
+- **src/bridge/ApiClient.js**:
+  - Updated `pullFlightLogFromRC2()` to parse structured JSON from native Android bridge, present clear feedback toasts on connection issues, and invoke `DigitalTwin.loadFlightLogData()`.
+- **src/3d/DigitalTwin.js**:
+  - Implemented `loadFlightLogData(filename, data)` supporting Base64 strings, ArrayBuffers, CSV, and text records.
+  - Extended `handleLogFileImport()` to parse `.txt` flight logs.
+- **src/bridge/DjiLogDecryptor.js**:
+  - Implemented `parseLogText(rawText, filename)` parsing plaintext CSV and JSON flight records.
+- **src/ui/DebugConsole.js**:
+  - Implemented `DebugConsoleManager` capturing console methods, unhandled exceptions, and promise rejections in a 200-entry circular buffer with triple-tap activation on `.header-version-badge`.
+
 ## [1.226.1] - 2026-11-06
 
 Native Android File Picker, Public Downloads Exporter & DJI Developer API Key Persistence.

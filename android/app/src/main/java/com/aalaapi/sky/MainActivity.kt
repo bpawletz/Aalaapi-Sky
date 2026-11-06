@@ -24,6 +24,8 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
 import android.util.Base64
+import android.util.Log
+import android.webkit.ConsoleMessage
 import android.webkit.GeolocationPermissions
 import android.webkit.JavascriptInterface
 import android.webkit.ValueCallback
@@ -320,6 +322,10 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            WebView.setWebContentsDebuggingEnabled(true)
+        }
+
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -380,10 +386,27 @@ class MainActivity : AppCompatActivity() {
                     false
                 }
             }
+
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                val msg = consoleMessage?.message() ?: ""
+                val level = consoleMessage?.messageLevel()
+                val tag = "AalaapiWeb"
+                when (level) {
+                    ConsoleMessage.MessageLevel.ERROR -> Log.e(tag, "[$level] $msg (${consoleMessage?.sourceId()}:${consoleMessage?.lineNumber()})")
+                    ConsoleMessage.MessageLevel.WARNING -> Log.w(tag, "[$level] $msg")
+                    else -> Log.d(tag, "[$level] $msg")
+                }
+                return super.onConsoleMessage(consoleMessage)
+            }
         }
 
         // Register Javascript Interface: window.AalaapiAndroid
         webView.addJavascriptInterface(object {
+            @JavascriptInterface
+            fun getMtpStatus(): String {
+                return mtpBridge.getStatusJson()
+            }
+
             @JavascriptInterface
             fun getDjiApiKey(): String {
                 val prefs = getSharedPreferences("aalaapi_prefs", Context.MODE_PRIVATE)
