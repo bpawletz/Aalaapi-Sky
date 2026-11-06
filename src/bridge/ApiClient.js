@@ -4973,6 +4973,8 @@ const RemoteIdRadar = {
 
     } catch (e) {
 
+      if (this.streamMode === 'android-tcp' || this.streamMode === 'android-http') return;
+
       this.streamConnected = false;
 
       this.streamMode = 'polling';
@@ -5751,6 +5753,14 @@ const AdsbAirspaceManager = {
 
   showCones: true,
 
+  suppressAirportLanding: true,
+
+  airportRadiusNm: 4.0,
+
+  maxLandingAltitudeFt: 3000,
+
+  airports: new Map(), // icao -> { icao, name, lat, lon, elevationFt }
+
   customEndpoint: '',
 
   serverHost: '127.0.0.1',
@@ -6263,6 +6273,34 @@ const AdsbAirspaceManager = {
 
       };
 
+    } else if (targetType === 'landing') {
+
+      if (this.airports.size === 0) {
+        this.registerAirport({
+          icao: 'KVYS',
+          name: 'Illinois Valley Regional Airport',
+          lat: homeLat + 0.03,
+          lon: homeLon + 0.03,
+          elevationFt: 654
+        });
+      }
+      const apt = this.airports.values().next().value;
+      simAircraft = {
+        hex: 'A66666',
+        callsign: 'LANDER42',
+        aircraftType: 'C172',
+        category: 'A1',
+        lat: apt ? apt.lat + 0.015 : homeLat + 0.02,
+        lon: apt ? apt.lon + 0.015 : homeLon + 0.02,
+        alt: 1400,
+        speed: 75,
+        track: 220,
+        verticalRate: -500,
+        isLanding: true,
+        landingAirport: apt ? apt.icao : 'KVYS',
+        coneSuppressed: true
+      };
+
     } else {
 
       // Propeller (C172)
@@ -6306,13 +6344,17 @@ const AdsbAirspaceManager = {
     } catch (e) {
       // If offline or unauthorized, inject directly into manager
       const isApproaching = targetType === 'approaching';
-      simAircraft.distanceMeters = isApproaching ? 8368 : 1500;
-      simAircraft.distanceMiles = isApproaching ? 5.2 : 0.93;
+      const isLanding = targetType === 'landing';
+      simAircraft.distanceMeters = isApproaching ? 8368 : (isLanding ? 4200 : 1500);
+      simAircraft.distanceMiles = isApproaching ? 5.2 : (isLanding ? 2.6 : 0.93);
       simAircraft.bearingDeg = 45;
       simAircraft.bearingCardinal = 'NE';
-      simAircraft.isBreached = !isApproaching;
+      simAircraft.isBreached = !isApproaching && !isLanding;
       simAircraft.isConeWarning = isApproaching;
-      simAircraft.status = isApproaching ? 'approaching' : 'breached';
+      simAircraft.isLanding = isLanding;
+      simAircraft.landingAirport = isLanding ? (simAircraft.landingAirport || 'KVYS') : null;
+      simAircraft.coneSuppressed = isLanding;
+      simAircraft.status = isApproaching ? 'approaching' : (isLanding ? 'landing' : 'breached');
       simAircraft.etaSeconds = isApproaching ? 51 : null;
       simAircraft.closingSpeedKts = isApproaching ? 135 : null;
       simAircraft.coneLengthMeters = isApproaching ? 8334 : 0;
@@ -6409,6 +6451,14 @@ const AdsbAirspaceManager = {
 
         if (savedShowCones !== null) this.showCones = savedShowCones !== 'false';
 
+        const savedSuppressLanding = localStorage.getItem('aalaapi_adsb_suppress_airport_landing');
+
+        if (savedSuppressLanding !== null) this.suppressAirportLanding = savedSuppressLanding !== 'false';
+
+        const savedAirportRadius = localStorage.getItem('aalaapi_adsb_airport_radius_nm');
+
+        if (savedAirportRadius) this.airportRadiusNm = parseFloat(savedAirportRadius) || 4.0;
+
 
 
         const savedEndpoint = localStorage.getItem('aalaapi_adsb_custom_endpoint');
@@ -6478,6 +6528,10 @@ const AdsbAirspaceManager = {
         localStorage.setItem('aalaapi_adsb_cone_dev_deg', String(this.coneDeviationDeg || 15));
 
         localStorage.setItem('aalaapi_adsb_show_cones', String(this.showCones));
+
+        localStorage.setItem('aalaapi_adsb_suppress_airport_landing', String(this.suppressAirportLanding));
+
+        localStorage.setItem('aalaapi_adsb_airport_radius_nm', String(this.airportRadiusNm || 4.0));
 
         localStorage.setItem('aalaapi_adsb_custom_endpoint', this.customEndpoint || '');
 
@@ -6613,6 +6667,54 @@ const AdsbAirspaceManager = {
 
 
 
+  checkAirportAirspace(ac) {
+    const result = { isLanding: false, airport: null, distanceNm: null };
+    if (!ac || ac.latitude === null || ac.longitude === null || ac.latitude === undefined || ac.longitude === undefined) {
+      return result;
+    }
+    const alt = ac.altitude !== null && ac.altitude !== undefined
+      ? ac.altitude
+      : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
+    const maxAlt = this.maxLandingAltitudeFt || 3000;
+    const vRate = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : 0;
+    const isDescending = vRate <= -400;
+
+    const toRad = Math.PI / 180;
+    for (const apt of this.airports.values()) {
+      if (typeof apt.lat !== 'number' || typeof apt.lon !== 'number') continue;
+      const dLat = (apt.lat - ac.latitude) * toRad;
+      const dLon = (apt.lon - ac.longitude) * toRad;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(ac.latitude * toRad) * Math.cos(apt.lat * toRad) * Math.sin(dLon / 2) ** 2;
+      const distM = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distNm = distM / 1852.0;
+
+      if (distNm <= this.airportRadiusNm) {
+        if (alt === null || alt <= maxAlt || isDescending) {
+          result.isLanding = true;
+          result.airport = apt;
+          result.distanceNm = parseFloat(distNm.toFixed(2));
+          return result;
+        }
+      }
+    }
+    return result;
+  },
+
+  registerAirport(apt) {
+    if (!apt || (!apt.icao && !apt.id && !apt.name)) return;
+    const icao = (apt.icao || apt.id || apt.stationIdentifier || apt.name).toUpperCase();
+    const lat = apt.lat !== undefined ? apt.lat : (apt.latitude !== undefined ? apt.latitude : null);
+    const lon = apt.lon !== undefined ? apt.lon : (apt.longitude !== undefined ? apt.longitude : null);
+    if (lat === null || lon === null) return;
+    this.airports.set(icao, {
+      icao,
+      name: apt.name || icao,
+      lat: Number(lat),
+      lon: Number(lon),
+      elevationFt: apt.elevationFt || apt.elevation || 0
+    });
+  },
+
   computeConePolygonLatLngs(lat, lon, track, coneLengthMeters, deviationDeg = 15) {
 
     const length = Math.max(50, coneLengthMeters || 1000);
@@ -6657,6 +6759,14 @@ const AdsbAirspaceManager = {
 
       isConeWarning: false,
 
+      isClimbingOut: false,
+
+      isLanding: false,
+
+      landingAirport: null,
+
+      coneSuppressed: false,
+
       etaSeconds: null,
 
       entryDistanceMeters: null,
@@ -6689,7 +6799,16 @@ const AdsbAirspaceManager = {
 
     result.coneLengthMeters = coneLengthMeters;
 
-
+    // Suppress predictive cone if aircraft is in airport airspace assuming landing
+    if (this.suppressAirportLanding) {
+      const airportCheck = this.checkAirportAirspace(ac);
+      if (airportCheck.isLanding) {
+        result.isLanding = true;
+        result.landingAirport = airportCheck.airport ? airportCheck.airport.icao : null;
+        result.coneSuppressed = true;
+        return result;
+      }
+    }
 
     const rProx = this.radiusMiles * 1609.344;
     const toRad = Math.PI / 180;
@@ -6752,11 +6871,16 @@ const AdsbAirspaceManager = {
 
       const projectedAlt = alt + (vRate * (etaSeconds / 60));
 
+      // Climb-out suppression: aircraft climbing safely overhead above ceiling
+      if (vRate > 0 && projectedAlt > ceilingFt) {
+        result.isClimbingOut = true;
+        result.coneSuppressed = true;
+        return result;
+      }
+
       if (alt > ceilingFt && projectedAlt > ceilingFt) return result;
 
     }
-
-
 
     const closingSpeedKts = Math.max(0, Math.round(speedKts * Math.cos(offBoresight * (Math.PI / 180))));
 
@@ -7761,6 +7885,8 @@ const AdsbAirspaceManager = {
 
     if (!this.enabled) return;
 
+    if (this.streamMode === 'android-tcp' || this.streamMode === 'android-http') return;
+
     const EventSourceCtor = (typeof window !== 'undefined' && window.EventSource) || (typeof EventSource !== 'undefined' && EventSource) || null;
 
     if (!EventSourceCtor) {
@@ -7801,7 +7927,7 @@ const AdsbAirspaceManager = {
 
     const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
     const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
-    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true${tokenParam}`;
+    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}${tokenParam}`;
 
 
 
@@ -7885,6 +8011,8 @@ const AdsbAirspaceManager = {
 
       this.eventSource.onerror = () => {
 
+        if (this.streamMode === 'android-tcp' || this.streamMode === 'android-http') return;
+
         this.streamConnected = false;
 
         this.streamMode = 'polling';
@@ -7912,6 +8040,8 @@ const AdsbAirspaceManager = {
 
 
   ensureFallbackPolling() {
+
+    if (this.streamMode === 'android-tcp' || this.streamMode === 'android-http') return;
 
     if (this.pollTimer) return;
 
@@ -7957,7 +8087,7 @@ const AdsbAirspaceManager = {
 
         this.pollAirspace();
 
-      } else if (this.streamLat !== null) {
+      } else if (this.streamLat !== null && this.streamMode !== 'android-tcp' && this.streamMode !== 'android-http') {
 
         // Check if home point moved significantly (> ~500m) or radius changed
 
@@ -8070,6 +8200,17 @@ const AdsbAirspaceManager = {
         ac.coneLengthMeters = coneEval.coneLengthMeters;
 
         ac.offBoresightDeg = coneEval.offBoresightDeg;
+
+        if (coneEval.isLanding) {
+          ac.isLanding = true;
+          ac.landingAirport = coneEval.landingAirport;
+          ac.coneSuppressed = true;
+          ac.status = 'landing';
+          ac.isConeWarning = false;
+        } else if (coneEval.isClimbingOut) {
+          ac.isClimbingOut = true;
+          ac.coneSuppressed = true;
+        }
 
         if (coneEval.isConeWarning) {
 
@@ -8210,7 +8351,7 @@ const AdsbAirspaceManager = {
       const endpoint = this.getEffectiveEndpoint();
       const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
       const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
-      const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true${tokenParam}`;
+      const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}${tokenParam}`;
 
       const res = await fetch(url, {
         headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
@@ -8761,6 +8902,12 @@ const AdsbAirspaceManager = {
 
         alertBadgeTooltip = `<br><span style="font-weight: 700; color: #f59e0b;">⚠️ APPROACHING PERIMETER</span><br><span style="font-size: 0.68rem; color: #fbbf24;">ETA: ${etaMin}m ${etaSec}s${closing}</span>`;
 
+      } else if (ac.isLanding) {
+
+        const aptLabel = ac.landingAirport ? ` (${ac.landingAirport})` : '';
+
+        alertBadgeTooltip = `<br><span style="font-weight: 700; color: #38bdf8;">🛬 AIRPORT TRAFFIC${aptLabel}</span><br><span style="font-size: 0.68rem; color: #94a3b8;">Pattern / Landing Assumed • Cone Suppressed</span>`;
+
       }
 
 
@@ -8773,7 +8920,7 @@ const AdsbAirspaceManager = {
 
       const hasSpeedAndTrack = typeof ac.speed === 'number' && ac.speed > 0 && typeof ac.track === 'number' && !isNaN(ac.track);
 
-      if (hasSpeedAndTrack && ac.latitude !== null && ac.longitude !== null) {
+      if (hasSpeedAndTrack && ac.latitude !== null && ac.longitude !== null && !ac.isLanding && !ac.coneSuppressed) {
 
         const coneLen = ac.coneLengthMeters || Math.round((ac.speed * 0.51444444) * (this.warningMinutes * 60));
 
@@ -8893,6 +9040,16 @@ const AdsbAirspaceManager = {
 
 
 
+      if (ac.isLanding || ac.coneSuppressed) {
+        const coneEntry = this.mapCones.get(ac.hex);
+        if (coneEntry) {
+          if (this.coneLayerGroup && this.coneLayerGroup.removeLayer && coneEntry.group) {
+            this.coneLayerGroup.removeLayer(coneEntry.group);
+          }
+          this.mapCones.delete(ac.hex);
+        }
+      }
+
       let marker = this.mapMarkers.get(ac.hex);
 
       if (!marker) {
@@ -8901,7 +9058,7 @@ const AdsbAirspaceManager = {
 
           ? `adsb-marker-inner breached ${classified.type}` 
 
-          : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : `adsb-marker-inner ${classified.type}`);
+          : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : (ac.isLanding ? `adsb-marker-inner landing ${classified.type}` : `adsb-marker-inner ${classified.type}`));
 
         const markerSvg = this.getAircraftMarkerSvg(classified.type);
 
@@ -9061,7 +9218,7 @@ const AdsbAirspaceManager = {
 
               ? `adsb-marker-inner breached ${classified.type}` 
 
-              : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : `adsb-marker-inner ${classified.type}`);
+              : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : (ac.isLanding ? `adsb-marker-inner landing ${classified.type}` : `adsb-marker-inner ${classified.type}`));
 
             if (marker._aircraftTypeClass !== classified.type) {
 
@@ -9315,6 +9472,24 @@ const AdsbAirspaceManager = {
 
     if (conesToggle) conesToggle.checked = this.showCones;
 
+    const landingToggle = document.getElementById('adsb-airport-landing-toggle');
+
+    if (landingToggle) landingToggle.checked = this.suppressAirportLanding;
+
+    const airportRadiusSlider = document.getElementById('adsb-airport-radius-slider');
+
+    const airportRadiusVal = document.getElementById('adsb-airport-radius-val');
+
+    if (airportRadiusSlider) airportRadiusSlider.value = this.airportRadiusNm;
+
+    if (airportRadiusVal) {
+
+      const km = (this.airportRadiusNm * 1.852).toFixed(1);
+
+      airportRadiusVal.textContent = `${this.airportRadiusNm.toFixed(1)} NM (${km} km)`;
+
+    }
+
 
 
     const endpointInput = document.getElementById('adsb-endpoint-input');
@@ -9551,6 +9726,14 @@ const AdsbAirspaceManager = {
 
         distDisplay = `<span style="font-size: 0.68rem; font-weight: 600; color: #fbbf24;">${distStr} ${ac.bearingCardinal || ''}</span><span style="font-size: 0.62rem; color: #f59e0b; font-weight: 600;">ETA ${etaMin}m ${etaSec}s</span>`;
 
+      } else if (ac.isLanding) {
+
+        const aptTag = ac.landingAirport ? ` (${ac.landingAirport})` : '';
+
+        statusChip = `<span class="adsb-landing-chip" style="font-size: 0.62rem; font-weight: 700; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.6); color: #38bdf8; padding: 1px 6px; border-radius: 8px;">🛬 LANDING${aptTag}</span>`;
+
+        distDisplay = `<span style="font-size: 0.68rem; font-weight: 600; color: #38bdf8;">${distStr} ${ac.bearingCardinal || ''}</span><span style="font-size: 0.62rem; color: #94a3b8; font-weight: 600;">Cone Suppressed</span>`;
+
       } else {
 
         statusChip = '<span style="font-size: 0.62rem; font-weight: 600; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 1px 6px; border-radius: 8px;">SAFE</span>';
@@ -9571,7 +9754,7 @@ const AdsbAirspaceManager = {
 
       html += `
 
-        <div class="adsb-aircraft-card ${isBreached ? 'breached' : ''} ${isApproaching ? 'approaching' : ''} ${!hasPos ? 'mode-s-pending' : ''}" data-aircraft-type="${classified.type}">
+        <div class="adsb-aircraft-card ${isBreached ? 'breached' : ''} ${isApproaching ? 'approaching' : ''} ${ac.isLanding ? 'landing' : ''} ${!hasPos ? 'mode-s-pending' : ''}" data-aircraft-type="${classified.type}">
 
           <div style="display: flex; flex-direction: column; gap: 2px;">
 
@@ -10515,6 +10698,14 @@ const AdsbAirspaceManager = {
 
     }
 
+    const simLandingBtn = document.getElementById('adsb-sim-landing-btn');
+
+    if (simLandingBtn) {
+
+      simLandingBtn.addEventListener('click', () => this.simulateAircraft('landing'));
+
+    }
+
 
 
     const conesToggle = document.getElementById('adsb-cones-toggle');
@@ -10590,6 +10781,46 @@ const AdsbAirspaceManager = {
       coneDevSlider.addEventListener('input', (e) => {
 
         this.coneDeviationDeg = parseInt(e.target.value, 10) || 15;
+
+        this.saveSettings();
+
+        this.updateControlsUI();
+
+        if (this.showCones) this.updateMapMarkers();
+
+        this.pollAirspace();
+
+      });
+
+    }
+
+    const landingToggle = document.getElementById('adsb-airport-landing-toggle');
+
+    if (landingToggle) {
+
+      landingToggle.addEventListener('change', (e) => {
+
+        this.suppressAirportLanding = !!e.target.checked;
+
+        this.saveSettings();
+
+        this.updateControlsUI();
+
+        if (this.showCones) this.updateMapMarkers();
+
+        this.pollAirspace();
+
+      });
+
+    }
+
+    const airportRadiusSlider = document.getElementById('adsb-airport-radius-slider');
+
+    if (airportRadiusSlider) {
+
+      airportRadiusSlider.addEventListener('input', (e) => {
+
+        this.airportRadiusNm = parseFloat(e.target.value) || 4.0;
 
         this.saveSettings();
 

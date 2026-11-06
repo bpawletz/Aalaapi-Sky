@@ -709,6 +709,36 @@ describe('AdsbAirspaceTracker Tests', () => {
     const evalHigh = evaluatePredictiveCone(acHighCruise, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15);
     assert.strictEqual(evalHigh.isConeWarning, false, 'High altitude cruise above ceiling must not trigger warning');
 
+    // Climb-out test: Aircraft at 2000 ft climbing at +2500 fpm should project to 4500 ft (>2500 ceiling) upon arrival
+    const acClimbing = { ...acApproaching, altitude: 2000, verticalRate: 2500 };
+    const evalClimb = evaluatePredictiveCone(acClimbing, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15);
+    assert.strictEqual(evalClimb.isConeWarning, false, 'Aircraft climbing rapidly above ceiling should have cone warning suppressed');
+    assert.strictEqual(evalClimb.isClimbingOut, true, 'isClimbingOut flag should be true');
+
+    // Airport Airspace landing suppression test (Issue #246)
+    const { checkAirportAirspace } = require('./adsb_tracker.js');
+    const dummyAirports = [
+      { id: 'KVYS', name: 'Illinois Valley Regional', lat: homeLat + 0.055, lon: homeLon + 0.055, radiusNm: 4.0, ceilingFt: 3000 }
+    ];
+
+    // Aircraft right at KVYS (distance ~ 0) at 1200 ft alt descending at -600 fpm
+    const acAtAirport = { ...acApproaching, altitude: 1200, verticalRate: -600 };
+    const aptCheck = checkAirportAirspace(acAtAirport, dummyAirports, 3000, 4.0);
+    assert.strictEqual(aptCheck.inAirportAirspace, true, 'Aircraft within 4.0 NM should be detected in airport airspace');
+    assert.strictEqual(aptCheck.isLanding, true, 'Low-altitude descending aircraft in airport airspace should be flagged as landing');
+    assert.strictEqual(aptCheck.airport.id, 'KVYS');
+
+    // In evaluatePredictiveCone with airports provided:
+    const evalAirportLanding = evaluatePredictiveCone(acAtAirport, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15, {
+      airports: dummyAirports,
+      suppressAirportLanding: true,
+      airportRadiusNm: 4.0
+    });
+    assert.strictEqual(evalAirportLanding.isConeWarning, false, 'Aircraft landing in airport airspace must have cone warning suppressed');
+    assert.strictEqual(evalAirportLanding.isLanding, true, 'isLanding must be true');
+    assert.strictEqual(evalAirportLanding.coneSuppressed, true, 'coneSuppressed must be true');
+    assert.strictEqual(evalAirportLanding.suppressReason, 'airport_landing');
+
     // Test getAirspaceBounds integration and sorting
     const tracker = new AdsbAirspaceTracker({ autoConnect: false, silent: true });
     tracker.injectSimulatedAircraft({

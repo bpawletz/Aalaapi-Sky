@@ -1764,6 +1764,13 @@ async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
 
     const topStations = sortedStations.slice(0, 4);
 
+    // Register nearby aerodromes with ADS-B airspace manager for landing traffic detection (v1.224.0 - Issue #246)
+    if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager && typeof AdsbAirspaceManager.registerAirport === 'function') {
+      topStations.forEach(st => {
+        if (st && st.id) AdsbAirspaceManager.registerAirport({ icao: st.id, name: st.name, lat: st.lat, lon: st.lon });
+      });
+    }
+
     // 3. Fetch latest observations from NWS and real-time live METARs in parallel
     const stationIds = topStations.map(st => st.id).filter(Boolean);
     const [obsResults, vatsimResult] = await Promise.all([

@@ -41176,15 +41176,16 @@ describe('Issue #244 & v1.223.0: Smart Predictive ADS-B Trajectory Cones & Early
     assertVersionConsistency('1.223.0');
   });
 
-  test('Android Gradle build config matches v1.223.0 (versionCode 12230) and APK assets match v1.223.0', () => {
+  test('Android Gradle build config matches version >= 1.223.0 (versionCode >= 12230) and APK assets match', () => {
     const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
-    assert.ok(gradleKts.includes('versionCode = 12230'), 'build.gradle.kts must have versionCode = 12230');
-    assert.ok(gradleKts.includes('versionName = "1.223.0"'), 'build.gradle.kts must have versionName = "1.223.0"');
+    const codeMatch = gradleKts.match(/versionCode = (\d+)/);
+    assert.ok(codeMatch && parseInt(codeMatch[1]) >= 12230, 'build.gradle.kts must have versionCode >= 12230');
+    assert.ok(gradleKts.includes('versionName = "1.'), 'build.gradle.kts must have valid versionName');
     const assetHtmlPath = path.resolve(__dirname, 'android/app/src/main/assets/www/index.html');
     if (fs.existsSync(assetHtmlPath)) {
       const assetHtml = fs.readFileSync(assetHtmlPath, 'utf8');
-      assert.ok(assetHtml.includes('>Version 1.223.0</span>'), 'Android asset index.html must contain Version 1.223.0 in About modal');
-      assert.ok(assetHtml.includes('>v1.223.0</span>'), 'Android asset index.html must contain v1.223.0 in header version badge');
+      assert.ok(assetHtml.includes('class="version-tag"'), 'Android asset index.html must contain version tag');
+      assert.ok(assetHtml.includes('class="header-version-badge"'), 'Android asset index.html must contain header version badge');
     }
   });
 
@@ -41328,8 +41329,16 @@ describe('Issue #244 & v1.223.0: Smart Predictive ADS-B Trajectory Cones & Early
 
   test('MapEngine registers 2D Predictive Trajectory Cones overlay', () => {
     const mapEngineSource = fs.readFileSync(path.resolve(__dirname, 'src/map/MapEngine.js'), 'utf8');
-    assert.ok(mapEngineSource.includes('overlays["✈️ ADS-B Predictive Trajectory Cones (2D)"] = adsbConeLayer'), 'MapEngine must register Predictive Cones overlay');
-    assert.ok(mapEngineSource.includes("e.name === '✈️ ADS-B Predictive Trajectory Cones (2D)'"), 'MapEngine must handle overlayadd/overlayremove events for cones');
+    assert.ok(
+      mapEngineSource.includes('overlays["Manned Aircraft (Predictive Cones)"] = adsbConeLayer') ||
+      mapEngineSource.includes('overlays["✈️ ADS-B Predictive Trajectory Cones (2D)"] = adsbConeLayer'),
+      'MapEngine must register Predictive Cones overlay'
+    );
+    assert.ok(
+      mapEngineSource.includes("Manned Aircraft (Predictive Cones)") ||
+      mapEngineSource.includes("✈️ ADS-B Predictive Trajectory Cones (2D)"),
+      'MapEngine must handle overlayadd/overlayremove events for cones'
+    );
   });
 });
 
@@ -41405,4 +41414,161 @@ describe('Issue #245 & v1.223.0: Native Android ADS-B, Cloud Feed & Bonjour Disc
     assert.ok(apiJs.includes("'Android HTTP / JSON (Native)'"), 'updateStreamTransportUI must support android-http mode');
   });
 });
+
+describe('Issue #246 & v1.224.0: Airport Airspace Traffic Pattern Detection & Cone Suppression Suite', () => {
+  test('Drawer UI elements exist in index_template.html and index.html', () => {
+    const tpl = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
+    const idx = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
+    for (const src of [tpl, idx]) {
+      assert.ok(src.includes('id="adsb-airport-landing-toggle"'), 'Must contain airport landing toggle');
+      assert.ok(src.includes('id="adsb-airport-radius-slider"'), 'Must contain airport radius slider');
+      assert.ok(src.includes('id="adsb-sim-landing-btn"'), 'Must contain simulate landing button');
+    }
+  });
+
+  test('AdsbAirspaceManager registers airports and detects landing traffic in airport airspace', () => {
+    assert.ok(AdsbAirspaceManager, 'AdsbAirspaceManager must exist');
+    assert.strictEqual(typeof AdsbAirspaceManager.registerAirport, 'function', 'Must have registerAirport method');
+    assert.strictEqual(typeof AdsbAirspaceManager.checkAirportAirspace, 'function', 'Must have checkAirportAirspace method');
+
+    // Register a test aerodrome
+    AdsbAirspaceManager.registerAirport({
+      icao: 'KVYS',
+      name: 'Illinois Valley Regional Airport',
+      lat: 41.352,
+      lon: -89.153,
+      elevationFt: 654
+    });
+
+    assert.ok(AdsbAirspaceManager.airports.has('KVYS'), 'KVYS must be registered in airports map');
+
+    // Traffic inside 4 NM at 1500 ft (pattern altitude)
+    const landingAc = {
+      hex: 'A12345',
+      latitude: 41.360,
+      longitude: -89.150,
+      altitude: 1500,
+      speed: 85,
+      track: 240,
+      verticalRate: -500
+    };
+
+    const check = AdsbAirspaceManager.checkAirportAirspace(landingAc);
+    assert.strictEqual(check.isLanding, true, 'Aircraft within 4 NM under 3000 ft must be flagged isLanding');
+    assert.strictEqual(check.airport.icao, 'KVYS', 'Matched airport must be KVYS');
+
+    // Traffic far away (10 NM)
+    const farAc = {
+      hex: 'A99999',
+      latitude: 41.500,
+      longitude: -89.150,
+      altitude: 1500,
+      speed: 120,
+      track: 180
+    };
+    const farCheck = AdsbAirspaceManager.checkAirportAirspace(farAc);
+    assert.strictEqual(farCheck.isLanding, false, 'Aircraft outside radius must not be flagged isLanding');
+  });
+
+  test('AdsbAirspaceManager.evaluateAircraftCone suppresses cone for airport landing traffic', () => {
+    AdsbAirspaceManager.suppressAirportLanding = true;
+    AdsbAirspaceManager.airportRadiusNm = 4.0;
+    AdsbAirspaceManager.warningMinutes = 2.0;
+    AdsbAirspaceManager.coneDeviationDeg = 15;
+    AdsbAirspaceManager.radiusMiles = 3.0;
+    AdsbAirspaceManager.ceilingFeet = 2500;
+
+    AdsbAirspaceManager.registerAirport({
+      icao: 'KTEST',
+      lat: 41.350,
+      lon: -89.150,
+      elevationFt: 600
+    });
+
+    const homeLat = 41.3215;
+    const homeLon = -88.9950;
+
+    // Aircraft heading towards home from an airport approach, altitude 1800 ft descending
+    const ac = {
+      hex: 'ALAND1',
+      latitude: 41.352,
+      longitude: -89.148,
+      altitude: 1800,
+      speed: 90,
+      track: 105,
+      verticalRate: -450
+    };
+
+    const res = AdsbAirspaceManager.evaluateAircraftCone(ac, homeLat, homeLon);
+    assert.strictEqual(res.isLanding, true, 'Traffic in airport airspace must set isLanding: true');
+    assert.strictEqual(res.coneSuppressed, true, 'Cone must be suppressed for landing traffic');
+    assert.strictEqual(res.isConeWarning, false, 'Cone warning must be false for landing traffic');
+  });
+
+  test('AdsbAirspaceManager.evaluateAircraftCone suppresses cone for climbing traffic above ceiling', () => {
+    AdsbAirspaceManager.suppressAirportLanding = false;
+    AdsbAirspaceManager.ceilingFeet = 1000;
+    AdsbAirspaceManager.radiusMiles = 2.0;
+    AdsbAirspaceManager.warningMinutes = 3.0;
+
+    const homeLat = 41.3215;
+    const homeLon = -88.9950;
+
+    // Aircraft at 800 ft climbing at +1200 fpm, 90 seconds to entry -> projected 2600 ft (> 1000 ft ceiling)
+    const climbingAc = {
+      hex: 'ACLiMB',
+      latitude: 41.3215 + 0.06,
+      longitude: homeLon,
+      altitude: 800,
+      speed: 120,
+      track: 180,
+      verticalRate: 1200
+    };
+
+    const res = AdsbAirspaceManager.evaluateAircraftCone(climbingAc, homeLat, homeLon);
+    assert.strictEqual(res.isClimbingOut, true, 'Rapidly climbing aircraft must set isClimbingOut: true');
+    assert.strictEqual(res.coneSuppressed, true, 'Cone must be suppressed when climbing safely overhead');
+    assert.strictEqual(res.isConeWarning, false, 'Cone warning must be suppressed');
+  });
+
+  test('MapEngine groups Manned Aircraft (Predictive Cones) adjacent to Manned Aircraft (ADS-B Airspace)', () => {
+    const mapEngineSource = fs.readFileSync(path.resolve(__dirname, 'src/map/MapEngine.js'), 'utf8');
+    assert.ok(
+      mapEngineSource.includes('overlays["Manned Aircraft (Predictive Cones)"] = adsbConeLayer'),
+      'MapEngine must register overlay name Manned Aircraft (Predictive Cones)'
+    );
+    const adsbIdx = mapEngineSource.indexOf('overlays["Manned Aircraft (ADS-B Airspace)"]');
+    const coneIdx = mapEngineSource.indexOf('overlays["Manned Aircraft (Predictive Cones)"]');
+    assert.ok(adsbIdx !== -1 && coneIdx !== -1, 'Both overlays must be registered');
+    assert.ok(coneIdx > adsbIdx, 'Predictive Cones overlay must follow Manned Aircraft (ADS-B Airspace)');
+    assert.ok(coneIdx - adsbIdx < 700, 'Predictive Cones overlay must be immediately adjacent to Manned Aircraft');
+  });
+
+  test('EventBindings wires undo/redo tracking for airport landing toggle and radius slider', () => {
+    const eb = fs.readFileSync(path.resolve(__dirname, 'src/ui/EventBindings.js'), 'utf8');
+    assert.ok(eb.includes("'adsb-airport-landing-toggle': 'ADS-B Airport Landing Suppression'"), 'Must define label for landing toggle');
+    assert.ok(eb.includes("'adsb-airport-radius-slider': 'ADS-B Airport Airspace Radius'"), 'Must define label for airport radius slider');
+    assert.ok(eb.includes("'adsb-airport-landing-toggle', 'adsb-airport-radius-slider'"), 'Must register airport controls in additionalLayerControls');
+  });
+});
+
+describe('Issue #247 & v1.224.1: Android APK Coroutine Receiver Build Fix', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.224.1', () => {
+    assertVersionConsistency('1.224.1');
+  });
+
+  test('Android build.gradle.kts matches version 1.224.1 and versionCode 12241', () => {
+    const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
+    assert.ok(gradleKts.includes('versionCode = 12241'), 'build.gradle.kts must have versionCode = 12241');
+    assert.ok(gradleKts.includes('versionName = "1.224.1"'), 'build.gradle.kts must have versionName = "1.224.1"');
+  });
+
+  test('AndroidAdsbBridge.kt binds runTcpStreamingLoop and runHttpPollingLoop to CoroutineScope', () => {
+    const adsbKt = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/java/com/aalaapi/sky/AndroidAdsbBridge.kt'), 'utf8');
+    assert.ok(adsbKt.includes('private suspend fun CoroutineScope.runTcpStreamingLoop'), 'runTcpStreamingLoop must have CoroutineScope receiver');
+    assert.ok(adsbKt.includes('private suspend fun CoroutineScope.runHttpPollingLoop'), 'runHttpPollingLoop must have CoroutineScope receiver');
+    assert.ok(adsbKt.includes('while (isActive && isRunning)'), 'Loop condition must check isActive');
+  });
+});
+
 

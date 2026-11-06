@@ -112,8 +112,79 @@ function shortestAngularDifference(deg1, deg2) {
 }
 
 /**
+ * Evaluates whether an aircraft is operating within an airport's terminal airspace
+ * and matches landing / traffic pattern descent profile.
+ * @param {object} ac Aircraft telemetry object
+ * @param {Array<object>|Map} airports List or Map of airport reference objects {id, name, lat, lon, radiusNm, ceilingFt}
+ * @param {number} [maxLandingAltitudeFt=3000] Maximum altitude in feet AGL/relative to qualify as terminal landing traffic
+ * @param {number} [airportRadiusNm=4.0] Airport airspace radius in nautical miles
+ * @returns {{inAirportAirspace: boolean, airport: object|null, isLanding: boolean, distanceMeters: number|null, distanceNm: number|null}}
+ */
+function checkAirportAirspace(ac, airports, maxLandingAltitudeFt = 3000, airportRadiusNm = 4.0) {
+  const result = {
+    inAirportAirspace: false,
+    airport: null,
+    isLanding: false,
+    distanceMeters: null,
+    distanceNm: null
+  };
+
+  if (!ac || ac.latitude === null || ac.longitude === null || ac.latitude === undefined || ac.longitude === undefined) {
+    return result;
+  }
+
+  const airportList = Array.isArray(airports) 
+    ? airports 
+    : (airports instanceof Map ? Array.from(airports.values()) : []);
+
+  if (airportList.length === 0) return result;
+
+  const alt = ac.altitude !== null && ac.altitude !== undefined 
+    ? ac.altitude 
+    : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
+
+  const vRate = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : 0;
+  const speed = typeof ac.speed === 'number' && !isNaN(ac.speed) ? ac.speed : 0;
+
+  for (const apt of airportList) {
+    if (!apt || typeof apt.lat !== 'number' || typeof apt.lon !== 'number') continue;
+    const dMeters = calculateHaversineDistance(ac.latitude, ac.longitude, apt.lat, apt.lon);
+    const radNm = typeof apt.radiusNm === 'number' && apt.radiusNm > 0 
+      ? apt.radiusNm 
+      : (typeof airportRadiusNm === 'number' && airportRadiusNm > 0 ? airportRadiusNm : 4.0);
+    const radMeters = radNm * METERS_PER_NAUTICAL_MILE;
+
+    if (dMeters <= radMeters) {
+      const dNm = Math.round((dMeters / METERS_PER_NAUTICAL_MILE) * 10) / 10;
+      const ceiling = typeof apt.ceilingFt === 'number' && apt.ceilingFt > 0 ? apt.ceilingFt : maxLandingAltitudeFt;
+
+      const isLowAlt = ac.isOnGround || alt === null || alt <= ceiling;
+      // Landing profile: on ground, or low altitude with descending/level vertical rate or terminal speed
+      const isLandingProfile = ac.isOnGround || (isLowAlt && (vRate <= 300 || speed <= 220));
+
+      result.inAirportAirspace = true;
+      result.airport = {
+        id: apt.id || apt.icao || 'AIRPORT',
+        name: apt.name || apt.id || 'Airport',
+        lat: apt.lat,
+        lon: apt.lon,
+        distanceMeters: Math.round(dMeters),
+        distanceNm: dNm
+      };
+      result.distanceMeters = Math.round(dMeters);
+      result.distanceNm = dNm;
+      result.isLanding = isLowAlt && isLandingProfile;
+      break;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Evaluates whether an aircraft outside the proximity radius is on a forward trajectory cone
  * that will breach the RPIC's horizontal proximity radius and vertical ceiling within warningMinutes.
+ * Factors in ground speed, heading deviation angle, vertical ascent/descent rate, and airport landing suppression.
  * 
  * @param {object} ac Aircraft state object
  * @param {number} homeLat RPIC latitude
@@ -123,16 +194,24 @@ function shortestAngularDifference(deg1, deg2) {
  * @param {number} [maxCeilingFeet] Maximum warning ceiling in feet
  * @param {number} [warningMinutes=2.0] Lookahead time in minutes
  * @param {number} [coneDeviationDeg=15] Angular half-spread cone deviation in degrees
- * @returns {{isConeWarning: boolean, etaSeconds: number|null, entryDistanceMeters: number|null, closingSpeedKts: number|null, coneLengthMeters: number, offBoresightDeg: number|null}}
+ * @param {object} [options={}] Additional options (airports, suppressAirportLanding, airportRadiusNm)
+ * @returns {{isConeWarning: boolean, etaSeconds: number|null, entryDistanceMeters: number|null, closingSpeedKts: number|null, coneLengthMeters: number, offBoresightDeg: number|null, isLanding: boolean, landingAirport: object|null, coneSuppressed: boolean, suppressReason: string|null, projectedAltitude: number|null, verticalRate: number|null}}
  */
-function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMeters, maxCeilingFeet, warningMinutes = 2.0, coneDeviationDeg = 15) {
+function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMeters, maxCeilingFeet, warningMinutes = 2.0, coneDeviationDeg = 15, options = {}) {
   const result = {
     isConeWarning: false,
     etaSeconds: null,
     entryDistanceMeters: null,
     closingSpeedKts: null,
     coneLengthMeters: 0,
-    offBoresightDeg: null
+    offBoresightDeg: null,
+    isLanding: false,
+    landingAirport: null,
+    isClimbingOut: false,
+    coneSuppressed: false,
+    suppressReason: null,
+    projectedAltitude: null,
+    verticalRate: null
   };
 
   if (!ac || ac.latitude === null || ac.longitude === null) return result;
@@ -145,6 +224,21 @@ function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMete
   const vMps = speedKts * 0.51444444;
   const coneLengthMeters = Math.round(vMps * (warnMin * 60));
   result.coneLengthMeters = coneLengthMeters;
+
+  // Airport Airspace Landing Suppression (Issue #246)
+  const suppressAirportLanding = options.suppressAirportLanding !== false;
+  if (suppressAirportLanding && options.airports) {
+    const aptRadiusNm = typeof options.airportRadiusNm === 'number' && options.airportRadiusNm > 0 ? options.airportRadiusNm : 4.0;
+    const aptCheck = checkAirportAirspace(ac, options.airports, 3000, aptRadiusNm);
+    if (aptCheck.isLanding) {
+      result.isConeWarning = false;
+      result.isLanding = true;
+      result.landingAirport = aptCheck.airport;
+      result.coneSuppressed = true;
+      result.suppressReason = 'airport_landing';
+      return result;
+    }
+  }
 
   const d = typeof distanceMeters === 'number' 
     ? distanceMeters 
@@ -177,7 +271,7 @@ function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMete
 
   const etaSeconds = Math.max(1, Math.round(dEntry / vMps));
 
-  // Ceiling evaluation
+  // Ceiling evaluation & Bidirectional vertical rate accounting
   const ceilingFt = typeof maxCeilingFeet === 'number' && maxCeilingFeet > 0 ? maxCeilingFeet : 2500;
   const alt = ac.altitude !== null && ac.altitude !== undefined 
     ? ac.altitude 
@@ -186,6 +280,18 @@ function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMete
   if (alt !== null) {
     const vRate = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : 0;
     const projectedAlt = alt + (vRate * (etaSeconds / 60));
+    result.verticalRate = vRate;
+    result.projectedAltitude = Math.round(projectedAlt);
+
+    // Climb-out suppression: If aircraft is climbing and projected to arrive safely above ceiling
+    if (vRate > 0 && projectedAlt > ceilingFt) {
+      result.isConeWarning = false;
+      result.isClimbingOut = true;
+      result.coneSuppressed = true;
+      result.suppressReason = 'climb_out_above_ceiling';
+      return result;
+    }
+
     // Must be either below ceiling now or descending into ceiling by arrival
     if (alt > ceilingFt && projectedAlt > ceilingFt) {
       return result;
@@ -218,6 +324,7 @@ class AdsbAirspaceTracker extends EventEmitter {
     this.tcpHost = options.tcpHost || '127.0.0.1';
     
     this.aircraft = new Map(); // hex -> aircraft state object
+    this.airports = new Map(); // id -> airport object {id, name, lat, lon, radiusNm, ceilingFt}
     this.totalPackets = 0;
     this.lastPacketTimestamp = 0;
     this.connected = false;
@@ -682,6 +789,13 @@ class AdsbAirspaceTracker extends EventEmitter {
     const coneDeviationDeg = typeof criteria.coneDeviationDeg === 'number' && criteria.coneDeviationDeg >= 0
       ? criteria.coneDeviationDeg
       : 15;
+    const suppressAirportLanding = criteria.suppressAirportLanding !== false;
+    const airportRadiusNm = typeof criteria.airportRadiusNm === 'number' && criteria.airportRadiusNm > 0
+      ? criteria.airportRadiusNm
+      : 4.0;
+    const airports = Array.isArray(criteria.airports) 
+      ? criteria.airports 
+      : (this.airports ? Array.from(this.airports.values()) : []);
     const includeSafe = criteria.includeSafe !== false;
 
     const hasValidHome = (homeLat !== 0 || homeLon !== 0) && Math.abs(homeLat) <= 90 && Math.abs(homeLon) <= 180;
@@ -710,6 +824,10 @@ class AdsbAirspaceTracker extends EventEmitter {
       let closingSpeedKts = null;
       let coneLengthMeters = 0;
       let offBoresightDeg = null;
+      let isLanding = false;
+      let landingAirport = null;
+      let coneSuppressed = false;
+      let projectedAltitude = null;
 
       if (hasValidHome && ac.latitude !== null && ac.longitude !== null) {
         distanceMeters = Math.round(calculateHaversineDistance(homeLat, homeLon, ac.latitude, ac.longitude));
@@ -745,10 +863,15 @@ class AdsbAirspaceTracker extends EventEmitter {
             radiusMeters,
             maxCeilingFeet,
             warningMinutes,
-            coneDeviationDeg
+            coneDeviationDeg,
+            { airports, suppressAirportLanding, airportRadiusNm }
           );
           coneLengthMeters = coneEval.coneLengthMeters;
           offBoresightDeg = coneEval.offBoresightDeg;
+          isLanding = coneEval.isLanding;
+          landingAirport = coneEval.landingAirport;
+          coneSuppressed = coneEval.coneSuppressed;
+          projectedAltitude = coneEval.projectedAltitude;
 
           if (coneEval.isConeWarning) {
             isConeWarning = true;
@@ -792,13 +915,17 @@ class AdsbAirspaceTracker extends EventEmitter {
           isWithinRadius,
           isBreached,
           isConeWarning,
+          isLanding,
+          landingAirport,
+          coneSuppressed,
+          projectedAltitude,
           etaSeconds,
           entryDistanceMeters,
           closingSpeedKts,
           coneLengthMeters,
           offBoresightDeg,
           breachReason,
-          status: isBreached ? 'breached' : (isConeWarning ? 'approaching' : 'safe'),
+          status: isBreached ? 'breached' : (isConeWarning ? 'approaching' : (isLanding ? 'landing' : 'safe')),
           history: Array.isArray(ac.history) ? ac.history : []
         });
       }
@@ -1203,6 +1330,7 @@ module.exports = {
   calculateDestinationPoint,
   shortestAngularDifference,
   evaluatePredictiveCone,
+  checkAirportAirspace,
   EARTH_RADIUS_METERS,
   METERS_PER_STATUTE_MILE,
   METERS_PER_NAUTICAL_MILE

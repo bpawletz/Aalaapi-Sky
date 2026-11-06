@@ -88,7 +88,7 @@ class AndroidAdsbBridge(private val context: Context, private val webView: WebVi
         }.toString()
     }
 
-    private suspend fun runTcpStreamingLoop(host: String, port: Int) {
+    private suspend fun CoroutineScope.runTcpStreamingLoop(host: String, port: Int) {
         while (isActive && isRunning) {
             var socket: Socket? = null
             try {
@@ -123,7 +123,7 @@ class AndroidAdsbBridge(private val context: Context, private val webView: WebVi
         }
     }
 
-    private suspend fun runHttpPollingLoop(host: String, port: Int) {
+    private suspend fun CoroutineScope.runHttpPollingLoop(host: String, port: Int) {
         val paths = listOf("/data/aircraft.json", "/tar1090/data/aircraft.json", "/aircraft.json")
         var workingPath = paths[0]
 
