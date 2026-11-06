@@ -49,7 +49,7 @@
     "description": "BATON ROUGE, LA, Saturday, November 7, 2026 through Saturday, November 7, 2026 Local",
     "mod_date": "11/05/2026 17:24:00",
     "mod_abs_time": "202611051724",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5946",
     "start_utc": "2026-11-07T17:15:00.000Z",
     "end_utc": "2026-11-08T00:15:59.000Z",
@@ -806,28 +806,6 @@
     "mod_abs_time": "201510080555",
     "is_new": "N",
     "gid": "9/2934"
-  },
-  {
-    "notam_id": "4/3634",
-    "facility": "ZJX",
-    "state": "FL",
-    "type": "SECURITY",
-    "description": "DISNEY WORLD THEME PARK, ORLANDO, FL",
-    "mod_date": "10/08/2015 00:55:00",
-    "mod_abs_time": "201510080055",
-    "is_new": "N",
-    "gid": "4/3634"
-  },
-  {
-    "notam_id": "4/3635",
-    "facility": "ZLA",
-    "state": "CA",
-    "type": "SECURITY",
-    "description": "DISNEYLAND THEME PARK, ANAHEIM,, CA",
-    "mod_date": "10/08/2015 00:55:00",
-    "mod_abs_time": "201510080055",
-    "is_new": "N",
-    "gid": "4/3635"
   },
   {
     "notam_id": "6/4933",

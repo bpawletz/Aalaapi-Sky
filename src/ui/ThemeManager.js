@@ -473,6 +473,9 @@ function initGeolocation() {
     if (getCurrentWaypoints()) {
       redrawCurrentMission();
     }
+    if (typeof AdsbAirspaceManager !== 'undefined' && typeof AdsbAirspaceManager.onOriginMoved === 'function') {
+      AdsbAirspaceManager.onOriginMoved();
+    }
   }
 
   // On page load — restore the last known location from localStorage so
@@ -487,7 +490,10 @@ function initGeolocation() {
     Logger.warn('Could not restore cached location:', e);
   }
 
-  if (!navigator.geolocation) {
+  const hasNativeLocation = typeof window !== 'undefined' && window.AalaapiAndroid &&
+    typeof window.AalaapiAndroid.getNativeLocation === 'function';
+
+  if (!navigator.geolocation && !hasNativeLocation) {
     if (label && !userLocation) label.textContent = 'Location Not Supported';
     if (btn) {
       btn.disabled = true;
@@ -496,46 +502,75 @@ function initGeolocation() {
     return;
   }
 
+  const notify = (msg, type) => {
+    if (typeof showToast === 'function') showToast(msg, type);
+  };
+
+  function onLocationFix(loc) {
+    // Persist fresh fix to localStorage for next session / mobile fallback
+    try {
+      localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(loc));
+    } catch (e) {
+      Logger.warn('Could not cache location:', e);
+    }
+    applyLocation(loc, false);
+    notify('📍 Located — map centered on your position', 'success');
+  }
+
+  function onLocationFailure(message) {
+    Logger.warn('Geolocation service failed:', message);
+    // If we have a cached location, fall back to it
+    try {
+      const cached = JSON.parse(localStorage.getItem(LOCATION_CACHE_KEY));
+      if (cached && typeof cached.lat === 'number') {
+        Logger.info('GPS unavailable - using cached location fallback.');
+        applyLocation(cached, true);
+        notify('📍 ' + message + ' — using last known location', 'info');
+        return;
+      }
+    } catch (e) { /* ignore */ }
+    if (label) label.textContent = 'Location Denied';
+    if (btn) {
+      btn.style.color = 'var(--accent-red, #ef4444)';
+      btn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+      btn.title = message;
+      btn.disabled = false;
+    }
+    notify('📍 ' + message, 'error');
+  }
+
+  // Native Android bridge callbacks (MainActivity.getNativeLocation)
+  if (typeof window !== 'undefined') {
+    window.onNativeLocation = (lat, lon) => onLocationFix({ lat: Number(lat), lon: Number(lon) });
+    window.onNativeLocationError = (message) => onLocationFailure(message || 'Location unavailable');
+  }
+
   if (btn) {
     btn.addEventListener('click', () => {
-      if (label) label.textContent = '⏳ Locating…';
+      if (label) label.textContent = 'Locating...';
       btn.disabled = true;
-      btn.title = 'Locating current GPS position…';
+      btn.title = 'Locating current GPS position...';
       btn.style.color = '';
       btn.style.borderColor = '';
+      notify('📍 Locating...', 'info');
+
+      if (hasNativeLocation) {
+        window.AalaapiAndroid.getNativeLocation();
+        // Watchdog: never leave the button stuck disabled if the native side never answers
+        setTimeout(() => {
+          if (btn.disabled) onLocationFailure('Location request timed out');
+        }, 20000);
+        return;
+      }
+
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const loc = {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
-          };
-          // Persist fresh fix to localStorage for next session / mobile fallback
-          try {
-            localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(loc));
-          } catch (e) {
-            Logger.warn('Could not cache location:', e);
-          }
-          applyLocation(loc, false);
-        },
-        (error) => {
-          Logger.warn("Geolocation service failed:", error);
-          // If we have a cached location, fall back silently to it
-          try {
-            const cached = JSON.parse(localStorage.getItem(LOCATION_CACHE_KEY));
-            if (cached && typeof cached.lat === 'number') {
-              Logger.info('GPS denied — using cached location fallback.');
-              applyLocation(cached, true);
-              return;
-            }
-          } catch (e) { /* ignore */ }
-          if (label) label.textContent = '✗ Location Denied';
-          if (btn) {
-            btn.style.color = 'var(--accent-red, #ef4444)';
-            btn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-            btn.title = 'Location access denied or unavailable';
-            btn.disabled = false;
-          }
-        },
+        (position) => onLocationFix({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude
+        }),
+        (error) => onLocationFailure(
+          error && error.code === 1 ? 'Location permission denied' : 'Location unavailable'
+        ),
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
     });

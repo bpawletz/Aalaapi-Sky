@@ -152,7 +152,9 @@ function initUIEventListeners() {
       'adsb-cones-toggle': 'ADS-B Predictive Heading Cones',
       'adsb-airport-landing-toggle': 'ADS-B Airport Landing Suppression',
       'adsb-airport-radius-slider': 'ADS-B Airport Airspace Radius',
-      'adsb-descent-gradient-toggle': 'ADS-B Descent Intrusion Gradient'
+      'adsb-descent-gradient-toggle': 'ADS-B Descent Intrusion Gradient',
+      'adsb-anchor-mode-select': 'ADS-B Alert Reference Anchor',
+      'adsb-show-proximity-ring-toggle': 'ADS-B Proximity Boundary Ring'
     };
     return map[id] || id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
@@ -343,7 +345,7 @@ function initUIEventListeners() {
     'global-max-altitude', 'global-rth-altitude', 'rc2-uuid',
     'acoustic-ambient-preset', 'acoustic-contour-display-mode', 'acoustic-map-overlay-toggle', 'acoustic-3d-overlay-toggle',
     'sun-sky-condition-select',
-    'adsb-radius-slider', 'adsb-ceiling-slider', 'adsb-warning-min-slider', 'adsb-cone-dev-slider', 'adsb-cones-toggle', 'adsb-airport-landing-toggle', 'adsb-airport-radius-slider', 'adsb-descent-gradient-toggle'
+    'adsb-radius-slider', 'adsb-ceiling-slider', 'adsb-warning-min-slider', 'adsb-cone-dev-slider', 'adsb-cones-toggle', 'adsb-airport-landing-toggle', 'adsb-airport-radius-slider', 'adsb-descent-gradient-toggle', 'adsb-anchor-mode-select', 'adsb-show-proximity-ring-toggle'
   ];
   additionalLayerControls.forEach(id => {
     const el = document.getElementById(id);

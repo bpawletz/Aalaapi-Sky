@@ -1,22 +1,33 @@
 package com.aalaapi.sky
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.media.AudioAttributes
 import android.os.Build
 import android.os.Bundle
+import android.os.Looper
+import android.speech.tts.TextToSpeech
+import android.webkit.GeolocationPermissions
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -26,6 +37,7 @@ import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -35,6 +47,30 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adsbBridge: AndroidAdsbBridge
     private lateinit var mdnsDiscovery: AndroidMdnsDiscovery
     private lateinit var mtpBridge: AndroidMtpBridge
+
+    // ── Location (Issue #249) ──
+    private var pendingGeoCallback: GeolocationPermissions.Callback? = null
+    private var pendingGeoOrigin: String? = null
+    private var pendingNativeLocation = false
+
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        val granted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        pendingGeoCallback?.invoke(pendingGeoOrigin, granted, false)
+        pendingGeoCallback = null
+        pendingGeoOrigin = null
+        if (pendingNativeLocation) {
+            pendingNativeLocation = false
+            if (granted) fetchNativeLocation() else notifyLocationError("Location permission denied")
+        }
+    }
+
+    // ── Text-to-speech (Issue #249) ──
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
+    private var pendingSpeech: Triple<String, Float, Float>? = null
 
     private val usbReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -63,6 +99,109 @@ class MainActivity : AppCompatActivity() {
                         mtpBridge.onPermissionGranted(device)
                     }
                 }
+            }
+        }
+    }
+
+    private fun hasLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    private fun requestLocationPermissions() {
+        locationPermissionLauncher.launch(
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+        )
+    }
+
+    private fun notifyLocation(loc: Location) {
+        val js = "if (window.onNativeLocation) { window.onNativeLocation(${loc.latitude}, ${loc.longitude}, ${loc.accuracy}); }"
+        webView.post { webView.evaluateJavascript(js, null) }
+    }
+
+    private fun notifyLocationError(message: String) {
+        val js = "if (window.onNativeLocationError) { window.onNativeLocationError(${JSONObject.quote(message)}); }"
+        webView.post { webView.evaluateJavascript(js, null) }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun fetchNativeLocation() {
+        val lm = getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+        if (lm == null) {
+            notifyLocationError("Location service unavailable on this device")
+            return
+        }
+        val provider = when {
+            lm.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
+            lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
+            else -> null
+        }
+        if (provider == null) {
+            val last = try { lm.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER) } catch (_: Exception) { null }
+            if (last != null) notifyLocation(last) else notifyLocationError("Location services are turned off")
+            return
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                lm.getCurrentLocation(provider, null, mainExecutor) { loc ->
+                    if (loc != null) notifyLocation(loc)
+                    else notifyLocationError("Could not determine location (no GPS fix)")
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                lm.requestSingleUpdate(provider, object : LocationListener {
+                    override fun onLocationChanged(location: Location) {
+                        notifyLocation(location)
+                    }
+                    @Deprecated("Deprecated in Java")
+                    override fun onStatusChanged(p: String?, status: Int, extras: Bundle?) {}
+                    override fun onProviderEnabled(p: String) {}
+                    override fun onProviderDisabled(p: String) {}
+                }, Looper.getMainLooper())
+            }
+        } catch (e: Exception) {
+            notifyLocationError(e.message ?: "Location request failed")
+        }
+    }
+
+    private fun notifyTtsError(message: String) {
+        val js = "if (window.onNativeTtsError) { window.onNativeTtsError(${JSONObject.quote(message)}); }"
+        webView.post { webView.evaluateJavascript(js, null) }
+    }
+
+    private fun doSpeak(text: String, rate: Float, pitch: Float) {
+        val engine = tts ?: return
+        engine.setSpeechRate(rate)
+        engine.setPitch(pitch)
+        engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "aalaapi-advisory")
+    }
+
+    private fun speakText(text: String, rate: Float, pitch: Float) {
+        runOnUiThread {
+            if (tts == null) {
+                pendingSpeech = Triple(text, rate, pitch)
+                tts = TextToSpeech(this) { status ->
+                    if (status == TextToSpeech.SUCCESS) {
+                        ttsReady = true
+                        tts?.language = Locale.getDefault()
+                        tts?.setAudioAttributes(
+                            AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .build()
+                        )
+                        pendingSpeech?.let { doSpeak(it.first, it.second, it.third) }
+                        pendingSpeech = null
+                    } else {
+                        tts = null
+        unregisterReceiver(usbReceiver)
+                        pendingSpeech = null
+                        notifyTtsError("No text-to-speech engine available (check Settings > Text-to-speech)")
+                    }
+                }
+            } else if (ttsReady) {
+                doSpeak(text, rate, pitch)
+            } else {
+                pendingSpeech = Triple(text, rate, pitch)
             }
         }
     }
@@ -151,6 +290,9 @@ class MainActivity : AppCompatActivity() {
             loadWithOverviewMode = true
             allowFileAccessFromFileURLs = true
             allowUniversalAccessFromFileURLs = true
+            setGeolocationEnabled(true)
+            // Allow ADS-B chimes (Web Audio) to play without a prior user tap (Issue #249)
+            mediaPlaybackRequiresUserGesture = false
         }
 
         webView.webViewClient = object : WebViewClient() {
@@ -162,7 +304,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        webView.webChromeClient = WebChromeClient()
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?
+            ) {
+                if (hasLocationPermission()) {
+                    callback?.invoke(origin, true, false)
+                } else {
+                    pendingGeoCallback = callback
+                    pendingGeoOrigin = origin
+                    requestLocationPermissions()
+                }
+            }
+        }
 
         // Register Javascript Interface: window.AalaapiAndroid
         webView.addJavascriptInterface(object {
@@ -185,6 +340,29 @@ class MainActivity : AppCompatActivity() {
             @JavascriptInterface
             fun getAdsbStatus(): String {
                 return adsbBridge.getStatusJson()
+            }
+
+            @JavascriptInterface
+            fun getNativeLocation() {
+                runOnUiThread {
+                    if (hasLocationPermission()) {
+                        fetchNativeLocation()
+                    } else {
+                        pendingNativeLocation = true
+                        requestLocationPermissions()
+                    }
+                }
+            }
+
+            @JavascriptInterface
+            fun speak(text: String, rate: Double, pitch: Double): Boolean {
+                speakText(text, rate.toFloat(), pitch.toFloat())
+                return true
+            }
+
+            @JavascriptInterface
+            fun stopSpeaking() {
+                runOnUiThread { tts?.stop() }
             }
 
             @JavascriptInterface
@@ -236,6 +414,9 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         remoteIdScanner.stopScan()
         adsbBridge.stop()
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
         unregisterReceiver(usbReceiver)
     }
 }

@@ -1,4 +1,4 @@
-const { describe, test, before, after } = require('node:test');
+const { describe, test, before, after, beforeEach } = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');
 const { chromium } = require('playwright');
@@ -4934,7 +4934,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   });
 
   test('E2E: TFR popover renders upcoming TFR card with countdown timer and schedule row (v1.201.0 - Issue #191)', async () => {
-    await page.evaluate(() => {
+    const cardState = await page.evaluate(() => {
       const mockUpcoming = {
         notamId: '6/2521',
         title: 'ATLANTA VIP EVENT',
@@ -4959,10 +4959,6 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       if (typeof window.updateTfrPanelUI === 'function') {
         window.updateTfrPanelUI([mockUpcoming], null, false);
       }
-    });
-    await page.waitForTimeout(100);
-
-    const cardState = await page.evaluate(() => {
       const badge = document.getElementById('pop-tfr-badge');
       const list = document.getElementById('pop-tfr-list');
       const card = list ? list.querySelector('.tfr-item-card.is-upcoming') : null;
@@ -12049,12 +12045,31 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         if (typeof restoreActiveWorkspacePlanning === 'function') {
           restoreActiveWorkspacePlanning();
         }
+        if (typeof AdsbAirspaceManager !== 'undefined') {
+          AdsbAirspaceManager.aircraft = [];
+          AdsbAirspaceManager.breachedAircraft = [];
+          AdsbAirspaceManager.approachingAircraft = [];
+          AdsbAirspaceManager.updateVisualBanner();
+          AdsbAirspaceManager.updateMapMarkers();
+        }
       });
       await page.waitForTimeout(200);
     });
   });
 
   describe('Issue #244: Predictive Trajectory Cones & Approaching Traffic Alerting', () => {
+    beforeEach(async () => {
+      await page.evaluate(() => {
+        if (typeof AdsbAirspaceManager !== 'undefined') {
+          AdsbAirspaceManager.aircraft = [];
+          AdsbAirspaceManager.breachedAircraft = [];
+          AdsbAirspaceManager.approachingAircraft = [];
+          AdsbAirspaceManager.updateVisualBanner();
+          AdsbAirspaceManager.updateMapMarkers();
+        }
+      });
+    });
+
     test('ADS-B drawer controls exist and update warning time and cone deviation', async () => {
       // Ensure controls exist in DOM
       const warnSlider = page.locator('#adsb-warning-min-slider');
@@ -12328,6 +12343,118 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         AdsbAirspaceManager.updateVisualBanner();
         AdsbAirspaceManager.updateMapMarkers();
         AdsbAirspaceManager.updateDrawerAircraftList();
+      }
+    });
+    await page.waitForTimeout(200);
+  });
+
+  test('Issue #250: Configurable Alert Reference Anchor, Real-Time Re-Anchoring & Visual Proximity Boundary Ring', async () => {
+    // Ensure grid center marker is placed
+    await page.evaluate(() => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.3215, -88.9950);
+      }
+    });
+    await page.waitForTimeout(200);
+
+    // 1. Open ADS-B drawer and switch to Settings tab
+    await page.evaluate(() => {
+      const toggle = document.getElementById('adsb-drawer-toggle');
+      if (toggle && !toggle.classList.contains('active')) toggle.click();
+      const settingsTabBtn = document.querySelector('.adsb-tab-btn[data-tab="settings"]');
+      if (settingsTabBtn) settingsTabBtn.click();
+    });
+    await page.waitForTimeout(300);
+
+    // 2. Verify UI elements exist
+    const anchorSelect = page.locator('#adsb-anchor-mode-select');
+    assert.strictEqual(await anchorSelect.count(), 1, '#adsb-anchor-mode-select should exist');
+    assert.strictEqual(await anchorSelect.inputValue(), 'auto', 'Anchor mode should default to auto');
+
+    const ringToggle = page.locator('#adsb-show-proximity-ring-toggle');
+    assert.strictEqual(await ringToggle.count(), 1, '#adsb-show-proximity-ring-toggle should exist');
+    assert.strictEqual(await ringToggle.isChecked(), true, 'Proximity ring toggle should default to checked');
+
+    const anchorBadge = page.locator('#adsb-active-anchor-badge');
+    assert.strictEqual(await anchorBadge.count(), 1, '#adsb-active-anchor-badge should exist in title area');
+    const badgeText = await anchorBadge.textContent();
+    assert.ok(badgeText.includes('Anchor:'), `Badge should contain 'Anchor:', got: ${badgeText}`);
+
+    // 3. Verify proximity boundary ring layer rendered on map
+    const ringExists = await page.evaluate(() => {
+      if (typeof AdsbAirspaceManager === 'undefined') return false;
+      AdsbAirspaceManager.updateProximityRing();
+      return !!AdsbAirspaceManager.proximityCircleLayer;
+    });
+    assert.strictEqual(ringExists, true, 'Proximity ring layer should be initialized on map');
+
+    // 4. Test switching anchor mode to 'pilot'
+    await page.evaluate(() => {
+      const sel = document.getElementById('adsb-anchor-mode-select');
+      if (sel) {
+        sel.value = 'pilot';
+        sel.dispatchEvent(new Event('change'));
+      }
+    });
+    await page.waitForTimeout(200);
+
+    const anchorModeSaved = await page.evaluate(() => AdsbAirspaceManager.alertAnchorMode);
+    assert.strictEqual(anchorModeSaved, 'pilot', 'alertAnchorMode should update to pilot');
+
+    // 5. Test toggling proximity ring visibility off and on
+    await page.evaluate(() => {
+      const toggle = document.getElementById('adsb-show-proximity-ring-toggle');
+      if (toggle) {
+        toggle.checked = false;
+        toggle.dispatchEvent(new Event('change'));
+      }
+    });
+    await page.waitForTimeout(200);
+
+    const ringRemoved = await page.evaluate(() => {
+      return !AdsbAirspaceManager.proximityCircleLayer;
+    });
+    assert.strictEqual(ringRemoved, true, 'Proximity ring layer should be destroyed when toggled off');
+
+    // Re-enable proximity ring
+    await page.evaluate(() => {
+      const toggle = document.getElementById('adsb-show-proximity-ring-toggle');
+      if (toggle) {
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change'));
+      }
+    });
+    await page.waitForTimeout(200);
+
+    const ringRestored = await page.evaluate(() => {
+      return !!AdsbAirspaceManager.proximityCircleLayer;
+    });
+    assert.strictEqual(ringRestored, true, 'Proximity ring layer should be restored when toggled back on');
+
+    // 6. Test real-time re-anchoring onOriginMoved() when origin moves
+    const reanchorWorked = await page.evaluate(() => {
+      if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.setLatLng) {
+        centerMarker.setLatLng([41.3250, -88.9900]);
+      }
+      AdsbAirspaceManager.alertAnchorMode = 'mission';
+      AdsbAirspaceManager.onOriginMoved();
+      const orig = AdsbAirspaceManager.getAlertOrigin();
+      const ringLL = AdsbAirspaceManager.proximityCircleLayer ? AdsbAirspaceManager.proximityCircleLayer.getLatLng() : null;
+      return {
+        source: orig.source,
+        lat: orig.lat,
+        ringLat: ringLL ? ringLL.lat : null
+      };
+    });
+    assert.strictEqual(reanchorWorked.source, 'mission', 'Origin should resolve to mission');
+    assert.ok(reanchorWorked.lat > 0, 'Origin lat should be positive');
+
+    // Restore anchor mode to 'auto'
+    await page.evaluate(() => {
+      const sel = document.getElementById('adsb-anchor-mode-select');
+      if (sel) {
+        sel.value = 'auto';
+        sel.dispatchEvent(new Event('change'));
       }
     });
     await page.waitForTimeout(200);

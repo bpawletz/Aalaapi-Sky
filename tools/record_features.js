@@ -4112,6 +4112,91 @@ const scenarios = [
       await page.waitForTimeout(600);
     }
   }
+,
+  {
+    id: 'feature_adsb_anchor_reanchoring',
+    name: 'Configurable Alert Reference Anchor, Real-Time Re-Anchoring & Proximity Boundary Ring',
+    description: 'Demonstrates configurable Alert Reference Anchor modes (Auto, Mission, Pilot, Live Drone), dynamic Leaflet proximity boundary ring around the alert origin, and immediate event-driven re-anchoring when moving flight center.',
+    issueRef: 'Issue #250',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // Open ADS-B drawer
+      await page.evaluate(() => {
+        const topbarBtn = document.getElementById('adsb-topbar-btn');
+        if (topbarBtn) topbarBtn.click();
+        const drawer = document.getElementById('adsb-control-drawer');
+        if (drawer) drawer.classList.remove('hidden', 'drawer-closed');
+      });
+      await page.waitForTimeout(800);
+
+      // Switch to Settings tab to showcase Anchor Mode selector and Proximity Ring toggle
+      await page.evaluate(() => {
+        const settingsTab = document.querySelector('.adsb-tab-btn[data-tab="settings"]');
+        if (settingsTab) settingsTab.click();
+      });
+      await page.waitForTimeout(1000);
+
+      // Switch Anchor to Pilot Location
+      await page.evaluate(() => {
+        const anchorSel = document.getElementById('adsb-anchor-mode-select');
+        if (anchorSel) {
+          anchorSel.value = 'pilot';
+          anchorSel.dispatchEvent(new Event('change'));
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // Switch back to Auto
+      await page.evaluate(() => {
+        const anchorSel = document.getElementById('adsb-anchor-mode-select');
+        if (anchorSel) {
+          anchorSel.value = 'auto';
+          anchorSel.dispatchEvent(new Event('change'));
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // Move mission center point to demonstrate real-time re-anchoring
+      await page.evaluate(() => {
+        if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.setLatLng) {
+          centerMarker.setLatLng([41.3250, -88.9900]);
+        }
+        if (typeof AdsbAirspaceManager !== 'undefined') {
+          AdsbAirspaceManager.onOriginMoved();
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // Capture screenshot preview
+      await page.screenshot({ path: 'recordings/feature_adsb_anchor_reanchoring_preview.png' });
+      await page.waitForTimeout(1000);
+
+      // Restore center point
+      await page.evaluate(() => {
+        if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.setLatLng) {
+          centerMarker.setLatLng([41.3215, -88.9950]);
+        }
+        if (typeof AdsbAirspaceManager !== 'undefined') {
+          AdsbAirspaceManager.onOriginMoved();
+        }
+      });
+      await page.waitForTimeout(500);
+
+      // Clean up drawer
+      await page.evaluate(() => {
+        const close = document.getElementById('adsb-drawer-close-btn') || document.querySelector('#adsb-control-drawer .popover-close-btn');
+        if (close) {
+          close.click();
+        } else {
+          const drawer = document.getElementById('adsb-control-drawer');
+          if (drawer) drawer.classList.add('hidden');
+        }
+      });
+      await page.waitForTimeout(600);
+    }
+  }
 ];
 
 /**

@@ -1,3 +1,57 @@
+## [1.226.0] - 2026-11-06
+
+Configurable Alert Reference Anchor, Real-Time Re-Anchoring & Visual Proximity Boundary Ring.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Configurable Alert Reference Anchor (Closes #250)**:
+  - Added an **Alert Reference Anchor** selector (`#adsb-anchor-mode-select`) in ADS-B Drawer Settings allowing the RPIC to select the alert coordinate origin:
+    - **Auto (Mission Center → Pilot GPS → Map Center)**: Prioritizes active mission target area when planned, falls back to device GPS or map center.
+    - **Mission Center (Flight Area Target)**: Strictly protects the drone's operating workspace volume (`centerMarker`).
+    - **Pilot Location (RPIC Device GPS)**: Strictly protects the pilot's physical ground station using browser or native device geolocation (`userLocation`).
+    - **Live Drone (Telemetry Tracking)**: Dynamically follows active telemetry drone coordinates.
+  - Active anchor origin badge (`#adsb-active-anchor-badge`) rendered in ADS-B Drawer indicating the exact anchor source in real time.
+- **Visual ADS-B Proximity Boundary Ring on 2D Map (Closes #250)**:
+  - Renders an interactive Leaflet circle layer on the map visualizing the configured proximity boundary (e.g. 3.0 miles).
+  - Dynamically centers on the active alert origin and smoothly tracks `centerMarker` dragging, device GPS updates, or telemetry in real time.
+  - Interactive perimeter styling: cyan dashed line during normal operations, shifting to pulsating amber or crimson when approaching or breached traffic is detected.
+  - Added **Show Proximity Ring** toggle (`#adsb-show-proximity-ring-toggle`) in Drawer Settings with full Undo/Redo integration.
+- **Immediate Real-Time Origin Re-Anchoring (Closes #250)**:
+  - Dragging or relocating the mission center (`centerMarker`) or updating device GPS location now immediately recomputes distances, bearings, ETAs, and predictive trajectory cones without waiting for periodic polling ticks.
+  - Replaced the coarse 555-meter SSE deadzone with debounced real-time re-subscription (`> 25m`).
+
+#### Under the Hood & Technical Details
+- **src/bridge/ApiClient.js**:
+  - Implemented `AdsbAirspaceManager.getAlertOrigin()` unifying alert coordinates across stream connection, periodic polling, client cone evaluation, and external feeds.
+  - Implemented `AdsbAirspaceManager.onOriginMoved()` and debounced `connectStream()` re-subscription.
+  - Implemented `AdsbAirspaceManager.updateProximityRing()` managing dynamic Leaflet circle lifecycle and state-dependent border styling.
+  - Added `alertAnchorMode` and `showProximityRing` properties with persistence in `localStorage`.
+- **src/map/MapInteraction.js**:
+  - Wired `centerMarker.on('drag')` and `centerMarker.on('dragend')` to notify `AdsbAirspaceManager.onOriginMoved()`.
+  - Wired `setCenterPoint()` to invoke `AdsbAirspaceManager.onOriginMoved()`.
+- **src/ui/ThemeManager.js**:
+  - Wired `applyLocation()` ("Locate Me" / GPS updates) to notify `AdsbAirspaceManager.onOriginMoved()`.
+- **src/ui/EventBindings.js**:
+  - Registered `#adsb-anchor-mode-select` and `#adsb-show-proximity-ring-toggle` with `wireUndoPropertyTracking`.
+
+## [1.225.1] - 2026-11-06
+
+Android Locate Button & ADS-B Alert Audio Fix.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Locate Button on Android (Closes #249)**: Tapping the topbar Locate pin now prompts for location permission, centers the map on your position, and shows a visible toast ("Located", "Location permission denied", "Location services are turned off") instead of failing silently.
+- **ADS-B Chime & Voice Advisories on Android (Closes #249)**: Traffic chimes now play without needing a prior tap, and spoken advisories use the device's native text-to-speech engine. The existing **Test Audio** button in the ADS-B drawer plays both so you can confirm sound on-device. If no TTS engine is installed, a toast explains how to enable one.
+
+#### Under the Hood & Technical Details
+- **android/app/src/main/java/com/aalaapi/sky/MainActivity.kt**: Custom `WebChromeClient.onGeolocationPermissionsShowPrompt` with runtime `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION` request (`ActivityResultContracts.RequestMultiplePermissions`); `mediaPlaybackRequiresUserGesture = false`; new `@JavascriptInterface` methods `getNativeLocation()` (LocationManager fallback, replies via `window.onNativeLocation` / `window.onNativeLocationError`), `speak(text, rate, pitch)` and `stopSpeaking()` backed by `TextToSpeech` (errors via `window.onNativeTtsError`); TTS shutdown in `onDestroy`.
+- **android/app/src/main/AndroidManifest.xml**: Added `<queries>` entry for `android.intent.action.TTS_SERVICE` (Android 11+ engine discovery).
+- **src/ui/ThemeManager.js**: `initGeolocation()` routes to the native bridge when present, adds toast feedback and a 20 s watchdog so the button never stays disabled.
+- **src/bridge/ApiClient.js**: `playVoiceAdvisory()` prefers `window.AalaapiAndroid.speak`, falls back to `speechSynthesis`, and logs instead of swallowing failures.
+- **src/bridge/AndroidNativeBridge.js**: `installAudioUnlock()` resumes the Web Audio context on first pointer/touch/key gesture; `window.onNativeTtsError` toast handler.
+
 ## [1.225.0] - 2026-11-06
 
 Descending Aircraft Dynamic Gradient Cones & Airspace Intrusion Rate Alerting Release.

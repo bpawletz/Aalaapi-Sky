@@ -320,11 +320,17 @@ function setGridCenter(lat, lng) {
         weatherStationLine.setLatLngs([centerMarker.getLatLng(), weatherStationMarker.getLatLng()]);
       }
       updateGrid();
+      if (typeof AdsbAirspaceManager !== 'undefined' && typeof AdsbAirspaceManager.onOriginMoved === 'function') {
+        AdsbAirspaceManager.onOriginMoved();
+      }
     });
     centerMarker.on('dragend', () => {
       centerMarker.openPopup();
       if (typeof renderCorridorNodeTable === 'function') {
         renderCorridorNodeTable();
+      }
+      if (typeof AdsbAirspaceManager !== 'undefined' && typeof AdsbAirspaceManager.onOriginMoved === 'function') {
+        AdsbAirspaceManager.onOriginMoved();
       }
     });
     centerMarker.on('click', (e) => {
@@ -342,6 +348,9 @@ function setGridCenter(lat, lng) {
   updatePoiListUI();
   updateGrid();
   updateOpenSkyLink();
+  if (typeof AdsbAirspaceManager !== 'undefined' && typeof AdsbAirspaceManager.onOriginMoved === 'function') {
+    AdsbAirspaceManager.onOriginMoved();
+  }
   if (typeof renderCorridorNodeTable === 'function') {
     renderCorridorNodeTable();
   }

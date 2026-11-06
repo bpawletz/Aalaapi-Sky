@@ -41585,10 +41585,11 @@ describe('Issue #248 & v1.225.0: Dynamic Gradient Trajectory Cones for Descendin
     assertVersionConsistency('1.225.0');
   });
 
-  test('Android build.gradle.kts matches version 1.225.0 and versionCode 12250', () => {
+  test('Android build.gradle.kts matches version >= 1.225.0 and versionCode >= 12250', () => {
     const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
-    assert.ok(gradleKts.includes('versionCode = 12250'), 'build.gradle.kts must have versionCode 12250');
-    assert.ok(gradleKts.includes('versionName = "1.225.0"'), 'build.gradle.kts must have versionName "1.225.0"');
+    const m = gradleKts.match(/versionCode = (\d+)/);
+    assert.ok(m && parseInt(m[1]) >= 12250, 'build.gradle.kts must have versionCode >= 12250');
+    assert.ok(gradleKts.match(/versionName = "1\.\d+\.\d+"/), 'build.gradle.kts must have valid versionName');
   });
 
   test('AdsbAirspaceManager evaluates descent rates and classifies severity tiers', () => {
@@ -41724,5 +41725,329 @@ describe('Issue #248 & v1.225.0: Dynamic Gradient Trajectory Cones for Descendin
     assert.ok(css.includes('.adsb-vrate-badge.descending-moderate'), 'index.css must include descending-moderate vrate style');
     assert.ok(css.includes('.adsb-vrate-badge.descending-severe'), 'index.css must include descending-severe vrate style');
     assert.ok(css.includes('.adsb-cone-polygon.descent-gradient'), 'index.css must include .adsb-cone-polygon.descent-gradient');
+  });
+});
+
+describe('Issue #249 & v1.225.1: Android Locate Button & ADS-B Alert Audio Suite', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.225.1', () => {
+    assertVersionConsistency('1.225.1');
+  });
+
+  test('Android build.gradle.kts has versionCode >= 12251', () => {
+    const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
+    const m = gradleKts.match(/versionCode = (\d+)/);
+    assert.ok(m && parseInt(m[1]) >= 12251, 'versionCode must be >= 12251');
+  });
+
+  test('MainActivity.kt grants WebView geolocation via runtime permission request', () => {
+    const kt = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/java/com/aalaapi/sky/MainActivity.kt'), 'utf8');
+    assert.ok(kt.includes('onGeolocationPermissionsShowPrompt'), 'Must override onGeolocationPermissionsShowPrompt');
+    assert.ok(kt.includes('RequestMultiplePermissions'), 'Must request location permissions at runtime');
+    assert.ok(kt.includes('Manifest.permission.ACCESS_FINE_LOCATION'), 'Must request ACCESS_FINE_LOCATION');
+    assert.ok(kt.includes('fun getNativeLocation()'), 'Must expose getNativeLocation fallback');
+    assert.ok(kt.includes('window.onNativeLocation'), 'Must reply via window.onNativeLocation');
+    assert.ok(kt.includes('window.onNativeLocationError'), 'Must reply via window.onNativeLocationError');
+  });
+
+  test('MainActivity.kt enables ungated media playback and native TextToSpeech bridge', () => {
+    const kt = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/java/com/aalaapi/sky/MainActivity.kt'), 'utf8');
+    assert.ok(kt.includes('mediaPlaybackRequiresUserGesture = false'), 'Must allow media playback without a user gesture');
+    assert.ok(kt.includes('fun speak(text: String, rate: Double, pitch: Double): Boolean'), 'Must expose speak()');
+    assert.ok(kt.includes('fun stopSpeaking()'), 'Must expose stopSpeaking()');
+    assert.ok(kt.includes('TextToSpeech('), 'Must back speak() with TextToSpeech');
+    assert.ok(kt.includes('tts?.shutdown()'), 'Must shut TTS down in onDestroy');
+    assert.ok(kt.includes('unregisterReceiver(usbReceiver)'), 'Must still unregister USB receiver');
+  });
+
+  test('AndroidManifest.xml declares TTS_SERVICE query for Android 11+', () => {
+    const manifest = fs.readFileSync(path.resolve(__dirname, 'android/app/src/main/AndroidManifest.xml'), 'utf8');
+    assert.ok(manifest.includes('android.intent.action.TTS_SERVICE'), 'Manifest must query TTS_SERVICE');
+  });
+
+  test('ThemeManager.initGeolocation routes to native bridge and gives visible toast feedback', () => {
+    const src = fs.readFileSync(path.resolve(__dirname, 'src/ui/ThemeManager.js'), 'utf8');
+    assert.ok(src.includes('window.AalaapiAndroid.getNativeLocation()'), 'Locate must call native getNativeLocation');
+    assert.ok(src.includes('window.onNativeLocation = '), 'Must register window.onNativeLocation');
+    assert.ok(src.includes('window.onNativeLocationError = '), 'Must register window.onNativeLocationError');
+    assert.ok(src.includes('Location permission denied'), 'Must surface a permission-denied message');
+    assert.ok(src.includes("showToast(msg, type)"), 'Must surface feedback with showToast');
+  });
+
+  test('playVoiceAdvisory uses native AalaapiAndroid.speak when available', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+    const prevWindow = global.window;
+    const spoken = [];
+    global.window = {
+      AalaapiAndroid: { speak: (text, rate, pitch) => { spoken.push({ text, rate, pitch }); return true; } }
+    };
+    try {
+      AdsbAirspaceManager.playVoiceAdvisory({
+        callsign: 'UAL452', distanceMiles: 1.5, distanceMeters: 2414, altitude: 1850, bearingCardinal: 'NE'
+      });
+    } finally {
+      global.window = prevWindow;
+    }
+    assert.strictEqual(spoken.length, 1, 'Native speak must be invoked once');
+    assert.ok(spoken[0].text.includes('UAL'), 'Spoken text must include the callsign');
+    assert.ok(spoken[0].rate > 0 && spoken[0].pitch > 0, 'Rate and pitch must be positive numbers');
+  });
+
+  test('playVoiceAdvisory falls back to speechSynthesis when no native bridge exists', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+    const prevWindow = global.window;
+    const prevCtor = global.SpeechSynthesisUtterance;
+    const calls = { cancel: 0, speak: 0 };
+    global.SpeechSynthesisUtterance = function (text) { this.text = text; };
+    global.window = { speechSynthesis: { cancel: () => { calls.cancel++; }, speak: () => { calls.speak++; } } };
+    try {
+      AdsbAirspaceManager.playVoiceAdvisory({
+        callsign: 'N123AB', distanceMiles: 2, distanceMeters: 3218, altitude: 900, bearingCardinal: 'S'
+      });
+    } finally {
+      global.window = prevWindow;
+      global.SpeechSynthesisUtterance = prevCtor;
+    }
+    assert.strictEqual(calls.cancel, 1, 'speechSynthesis.cancel must be called');
+    assert.strictEqual(calls.speak, 1, 'speechSynthesis.speak must be called');
+  });
+
+  test('AndroidNativeBridge.installAudioUnlock resumes Web Audio on the first user gesture', () => {
+    const { AndroidNativeBridge } = require('./src/bridge/AndroidNativeBridge.js');
+    const prevDoc = global.document;
+    // Resolve the same AdsbAirspaceManager binding the bridge sees (bundle global lexical scope or global property)
+    let mgr = (0, eval)("typeof AdsbAirspaceManager !== 'undefined' ? AdsbAirspaceManager : null");
+    const createdStub = !mgr;
+    if (createdStub) { mgr = {}; global.AdsbAirspaceManager = mgr; }
+    const prevInit = mgr.initAudioContext;
+    const handlers = {};
+    let initCalls = 0;
+    global.document = {
+      addEventListener: (type, fn) => { handlers[type] = fn; },
+      removeEventListener: () => {}
+    };
+    mgr.initAudioContext = () => { initCalls++; };
+    AndroidNativeBridge._audioUnlockInstalled = false;
+    try {
+      AndroidNativeBridge.installAudioUnlock();
+      assert.strictEqual(typeof handlers.pointerdown, 'function', 'Must listen for pointerdown');
+      assert.strictEqual(typeof handlers.touchend, 'function', 'Must listen for touchend');
+      handlers.pointerdown();
+      assert.strictEqual(initCalls, 1, 'First gesture must initialise the audio context');
+    } finally {
+      global.document = prevDoc;
+      if (createdStub) { delete global.AdsbAirspaceManager; } else { mgr.initAudioContext = prevInit; }
+      AndroidNativeBridge._audioUnlockInstalled = false;
+    }
+  });
+});
+
+describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time Re-Anchoring & Visual Proximity Boundary Ring', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.226.0', () => {
+    assertVersionConsistency('1.226.0');
+  });
+
+  test('Android build.gradle.kts has versionCode >= 12260', () => {
+    const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
+    const m = gradleKts.match(/versionCode = (\d+)/);
+    assert.ok(m && parseInt(m[1]) >= 12260, 'versionCode must be >= 12260');
+  });
+
+  test('AdsbAirspaceManager resolves alert origins according to hierarchy and anchor mode', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+    
+    // Save globals
+    const prevCenter = global.centerMarker;
+    const prevUserLoc = global.userLocation;
+    const prevMap = global.map;
+
+    try {
+      // 1. Auto mode with centerMarker placed
+      AdsbAirspaceManager.alertAnchorMode = 'auto';
+      global.centerMarker = { getLatLng: () => ({ lat: 41.3215, lng: -88.9950 }) };
+      global.userLocation = { lat: 42.0000, lon: -89.0000 };
+      
+      let orig = AdsbAirspaceManager.getAlertOrigin();
+      assert.strictEqual(orig.source, 'mission');
+      assert.strictEqual(orig.lat, 41.3215);
+      assert.strictEqual(orig.lon, -88.9950);
+
+      // 2. Explicit 'pilot' mode selects userLocation even if centerMarker is set
+      AdsbAirspaceManager.alertAnchorMode = 'pilot';
+      orig = AdsbAirspaceManager.getAlertOrigin();
+      assert.strictEqual(orig.source, 'pilot');
+      assert.strictEqual(orig.lat, 42.0000);
+      assert.strictEqual(orig.lon, -89.0000);
+
+      // 3. Auto mode with no centerMarker falls back to userLocation
+      AdsbAirspaceManager.alertAnchorMode = 'auto';
+      try { vm.runInThisContext('centerMarker = null;'); } catch (_) {}
+      global.centerMarker = null;
+      if (typeof window !== 'undefined') window.centerMarker = null;
+      if (typeof globalThis !== 'undefined') globalThis.centerMarker = null;
+      orig = AdsbAirspaceManager.getAlertOrigin();
+      assert.strictEqual(orig.source, 'pilot');
+      assert.strictEqual(orig.lat, 42.0000);
+
+      // 4. Auto mode with no userLocation falls back to map center
+      try { vm.runInThisContext('userLocation = null;'); } catch (_) {}
+      global.userLocation = null;
+      if (typeof window !== 'undefined') window.userLocation = null;
+      if (typeof globalThis !== 'undefined') globalThis.userLocation = null;
+      global.map = { getCenter: () => ({ lat: 41.5000, lng: -88.5000 }) };
+      orig = AdsbAirspaceManager.getAlertOrigin();
+      assert.strictEqual(orig.source, 'map');
+      assert.strictEqual(orig.lat, 41.5000);
+
+      // 5. Explicit 'mission' mode with centerMarker
+      AdsbAirspaceManager.alertAnchorMode = 'mission';
+      global.centerMarker = { getLatLng: () => ({ lat: 41.3215, lng: -88.9950 }) };
+      orig = AdsbAirspaceManager.getAlertOrigin();
+      assert.strictEqual(orig.source, 'mission');
+      assert.strictEqual(orig.label, 'Mission Center');
+    } finally {
+      if (prevCenter !== undefined) global.centerMarker = prevCenter; else delete global.centerMarker;
+      if (prevUserLoc !== undefined) global.userLocation = prevUserLoc; else delete global.userLocation;
+      if (prevMap !== undefined) global.map = prevMap; else delete global.map;
+    }
+  });
+
+  test('onOriginMoved immediately re-anchors aircraft metrics and triggers redraw', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+    
+    AdsbAirspaceManager.alertAnchorMode = 'auto';
+    global.centerMarker = { getLatLng: () => ({ lat: 41.3215, lng: -88.9950 }) };
+
+    // Setup dummy aircraft
+    AdsbAirspaceManager.aircraft = [
+      {
+        hex: 'A12345',
+        callsign: 'TEST01',
+        latitude: 41.3300,
+        longitude: -88.9950,
+        altitude: 2000,
+        track: 180,
+        speed: 120
+      }
+    ];
+
+    let updateCalled = false;
+    const origUpdate = AdsbAirspaceManager.updateMapMarkers;
+    AdsbAirspaceManager.updateMapMarkers = () => { updateCalled = true; };
+
+    try {
+      // Call onOriginMoved
+      AdsbAirspaceManager.onOriginMoved();
+      assert.ok(updateCalled, 'updateMapMarkers must be called on origin move');
+      assert.ok(AdsbAirspaceManager.aircraft[0].distanceMeters > 0, 'distanceMeters must be recalculated');
+      assert.ok(AdsbAirspaceManager.aircraft[0].distanceMiles > 0, 'distanceMiles must be recalculated');
+      assert.ok(AdsbAirspaceManager.aircraft[0].bearingCardinal, 'bearingCardinal must be recalculated');
+    } finally {
+      AdsbAirspaceManager.updateMapMarkers = origUpdate;
+      delete global.centerMarker;
+    }
+  });
+
+  test('Visual proximity ring initializes, tracks radius, and reacts to threat severity', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+    
+    // Mock L.circle and Leaflet layerGroup
+    const circleStyles = [];
+    const mockCircle = {
+      setLatLng: (ll) => { mockCircle._latlng = ll; return mockCircle; },
+      setRadius: (r) => { mockCircle._radius = r; return mockCircle; },
+      setStyle: (s) => { circleStyles.push(s); return mockCircle; },
+      addTo: (grp) => { grp.addLayer(mockCircle); return mockCircle; },
+      getElement: () => mockElement,
+      _latlng: null,
+      _radius: 0
+    };
+    const classList = new Set();
+    const mockElement = {
+      classList: {
+        add: (c) => classList.add(c),
+        remove: (c) => classList.delete(c),
+        contains: (c) => classList.has(c)
+      }
+    };
+    
+    const prevL = global.L;
+    const prevMap = global.map;
+    global.map = { getCenter: () => ({ lat: 41.3215, lng: -88.9950 }) };
+    global.L = {
+      circle: (latlng, opts) => {
+        mockCircle._latlng = { lat: latlng[0], lng: latlng[1] };
+        mockCircle._radius = opts.radius;
+        return mockCircle;
+      }
+    };
+
+    const addedLayers = [];
+    AdsbAirspaceManager.layerGroup = {
+      addLayer: (l) => addedLayers.push(l),
+      removeLayer: (l) => {
+        const idx = addedLayers.indexOf(l);
+        if (idx !== -1) addedLayers.splice(idx, 1);
+      }
+    };
+
+    AdsbAirspaceManager.proximityCircleLayer = null;
+    AdsbAirspaceManager.showProximityRing = true;
+    AdsbAirspaceManager.radiusMiles = 3.0;
+    AdsbAirspaceManager.breachedAircraft = [];
+    AdsbAirspaceManager.approachingAircraft = [];
+    AdsbAirspaceManager.aircraft = [];
+    AdsbAirspaceManager.hasActiveThreat = false;
+    AdsbAirspaceManager.hasActiveConeWarning = false;
+    global.centerMarker = { getLatLng: () => ({ lat: 41.3215, lng: -88.9950 }) };
+
+    try {
+      // 1. Initial creation
+      AdsbAirspaceManager.updateProximityRing();
+      assert.ok(AdsbAirspaceManager.proximityCircleLayer, 'Proximity circle must be created');
+      assert.strictEqual(mockCircle._latlng.lat, 41.3215);
+      // 3.0 miles = ~4828.03 meters
+      assert.ok(Math.abs(mockCircle._radius - 4828.03) < 1.0, 'Radius in meters must match 3 miles');
+
+      // 2. Threat severity: Approaching (amber)
+      AdsbAirspaceManager.hasActiveConeWarning = true;
+      AdsbAirspaceManager.hasActiveThreat = false;
+      AdsbAirspaceManager.updateProximityRing();
+      assert.ok(classList.has('approaching'), 'Ring element must have approaching class');
+      assert.ok(!classList.has('breached'), 'Ring element must not have breached class');
+
+      // 3. Threat severity: Breached (red)
+      AdsbAirspaceManager.hasActiveThreat = true;
+      AdsbAirspaceManager.updateProximityRing();
+      assert.ok(classList.has('breached'), 'Ring element must have breached class');
+
+      // 4. Nominal state
+      AdsbAirspaceManager.hasActiveThreat = false;
+      AdsbAirspaceManager.hasActiveConeWarning = false;
+      AdsbAirspaceManager.updateProximityRing();
+      assert.ok(!classList.has('breached') && !classList.has('approaching'), 'Ring element nominal');
+
+      // 5. Hide ring
+      AdsbAirspaceManager.showProximityRing = false;
+      AdsbAirspaceManager.updateProximityRing();
+      assert.strictEqual(addedLayers.length, 0, 'Ring should be removed when showProximityRing is false');
+    } finally {
+      global.L = prevL;
+      global.map = prevMap;
+      delete global.centerMarker;
+      AdsbAirspaceManager.proximityCircleLayer = null;
+    }
+  });
+
+  test('UI controls and EventBindings register ADS-B Anchor and Proximity Ring for Undo/Redo', () => {
+    const eventBindingsSrc = fs.readFileSync(path.resolve(__dirname, 'src/ui/EventBindings.js'), 'utf8');
+    assert.ok(eventBindingsSrc.includes("'adsb-anchor-mode-select': 'ADS-B Alert Reference Anchor'"), 'Anchor select label registered');
+    assert.ok(eventBindingsSrc.includes("'adsb-show-proximity-ring-toggle': 'ADS-B Proximity Boundary Ring'"), 'Ring toggle label registered');
+    assert.ok(eventBindingsSrc.includes("'adsb-anchor-mode-select'"), 'Anchor select in additionalLayerControls');
+    assert.ok(eventBindingsSrc.includes("'adsb-show-proximity-ring-toggle'"), 'Ring toggle in additionalLayerControls');
+
+    const templateSrc = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateSrc.includes('id="adsb-anchor-mode-select"'), 'Template includes adsb-anchor-mode-select');
+    assert.ok(templateSrc.includes('id="adsb-show-proximity-ring-toggle"'), 'Template includes adsb-show-proximity-ring-toggle');
+    assert.ok(templateSrc.includes('id="adsb-active-anchor-badge"'), 'Template includes adsb-active-anchor-badge');
   });
 });
