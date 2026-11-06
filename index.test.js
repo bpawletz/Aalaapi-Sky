@@ -40842,7 +40842,7 @@ describe('Issue #236 & v1.222.0: Automated Zero-Cost Android APK Cloud Compilati
 
     assert.ok(content.includes('workflow_dispatch:'), 'Must support manual workflow_dispatch trigger');
     assert.ok(content.includes('actions/setup-java@v4'), 'Must setup Java 17');
-    assert.ok(content.includes('android-actions/setup-android@v3'), 'Must setup Android SDK');
+    assert.ok(content.includes('local.properties'), 'Must configure sdk.dir in local.properties');
     assert.ok(content.includes('gradle/actions/setup-gradle@v4'), 'Must setup Gradle 8.9');
     assert.ok(content.includes('gradle assembleDebug'), 'Must execute assembleDebug');
     assert.ok(content.includes('actions/upload-artifact@v4'), 'Must upload APK artifact');
@@ -40862,5 +40862,21 @@ describe('Issue #236 & v1.222.0: Automated Zero-Cost Android APK Cloud Compilati
     const content = fs.readFileSync(guidePath, 'utf8');
     assert.ok(content.includes('Zero-Install Cloud Build via GitHub Actions'), 'Must include GitHub Actions cloud build instructions');
     assert.ok(content.includes('AalaapiSky-debug-apk'), 'Must document artifact download');
+  });
+});
+
+describe('Issue #237 & v1.222.1: GitHub Actions Android Cloud Build sdkmanager Exit Code 1 Fix', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.222.1', () => {
+    assertVersionConsistency('1.222.1');
+  });
+
+  test('android-build.yml uses runner native Android SDK with local.properties instead of redundant setup-android action', () => {
+    const workflowPath = path.join(__dirname, '.github', 'workflows', 'android-build.yml');
+    const content = fs.readFileSync(workflowPath, 'utf8');
+
+    assert.ok(!content.includes('android-actions/setup-android'), 'Must not include problematic setup-android action');
+    assert.ok(content.includes('local.properties'), 'Must configure sdk.dir in local.properties');
+    assert.ok(content.includes('actions/setup-java@v4'), 'Must setup JDK 17');
+    assert.ok(content.includes('gradle/actions/setup-gradle@v4'), 'Must setup Gradle 8.9');
   });
 });
