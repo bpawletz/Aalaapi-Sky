@@ -1,3 +1,32 @@
+## [1.225.0] - 2026-11-06
+
+Descending Aircraft Dynamic Gradient Cones & Airspace Intrusion Rate Alerting Release.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Dynamic Gradient Trajectory Cones for Descending Aircraft (Closes #248)**:
+  - Predictive forward trajectory cones for descending aircraft ($v_{\text{vert}} \le -200\text{ fpm}$) render an axial SVG gradient indicating the rate of vertical and horizontal intrusion into pilot airspace.
+  - The cone begins at the aircraft apex with the aircraft's current threat color (Sky Blue `#38bdf8` for safe cruising, Amber `#f59e0b` for perimeter approach, or Red `#ef4444` for perimeter breach), smoothly transitioning to an intensified intrusion color at the perimeter front.
+  - Three distinct descent severity tiers are modeled:
+    - **Mild Descent ($-200$ to $-500\text{ fpm}$)**: Transitions from status color to warm amber (`#f59e0b`).
+    - **Moderate Descent ($-500$ to $-1,200\text{ fpm}$)**: Transitions from status color to deep orange (`#ea580c`).
+    - **Severe Dive ($< -1,200\text{ fpm}$)**: Transitions from status color to high-contrast crimson (`#ef4444`) with heightened opacity and highlighted centerline.
+  - Added **Descent Intrusion Gradient Cones** toggle (`#adsb-descent-gradient-toggle`, default enabled) in ADS-B Drawer Settings with full Undo/Redo tracking.
+  - Added **Simulate Descending Traffic** button (`#adsb-sim-descending-btn`) in ADS-B Drawer Operations for rapid pre-flight visual verification.
+  - Displays vertical descent rate badge (e.g. `⤓ -850 fpm`) on aircraft cards and map marker tooltips.
+
+#### Under the Hood & Technical Details
+- **tools/companion/adsb_tracker.js**:
+  - Enhanced `evaluatePredictiveCone()` to compute `isDescending`, `descentSeverity`, and `verticalRateFpm` metrics.
+- **src/bridge/ApiClient.js**:
+  - Implemented dynamic SVG `<linearGradient>` management inside Leaflet `overlayPane <defs>` using `userSpaceOnUse` coordinates aligned from aircraft apex $(x_1, y_1)$ to centerline destination $(x_2, y_2)$.
+  - Bound Leaflet `move` and `zoom` handlers to maintain gradient coordinate alignment during smooth panning and zooming.
+  - Updated `updateMapMarkers()` to apply `url(#adsb-cone-grad-${hex})` for descending aircraft.
+  - Added `simulateAircraft('descending')` scenario.
+- **src/ui/EventBindings.js**:
+  - Registered `#adsb-descent-gradient-toggle` with `wireUndoPropertyTracking` and contextual undo label.
+
 ## [1.224.1] - 2026-11-06
 
 Android APK Coroutine Receiver Build Fix.

@@ -208,6 +208,9 @@ function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMete
     isLanding: false,
     landingAirport: null,
     isClimbingOut: false,
+    isDescending: false,
+    descentSeverity: null,
+    verticalRateFpm: null,
     coneSuppressed: false,
     suppressReason: null,
     projectedAltitude: null,
@@ -218,6 +221,16 @@ function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMete
   const speedKts = typeof ac.speed === 'number' && !isNaN(ac.speed) ? ac.speed : 0;
   const trackDeg = typeof ac.track === 'number' && !isNaN(ac.track) ? ac.track : null;
   if (speedKts <= 0 || trackDeg === null) return result;
+
+  const vRate = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : 0;
+  result.verticalRate = vRate;
+  result.verticalRateFpm = Math.round(vRate);
+  if (vRate <= -200) {
+    result.isDescending = true;
+    if (vRate < -1200) result.descentSeverity = 'severe';
+    else if (vRate < -500) result.descentSeverity = 'moderate';
+    else result.descentSeverity = 'mild';
+  }
 
   const warnMin = typeof warningMinutes === 'number' && warningMinutes > 0 ? warningMinutes : 2.0;
   const devDeg = typeof coneDeviationDeg === 'number' && coneDeviationDeg >= 0 ? coneDeviationDeg : 15;
@@ -277,10 +290,10 @@ function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMete
     ? ac.altitude 
     : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
 
+
+
   if (alt !== null) {
-    const vRate = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : 0;
     const projectedAlt = alt + (vRate * (etaSeconds / 60));
-    result.verticalRate = vRate;
     result.projectedAltitude = Math.round(projectedAlt);
 
     // Climb-out suppression: If aircraft is climbing and projected to arrive safely above ceiling
@@ -826,8 +839,20 @@ class AdsbAirspaceTracker extends EventEmitter {
       let offBoresightDeg = null;
       let isLanding = false;
       let landingAirport = null;
+      let isDescending = false;
+      let descentSeverity = null;
+      let verticalRateFpm = null;
       let coneSuppressed = false;
       let projectedAltitude = null;
+
+      const vRate = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : 0;
+      verticalRateFpm = Math.round(vRate);
+      if (vRate <= -200) {
+        isDescending = true;
+        if (vRate < -1200) descentSeverity = 'severe';
+        else if (vRate < -500) descentSeverity = 'moderate';
+        else descentSeverity = 'mild';
+      }
 
       if (hasValidHome && ac.latitude !== null && ac.longitude !== null) {
         distanceMeters = Math.round(calculateHaversineDistance(homeLat, homeLon, ac.latitude, ac.longitude));
@@ -924,6 +949,9 @@ class AdsbAirspaceTracker extends EventEmitter {
           closingSpeedKts,
           coneLengthMeters,
           offBoresightDeg,
+          isDescending,
+          descentSeverity,
+          verticalRateFpm,
           breachReason,
           status: isBreached ? 'breached' : (isConeWarning ? 'approaching' : (isLanding ? 'landing' : 'safe')),
           history: Array.isArray(ac.history) ? ac.history : []
@@ -996,7 +1024,7 @@ class AdsbAirspaceTracker extends EventEmitter {
       altitudeGeometric: ac.altitudeGeometric || ac.altitude || 1800,
       speed: ac.speed !== undefined ? ac.speed : 135,
       track: ac.track !== undefined ? ac.track : (ac.heading !== undefined ? ac.heading : 90),
-      verticalRate: ac.verticalRate || 0,
+      verticalRate: ac.verticalRate !== undefined ? ac.verticalRate : (ac.vrate !== undefined ? ac.vrate : 0),
       squawk: ac.squawk || '1200',
       isOnGround: !!ac.isOnGround,
       firstSeen: now,

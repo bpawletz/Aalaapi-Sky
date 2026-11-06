@@ -151,7 +151,8 @@ function initUIEventListeners() {
       'adsb-cone-dev-slider': 'ADS-B Heading Deviation Half-Angle',
       'adsb-cones-toggle': 'ADS-B Predictive Heading Cones',
       'adsb-airport-landing-toggle': 'ADS-B Airport Landing Suppression',
-      'adsb-airport-radius-slider': 'ADS-B Airport Airspace Radius'
+      'adsb-airport-radius-slider': 'ADS-B Airport Airspace Radius',
+      'adsb-descent-gradient-toggle': 'ADS-B Descent Intrusion Gradient'
     };
     return map[id] || id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
@@ -342,7 +343,7 @@ function initUIEventListeners() {
     'global-max-altitude', 'global-rth-altitude', 'rc2-uuid',
     'acoustic-ambient-preset', 'acoustic-contour-display-mode', 'acoustic-map-overlay-toggle', 'acoustic-3d-overlay-toggle',
     'sun-sky-condition-select',
-    'adsb-radius-slider', 'adsb-ceiling-slider', 'adsb-warning-min-slider', 'adsb-cone-dev-slider', 'adsb-cones-toggle', 'adsb-airport-landing-toggle', 'adsb-airport-radius-slider'
+    'adsb-radius-slider', 'adsb-ceiling-slider', 'adsb-warning-min-slider', 'adsb-cone-dev-slider', 'adsb-cones-toggle', 'adsb-airport-landing-toggle', 'adsb-airport-radius-slider', 'adsb-descent-gradient-toggle'
   ];
   additionalLayerControls.forEach(id => {
     const el = document.getElementById(id);

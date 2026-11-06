@@ -778,4 +778,91 @@ describe('AdsbAirspaceTracker Tests', () => {
     assert.ok(bounds.aircraft[0].etaSeconds !== null);
     tracker.destroy();
   });
+
+  test('evaluatePredictiveCone and getAirspaceBounds accurately classify descending aircraft into intrusion severity tiers (Issue #248)', () => {
+    const { evaluatePredictiveCone } = require('./adsb_tracker.js');
+    const homeLat = 41.3215;
+    const homeLon = -88.9950;
+    const radiusMeters = 3 * 1609.344;
+
+    // 1. Mild descent (-300 fpm)
+    const acMild = {
+      hex: 'A11111',
+      latitude: homeLat + 0.05,
+      longitude: homeLon + 0.05,
+      speed: 120,
+      track: 225,
+      altitude: 2000,
+      verticalRate: -350
+    };
+    const evalMild = evaluatePredictiveCone(acMild, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15);
+    assert.strictEqual(evalMild.isDescending, true);
+    assert.strictEqual(evalMild.descentSeverity, 'mild');
+    assert.strictEqual(evalMild.verticalRateFpm, -350);
+
+    // 2. Moderate descent (-800 fpm)
+    const acMod = {
+      hex: 'A22222',
+      latitude: homeLat + 0.05,
+      longitude: homeLon + 0.05,
+      speed: 120,
+      track: 225,
+      altitude: 2200,
+      verticalRate: -800
+    };
+    const evalMod = evaluatePredictiveCone(acMod, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15);
+    assert.strictEqual(evalMod.isDescending, true);
+    assert.strictEqual(evalMod.descentSeverity, 'moderate');
+    assert.strictEqual(evalMod.verticalRateFpm, -800);
+
+    // 3. Severe descent / dive (-1500 fpm)
+    const acSev = {
+      hex: 'A33333',
+      latitude: homeLat + 0.05,
+      longitude: homeLon + 0.05,
+      speed: 120,
+      track: 225,
+      altitude: 3500,
+      verticalRate: -1500
+    };
+    const evalSev = evaluatePredictiveCone(acSev, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15);
+    assert.strictEqual(evalSev.isDescending, true);
+    assert.strictEqual(evalSev.descentSeverity, 'severe');
+    assert.strictEqual(evalSev.verticalRateFpm, -1500);
+
+    // 4. Level or climbing (+400 fpm)
+    const acClimb = {
+      hex: 'A44444',
+      latitude: homeLat + 0.05,
+      longitude: homeLon + 0.05,
+      speed: 120,
+      track: 225,
+      altitude: 1800,
+      verticalRate: 400
+    };
+    const evalClimb = evaluatePredictiveCone(acClimb, homeLat, homeLon, null, radiusMeters, 2500, 2.0, 15);
+    assert.strictEqual(evalClimb.isDescending, false);
+    assert.strictEqual(evalClimb.descentSeverity, null);
+    assert.strictEqual(evalClimb.verticalRateFpm, 400);
+
+    // 5. Verify tracker getAirspaceBounds propagates descent fields to active aircraft list
+    const tracker = new AdsbAirspaceTracker({ autoConnect: false, silent: true });
+    tracker.injectSimulatedAircraft({
+      hex: 'AD1000',
+      callsign: 'DESCENT1',
+      lat: homeLat + 0.06,
+      lon: homeLon + 0.06,
+      alt: 2400,
+      speed: 140,
+      track: 225,
+      vrate: -950
+    });
+    const bounds = tracker.getAirspaceBounds({ homeLat, homeLon, radiusMeters, maxCeilingFeet: 2500 });
+    const targetAc = bounds.aircraft.find(a => a.hex === 'AD1000');
+    assert.ok(targetAc, 'Simulated aircraft should be present in bounds');
+    assert.strictEqual(targetAc.isDescending, true);
+    assert.strictEqual(targetAc.descentSeverity, 'moderate');
+    assert.strictEqual(targetAc.verticalRateFpm, -950);
+    tracker.destroy();
+  });
 });

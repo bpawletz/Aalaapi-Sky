@@ -41563,10 +41563,11 @@ describe('Issue #247 & v1.224.1: Android APK Coroutine Receiver Build Fix', () =
     assertVersionConsistency('1.224.1');
   });
 
-  test('Android build.gradle.kts matches version 1.224.1 and versionCode 12241', () => {
+  test('Android build.gradle.kts matches version >= 1.224.1 and versionCode >= 12241', () => {
     const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
-    assert.ok(gradleKts.includes('versionCode = 12241'), 'build.gradle.kts must have versionCode = 12241');
-    assert.ok(gradleKts.includes('versionName = "1.224.1"'), 'build.gradle.kts must have versionName = "1.224.1"');
+    const codeMatch = gradleKts.match(/versionCode\s*=\s*(\d+)/);
+    assert.ok(codeMatch && parseInt(codeMatch[1], 10) >= 12241, 'build.gradle.kts must have versionCode >= 12241');
+    assert.ok(gradleKts.includes('versionName = "1.'), 'build.gradle.kts must have valid versionName');
   });
 
   test('AndroidAdsbBridge.kt binds runTcpStreamingLoop and runHttpPollingLoop to CoroutineScope', () => {
@@ -41578,3 +41579,150 @@ describe('Issue #247 & v1.224.1: Android APK Coroutine Receiver Build Fix', () =
 });
 
 
+
+describe('Issue #248 & v1.225.0: Dynamic Gradient Trajectory Cones for Descending Aircraft Indicating Intrusion Rate', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.225.0', () => {
+    assertVersionConsistency('1.225.0');
+  });
+
+  test('Android build.gradle.kts matches version 1.225.0 and versionCode 12250', () => {
+    const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
+    assert.ok(gradleKts.includes('versionCode = 12250'), 'build.gradle.kts must have versionCode 12250');
+    assert.ok(gradleKts.includes('versionName = "1.225.0"'), 'build.gradle.kts must have versionName "1.225.0"');
+  });
+
+  test('AdsbAirspaceManager evaluates descent rates and classifies severity tiers', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+    const homeLat = 41.3215;
+    const homeLon = -88.9950;
+
+    // Mild descent (-350 fpm)
+    const acMild = {
+      hex: 'A11111',
+      latitude: homeLat + 0.05,
+      longitude: homeLon + 0.05,
+      altitude: 2000,
+      speed: 120,
+      track: 225,
+      verticalRate: -350
+    };
+    const evalMild = AdsbAirspaceManager.evaluateAircraftCone(acMild, homeLat, homeLon);
+    assert.strictEqual(evalMild.isDescending, true);
+    assert.strictEqual(evalMild.descentSeverity, 'mild');
+    assert.strictEqual(evalMild.verticalRateFpm, -350);
+
+    // Moderate descent (-850 fpm)
+    const acMod = {
+      hex: 'A22222',
+      latitude: homeLat + 0.05,
+      longitude: homeLon + 0.05,
+      altitude: 2200,
+      speed: 130,
+      track: 225,
+      verticalRate: -850
+    };
+    const evalMod = AdsbAirspaceManager.evaluateAircraftCone(acMod, homeLat, homeLon);
+    assert.strictEqual(evalMod.isDescending, true);
+    assert.strictEqual(evalMod.descentSeverity, 'moderate');
+    assert.strictEqual(evalMod.verticalRateFpm, -850);
+
+    // Severe dive (-1500 fpm)
+    const acSev = {
+      hex: 'A33333',
+      latitude: homeLat + 0.05,
+      longitude: homeLon + 0.05,
+      altitude: 3500,
+      speed: 160,
+      track: 225,
+      verticalRate: -1500
+    };
+    const evalSev = AdsbAirspaceManager.evaluateAircraftCone(acSev, homeLat, homeLon);
+    assert.strictEqual(evalSev.isDescending, true);
+    assert.strictEqual(evalSev.descentSeverity, 'severe');
+    assert.strictEqual(evalSev.verticalRateFpm, -1500);
+
+    // Level / climbing flight (+450 fpm)
+    const acClimb = {
+      hex: 'A44444',
+      latitude: homeLat + 0.05,
+      longitude: homeLon + 0.05,
+      altitude: 1900,
+      speed: 120,
+      track: 225,
+      verticalRate: 450
+    };
+    const evalClimb = AdsbAirspaceManager.evaluateAircraftCone(acClimb, homeLat, homeLon);
+    assert.strictEqual(evalClimb.isDescending, false);
+    assert.strictEqual(evalClimb.descentSeverity, null);
+    assert.strictEqual(evalClimb.verticalRateFpm, 450);
+  });
+
+  test('AdsbAirspaceManager manages SVG linearGradient definitions on Leaflet map', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+
+    // Mock Leaflet map with SVG overlayPane
+    const createdElements = [];
+    const mockSvg = {
+      querySelector: (sel) => null,
+      insertBefore: (el) => { createdElements.push(el); },
+      appendChild: (el) => { createdElements.push(el); }
+    };
+    const mockOverlayPane = {
+      querySelector: (sel) => (sel === 'svg' ? mockSvg : null)
+    };
+    const mockMap = {
+      getPanes: () => ({ overlayPane: mockOverlayPane }),
+      latLngToLayerPoint: (ll) => ({ x: Math.round(ll[0] * 10), y: Math.round(ll[1] * 10) })
+    };
+
+    // Ensure defs
+    const origCreateElementNS = document.createElementNS;
+    document.createElementNS = (ns, tag) => {
+      const el = {
+        tagName: tag,
+        attributes: {},
+        setAttribute: (k, v) => { el.attributes[k] = v; },
+        querySelector: (sel) => null,
+        appendChild: (child) => { createdElements.push(child); }
+      };
+      return el;
+    };
+
+    try {
+      const defs = AdsbAirspaceManager.ensureSvgDefs(mockMap);
+      assert.ok(defs, 'ensureSvgDefs must create and return defs element');
+      assert.strictEqual(defs.id, 'adsb-cone-defs');
+    } finally {
+      document.createElementNS = origCreateElementNS;
+    }
+  });
+
+  test('EventBindings registers adsb-descent-gradient-toggle with undo/redo tracking', () => {
+    const eb = fs.readFileSync(path.resolve(__dirname, 'src/ui/EventBindings.js'), 'utf8');
+    assert.ok(
+      eb.includes("'adsb-descent-gradient-toggle': 'ADS-B Descent Intrusion Gradient'"),
+      'Must define human-readable undo toast label for adsb-descent-gradient-toggle'
+    );
+    assert.ok(
+      eb.includes("'adsb-descent-gradient-toggle'"),
+      'Must include adsb-descent-gradient-toggle in additionalLayerControls undo registration'
+    );
+  });
+
+  test('index_template.html contains adsb-descent-gradient-toggle and adsb-sim-descending-btn', () => {
+    const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('id="adsb-descent-gradient-toggle"'), 'Template must include adsb-descent-gradient-toggle');
+    assert.ok(template.includes('id="adsb-sim-descending-btn"'), 'Template must include adsb-sim-descending-btn');
+    assert.ok(template.includes('Descent Intrusion Gradient'), 'Template must include Descent Intrusion Gradient label');
+  });
+
+  test('index.css includes adsb-vrate-badge styles for climbing and descending tiers', () => {
+    const css = fs.readFileSync(path.resolve(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('.adsb-vrate-badge'), 'index.css must include .adsb-vrate-badge');
+    assert.ok(css.includes('.adsb-vrate-badge.climbing'), 'index.css must include climbing vrate style');
+    assert.ok(css.includes('.adsb-vrate-badge.descending-mild'), 'index.css must include descending-mild vrate style');
+    assert.ok(css.includes('.adsb-vrate-badge.descending-moderate'), 'index.css must include descending-moderate vrate style');
+    assert.ok(css.includes('.adsb-vrate-badge.descending-severe'), 'index.css must include descending-severe vrate style');
+    assert.ok(css.includes('.adsb-cone-polygon.descent-gradient'), 'index.css must include .adsb-cone-polygon.descent-gradient');
+  });
+});

@@ -5753,6 +5753,8 @@ const AdsbAirspaceManager = {
 
   showCones: true,
 
+  descentGradientEnabled: true,
+
   suppressAirportLanding: true,
 
   airportRadiusNm: 4.0,
@@ -6273,6 +6275,22 @@ const AdsbAirspaceManager = {
 
       };
 
+    } else if (targetType === 'descending') {
+      simAircraft = {
+        hex: 'AD4444',
+        callsign: 'DESCEND1',
+        aircraftType: 'BE36',
+        category: 'A1',
+        lat: homeLat + 0.052,
+        lon: homeLon + 0.052,
+        alt: 2400,
+        speed: 145,
+        track: 225,
+        verticalRate: -950,
+        isDescending: true,
+        descentSeverity: 'moderate',
+        verticalRateFpm: -950
+      };
     } else if (targetType === 'landing') {
 
       if (this.airports.size === 0) {
@@ -6343,14 +6361,19 @@ const AdsbAirspaceManager = {
       await this.pollAirspace();
     } catch (e) {
       // If offline or unauthorized, inject directly into manager
-      const isApproaching = targetType === 'approaching';
+      const isApproaching = targetType === 'approaching' || targetType === 'descending';
       const isLanding = targetType === 'landing';
+      const isDescending = targetType === 'descending';
       simAircraft.distanceMeters = isApproaching ? 8368 : (isLanding ? 4200 : 1500);
       simAircraft.distanceMiles = isApproaching ? 5.2 : (isLanding ? 2.6 : 0.93);
       simAircraft.bearingDeg = 45;
       simAircraft.bearingCardinal = 'NE';
       simAircraft.isBreached = !isApproaching && !isLanding;
       simAircraft.isConeWarning = isApproaching;
+      simAircraft.isDescending = isDescending;
+      simAircraft.descentSeverity = isDescending ? 'moderate' : null;
+      simAircraft.verticalRate = isDescending ? -950 : (simAircraft.verticalRate || 0);
+      simAircraft.verticalRateFpm = isDescending ? -950 : (simAircraft.verticalRate || 0);
       simAircraft.isLanding = isLanding;
       simAircraft.landingAirport = isLanding ? (simAircraft.landingAirport || 'KVYS') : null;
       simAircraft.coneSuppressed = isLanding;
@@ -6451,6 +6474,10 @@ const AdsbAirspaceManager = {
 
         if (savedShowCones !== null) this.showCones = savedShowCones !== 'false';
 
+        const savedDescentGrad = localStorage.getItem('aalaapi_adsb_descent_gradient');
+
+        if (savedDescentGrad !== null) this.descentGradientEnabled = savedDescentGrad !== 'false';
+
         const savedSuppressLanding = localStorage.getItem('aalaapi_adsb_suppress_airport_landing');
 
         if (savedSuppressLanding !== null) this.suppressAirportLanding = savedSuppressLanding !== 'false';
@@ -6529,6 +6556,8 @@ const AdsbAirspaceManager = {
 
         localStorage.setItem('aalaapi_adsb_show_cones', String(this.showCones));
 
+        localStorage.setItem('aalaapi_adsb_descent_gradient', String(this.descentGradientEnabled));
+
         localStorage.setItem('aalaapi_adsb_suppress_airport_landing', String(this.suppressAirportLanding));
 
         localStorage.setItem('aalaapi_adsb_airport_radius_nm', String(this.airportRadiusNm || 4.0));
@@ -6606,6 +6635,13 @@ const AdsbAirspaceManager = {
         this.coneLayerGroup.addTo(m);
 
       }
+
+        if (m.on && !this._adsbGradientMapBound) {
+          this._adsbGradientMapBound = true;
+          m.on('move zoom', () => {
+            this.refreshActiveGradients();
+          });
+        }
 
     }
 
@@ -6715,6 +6751,105 @@ const AdsbAirspaceManager = {
     });
   },
 
+  ensureSvgDefs(m) {
+    const mapInst = m || (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || null;
+    if (!mapInst || !mapInst.getPanes) return null;
+    const overlayPane = mapInst.getPanes().overlayPane;
+    if (!overlayPane) return null;
+    let svg = overlayPane.querySelector('svg');
+    if (!svg) {
+      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'leaflet-zoom-animated');
+      svg.style.position = 'absolute';
+      svg.style.left = '0';
+      svg.style.top = '0';
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      overlayPane.appendChild(svg);
+    }
+    let defs = svg.querySelector('defs#adsb-cone-defs');
+    if (!defs) {
+      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      defs.id = 'adsb-cone-defs';
+      svg.insertBefore(defs, svg.firstChild);
+    }
+    return defs;
+  },
+
+  updateConeGradient(ac, coneGeom, coneColor, m) {
+    const mapInst = m || (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || null;
+    if (!mapInst || !mapInst.latLngToLayerPoint || !coneGeom || !coneGeom.centerLineLatLngs) return;
+    const defs = this.ensureSvgDefs(mapInst);
+    if (!defs) return;
+
+    const gradId = `adsb-cone-grad-${ac.hex}`;
+    let grad = defs.querySelector(`#${gradId}`);
+    if (!grad) {
+      grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+      grad.id = gradId;
+      grad.setAttribute('gradientUnits', 'userSpaceOnUse');
+      defs.appendChild(grad);
+    }
+
+    const pApex = mapInst.latLngToLayerPoint([ac.latitude, ac.longitude]);
+    const centerDest = coneGeom.centerLineLatLngs[1];
+    const pDest = mapInst.latLngToLayerPoint(centerDest);
+
+    grad.setAttribute('x1', String(pApex.x));
+    grad.setAttribute('y1', String(pApex.y));
+    grad.setAttribute('x2', String(pDest.x));
+    grad.setAttribute('y2', String(pDest.y));
+
+    // Choose target descent intrusion color based on vertical rate severity
+    let targetColor = '#ea580c';
+    let targetOpacity = 0.65;
+    const vRate = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : (ac.verticalRateFpm || 0);
+    const severity = ac.descentSeverity || (vRate < -1200 ? 'severe' : (vRate < -500 ? 'moderate' : 'mild'));
+
+    if (severity === 'severe') {
+      targetColor = '#ef4444';
+      targetOpacity = 0.85;
+    } else if (severity === 'moderate') {
+      targetColor = '#ea580c';
+      targetOpacity = 0.70;
+    } else {
+      targetColor = '#f59e0b';
+      targetOpacity = 0.55;
+    }
+
+    const startOpacity = (ac.status === 'approaching' || ac.isConeWarning) ? 0.35 : 0.20;
+    grad.innerHTML = `<stop offset="0%" stop-color="${coneColor}" stop-opacity="${startOpacity}" /><stop offset="100%" stop-color="${targetColor}" stop-opacity="${targetOpacity}" />`;
+  },
+
+  removeConeGradient(hex, m) {
+    const mapInst = m || (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || null;
+    if (!mapInst || !mapInst.getPanes) return;
+    const overlayPane = mapInst.getPanes().overlayPane;
+    if (!overlayPane) return;
+    const svg = overlayPane.querySelector('svg');
+    if (!svg) return;
+    const grad = svg.querySelector(`#adsb-cone-grad-${hex}`);
+    if (grad && grad.parentNode) {
+      grad.parentNode.removeChild(grad);
+    }
+  },
+
+  refreshActiveGradients() {
+    if (!this.descentGradientEnabled || !this.showCones) return;
+    const mapInst = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || null;
+    if (!mapInst) return;
+    for (const ac of this.aircraft) {
+      const vRate = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : (ac.verticalRateFpm || 0);
+      if (ac.isDescending || vRate <= -200) {
+        const coneEntry = this.mapCones.get(ac.hex);
+        if (coneEntry && coneEntry.coneGeom) {
+          const coneColor = ac.isBreached ? '#ef4444' : ((ac.isConeWarning || ac.status === 'approaching') ? '#f59e0b' : '#38bdf8');
+          this.updateConeGradient(ac, coneEntry.coneGeom, coneColor, mapInst);
+        }
+      }
+    }
+  },
+
   computeConePolygonLatLngs(lat, lon, track, coneLengthMeters, deviationDeg = 15) {
 
     const length = Math.max(50, coneLengthMeters || 1000);
@@ -6761,6 +6896,12 @@ const AdsbAirspaceManager = {
 
       isClimbingOut: false,
 
+      isDescending: false,
+
+      descentSeverity: null,
+
+      verticalRateFpm: null,
+
       isLanding: false,
 
       landingAirport: null,
@@ -6788,6 +6929,16 @@ const AdsbAirspaceManager = {
     if (speedKts <= 0 || trackDeg === null) return result;
 
 
+
+    const vRate = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : 0;
+    result.verticalRate = vRate;
+    result.verticalRateFpm = Math.round(vRate);
+    if (vRate <= -200) {
+      result.isDescending = true;
+      if (vRate < -1200) result.descentSeverity = 'severe';
+      else if (vRate < -500) result.descentSeverity = 'moderate';
+      else result.descentSeverity = 'mild';
+    }
 
     const warnMin = this.warningMinutes > 0 ? this.warningMinutes : 2.0;
 
@@ -8912,7 +9063,16 @@ const AdsbAirspaceManager = {
 
 
 
-      const tooltipContent = `<strong>${ac.callsign || ac.hex}</strong>${typeStr}<br><span style="font-weight: 600; color: #38bdf8;">${classified.emoji} ${classified.label}</span><br>Alt: ${altStr} • ${speedStr}<br>Dist: ${ac.distanceMiles || '--'} mi ${ac.bearingCardinal || ''}${alertBadgeTooltip}<br><span style="font-size: 0.64rem; color: #94a3b8;">Source: ${srcStr}</span>`;
+      let vrateTooltipBadge = '';
+      const vRateVal = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : (ac.verticalRateFpm || 0);
+      if (vRateVal <= -200) {
+        const sev = ac.descentSeverity || (vRateVal < -1200 ? 'severe' : (vRateVal < -500 ? 'moderate' : 'mild'));
+        vrateTooltipBadge = ` <span class="adsb-vrate-badge descending-${sev}">⤓ ${Math.abs(Math.round(vRateVal))} fpm</span>`;
+      } else if (vRateVal > 200) {
+        vrateTooltipBadge = ` <span class="adsb-vrate-badge climbing">⤒ +${Math.round(vRateVal)} fpm</span>`;
+      }
+
+      const tooltipContent = `<strong>${ac.callsign || ac.hex}</strong>${typeStr}<br><span style="font-weight: 600; color: #38bdf8;">${classified.emoji} ${classified.label}</span><br>Alt: ${altStr}${vrateTooltipBadge} • ${speedStr}<br>Dist: ${ac.distanceMiles || '--'} mi ${ac.bearingCardinal || ''}${alertBadgeTooltip}<br><span style="font-size: 0.64rem; color: #94a3b8;">Source: ${srcStr}</span>`;
 
 
 
@@ -8928,11 +9088,19 @@ const AdsbAirspaceManager = {
 
         const coneGeom = this.computeConePolygonLatLngs(ac.latitude, ac.longitude, ac.track, coneLen, coneDev);
 
-        const coneColor = isBreached ? '#ef4444' : (isApproaching ? '#f59e0b' : '#38bdf8');
+                const coneColor = isBreached ? '#ef4444' : (isApproaching ? '#f59e0b' : '#38bdf8');
+        const isDescendingTraffic = (ac.isDescending || (typeof ac.verticalRate === 'number' && ac.verticalRate <= -200));
+        const useGradient = this.descentGradientEnabled && isDescendingTraffic;
 
-        const coneFillOpacity = isBreached ? 0.12 : (isApproaching ? 0.20 : 0.08);
+        if (useGradient) {
+          this.updateConeGradient(ac, coneGeom, coneColor, map);
+        } else {
+          this.removeConeGradient(ac.hex, map);
+        }
 
-
+        const coneFillColor = useGradient ? `url(#adsb-cone-grad-${ac.hex})` : coneColor;
+        const coneFillOpacity = useGradient ? 1.0 : (isBreached ? 0.12 : (isApproaching ? 0.20 : 0.08));
+        const strokeColor = useGradient ? (ac.descentSeverity === 'severe' ? '#ef4444' : (ac.descentSeverity === 'moderate' ? '#ea580c' : coneColor)) : coneColor;
 
         if (this.showCones && this.coneLayerGroup) {
 
@@ -8944,29 +9112,29 @@ const AdsbAirspaceManager = {
 
               const poly = leaflet.polygon(coneGeom.polygonLatLngs, {
 
-                color: coneColor,
+                color: strokeColor,
 
-                weight: isApproaching ? 2 : 1,
+                weight: (isApproaching || useGradient) ? 2 : 1,
 
-                fillColor: coneColor,
+                fillColor: coneFillColor,
 
                 fillOpacity: coneFillOpacity,
 
                 dashArray: isApproaching ? '4, 4' : null,
 
-                className: `adsb-cone-polygon ${isBreached ? 'breached' : (isApproaching ? 'approaching' : '')}`
+                className: `adsb-cone-polygon ${isBreached ? 'breached' : (isApproaching ? 'approaching' : '')} ${useGradient ? 'descent-gradient' : ''}`
 
               });
 
               const centerLine = leaflet.polyline(coneGeom.centerLineLatLngs, {
 
-                color: coneColor,
+                color: strokeColor,
 
-                weight: isApproaching ? 1.5 : 1,
+                weight: (isApproaching || useGradient) ? 1.5 : 1,
 
                 dashArray: '3, 4',
 
-                opacity: 0.7
+                opacity: useGradient ? 0.9 : 0.7
 
               });
 
@@ -8976,11 +9144,17 @@ const AdsbAirspaceManager = {
               } else if (grp && typeof grp.addTo === 'function') {
                 grp.addTo(this.coneLayerGroup);
               }
-              this.mapCones.set(ac.hex, { group: grp, poly, centerLine });
+              this.mapCones.set(ac.hex, { group: grp, poly, centerLine, coneGeom, coneColor });
+              if (useGradient) {
+                this.updateConeGradient(ac, coneGeom, coneColor, map);
+              }
 
             }
 
           } else {
+
+            coneEntry.coneGeom = coneGeom;
+            coneEntry.coneColor = coneColor;
 
             if (coneEntry.poly && coneEntry.poly.setLatLngs) {
 
@@ -8988,15 +9162,17 @@ const AdsbAirspaceManager = {
 
               coneEntry.poly.setStyle({
 
-                color: coneColor,
+                color: strokeColor,
 
-                weight: isApproaching ? 2 : 1,
+                weight: (isApproaching || useGradient) ? 2 : 1,
 
-                fillColor: coneColor,
+                fillColor: coneFillColor,
 
                 fillOpacity: coneFillOpacity,
 
-                dashArray: isApproaching ? '4, 4' : null
+                dashArray: isApproaching ? '4, 4' : null,
+
+                className: `adsb-cone-polygon ${isBreached ? 'breached' : (isApproaching ? 'approaching' : '')} ${useGradient ? 'descent-gradient' : ''}`
 
               });
 
@@ -9008,9 +9184,11 @@ const AdsbAirspaceManager = {
 
               coneEntry.centerLine.setStyle({
 
-                color: coneColor,
+                color: strokeColor,
 
-                weight: isApproaching ? 1.5 : 1
+                weight: (isApproaching || useGradient) ? 1.5 : 1,
+
+                opacity: useGradient ? 0.9 : 0.7
 
               });
 
@@ -9031,14 +9209,13 @@ const AdsbAirspaceManager = {
             }
 
             this.mapCones.delete(ac.hex);
+            this.removeConeGradient(ac.hex, map);
 
           }
 
         }
 
       }
-
-
 
       if (ac.isLanding || ac.coneSuppressed) {
         const coneEntry = this.mapCones.get(ac.hex);
@@ -9047,6 +9224,7 @@ const AdsbAirspaceManager = {
             this.coneLayerGroup.removeLayer(coneEntry.group);
           }
           this.mapCones.delete(ac.hex);
+          this.removeConeGradient(ac.hex, map);
         }
       }
 
@@ -9472,6 +9650,10 @@ const AdsbAirspaceManager = {
 
     if (conesToggle) conesToggle.checked = this.showCones;
 
+    const descentGradToggle = document.getElementById('adsb-descent-gradient-toggle');
+
+    if (descentGradToggle) descentGradToggle.checked = this.descentGradientEnabled;
+
     const landingToggle = document.getElementById('adsb-airport-landing-toggle');
 
     if (landingToggle) landingToggle.checked = this.suppressAirportLanding;
@@ -9660,6 +9842,15 @@ const AdsbAirspaceManager = {
 
       const altStr = ac.altitude !== null ? (isMetric ? `${Math.round(ac.altitude * 0.3048)}m` : `${ac.altitude}ft`) : 'Alt N/A';
 
+      let vrateBadge = '';
+      const vRateNum = typeof ac.verticalRate === 'number' && !isNaN(ac.verticalRate) ? ac.verticalRate : (ac.verticalRateFpm || 0);
+      if (vRateNum <= -200) {
+        const sev = ac.descentSeverity || (vRateNum < -1200 ? 'severe' : (vRateNum < -500 ? 'moderate' : 'mild'));
+        vrateBadge = ` <span class="adsb-vrate-badge descending-${sev}">⤓ ${Math.abs(Math.round(vRateNum))} fpm</span>`;
+      } else if (vRateNum > 200) {
+        vrateBadge = ` <span class="adsb-vrate-badge climbing">⤒ +${Math.round(vRateNum)} fpm</span>`;
+      }
+
       const distStr = ac.distanceMiles !== null ? (isMetric ? `${(ac.distanceMeters / 1000).toFixed(1)}km` : `${ac.distanceMiles}mi`) : '--';
 
       
@@ -9772,7 +9963,7 @@ const AdsbAirspaceManager = {
 
             <div style="font-size: 0.68rem; color: var(--text-muted);">
 
-              <span>${altStr}</span> • <span>${speedSubtitle}</span>${trackSubtitle}${groundSubtitle}
+              <span>${altStr}</span>${vrateBadge} • <span>${speedSubtitle}</span>${trackSubtitle}${groundSubtitle}
 
             </div>
 
@@ -10703,6 +10894,30 @@ const AdsbAirspaceManager = {
     if (simLandingBtn) {
 
       simLandingBtn.addEventListener('click', () => this.simulateAircraft('landing'));
+
+    }
+
+    const simDescendingBtn = document.getElementById('adsb-sim-descending-btn');
+
+    if (simDescendingBtn) {
+
+      simDescendingBtn.addEventListener('click', () => this.simulateAircraft('descending'));
+
+    }
+
+    const descentGradToggle = document.getElementById('adsb-descent-gradient-toggle');
+
+    if (descentGradToggle) {
+
+      descentGradToggle.addEventListener('change', (e) => {
+
+        this.descentGradientEnabled = !!e.target.checked;
+
+        this.saveSettings();
+
+        this.updateMapMarkers();
+
+      });
 
     }
 

@@ -12238,5 +12238,99 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
     await page.waitForTimeout(200);
   });
+
+  test('Issue #248: Descending traffic renders linear gradient trajectory cones & vrate badges in drawer', async () => {
+    // 1. Open ADS-B drawer and verify descent gradient toggle in Settings tab
+    await page.evaluate(() => {
+      const toggle = document.getElementById('adsb-drawer-toggle');
+      if (toggle && !toggle.classList.contains('active')) toggle.click();
+      const settingsTabBtn = document.querySelector('.adsb-tab-btn[data-tab="settings"]');
+      if (settingsTabBtn) settingsTabBtn.click();
+    });
+    await page.waitForTimeout(300);
+
+    const gradToggle = page.locator('#adsb-descent-gradient-toggle');
+    assert.strictEqual(await gradToggle.count(), 1, '#adsb-descent-gradient-toggle should exist');
+    assert.strictEqual(await gradToggle.isChecked(), true, 'Descent gradient toggle should default to enabled');
+
+    // 2. Switch to Operations tab and trigger Simulate Descending Traffic
+    await page.evaluate(() => {
+      const opsTabBtn = document.querySelector('.adsb-tab-btn[data-tab="operations"]');
+      if (opsTabBtn) opsTabBtn.click();
+    });
+    await page.waitForTimeout(200);
+
+    const simDescBtn = page.locator('#adsb-sim-descending-btn');
+    assert.strictEqual(await simDescBtn.count(), 1, '#adsb-sim-descending-btn should exist in Operations tab');
+    await page.evaluate(() => {
+      const btn = document.getElementById('adsb-sim-descending-btn');
+      if (btn) btn.click();
+    });
+    await page.waitForTimeout(500);
+
+    // 3. Verify aircraft card rendered in drawer with descent rate badge
+    const vrateBadge = page.locator('.adsb-vrate-badge.descending-moderate');
+    assert.ok(await vrateBadge.count() >= 1, 'Should render .adsb-vrate-badge.descending-moderate in drawer list');
+    const badgeText = await vrateBadge.first().textContent();
+    assert.ok(badgeText.includes('950 fpm'), `Badge should display descent rate (-950 fpm), got: ${badgeText}`);
+
+    // 4. Verify SVG linearGradient injected into Leaflet SVG defs
+    const hasGradientInDefs = await page.evaluate(() => {
+      const defs = document.querySelector('svg defs#adsb-cone-defs');
+      if (!defs) return false;
+      const grad = defs.querySelector('linearGradient[id*="adsb-cone-grad"]');
+      return !!grad;
+    });
+    assert.strictEqual(hasGradientInDefs, true, 'Map SVG overlay should contain linearGradient definition for descending aircraft');
+
+    // 5. Verify cone polygon has descent-gradient class
+    const coneCount = await page.evaluate(() => {
+      return document.querySelectorAll('.adsb-cone-polygon.descent-gradient').length;
+    });
+    assert.ok(coneCount >= 1, 'Map should render .adsb-cone-polygon.descent-gradient element');
+
+    // 6. Test disabling descent gradient toggle reverts cone to solid styling
+    await page.evaluate(() => {
+      const settingsTabBtn = document.querySelector('.adsb-tab-btn[data-tab="settings"]');
+      if (settingsTabBtn) settingsTabBtn.click();
+      const toggle = document.getElementById('adsb-descent-gradient-toggle');
+      if (toggle) {
+        toggle.checked = false;
+        toggle.dispatchEvent(new Event('change'));
+      }
+    });
+    await page.waitForTimeout(300);
+
+    const gradDisabled = await page.evaluate(() => !AdsbAirspaceManager.descentGradientEnabled);
+    assert.strictEqual(gradDisabled, true, 'AdsbAirspaceManager.descentGradientEnabled should be false');
+
+    const gradRemoved = await page.evaluate(() => {
+      const defs = document.querySelector('svg defs#adsb-cone-defs');
+      return !defs || !defs.querySelector('#adsb-cone-grad-AD4444');
+    });
+    assert.strictEqual(gradRemoved, true, 'linearGradient element should be removed when gradient toggle disabled');
+
+    // Restore gradient toggle
+    await page.evaluate(() => {
+      const toggle = document.getElementById('adsb-descent-gradient-toggle');
+      if (toggle) {
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change'));
+      }
+    });
+
+    // Cleanup
+    await page.evaluate(() => {
+      if (typeof AdsbAirspaceManager !== 'undefined') {
+        AdsbAirspaceManager.aircraft = [];
+        AdsbAirspaceManager.breachedAircraft = [];
+        AdsbAirspaceManager.approachingAircraft = [];
+        AdsbAirspaceManager.updateVisualBanner();
+        AdsbAirspaceManager.updateMapMarkers();
+        AdsbAirspaceManager.updateDrawerAircraftList();
+      }
+    });
+    await page.waitForTimeout(200);
+  });
   });
 });

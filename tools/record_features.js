@@ -4046,6 +4046,71 @@ const scenarios = [
       });
       await page.waitForTimeout(600);
     }
+  },
+  {
+    id: 'feature_adsb_descent_gradient',
+    name: 'Descending Aircraft Dynamic Gradient Cones & Intrusion Rate Alerting',
+    description: 'Demonstrates axial SVG linear gradient trajectory cones indicating intrusion rates for descending aircraft, vertical rate badges, and settings toggle.',
+    issueRef: 'Issue #248',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // Open ADS-B drawer
+      await page.evaluate(() => {
+        const topbarBtn = document.getElementById('adsb-topbar-btn');
+        if (topbarBtn) topbarBtn.click();
+        const drawer = document.getElementById('adsb-control-drawer');
+        if (drawer) drawer.classList.remove('hidden', 'drawer-closed');
+      });
+      await page.waitForTimeout(800);
+
+      // Simulate descending aircraft
+      await page.evaluate(async () => {
+        if (typeof AdsbAirspaceManager !== 'undefined') {
+          await AdsbAirspaceManager.simulateAircraft('descending');
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // Switch to Settings tab to showcase toggle
+      await page.evaluate(() => {
+        const settingsTab = document.querySelector('.adsb-tab-btn[data-tab="settings"]');
+        if (settingsTab) settingsTab.click();
+      });
+      await page.waitForTimeout(1000);
+
+      // Capture screenshot preview
+      await page.screenshot({ path: 'recordings/feature_adsb_descent_gradient_preview.png' });
+      await page.waitForTimeout(1000);
+
+      // Switch back to Operations tab
+      await page.evaluate(() => {
+        const opsTab = document.querySelector('.adsb-tab-btn[data-tab="operations"]');
+        if (opsTab) opsTab.click();
+      });
+      await page.waitForTimeout(800);
+
+      // Clean up simulated aircraft and close drawer
+      await page.evaluate(() => {
+        if (typeof AdsbAirspaceManager !== 'undefined') {
+          AdsbAirspaceManager.aircraft = [];
+          AdsbAirspaceManager.breachedAircraft = [];
+          AdsbAirspaceManager.approachingAircraft = [];
+          AdsbAirspaceManager.updateVisualBanner();
+          AdsbAirspaceManager.updateMapMarkers();
+          AdsbAirspaceManager.updateDrawerAircraftList();
+        }
+        const close = document.getElementById('adsb-drawer-close-btn') || document.querySelector('#adsb-control-drawer .popover-close-btn');
+        if (close) {
+          close.click();
+        } else {
+          const drawer = document.getElementById('adsb-control-drawer');
+          if (drawer) drawer.classList.add('hidden');
+        }
+      });
+      await page.waitForTimeout(600);
+    }
   }
 ];
 
