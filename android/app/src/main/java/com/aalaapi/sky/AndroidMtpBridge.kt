@@ -1,10 +1,13 @@
 package com.aalaapi.sky
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbManager
 import android.mtp.MtpDevice
+import android.os.Build
 import android.util.Base64
 import android.webkit.WebView
 import java.io.File
@@ -23,6 +26,7 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
 
     companion object {
         const val DJI_VENDOR_ID = 0x2CA3 // 11427
+        const val ACTION_USB_PERMISSION = "com.aalaapi.sky.USB_PERMISSION"
     }
 
     fun checkConnectedDevices() {
@@ -36,6 +40,30 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
     }
 
     fun onDeviceAttached(device: UsbDevice) {
+        connectedDevice = device
+        val mgr = usbManager ?: return
+
+        if (!mgr.hasPermission(device)) {
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+            val permissionIntent = PendingIntent.getBroadcast(
+                context, 0, Intent(ACTION_USB_PERMISSION), flags
+            )
+            mgr.requestPermission(device, permissionIntent)
+            return
+        }
+
+        openMtpDevice(device)
+    }
+
+    fun onPermissionGranted(device: UsbDevice) {
+        openMtpDevice(device)
+    }
+
+    private fun openMtpDevice(device: UsbDevice) {
         connectedDevice = device
         val connection = usbManager?.openDevice(device) ?: return
         usbConnection = connection
@@ -62,7 +90,7 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
 
     private fun notifyConnected(name: String) {
         val safeName = name.replace("'", "\\'")
-        val json = """{"deviceName":"$safeName","vendorId":11427}"""
+        val json = """{"deviceName":"$safeName","vendorId":11427,"connected":true}"""
         webView.post {
             webView.evaluateJavascript("if (typeof window.onRc2UsbConnected === 'function') { window.onRc2UsbConnected($json); }", null)
         }
@@ -83,6 +111,16 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
     }
 
     fun pullLatestLog(): String {
+        try {
+            val dir = File(context.getExternalFilesDir(null), "FlightRecord")
+            if (dir.exists()) {
+                val files = dir.listFiles()?.sortedByDescending { it.lastModified() }
+                if (!files.isNullOrEmpty()) {
+                    val bytes = files[0].readBytes()
+                    return Base64.encodeToString(bytes, Base64.NO_WRAP)
+                }
+            }
+        } catch (_: Exception) {}
         return ""
     }
 }

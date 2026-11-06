@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-06T01:56:47.709Z",
-  "currentAppVersion": "1.222.3",
+  "lastUpdated": "2026-11-06T04:20:22.951Z",
+  "currentAppVersion": "1.222.4",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "eb2417f42275",
@@ -1413,6 +1413,41 @@
     }
   },
   "releasePlans": [
+    {
+      "id": "rel-1.222.4-241",
+      "version": "1.222.4",
+      "issueNumber": 241,
+      "title": "Android Status Bar Insets & Native MTP Companion Bridge Unification",
+      "date": "2026-11-06",
+      "affectedPatterns": [
+        "grid",
+        "double-grid",
+        "orbit"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Launch compiled Android APK on device",
+          "checked": false
+        },
+        {
+          "label": "Verify top navigation bar does not collide with system status bar or camera cutout",
+          "checked": false
+        },
+        {
+          "label": "Connect DJI RC 2 via USB-C cable and approve USB permission prompt",
+          "checked": false
+        },
+        {
+          "label": "Verify Android Field Link and RC 2 status show online/connected",
+          "checked": false
+        },
+        {
+          "label": "Click Send to RC 2 and verify KMZ writes directly without needing Node companion PC",
+          "checked": false
+        }
+      ]
+    },
     {
       "id": "rel-1.222.3-238",
       "version": "1.222.3",

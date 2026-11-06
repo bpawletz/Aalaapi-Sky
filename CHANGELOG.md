@@ -7019,6 +7019,23 @@ Architectural overhaul introducing isolated XML payload and mission templates fo
 
  
 
+## [1.222.4] - 2026-11-05
+
+Fixes Android 15 edge-to-edge system status bar and camera cutout collision with the top navigation bar, requests explicit USB-C host permissions for DJI RC 2 MTP connections, and unifies standalone Android companion actions directly with native Kotlin MTP drivers.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Android 15 Top Menu & Status Bar Collision**: Integrated Android 15 window insets listener and safe area styling so the top navigation bar, status pills, and search controls display cleanly below Android status bar icons, clock, and camera cutouts (Closes #241).
+- **Standalone Android DJI RC 2 Companion Sync & Flight Log Pull**: Sidebar and drawer actions ("Send to RC 2", "Pull Mission", "Pull Flight Log") now route seamlessly through native Android MTP USB drivers in the compiled APK, removing the requirement for a separate PC bridge in the field (Closes #241).
+- **USB-C Permission Authorization**: Prompts pilot for Android USB device permission upon connecting DJI RC 2 via USB-C OTG cable, preventing silent attachment dropouts.
+
+#### Under the Hood & Technical Details
+- **MainActivity.kt**: Registered `ViewCompat.setOnApplyWindowInsetsListener` consuming `systemBars() | displayCutout()` and configured dark system navigation and status bar theme (#0f172a). Registered `ACTION_USB_PERMISSION` broadcast receiver.
+- **AndroidMtpBridge.kt**: Implemented `requestPermission` with `PendingIntent` and safe MTP device initialization.
+- **ApiClient.js & AndroidNativeBridge.js**: Added `updateNativeAndroidStatusUI` and `setNativeRc2Connection` to reflect Android Field Link status, routing `sendDirectlyToRC2`, `pullFromRC2`, and `pullFlightLogFromRC2` to `window.AalaapiAndroid`.
+- **index.css & index_template.html**: Added `viewport-fit=cover` and `env(safe-area-inset-top)` to `.studio-topbar`.
+
 ## [1.128.0] - 2026-09-25
 
 
