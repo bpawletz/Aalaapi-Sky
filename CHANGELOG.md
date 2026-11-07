@@ -1,3 +1,28 @@
+## [1.242.0] - 2026-11-07
+
+Mutual exclusivity between the Manned Aircraft ADS-B drawer, topbar ribbon popovers, and modal dialogs, alongside Escape key dismissal.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Mutual Exclusivity Between ADS-B Radar Drawer & Modals/Popovers (Closes #273)**:
+  - Opening the Manned Aircraft Radar drawer (`#adsb-control-drawer`) automatically dismisses active topbar ribbon popovers (Bridge & Hardware Link, Weather & Mission Details, Ambient Buffer, and Mission Time), preventing overlapping panels on screen.
+  - Selecting any topbar popover (e.g. clicking the Bridge pill or Weather summary) or modal dialog (About, Guide, Config, Useful Links, Action Flow, Pilot Profile) automatically closes the ADS-B drawer.
+  - Pressing the `Escape` key now dismisses the ADS-B drawer along with any active popover.
+  - Clicking or panning on the 2D map canvas keeps the ADS-B drawer open, allowing pilots to plan missions and observe manned traffic concurrently.
+
+#### Under the Hood & Technical Details
+- **`src/ui/EventBindings.js`**:
+  - Implemented centralized coordinator `dismissActivePopovers(exceptId)` closing popovers and calling `AdsbAirspaceManager.toggleDrawer(false)`. Exposed on `window.dismissActivePopovers` and `global.dismissActivePopovers`.
+  - Updated `toggleBufferPopover`, `toggleBridgePopover`, `toggleTelemetryPopover`, and modal triggers (`toggleAboutModal`, `toggleLinksModal`, `toggleConfigModal`, `showGuideBtn`, `actionFlowTopbarBtn`) to invoke `dismissActivePopovers`.
+  - Updated `document.addEventListener('keydown')` to dismiss popovers and ADS-B drawer on `Escape`.
+- **`src/core/MissionClock.js`**:
+  - Integrated `dismissActivePopovers('mission-time-popover')` inside `MissionClock.togglePopover(true)`.
+- **`src/bridge/ApiClient.js`**:
+  - Integrated `dismissActivePopovers('adsb-control-drawer')` inside `AdsbAirspaceManager.toggleDrawer(true)`.
+- **`src/ui/ResetManager.js` & `src/ui/ActionFlowModal.js` & `src/bridge/CompanionAuth.js`**:
+  - Integrated `dismissActivePopovers()` inside `openIntroModal`, `openActionFlowModal`, and `CompanionAuth.openModal()`.
+
 ## [1.241.0] - 2026-11-07
 
 Auto-fitted over-expanded pills (Sleep Awake and FT/MPH), side swipeable indicator chevrons with edge gradient fades, and a solid non-transparent brand header with a dividing border.

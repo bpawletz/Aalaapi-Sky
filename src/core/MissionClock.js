@@ -469,10 +469,16 @@ const MissionClock = {
       this.updateUI();
 
       // Close other popovers for mutual exclusivity
-      const weatherPop = document.getElementById('telemetry-weather-popover');
-      if (weatherPop) weatherPop.classList.add('hidden');
-      const bridgePop = document.getElementById('bridge-status-popover');
-      if (bridgePop) bridgePop.classList.add('hidden');
+      if (typeof window !== 'undefined' && typeof window.dismissActivePopovers === 'function') {
+        window.dismissActivePopovers('mission-time-popover');
+      } else if (typeof dismissActivePopovers === 'function') {
+        dismissActivePopovers('mission-time-popover');
+      } else {
+        const weatherPop = document.getElementById('telemetry-weather-popover');
+        if (weatherPop) weatherPop.classList.add('hidden');
+        const bridgePop = document.getElementById('bridge-status-popover');
+        if (bridgePop) bridgePop.classList.add('hidden');
+      }
     } else {
       popover.classList.add('hidden');
     }

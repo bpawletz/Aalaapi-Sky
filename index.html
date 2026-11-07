@@ -9174,7 +9174,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.241.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.0</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -16815,7 +16815,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.241.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -29478,10 +29478,16 @@ const MissionClock = {
       this.updateUI();
 
       // Close other popovers for mutual exclusivity
-      const weatherPop = document.getElementById('telemetry-weather-popover');
-      if (weatherPop) weatherPop.classList.add('hidden');
-      const bridgePop = document.getElementById('bridge-status-popover');
-      if (bridgePop) bridgePop.classList.add('hidden');
+      if (typeof window !== 'undefined' && typeof window.dismissActivePopovers === 'function') {
+        window.dismissActivePopovers('mission-time-popover');
+      } else if (typeof dismissActivePopovers === 'function') {
+        dismissActivePopovers('mission-time-popover');
+      } else {
+        const weatherPop = document.getElementById('telemetry-weather-popover');
+        if (weatherPop) weatherPop.classList.add('hidden');
+        const bridgePop = document.getElementById('bridge-status-popover');
+        if (bridgePop) bridgePop.classList.add('hidden');
+      }
     } else {
       popover.classList.add('hidden');
     }
@@ -37637,6 +37643,11 @@ function updateMatrixActiveLayerTelemetry() {
 
 function openIntroModal(targetTab = 'workflow') {
   if (typeof document === 'undefined') return;
+  if (typeof window !== 'undefined' && typeof window.dismissActivePopovers === 'function') {
+    window.dismissActivePopovers();
+  } else if (typeof dismissActivePopovers === 'function') {
+    dismissActivePopovers();
+  }
   const canonicalTab = (typeof targetTab === 'string') ? targetTab : 'workflow';
   const modal = document.getElementById('quickstart-modal');
   if (!modal) return;
@@ -40408,15 +40419,52 @@ function initUIEventListeners() {
   const bufferFlushBtn = document.getElementById('buffer-flush-btn');
   const bufferSnapshotBtn = document.getElementById('buffer-snapshot-btn');
 
+  function dismissActivePopovers(exceptId = null) {
+    if (exceptId !== 'bridge-status-popover') {
+      const bridge = document.getElementById('bridge-status-popover');
+      if (bridge) bridge.classList.add('hidden');
+    }
+    if (exceptId !== 'telemetry-weather-popover') {
+      const telem = document.getElementById('telemetry-weather-popover');
+      if (telem) telem.classList.add('hidden');
+    }
+    if (exceptId !== 'mission-time-popover') {
+      const timePop = document.getElementById('mission-time-popover');
+      if (timePop) timePop.classList.add('hidden');
+    }
+    if (exceptId !== 'buffer-monitor-popover') {
+      const buf = document.getElementById('buffer-monitor-popover');
+      if (buf) buf.classList.add('hidden');
+    }
+    if (exceptId !== 'header-more-menu') {
+      const moreMenu = document.getElementById('header-more-menu');
+      if (moreMenu) moreMenu.classList.add('hidden');
+    }
+    if (exceptId !== 'adsb-control-drawer') {
+      const adsbMgr = (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) ? AdsbAirspaceManager :
+                      (typeof window !== 'undefined' && window.AdsbAirspaceManager) ? window.AdsbAirspaceManager : null;
+      if (adsbMgr && typeof adsbMgr.toggleDrawer === 'function' && adsbMgr.isDrawerOpen) {
+        adsbMgr.toggleDrawer(false);
+      } else {
+        const adsbDrawer = document.getElementById('adsb-control-drawer');
+        if (adsbDrawer) adsbDrawer.classList.add('hidden');
+        if (adsbMgr) adsbMgr.isDrawerOpen = false;
+      }
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.dismissActivePopovers = dismissActivePopovers;
+  }
+  if (typeof global !== 'undefined') {
+    global.dismissActivePopovers = dismissActivePopovers;
+  }
+
   function toggleBufferPopover(forceState) {
     if (!bufferPopover) return;
     const shouldOpen = typeof forceState === 'boolean' ? forceState : bufferPopover.classList.contains('hidden');
     if (shouldOpen) {
+      dismissActivePopovers('buffer-monitor-popover');
       bufferPopover.classList.remove('hidden');
-      if (bridgePopover) bridgePopover.classList.add('hidden');
-      if (telemetryPopover) telemetryPopover.classList.add('hidden');
-      const timePop = document.getElementById('mission-time-popover');
-      if (timePop) timePop.classList.add('hidden');
       if (typeof ApiClient !== 'undefined' && typeof ApiClient.fetchBufferMetrics === 'function') {
         ApiClient.fetchBufferMetrics();
       }
@@ -40429,11 +40477,8 @@ function initUIEventListeners() {
     if (!bridgePopover) return;
     const shouldOpen = typeof forceState === 'boolean' ? forceState : bridgePopover.classList.contains('hidden');
     if (shouldOpen) {
+      dismissActivePopovers('bridge-status-popover');
       bridgePopover.classList.remove('hidden');
-      if (telemetryPopover) telemetryPopover.classList.add('hidden');
-      if (bufferPopover) bufferPopover.classList.add('hidden');
-      const timePop = document.getElementById('mission-time-popover');
-      if (timePop) timePop.classList.add('hidden');
       if (typeof ApiClient !== 'undefined' && typeof ApiClient.fetchBufferMetrics === 'function') {
         ApiClient.fetchBufferMetrics();
       }
@@ -40446,11 +40491,8 @@ function initUIEventListeners() {
     if (!telemetryPopover) return;
     const shouldOpen = typeof forceState === 'boolean' ? forceState : telemetryPopover.classList.contains('hidden');
     if (shouldOpen) {
+      dismissActivePopovers('telemetry-weather-popover');
       telemetryPopover.classList.remove('hidden');
-      if (bridgePopover) bridgePopover.classList.add('hidden');
-      if (bufferPopover) bufferPopover.classList.add('hidden');
-      const timePop = document.getElementById('mission-time-popover');
-      if (timePop) timePop.classList.add('hidden');
     } else {
       telemetryPopover.classList.add('hidden');
     }
@@ -40661,16 +40703,7 @@ function initUIEventListeners() {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (bridgePopover && !bridgePopover.classList.contains('hidden')) {
-        bridgePopover.classList.add('hidden');
-      }
-      if (telemetryPopover && !telemetryPopover.classList.contains('hidden')) {
-        telemetryPopover.classList.add('hidden');
-      }
-      const timePopover = document.getElementById('mission-time-popover');
-      if (timePopover && !timePopover.classList.contains('hidden')) {
-        timePopover.classList.add('hidden');
-      }
+      dismissActivePopovers();
     }
   });
 
@@ -40948,6 +40981,7 @@ function initUIEventListeners() {
 
   if (showAboutBtn && aboutModal) {
     const toggleAboutModal = () => {
+      dismissActivePopovers();
       aboutModal.classList.toggle('hidden');
       if (!aboutModal.classList.contains('hidden') && window.innerWidth <= 768) {
         document.querySelector('.sidebar').classList.remove('open');
@@ -40969,6 +41003,7 @@ function initUIEventListeners() {
   if (showLinksBtn && linksModal) {
     const toggleLinksModal = (e) => {
       if (e) e.stopPropagation();
+      dismissActivePopovers();
       linksModal.classList.toggle('hidden');
       if (!linksModal.classList.contains('hidden')) {
         updateOpenSkyLink();
@@ -41441,6 +41476,7 @@ function initUIEventListeners() {
 
   if (configBtn && configModal) {
     const toggleConfigModal = () => {
+      dismissActivePopovers();
       configModal.classList.toggle('hidden');
       if (!configModal.classList.contains('hidden')) {
         if (unitSystemEl) unitSystemEl.value = getUnitSystem();
@@ -41970,6 +42006,7 @@ function initUIEventListeners() {
   const actionFlowTopbarBtn = document.getElementById('action-flow-topbar-btn');
   if (actionFlowTopbarBtn) {
     actionFlowTopbarBtn.addEventListener('click', () => {
+      dismissActivePopovers();
       if (typeof openActionFlowModal === 'function') {
         openActionFlowModal();
       }
@@ -41979,6 +42016,7 @@ function initUIEventListeners() {
   const moreMenuActionFlowBtn = document.getElementById('more-menu-action-flow-btn');
   if (moreMenuActionFlowBtn) {
     moreMenuActionFlowBtn.addEventListener('click', () => {
+      dismissActivePopovers();
       if (typeof openActionFlowModal === 'function') {
         openActionFlowModal();
       }
@@ -76529,6 +76567,11 @@ const AdsbAirspaceManager = {
 
 
     if (this.isDrawerOpen) {
+      if (typeof window !== 'undefined' && typeof window.dismissActivePopovers === 'function') {
+        window.dismissActivePopovers('adsb-control-drawer');
+      } else if (typeof dismissActivePopovers === 'function') {
+        dismissActivePopovers('adsb-control-drawer');
+      }
 
 
 
@@ -87039,6 +87082,11 @@ const CompanionAuth = {
   openModal() {
     const modal = document.getElementById('companion-auth-modal');
     if (!modal) return;
+    if (typeof window !== 'undefined' && typeof window.dismissActivePopovers === 'function') {
+      window.dismissActivePopovers();
+    } else if (typeof dismissActivePopovers === 'function') {
+      dismissActivePopovers();
+    }
     this.clearAuthError();
 
     // Check Companion status
@@ -112947,6 +112995,11 @@ function initActionFlowModal() {
 
 function openActionFlowModal(focusIndex = null) {
   if (typeof document === 'undefined') return;
+  if (typeof window !== 'undefined' && typeof window.dismissActivePopovers === 'function') {
+    window.dismissActivePopovers();
+  } else if (typeof dismissActivePopovers === 'function') {
+    dismissActivePopovers();
+  }
   const modal = document.getElementById('action-flow-modal');
   if (!modal) return;
 

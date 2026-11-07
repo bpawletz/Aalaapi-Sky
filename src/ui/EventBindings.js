@@ -2612,15 +2612,52 @@ function initUIEventListeners() {
   const bufferFlushBtn = document.getElementById('buffer-flush-btn');
   const bufferSnapshotBtn = document.getElementById('buffer-snapshot-btn');
 
+  function dismissActivePopovers(exceptId = null) {
+    if (exceptId !== 'bridge-status-popover') {
+      const bridge = document.getElementById('bridge-status-popover');
+      if (bridge) bridge.classList.add('hidden');
+    }
+    if (exceptId !== 'telemetry-weather-popover') {
+      const telem = document.getElementById('telemetry-weather-popover');
+      if (telem) telem.classList.add('hidden');
+    }
+    if (exceptId !== 'mission-time-popover') {
+      const timePop = document.getElementById('mission-time-popover');
+      if (timePop) timePop.classList.add('hidden');
+    }
+    if (exceptId !== 'buffer-monitor-popover') {
+      const buf = document.getElementById('buffer-monitor-popover');
+      if (buf) buf.classList.add('hidden');
+    }
+    if (exceptId !== 'header-more-menu') {
+      const moreMenu = document.getElementById('header-more-menu');
+      if (moreMenu) moreMenu.classList.add('hidden');
+    }
+    if (exceptId !== 'adsb-control-drawer') {
+      const adsbMgr = (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) ? AdsbAirspaceManager :
+                      (typeof window !== 'undefined' && window.AdsbAirspaceManager) ? window.AdsbAirspaceManager : null;
+      if (adsbMgr && typeof adsbMgr.toggleDrawer === 'function' && adsbMgr.isDrawerOpen) {
+        adsbMgr.toggleDrawer(false);
+      } else {
+        const adsbDrawer = document.getElementById('adsb-control-drawer');
+        if (adsbDrawer) adsbDrawer.classList.add('hidden');
+        if (adsbMgr) adsbMgr.isDrawerOpen = false;
+      }
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.dismissActivePopovers = dismissActivePopovers;
+  }
+  if (typeof global !== 'undefined') {
+    global.dismissActivePopovers = dismissActivePopovers;
+  }
+
   function toggleBufferPopover(forceState) {
     if (!bufferPopover) return;
     const shouldOpen = typeof forceState === 'boolean' ? forceState : bufferPopover.classList.contains('hidden');
     if (shouldOpen) {
+      dismissActivePopovers('buffer-monitor-popover');
       bufferPopover.classList.remove('hidden');
-      if (bridgePopover) bridgePopover.classList.add('hidden');
-      if (telemetryPopover) telemetryPopover.classList.add('hidden');
-      const timePop = document.getElementById('mission-time-popover');
-      if (timePop) timePop.classList.add('hidden');
       if (typeof ApiClient !== 'undefined' && typeof ApiClient.fetchBufferMetrics === 'function') {
         ApiClient.fetchBufferMetrics();
       }
@@ -2633,11 +2670,8 @@ function initUIEventListeners() {
     if (!bridgePopover) return;
     const shouldOpen = typeof forceState === 'boolean' ? forceState : bridgePopover.classList.contains('hidden');
     if (shouldOpen) {
+      dismissActivePopovers('bridge-status-popover');
       bridgePopover.classList.remove('hidden');
-      if (telemetryPopover) telemetryPopover.classList.add('hidden');
-      if (bufferPopover) bufferPopover.classList.add('hidden');
-      const timePop = document.getElementById('mission-time-popover');
-      if (timePop) timePop.classList.add('hidden');
       if (typeof ApiClient !== 'undefined' && typeof ApiClient.fetchBufferMetrics === 'function') {
         ApiClient.fetchBufferMetrics();
       }
@@ -2650,11 +2684,8 @@ function initUIEventListeners() {
     if (!telemetryPopover) return;
     const shouldOpen = typeof forceState === 'boolean' ? forceState : telemetryPopover.classList.contains('hidden');
     if (shouldOpen) {
+      dismissActivePopovers('telemetry-weather-popover');
       telemetryPopover.classList.remove('hidden');
-      if (bridgePopover) bridgePopover.classList.add('hidden');
-      if (bufferPopover) bufferPopover.classList.add('hidden');
-      const timePop = document.getElementById('mission-time-popover');
-      if (timePop) timePop.classList.add('hidden');
     } else {
       telemetryPopover.classList.add('hidden');
     }
@@ -2865,16 +2896,7 @@ function initUIEventListeners() {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (bridgePopover && !bridgePopover.classList.contains('hidden')) {
-        bridgePopover.classList.add('hidden');
-      }
-      if (telemetryPopover && !telemetryPopover.classList.contains('hidden')) {
-        telemetryPopover.classList.add('hidden');
-      }
-      const timePopover = document.getElementById('mission-time-popover');
-      if (timePopover && !timePopover.classList.contains('hidden')) {
-        timePopover.classList.add('hidden');
-      }
+      dismissActivePopovers();
     }
   });
 
@@ -3152,6 +3174,7 @@ function initUIEventListeners() {
 
   if (showAboutBtn && aboutModal) {
     const toggleAboutModal = () => {
+      dismissActivePopovers();
       aboutModal.classList.toggle('hidden');
       if (!aboutModal.classList.contains('hidden') && window.innerWidth <= 768) {
         document.querySelector('.sidebar').classList.remove('open');
@@ -3173,6 +3196,7 @@ function initUIEventListeners() {
   if (showLinksBtn && linksModal) {
     const toggleLinksModal = (e) => {
       if (e) e.stopPropagation();
+      dismissActivePopovers();
       linksModal.classList.toggle('hidden');
       if (!linksModal.classList.contains('hidden')) {
         updateOpenSkyLink();
@@ -3645,6 +3669,7 @@ function initUIEventListeners() {
 
   if (configBtn && configModal) {
     const toggleConfigModal = () => {
+      dismissActivePopovers();
       configModal.classList.toggle('hidden');
       if (!configModal.classList.contains('hidden')) {
         if (unitSystemEl) unitSystemEl.value = getUnitSystem();
@@ -4174,6 +4199,7 @@ function initUIEventListeners() {
   const actionFlowTopbarBtn = document.getElementById('action-flow-topbar-btn');
   if (actionFlowTopbarBtn) {
     actionFlowTopbarBtn.addEventListener('click', () => {
+      dismissActivePopovers();
       if (typeof openActionFlowModal === 'function') {
         openActionFlowModal();
       }
@@ -4183,6 +4209,7 @@ function initUIEventListeners() {
   const moreMenuActionFlowBtn = document.getElementById('more-menu-action-flow-btn');
   if (moreMenuActionFlowBtn) {
     moreMenuActionFlowBtn.addEventListener('click', () => {
+      dismissActivePopovers();
       if (typeof openActionFlowModal === 'function') {
         openActionFlowModal();
       }

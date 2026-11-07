@@ -43918,21 +43918,13 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       });
 
       describe('v1.241.0: Topbar Pill Auto-Fitting, Side Swipeable Indicators, Opaque Brand Header & Divider Border (Issue #272)', () => {
-        test('Version consistency: v1.241.0 across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
-          const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-          assert.strictEqual(pkg.version, '1.241.0', 'package.json version must be 1.241.0');
-
+        test('Version consistency: v1.241.0 entry preserved in CHANGELOG.md and build history', () => {
           const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
           assert.ok(changelog.includes('## [1.241.0] - 2026-11-07'), 'CHANGELOG.md must include v1.241.0 header');
           assert.ok(changelog.includes('Closes #272'), 'CHANGELOG.md must reference issue #272');
 
           const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-          assert.ok(template.includes('Version 1.241.0'), 'index_template.html must include Version 1.241.0 in About modal');
-          assert.ok(template.includes('v1.241.0'), 'index_template.html must include v1.241.0 header badge');
-
-          const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-          assert.ok(gradle.includes('versionName = "1.241.0"'), 'Gradle versionName must be 1.241.0');
-          assert.ok(gradle.includes('versionCode = 12410'), 'Gradle versionCode must be 12410');
+          assert.ok(template.includes('Changelog (v1.241.0):'), 'index_template.html must include Changelog (v1.241.0)');
         });
 
         test('CSS Architecture: .topbar-left has 100% solid non-transparent background and right dividing border', () => {
@@ -43966,7 +43958,89 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
           assert.ok(src.includes('topbar-scroll-cue-right'), 'initTopbarScrollCues must query #topbar-scroll-cue-right');
         });
       });
-    });
+
+      describe('v1.242.0: Mutual Exclusivity Between ADS-B Radar Drawer & Modals/Popovers (Issue #273)', () => {
+        test('Version consistency: v1.242.0 across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
+          const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+          assert.strictEqual(pkg.version, '1.242.0', 'package.json version must be 1.242.0');
+
+          const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+          assert.ok(changelog.includes('## [1.242.0] - 2026-11-07'), 'CHANGELOG.md must include v1.242.0 header');
+          assert.ok(changelog.includes('Closes #273'), 'CHANGELOG.md must reference issue #273');
+
+          const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+          assert.ok(template.includes('Version 1.242.0'), 'index_template.html must include Version 1.242.0 in About modal');
+          assert.ok(template.includes('v1.242.0'), 'index_template.html must include v1.242.0 header badge');
+
+          const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+          assert.ok(html.includes('Version 1.242.0'), 'index.html must include Version 1.242.0 in About modal');
+
+          const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+          assert.ok(gradle.includes('versionName = "1.242.0"'), 'Gradle versionName must be 1.242.0');
+          assert.ok(gradle.includes('versionCode = 12420'), 'Gradle versionCode must be 12420');
+        });
+
+        test('dismissActivePopovers exists and closes #adsb-control-drawer and other popovers', () => {
+          const mockDrawer = { classList: { add: (c) => mockDrawer.classes.add(c), remove: (c) => mockDrawer.classes.delete(c), contains: (c) => mockDrawer.classes.has(c) }, classes: new Set() };
+          const mockBridge = { classList: { add: (c) => mockBridge.classes.add(c), remove: (c) => mockBridge.classes.delete(c), contains: (c) => mockBridge.classes.has(c) }, classes: new Set() };
+          const mockTelem = { classList: { add: (c) => mockTelem.classes.add(c), remove: (c) => mockTelem.classes.delete(c), contains: (c) => mockTelem.classes.has(c) }, classes: new Set() };
+          const mockTime = { classList: { add: (c) => mockTime.classes.add(c), remove: (c) => mockTime.classes.delete(c), contains: (c) => mockTime.classes.has(c) }, classes: new Set() };
+
+          const ebSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'EventBindings.js'), 'utf8');
+          assert.ok(ebSrc.includes('function dismissActivePopovers'), 'EventBindings must declare dismissActivePopovers');
+          assert.ok(ebSrc.includes('window.dismissActivePopovers = dismissActivePopovers'), 'dismissActivePopovers must be exposed on window');
+          assert.ok(ebSrc.includes('adsb-control-drawer'), 'dismissActivePopovers must handle adsb-control-drawer');
+
+          const origDoc = global.document;
+          try {
+            global.document = {
+              getElementById: (id) => {
+                if (id === 'adsb-control-drawer') return mockDrawer;
+                if (id === 'bridge-status-popover') return mockBridge;
+                if (id === 'telemetry-weather-popover') return mockTelem;
+                if (id === 'mission-time-popover') return mockTime;
+                return null;
+              }
+            };
+            if (typeof global.dismissActivePopovers === 'function') {
+              global.dismissActivePopovers();
+              assert.ok(mockDrawer.classList.contains('hidden'), 'Drawer must have hidden class added');
+              assert.ok(mockBridge.classList.contains('hidden'), 'Bridge popover must have hidden class added');
+              assert.ok(mockTelem.classList.contains('hidden'), 'Telemetry popover must have hidden class added');
+              assert.ok(mockTime.classList.contains('hidden'), 'Time popover must have hidden class added');
+            }
+          } finally {
+            global.document = origDoc;
+          }
+        });
+
+        test('Opening ADS-B drawer dismisses other ribbon popovers', () => {
+          const apiSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
+          assert.ok(apiSrc.includes("dismissActivePopovers('adsb-control-drawer')"), 'AdsbAirspaceManager.toggleDrawer must call dismissActivePopovers when opening');
+        });
+
+        test('Opening Mission Time popover dismisses ADS-B drawer and other popovers', () => {
+          const mcSrc = fs.readFileSync(path.join(__dirname, 'src', 'core', 'MissionClock.js'), 'utf8');
+          assert.ok(mcSrc.includes("dismissActivePopovers('mission-time-popover')"), 'MissionClock.togglePopover must call dismissActivePopovers when opening');
+        });
+
+        test('Escape key listener in EventBindings dismisses all active popovers and ADS-B drawer', () => {
+          const ebSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'EventBindings.js'), 'utf8');
+          assert.ok(ebSrc.includes("if (e.key === 'Escape')"), 'Escape key handler must exist');
+          assert.ok(ebSrc.includes('dismissActivePopovers();'), 'Escape key must trigger dismissActivePopovers()');
+        });
+
+        test('Modal dialogs (About, Links, Config, Guide, Action Flow) call dismissActivePopovers', () => {
+          const ebSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'EventBindings.js'), 'utf8');
+          const afSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'ActionFlowModal.js'), 'utf8');
+          const rmSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'ResetManager.js'), 'utf8');
+          const caSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'CompanionAuth.js'), 'utf8');
+
+          assert.ok(afSrc.includes('dismissActivePopovers()'), 'openActionFlowModal must call dismissActivePopovers()');
+          assert.ok(rmSrc.includes('dismissActivePopovers()'), 'openIntroModal must call dismissActivePopovers()');
+          assert.ok(caSrc.includes('dismissActivePopovers()'), 'CompanionAuth.openModal must call dismissActivePopovers()');
+        });
+      });    });
   });
   });
 });

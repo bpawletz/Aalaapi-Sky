@@ -3981,7 +3981,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
 
-    assert.strictEqual(mobile390Metrics.isOverflowing, false, 'Topbar must not horizontally overflow on 390px mobile screen');
+    // In v1.240.0+, the topbar is an interactive swipeable/scrollable ribbon (Issue #270)
+    // assert.strictEqual(mobile390Metrics.isOverflowing, false, 'Topbar must not horizontally overflow on 390px mobile screen');
     assert.strictEqual(mobile390Metrics.titleHidden, true, 'Brand text should be hidden on mobile to conserve space');
     assert.strictEqual(mobile390Metrics.moreBtnVisible, true, 'More menu button should be visible on mobile');
     assert.strictEqual(mobile390Metrics.introHidden, true, 'Intro button should be collapsed into More menu');
@@ -4002,7 +4003,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const topbar = document.querySelector('.studio-topbar');
       return topbar.scrollWidth > topbar.clientWidth;
     });
-    assert.strictEqual(mobile360Overflow, false, 'Topbar must not horizontally overflow even on 360px small screens');
+    // In v1.240.0+, the topbar is an interactive swipeable/scrollable ribbon (Issue #270)
+    // assert.strictEqual(mobile360Overflow, false, 'Topbar must not horizontally overflow even on 360px small screens');
 
     // 3. Test Expandable Mobile Search
     await page.locator('#mobile-search-toggle-btn').click();
@@ -13015,6 +13017,88 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     // Restore viewport
     await page.setViewportSize({ width: 1366, height: 768 });
+  });
+  test('E2E: Mutual Exclusivity Between ADS-B Radar Drawer & Modals/Popovers (v1.242.0, Issue #273)', async () => {
+    // 1. Ensure baseline clean state with popovers closed
+    await page.evaluate(() => {
+      if (typeof dismissActivePopovers === 'function') dismissActivePopovers();
+    });
+
+    // 2. Open ADS-B radar drawer
+    await page.evaluate(() => {
+      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+        AdsbAirspaceManager.toggleDrawer(true);
+      }
+    });
+    await page.waitForTimeout(100);
+
+    let drawerVisible = await page.evaluate(() => {
+      const drawer = document.getElementById('adsb-control-drawer');
+      return drawer && !drawer.classList.contains('hidden');
+    });
+    assert.strictEqual(drawerVisible, true, 'ADS-B drawer must be open');
+
+    // 3. Open Bridge Popover by clicking Bridge pill
+    await page.evaluate(() => {
+      const bridgePill = document.getElementById('header-bridge-pill');
+      if (bridgePill) bridgePill.click();
+    });
+    await page.waitForTimeout(150);
+
+    let states = await page.evaluate(() => {
+      const drawer = document.getElementById('adsb-control-drawer');
+      const bridge = document.getElementById('bridge-status-popover');
+      return {
+        drawerHidden: drawer ? drawer.classList.contains('hidden') : true,
+        bridgeVisible: bridge ? !bridge.classList.contains('hidden') : false
+      };
+    });
+    assert.strictEqual(states.drawerHidden, true, 'Opening Bridge popover must close ADS-B drawer');
+    assert.strictEqual(states.bridgeVisible, true, 'Bridge popover must be open');
+
+    // 4. Now open ADS-B drawer again -> Bridge popover must close
+    await page.evaluate(() => {
+      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+        AdsbAirspaceManager.toggleDrawer(true);
+      }
+    });
+    await page.waitForTimeout(100);
+
+    states = await page.evaluate(() => {
+      const drawer = document.getElementById('adsb-control-drawer');
+      const bridge = document.getElementById('bridge-status-popover');
+      return {
+        drawerVisible: drawer ? !drawer.classList.contains('hidden') : false,
+        bridgeHidden: bridge ? bridge.classList.contains('hidden') : true
+      };
+    });
+    assert.strictEqual(states.drawerVisible, true, 'ADS-B drawer must be open');
+    assert.strictEqual(states.bridgeHidden, true, 'Opening ADS-B drawer must close Bridge popover');
+
+    // 5. Click on the map canvas -> ADS-B drawer must remain open
+    await page.evaluate(() => {
+      const mapEl = document.getElementById('map');
+      if (mapEl) {
+        mapEl.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      }
+    });
+    await page.waitForTimeout(100);
+
+    drawerVisible = await page.evaluate(() => {
+      const drawer = document.getElementById('adsb-control-drawer');
+      return drawer && !drawer.classList.contains('hidden');
+    });
+    assert.strictEqual(drawerVisible, true, 'Clicking on map must keep ADS-B drawer open');
+
+    // 6. Press Escape key -> ADS-B drawer must close
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(100);
+
+    drawerVisible = await page.evaluate(() => {
+      const drawer = document.getElementById('adsb-control-drawer');
+      return drawer && !drawer.classList.contains('hidden');
+    });
+    assert.strictEqual(drawerVisible, false, 'Pressing Escape must close ADS-B drawer');
   });
 
   test('E2E: Topbar Pill Auto-Fitting, Side Swipeable Indicators & Opaque Brand Header (v1.241.0, Issue #272)', async () => {

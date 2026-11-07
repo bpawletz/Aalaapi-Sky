@@ -15933,6 +15933,11 @@ const AdsbAirspaceManager = {
 
 
     if (this.isDrawerOpen) {
+      if (typeof window !== 'undefined' && typeof window.dismissActivePopovers === 'function') {
+        window.dismissActivePopovers('adsb-control-drawer');
+      } else if (typeof dismissActivePopovers === 'function') {
+        dismissActivePopovers('adsb-control-drawer');
+      }
 
 
 
