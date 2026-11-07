@@ -8747,7 +8747,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.234.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.235.0</span></h1>
         </div>
       </div>
 
@@ -16228,7 +16228,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.234.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.235.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -16392,6 +16392,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.235.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Common Base + OS Override Platform Framework (Closes #263):</strong> Introduced modular <code>src/platform/</code> (<code>BasePlatformAdapter</code>, <code>WindowsDesktopAdapter</code>, <code>AndroidPlatformAdapter</code>, <code>IosPlatformAdapter</code>, <code>PlatformManager</code>) and Companion Bridge <code>tools/companion/drivers/</code> (<code>BaseCompanionDriver</code>, <code>Win32CompanionDriver</code>, <code>PosixCompanionDriver</code>) replacing scattered inline platform conditionals.</li>
+                  <li><strong>Full iOS &amp; iPadOS Adapter Support (Closes #263):</strong> Added native 1-tap KMZ export via the iOS Share Sheet (<code>navigator.share({ files })</code>) plus <code>WKWebView</code> <code>AalaapiIOS</code> bridge hooks for GPS, TTS, wake lock, keychain, and CORS-free HTTP.</li>
+                  <li><strong>Runtime Platform Test Override (<code>?platform=</code>) (Closes #263):</strong> Enabled instant runtime switching via <code>?platform=android|ios|windows|web</code> URL parameters or <code>Platform.usePlatform()</code> without rebuilding separate bundles.</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.234.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                   <li><strong>Cross-Platform Screen Keep-Awake / Sleep Toggle (Closes #262):</strong> Added persistent topbar button (<code>☕ Awake</code> / <code>💤 Sleep</code>) and mobile overflow menu option using native Android <code>FLAG_KEEP_SCREEN_ON</code> and Web Screen Wake Lock API to prevent screen timeout during flights.</li>
@@ -26246,6 +26254,1214 @@ if (typeof window !== 'undefined') {
 }
 
 // Theme Manager (Light & Dark Field Mode)
+// -------------------- src/platform/BasePlatformAdapter.js --------------------
+/**
+ * Aalaapi Sky - Base Platform Adapter (Common Web & Companion Bridge Defaults)
+ *
+ * Defines the shared platform interface and standard browser/Companion implementations.
+ * Platform-specific subclasses (WindowsDesktopAdapter, AndroidPlatformAdapter, IosPlatformAdapter)
+ * extend this class and override only the capabilities that differ on their operating system.
+ */
+
+class BasePlatformAdapter {
+  constructor(id = 'web') {
+    this.id = id;
+  }
+
+  /**
+   * Returns legacy sync platform identifier ('android' | 'ios' | 'chromeos' | 'desktop')
+   */
+  getSyncPlatform() {
+    if (this.id === 'android') return 'android';
+    if (this.id === 'ios') return 'ios';
+    if (this.id === 'chromeos') return 'chromeos';
+    return 'desktop';
+  }
+
+  isNativeContainer() {
+    return false;
+  }
+
+  isNativeAndroid() {
+    return false;
+  }
+
+  isNativeIos() {
+    return false;
+  }
+
+  supportsWebUsbDirect() {
+    return this.id === 'android' || this.id === 'chromeos';
+  }
+
+  getSyncTransportLabel() {
+    return 'Aalaapi Companion Bridge (REST / SSE)';
+  }
+
+  /**
+   * Convert a string, Blob, Uint8Array, or ArrayBuffer into a Base64 string.
+   */
+  async blobToBase64(blobOrData) {
+    if (typeof blobOrData === 'string') {
+      if (typeof btoa === 'function') {
+        return btoa(unescape(encodeURIComponent(blobOrData)));
+      }
+      if (typeof Buffer !== 'undefined') {
+        return Buffer.from(blobOrData, 'utf8').toString('base64');
+      }
+      return '';
+    }
+    if (typeof Blob !== 'undefined' && blobOrData instanceof Blob) {
+      const buffer = await blobOrData.arrayBuffer();
+      return this._bytesToBase64(new Uint8Array(buffer));
+    }
+    if (blobOrData instanceof Uint8Array || blobOrData instanceof ArrayBuffer) {
+      const bytes = blobOrData instanceof ArrayBuffer ? new Uint8Array(blobOrData) : blobOrData;
+      return this._bytesToBase64(bytes);
+    }
+    return '';
+  }
+
+  _bytesToBase64(bytes) {
+    if (typeof btoa === 'function') {
+      let binary = '';
+      const chunk = 8192;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        const sub = bytes.subarray(i, i + chunk);
+        binary += String.fromCharCode.apply(null, sub);
+      }
+      return btoa(binary);
+    }
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(bytes).toString('base64');
+    }
+    return '';
+  }
+
+  // ─── 1. File Export / Download ──────────────────────────────────────────────
+  async saveFile(blobOrData, filename, mimeType = 'application/octet-stream') {
+    if (typeof document === 'undefined' || !document.createElement) {
+      return { success: false, method: 'none', filename };
+    }
+    const blob = (typeof Blob !== 'undefined' && blobOrData instanceof Blob)
+      ? blobOrData
+      : new Blob([blobOrData], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      if (link.parentNode) link.parentNode.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 150);
+    return { success: true, method: 'browser-download', filename };
+  }
+
+  // ─── 2. Static Bundled Asset Loading ────────────────────────────────────────
+  async readAsset(assetPath, timeoutMs = 4000) {
+    if (typeof fetch === 'undefined') return null;
+    try {
+      const cleanPath = assetPath.startsWith('./') || assetPath.startsWith('/') ? assetPath : `./${assetPath}`;
+      const options = {};
+      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+        options.signal = AbortSignal.timeout(timeoutMs);
+      }
+      const res = await fetch(cleanPath, options);
+      if (res.ok) {
+        if (typeof res.text === 'function') {
+          return await res.text();
+        }
+        if (typeof res.json === 'function') {
+          const parsed = await res.json();
+          return typeof parsed === 'string' ? parsed : JSON.stringify(parsed);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  async readAssetJson(assetPath, timeoutMs = 4000) {
+    const raw = await this.readAsset(assetPath, timeoutMs);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ─── 3. Geolocation ─────────────────────────────────────────────────────────
+  hasLocationSupport() {
+    return Boolean(typeof navigator !== 'undefined' && navigator.geolocation);
+  }
+
+  requestLocation(onSuccess, onError, options = { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }) {
+    if (!this.hasLocationSupport()) {
+      if (typeof onError === 'function') onError('Location not supported');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (typeof onSuccess === 'function') {
+          onSuccess({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          });
+        }
+      },
+      (error) => {
+        if (typeof onError === 'function') {
+          onError(error && error.code === 1 ? 'Location permission denied' : 'Location unavailable');
+        }
+      },
+      options
+    );
+  }
+
+  // ─── 4. Voice Advisory / Text-to-Speech ─────────────────────────────────────
+  hasNativeTts() {
+    return false;
+  }
+
+  hasSpeechSupport() {
+    return this.hasNativeTts() || Boolean(typeof window !== 'undefined' && window.speechSynthesis);
+  }
+
+  speak(text, rate = 1.05, pitch = 1.0) {
+    if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
+      return false;
+    }
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = rate;
+      utterance.pitch = pitch;
+      utterance.volume = 0.9;
+      window.speechSynthesis.speak(utterance);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  stopSpeaking() {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      try { window.speechSynthesis.cancel(); } catch (_) {}
+    }
+  }
+
+  // ─── 5. Screen Wake Lock ────────────────────────────────────────────────────
+  setKeepScreenOn(_enabled) {
+    // Standard browser wakeLock is managed via navigator.wakeLock Sentinel in ScreenAwakeManager / DigitalTwin
+    return false;
+  }
+
+  // ─── 6. Keychain / Secret Storage & CORS-Free HTTP ──────────────────────────
+  getDjiApiKey() {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const val = localStorage.getItem('aalaapi_dji_api_key');
+        if (val) return val.trim();
+      } catch (_) {}
+    }
+    return '';
+  }
+
+  setDjiApiKey(key) {
+    const cleaned = (key || '').trim();
+    if (typeof localStorage !== 'undefined') {
+      try {
+        if (cleaned) {
+          localStorage.setItem('aalaapi_dji_api_key', cleaned);
+        } else {
+          localStorage.removeItem('aalaapi_dji_api_key');
+        }
+        return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  async fetchHttpJson(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  }
+
+  postHttpNative(_url, _bodyStr, _headersObj) {
+    return null;
+  }
+
+  // ─── 7. Flight Controller Sync & Flight Logs ────────────────────────────────
+  pushKmzToController(_kmzBase64, _uuid) {
+    return { handled: false };
+  }
+
+  pullLatestLogFromController() {
+    return { handled: false };
+  }
+
+  listControllerLogs(_limit = 30, _forceRefresh = false) {
+    return null;
+  }
+
+  pullControllerLog(_filename, _handle = null) {
+    return null;
+  }
+
+  listSavedFlights() {
+    return null;
+  }
+
+  getSavedFlightTelemetry(_flightId) {
+    return null;
+  }
+
+  // ─── 8. Native Airspace Sockets (ADS-B & mDNS) ──────────────────────────────
+  getNativeAdsbStatus() {
+    return null;
+  }
+
+  setNativeAdsbServer(_host, _port) {
+    return false;
+  }
+
+  async probeAdsbHost(targetHost, apiBase = 'http://127.0.0.1:8765') {
+    const res = await fetch(`${apiBase}/api/config/adsb/probe?host=${encodeURIComponent(targetHost)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  }
+
+  async discoverMdnsServers(timeoutMs = 2000, apiBase = 'http://127.0.0.1:8765') {
+    const res = await fetch(`${apiBase}/api/airspace/discover?timeout=${encodeURIComponent(timeoutMs)}`);
+    return await res.json();
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.BasePlatformAdapter = BasePlatformAdapter;
+}
+if (typeof global !== 'undefined') {
+  global.BasePlatformAdapter = BasePlatformAdapter;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { BasePlatformAdapter };
+}
+// -------------------- src/platform/WindowsDesktopAdapter.js --------------------
+/**
+ * Aalaapi Sky - Windows & Desktop Platform Adapter
+ *
+ * Extends BasePlatformAdapter for Windows, macOS, and Linux desktop environments
+ * paired with the Aalaapi Companion Bridge (PowerShell COM MTP, C# BLE/Wi-Fi scanners, RTL-SDR).
+ */
+
+class WindowsDesktopAdapter extends BasePlatformAdapter {
+  constructor(osSubtype = 'windows') {
+    super('desktop');
+    this.osSubtype = osSubtype;
+  }
+
+  getSyncPlatform() {
+    return 'desktop';
+  }
+
+  supportsWebUsbDirect() {
+    return false;
+  }
+
+  getSyncTransportLabel() {
+    if (this.osSubtype === 'windows') {
+      return 'Windows Companion Bridge (PowerShell COM MTP / SSE)';
+    }
+    return 'Desktop Companion Bridge (ADB / SSE)';
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.WindowsDesktopAdapter = WindowsDesktopAdapter;
+}
+if (typeof global !== 'undefined') {
+  global.WindowsDesktopAdapter = WindowsDesktopAdapter;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { WindowsDesktopAdapter };
+}
+// -------------------- src/platform/AndroidPlatformAdapter.js --------------------
+/**
+ * Aalaapi Sky - Android Platform Adapter
+ *
+ * Extends BasePlatformAdapter for Android tablets, phones, and DJI controllers.
+ * Routes capabilities to `window.AalaapiAndroid` when running inside the Native Kotlin WebView
+ * container, and automatically falls back to `super` (WebUSB / standard Web APIs) when running
+ * inside mobile Chrome / PWA or if a native bridge method is unavailable.
+ */
+
+class AndroidPlatformAdapter extends BasePlatformAdapter {
+  constructor() {
+    super('android');
+  }
+
+  _bridge() {
+    if (typeof window !== 'undefined' && window.AalaapiAndroid) {
+      return window.AalaapiAndroid;
+    }
+    return null;
+  }
+
+  getSyncPlatform() {
+    return 'android';
+  }
+
+  isNativeContainer() {
+    return Boolean(this._bridge());
+  }
+
+  isNativeAndroid() {
+    return Boolean(this._bridge());
+  }
+
+  supportsWebUsbDirect() {
+    return true;
+  }
+
+  getSyncTransportLabel() {
+    return this.isNativeContainer()
+      ? 'Android Native Hardware Bridge (USB-C MTP / BLE / TCP)'
+      : 'Android WebUSB Direct Link';
+  }
+
+  // ─── 1. File Export / Download ──────────────────────────────────────────────
+  async saveFile(blobOrData, filename, mimeType = 'application/octet-stream') {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.saveFile === 'function') {
+      try {
+        const base64 = await this.blobToBase64(blobOrData);
+        const rawRes = bridge.saveFile(base64, filename, mimeType);
+        try {
+          const parsed = JSON.parse(rawRes);
+          if (parsed.success && typeof showToast === 'function') {
+            showToast(`💾 Saved to Downloads: ${filename}`, 'success');
+          }
+        } catch (_) {
+          if (typeof showToast === 'function') {
+            showToast(`💾 Saved to Downloads: ${filename}`, 'success');
+          }
+        }
+        return { success: true, method: 'android-native', filename };
+      } catch (err) {
+        console.warn('[AndroidPlatformAdapter] Native saveFile failed, falling back to browser download:', err);
+      }
+    }
+    return super.saveFile(blobOrData, filename, mimeType);
+  }
+
+  // ─── 2. Static Bundled Asset Loading ────────────────────────────────────────
+  async readAsset(assetPath, timeoutMs = 4000) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.readAsset === 'function') {
+      try {
+        const clean = assetPath.replace(/^\.?\//, '');
+        const rawText = bridge.readAsset(clean);
+        if (rawText) return rawText;
+      } catch (_) {}
+    }
+    return super.readAsset(assetPath, timeoutMs);
+  }
+
+  // ─── 3. Geolocation ─────────────────────────────────────────────────────────
+  hasLocationSupport() {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.getNativeLocation === 'function') {
+      return true;
+    }
+    return super.hasLocationSupport();
+  }
+
+  requestLocation(onSuccess, onError, options) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.getNativeLocation === 'function') {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          if (typeof onError === 'function') onError('Location request timed out');
+        }
+      }, 20000);
+
+      if (typeof window !== 'undefined') {
+        window.onNativeLocation = (lat, lon) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (typeof onSuccess === 'function') onSuccess({ lat: Number(lat), lon: Number(lon) });
+        };
+        window.onNativeLocationError = (message) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (typeof onError === 'function') onError(message || 'Location unavailable');
+        };
+      }
+
+      bridge.getNativeLocation();
+      return;
+    }
+    return super.requestLocation(onSuccess, onError, options);
+  }
+
+  // ─── 4. Voice Advisory / Text-to-Speech ─────────────────────────────────────
+  hasNativeTts() {
+    const bridge = this._bridge();
+    return Boolean(bridge && typeof bridge.speak === 'function');
+  }
+
+  speak(text, rate = 1.05, pitch = 1.0) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.speak === 'function') {
+      try {
+        bridge.speak(text, rate, pitch);
+        return true;
+      } catch (_) {}
+    }
+    return super.speak(text, rate, pitch);
+  }
+
+  stopSpeaking() {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.stopSpeaking === 'function') {
+      try {
+        bridge.stopSpeaking();
+        return;
+      } catch (_) {}
+    }
+    super.stopSpeaking();
+  }
+
+  // ─── 5. Screen Wake Lock ────────────────────────────────────────────────────
+  setKeepScreenOn(enabled) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.setKeepScreenOn === 'function') {
+      try {
+        bridge.setKeepScreenOn(Boolean(enabled));
+        return true;
+      } catch (_) {}
+    }
+    return super.setKeepScreenOn(enabled);
+  }
+
+  // ─── 6. Keychain / Secret Storage & CORS-Free HTTP ──────────────────────────
+  getDjiApiKey() {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.getDjiApiKey === 'function') {
+      try {
+        const nativeKey = bridge.getDjiApiKey();
+        if (nativeKey && nativeKey.trim()) {
+          return nativeKey.trim();
+        }
+      } catch (_) {}
+    }
+    return super.getDjiApiKey();
+  }
+
+  setDjiApiKey(key) {
+    const cleaned = (key || '').trim();
+    const bridge = this._bridge();
+    let nativeSaved = false;
+    if (bridge && typeof bridge.setDjiApiKey === 'function') {
+      try {
+        bridge.setDjiApiKey(cleaned);
+        nativeSaved = true;
+      } catch (_) {}
+    }
+    const localSaved = super.setDjiApiKey(cleaned);
+    return nativeSaved || localSaved;
+  }
+
+  async fetchHttpJson(url) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.fetchHttp === 'function') {
+      const raw = bridge.fetchHttp(url);
+      const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (data && data.error) throw new Error(data.error);
+      return data;
+    }
+    return super.fetchHttpJson(url);
+  }
+
+  postHttpNative(url, bodyStr, headersObj) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.postHttp === 'function') {
+      const headersJson = typeof headersObj === 'string' ? headersObj : JSON.stringify(headersObj || {});
+      const rawRes = bridge.postHttp(url, bodyStr, headersJson);
+      return typeof rawRes === 'string' ? JSON.parse(rawRes) : rawRes;
+    }
+    return null;
+  }
+
+  // ─── 7. Flight Controller Sync & Flight Logs ────────────────────────────────
+  pushKmzToController(kmzBase64, uuid) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.pushKmzToRc2 === 'function') {
+      const ok = bridge.pushKmzToRc2(kmzBase64, uuid);
+      return { handled: true, success: Boolean(ok), slotUuid: uuid };
+    }
+    return super.pushKmzToController(kmzBase64, uuid);
+  }
+
+  pullLatestLogFromController() {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.pullLatestLogFromRc2 === 'function') {
+      const rawRes = bridge.pullLatestLogFromRc2();
+      return { handled: true, rawRes };
+    }
+    return super.pullLatestLogFromController();
+  }
+
+  listControllerLogs(limit = 30, forceRefresh = false) {
+    const bridge = this._bridge();
+    if (bridge && (typeof bridge.listFlightRecordsFromRc2WithRefresh === 'function' || typeof bridge.listFlightRecordsFromRc2 === 'function')) {
+      try {
+        const raw = (forceRefresh && typeof bridge.listFlightRecordsFromRc2WithRefresh === 'function')
+          ? bridge.listFlightRecordsFromRc2WithRefresh(limit, true)
+          : bridge.listFlightRecordsFromRc2(limit);
+        const parsed = JSON.parse(raw || '[]');
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        console.warn('[AndroidPlatformAdapter] MTP list error:', e);
+      }
+    }
+    return super.listControllerLogs(limit, forceRefresh);
+  }
+
+  pullControllerLog(filename, handle = null) {
+    const bridge = this._bridge();
+    if (bridge && (typeof bridge.pullLogByHandleFromRc2 === 'function' || typeof bridge.pullLogByNameFromRc2 === 'function')) {
+      let raw = null;
+      if (handle && !isNaN(handle) && typeof bridge.pullLogByHandleFromRc2 === 'function') {
+        raw = bridge.pullLogByHandleFromRc2(handle);
+      } else if (typeof bridge.pullLogByNameFromRc2 === 'function') {
+        raw = bridge.pullLogByNameFromRc2(filename);
+      }
+      return JSON.parse(raw || '{}');
+    }
+    return super.pullControllerLog(filename, handle);
+  }
+
+  listSavedFlights() {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.listSavedFlights === 'function') {
+      try {
+        const raw = bridge.listSavedFlights();
+        if (raw) {
+          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if (parsed && parsed.success && Array.isArray(parsed.flights)) {
+            return parsed.flights;
+          }
+        }
+      } catch (_) {}
+    }
+    return super.listSavedFlights();
+  }
+
+  getSavedFlightTelemetry(flightId) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.getSavedFlightTelemetry === 'function') {
+      try {
+        const raw = bridge.getSavedFlightTelemetry(flightId);
+        if (raw) {
+          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if (parsed && parsed.success && parsed.data) {
+            return parsed.data;
+          }
+        }
+      } catch (_) {}
+    }
+    return super.getSavedFlightTelemetry(flightId);
+  }
+
+  // ─── 8. Native Airspace Sockets (ADS-B & mDNS) ──────────────────────────────
+  getNativeAdsbStatus() {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.getAdsbStatus === 'function') {
+      try {
+        const raw = bridge.getAdsbStatus();
+        if (raw) return typeof raw === 'string' ? JSON.parse(raw) : raw;
+      } catch (_) {}
+    }
+    return super.getNativeAdsbStatus();
+  }
+
+  setNativeAdsbServer(host, port) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.setAdsbServer === 'function') {
+      bridge.setAdsbServer(host, port);
+      return true;
+    }
+    return super.setNativeAdsbServer(host, port);
+  }
+
+  async probeAdsbHost(targetHost, apiBase = 'http://127.0.0.1:8765') {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.probeAdsbHost === 'function') {
+      const raw = bridge.probeAdsbHost(targetHost);
+      return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    }
+    return super.probeAdsbHost(targetHost, apiBase);
+  }
+
+  async discoverMdnsServers(timeoutMs = 2000, apiBase = 'http://127.0.0.1:8765') {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.discoverMdnsServers === 'function') {
+      const raw = bridge.discoverMdnsServers(timeoutMs);
+      return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    }
+    return super.discoverMdnsServers(timeoutMs, apiBase);
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.AndroidPlatformAdapter = AndroidPlatformAdapter;
+}
+if (typeof global !== 'undefined') {
+  global.AndroidPlatformAdapter = AndroidPlatformAdapter;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { AndroidPlatformAdapter };
+}
+// -------------------- src/platform/IosPlatformAdapter.js --------------------
+/**
+ * Aalaapi Sky - iOS & iPadOS Platform Adapter
+ *
+ * Extends BasePlatformAdapter for iPhone and iPad devices:
+ * 1. Supports native Swift/WKWebView container (`window.AalaapiIOS` or `window.webkit.messageHandlers.AalaapiIOS`)
+ * 2. Supports iOS Safari / Home Screen PWA overrides (such as Web Share API `navigator.share({ files })`
+ *    for 1-tap KMZ export to Files / AirDrop / DJI Fly)
+ * 3. Falls back cleanly to `super` (standard Web & Companion Bridge APIs) for all other methods.
+ */
+
+class IosPlatformAdapter extends BasePlatformAdapter {
+  constructor() {
+    super('ios');
+  }
+
+  _bridge() {
+    if (typeof window !== 'undefined') {
+      if (window.AalaapiIOS) return window.AalaapiIOS;
+    }
+    return null;
+  }
+
+  _webkitHandler() {
+    if (typeof window !== 'undefined' && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.AalaapiIOS) {
+      return window.webkit.messageHandlers.AalaapiIOS;
+    }
+    return null;
+  }
+
+  _postWebkitMessage(action, payload = {}) {
+    const handler = this._webkitHandler();
+    if (handler && typeof handler.postMessage === 'function') {
+      try {
+        handler.postMessage({ action, ...payload });
+        return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  getSyncPlatform() {
+    return 'ios';
+  }
+
+  isNativeContainer() {
+    return Boolean(this._bridge() || this._webkitHandler());
+  }
+
+  isNativeIos() {
+    return this.isNativeContainer();
+  }
+
+  supportsWebUsbDirect() {
+    // iOS/iPadOS Safari and WKWebView do not expose WebUSB (navigator.usb)
+    return false;
+  }
+
+  getSyncTransportLabel() {
+    return this.isNativeContainer()
+      ? 'iOS Native Hardware Bridge (WKWebView)'
+      : 'iOS Companion / AirDrop Share Link';
+  }
+
+  // ─── 1. File Export / Download (Native Bridge -> iOS Web Share Sheet -> Anchor Fallback) ───
+  async saveFile(blobOrData, filename, mimeType = 'application/octet-stream') {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.saveFile === 'function') {
+      try {
+        const base64 = await this.blobToBase64(blobOrData);
+        const rawRes = await bridge.saveFile(base64, filename, mimeType);
+        if (typeof showToast === 'function') {
+          showToast(`💾 Saved to iOS Files: ${filename}`, 'success');
+        }
+        return { success: true, method: 'ios-native', filename, rawRes };
+      } catch (err) {
+        console.warn('[IosPlatformAdapter] Native saveFile failed:', err);
+      }
+    }
+
+    if (this._webkitHandler()) {
+      const base64 = await this.blobToBase64(blobOrData);
+      if (this._postWebkitMessage('saveFile', { base64, filename, mimeType })) {
+        if (typeof showToast === 'function') {
+          showToast(`💾 Exporting to iOS Share Sheet: ${filename}`, 'success');
+        }
+        return { success: true, method: 'ios-webkit', filename };
+      }
+    }
+
+    // iOS Safari / PWA Web Share API Level 2 (Files) for native iPad/iPhone Share Sheet
+    if (typeof navigator !== 'undefined' && typeof navigator.canShare === 'function' && typeof navigator.share === 'function' && typeof File !== 'undefined') {
+      try {
+        const blob = (typeof Blob !== 'undefined' && blobOrData instanceof Blob)
+          ? blobOrData
+          : new Blob([blobOrData], { type: mimeType });
+        const fileObj = new File([blob], filename, { type: mimeType });
+        if (navigator.canShare({ files: [fileObj] })) {
+          await navigator.share({
+            files: [fileObj],
+            title: filename
+          });
+          return { success: true, method: 'ios-web-share', filename };
+        }
+      } catch (shareErr) {
+        // User cancelled share sheet or not triggered by user gesture; fall back to anchor download
+        if (shareErr && shareErr.name === 'AbortError') {
+          return { success: false, cancelled: true, method: 'ios-web-share', filename };
+        }
+      }
+    }
+
+    return super.saveFile(blobOrData, filename, mimeType);
+  }
+
+  // ─── 2. Static Bundled Asset Loading ────────────────────────────────────────
+  async readAsset(assetPath, timeoutMs = 4000) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.readAsset === 'function') {
+      try {
+        const clean = assetPath.replace(/^\.?\//, '');
+        const rawText = await bridge.readAsset(clean);
+        if (rawText) return rawText;
+      } catch (_) {}
+    }
+    return super.readAsset(assetPath, timeoutMs);
+  }
+
+  // ─── 3. Geolocation ─────────────────────────────────────────────────────────
+  hasLocationSupport() {
+    if (this.isNativeContainer()) return true;
+    return super.hasLocationSupport();
+  }
+
+  requestLocation(onSuccess, onError, options) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.getNativeLocation === 'function') {
+      if (typeof window !== 'undefined') {
+        window.onNativeLocation = (lat, lon) => {
+          if (typeof onSuccess === 'function') onSuccess({ lat: Number(lat), lon: Number(lon) });
+        };
+        window.onNativeLocationError = (message) => {
+          if (typeof onError === 'function') onError(message || 'Location unavailable');
+        };
+      }
+      bridge.getNativeLocation();
+      return;
+    }
+    if (this._webkitHandler()) {
+      if (typeof window !== 'undefined') {
+        window.onNativeLocation = (lat, lon) => {
+          if (typeof onSuccess === 'function') onSuccess({ lat: Number(lat), lon: Number(lon) });
+        };
+        window.onNativeLocationError = (message) => {
+          if (typeof onError === 'function') onError(message || 'Location unavailable');
+        };
+      }
+      if (this._postWebkitMessage('getNativeLocation')) return;
+    }
+    return super.requestLocation(onSuccess, onError, options);
+  }
+
+  // ─── 4. Voice Advisory / Text-to-Speech ─────────────────────────────────────
+  hasNativeTts() {
+    const bridge = this._bridge();
+    return Boolean((bridge && typeof bridge.speak === 'function') || this._webkitHandler());
+  }
+
+  speak(text, rate = 1.05, pitch = 1.0) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.speak === 'function') {
+      try {
+        bridge.speak(text, rate, pitch);
+        return true;
+      } catch (_) {}
+    }
+    if (this._postWebkitMessage('speak', { text, rate, pitch })) {
+      return true;
+    }
+    return super.speak(text, rate, pitch);
+  }
+
+  stopSpeaking() {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.stopSpeaking === 'function') {
+      try {
+        bridge.stopSpeaking();
+        return;
+      } catch (_) {}
+    }
+    if (this._postWebkitMessage('stopSpeaking')) return;
+    super.stopSpeaking();
+  }
+
+  // ─── 5. Screen Wake Lock ────────────────────────────────────────────────────
+  setKeepScreenOn(enabled) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.setKeepScreenOn === 'function') {
+      try {
+        bridge.setKeepScreenOn(Boolean(enabled));
+        return true;
+      } catch (_) {}
+    }
+    if (this._postWebkitMessage('setKeepScreenOn', { enabled: Boolean(enabled) })) {
+      return true;
+    }
+    return super.setKeepScreenOn(enabled);
+  }
+
+  // ─── 6. Keychain / Secret Storage & CORS-Free HTTP ──────────────────────────
+  getDjiApiKey() {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.getDjiApiKey === 'function') {
+      try {
+        const key = bridge.getDjiApiKey();
+        if (key && key.trim()) return key.trim();
+      } catch (_) {}
+    }
+    return super.getDjiApiKey();
+  }
+
+  setDjiApiKey(key) {
+    const cleaned = (key || '').trim();
+    const bridge = this._bridge();
+    let nativeSaved = false;
+    if (bridge && typeof bridge.setDjiApiKey === 'function') {
+      try {
+        bridge.setDjiApiKey(cleaned);
+        nativeSaved = true;
+      } catch (_) {}
+    }
+    if (this._postWebkitMessage('setDjiApiKey', { key: cleaned })) {
+      nativeSaved = true;
+    }
+    const localSaved = super.setDjiApiKey(cleaned);
+    return nativeSaved || localSaved;
+  }
+
+  async fetchHttpJson(url) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.fetchHttp === 'function') {
+      const raw = await bridge.fetchHttp(url);
+      const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (data && data.error) throw new Error(data.error);
+      return data;
+    }
+    return super.fetchHttpJson(url);
+  }
+
+  postHttpNative(url, bodyStr, headersObj) {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.postHttp === 'function') {
+      const headersJson = typeof headersObj === 'string' ? headersObj : JSON.stringify(headersObj || {});
+      const rawRes = bridge.postHttp(url, bodyStr, headersJson);
+      return typeof rawRes === 'string' ? JSON.parse(rawRes) : rawRes;
+    }
+    return null;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.IosPlatformAdapter = IosPlatformAdapter;
+}
+if (typeof global !== 'undefined') {
+  global.IosPlatformAdapter = IosPlatformAdapter;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { IosPlatformAdapter };
+}
+// -------------------- src/platform/PlatformManager.js --------------------
+/**
+ * Aalaapi Sky - Unified Platform Manager & Runtime Dispatch Facade
+ *
+ * Automatically resolves the active OS adapter (`AndroidPlatformAdapter`, `IosPlatformAdapter`,
+ * `WindowsDesktopAdapter`, or `BasePlatformAdapter`) while supporting:
+ * 1. Dynamic runtime overrides (`Platform.usePlatform('ios')` or `Platform.setAdapter(mockAdapter)`)
+ * 2. URL query parameter test overrides (`?platform=android|ios|windows|web`)
+ * 3. Live native container injection detection (`window.AalaapiAndroid` / `window.AalaapiIOS` / `webkit`)
+ */
+
+const PlatformManager = {
+  _customAdapter: null,
+  _forcedPlatformId: null,
+  _instances: null,
+
+  _ensureInstances() {
+    if (!this._instances) {
+      this._instances = {
+        web: new BasePlatformAdapter('web'),
+        chromeos: new BasePlatformAdapter('chromeos'),
+        windows: new WindowsDesktopAdapter('windows'),
+        desktop: new WindowsDesktopAdapter('desktop'),
+        android: new AndroidPlatformAdapter(),
+        ios: new IosPlatformAdapter()
+      };
+    }
+    return this._instances;
+  },
+
+  /**
+   * Detect the active platform identifier ('android' | 'ios' | 'chromeos' | 'windows' | 'desktop' | 'web')
+   */
+  detectPlatformId() {
+    if (this._forcedPlatformId) {
+      return this._forcedPlatformId;
+    }
+
+    // 1. Check URL query parameter override (?platform=android|ios|windows|web) for streamlined testing
+    if (typeof window !== 'undefined' && window.location && window.location.search) {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const queryPlat = (params.get('platform') || '').trim().toLowerCase();
+        if (['android', 'ios', 'windows', 'desktop', 'chromeos', 'web'].includes(queryPlat)) {
+          return queryPlat;
+        }
+      } catch (_) {}
+    }
+
+    // 2. Check active Native Bridge containers injected into global window
+    if (typeof window !== 'undefined') {
+      if (window.AalaapiAndroid) return 'android';
+      if (window.AalaapiIOS || (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.AalaapiIOS)) {
+        return 'ios';
+      }
+    }
+
+    if (typeof navigator === 'undefined') {
+      return 'desktop';
+    }
+
+    // 3. Check User-Agent Client Hints (navigator.userAgentData.platform)
+    if (navigator.userAgentData && typeof navigator.userAgentData.platform === 'string') {
+      const p = navigator.userAgentData.platform.toLowerCase();
+      if (p.includes('android')) return 'android';
+      if (p.includes('ios') || p.includes('iphone') || p.includes('ipad')) return 'ios';
+      if (p.includes('chrome os') || p.includes('cros')) return 'chromeos';
+      if (p.includes('win')) return 'windows';
+      if (p.includes('mac') || p.includes('linux')) return 'desktop';
+    }
+
+    // 4. Fallback to navigator.userAgent / navigator.platform
+    const ua = (navigator.userAgent || '').toLowerCase();
+    const navPlatform = (navigator.platform || '').toLowerCase();
+
+    if (ua.includes('android') || navPlatform.includes('android')) {
+      return 'android';
+    }
+    if (
+      ua.includes('iphone') ||
+      ua.includes('ipad') ||
+      ua.includes('ipod') ||
+      navPlatform.includes('iphone') ||
+      navPlatform.includes('ipad') ||
+      (navPlatform === 'macintel' && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1)
+    ) {
+      return 'ios';
+    }
+    if (ua.includes('cros') || navPlatform.includes('cros')) {
+      return 'chromeos';
+    }
+    if (ua.includes('win') || navPlatform.includes('win')) {
+      return 'windows';
+    }
+
+    return 'desktop';
+  },
+
+  /**
+   * Return the active PlatformAdapter instance.
+   */
+  getAdapter() {
+    if (this._customAdapter) {
+      return this._customAdapter;
+    }
+    const instances = this._ensureInstances();
+    const pid = this.detectPlatformId();
+    return instances[pid] || instances.desktop;
+  },
+
+  /**
+   * Force a specific built-in platform ('android' | 'ios' | 'windows' | 'desktop' | 'chromeos' | 'web')
+   * Pass null to restore automatic detection.
+   */
+  usePlatform(platformId = null) {
+    this._customAdapter = null;
+    this._forcedPlatformId = platformId ? String(platformId).toLowerCase() : null;
+    return this.getAdapter();
+  },
+
+  /**
+   * Inject a custom or mock adapter instance (e.g. for unit testing).
+   * Pass null to restore automatic detection.
+   */
+  setAdapter(customAdapter = null) {
+    this._customAdapter = customAdapter;
+    return this.getAdapter();
+  },
+
+  reset() {
+    this._customAdapter = null;
+    this._forcedPlatformId = null;
+  }
+};
+
+/**
+ * Global `Platform` Facade delegating every capability call to the active OS adapter.
+ */
+const Platform = {
+  get id() {
+    return PlatformManager.getAdapter().id;
+  },
+  getAdapter() {
+    return PlatformManager.getAdapter();
+  },
+  detectPlatformId() {
+    return PlatformManager.detectPlatformId();
+  },
+  usePlatform(platformId) {
+    return PlatformManager.usePlatform(platformId);
+  },
+  setAdapter(adapter) {
+    return PlatformManager.setAdapter(adapter);
+  },
+  reset() {
+    return PlatformManager.reset();
+  },
+  getSyncPlatform() {
+    return PlatformManager.getAdapter().getSyncPlatform();
+  },
+  isNativeContainer() {
+    return PlatformManager.getAdapter().isNativeContainer();
+  },
+  isNativeAndroid() {
+    return PlatformManager.getAdapter().isNativeAndroid();
+  },
+  isNativeIos() {
+    return PlatformManager.getAdapter().isNativeIos();
+  },
+  supportsWebUsbDirect() {
+    return PlatformManager.getAdapter().supportsWebUsbDirect();
+  },
+  getSyncTransportLabel() {
+    return PlatformManager.getAdapter().getSyncTransportLabel();
+  },
+  blobToBase64(blobOrData) {
+    return PlatformManager.getAdapter().blobToBase64(blobOrData);
+  },
+  saveFile(blobOrData, filename, mimeType) {
+    return PlatformManager.getAdapter().saveFile(blobOrData, filename, mimeType);
+  },
+  readAsset(assetPath, timeoutMs) {
+    return PlatformManager.getAdapter().readAsset(assetPath, timeoutMs);
+  },
+  readAssetJson(assetPath, timeoutMs) {
+    return PlatformManager.getAdapter().readAssetJson(assetPath, timeoutMs);
+  },
+  hasLocationSupport() {
+    return PlatformManager.getAdapter().hasLocationSupport();
+  },
+  requestLocation(onSuccess, onError, options) {
+    return PlatformManager.getAdapter().requestLocation(onSuccess, onError, options);
+  },
+  hasNativeTts() {
+    return PlatformManager.getAdapter().hasNativeTts();
+  },
+  hasSpeechSupport() {
+    return PlatformManager.getAdapter().hasSpeechSupport();
+  },
+  speak(text, rate, pitch) {
+    return PlatformManager.getAdapter().speak(text, rate, pitch);
+  },
+  stopSpeaking() {
+    return PlatformManager.getAdapter().stopSpeaking();
+  },
+  setKeepScreenOn(enabled) {
+    return PlatformManager.getAdapter().setKeepScreenOn(enabled);
+  },
+  getDjiApiKey() {
+    return PlatformManager.getAdapter().getDjiApiKey();
+  },
+  setDjiApiKey(key) {
+    return PlatformManager.getAdapter().setDjiApiKey(key);
+  },
+  fetchHttpJson(url) {
+    return PlatformManager.getAdapter().fetchHttpJson(url);
+  },
+  postHttpNative(url, bodyStr, headersObj) {
+    return PlatformManager.getAdapter().postHttpNative(url, bodyStr, headersObj);
+  },
+  pushKmzToController(kmzBase64, uuid) {
+    return PlatformManager.getAdapter().pushKmzToController(kmzBase64, uuid);
+  },
+  pullLatestLogFromController() {
+    return PlatformManager.getAdapter().pullLatestLogFromController();
+  },
+  listControllerLogs(limit, forceRefresh) {
+    return PlatformManager.getAdapter().listControllerLogs(limit, forceRefresh);
+  },
+  pullControllerLog(filename, handle) {
+    return PlatformManager.getAdapter().pullControllerLog(filename, handle);
+  },
+  listSavedFlights() {
+    return PlatformManager.getAdapter().listSavedFlights();
+  },
+  getSavedFlightTelemetry(flightId) {
+    return PlatformManager.getAdapter().getSavedFlightTelemetry(flightId);
+  },
+  getNativeAdsbStatus() {
+    return PlatformManager.getAdapter().getNativeAdsbStatus();
+  },
+  setNativeAdsbServer(host, port) {
+    return PlatformManager.getAdapter().setNativeAdsbServer(host, port);
+  },
+  probeAdsbHost(targetHost, apiBase) {
+    return PlatformManager.getAdapter().probeAdsbHost(targetHost, apiBase);
+  },
+  discoverMdnsServers(timeoutMs, apiBase) {
+    return PlatformManager.getAdapter().discoverMdnsServers(timeoutMs, apiBase);
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.PlatformManager = PlatformManager;
+  window.Platform = Platform;
+}
+if (typeof global !== 'undefined') {
+  global.PlatformManager = PlatformManager;
+  global.Platform = Platform;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { PlatformManager, Platform };
+}
 // -------------------- src/core/PlaybackManager.js --------------------
 /**
  * src/core/PlaybackManager.js
@@ -28122,10 +29338,11 @@ function initGeolocation() {
     Logger.warn('Could not restore cached location:', e);
   }
 
-  const hasNativeLocation = typeof window !== 'undefined' && window.AalaapiAndroid &&
-    typeof window.AalaapiAndroid.getNativeLocation === 'function';
+  const hasLocationSupport = (typeof Platform !== 'undefined' && typeof Platform.hasLocationSupport === 'function')
+    ? Platform.hasLocationSupport()
+    : Boolean(typeof navigator !== 'undefined' && navigator.geolocation);
 
-  if (!navigator.geolocation && !hasNativeLocation) {
+  if (!hasLocationSupport) {
     if (label && !userLocation) label.textContent = 'Location Not Supported';
     if (btn) {
       btn.disabled = true;
@@ -28171,7 +29388,7 @@ function initGeolocation() {
     notify('📍 ' + message, 'error');
   }
 
-  // Native Android bridge callbacks (MainActivity.getNativeLocation)
+  // Native bridge callbacks (MainActivity.getNativeLocation / WKWebView location)
   if (typeof window !== 'undefined') {
     window.onNativeLocation = (lat, lon) => onLocationFix({ lat: Number(lat), lon: Number(lon) });
     window.onNativeLocationError = (message) => onLocationFailure(message || 'Location unavailable');
@@ -28186,12 +29403,8 @@ function initGeolocation() {
       btn.style.borderColor = '';
       notify('📍 Locating...', 'info');
 
-      if (hasNativeLocation) {
-        window.AalaapiAndroid.getNativeLocation();
-        // Watchdog: never leave the button stuck disabled if the native side never answers
-        setTimeout(() => {
-          if (btn.disabled) onLocationFailure('Location request timed out');
-        }, 20000);
+      if (typeof Platform !== 'undefined' && typeof Platform.requestLocation === 'function') {
+        Platform.requestLocation(onLocationFix, onLocationFailure, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
         return;
       }
 
@@ -28370,8 +29583,8 @@ function isScreenAwakeActive() {
 
 async function requestScreenWakeLock() {
   try {
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setKeepScreenOn === 'function') {
-      window.AalaapiAndroid.setKeepScreenOn(true);
+    if (typeof Platform !== 'undefined' && typeof Platform.setKeepScreenOn === 'function') {
+      Platform.setKeepScreenOn(true);
     }
   } catch (_) {}
 
@@ -28387,8 +29600,8 @@ async function requestScreenWakeLock() {
 
 function releaseScreenWakeLock() {
   try {
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setKeepScreenOn === 'function') {
-      window.AalaapiAndroid.setKeepScreenOn(false);
+    if (typeof Platform !== 'undefined' && typeof Platform.setKeepScreenOn === 'function') {
+      Platform.setKeepScreenOn(false);
     }
   } catch (_) {}
 
@@ -43182,30 +44395,27 @@ async function refreshMissionDbList() {
       }
     } catch (_) {}
 
-    // 3. Check Android native bridge for saved/decrypted flight records
+    // 3. Check active platform adapter for saved/decrypted flight records
     try {
-      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.listSavedFlights === 'function') {
-        const rawSaved = window.AalaapiAndroid.listSavedFlights();
-        if (rawSaved) {
-          const savedData = JSON.parse(rawSaved);
-          if (savedData.success && Array.isArray(savedData.flights)) {
-            savedData.flights.forEach(f => {
-              if (!items.some(it => it.filename === f.filename)) {
-                items.push({
-                  id: f.filename,
-                  type: 'rc2-recorded',
-                  title: f.label || f.filename,
-                  filename: f.filename,
-                  date: f.flightDate || f.mtimeFormatted || 'Controller Log',
-                  size: f.sizeFormatted || '',
-                  statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
-                  badgeColor: '#34d399',
-                  badgeBg: 'rgba(16, 185, 129, 0.15)',
-                  wpsText: 'Tablet Storage'
-                });
-              }
-            });
-          }
+      if (typeof Platform !== 'undefined' && typeof Platform.listSavedFlights === 'function') {
+        const savedList = Platform.listSavedFlights();
+        if (Array.isArray(savedList)) {
+          savedList.forEach(f => {
+            if (!items.some(it => it.filename === f.filename)) {
+              items.push({
+                id: f.filename,
+                type: 'rc2-recorded',
+                title: f.label || f.filename,
+                filename: f.filename,
+                date: f.flightDate || f.mtimeFormatted || 'Controller Log',
+                size: f.sizeFormatted || '',
+                statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
+                badgeColor: '#34d399',
+                badgeBg: 'rgba(16, 185, 129, 0.15)',
+                wpsText: 'Tablet Storage'
+              });
+            }
+          });
         }
       }
     } catch (_) {}
@@ -57254,46 +58464,9 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 // -------------------- src/export/Packager.js --------------------
 async function triggerFileDownload(blobOrData, filename, mimeType = 'application/octet-stream') {
-  if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.saveFile === 'function') {
-    try {
-      let base64 = '';
-      if (typeof blobOrData === 'string') {
-        base64 = btoa(unescape(encodeURIComponent(blobOrData)));
-      } else if (blobOrData instanceof Blob) {
-        const buffer = await blobOrData.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        let binary = '';
-        const chunk = 8192;
-        for (let i = 0; i < bytes.length; i += chunk) {
-          const sub = bytes.subarray(i, i + chunk);
-          binary += String.fromCharCode.apply(null, sub);
-        }
-        base64 = btoa(binary);
-      } else if (blobOrData instanceof Uint8Array || blobOrData instanceof ArrayBuffer) {
-        const bytes = blobOrData instanceof ArrayBuffer ? new Uint8Array(blobOrData) : blobOrData;
-        let binary = '';
-        const chunk = 8192;
-        for (let i = 0; i < bytes.length; i += chunk) {
-          const sub = bytes.subarray(i, i + chunk);
-          binary += String.fromCharCode.apply(null, sub);
-        }
-        base64 = btoa(binary);
-      }
-      const rawRes = window.AalaapiAndroid.saveFile(base64, filename, mimeType);
-      try {
-        const parsed = JSON.parse(rawRes);
-        if (parsed.success && typeof showToast === 'function') {
-          showToast(`💾 Saved to Downloads: ${filename}`, 'success');
-        }
-      } catch (_) {
-        if (typeof showToast === 'function') {
-          showToast(`💾 Saved to Downloads: ${filename}`, 'success');
-        }
-      }
-      return;
-    } catch (err) {
-      console.warn('[Packager] Native saveFile failed, falling back to browser anchor click:', err);
-    }
+  if (typeof Platform !== 'undefined' && typeof Platform.saveFile === 'function') {
+    await Platform.saveFile(blobOrData, filename, mimeType);
+    return;
   }
 
   if (typeof document === 'undefined' || !document.createElement) return;
@@ -58498,101 +59671,10 @@ function generateMissionPreviewBlob(waypoints, width = 400, height = 300) {
 
 
 function getSyncPlatform() {
-
-
-
-  if (typeof window !== 'undefined' && window.AalaapiAndroid) return 'android';
-
-
-
-  if (typeof navigator === 'undefined') return 'desktop';
-
-
-
-
-
-
-
-  // 1. Check User-Agent Client Hints (navigator.userAgentData.platform)
-
-
-
-  if (navigator.userAgentData && typeof navigator.userAgentData.platform === 'string') {
-
-
-
-    const platform = navigator.userAgentData.platform.toLowerCase();
-
-
-
-    if (platform.includes('android')) return 'android';
-
-
-
-    if (platform.includes('chrome os') || platform.includes('cros')) return 'chromeos';
-
-
-
-    if (platform.includes('windows') || platform.includes('mac') || platform.includes('linux')) return 'desktop';
-
-
-
+  if (typeof Platform !== 'undefined' && typeof Platform.getSyncPlatform === 'function') {
+    return Platform.getSyncPlatform();
   }
-
-
-
-
-
-
-
-  // 2. Fallback to navigator.userAgent / navigator.platform
-
-
-
-  const ua = (navigator.userAgent || '').toLowerCase();
-
-
-
-  const navPlatform = (navigator.platform || '').toLowerCase();
-
-
-
-
-
-
-
-  if (ua.includes('android') || navPlatform.includes('android')) {
-
-
-
-    return 'android';
-
-
-
-  }
-
-
-
-  if (ua.includes('cros') || navPlatform.includes('cros')) {
-
-
-
-    return 'chromeos';
-
-
-
-  }
-
-
-
-
-
-
-
   return 'desktop';
-
-
-
 }
 
 
@@ -62401,7 +63483,7 @@ async function pollCompanionStatus() {
 
 
 
-    if (typeof window !== 'undefined' && window.AalaapiAndroid) {
+    if (typeof Platform !== 'undefined' && Platform.isNativeAndroid()) {
 
       updateNativeAndroidStatusUI();
 
@@ -62859,9 +63941,13 @@ async function pullFromRC2() {
 
 
 
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLatestLogFromRc2 === 'function') {
+    const nativeLogPull = (typeof Platform !== 'undefined' && typeof Platform.pullLatestLogFromController === 'function')
+      ? Platform.pullLatestLogFromController()
+      : { handled: false };
 
-      const logBase64 = window.AalaapiAndroid.pullLatestLogFromRc2();
+    if (nativeLogPull && nativeLogPull.handled) {
+
+      const logBase64 = nativeLogPull.rawRes;
 
       if (logBase64 && typeof atob === 'function') {
 
@@ -63191,9 +64277,13 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
 
 
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLatestLogFromRc2 === 'function') {
+    const nativeLogPull = (typeof Platform !== 'undefined' && typeof Platform.pullLatestLogFromController === 'function')
+      ? Platform.pullLatestLogFromController()
+      : { handled: false };
 
-      const rawRes = window.AalaapiAndroid.pullLatestLogFromRc2();
+    if (nativeLogPull && nativeLogPull.handled) {
+
+      const rawRes = nativeLogPull.rawRes;
 
       if (!rawRes) {
 
@@ -63727,11 +64817,14 @@ async function sendDirectlyToRC2() {
 
 
 
-    // If running inside Native Android container, transfer directly via window.AalaapiAndroid
+    // If running inside a Native Platform container, transfer directly via Platform.pushKmzToController
+    const nativePush = (typeof Platform !== 'undefined' && typeof Platform.pushKmzToController === 'function')
+      ? Platform.pushKmzToController(kmzBase64, uuid)
+      : { handled: false };
 
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pushKmzToRc2 === 'function') {
+    if (nativePush && nativePush.handled) {
 
-      const ok = window.AalaapiAndroid.pushKmzToRc2(kmzBase64, uuid);
+      const ok = nativePush.success;
 
       if (!ok) {
 
@@ -68518,7 +69611,7 @@ const RemoteIdRadar = {
 
 
       this.eventSource.onerror = () => {
-        if (typeof window !== 'undefined' && window.AalaapiAndroid) {
+        if (typeof Platform !== 'undefined' && Platform.isNativeAndroid()) {
           try { this.eventSource.close(); } catch (_) {}
           this.eventSource = null;
         }
@@ -73650,7 +74743,9 @@ const AdsbAirspaceManager = {
 
 
 
-    const nativeTts = !!(window.AalaapiAndroid && typeof window.AalaapiAndroid.speak === 'function');
+    const nativeTts = (typeof Platform !== 'undefined' && typeof Platform.hasNativeTts === 'function')
+      ? Platform.hasNativeTts()
+      : false;
 
 
 
@@ -73788,18 +74883,9 @@ const AdsbAirspaceManager = {
 
 
 
-      if (nativeTts) {
-
-
-
-        window.AalaapiAndroid.speak(text, 1.05, 1.0);
-
-
-
+      if (nativeTts && typeof Platform !== 'undefined' && typeof Platform.speak === 'function') {
+        Platform.speak(text, 1.05, 1.0);
         return;
-
-
-
       }
 
 
@@ -74468,50 +75554,23 @@ const AdsbAirspaceManager = {
 
     try {
 
-      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getAdsbStatus === 'function') {
-
-        const rawJson = window.AalaapiAndroid.getAdsbStatus();
-
-        if (rawJson) {
-
-          try {
-
-            const nativeStatus = JSON.parse(rawJson);
-
-            if (nativeStatus && (nativeStatus.connected || nativeStatus.connecting || nativeStatus.messagesReceived > 0)) {
-
-              const nativeSt = {
-
-                connected: Boolean(nativeStatus.connected),
-
-                connecting: Boolean(nativeStatus.connecting),
-
-                isRemoteServer: true,
-
-                tcpHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
-
-                tcpPort: nativeStatus.currentPort || this.serverPort || 30003,
-
-                adsbHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
-
-                adsbPort: nativeStatus.currentPort || this.serverPort || 30003,
-
-                totalPackets: nativeStatus.messagesReceived || 0,
-
-                driverType: 'Android Native Socket'
-
-              };
-
-              this.updateDiagnosticsUI(nativeSt);
-
-              return;
-
-            }
-
-          } catch (_) {}
-
+      if (typeof Platform !== 'undefined' && typeof Platform.getNativeAdsbStatus === 'function') {
+        const nativeStatus = Platform.getNativeAdsbStatus();
+        if (nativeStatus && (nativeStatus.connected || nativeStatus.connecting || nativeStatus.messagesReceived > 0)) {
+          const nativeSt = {
+            connected: Boolean(nativeStatus.connected),
+            connecting: Boolean(nativeStatus.connecting),
+            isRemoteServer: true,
+            tcpHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
+            tcpPort: nativeStatus.currentPort || this.serverPort || 30003,
+            adsbHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
+            adsbPort: nativeStatus.currentPort || this.serverPort || 30003,
+            totalPackets: nativeStatus.messagesReceived || 0,
+            driverType: 'Android Native Socket'
+          };
+          this.updateDiagnosticsUI(nativeSt);
+          return;
         }
-
       }
 
 
@@ -75264,7 +76323,7 @@ const AdsbAirspaceManager = {
 
     // If running on Native Android container without an explicit remote companion host,
     // ADS-B telemetry is provided natively via AndroidAdsbBridge TCP socket.
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && (!this.customEndpoint || !this.customEndpoint.trim())) {
+    if (typeof Platform !== 'undefined' && Platform.isNativeAndroid() && (!this.customEndpoint || !this.customEndpoint.trim())) {
       const storedComp = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi-companion-host') : null;
       if (!storedComp || storedComp.includes('127.0.0.1') || storedComp.includes('localhost')) {
         return;
@@ -79646,13 +80705,9 @@ const AdsbAirspaceManager = {
 
       let data;
 
-      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.fetchHttp === 'function') {
+      if (typeof Platform !== 'undefined' && typeof Platform.fetchHttpJson === 'function') {
 
-        const raw = window.AalaapiAndroid.fetchHttp(directUrl);
-
-        data = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
-        if (data && data.error) throw new Error(data.error);
+        data = await Platform.fetchHttpJson(directUrl);
 
       } else {
 
@@ -81380,9 +82435,7 @@ const AdsbAirspaceManager = {
 
         try {
 
-          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setAdsbServer === 'function') {
-
-            window.AalaapiAndroid.setAdsbServer(hostVal, parsedPortVal);
+          if (typeof Platform !== 'undefined' && typeof Platform.setNativeAdsbServer === 'function' && Platform.setNativeAdsbServer(hostVal, parsedPortVal)) {
 
             this.serverHost = hostVal;
 
@@ -81724,17 +82777,14 @@ const AdsbAirspaceManager = {
 
         try {
 
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
           let data;
 
-          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.probeAdsbHost === 'function') {
+          if (typeof Platform !== 'undefined' && typeof Platform.probeAdsbHost === 'function') {
 
-            const raw = window.AalaapiAndroid.probeAdsbHost(targetHost);
-
-            data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            data = await Platform.probeAdsbHost(targetHost, apiBase);
 
           } else {
-
-            const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
             const res = await fetch(`${apiBase}/api/config/adsb/probe?host=${encodeURIComponent(targetHost)}`);
 
@@ -81954,17 +83004,14 @@ const AdsbAirspaceManager = {
 
         try {
 
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
           let data;
 
-          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.discoverMdnsServers === 'function') {
+          if (typeof Platform !== 'undefined' && typeof Platform.discoverMdnsServers === 'function') {
 
-            const raw = window.AalaapiAndroid.discoverMdnsServers(2000);
-
-            data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            data = await Platform.discoverMdnsServers(2000, apiBase);
 
           } else {
-
-            const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
             const res = await fetch(`${apiBase}/api/airspace/discover?timeout=2000`);
 
@@ -86455,10 +87502,9 @@ class DjiLogDecryptorEngine {
 
   setApiKey(key) {
     this.apiKey = (key || '').trim();
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setDjiApiKey === 'function') {
-      try {
-        window.AalaapiAndroid.setDjiApiKey(this.apiKey);
-      } catch (_) {}
+    if (typeof Platform !== 'undefined' && typeof Platform.setDjiApiKey === 'function') {
+      Platform.setDjiApiKey(this.apiKey);
+      return;
     }
     if (typeof localStorage !== 'undefined') {
       try {
@@ -86469,14 +87515,12 @@ class DjiLogDecryptorEngine {
 
   getApiKey() {
     if (this.apiKey) return this.apiKey;
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getDjiApiKey === 'function') {
-      try {
-        const nativeKey = window.AalaapiAndroid.getDjiApiKey();
-        if (nativeKey) {
-          this.apiKey = nativeKey.trim();
-          return this.apiKey;
-        }
-      } catch (_) {}
+    if (typeof Platform !== 'undefined' && typeof Platform.getDjiApiKey === 'function') {
+      const k = Platform.getDjiApiKey();
+      if (k) {
+        this.apiKey = k;
+        return this.apiKey;
+      }
     }
     if (typeof localStorage !== 'undefined') {
       try {
@@ -86554,18 +87598,19 @@ class DjiLogDecryptorEngine {
       'Api-Key': keyToUse
     };
 
-    // If running in Android container, route via native postHttp bridge (bypasses WebView CORS)
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.postHttp === 'function') {
+    // If running in a native platform container, route via native postHttp bridge (bypasses WebView CORS)
+    if (typeof Platform !== 'undefined' && typeof Platform.postHttpNative === 'function') {
       try {
-        const rawRes = window.AalaapiAndroid.postHttp(endpoint, requestBody, JSON.stringify(headers));
-        const parsed = JSON.parse(rawRes);
-        if (parsed.error) {
-          throw new Error(`DJI Cloud Keychain API error: ${parsed.error} (${parsed.status || 'unknown'})`);
+        const parsed = Platform.postHttpNative(endpoint, requestBody, headers);
+        if (parsed) {
+          if (parsed.error) {
+            throw new Error(`DJI Cloud Keychain API error: ${parsed.error} (${parsed.status || 'unknown'})`);
+          }
+          if (parsed.key) {
+            return parsed.key;
+          }
+          throw new Error('DJI Cloud returned empty or invalid decryption key.');
         }
-        if (parsed.key) {
-          return parsed.key;
-        }
-        throw new Error('DJI Cloud returned empty or invalid decryption key.');
       } catch (nativeErr) {
         if (nativeErr.message.includes('DJI Cloud')) {
           throw nativeErr;
@@ -88258,8 +89303,8 @@ const FlightDiagnostics = {
   _wakeLockSentinel: null,
   async requestWakeLock() {
     try {
-      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setKeepScreenOn === 'function') {
-        window.AalaapiAndroid.setKeepScreenOn(true);
+      if (typeof Platform !== 'undefined' && typeof Platform.setKeepScreenOn === 'function') {
+        Platform.setKeepScreenOn(true);
       }
       if (typeof navigator !== 'undefined' && 'wakeLock' in navigator && !this._wakeLockSentinel) {
         this._wakeLockSentinel = await navigator.wakeLock.request('screen');
@@ -89315,10 +90360,8 @@ const FlightDiagnostics = {
 
   async checkDjiApiKeyStatus() {
     let localKey = '';
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getDjiApiKey === 'function') {
-      try {
-        localKey = window.AalaapiAndroid.getDjiApiKey() || '';
-      } catch (_) {}
+    if (typeof Platform !== 'undefined' && typeof Platform.getDjiApiKey === 'function') {
+      localKey = Platform.getDjiApiKey() || '';
     }
     if (!localKey && typeof localStorage !== 'undefined') {
       try {
@@ -89436,13 +90479,8 @@ const FlightDiagnostics = {
     }
 
     let savedLocally = false;
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setDjiApiKey === 'function') {
-      try {
-        window.AalaapiAndroid.setDjiApiKey(key);
-        savedLocally = true;
-      } catch (err) {
-        console.warn('[DigitalTwin] Native setDjiApiKey error:', err);
-      }
+    if (typeof Platform !== 'undefined' && typeof Platform.setDjiApiKey === 'function') {
+      if (Platform.setDjiApiKey(key)) savedLocally = true;
     }
     if (typeof localStorage !== 'undefined') {
       try {
@@ -89512,10 +90550,8 @@ const FlightDiagnostics = {
 
     if (clearBtn) clearBtn.disabled = true;
 
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setDjiApiKey === 'function') {
-      try {
-        window.AalaapiAndroid.setDjiApiKey('');
-      } catch (_) {}
+    if (typeof Platform !== 'undefined' && typeof Platform.setDjiApiKey === 'function') {
+      Platform.setDjiApiKey('');
     }
     if (typeof localStorage !== 'undefined') {
       try {
@@ -90045,18 +91081,15 @@ const FlightDiagnostics = {
         this.isDecrypted = false;
         this.needsDjiApiKey = false;
 
-        // Check if Android native bridge or localStorage has this flight saved offline!
+        // Check if active platform adapter or localStorage has this flight saved offline!
         let offlineLoaded = false;
         try {
-          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getSavedFlightTelemetry === 'function') {
-            const rawJson = window.AalaapiAndroid.getSavedFlightTelemetry(flightId);
-            if (rawJson) {
-              const res = JSON.parse(rawJson);
-              if (res.success && res.data) {
-                const ok = this.loadFlightLogData(flightId, res.data);
-                if (ok && this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
-                  offlineLoaded = true;
-                }
+          if (typeof Platform !== 'undefined' && typeof Platform.getSavedFlightTelemetry === 'function') {
+            const savedData = Platform.getSavedFlightTelemetry(flightId);
+            if (savedData) {
+              const ok = this.loadFlightLogData(flightId, savedData);
+              if (ok && this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
+                offlineLoaded = true;
               }
             }
           }
@@ -104361,22 +105394,12 @@ async function fetchAndProcessTFRs(centerLat, centerLon, force = false) {
     }
   } catch (err) {}
 
-  // Tier 2: Static repository cache (zero-latency, CORS-safe bundle for GitHub Pages / web hosting / Android assets)
+  // Tier 2: Static repository cache (zero-latency, CORS-safe bundle for GitHub Pages / web hosting / mobile assets)
   if (notamList.length === 0) {
-    let loadedFromAsset = false;
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.readAsset === 'function') {
-      try {
-        const rawNotamText = window.AalaapiAndroid.readAsset('data/tfr_notams.json');
-        if (rawNotamText) {
-          const data = JSON.parse(rawNotamText);
-          if (Array.isArray(data) && data.length > 0) {
-            notamList = data;
-            loadedFromAsset = true;
-          }
-        }
-      } catch (_) {}
-    }
-    if (!loadedFromAsset) {
+    if (typeof Platform !== 'undefined' && typeof Platform.readAssetJson === 'function') {
+      const data = await Platform.readAssetJson('data/tfr_notams.json', 4000);
+      if (Array.isArray(data) && data.length > 0) notamList = data;
+    } else {
       try {
         const staticNotamRes = await fetch('./data/tfr_notams.json', { signal: AbortSignal.timeout(4000) });
         if (staticNotamRes.ok) {
@@ -104388,20 +105411,10 @@ async function fetchAndProcessTFRs(centerLat, centerLon, force = false) {
   }
 
   if (!geojson || !geojson.features || geojson.features.length === 0) {
-    let loadedFromAsset = false;
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.readAsset === 'function') {
-      try {
-        const rawGeoText = window.AalaapiAndroid.readAsset('data/tfr_geojson.json');
-        if (rawGeoText) {
-          const g = JSON.parse(rawGeoText);
-          if (g && Array.isArray(g.features) && g.features.length > 0) {
-            geojson = g;
-            loadedFromAsset = true;
-          }
-        }
-      } catch (_) {}
-    }
-    if (!loadedFromAsset) {
+    if (typeof Platform !== 'undefined' && typeof Platform.readAssetJson === 'function') {
+      const g = await Platform.readAssetJson('data/tfr_geojson.json', 4000);
+      if (g && Array.isArray(g.features) && g.features.length > 0) geojson = g;
+    } else {
       try {
         const staticGeoRes = await fetch('./data/tfr_geojson.json', { signal: AbortSignal.timeout(4000) });
         if (staticGeoRes.ok) {
@@ -110774,12 +111787,9 @@ async function refreshRc2LogList(force = false) {
   }
 
   try {
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && (typeof window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh === 'function' || typeof window.AalaapiAndroid.listFlightRecordsFromRc2 === 'function')) {
+    if (typeof Platform !== 'undefined' && typeof Platform.listControllerLogs === 'function') {
       try {
-        const raw = (force && typeof window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh === 'function')
-          ? window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh(30, true)
-          : window.AalaapiAndroid.listFlightRecordsFromRc2(30);
-        const parsed = JSON.parse(raw || '[]');
+        const parsed = Platform.listControllerLogs(30, Boolean(force));
         if (Array.isArray(parsed) && parsed.length > 0) {
           const seenNames = new Set();
           rc2LogsCache = [];
@@ -110976,7 +111986,7 @@ function renderRc2LogTable(logs) {
     btn.addEventListener('click', () => {
       const fn = btn.getAttribute('data-filename');
       const handleAttr = btn.getAttribute('data-handle');
-      if (typeof window !== 'undefined' && window.AalaapiAndroid && fn) {
+      if (typeof Platform !== 'undefined' && Platform.isNativeContainer() && fn) {
         pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
       } else if (fn) {
         loadRc2LogToDiagnostics(fn);
@@ -111018,15 +112028,12 @@ async function pullSpecificRc2Log(filename, handle = null) {
     }
   }, 250);
 
-  if (typeof window !== 'undefined' && window.AalaapiAndroid && (typeof window.AalaapiAndroid.pullLogByHandleFromRc2 === 'function' || typeof window.AalaapiAndroid.pullLogByNameFromRc2 === 'function')) {
+  const nativePullData = (typeof Platform !== 'undefined' && typeof Platform.pullControllerLog === 'function')
+    ? Platform.pullControllerLog(filename, handle)
+    : null;
+  if (nativePullData !== null) {
     try {
-      let raw = null;
-      if (handle && !isNaN(handle) && typeof window.AalaapiAndroid.pullLogByHandleFromRc2 === 'function') {
-        raw = window.AalaapiAndroid.pullLogByHandleFromRc2(handle);
-      } else if (typeof window.AalaapiAndroid.pullLogByNameFromRc2 === 'function') {
-        raw = window.AalaapiAndroid.pullLogByNameFromRc2(filename);
-      }
-      const data = JSON.parse(raw || '{}');
+      const data = nativePullData;
       clearInterval(pollTimer);
       if (progBar) progBar.style.width = '100%';
       if (progPct) progPct.textContent = '100%';

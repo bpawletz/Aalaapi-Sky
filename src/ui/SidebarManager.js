@@ -2722,30 +2722,27 @@ async function refreshMissionDbList() {
       }
     } catch (_) {}
 
-    // 3. Check Android native bridge for saved/decrypted flight records
+    // 3. Check active platform adapter for saved/decrypted flight records
     try {
-      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.listSavedFlights === 'function') {
-        const rawSaved = window.AalaapiAndroid.listSavedFlights();
-        if (rawSaved) {
-          const savedData = JSON.parse(rawSaved);
-          if (savedData.success && Array.isArray(savedData.flights)) {
-            savedData.flights.forEach(f => {
-              if (!items.some(it => it.filename === f.filename)) {
-                items.push({
-                  id: f.filename,
-                  type: 'rc2-recorded',
-                  title: f.label || f.filename,
-                  filename: f.filename,
-                  date: f.flightDate || f.mtimeFormatted || 'Controller Log',
-                  size: f.sizeFormatted || '',
-                  statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
-                  badgeColor: '#34d399',
-                  badgeBg: 'rgba(16, 185, 129, 0.15)',
-                  wpsText: 'Tablet Storage'
-                });
-              }
-            });
-          }
+      if (typeof Platform !== 'undefined' && typeof Platform.listSavedFlights === 'function') {
+        const savedList = Platform.listSavedFlights();
+        if (Array.isArray(savedList)) {
+          savedList.forEach(f => {
+            if (!items.some(it => it.filename === f.filename)) {
+              items.push({
+                id: f.filename,
+                type: 'rc2-recorded',
+                title: f.label || f.filename,
+                filename: f.filename,
+                date: f.flightDate || f.mtimeFormatted || 'Controller Log',
+                size: f.sizeFormatted || '',
+                statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
+                badgeColor: '#34d399',
+                badgeBg: 'rgba(16, 185, 129, 0.15)',
+                wpsText: 'Tablet Storage'
+              });
+            }
+          });
         }
       }
     } catch (_) {}

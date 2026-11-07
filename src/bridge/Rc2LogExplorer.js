@@ -69,12 +69,9 @@ async function refreshRc2LogList(force = false) {
   }
 
   try {
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && (typeof window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh === 'function' || typeof window.AalaapiAndroid.listFlightRecordsFromRc2 === 'function')) {
+    if (typeof Platform !== 'undefined' && typeof Platform.listControllerLogs === 'function') {
       try {
-        const raw = (force && typeof window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh === 'function')
-          ? window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh(30, true)
-          : window.AalaapiAndroid.listFlightRecordsFromRc2(30);
-        const parsed = JSON.parse(raw || '[]');
+        const parsed = Platform.listControllerLogs(30, Boolean(force));
         if (Array.isArray(parsed) && parsed.length > 0) {
           const seenNames = new Set();
           rc2LogsCache = [];
@@ -271,7 +268,7 @@ function renderRc2LogTable(logs) {
     btn.addEventListener('click', () => {
       const fn = btn.getAttribute('data-filename');
       const handleAttr = btn.getAttribute('data-handle');
-      if (typeof window !== 'undefined' && window.AalaapiAndroid && fn) {
+      if (typeof Platform !== 'undefined' && Platform.isNativeContainer() && fn) {
         pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
       } else if (fn) {
         loadRc2LogToDiagnostics(fn);
@@ -313,15 +310,12 @@ async function pullSpecificRc2Log(filename, handle = null) {
     }
   }, 250);
 
-  if (typeof window !== 'undefined' && window.AalaapiAndroid && (typeof window.AalaapiAndroid.pullLogByHandleFromRc2 === 'function' || typeof window.AalaapiAndroid.pullLogByNameFromRc2 === 'function')) {
+  const nativePullData = (typeof Platform !== 'undefined' && typeof Platform.pullControllerLog === 'function')
+    ? Platform.pullControllerLog(filename, handle)
+    : null;
+  if (nativePullData !== null) {
     try {
-      let raw = null;
-      if (handle && !isNaN(handle) && typeof window.AalaapiAndroid.pullLogByHandleFromRc2 === 'function') {
-        raw = window.AalaapiAndroid.pullLogByHandleFromRc2(handle);
-      } else if (typeof window.AalaapiAndroid.pullLogByNameFromRc2 === 'function') {
-        raw = window.AalaapiAndroid.pullLogByNameFromRc2(filename);
-      }
-      const data = JSON.parse(raw || '{}');
+      const data = nativePullData;
       clearInterval(pollTimer);
       if (progBar) progBar.style.width = '100%';
       if (progPct) progPct.textContent = '100%';

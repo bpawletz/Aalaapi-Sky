@@ -490,10 +490,11 @@ function initGeolocation() {
     Logger.warn('Could not restore cached location:', e);
   }
 
-  const hasNativeLocation = typeof window !== 'undefined' && window.AalaapiAndroid &&
-    typeof window.AalaapiAndroid.getNativeLocation === 'function';
+  const hasLocationSupport = (typeof Platform !== 'undefined' && typeof Platform.hasLocationSupport === 'function')
+    ? Platform.hasLocationSupport()
+    : Boolean(typeof navigator !== 'undefined' && navigator.geolocation);
 
-  if (!navigator.geolocation && !hasNativeLocation) {
+  if (!hasLocationSupport) {
     if (label && !userLocation) label.textContent = 'Location Not Supported';
     if (btn) {
       btn.disabled = true;
@@ -539,7 +540,7 @@ function initGeolocation() {
     notify('📍 ' + message, 'error');
   }
 
-  // Native Android bridge callbacks (MainActivity.getNativeLocation)
+  // Native bridge callbacks (MainActivity.getNativeLocation / WKWebView location)
   if (typeof window !== 'undefined') {
     window.onNativeLocation = (lat, lon) => onLocationFix({ lat: Number(lat), lon: Number(lon) });
     window.onNativeLocationError = (message) => onLocationFailure(message || 'Location unavailable');
@@ -554,12 +555,8 @@ function initGeolocation() {
       btn.style.borderColor = '';
       notify('📍 Locating...', 'info');
 
-      if (hasNativeLocation) {
-        window.AalaapiAndroid.getNativeLocation();
-        // Watchdog: never leave the button stuck disabled if the native side never answers
-        setTimeout(() => {
-          if (btn.disabled) onLocationFailure('Location request timed out');
-        }, 20000);
+      if (typeof Platform !== 'undefined' && typeof Platform.requestLocation === 'function') {
+        Platform.requestLocation(onLocationFix, onLocationFailure, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
         return;
       }
 

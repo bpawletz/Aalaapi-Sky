@@ -1,3 +1,23 @@
+## [1.235.0] - 2026-11-07
+
+Cross-platform Common Base + OS Override Adapter Framework for Client (`src/platform/`) and Companion Server (`tools/companion/drivers/`), full `IosPlatformAdapter` (Web Share API + `WKWebView` hooks), and `?platform=` runtime test switching.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Unified Multi-Platform Architecture (`Windows` / `Android` / `iOS` / `Web`) (Closes #263)**:
+  - Introduced a unified `Platform` abstraction layer that provides shared Web/Companion capabilities in a common base class while allowing Windows Desktop, Android Native (`window.AalaapiAndroid`), and iOS/iPadOS (`window.AalaapiIOS` / `WKWebView` / Safari PWA) to cleanly override platform-specific hardware, file I/O, GPS, TTS, wake lock, and airspace operations with automatic fallback to base implementations.
+- **iOS & iPadOS Adapter Support (`IosPlatformAdapter`) (Closes #263)**:
+  - Added immediate iOS/iPadOS Safari & Home Screen PWA support for 1-tap KMZ mission export via the native iOS Share Sheet (`navigator.share({ files })` to DJI Fly, Files, or AirDrop), alongside full `window.webkit.messageHandlers.AalaapiIOS` / `window.AalaapiIOS` bridge hooks for native GPS, Text-to-Speech, Screen Wake Lock, Keychain API key storage, and CORS-free HTTP.
+- **Streamlined Runtime Platform Override for Testing (`?platform=`) (Closes #263)**:
+  - Pilots and developers can test any platform adapter directly inside the unified bundle using `?platform=android`, `?platform=ios`, `?platform=windows`, or `?platform=web` URL parameters or `Platform.usePlatform(id)` / `Platform.setAdapter(mock)` at runtime without rebuilding separate bundles.
+
+#### Under the Hood & Technical Details
+- **Client Platform Adapter Layer (`src/platform/`)**:
+  - Created `BasePlatformAdapter.js`, `WindowsDesktopAdapter.js`, `AndroidPlatformAdapter.js`, `IosPlatformAdapter.js`, and `PlatformManager.js` (`window.Platform`), eliminating ~25 scattered inline `if (window.AalaapiAndroid ...)` conditional blocks across `ApiClient.js`, `DigitalTwin.js`, `Rc2LogExplorer.js`, `DjiLogDecryptor.js`, `TfrNotam.js`, `Packager.js`, `ThemeManager.js`, `ScreenAwakeManager.js`, and `SidebarManager.js`.
+- **Companion Bridge OS Driver Layer (`tools/companion/drivers/`)**:
+  - Created `BaseCompanionDriver.js`, `Win32CompanionDriver.js`, `PosixCompanionDriver.js`, and `drivers/index.js` (`getCompanionDriver()`), extracting inline `process.platform === 'win32'` conditionals from `tools/companion/server.js`, `tools/companion/adsb_tracker.js`, and `tools/companion/video_service.js`.
+
 ## [1.234.0] - 2026-11-07
 
 Session-persistent MTP caching, RC 2 .DAT blackbox sensor filtering with zero-default fallback, offline Section 0 historical flight database, and cross-platform Screen Keep-Awake / Sleep toggle for Android and Windows.

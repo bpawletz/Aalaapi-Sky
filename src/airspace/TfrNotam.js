@@ -452,22 +452,12 @@ async function fetchAndProcessTFRs(centerLat, centerLon, force = false) {
     }
   } catch (err) {}
 
-  // Tier 2: Static repository cache (zero-latency, CORS-safe bundle for GitHub Pages / web hosting / Android assets)
+  // Tier 2: Static repository cache (zero-latency, CORS-safe bundle for GitHub Pages / web hosting / mobile assets)
   if (notamList.length === 0) {
-    let loadedFromAsset = false;
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.readAsset === 'function') {
-      try {
-        const rawNotamText = window.AalaapiAndroid.readAsset('data/tfr_notams.json');
-        if (rawNotamText) {
-          const data = JSON.parse(rawNotamText);
-          if (Array.isArray(data) && data.length > 0) {
-            notamList = data;
-            loadedFromAsset = true;
-          }
-        }
-      } catch (_) {}
-    }
-    if (!loadedFromAsset) {
+    if (typeof Platform !== 'undefined' && typeof Platform.readAssetJson === 'function') {
+      const data = await Platform.readAssetJson('data/tfr_notams.json', 4000);
+      if (Array.isArray(data) && data.length > 0) notamList = data;
+    } else {
       try {
         const staticNotamRes = await fetch('./data/tfr_notams.json', { signal: AbortSignal.timeout(4000) });
         if (staticNotamRes.ok) {
@@ -479,20 +469,10 @@ async function fetchAndProcessTFRs(centerLat, centerLon, force = false) {
   }
 
   if (!geojson || !geojson.features || geojson.features.length === 0) {
-    let loadedFromAsset = false;
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.readAsset === 'function') {
-      try {
-        const rawGeoText = window.AalaapiAndroid.readAsset('data/tfr_geojson.json');
-        if (rawGeoText) {
-          const g = JSON.parse(rawGeoText);
-          if (g && Array.isArray(g.features) && g.features.length > 0) {
-            geojson = g;
-            loadedFromAsset = true;
-          }
-        }
-      } catch (_) {}
-    }
-    if (!loadedFromAsset) {
+    if (typeof Platform !== 'undefined' && typeof Platform.readAssetJson === 'function') {
+      const g = await Platform.readAssetJson('data/tfr_geojson.json', 4000);
+      if (g && Array.isArray(g.features) && g.features.length > 0) geojson = g;
+    } else {
       try {
         const staticGeoRes = await fetch('./data/tfr_geojson.json', { signal: AbortSignal.timeout(4000) });
         if (staticGeoRes.ok) {

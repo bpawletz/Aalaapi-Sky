@@ -11,8 +11,8 @@ function isScreenAwakeActive() {
 
 async function requestScreenWakeLock() {
   try {
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setKeepScreenOn === 'function') {
-      window.AalaapiAndroid.setKeepScreenOn(true);
+    if (typeof Platform !== 'undefined' && typeof Platform.setKeepScreenOn === 'function') {
+      Platform.setKeepScreenOn(true);
     }
   } catch (_) {}
 
@@ -28,8 +28,8 @@ async function requestScreenWakeLock() {
 
 function releaseScreenWakeLock() {
   try {
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setKeepScreenOn === 'function') {
-      window.AalaapiAndroid.setKeepScreenOn(false);
+    if (typeof Platform !== 'undefined' && typeof Platform.setKeepScreenOn === 'function') {
+      Platform.setKeepScreenOn(false);
     }
   } catch (_) {}
 

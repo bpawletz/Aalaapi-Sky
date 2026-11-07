@@ -13,10 +13,9 @@ class DjiLogDecryptorEngine {
 
   setApiKey(key) {
     this.apiKey = (key || '').trim();
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setDjiApiKey === 'function') {
-      try {
-        window.AalaapiAndroid.setDjiApiKey(this.apiKey);
-      } catch (_) {}
+    if (typeof Platform !== 'undefined' && typeof Platform.setDjiApiKey === 'function') {
+      Platform.setDjiApiKey(this.apiKey);
+      return;
     }
     if (typeof localStorage !== 'undefined') {
       try {
@@ -27,14 +26,12 @@ class DjiLogDecryptorEngine {
 
   getApiKey() {
     if (this.apiKey) return this.apiKey;
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getDjiApiKey === 'function') {
-      try {
-        const nativeKey = window.AalaapiAndroid.getDjiApiKey();
-        if (nativeKey) {
-          this.apiKey = nativeKey.trim();
-          return this.apiKey;
-        }
-      } catch (_) {}
+    if (typeof Platform !== 'undefined' && typeof Platform.getDjiApiKey === 'function') {
+      const k = Platform.getDjiApiKey();
+      if (k) {
+        this.apiKey = k;
+        return this.apiKey;
+      }
     }
     if (typeof localStorage !== 'undefined') {
       try {
@@ -112,18 +109,19 @@ class DjiLogDecryptorEngine {
       'Api-Key': keyToUse
     };
 
-    // If running in Android container, route via native postHttp bridge (bypasses WebView CORS)
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.postHttp === 'function') {
+    // If running in a native platform container, route via native postHttp bridge (bypasses WebView CORS)
+    if (typeof Platform !== 'undefined' && typeof Platform.postHttpNative === 'function') {
       try {
-        const rawRes = window.AalaapiAndroid.postHttp(endpoint, requestBody, JSON.stringify(headers));
-        const parsed = JSON.parse(rawRes);
-        if (parsed.error) {
-          throw new Error(`DJI Cloud Keychain API error: ${parsed.error} (${parsed.status || 'unknown'})`);
+        const parsed = Platform.postHttpNative(endpoint, requestBody, headers);
+        if (parsed) {
+          if (parsed.error) {
+            throw new Error(`DJI Cloud Keychain API error: ${parsed.error} (${parsed.status || 'unknown'})`);
+          }
+          if (parsed.key) {
+            return parsed.key;
+          }
+          throw new Error('DJI Cloud returned empty or invalid decryption key.');
         }
-        if (parsed.key) {
-          return parsed.key;
-        }
-        throw new Error('DJI Cloud returned empty or invalid decryption key.');
       } catch (nativeErr) {
         if (nativeErr.message.includes('DJI Cloud')) {
           throw nativeErr;

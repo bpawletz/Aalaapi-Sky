@@ -462,8 +462,8 @@ const FlightDiagnostics = {
   _wakeLockSentinel: null,
   async requestWakeLock() {
     try {
-      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setKeepScreenOn === 'function') {
-        window.AalaapiAndroid.setKeepScreenOn(true);
+      if (typeof Platform !== 'undefined' && typeof Platform.setKeepScreenOn === 'function') {
+        Platform.setKeepScreenOn(true);
       }
       if (typeof navigator !== 'undefined' && 'wakeLock' in navigator && !this._wakeLockSentinel) {
         this._wakeLockSentinel = await navigator.wakeLock.request('screen');
@@ -1519,10 +1519,8 @@ const FlightDiagnostics = {
 
   async checkDjiApiKeyStatus() {
     let localKey = '';
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getDjiApiKey === 'function') {
-      try {
-        localKey = window.AalaapiAndroid.getDjiApiKey() || '';
-      } catch (_) {}
+    if (typeof Platform !== 'undefined' && typeof Platform.getDjiApiKey === 'function') {
+      localKey = Platform.getDjiApiKey() || '';
     }
     if (!localKey && typeof localStorage !== 'undefined') {
       try {
@@ -1640,13 +1638,8 @@ const FlightDiagnostics = {
     }
 
     let savedLocally = false;
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setDjiApiKey === 'function') {
-      try {
-        window.AalaapiAndroid.setDjiApiKey(key);
-        savedLocally = true;
-      } catch (err) {
-        console.warn('[DigitalTwin] Native setDjiApiKey error:', err);
-      }
+    if (typeof Platform !== 'undefined' && typeof Platform.setDjiApiKey === 'function') {
+      if (Platform.setDjiApiKey(key)) savedLocally = true;
     }
     if (typeof localStorage !== 'undefined') {
       try {
@@ -1716,10 +1709,8 @@ const FlightDiagnostics = {
 
     if (clearBtn) clearBtn.disabled = true;
 
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setDjiApiKey === 'function') {
-      try {
-        window.AalaapiAndroid.setDjiApiKey('');
-      } catch (_) {}
+    if (typeof Platform !== 'undefined' && typeof Platform.setDjiApiKey === 'function') {
+      Platform.setDjiApiKey('');
     }
     if (typeof localStorage !== 'undefined') {
       try {
@@ -2249,18 +2240,15 @@ const FlightDiagnostics = {
         this.isDecrypted = false;
         this.needsDjiApiKey = false;
 
-        // Check if Android native bridge or localStorage has this flight saved offline!
+        // Check if active platform adapter or localStorage has this flight saved offline!
         let offlineLoaded = false;
         try {
-          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getSavedFlightTelemetry === 'function') {
-            const rawJson = window.AalaapiAndroid.getSavedFlightTelemetry(flightId);
-            if (rawJson) {
-              const res = JSON.parse(rawJson);
-              if (res.success && res.data) {
-                const ok = this.loadFlightLogData(flightId, res.data);
-                if (ok && this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
-                  offlineLoaded = true;
-                }
+          if (typeof Platform !== 'undefined' && typeof Platform.getSavedFlightTelemetry === 'function') {
+            const savedData = Platform.getSavedFlightTelemetry(flightId);
+            if (savedData) {
+              const ok = this.loadFlightLogData(flightId, savedData);
+              if (ok && this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
+                offlineLoaded = true;
               }
             }
           }

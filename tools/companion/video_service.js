@@ -145,90 +145,9 @@ class VideoService {
       return VideoService._deviceCache;
     }
 
-    let devices = null;
-
-    if (process.platform === 'win32') {
-      try {
-        const { execFileSync } = require('node:child_process');
-        const psCmd = [
-          'Add-Type -AssemblyName System.Runtime.WindowsRuntime;',
-          '$asTask = [System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq "AsTask" -and $_.GetParameters().Count -eq 1 -and $_.GetGenericArguments().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name.StartsWith("IAsyncOperation") };',
-          '[Windows.Devices.Enumeration.DeviceInformation, Windows.Devices.Enumeration, ContentType = WindowsRuntime] | Out-Null;',
-          '$op = [Windows.Devices.Enumeration.DeviceInformation]::FindAllAsync([Windows.Devices.Enumeration.DeviceClass]::VideoCapture);',
-          '$t = $asTask.MakeGenericMethod([Windows.Devices.Enumeration.DeviceInformationCollection]).Invoke($null, @($op));',
-          '$t.Wait();',
-          '$i = 0;',
-          '$res = @(foreach ($d in $t.Result) { if ($d.IsEnabled) { [PSCustomObject]@{ FriendlyName = $d.Name; InstanceId = $d.Id; DeviceIndex = $i }; $i++ } });',
-          '$res | ConvertTo-Json -Compress'
-        ].join(' ');
-
-        const out = execFileSync(
-          'powershell.exe',
-          ['-NoProfile', '-Command', psCmd],
-          { timeout: 5000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
-        );
-        if (out && out.trim()) {
-          const parsed = JSON.parse(out.trim());
-          const raw = Array.isArray(parsed) ? parsed : [parsed];
-          devices = VideoService.formatDeviceList(raw);
-        }
-      } catch (_) {
-        // Fallback to Get-PnpDevice if WinRT query encounters security or permissions limitations
-        try {
-          const { execFileSync } = require('node:child_process');
-          const out = execFileSync(
-            'powershell.exe',
-            ['-NoProfile', '-Command', 'Get-PnpDevice -Class Camera, Image | Where-Object Status -eq OK | Select-Object FriendlyName, InstanceId | ConvertTo-Json'],
-            { timeout: 3500, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
-          );
-          if (out && out.trim()) {
-            const parsed = JSON.parse(out.trim());
-            const raw = Array.isArray(parsed) ? parsed : [parsed];
-            devices = VideoService.formatDeviceList(raw);
-          }
-        } catch (e) {}
-      }
-    } else if (process.platform === 'linux') {
-      try {
-        const v4lDir = '/sys/class/video4linux';
-        if (fs.existsSync(v4lDir)) {
-          const dirs = fs.readdirSync(v4lDir)
-            .filter(d => /^video\d+$/.test(d))
-            .sort((a, b) => parseInt(a.replace('video', ''), 10) - parseInt(b.replace('video', ''), 10));
-
-          if (dirs.length > 0) {
-            const raw = [];
-            for (const d of dirs) {
-              const idx = parseInt(d.replace('video', ''), 10);
-              const nameFile = path.join(v4lDir, d, 'name');
-              let devName = `Video Device ${idx}`;
-              if (fs.existsSync(nameFile)) {
-                try { devName = fs.readFileSync(nameFile, 'utf8').trim() || devName; } catch (_) {}
-              }
-              raw.push({ FriendlyName: devName, InstanceId: `/dev/${d}` });
-            }
-            devices = VideoService.formatDeviceList(raw);
-          }
-        }
-      } catch (_) {}
-    } else if (process.platform === 'darwin') {
-      try {
-        const { execFileSync } = require('node:child_process');
-        const out = execFileSync('system_profiler', ['SPCameraDataType', '-json'], { timeout: 3500, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-        if (out && out.trim()) {
-          const parsed = JSON.parse(out.trim());
-          const cams = parsed?.SPCameraDataType || [];
-          if (cams.length > 0) {
-            const raw = cams.map((c, i) => ({ FriendlyName: c._name || `Camera ${i}`, InstanceId: c.spcamera_unique_id || null }));
-            devices = VideoService.formatDeviceList(raw);
-          }
-        }
-      } catch (_) {}
-    }
-
-    if (!devices || devices.length === 0) {
-      devices = VideoService.formatDeviceList([]);
-    }
+    const { getCompanionDriver } = require('./drivers');
+    const rawDevices = getCompanionDriver().enumerateRawVideoCaptureDevices();
+    const devices = VideoService.formatDeviceList(Array.isArray(rawDevices) ? rawDevices : []);
 
     VideoService._deviceCache = devices;
     VideoService._deviceCacheTimestamp = now;
@@ -255,46 +174,8 @@ class VideoService {
       return cached.result;
     }
 
-    if (process.platform !== 'win32') {
-      const res = {
-        open: true,
-        platform: process.platform,
-        port,
-        message: 'Non-Windows host; local firewall rules managed by OS packet filter.'
-      };
-      VideoService._firewallCache.set(key, { result: res, timestamp: now });
-      return res;
-    }
-
-    let res = null;
-    try {
-      const out = execSync(`netsh advfirewall firewall show rule name="${ruleName}"`, {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe']
-      });
-      if (out && (out.includes(String(port)) || out.includes(ruleName))) {
-        res = {
-          open: true,
-          platform: 'win32',
-          rule: ruleName,
-          port,
-          message: `Inbound firewall rule '${ruleName}' is active on port ${port}.`
-        };
-      }
-    } catch (_) {
-      // Command exits with code 1 if rule does not exist
-    }
-
-    if (!res) {
-      res = {
-        open: false,
-        platform: 'win32',
-        rule: ruleName,
-        port,
-        command: `netsh advfirewall firewall add rule name="${ruleName}" dir=in action=allow protocol=TCP localport=${port} profile=any description="Allows inbound RTMP video streaming from DJI RC 2 to Aalaapi Sky Companion"`,
-        message: `Inbound firewall rule for port ${port} not found. Elevation required to configure.`
-      };
-    }
+    const { getCompanionDriver } = require('./drivers');
+    const res = getCompanionDriver().checkFirewallRule(ruleName, port);
 
     VideoService._firewallCache.set(key, { result: res, timestamp: now });
     return res;
