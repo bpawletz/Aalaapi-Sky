@@ -13016,5 +13016,82 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     // Restore viewport
     await page.setViewportSize({ width: 1366, height: 768 });
   });
+
+  test('E2E: Topbar Pill Auto-Fitting, Side Swipeable Indicators & Opaque Brand Header (v1.241.0, Issue #272)', async () => {
+    // 1. Set viewport to 1200px and reveal ribbon buttons
+    await page.setViewportSize({ width: 1200, height: 768 });
+    await page.evaluate(() => {
+      localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+      document.querySelectorAll('.topbar-right > *').forEach(el => el.classList.add('ribbon-force-show'));
+      const topbar = document.querySelector('.studio-topbar');
+      if (topbar) topbar.scrollLeft = 0;
+      if (window.initTopbarScrollCues) window.initTopbarScrollCues(topbar);
+    });
+    await page.waitForTimeout(250);
+
+    // 2. Verify auto-fit pill widths
+    const pillMetrics = await page.evaluate(() => {
+      const unit = document.getElementById('header-unit-toggle-btn');
+      const awake = document.getElementById('screen-awake-toggle-btn');
+      return {
+        unitWidth: unit ? unit.getBoundingClientRect().width : 0,
+        awakeWidth: awake ? awake.getBoundingClientRect().width : 0
+      };
+    });
+
+    assert.ok(pillMetrics.unitWidth > 20 && pillMetrics.unitWidth <= 100, `FT/MPH pill must auto-fit (width: ${pillMetrics.unitWidth}px <= 100px)`);
+    assert.ok(pillMetrics.awakeWidth > 20 && pillMetrics.awakeWidth <= 100, `Awake pill must auto-fit (width: ${pillMetrics.awakeWidth}px <= 100px)`);
+
+    // 3. Verify .topbar-left is opaque and has right border
+    const topbarLeftStyle = await page.evaluate(() => {
+      const left = document.querySelector('.topbar-left');
+      const cs = window.getComputedStyle(left);
+      return {
+        bg: cs.backgroundColor,
+        borderRightWidth: cs.borderRightWidth,
+        position: cs.position
+      };
+    });
+
+    assert.strictEqual(topbarLeftStyle.bg, 'rgb(15, 23, 42)', '.topbar-left must have solid opaque background');
+    assert.strictEqual(topbarLeftStyle.borderRightWidth, '1px', '.topbar-left must have 1px right border');
+    assert.strictEqual(topbarLeftStyle.position, 'sticky', '.topbar-left must be sticky');
+
+    // 4. Verify side swipeable scroll cues
+    const cuesInitial = await page.evaluate(() => {
+      const rightCue = document.getElementById('topbar-scroll-cue-right');
+      const leftCue = document.getElementById('topbar-scroll-cue-left');
+      return {
+        rightDisplay: rightCue ? window.getComputedStyle(rightCue).display : 'none',
+        leftDisplay: leftCue ? window.getComputedStyle(leftCue).display : 'none'
+      };
+    });
+
+    assert.strictEqual(cuesInitial.rightDisplay, 'flex', 'Right scroll cue must be visible when content overflows');
+    assert.strictEqual(cuesInitial.leftDisplay, 'none', 'Left scroll cue must be hidden at scrollLeft=0');
+
+    // 5. Click right cue to scroll
+    await page.evaluate(() => {
+      const rightCue = document.getElementById('topbar-scroll-cue-right');
+      if (rightCue) rightCue.click();
+    });
+    await page.waitForTimeout(350);
+
+    const cuesAfterScroll = await page.evaluate(() => {
+      const topbar = document.querySelector('.studio-topbar');
+      const leftCue = document.getElementById('topbar-scroll-cue-left');
+      return {
+        scrollLeft: topbar ? topbar.scrollLeft : 0,
+        leftDisplay: leftCue ? window.getComputedStyle(leftCue).display : 'none'
+      };
+    });
+
+    assert.ok(cuesAfterScroll.scrollLeft > 50, `Clicking right cue must scroll topbar (actual: ${cuesAfterScroll.scrollLeft}px)`);
+    assert.strictEqual(cuesAfterScroll.leftDisplay, 'flex', 'Left scroll cue must appear after scrolling right');
+
+    // Restore viewport
+    await page.setViewportSize({ width: 1366, height: 768 });
+  });
   });
 });

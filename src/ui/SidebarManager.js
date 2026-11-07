@@ -344,7 +344,62 @@ if (topbar) {
       }
     }
   }, { passive: false });
+
+  // Initialize side swipeable indicator cues (v1.241.0, Issue #272)
+  initTopbarScrollCues(topbar);
 }
+}
+
+/**
+ * Side Swipeable Indicator Cues (v1.241.0, Issue #272)
+ * Manages visibility and smooth scrolling on left and right edge indicators
+ * when topbar ribbon items overflow the viewport.
+ */
+function initTopbarScrollCues(topbarEl) {
+  if (typeof document === 'undefined') return;
+  const topbar = topbarEl || document.querySelector('.studio-topbar');
+  if (!topbar) return;
+
+  const leftCue = document.getElementById('topbar-scroll-cue-left');
+  const rightCue = document.getElementById('topbar-scroll-cue-right');
+
+  const updateCues = () => {
+    const maxScroll = topbar.scrollWidth - topbar.clientWidth;
+    if (maxScroll > 6) {
+      if (rightCue) {
+        rightCue.style.display = (topbar.scrollLeft < maxScroll - 6) ? 'flex' : 'none';
+      }
+      if (leftCue) {
+        leftCue.style.display = (topbar.scrollLeft > 6) ? 'flex' : 'none';
+      }
+    } else {
+      if (rightCue) rightCue.style.display = 'none';
+      if (leftCue) leftCue.style.display = 'none';
+    }
+  };
+
+  topbar.addEventListener('scroll', updateCues, { passive: true });
+  window.addEventListener('resize', updateCues, { passive: true });
+
+  if (rightCue) {
+    rightCue.addEventListener('click', (e) => {
+      e.stopPropagation();
+      topbar.scrollBy({ left: 240, behavior: 'smooth' });
+    });
+  }
+
+  if (leftCue) {
+    leftCue.addEventListener('click', (e) => {
+      e.stopPropagation();
+      topbar.scrollBy({ left: -240, behavior: 'smooth' });
+    });
+  }
+
+  // Initial and delayed update for font/layout settlement
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(updateCues);
+  }
+  setTimeout(updateCues, 150);
 }
 
 /**
@@ -593,6 +648,7 @@ if (typeof window !== 'undefined') {
   window.applyTopbarRibbonConfig = applyTopbarRibbonConfig;
   window.resetTopbarRibbonConfig = resetTopbarRibbonConfig;
   window.initTopbarRibbon = initTopbarRibbon;
+  window.initTopbarScrollCues = initTopbarScrollCues;
 }
 
 /**
