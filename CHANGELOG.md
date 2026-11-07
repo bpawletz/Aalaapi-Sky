@@ -1,3 +1,24 @@
+## [1.242.1] - 2026-11-07
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **ADS-B Preflight Simulation Controls Containment (Closes #274)**:
+  - Reorganized the 9 simulation and test buttons under "Preflight Audio & Traffic Simulation" into a dedicated full-width "Test Audio & Voice Alert" action bar, a 2-column responsive grid for Alert Scenarios (Breach, Approaching, Landing, Descending), and a 4-column compact grid for Aircraft Profiles (Prop, Heli, Jet, High Alt).
+  - Eliminates button overhang and horizontal overflow outside the 350px drawer boundary across desktop and mobile screens.
+- **Windows ADS-B Audio Chimes & Voice Alerts (Closes #274)**:
+  - Resolved missing audio alert playback on Windows desktop browsers (Chrome, Edge, Electron).
+  - Web Audio alert synthesizers (warning chime and approaching amber tone) and Text-to-Speech voice advisories now play reliably upon simulation triggers, test button clicks, and live perimeter breach alerts.
+
+#### Under the Hood & Technical Details
+- **`src/bridge/ApiClient.js`**:
+  - Registered a global user-gesture audio and speech synthesis unlock handler (`pointerdown`, `keydown`, `click`) in `AdsbAirspaceManager.bindEvents()` to prevent Chromium autoplay policy from silencing background and network alerts.
+  - Made `playWarningChime()` and `playApproachingChime()` async, properly awaiting `ctx.resume()` before sampling `ctx.currentTime` so oscillator ramps are not scheduled in the past while the context is suspended.
+  - Resolved Chromium Windows `SpeechSynthesis` bugs in `playVoiceAdvisory()`: unsticks paused speech synthesis, debounces synchronous `speechSynthesis.cancel()` prior to `speak()`, selects preferred English system voices, and anchors `this._activeUtterance` against V8 garbage collection mid-speech.
+  - Updated `simulateAircraft()` to clear simulated aircraft hex cooldowns so repeated preflight simulation testing always produces immediate audio feedback.
+- **`index_template.html` & `index.css`**:
+  - Added `.adsb-sim-test-btn`, `.adsb-sim-grid-scenarios`, and `.adsb-sim-grid-profiles` layout classes with `box-sizing: border-box`, clean gap spacing, and text truncation preventing horizontal overflow.
+
 ## [1.242.0] - 2026-11-07
 
 Mutual exclusivity between the Manned Aircraft ADS-B drawer, topbar ribbon popovers, and modal dialogs, alongside Escape key dismissal.

@@ -7020,6 +7020,87 @@ body.modal-drag-active {
   color: var(--text-main);
 }
 
+.adsb-sim-test-btn {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(56, 189, 248, 0.14);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.adsb-sim-test-btn:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.55);
+}
+
+.adsb-sim-section-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+.adsb-sim-grid-scenarios {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.adsb-sim-grid-scenarios button {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 5px 6px;
+  font-size: 0.70rem;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.adsb-sim-grid-profiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.adsb-sim-grid-profiles button {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 4px 4px;
+  font-size: 0.68rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
 .adsb-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-color);

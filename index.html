@@ -7037,6 +7037,87 @@ body.modal-drag-active {
   color: var(--text-main);
 }
 
+.adsb-sim-test-btn {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(56, 189, 248, 0.14);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.adsb-sim-test-btn:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.55);
+}
+
+.adsb-sim-section-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+.adsb-sim-grid-scenarios {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.adsb-sim-grid-scenarios button {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 5px 6px;
+  font-size: 0.70rem;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.adsb-sim-grid-profiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.adsb-sim-grid-profiles button {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 4px 4px;
+  font-size: 0.68rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
 .adsb-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-color);
@@ -9174,7 +9255,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.1</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -13637,35 +13718,39 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <span>🧪 Preflight Audio &amp; Traffic Simulation</span>
                 <span style="font-size: 0.65rem; color: #38bdf8;">▾</span>
               </summary>
-              <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
-                <div style="display: flex; gap: 6px;">
-                  <button id="adsb-test-audio-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer;" title="Test Audio Synth &amp; Speech">
-                    <span>🔊</span> Test Audio
-                  </button>
-                  <button id="adsb-sim-trigger-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); cursor: pointer;" title="Simulate Approaching Aircraft Breach">
+              <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; width: 100%; box-sizing: border-box;">
+                <button id="adsb-test-audio-btn" type="button" class="btn-secondary adsb-sim-test-btn" title="Test Audio Synth &amp; Speech Alert">
+                  <span>🔊</span> Test Audio &amp; Voice Alert
+                </button>
+
+                <div class="adsb-sim-section-label">Alert Scenarios</div>
+                <div class="adsb-sim-grid-scenarios">
+                  <button id="adsb-sim-trigger-btn" type="button" class="btn-secondary" style="background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35);" title="Simulate Approaching Aircraft Breach">
                     <span>⚠️</span> Breach
                   </button>
-                  <button id="adsb-sim-approaching-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(245, 158, 11, 0.16); color: #f59e0b; border-color: rgba(245, 158, 11, 0.45); cursor: pointer;" title="Simulate Approaching Trajectory Cone Warning">
+                  <button id="adsb-sim-approaching-btn" type="button" class="btn-secondary" style="background: rgba(245, 158, 11, 0.16); color: #f59e0b; border-color: rgba(245, 158, 11, 0.45);" title="Simulate Approaching Trajectory Cone Warning">
                     <span>📐</span> Approaching
                   </button>
-                  <button id="adsb-sim-landing-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(56, 189, 248, 0.16); color: #38bdf8; border-color: rgba(56, 189, 248, 0.45); cursor: pointer;" title="Simulate Airport Traffic Pattern / Landing (Cone Suppressed)">
+                  <button id="adsb-sim-landing-btn" type="button" class="btn-secondary" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border-color: rgba(56, 189, 248, 0.45);" title="Simulate Airport Traffic Pattern / Landing (Cone Suppressed)">
                     <span>🛬</span> Landing
                   </button>
-                  <button id="adsb-sim-descending-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(234, 88, 12, 0.16); color: #ea580c; border-color: rgba(234, 88, 12, 0.45); cursor: pointer;" title="Simulate Descending Aircraft with Intrusion Gradient Cone">
+                  <button id="adsb-sim-descending-btn" type="button" class="btn-secondary" style="background: rgba(234, 88, 12, 0.16); color: #ea580c; border-color: rgba(234, 88, 12, 0.45);" title="Simulate Descending Aircraft with Intrusion Gradient Cone">
                     <span>📉</span> Descending
                   </button>
                 </div>
-                <div style="display: flex; gap: 4px;">
-                  <button id="adsb-sim-prop-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(16, 185, 129, 0.12); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); cursor: pointer;" title="Simulate GA Propeller Traffic (C172)">
+
+                <div class="adsb-sim-section-label">Aircraft Profiles</div>
+                <div class="adsb-sim-grid-profiles">
+                  <button id="adsb-sim-prop-btn" type="button" class="btn-secondary" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35);" title="Simulate GA Propeller Traffic (C172)">
                     <span>🛩️</span> Prop
                   </button>
-                  <button id="adsb-sim-heli-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(234, 179, 8, 0.12); color: #fde047; border-color: rgba(234, 179, 8, 0.35); cursor: pointer;" title="Simulate Helicopter Traffic (Bell 407 / R44)">
+                  <button id="adsb-sim-heli-btn" type="button" class="btn-secondary" style="background: rgba(234, 179, 8, 0.12); color: #fde047; border-color: rgba(234, 179, 8, 0.35);" title="Simulate Helicopter Traffic (Bell 407 / R44)">
                     <span>🚁</span> Heli
                   </button>
-                  <button id="adsb-sim-jet-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); cursor: pointer;" title="Simulate Commercial / Jet Traffic (B738)">
+                  <button id="adsb-sim-jet-btn" type="button" class="btn-secondary" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.35);" title="Simulate Commercial / Jet Traffic (B738)">
                     <span>✈️</span> Jet
                   </button>
-                  <button id="adsb-sim-high-alt-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(134, 239, 172, 0.16); color: #86efac; border-color: rgba(134, 239, 172, 0.45); cursor: pointer;" title="Simulate High-Altitude Cruising Traffic (12,000 ft AGL / Cone Suppressed)">
+                  <button id="adsb-sim-high-alt-btn" type="button" class="btn-secondary" style="background: rgba(134, 239, 172, 0.16); color: #86efac; border-color: rgba(134, 239, 172, 0.45);" title="Simulate High-Altitude Cruising Traffic (12,000 ft AGL / Cone Suppressed)">
                     <span>🛫</span> High Alt
                   </button>
                 </div>
@@ -16815,7 +16900,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.1</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -16978,6 +17063,18 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.242.1):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>ADS-B Preflight Simulation Controls Containment (Closes #274):</strong> Reorganized the 9 simulation and test buttons into responsive grid layouts eliminating overhang outside the 350px drawer; fixed Windows AudioContext autoplay unlock and Chromium SpeechSynthesis bugs.</li>
+                </ul>
+              </li>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.242.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Mutual Exclusivity for ADS-B Drawer &amp; Modals (Closes #273):</strong> Opening the ADS-B drawer dismisses active ribbon popovers; selecting popovers/modals or pressing Escape closes the drawer.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.241.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -73510,6 +73607,11 @@ const AdsbAirspaceManager = {
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
+      if (simAircraft && simAircraft.hex) {
+        this.lastAlertTimes.delete(simAircraft.hex);
+        this.lastApproachingAlertTimes.delete(simAircraft.hex);
+        this.previousStatus.delete(simAircraft.hex);
+      }
       await this.pollAirspace();
       this.updateVisualBanner();
       this.updateTopbarAndHud();
@@ -73589,6 +73691,10 @@ const AdsbAirspaceManager = {
 
       this.approachingAircraft = this.aircraft.filter(a => !a.isBreached && (a.isConeWarning || a.status === 'approaching'));
 
+      if (simAircraft && simAircraft.hex) {
+        this.lastAlertTimes.delete(simAircraft.hex);
+        this.lastApproachingAlertTimes.delete(simAircraft.hex);
+      }
       this.triggerAudioAlert(simAircraft, isApproaching ? 'approaching' : 'breached');
 
       this.updateVisualBanner();
@@ -75561,89 +75667,29 @@ const AdsbAirspaceManager = {
 
 
   initAudioContext() {
-
-
-
     if (!this.audioContext && typeof window !== 'undefined') {
-
-
-
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-
-
-
       if (AudioCtx) {
-
-
-
         try {
-
-
-
           this.audioContext = new AudioCtx();
-
-
-
         } catch (e) {}
-
-
-
       }
-
-
-
     }
-
-
-
     if (this.audioContext && this.audioContext.state === 'suspended') {
-
-
-
-      this.audioContext.resume().catch(() => {});
-
-
-
+      return this.audioContext.resume().catch(() => {});
     }
-
-
-
+    return Promise.resolve();
   },
 
-
-
-
-
-
-
-  playApproachingChime() {
-
-
-
+  async playApproachingChime() {
     try {
-
-
-
-      this.initAudioContext();
-
-
-
+      await this.initAudioContext();
       if (!this.audioContext) return;
-
-
-
       const ctx = this.audioContext;
-
-
-
+      if (ctx.state === 'suspended') {
+        try { await ctx.resume(); } catch (e) {}
+      }
       const now = ctx.currentTime;
-
-
-
-
-
-
-
       const masterGain = ctx.createGain();
 
 
@@ -75764,34 +75810,15 @@ const AdsbAirspaceManager = {
 
 
 
-  playWarningChime() {
-
-
-
+  async playWarningChime() {
     try {
-
-
-
-      this.initAudioContext();
-
-
-
+      await this.initAudioContext();
       if (!this.audioContext) return;
-
-
-
       const ctx = this.audioContext;
-
-
-
+      if (ctx.state === 'suspended') {
+        try { await ctx.resume(); } catch (e) {}
+      }
       const now = ctx.currentTime;
-
-
-
-
-
-
-
       const masterGain = ctx.createGain();
 
 
@@ -75913,32 +75940,21 @@ const AdsbAirspaceManager = {
 
 
   playVoiceAdvisory(aircraft, alertStage = 'breached') {
-
-
-
     if (typeof window === 'undefined') return;
-
-
 
     const nativeTts = (typeof Platform !== 'undefined' && typeof Platform.hasNativeTts === 'function')
       ? Platform.hasNativeTts()
       : false;
 
-
-
     if (!nativeTts && !window.speechSynthesis) {
-
       if (typeof console !== 'undefined') console.warn('Voice advisory unavailable: no speech engine');
-
       return;
-
     }
 
-
-
     try {
-
-      if (!nativeTts) window.speechSynthesis.cancel();
+      if (!nativeTts && typeof window.speechSynthesis.cancel === 'function') {
+        window.speechSynthesis.cancel();
+      }
 
       const text = this.formatVoiceAdvisoryText(aircraft, alertStage);
       if (!text) return;
@@ -75948,36 +75964,47 @@ const AdsbAirspaceManager = {
         return;
       }
 
+      const UtteranceCtor = (typeof window !== 'undefined' && window.SpeechSynthesisUtterance)
+        ? window.SpeechSynthesisUtterance
+        : (typeof SpeechSynthesisUtterance !== 'undefined' ? SpeechSynthesisUtterance : null);
+      if (!UtteranceCtor) return;
 
+      // Unstick paused speech synthesis if suspended by browser
+      if (window.speechSynthesis.paused && typeof window.speechSynthesis.resume === 'function') {
+        try { window.speechSynthesis.resume(); } catch (e) {}
+      }
 
-      const utterance = new SpeechSynthesisUtterance(text);
-
-
-
+      const utterance = new UtteranceCtor(text);
       utterance.rate = 1.05;
-
-
-
       utterance.pitch = 1.0;
-
-
-
       utterance.volume = 0.9;
 
+      // Select preferred English voice if available on Windows / desktop
+      if (typeof window.speechSynthesis.getVoices === 'function') {
+        try {
+          const voices = window.speechSynthesis.getVoices();
+          if (voices && voices.length > 0) {
+            const preferred = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en') && (
+              v.name.includes('Natural') || v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Google') || v.default
+            )) || voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+            if (preferred) utterance.voice = preferred;
+          }
+        } catch (e) {}
+      }
 
+      // Anchor reference to prevent V8 garbage collection mid-speech
+      this._activeUtterance = utterance;
+      utterance.onend = () => {
+        if (this._activeUtterance === utterance) this._activeUtterance = null;
+      };
+      utterance.onerror = () => {
+        if (this._activeUtterance === utterance) this._activeUtterance = null;
+      };
 
       window.speechSynthesis.speak(utterance);
-
-
-
     } catch (e) {
-
       if (typeof console !== 'undefined') console.warn('Voice advisory failed:', e);
-
     }
-
-
-
   },
 
 
@@ -82391,16 +82418,22 @@ const AdsbAirspaceManager = {
 
 
   bindEvents() {
-
-
-
     if (typeof document === 'undefined') return;
 
-
-
-
-
-
+    // Global user-gesture audio & speech unlock for desktop / Windows / mobile web
+    const unlockAudioAndSpeech = () => {
+      this.initAudioContext();
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        if (window.speechSynthesis.paused) {
+          try { window.speechSynthesis.resume(); } catch (e) {}
+        }
+      }
+    };
+    if (typeof window !== 'undefined') {
+      ['pointerdown', 'keydown', 'click'].forEach(evt => {
+        window.addEventListener(evt, unlockAudioAndSpeech, { passive: true });
+      });
+    }
 
     // Topbar & More menu buttons
 
@@ -82796,9 +82829,9 @@ const AdsbAirspaceManager = {
     }
 
     if (ttsPreviewBtn) {
-      ttsPreviewBtn.addEventListener('click', () => {
-        this.initAudioContext();
-        this.playWarningChime();
+      ttsPreviewBtn.addEventListener('click', async () => {
+        await this.initAudioContext();
+        await this.playWarningChime();
         setTimeout(() => {
           this.playVoiceAdvisory({
             callsign: 'UAL452',
@@ -83019,64 +83052,20 @@ const AdsbAirspaceManager = {
 
     const testAudioBtn = document.getElementById('adsb-test-audio-btn');
 
-
-
     if (testAudioBtn) {
-
-
-
-      testAudioBtn.addEventListener('click', () => {
-
-
-
-        this.initAudioContext();
-
-
-
-        this.playWarningChime();
-
-
-
+      testAudioBtn.addEventListener('click', async () => {
+        await this.initAudioContext();
+        await this.playWarningChime();
         setTimeout(() => {
-
-
-
           this.playVoiceAdvisory({
-
-
-
             callsign: 'UAL452',
-
-
-
             distanceMiles: 1.5,
-
-
-
             distanceMeters: 2414,
-
-
-
             altitude: 1850,
-
-
-
             bearingCardinal: 'NE'
-
-
-
-          });
-
-
-
+          }, 'breached');
         }, 220);
-
-
-
       });
-
-
-
     }
 
 

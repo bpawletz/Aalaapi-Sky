@@ -43960,24 +43960,13 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       });
 
       describe('v1.242.0: Mutual Exclusivity Between ADS-B Radar Drawer & Modals/Popovers (Issue #273)', () => {
-        test('Version consistency: v1.242.0 across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
-          const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-          assert.strictEqual(pkg.version, '1.242.0', 'package.json version must be 1.242.0');
-
+        test('Version consistency: v1.242.0 entry preserved in CHANGELOG.md and build history', () => {
           const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
           assert.ok(changelog.includes('## [1.242.0] - 2026-11-07'), 'CHANGELOG.md must include v1.242.0 header');
           assert.ok(changelog.includes('Closes #273'), 'CHANGELOG.md must reference issue #273');
 
           const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-          assert.ok(template.includes('Version 1.242.0'), 'index_template.html must include Version 1.242.0 in About modal');
-          assert.ok(template.includes('v1.242.0'), 'index_template.html must include v1.242.0 header badge');
-
-          const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-          assert.ok(html.includes('Version 1.242.0'), 'index.html must include Version 1.242.0 in About modal');
-
-          const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-          assert.ok(gradle.includes('versionName = "1.242.0"'), 'Gradle versionName must be 1.242.0');
-          assert.ok(gradle.includes('versionCode = 12420'), 'Gradle versionCode must be 12420');
+          assert.ok(template.includes('Version 1.242.0') || template.includes('Changelog (v1.242.0)'), 'index_template.html must include v1.242.0 changelog');
         });
 
         test('dismissActivePopovers exists and closes #adsb-control-drawer and other popovers', () => {
@@ -44039,6 +44028,86 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
           assert.ok(afSrc.includes('dismissActivePopovers()'), 'openActionFlowModal must call dismissActivePopovers()');
           assert.ok(rmSrc.includes('dismissActivePopovers()'), 'openIntroModal must call dismissActivePopovers()');
           assert.ok(caSrc.includes('dismissActivePopovers()'), 'CompanionAuth.openModal must call dismissActivePopovers()');
+        });
+      });
+
+      describe('Issue #274: ADS-B Simulation Button Layout & Windows Audio Alert Fixes', () => {
+        test('Version consistency: v1.242.1 across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
+          const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+          assert.strictEqual(pkg.version, '1.242.1', 'package.json version must be 1.242.1');
+
+          const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+          assert.ok(changelog.includes('## [1.242.1] - 2026-11-07'), 'CHANGELOG.md must include v1.242.1 header');
+          assert.ok(changelog.includes('Closes #274'), 'CHANGELOG.md must reference issue #274');
+
+          const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+          assert.ok(template.includes('Version 1.242.1'), 'index_template.html must include Version 1.242.1 in About modal');
+          assert.ok(template.includes('v1.242.1'), 'index_template.html must include v1.242.1 header badge');
+
+          const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+          assert.ok(html.includes('Version 1.242.1'), 'index.html must include Version 1.242.1 in About modal');
+
+          const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+          assert.ok(gradle.includes('versionName = "1.242.1"'), 'Gradle versionName must be 1.242.1');
+          assert.ok(gradle.includes('versionCode = 12421'), 'Gradle versionCode must be 12421');
+        });
+
+        test('index_template.html contains responsive grid containers for simulation controls', () => {
+          const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+          assert.ok(template.includes('class="btn-secondary adsb-sim-test-btn"'), 'Must have full-width test audio button');
+          assert.ok(template.includes('class="adsb-sim-grid-scenarios"'), 'Must have 2-column scenarios grid');
+          assert.ok(template.includes('class="adsb-sim-grid-profiles"'), 'Must have 4-column profiles grid');
+          assert.ok(template.includes('id="adsb-test-audio-btn"'), 'Must have test audio button');
+          assert.ok(template.includes('id="adsb-sim-trigger-btn"'), 'Must have breach scenario button');
+          assert.ok(template.includes('id="adsb-sim-approaching-btn"'), 'Must have approaching scenario button');
+          assert.ok(template.includes('id="adsb-sim-landing-btn"'), 'Must have landing scenario button');
+          assert.ok(template.includes('id="adsb-sim-descending-btn"'), 'Must have descending scenario button');
+          assert.ok(template.includes('id="adsb-sim-prop-btn"'), 'Must have prop profile button');
+          assert.ok(template.includes('id="adsb-sim-heli-btn"'), 'Must have heli profile button');
+          assert.ok(template.includes('id="adsb-sim-jet-btn"'), 'Must have jet profile button');
+          assert.ok(template.includes('id="adsb-sim-high-alt-btn"'), 'Must have high alt profile button');
+        });
+
+        test('index.css contains grid styles ensuring containment within 350px drawer', () => {
+          const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+          assert.ok(css.includes('.adsb-sim-test-btn'), 'CSS must define .adsb-sim-test-btn');
+          assert.ok(css.includes('.adsb-sim-grid-scenarios'), 'CSS must define .adsb-sim-grid-scenarios');
+          assert.ok(css.includes('grid-template-columns: repeat(2, 1fr)'), 'Scenarios must use 2-column grid');
+          assert.ok(css.includes('.adsb-sim-grid-profiles'), 'CSS must define .adsb-sim-grid-profiles');
+          assert.ok(css.includes('grid-template-columns: repeat(4, 1fr)'), 'Profiles must use 4-column grid');
+        });
+
+        test('ApiClient.js registers global desktop user-gesture audio unlock listeners', () => {
+          const apiSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
+          assert.ok(apiSrc.includes("['pointerdown', 'keydown', 'click'].forEach"), 'Must listen for pointerdown, keydown, click');
+          assert.ok(apiSrc.includes('unlockAudioAndSpeech'), 'Must have unlockAudioAndSpeech function');
+        });
+
+        test('AdsbAirspaceManager initAudioContext returns Promise and handles suspended state', () => {
+          const apiSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
+          assert.ok(apiSrc.includes('return this.audioContext.resume().catch'), 'Must return resume promise');
+          assert.ok(apiSrc.includes('return Promise.resolve()'), 'Must return Promise.resolve() when not suspended');
+        });
+
+        test('playWarningChime and playApproachingChime await audioContext resumption', () => {
+          const apiSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
+          assert.ok(apiSrc.includes('async playApproachingChime()'), 'playApproachingChime must be async');
+          assert.ok(apiSrc.includes('async playWarningChime()'), 'playWarningChime must be async');
+          assert.ok(apiSrc.includes('await this.initAudioContext()'), 'Must await initAudioContext');
+        });
+
+        test('playVoiceAdvisory anchors utterance, unsticks paused speech, and cancels active speech', () => {
+          const apiSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
+          assert.ok(apiSrc.includes('this._activeUtterance = utterance'), 'Must anchor _activeUtterance against GC');
+          assert.ok(apiSrc.includes('window.speechSynthesis.paused'), 'Must inspect paused state');
+          assert.ok(apiSrc.includes('window.speechSynthesis.resume()'), 'Must unstick paused state');
+          assert.ok(apiSrc.includes('window.speechSynthesis.cancel()'), 'Must cancel previous speech');
+        });
+
+        test('simulateAircraft clears alert cooldowns for simulated hex so preflight audio triggers', () => {
+          const apiSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
+          assert.ok(apiSrc.includes('this.lastAlertTimes.delete(simAircraft.hex)'), 'Must clear lastAlertTimes on simulation');
+          assert.ok(apiSrc.includes('this.lastApproachingAlertTimes.delete(simAircraft.hex)'), 'Must clear lastApproachingAlertTimes on simulation');
         });
       });    });
   });
