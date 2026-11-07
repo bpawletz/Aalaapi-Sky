@@ -43094,6 +43094,7 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
         assert.ok(changelog.includes('## [1.235.0]'), 'CHANGELOG.md must include 1.235.0');
         assert.ok(changelog.includes('## [1.235.1]'), 'CHANGELOG.md must include 1.235.1');
         assert.ok(changelog.includes('## [1.236.0]'), 'CHANGELOG.md must include 1.236.0');
+        assert.ok(changelog.includes('## [1.237.0]'), 'CHANGELOG.md must include 1.237.0');
 
         const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
         assert.ok(template.includes(`Version ${pkg.version}`), `index_template.html must include Version ${pkg.version}`);
@@ -43101,7 +43102,7 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
         const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
         assert.ok(gradle.includes(`versionName = "${pkg.version}"`));
-        assert.ok(gradle.includes('versionCode = 12360'));
+        assert.ok(gradle.includes('versionCode = 12370'));
       });
 
       test('PlatformManager auto-detects Windows/Desktop, Android Native, iOS Native, and URL ?platform= overrides', () => {
@@ -43310,6 +43311,47 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
         const gitignore = fs.readFileSync(path.join(__dirname, '.gitignore'), 'utf8');
         assert.ok(gitignore.includes('data/tfr_notams.json'));
         assert.ok(gitignore.includes('data/tfr_geojson.json'));
+      });
+    });
+
+    describe('v1.237.0 Map Zoom Presets, Scrollable Topbar, Unified Modal Controls & Sticky Dock RC 2 (Issue #266)', () => {
+      test('DOM Architecture: Map Quick-Zoom Presets exist with Plan, Airspace, and Zoom Badge', () => {
+        const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+        assert.ok(indexHtml.includes('id="map-zoom-presets-control"'), '#map-zoom-presets-control container must exist');
+        assert.ok(indexHtml.includes('id="map-zoom-plan-btn"'), '#map-zoom-plan-btn must exist');
+        assert.ok(indexHtml.includes('id="map-zoom-airspace-btn"'), '#map-zoom-airspace-btn must exist');
+        assert.ok(indexHtml.includes('id="map-zoom-level-badge"'), '#map-zoom-level-badge must exist');
+      });
+
+      test('MapEngine exports setMapPlanningZoom and setMapAirspaceZoom functions', () => {
+        const MapEngine = require('./src/map/MapEngine.js');
+        assert.strictEqual(typeof MapEngine.setMapPlanningZoom, 'function', 'setMapPlanningZoom must be a function');
+        assert.strictEqual(typeof MapEngine.setMapAirspaceZoom, 'function', 'setMapAirspaceZoom must be a function');
+      });
+
+      test('CSS Architecture: Topbar is horizontally scrollable and more menu is fixed', () => {
+        const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+        assert.ok(css.includes('.studio-topbar {'), '.studio-topbar selector must exist');
+        assert.ok(css.includes('overflow-x: auto;'), 'studio-topbar must be horizontally scrollable');
+        assert.ok(css.includes('position: fixed;') && css.includes('.header-more-menu {'), '.header-more-menu must use fixed positioning');
+      });
+
+      test('ModalDragManager: exports initUniversalModalWindowControls and defines standard window controls', () => {
+        const modalDragSrc = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'ModalDragManager.js'), 'utf8');
+        assert.ok(modalDragSrc.includes('export function initUniversalModalWindowControls()'), 'ModalDragManager must export initUniversalModalWindowControls');
+        assert.ok(modalDragSrc.includes('modal-window-controls'), 'ModalDragManager must manage .modal-window-controls');
+        assert.ok(modalDragSrc.includes('modal-collapse-btn'), 'ModalDragManager must manage .modal-collapse-btn');
+        assert.ok(modalDragSrc.includes('modal-maximize-btn'), 'ModalDragManager must manage .modal-maximize-btn');
+        assert.ok(modalDragSrc.includes('modal-drag-grip'), 'ModalDragManager must enforce .modal-drag-grip');
+        assert.ok(modalDragSrc.includes('modal-maximized'), 'ModalDragManager must toggle .modal-maximized');
+      });
+
+      test('DOM Architecture: Sticky Dock contains Export KMZ and Send to RC 2 side-by-side', () => {
+        const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+        assert.ok(indexHtml.includes('dock-primary-actions-row'), '.dock-primary-actions-row container must exist');
+        assert.ok(indexHtml.includes('id="dock-rc2-sync-btn"'), '#dock-rc2-sync-btn must exist in sticky dock');
+        assert.ok(indexHtml.includes('id="dock-rc2-status-dot"'), '#dock-rc2-status-dot must exist on button');
+        assert.ok(indexHtml.includes('id="download-btn"'), '#download-btn must remain in dock');
       });
     });
   });

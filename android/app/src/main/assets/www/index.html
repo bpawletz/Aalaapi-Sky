@@ -161,6 +161,10 @@ html, body {
   box-sizing: border-box;
   flex-shrink: 0;
   gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
 .topbar-left {
@@ -196,9 +200,9 @@ html, body {
 }
 
 .header-more-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 8px;
+  position: fixed;
+  top: 54px;
+  right: 12px;
   background: rgba(15, 23, 42, 0.96);
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -8158,6 +8162,196 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
 
 /* ==========================================================================
+   🎯 Floating Map Zoom Presets: Flight Planning & Airspace Observing (Issue #266)
+   ========================================================================== */
+.map-floating-zoom-presets {
+  position: absolute;
+  top: 12px;
+  left: 216px;
+  z-index: 1000;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.map-zoom-preset-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.map-zoom-preset-button:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: var(--accent-cyan, #06b6d4);
+  color: var(--text-main, #f8fafc);
+}
+
+.map-zoom-preset-button.is-active {
+  background: rgba(6, 182, 212, 0.22);
+  border-color: var(--accent-cyan, #06b6d4);
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.35);
+}
+
+.map-zoom-level-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  min-width: 32px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted, #94a3b8);
+  font-family: monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+[data-theme="light"] .map-zoom-preset-button {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #475569;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .map-zoom-preset-button:hover {
+  background: rgba(241, 245, 249, 1);
+  border-color: #0284c7;
+  color: #0369a1;
+}
+
+[data-theme="light"] .map-zoom-preset-button.is-active {
+  background: rgba(14, 165, 233, 0.14);
+  border-color: #0284c7;
+  color: #0284c7;
+}
+
+[data-theme="light"] .map-zoom-level-badge {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #475569;
+}
+
+@media (max-width: 768px) {
+  .map-floating-zoom-presets {
+    top: 48px;
+    left: 54px;
+  }
+}
+
+/* ─── Bottom Sticky Dock RC 2 Direct Sync Button (Issue #266) ──────────────── */
+.dock-rc2-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.dock-rc2-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #64748b;
+  display: inline-block;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dock-rc2-dot.is-connected {
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+  animation: pulseGreen 1.8s infinite;
+}
+
+.dock-rc2-dot.is-waiting {
+  background: #f59e0b;
+  box-shadow: 0 0 5px rgba(245, 158, 11, 0.6);
+}
+
+.dock-rc2-dot.is-offline {
+  background: #64748b;
+}
+
+.dock-rc2-sync-btn.is-connected {
+  border-color: rgba(34, 197, 94, 0.6) !important;
+  color: #4ade80 !important;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(6, 182, 212, 0.25)) !important;
+}
+
+/* ─── Standardized Modal Window Controls (Issue #266) ──────────────────────── */
+.modal-window-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.modal-window-btn,
+.modal-header .close-btn,
+.modal-window-controls .close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.95rem;
+  line-height: 1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.modal-window-btn:hover {
+  color: var(--accent-cyan, #06b6d4);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.modal-header .close-btn:hover,
+.modal-window-controls .close-btn:hover {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+.modal.modal-maximized,
+.diag-modal-card.modal-maximized,
+.action-flow-card.modal-maximized,
+.photo-inspector-card.modal-maximized {
+  width: 96vw !important;
+  max-width: 96vw !important;
+  height: 94vh !important;
+  max-height: 94vh !important;
+  transform: translate(0px, 0px) !important;
+}
+
+/* ==========================================================================
    Visual Flight Action Flow Visualizer (Node-RED Style Canvas) - v1.216.0
    ========================================================================== */
 
@@ -8747,7 +8941,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.236.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.237.0</span></h1>
         </div>
       </div>
 
@@ -12109,14 +12303,20 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               Preflight
             </button>
           </div>
-          <button id="download-btn" class="btn-primary" type="button" style="width: 100%; padding: 8px 6px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0;" title="Export WPML Mission KMZ">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Export KMZ
-          </button>
+          <div class="dock-primary-actions-row" style="display: flex; gap: 6px; width: 100%;">
+  <button id="download-btn" class="btn-primary" type="button" style="flex: 1; padding: 8px 4px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0;" title="Export WPML Mission KMZ">
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    <span>Export KMZ</span>
+  </button>
+  <button id="dock-rc2-sync-btn" class="btn-primary dock-rc2-sync-btn" type="button" style="flex: 1; padding: 8px 4px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0; background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(59, 130, 246, 0.3)); border: 1px solid rgba(56, 189, 248, 0.45); color: #38bdf8;" title="Send mission directly to DJI RC 2 via Companion Bridge or USB MTP">
+    <span id="dock-rc2-status-dot" class="dock-rc2-dot"></span>
+    <span id="dock-rc2-sync-label">⚡ Send to RC 2</span>
+  </button>
+</div>
           <!-- Cloud & Google Workspace Field Dock (v1.219.0, Issue #227) -->
           <div style="display: flex; gap: 4px; margin-top: 4px;">
             <button id="cloud-drive-save-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 2px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.72rem; margin: 0; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); color: #38bdf8;" title="Save KMZ &amp; Project to Google Drive">
@@ -12140,24 +12340,35 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       <div id="map"></div>
 
       <!-- Floating Map Undo & Redo Controls (v1.206.0) -->
-      <div id="map-undo-control" class="map-floating-undo-control">
-        <button id="map-undo-btn" type="button" class="map-undo-button" disabled title="Undo Last Map Action (Ctrl+Z)" aria-label="Undo Last Map Action">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 7v6h6"/>
-            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
-          </svg>
-          <span>Undo</span>
-          <span id="map-undo-badge" class="map-undo-badge" style="display: none;">0</span>
-        </button>
-        <button id="map-redo-btn" type="button" class="map-undo-button" disabled title="Redo Last Map Action (Ctrl+Y)" aria-label="Redo Last Map Action">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 7v6h-6"/>
-            <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
-          </svg>
-          <span>Redo</span>
-          <span id="map-redo-badge" class="map-undo-badge" style="display: none;">0</span>
-        </button>
-      </div>
+<div id="map-undo-control" class="map-floating-undo-control">
+  <button id="map-undo-btn" type="button" class="map-undo-button" disabled title="Undo Last Map Action (Ctrl+Z)" aria-label="Undo Last Map Action">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 7v6h6"/>
+      <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+    </svg>
+    <span>Undo</span>
+    <span id="map-undo-badge" class="map-undo-badge" style="display: none;">0</span>
+  </button>
+  <button id="map-redo-btn" type="button" class="map-undo-button" disabled title="Redo Last Map Action (Ctrl+Y)" aria-label="Redo Last Map Action">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 7v6h-6"/>
+      <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+    </svg>
+    <span>Redo</span>
+    <span id="map-redo-badge" class="map-undo-badge" style="display: none;">0</span>
+  </button>
+</div>
+
+<!-- Floating Map Zoom Presets: Flight Planning & Airspace Observing (v1.237.0, Issue #266) -->
+<div id="map-zoom-presets-control" class="map-floating-zoom-presets">
+  <button id="map-zoom-plan-btn" type="button" class="map-zoom-preset-button is-active" title="Jump to Flight Planning Zoom (18 / Mission Bounds)" aria-label="Jump to Flight Planning Zoom">
+    <span>🎯 Plan</span>
+  </button>
+  <button id="map-zoom-airspace-btn" type="button" class="map-zoom-preset-button" title="Jump to Airspace Observing Zoom (12 / VFR &amp; ADS-B)" aria-label="Jump to Airspace Observing Zoom">
+    <span>✈️ Airspace</span>
+  </button>
+  <span id="map-zoom-level-badge" class="map-zoom-level-badge" title="Current Map Zoom Level">Z17</span>
+</div>
       <div id="undo-feedback-toast" class="undo-feedback-toast" style="display: none; position: absolute; top: 48px; left: 54px; z-index: 1001; pointer-events: none;"></div>
 
       <!-- 2D Elevation Profile Drawer (Issue #129, #158) -->
@@ -13554,6 +13765,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>🎯</span>
+              Map Zoom Presets, Scrollable Topbar, Modal Controls &amp; Sticky Dock RC 2 (v1.237.0) (Closes #266)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              1-click map quick-zoom presets for tight Flight Planning (<strong>🎯 Plan</strong>, zoom 18) and wide-area Airspace Observing (<strong>✈️ Airspace</strong>, zoom 12 / ADS-B proximity ring), non-wrapping horizontally scrollable top navigation ribbon with mouse wheel support, standardized modal window controls (<strong>⋮⋮ Drag Grip</strong>, <strong>▼/▲ Minimize</strong>, <strong>⛶/🗗 Maximize</strong>, <strong>✕ Close</strong>), and 1-click <strong>⚡ Send to RC 2</strong> button added directly to the bottom sticky dock alongside Export KMZ.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>🚀</span>
@@ -16246,7 +16466,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.236.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.237.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -16410,7 +16630,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
-                                <strong style="color: var(--text-main);">Changelog (v1.236.0):</strong>
+                                <strong style="color: var(--text-main);">Changelog (v1.237.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Map Zoom Presets (Closes #266):</strong> 1-click quick-zoom buttons on 2D map: <code>🎯 Plan</code> (zoom 18 / mission bounds) and <code>✈️ Airspace</code> (zoom 12 / ADS-B ring) with live zoom indicator (<code>Z17</code>).</li>
+                  <li><strong>Scrollable Topbar &amp; Sticky Dock RC 2 (Closes #266):</strong> Smooth horizontal mouse-wheel scrolling prevents pill overlap on smaller screens; added 1-click <code>⚡ Send to RC 2</code> button directly into bottom dock alongside Export KMZ.</li>
+                  <li><strong>Standardized Modal Window Controls (Closes #266):</strong> Unified headers across all dialogs with left drag grip (<code>⋮⋮</code>), minimize (<code>▼/▲</code>), maximize/restore (<code>⛶/🗗</code>), and close (<code>✕</code>).</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 8px;">
+                <strong style="color: var(--text-main);">Changelog (v1.236.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                   <li><strong>GitHub Actions CI &amp; Parallel Worktree Isolation (Closes #265):</strong> Full unit, Companion Bridge, and Playwright E2E UI testing automated on GitHub Actions; integrated automated Git worktree lifecycle commands (<code>npm run worktree:create</code> / <code>list</code> / <code>finish</code> / <code>prune</code>) with zero-delay <code>node_modules</code> junction linking.</li>
                   <li><strong>Flexible Push Modes &amp; Live REST TFRs (Closes #265):</strong> Added balanced default, <code>--quick</code>, and <code>--full</code> modes to <code>push.ps1</code> / <code>push.sh</code>; removed blocking pre-push TFR scrapes and transitioned airspace TFRs to strictly live REST feeds.</li>
@@ -30249,41 +30477,130 @@ function initModalDraggable(modalOverlayOrId) {
  * Initializes all modal overlays and floating panels in the document.
  */
 /**
- * Injects a standardized minimize/expand toggle button into every modal dialog header
- * allowing users to collapse dialogs to their headers and view the map beneath.
+ * Standardized Window Controls: Injects consistent Drag Grip (⋮⋮),
+ * Minimize (▼/▲), Maximize (⛶/🗗), and Close (✕) controls into every modal header.
+ * (v1.237.0 - Issue #266)
  */
-function initUniversalModalCollapseToggles() {
+function initUniversalModalWindowControls() {
   if (typeof document === 'undefined') return;
-  const modals = document.querySelectorAll('.modal-overlay .modal');
-  modals.forEach(modal => {
-    const header = modal.querySelector('.modal-header');
-    if (!header || header.querySelector('.modal-collapse-btn')) return;
-    const closeBtn = header.querySelector('.close-btn, button[aria-label^="Close"], button[aria-label^="close"]');
-    const collapseBtn = document.createElement('button');
-    collapseBtn.type = 'button';
-    collapseBtn.className = 'modal-collapse-btn';
-    collapseBtn.title = 'Minimize / Expand Modal';
-    collapseBtn.setAttribute('aria-label', 'Minimize / Expand Modal');
-    collapseBtn.textContent = '▼';
-    collapseBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.85rem;padding:2px 6px;line-height:1;border-radius:4px;transition:var(--transition-smooth);';
-    collapseBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      modal.classList.toggle('modal-collapsed');
-      const isCollapsed = modal.classList.contains('modal-collapsed');
-      collapseBtn.textContent = isCollapsed ? '▲' : '▼';
-      collapseBtn.title = isCollapsed ? 'Expand Modal' : 'Minimize Modal';
-      if (isCollapsed) {
-        ensureElementInViewport(modal);
-        // Secondary check after CSS layout settles
-        setTimeout(() => ensureElementInViewport(modal), 50);
+
+  const dialogContainers = document.querySelectorAll(
+    '.modal-overlay .modal, .modal-overlay .diag-modal-card, .modal-overlay .action-flow-card, .modal-overlay .photo-inspector-card, [data-draggable-modal] .modal, [data-draggable-modal].modal'
+  );
+
+  dialogContainers.forEach(modal => {
+    const header = modal.querySelector('.modal-header, .diag-modal-header, .photo-inspector-header, .action-flow-header');
+    if (!header) return;
+
+    // 1. Ensure Consistent Left Drag Grip (⋮⋮)
+    if (!header.querySelector('.modal-drag-grip')) {
+      const grip = document.createElement('span');
+      grip.className = 'modal-drag-grip';
+      grip.title = 'Drag to move window';
+      grip.setAttribute('aria-hidden', 'true');
+      grip.innerHTML = '&#x22EE;&#x22EE;';
+      header.insertBefore(grip, header.firstChild);
+    }
+
+    // 2. Ensure Consistent Right Window Control Cluster (.modal-window-controls)
+    if (!header.querySelector('.modal-window-controls')) {
+      const controls = document.createElement('div');
+      controls.className = 'modal-window-controls';
+
+      // Find existing close button in header if present
+      let closeBtn = header.querySelector('.close-btn, .diag-close-btn, button[aria-label^="Close"], button[aria-label^="close"], #close-3d-btn');
+
+      // Create Minimize Button
+      const collapseBtn = document.createElement('button');
+      collapseBtn.type = 'button';
+      collapseBtn.className = 'modal-window-btn modal-collapse-btn';
+      collapseBtn.title = 'Minimize Window';
+      collapseBtn.setAttribute('aria-label', 'Minimize Window');
+      collapseBtn.textContent = '▼';
+      collapseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        modal.classList.toggle('modal-collapsed');
+        const isCollapsed = modal.classList.contains('modal-collapsed');
+        collapseBtn.textContent = isCollapsed ? '▲' : '▼';
+        collapseBtn.title = isCollapsed ? 'Expand Window' : 'Minimize Window';
+        if (isCollapsed) {
+          ensureElementInViewport(modal);
+          setTimeout(() => ensureElementInViewport(modal), 50);
+        }
+      });
+
+      // Create Maximize / Restore Button
+      const maximizeBtn = document.createElement('button');
+      maximizeBtn.type = 'button';
+      maximizeBtn.className = 'modal-window-btn modal-maximize-btn';
+      maximizeBtn.title = 'Maximize Window';
+      maximizeBtn.setAttribute('aria-label', 'Maximize Window');
+      maximizeBtn.textContent = '⛶';
+      maximizeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (modal.classList.contains('modal-collapsed')) {
+          modal.classList.remove('modal-collapsed');
+          collapseBtn.textContent = '▼';
+          collapseBtn.title = 'Minimize Window';
+        }
+        const isMax = modal.classList.toggle('modal-maximized');
+        maximizeBtn.textContent = isMax ? '🗗' : '⛶';
+        maximizeBtn.title = isMax ? 'Restore Window' : 'Maximize Window';
+        maximizeBtn.setAttribute('aria-label', isMax ? 'Restore Window' : 'Maximize Window');
+
+        // Handle 3D preview modal expansion synchronization
+        if (modal.id === 'preview-3d-card' || modal.closest('#preview-3d-modal')) {
+          modal.classList.toggle('fullscreen-3d', isMax);
+          const expandIcon = document.getElementById('expand-3d-icon-expand');
+          const compressIcon = document.getElementById('expand-3d-icon-compress');
+          const expandText = document.getElementById('expand-3d-text');
+          if (expandIcon) expandIcon.classList.toggle('hidden', isMax);
+          if (compressIcon) compressIcon.classList.toggle('hidden', !isMax);
+          if (expandText) expandText.textContent = isMax ? 'Restore' : 'Expand';
+          if (typeof handle3DResize === 'function') handle3DResize();
+        }
+
+        // Handle Flight Diagnostics or Action Flow window resize
+        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.onWindowResize) {
+          FlightDiagnostics.onWindowResize();
+        }
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('resize'));
+        }
+      });
+
+      // Standardize or Create Close Button
+      if (!closeBtn) {
+        closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'close-btn modal-window-btn';
+        closeBtn.title = 'Close Window';
+        closeBtn.setAttribute('aria-label', 'Close Window');
+        closeBtn.innerHTML = '&times;';
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const overlay = modal.closest('.modal-overlay');
+          if (overlay) overlay.classList.add('hidden');
+        });
+      } else {
+        closeBtn.classList.add('modal-window-btn');
+        closeBtn.title = 'Close Window';
+        closeBtn.setAttribute('aria-label', 'Close Window');
       }
-    });
-    if (closeBtn && closeBtn.parentNode) {
-      closeBtn.parentNode.insertBefore(collapseBtn, closeBtn);
-    } else {
-      header.appendChild(collapseBtn);
+
+      controls.appendChild(collapseBtn);
+      controls.appendChild(maximizeBtn);
+      controls.appendChild(closeBtn);
+      header.appendChild(controls);
     }
   });
+}
+
+/**
+ * Backward-compatible alias for initUniversalModalWindowControls
+ */
+function initUniversalModalCollapseToggles() {
+  initUniversalModalWindowControls();
 }
 
 function initAllModalsDraggable() {
@@ -30296,7 +30613,7 @@ function initAllModalsDraggable() {
     initModalDraggable(dialog);
   });
 
-  initUniversalModalCollapseToggles();
+  initUniversalModalWindowControls();
 }
 
 /**
@@ -30345,6 +30662,7 @@ if (typeof window !== 'undefined') {
   window.initModalDraggable = initModalDraggable;
   window.initAllModalsDraggable = initAllModalsDraggable;
   window.initUniversalModalCollapseToggles = initUniversalModalCollapseToggles;
+  window.initUniversalModalWindowControls = initUniversalModalWindowControls;
   window.resetModalPosition = resetModalPosition;
   window.clampModalPosition = clampModalPosition;
   window.ensureElementInViewport = ensureElementInViewport;
@@ -36181,6 +36499,33 @@ function initReplay2dBarListeners() {
 }
 
 
+// Map Quick-Zoom Preset Actions (v1.237.0 - Issue #266)
+function setMapPlanningZoom() {
+  const activeMap = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
+  if (!activeMap) return;
+  const wps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+  if (wps && wps.length > 1) {
+    const latLngs = wps.map(wp => [wp.lat, wp.lon]);
+    activeMap.fitBounds(L.latLngBounds(latLngs), { padding: [50, 50], maxZoom: 18 });
+  } else if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+    activeMap.setView(centerMarker.getLatLng(), 18);
+  } else {
+    activeMap.setZoom(18);
+  }
+}
+
+function setMapAirspaceZoom() {
+  const activeMap = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
+  if (!activeMap) return;
+  if (typeof adsbProximityCircle !== 'undefined' && adsbProximityCircle && typeof adsbProximityCircle.getBounds === 'function' && activeMap.hasLayer(adsbProximityCircle)) {
+    activeMap.fitBounds(adsbProximityCircle.getBounds(), { padding: [40, 40], maxZoom: 12 });
+  } else if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+    activeMap.setView(centerMarker.getLatLng(), 12);
+  } else {
+    activeMap.setZoom(12);
+  }
+}
+
 // Computes current state of modified settings across all 5 domains
 
 // Night Flight Map Layer & Cloud Cover Layer exports (v1.161.0 - Issue #143, v1.166.0)
@@ -36189,12 +36534,25 @@ if (typeof window !== 'undefined') {
   window.cloudCoverLayer = cloudCoverLayer;
   window.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
   window.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
+  window.setMapPlanningZoom = setMapPlanningZoom;
+  window.setMapAirspaceZoom = setMapAirspaceZoom;
 }
 if (typeof global !== 'undefined') {
   global.nasaNightLightsLayer = nasaNightLightsLayer;
   global.cloudCoverLayer = cloudCoverLayer;
   global.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
   global.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
+  global.setMapPlanningZoom = setMapPlanningZoom;
+  global.setMapAirspaceZoom = setMapAirspaceZoom;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    setMapPlanningZoom,
+    setMapAirspaceZoom,
+    getReplayAircraftMarkerHtml,
+    getReplayDroneMarkerHtml
+  };
 }
 // -------------------- src/ui/ResetManager.js --------------------
 function getModifiedSettingsState() {
@@ -40599,6 +40957,29 @@ function initUIEventListeners() {
     });
   }
 
+  // Floating Map Zoom Presets: Planning & Airspace (v1.237.0 - Issue #266)
+  const zoomPlanBtn = document.getElementById('map-zoom-plan-btn');
+  if (zoomPlanBtn) {
+    zoomPlanBtn.addEventListener('click', () => {
+      if (typeof setMapPlanningZoom === 'function') {
+        setMapPlanningZoom();
+      } else if (typeof window.setMapPlanningZoom === 'function') {
+        window.setMapPlanningZoom();
+      }
+    });
+  }
+
+  const zoomAirspaceBtn = document.getElementById('map-zoom-airspace-btn');
+  if (zoomAirspaceBtn) {
+    zoomAirspaceBtn.addEventListener('click', () => {
+      if (typeof setMapAirspaceZoom === 'function') {
+        setMapAirspaceZoom();
+      } else if (typeof window.setMapAirspaceZoom === 'function') {
+        window.setMapAirspaceZoom();
+      }
+    });
+  }
+
   // Ctrl+Z / Cmd+Z (Undo) and Ctrl+Y / Ctrl+Shift+Z / Cmd+Shift+Z (Redo) Shortcuts
   document.addEventListener('keydown', (e) => {
     if (!e.ctrlKey && !e.metaKey) return;
@@ -41993,7 +42374,19 @@ function initMobileNav() {
   }
 
   // Initialize Top Ribbon layout customizer
-  initTopbarRibbon();
+initTopbarRibbon();
+
+// Smooth Horizontal Mouse Wheel Scroll for Topbar Ribbon (Issue #266)
+if (topbar) {
+  topbar.addEventListener('wheel', (e) => {
+    if (e.deltaY !== 0 && !e.shiftKey) {
+      if (topbar.scrollWidth > topbar.clientWidth) {
+        e.preventDefault();
+        topbar.scrollLeft += e.deltaY;
+      }
+    }
+  }, { passive: false });
+}
 }
 
 /**
@@ -52488,6 +52881,33 @@ function applyZoomGates() {
       }
     }
   }
+
+  // Update Map Quick-Zoom Presets Active State & Live Zoom Badge (Issue #266)
+  if (typeof document !== 'undefined') {
+    const planBtn = document.getElementById('map-zoom-plan-btn');
+    const airspaceBtn = document.getElementById('map-zoom-airspace-btn');
+    const zoomBadge = document.getElementById('map-zoom-level-badge');
+
+    if (planBtn) {
+      if (zoom >= 16) {
+        planBtn.classList.add('is-active');
+      } else {
+        planBtn.classList.remove('is-active');
+      }
+    }
+
+    if (airspaceBtn) {
+      if (zoom <= 13) {
+        airspaceBtn.classList.add('is-active');
+      } else {
+        airspaceBtn.classList.remove('is-active');
+      }
+    }
+
+    if (zoomBadge) {
+      zoomBadge.textContent = 'Z' + Math.round(zoom);
+    }
+  }
 }
 if (typeof window !== 'undefined') {
   window.applyZoomGates = applyZoomGates;
@@ -60264,14 +60684,29 @@ function updateNativeAndroidStatusUI() {
 
 
   if (sidebarRc2Badge) {
+  sidebarRc2Badge.textContent = isRc2MtpConnected ? 'RC 2: OK' : 'RC 2';
+  sidebarRc2Badge.style.background = isRc2MtpConnected ? 'rgba(34, 197, 94, 0.2)' : 'rgba(100, 116, 139, 0.2)';
+  sidebarRc2Badge.style.color = isRc2MtpConnected ? '#4ade80' : '#94a3b8';
+}
 
-    sidebarRc2Badge.textContent = isRc2MtpConnected ? 'RC 2: OK' : 'RC 2';
-
-    sidebarRc2Badge.style.background = isRc2MtpConnected ? 'rgba(34, 197, 94, 0.2)' : 'rgba(100, 116, 139, 0.2)';
-
-    sidebarRc2Badge.style.color = isRc2MtpConnected ? '#4ade80' : '#94a3b8';
-
+// Update Bottom Sticky Dock RC 2 indicator (Issue #266)
+const dockBtn = document.getElementById('dock-rc2-sync-btn');
+const dockDot = document.getElementById('dock-rc2-status-dot');
+if (dockBtn && dockDot) {
+  if (isRc2MtpConnected) {
+    dockDot.className = 'dock-rc2-dot is-connected';
+    dockBtn.classList.add('is-connected');
+    dockBtn.title = 'Send mission directly to connected DJI RC 2';
+  } else if (isCompanionOnline) {
+    dockDot.className = 'dock-rc2-dot is-waiting';
+    dockBtn.classList.remove('is-connected');
+    dockBtn.title = 'DJI RC 2: Plug in USB-C to sync';
+  } else {
+    dockDot.className = 'dock-rc2-dot is-offline';
+    dockBtn.classList.remove('is-connected');
+    dockBtn.title = 'Send to RC 2 (Connect USB or Bridge to sync)';
   }
+}
 
 
 
@@ -64664,14 +65099,9 @@ async function sendDirectlyToRC2() {
 
 
   const directBtn = document.getElementById('direct-rc2-sync-btn');
-
-
-
-  const sidebarDirectBtn = document.getElementById('sidebar-direct-rc2-sync-btn');
-
-
-
-  const buttonsToUpdate = [directBtn, sidebarDirectBtn].filter(Boolean);
+const sidebarDirectBtn = document.getElementById('sidebar-direct-rc2-sync-btn');
+const dockRc2Btn = document.getElementById('dock-rc2-sync-btn');
+const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean);
 
 
 
@@ -66389,22 +66819,29 @@ function initRC2Controls() {
 
 
   // Direct RC 2 sync button
+const directSyncBtn = document.getElementById('direct-rc2-sync-btn');
+if (directSyncBtn) {
+  directSyncBtn.addEventListener('click', () => withPreflightGate(sendDirectlyToRC2));
+}
 
-
-
-  const directSyncBtn = document.getElementById('direct-rc2-sync-btn');
-
-
-
-  if (directSyncBtn) {
-
-
-
-    directSyncBtn.addEventListener('click', () => withPreflightGate(sendDirectlyToRC2));
-
-
-
-  }
+// Bottom Sticky Dock Direct RC 2 Sync button (v1.237.0 - Issue #266)
+const dockRc2Btn = document.getElementById('dock-rc2-sync-btn');
+if (dockRc2Btn) {
+  dockRc2Btn.addEventListener('click', () => {
+    if (isRc2MtpConnected) {
+      withPreflightGate(sendDirectlyToRC2);
+    } else if (typeof WebUsbMtp !== 'undefined' && !isCompanionOnline && (typeof getSyncPlatform === 'function' && (getSyncPlatform() === 'android' || getSyncPlatform() === 'chromeos'))) {
+      withPreflightGate(sendDirectlyViaWebUsb);
+    } else {
+      if (typeof showToast === 'function') {
+        showToast('🔌 Connect DJI RC 2 via USB-C or start Aalaapi Bridge to sync directly.', 'warning', 5000);
+      }
+      if (typeof openRC2GuideModal === 'function') {
+        openRC2GuideModal(isCompanionOnline ? 'usb' : 'service');
+      }
+    }
+  });
+}
 
 
 

@@ -144,6 +144,10 @@ html, body {
   box-sizing: border-box;
   flex-shrink: 0;
   gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
 .topbar-left {
@@ -179,9 +183,9 @@ html, body {
 }
 
 .header-more-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 8px;
+  position: fixed;
+  top: 54px;
+  right: 12px;
   background: rgba(15, 23, 42, 0.96);
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -8139,6 +8143,196 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   pointer-events: auto !important; /* ensures informative title tooltip triggers on hover */
 }
 
+
+/* ==========================================================================
+   🎯 Floating Map Zoom Presets: Flight Planning & Airspace Observing (Issue #266)
+   ========================================================================== */
+.map-floating-zoom-presets {
+  position: absolute;
+  top: 12px;
+  left: 216px;
+  z-index: 1000;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.map-zoom-preset-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.map-zoom-preset-button:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: var(--accent-cyan, #06b6d4);
+  color: var(--text-main, #f8fafc);
+}
+
+.map-zoom-preset-button.is-active {
+  background: rgba(6, 182, 212, 0.22);
+  border-color: var(--accent-cyan, #06b6d4);
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.35);
+}
+
+.map-zoom-level-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  min-width: 32px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted, #94a3b8);
+  font-family: monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+[data-theme="light"] .map-zoom-preset-button {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #475569;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .map-zoom-preset-button:hover {
+  background: rgba(241, 245, 249, 1);
+  border-color: #0284c7;
+  color: #0369a1;
+}
+
+[data-theme="light"] .map-zoom-preset-button.is-active {
+  background: rgba(14, 165, 233, 0.14);
+  border-color: #0284c7;
+  color: #0284c7;
+}
+
+[data-theme="light"] .map-zoom-level-badge {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #475569;
+}
+
+@media (max-width: 768px) {
+  .map-floating-zoom-presets {
+    top: 48px;
+    left: 54px;
+  }
+}
+
+/* ─── Bottom Sticky Dock RC 2 Direct Sync Button (Issue #266) ──────────────── */
+.dock-rc2-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.dock-rc2-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #64748b;
+  display: inline-block;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dock-rc2-dot.is-connected {
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+  animation: pulseGreen 1.8s infinite;
+}
+
+.dock-rc2-dot.is-waiting {
+  background: #f59e0b;
+  box-shadow: 0 0 5px rgba(245, 158, 11, 0.6);
+}
+
+.dock-rc2-dot.is-offline {
+  background: #64748b;
+}
+
+.dock-rc2-sync-btn.is-connected {
+  border-color: rgba(34, 197, 94, 0.6) !important;
+  color: #4ade80 !important;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(6, 182, 212, 0.25)) !important;
+}
+
+/* ─── Standardized Modal Window Controls (Issue #266) ──────────────────────── */
+.modal-window-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.modal-window-btn,
+.modal-header .close-btn,
+.modal-window-controls .close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.95rem;
+  line-height: 1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.modal-window-btn:hover {
+  color: var(--accent-cyan, #06b6d4);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.modal-header .close-btn:hover,
+.modal-window-controls .close-btn:hover {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+.modal.modal-maximized,
+.diag-modal-card.modal-maximized,
+.action-flow-card.modal-maximized,
+.photo-inspector-card.modal-maximized {
+  width: 96vw !important;
+  max-width: 96vw !important;
+  height: 94vh !important;
+  max-height: 94vh !important;
+  transform: translate(0px, 0px) !important;
+}
 
 /* ==========================================================================
    Visual Flight Action Flow Visualizer (Node-RED Style Canvas) - v1.216.0

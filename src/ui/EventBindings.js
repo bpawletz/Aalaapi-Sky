@@ -3561,6 +3561,29 @@ function initUIEventListeners() {
     });
   }
 
+  // Floating Map Zoom Presets: Planning & Airspace (v1.237.0 - Issue #266)
+  const zoomPlanBtn = document.getElementById('map-zoom-plan-btn');
+  if (zoomPlanBtn) {
+    zoomPlanBtn.addEventListener('click', () => {
+      if (typeof setMapPlanningZoom === 'function') {
+        setMapPlanningZoom();
+      } else if (typeof window.setMapPlanningZoom === 'function') {
+        window.setMapPlanningZoom();
+      }
+    });
+  }
+
+  const zoomAirspaceBtn = document.getElementById('map-zoom-airspace-btn');
+  if (zoomAirspaceBtn) {
+    zoomAirspaceBtn.addEventListener('click', () => {
+      if (typeof setMapAirspaceZoom === 'function') {
+        setMapAirspaceZoom();
+      } else if (typeof window.setMapAirspaceZoom === 'function') {
+        window.setMapAirspaceZoom();
+      }
+    });
+  }
+
   // Ctrl+Z / Cmd+Z (Undo) and Ctrl+Y / Ctrl+Shift+Z / Cmd+Shift+Z (Redo) Shortcuts
   document.addEventListener('keydown', (e) => {
     if (!e.ctrlKey && !e.metaKey) return;

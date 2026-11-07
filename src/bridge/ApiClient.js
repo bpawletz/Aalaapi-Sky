@@ -588,14 +588,29 @@ function updateNativeAndroidStatusUI() {
 
 
   if (sidebarRc2Badge) {
+  sidebarRc2Badge.textContent = isRc2MtpConnected ? 'RC 2: OK' : 'RC 2';
+  sidebarRc2Badge.style.background = isRc2MtpConnected ? 'rgba(34, 197, 94, 0.2)' : 'rgba(100, 116, 139, 0.2)';
+  sidebarRc2Badge.style.color = isRc2MtpConnected ? '#4ade80' : '#94a3b8';
+}
 
-    sidebarRc2Badge.textContent = isRc2MtpConnected ? 'RC 2: OK' : 'RC 2';
-
-    sidebarRc2Badge.style.background = isRc2MtpConnected ? 'rgba(34, 197, 94, 0.2)' : 'rgba(100, 116, 139, 0.2)';
-
-    sidebarRc2Badge.style.color = isRc2MtpConnected ? '#4ade80' : '#94a3b8';
-
+// Update Bottom Sticky Dock RC 2 indicator (Issue #266)
+const dockBtn = document.getElementById('dock-rc2-sync-btn');
+const dockDot = document.getElementById('dock-rc2-status-dot');
+if (dockBtn && dockDot) {
+  if (isRc2MtpConnected) {
+    dockDot.className = 'dock-rc2-dot is-connected';
+    dockBtn.classList.add('is-connected');
+    dockBtn.title = 'Send mission directly to connected DJI RC 2';
+  } else if (isCompanionOnline) {
+    dockDot.className = 'dock-rc2-dot is-waiting';
+    dockBtn.classList.remove('is-connected');
+    dockBtn.title = 'DJI RC 2: Plug in USB-C to sync';
+  } else {
+    dockDot.className = 'dock-rc2-dot is-offline';
+    dockBtn.classList.remove('is-connected');
+    dockBtn.title = 'Send to RC 2 (Connect USB or Bridge to sync)';
   }
+}
 
 
 
@@ -4988,14 +5003,9 @@ async function sendDirectlyToRC2() {
 
 
   const directBtn = document.getElementById('direct-rc2-sync-btn');
-
-
-
-  const sidebarDirectBtn = document.getElementById('sidebar-direct-rc2-sync-btn');
-
-
-
-  const buttonsToUpdate = [directBtn, sidebarDirectBtn].filter(Boolean);
+const sidebarDirectBtn = document.getElementById('sidebar-direct-rc2-sync-btn');
+const dockRc2Btn = document.getElementById('dock-rc2-sync-btn');
+const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean);
 
 
 
@@ -6713,22 +6723,29 @@ function initRC2Controls() {
 
 
   // Direct RC 2 sync button
+const directSyncBtn = document.getElementById('direct-rc2-sync-btn');
+if (directSyncBtn) {
+  directSyncBtn.addEventListener('click', () => withPreflightGate(sendDirectlyToRC2));
+}
 
-
-
-  const directSyncBtn = document.getElementById('direct-rc2-sync-btn');
-
-
-
-  if (directSyncBtn) {
-
-
-
-    directSyncBtn.addEventListener('click', () => withPreflightGate(sendDirectlyToRC2));
-
-
-
-  }
+// Bottom Sticky Dock Direct RC 2 Sync button (v1.237.0 - Issue #266)
+const dockRc2Btn = document.getElementById('dock-rc2-sync-btn');
+if (dockRc2Btn) {
+  dockRc2Btn.addEventListener('click', () => {
+    if (isRc2MtpConnected) {
+      withPreflightGate(sendDirectlyToRC2);
+    } else if (typeof WebUsbMtp !== 'undefined' && !isCompanionOnline && (typeof getSyncPlatform === 'function' && (getSyncPlatform() === 'android' || getSyncPlatform() === 'chromeos'))) {
+      withPreflightGate(sendDirectlyViaWebUsb);
+    } else {
+      if (typeof showToast === 'function') {
+        showToast('🔌 Connect DJI RC 2 via USB-C or start Aalaapi Bridge to sync directly.', 'warning', 5000);
+      }
+      if (typeof openRC2GuideModal === 'function') {
+        openRC2GuideModal(isCompanionOnline ? 'usb' : 'service');
+      }
+    }
+  });
+}
 
 
 

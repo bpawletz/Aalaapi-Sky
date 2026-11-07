@@ -448,41 +448,130 @@ export function initModalDraggable(modalOverlayOrId) {
  * Initializes all modal overlays and floating panels in the document.
  */
 /**
- * Injects a standardized minimize/expand toggle button into every modal dialog header
- * allowing users to collapse dialogs to their headers and view the map beneath.
+ * Standardized Window Controls: Injects consistent Drag Grip (⋮⋮),
+ * Minimize (▼/▲), Maximize (⛶/🗗), and Close (✕) controls into every modal header.
+ * (v1.237.0 - Issue #266)
  */
-export function initUniversalModalCollapseToggles() {
+export function initUniversalModalWindowControls() {
   if (typeof document === 'undefined') return;
-  const modals = document.querySelectorAll('.modal-overlay .modal');
-  modals.forEach(modal => {
-    const header = modal.querySelector('.modal-header');
-    if (!header || header.querySelector('.modal-collapse-btn')) return;
-    const closeBtn = header.querySelector('.close-btn, button[aria-label^="Close"], button[aria-label^="close"]');
-    const collapseBtn = document.createElement('button');
-    collapseBtn.type = 'button';
-    collapseBtn.className = 'modal-collapse-btn';
-    collapseBtn.title = 'Minimize / Expand Modal';
-    collapseBtn.setAttribute('aria-label', 'Minimize / Expand Modal');
-    collapseBtn.textContent = '▼';
-    collapseBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.85rem;padding:2px 6px;line-height:1;border-radius:4px;transition:var(--transition-smooth);';
-    collapseBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      modal.classList.toggle('modal-collapsed');
-      const isCollapsed = modal.classList.contains('modal-collapsed');
-      collapseBtn.textContent = isCollapsed ? '▲' : '▼';
-      collapseBtn.title = isCollapsed ? 'Expand Modal' : 'Minimize Modal';
-      if (isCollapsed) {
-        ensureElementInViewport(modal);
-        // Secondary check after CSS layout settles
-        setTimeout(() => ensureElementInViewport(modal), 50);
+
+  const dialogContainers = document.querySelectorAll(
+    '.modal-overlay .modal, .modal-overlay .diag-modal-card, .modal-overlay .action-flow-card, .modal-overlay .photo-inspector-card, [data-draggable-modal] .modal, [data-draggable-modal].modal'
+  );
+
+  dialogContainers.forEach(modal => {
+    const header = modal.querySelector('.modal-header, .diag-modal-header, .photo-inspector-header, .action-flow-header');
+    if (!header) return;
+
+    // 1. Ensure Consistent Left Drag Grip (⋮⋮)
+    if (!header.querySelector('.modal-drag-grip')) {
+      const grip = document.createElement('span');
+      grip.className = 'modal-drag-grip';
+      grip.title = 'Drag to move window';
+      grip.setAttribute('aria-hidden', 'true');
+      grip.innerHTML = '&#x22EE;&#x22EE;';
+      header.insertBefore(grip, header.firstChild);
+    }
+
+    // 2. Ensure Consistent Right Window Control Cluster (.modal-window-controls)
+    if (!header.querySelector('.modal-window-controls')) {
+      const controls = document.createElement('div');
+      controls.className = 'modal-window-controls';
+
+      // Find existing close button in header if present
+      let closeBtn = header.querySelector('.close-btn, .diag-close-btn, button[aria-label^="Close"], button[aria-label^="close"], #close-3d-btn');
+
+      // Create Minimize Button
+      const collapseBtn = document.createElement('button');
+      collapseBtn.type = 'button';
+      collapseBtn.className = 'modal-window-btn modal-collapse-btn';
+      collapseBtn.title = 'Minimize Window';
+      collapseBtn.setAttribute('aria-label', 'Minimize Window');
+      collapseBtn.textContent = '▼';
+      collapseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        modal.classList.toggle('modal-collapsed');
+        const isCollapsed = modal.classList.contains('modal-collapsed');
+        collapseBtn.textContent = isCollapsed ? '▲' : '▼';
+        collapseBtn.title = isCollapsed ? 'Expand Window' : 'Minimize Window';
+        if (isCollapsed) {
+          ensureElementInViewport(modal);
+          setTimeout(() => ensureElementInViewport(modal), 50);
+        }
+      });
+
+      // Create Maximize / Restore Button
+      const maximizeBtn = document.createElement('button');
+      maximizeBtn.type = 'button';
+      maximizeBtn.className = 'modal-window-btn modal-maximize-btn';
+      maximizeBtn.title = 'Maximize Window';
+      maximizeBtn.setAttribute('aria-label', 'Maximize Window');
+      maximizeBtn.textContent = '⛶';
+      maximizeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (modal.classList.contains('modal-collapsed')) {
+          modal.classList.remove('modal-collapsed');
+          collapseBtn.textContent = '▼';
+          collapseBtn.title = 'Minimize Window';
+        }
+        const isMax = modal.classList.toggle('modal-maximized');
+        maximizeBtn.textContent = isMax ? '🗗' : '⛶';
+        maximizeBtn.title = isMax ? 'Restore Window' : 'Maximize Window';
+        maximizeBtn.setAttribute('aria-label', isMax ? 'Restore Window' : 'Maximize Window');
+
+        // Handle 3D preview modal expansion synchronization
+        if (modal.id === 'preview-3d-card' || modal.closest('#preview-3d-modal')) {
+          modal.classList.toggle('fullscreen-3d', isMax);
+          const expandIcon = document.getElementById('expand-3d-icon-expand');
+          const compressIcon = document.getElementById('expand-3d-icon-compress');
+          const expandText = document.getElementById('expand-3d-text');
+          if (expandIcon) expandIcon.classList.toggle('hidden', isMax);
+          if (compressIcon) compressIcon.classList.toggle('hidden', !isMax);
+          if (expandText) expandText.textContent = isMax ? 'Restore' : 'Expand';
+          if (typeof handle3DResize === 'function') handle3DResize();
+        }
+
+        // Handle Flight Diagnostics or Action Flow window resize
+        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.onWindowResize) {
+          FlightDiagnostics.onWindowResize();
+        }
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('resize'));
+        }
+      });
+
+      // Standardize or Create Close Button
+      if (!closeBtn) {
+        closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'close-btn modal-window-btn';
+        closeBtn.title = 'Close Window';
+        closeBtn.setAttribute('aria-label', 'Close Window');
+        closeBtn.innerHTML = '&times;';
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const overlay = modal.closest('.modal-overlay');
+          if (overlay) overlay.classList.add('hidden');
+        });
+      } else {
+        closeBtn.classList.add('modal-window-btn');
+        closeBtn.title = 'Close Window';
+        closeBtn.setAttribute('aria-label', 'Close Window');
       }
-    });
-    if (closeBtn && closeBtn.parentNode) {
-      closeBtn.parentNode.insertBefore(collapseBtn, closeBtn);
-    } else {
-      header.appendChild(collapseBtn);
+
+      controls.appendChild(collapseBtn);
+      controls.appendChild(maximizeBtn);
+      controls.appendChild(closeBtn);
+      header.appendChild(controls);
     }
   });
+}
+
+/**
+ * Backward-compatible alias for initUniversalModalWindowControls
+ */
+export function initUniversalModalCollapseToggles() {
+  initUniversalModalWindowControls();
 }
 
 export function initAllModalsDraggable() {
@@ -495,7 +584,7 @@ export function initAllModalsDraggable() {
     initModalDraggable(dialog);
   });
 
-  initUniversalModalCollapseToggles();
+  initUniversalModalWindowControls();
 }
 
 /**
@@ -544,6 +633,7 @@ if (typeof window !== 'undefined') {
   window.initModalDraggable = initModalDraggable;
   window.initAllModalsDraggable = initAllModalsDraggable;
   window.initUniversalModalCollapseToggles = initUniversalModalCollapseToggles;
+  window.initUniversalModalWindowControls = initUniversalModalWindowControls;
   window.resetModalPosition = resetModalPosition;
   window.clampModalPosition = clampModalPosition;
   window.ensureElementInViewport = ensureElementInViewport;

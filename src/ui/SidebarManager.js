@@ -288,7 +288,19 @@ function initMobileNav() {
   }
 
   // Initialize Top Ribbon layout customizer
-  initTopbarRibbon();
+initTopbarRibbon();
+
+// Smooth Horizontal Mouse Wheel Scroll for Topbar Ribbon (Issue #266)
+if (topbar) {
+  topbar.addEventListener('wheel', (e) => {
+    if (e.deltaY !== 0 && !e.shiftKey) {
+      if (topbar.scrollWidth > topbar.clientWidth) {
+        e.preventDefault();
+        topbar.scrollLeft += e.deltaY;
+      }
+    }
+  }, { passive: false });
+}
 }
 
 /**

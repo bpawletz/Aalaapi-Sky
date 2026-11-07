@@ -1908,6 +1908,33 @@ function applyZoomGates() {
       }
     }
   }
+
+  // Update Map Quick-Zoom Presets Active State & Live Zoom Badge (Issue #266)
+  if (typeof document !== 'undefined') {
+    const planBtn = document.getElementById('map-zoom-plan-btn');
+    const airspaceBtn = document.getElementById('map-zoom-airspace-btn');
+    const zoomBadge = document.getElementById('map-zoom-level-badge');
+
+    if (planBtn) {
+      if (zoom >= 16) {
+        planBtn.classList.add('is-active');
+      } else {
+        planBtn.classList.remove('is-active');
+      }
+    }
+
+    if (airspaceBtn) {
+      if (zoom <= 13) {
+        airspaceBtn.classList.add('is-active');
+      } else {
+        airspaceBtn.classList.remove('is-active');
+      }
+    }
+
+    if (zoomBadge) {
+      zoomBadge.textContent = 'Z' + Math.round(zoom);
+    }
+  }
 }
 if (typeof window !== 'undefined') {
   window.applyZoomGates = applyZoomGates;
