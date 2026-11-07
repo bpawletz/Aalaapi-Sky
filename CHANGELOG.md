@@ -1,3 +1,22 @@
+## [1.228.1] - 2026-11-06
+
+Fix ADS-B Trajectory Cone Gradient Coloring Failure on Android Chromium WebView.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **ADS-B Descent Gradient Trajectory Cones on Android (Closes #255)**:
+  - Fixed an issue where the dynamic trajectory cone gradient for descending aircraft failed to display on the Android build, leaving the cone interior blank or transparent.
+  - Descending manned traffic now displays full directional gradient coloring (from amber/orange into red depending on vertical descent severity) on Android tablets, phones, and smart controllers identically to desktop browsers.
+
+#### Under the Hood & Technical Details
+- **index.css**:
+  - Removed CSS `filter: drop-shadow(...)` from `.adsb-cone-polygon.descent-gradient` and `.adsb-cone-polygon.descent-gradient.severe`. This eliminates a known Chromium/Blink mobile GPU composite layer rasterization clipping bug that collapsed the `userSpaceOnUse` gradient coordinate space on Android devices.
+- **src/bridge/ApiClient.js**:
+  - `ensureSvgDefs()`: Refactored SVG paint server defs mounting to resolve directly to Leaflet's active renderer container (`poly._path.ownerSVGElement` / `poly._renderer._container`). Eliminated disconnected dummy SVG elements in `overlayPane` that prevented Android Chromium WebView from resolving local fragment identifiers (`fill="url(#id)"`). Mirrored defs across all active SVGs in `overlayPane` to guarantee same-root resolution.
+  - `updateConeGradient()`: Replaced `.innerHTML` string assignment with standards-compliant `document.createElementNS('http://www.w3.org/2000/svg', 'stop')`, explicitly configuring XML presentation attributes (`stop-color`, `stop-opacity`) and inline CSS styles (`style.stopColor`, `style.stopOpacity`).
+  - `renderMapOverlays()`: Passed active polygon instances to `updateConeGradient()` and synchronized direct `poly._path` attributes for immediate WebView rasterization.
+
 ## [1.228.0] - 2026-11-06
 
 Unified ADS-B Feed Health Monitoring, RC 2 USB MTP Log Pull Fix & Informative Mobile Debug Logging.

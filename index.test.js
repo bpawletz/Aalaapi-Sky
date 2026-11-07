@@ -42416,4 +42416,174 @@ describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time 
     });
 
   });
+describe('Issue #255 & v1.228.1: Trajectory Cone Gradient Coloring on Android WebView', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.228.1', () => {
+    assertVersionConsistency('1.228.1');
+  });
+
+  test('Android build.gradle.kts matches version 1.228.1 and versionCode >= 12281', () => {
+    const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
+    const m = gradleKts.match(/versionCode = (\d+)/);
+    assert.ok(m && parseInt(m[1]) >= 12281, 'build.gradle.kts must have versionCode >= 12281');
+    assert.ok(gradleKts.includes('versionName = "1.228.1"'), 'build.gradle.kts must have versionName = "1.228.1"');
+  });
+
+  test('index.css does NOT use CSS filter drop-shadow on adsb-cone-polygon descent-gradient', () => {
+    const cssContent = fs.readFileSync(path.resolve(__dirname, 'index.css'), 'utf8');
+    const blockMatch = cssContent.match(/\.adsb-cone-polygon\.descent-gradient\s*\{([^}]+)\}/);
+    assert.ok(blockMatch, 'index.css must define .adsb-cone-polygon.descent-gradient');
+    assert.ok(!blockMatch[1].includes('filter: drop-shadow'), 'Must not apply CSS filter drop-shadow to avoid Android WebView GPU layer clipping');
+  });
+
+  test('ensureSvgDefs co-locates defs inside active Leaflet renderer or polygon owner SVG', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+
+    const createdElements = [];
+    const mockSvg1 = {
+      nodeName: 'svg',
+      querySelector: (sel) => null,
+      insertBefore: (el) => { createdElements.push(el); },
+      appendChild: (el) => { createdElements.push(el); }
+    };
+    const mockPoly = {
+      _path: {
+        ownerSVGElement: mockSvg1
+      }
+    };
+    const mockOverlayPane = {
+      querySelector: () => mockSvg1,
+      querySelectorAll: () => [mockSvg1]
+    };
+    const mockMap = {
+      getPanes: () => ({ overlayPane: mockOverlayPane })
+    };
+
+    const origCreateElementNS = document.createElementNS;
+    document.createElementNS = (ns, tag) => {
+      const el = {
+        tagName: tag,
+        namespaceURI: ns,
+        attributes: {},
+        style: {},
+        children: [],
+        firstChild: null,
+        setAttribute: (k, v) => { el.attributes[k] = v; },
+        querySelector: (sel) => null,
+        querySelectorAll: () => [],
+        appendChild: (child) => {
+          el.children.push(child);
+          el.firstChild = el.children[0];
+          createdElements.push(child);
+        },
+        removeChild: (child) => {
+          const idx = el.children.indexOf(child);
+          if (idx !== -1) el.children.splice(idx, 1);
+          el.firstChild = el.children[0] || null;
+        }
+      };
+      return el;
+    };
+
+    try {
+      const defs = AdsbAirspaceManager.ensureSvgDefs(mockMap, mockPoly);
+      assert.ok(defs, 'ensureSvgDefs must return defs');
+      assert.strictEqual(defs.id, 'adsb-cone-defs');
+      assert.strictEqual(defs.namespaceURI, 'http://www.w3.org/2000/svg');
+    } finally {
+      document.createElementNS = origCreateElementNS;
+    }
+  });
+
+  test('updateConeGradient creates SVG stop elements in http://www.w3.org/2000/svg namespace with attributes & inline style', () => {
+    const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+
+    const createdStops = [];
+    const origCreateElementNS = document.createElementNS;
+    document.createElementNS = (ns, tag) => {
+      const el = {
+        tagName: tag,
+        namespaceURI: ns,
+        attributes: {},
+        style: {},
+        children: [],
+        firstChild: null,
+        setAttribute: (k, v) => { el.attributes[k] = v; },
+        querySelector: (sel) => null,
+        querySelectorAll: () => [],
+        appendChild: (child) => {
+          el.children.push(child);
+          el.firstChild = el.children[0];
+          if (child.tagName === 'stop') createdStops.push(child);
+        },
+        removeChild: (child) => {
+          const idx = el.children.indexOf(child);
+          if (idx !== -1) el.children.splice(idx, 1);
+          el.firstChild = el.children[0] || null;
+        }
+      };
+      return el;
+    };
+
+    const mockDefs = {
+      id: 'adsb-cone-defs',
+      tagName: 'defs',
+      namespaceURI: 'http://www.w3.org/2000/svg',
+      children: [],
+      firstChild: null,
+      querySelector: (sel) => null,
+      appendChild: (el) => {
+        mockDefs.children.push(el);
+        mockDefs.firstChild = mockDefs.children[0];
+      }
+    };
+    const mockSvg = {
+      nodeName: 'svg',
+      querySelector: (sel) => (sel === 'defs#adsb-cone-defs' ? mockDefs : null),
+      insertBefore: (el) => {},
+      appendChild: (el) => {}
+    };
+    const mockPoly = {
+      _path: {
+        ownerSVGElement: mockSvg,
+        setAttribute: (k, v) => {},
+        style: {}
+      }
+    };
+    const mockOverlayPane = {
+      querySelector: (sel) => (sel === 'svg' ? mockSvg : null),
+      querySelectorAll: (sel) => (sel === 'defs#adsb-cone-defs' ? [mockDefs] : (sel === 'svg' ? [mockSvg] : []))
+    };
+    const mockMap = {
+      getPanes: () => ({ overlayPane: mockOverlayPane }),
+      latLngToLayerPoint: (ll) => ({ x: 100, y: 200 })
+    };
+
+    try {
+      const ac = {
+        hex: 'A99999',
+        latitude: 41.32,
+        longitude: -88.99,
+        verticalRate: -1500,
+        descentSeverity: 'severe',
+        status: 'approaching'
+      };
+      const coneGeom = {
+        centerLineLatLngs: [[41.32, -88.99], [41.31, -88.98]]
+      };
+
+      AdsbAirspaceManager.updateConeGradient(ac, coneGeom, '#f59e0b', mockMap, mockPoly);
+
+      assert.strictEqual(createdStops.length, 2, 'Must create 2 SVG stop elements');
+      assert.strictEqual(createdStops[0].namespaceURI, 'http://www.w3.org/2000/svg');
+      assert.strictEqual(createdStops[1].namespaceURI, 'http://www.w3.org/2000/svg');
+      assert.strictEqual(createdStops[0].attributes['stop-color'], '#f59e0b');
+      assert.strictEqual(createdStops[1].attributes['stop-color'], '#ef4444');
+      assert.strictEqual(createdStops[1].style.stopColor, '#ef4444');
+      assert.strictEqual(mockPoly._path.style.fill, 'url(#adsb-cone-grad-A99999)');
+    } finally {
+      document.createElementNS = origCreateElementNS;
+    }
+  });
+});
+
 });

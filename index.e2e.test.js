@@ -12552,5 +12552,77 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(isConnectedDot, true, 'Tab dot must show is-connected (green) when feed is connected');
   });
 
+  test('Issue #255: Trajectory cone gradient co-locates in active SVG root with SVG stops (Android WebView compliance)', async () => {
+    // 1. Open ADS-B drawer
+    await page.evaluate(() => {
+      const toggle = document.getElementById('adsb-drawer-toggle');
+      if (toggle && !toggle.classList.contains('active')) toggle.click();
+    });
+    await page.waitForTimeout(150);
+
+    // 2. Switch to Settings tab and verify gradient toggle is active
+    await page.evaluate(() => {
+      const settingsTab = document.querySelector('.adsb-tab-btn[data-tab="settings"]');
+      if (settingsTab) settingsTab.click();
+      const gradToggle = document.getElementById('adsb-descent-gradient-toggle');
+      if (gradToggle && !gradToggle.checked) {
+        gradToggle.checked = true;
+        gradToggle.dispatchEvent(new Event('change'));
+      }
+    });
+    await page.waitForTimeout(100);
+
+    // 3. Switch to Operations tab and trigger Simulate Descending Traffic
+    await page.evaluate(() => {
+      const opsTab = document.querySelector('.adsb-tab-btn[data-tab="operations"]');
+      if (opsTab) opsTab.click();
+      const simBtn = document.getElementById('adsb-sim-descending-btn');
+      if (simBtn) simBtn.click();
+    });
+    await page.waitForTimeout(250);
+
+    // 4. Verify that the polygon path and the <linearGradient> reside in the SAME SVG element
+    const svgScopingResult = await page.evaluate(() => {
+      const conePath = document.querySelector('path.adsb-cone-polygon.descent-gradient');
+      if (!conePath) return { success: false, reason: 'No cone path with descent-gradient class found' };
+
+      const ownerSvg = conePath.ownerSVGElement;
+      if (!ownerSvg) return { success: false, reason: 'Cone path has no ownerSVGElement' };
+
+      // Look for defs#adsb-cone-defs inside this exact ownerSvg
+      const localDefs = ownerSvg.querySelector('defs#adsb-cone-defs');
+      if (!localDefs) return { success: false, reason: 'ownerSVGElement does not contain defs#adsb-cone-defs' };
+
+      // Find the linearGradient for this descending traffic
+      const grad = localDefs.querySelector('linearGradient[id*="adsb-cone-grad"]');
+      if (!grad) return { success: false, reason: 'No linearGradient inside ownerSVGElement defs' };
+
+      // Verify stops are present with valid stop-color
+      const stops = grad.querySelectorAll('stop');
+      if (stops.length < 2) return { success: false, reason: 'Gradient has fewer than 2 stops' };
+
+      const stop1Color = stops[0].getAttribute('stop-color') || stops[0].style.stopColor;
+      const stop2Color = stops[1].getAttribute('stop-color') || stops[1].style.stopColor;
+
+      // Verify no drop-shadow filter is applied to conePath (Android GPU raster clipping prevention)
+      const computedFilter = window.getComputedStyle(conePath).filter;
+      const hasDropShadow = computedFilter && computedFilter.includes('drop-shadow');
+
+      return {
+        success: true,
+        ownerSvgTag: ownerSvg.tagName.toLowerCase(),
+        stopsCount: stops.length,
+        stop1Color,
+        stop2Color,
+        hasDropShadow
+      };
+    });
+
+    assert.strictEqual(svgScopingResult.success, true, `SVG Scoping check failed: ${svgScopingResult.reason}`);
+    assert.strictEqual(svgScopingResult.ownerSvgTag, 'svg');
+    assert.ok(svgScopingResult.stopsCount >= 2, 'Must have at least 2 SVG gradient stops');
+    assert.strictEqual(svgScopingResult.hasDropShadow, false, 'Cone path must not have CSS drop-shadow filter applied');
+  });
+
   });
 });

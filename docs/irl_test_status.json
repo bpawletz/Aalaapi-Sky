@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-07T00:48:23.115Z",
-  "currentAppVersion": "1.228.0",
+  "lastUpdated": "2026-11-07T01:36:02.074Z",
+  "currentAppVersion": "1.228.1",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "eb2417f42275",
@@ -1413,6 +1413,39 @@
     }
   },
   "releasePlans": [
+    {
+      "id": "rel-1.228.1-255",
+      "version": "1.228.1",
+      "issueNumber": 255,
+      "title": "Fix ADS-B Trajectory Cone Gradient Coloring Failure on Android WebView",
+      "date": "2026-11-07",
+      "affectedPatterns": [
+        "adsb"
+      ],
+      "status": "PENDING_IRL_TEST",
+      "steps": [
+        {
+          "label": "Launch Aalaapi Sky on Android tablet or mobile WebView",
+          "checked": false
+        },
+        {
+          "label": "Open ADS-B Feed & Hardware drawer and activate descent gradient toggle",
+          "checked": false
+        },
+        {
+          "label": "Trigger or observe descending aircraft in airspace",
+          "checked": false
+        },
+        {
+          "label": "Verify trajectory cone renders directional color gradient from apex to intrusion boundary without blank or transparent fill",
+          "checked": false
+        },
+        {
+          "label": "Pan and zoom map to verify gradient alignment updates smoothly",
+          "checked": false
+        }
+      ]
+    },
     {
       "id": "rel-1.228.0-253",
       "version": "1.228.0",
