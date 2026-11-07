@@ -945,11 +945,13 @@ function fetchHttpsJson(urlStr, timeoutMs = 12000) {
   });
 }
 
-const IS_WINDOWS = process.platform === 'win32';
+const { getCompanionDriver } = require('./drivers');
+const companionDriver = getCompanionDriver();
+const IS_WINDOWS = companionDriver.isWindows;
 
 function startBleScanner() {
-  if (!IS_WINDOWS) {
-    logDetail('BLE Scanner', `Live Bluetooth sniffing is Windows-only; skipped on ${process.platform}`);
+  if (!companionDriver.supportsNativeBleScanner()) {
+    logDetail('BLE Scanner', `Live Bluetooth sniffing is Windows-only; skipped on ${companionDriver.platform}`);
     return;
   }
   const exePath = path.join(__dirname, 'BleScanner.exe');
@@ -1050,8 +1052,8 @@ function startBleScanner() {
 }
 
 function startWifiScanner() {
-  if (!IS_WINDOWS) {
-    logDetail('Wi-Fi Scanner', `Native Wi-Fi packet capture is Windows-only; skipped on ${process.platform}`);
+  if (!companionDriver.supportsNativeWifiScanner()) {
+    logDetail('Wi-Fi Scanner', `Native Wi-Fi packet capture is Windows-only; skipped on ${companionDriver.platform}`);
     return;
   }
   const exePath = path.join(__dirname, 'WifiScanner.exe');
@@ -1274,79 +1276,18 @@ function setCorsHeaders(res, req = null) {
   res.setHeader('Access-Control-Allow-Private-Network', 'true');
 }
 
-// Execute PowerShell COM helper for MTP operations
+// Execute OS driver helper for MTP / ADB operations
 function runMtpScript(scriptContent, timeoutMs = 45000) {
-  if (!IS_WINDOWS) {
-    return Promise.resolve({
-      success: false,
-      error: `PowerShell COM bridge is only available on Windows (${process.platform} detected).`
-    });
-  }
-  return new Promise((resolve) => {
-    const encodedCommand = Buffer.from(scriptContent, 'utf16le').toString('base64');
-    execFile(
-      'powershell.exe',
-      ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encodedCommand],
-      { maxBuffer: 10 * 1024 * 1024, timeout: timeoutMs },
-      (error, stdout, stderr) => {
-        if (error) {
-          resolve({ success: false, error: stderr || error.message });
-        } else {
-          try {
-            const data = JSON.parse(stdout.trim());
-            resolve({ success: true, data });
-          } catch (e) {
-            resolve({ success: true, raw: stdout.trim() });
-          }
-        }
-      }
-    );
-  });
+  return companionDriver.runMtpScript(scriptContent, timeoutMs);
 }
 
-// Android/Linux ADB Command Helper
+// Android/Linux ADB Command Helper (delegated to companionDriver)
 function runAdbCommand(args) {
-  return new Promise((resolve) => {
-    execFile('adb', args, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
-      if (error) {
-        resolve({ success: false, error: stderr ? stderr.trim() : error.message });
-      } else {
-        resolve({ success: true, stdout: stdout ? stdout.trim() : '' });
-      }
-    });
-  });
+  return companionDriver.runAdbCommand(args);
 }
 
 async function checkRc2AdbStatus() {
-  const devRes = await runAdbCommand(['devices']);
-  if (!devRes.success || !devRes.stdout) {
-    return { connected: false, error: devRes.error || 'ADB not available' };
-  }
-
-  const lines = devRes.stdout.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('List of devices'));
-  const activeDevice = lines.find(l => l.endsWith('device'));
-  if (!activeDevice) {
-    return { connected: false, error: 'No authorized ADB device found' };
-  }
-
-  const serial = activeDevice.split(/\s+/)[0];
-  const wpPath = '/sdcard/Android/data/dji.go.v5/files/waypoint';
-  const lsRes = await runAdbCommand(['-s', serial, 'shell', `ls -1 ${wpPath}`]);
-
-  let activeMissions = [];
-  if (lsRes.success && lsRes.stdout) {
-    activeMissions = lsRes.stdout
-      .split('\n')
-      .map(m => m.trim())
-      .filter(m => /^[A-F0-9]{8}-/i.test(m));
-  }
-
-  return {
-    connected: true,
-    deviceName: `DJI RC 2 (ADB: ${serial})`,
-    activeMissions,
-    waypointReady: lsRes.success
-  };
+  return companionDriver.checkRc2AdbStatus();
 }
 
 // Common PowerShell MTP Helpers for DJI RC controllers & Android smartphones
@@ -1520,23 +1461,7 @@ async function updateRc2Status() {
 // 2. Transfer KMZ to RC 2 (Preview thumbnail archived)
 async function transferToRc2(uuid, kmzPath) {
   if (!IS_WINDOWS) {
-    const adbCheck = await checkRc2AdbStatus();
-    if (!adbCheck.connected) {
-      return { success: false, error: 'DJI RC 2 not connected via ADB on ' + process.platform };
-    }
-    const targetUUID = uuid;
-    const remoteDir = `/sdcard/Android/data/dji.go.v5/files/waypoint/${targetUUID}`;
-    await runAdbCommand(['shell', `mkdir -p ${remoteDir}`]);
-    const pushRes = await runAdbCommand(['push', kmzPath, `${remoteDir}/${targetUUID}.kmz`]);
-    if (pushRes.success) {
-      return {
-        success: true,
-        uuid: targetUUID,
-        verified: true,
-        message: `Mission KMZ successfully synced to DJI RC 2 slot ${targetUUID} via ADB!`
-      };
-    }
-    return { success: false, error: pushRes.error || 'Failed to push KMZ via ADB' };
+    return companionDriver.transferToRc2ViaAdb(uuid, kmzPath);
   }
 
   const psScript = `
@@ -1657,32 +1582,7 @@ $syncVerified = ($finalCheck.Count -gt 0)
 // 3. Pull Current KMZ Mission from RC 2 over MTP
 async function pullFromRc2(requestedUuid = '') {
   if (!IS_WINDOWS) {
-    const adbCheck = await checkRc2AdbStatus();
-    if (!adbCheck.connected) {
-      return { success: false, error: 'DJI RC 2 not connected via ADB on ' + process.platform };
-    }
-    let targetUuid = requestedUuid;
-    if (!targetUuid && adbCheck.activeMissions && adbCheck.activeMissions.length > 0) {
-      targetUuid = adbCheck.activeMissions[0];
-    }
-    if (!targetUuid) {
-      return { success: false, error: 'No mission slot found on RC 2.' };
-    }
-    if (!fs.existsSync(STAGING_DIR)) {
-      fs.mkdirSync(STAGING_DIR, { recursive: true });
-    }
-    const targetLocalPath = path.join(STAGING_DIR, `pulled_${targetUuid}.kmz`);
-    const remoteKmz = `/sdcard/Android/data/dji.go.v5/files/waypoint/${targetUuid}/${targetUuid}.kmz`;
-    const pullRes = await runAdbCommand(['pull', remoteKmz, targetLocalPath]);
-    if (!pullRes.success || !fs.existsSync(targetLocalPath)) {
-      return { success: false, error: pullRes.error || 'Failed to pull KMZ from RC 2 via ADB' };
-    }
-    return {
-      success: true,
-      uuid: targetUuid,
-      fileName: `${targetUuid}.kmz`,
-      waylinesWpml: ''
-    };
+    return companionDriver.pullFromRc2ViaAdb(requestedUuid, STAGING_DIR);
   }
 
   const psScript = `
@@ -7609,28 +7509,7 @@ if (process.stdin.isTTY) {
 }
 
 function killPortPid(port) {
-  return new Promise((resolve) => {
-    if (process.platform === 'win32') {
-      try {
-        const netstatOut = execFileSync('cmd.exe', ['/c', `netstat -ano | findstr :${port}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-        const lines = netstatOut.trim().split('\n');
-        for (const line of lines) {
-          if (line.includes('LISTENING')) {
-            const parts = line.trim().split(/\s+/);
-            const pid = parts[parts.length - 1];
-            if (pid && pid !== `${process.pid}` && pid !== '0') {
-              try {
-                execFileSync('taskkill.exe', ['/F', '/PID', pid], { stdio: 'ignore' });
-                setTimeout(resolve, 600);
-                return;
-              } catch (e) {}
-            }
-          }
-        }
-      } catch (e) {}
-    }
-    resolve();
-  });
+  return companionDriver.killPortProcess(port);
 }
 
 async function killExistingCompanion(port) {

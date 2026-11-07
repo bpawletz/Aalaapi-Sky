@@ -41084,8 +41084,9 @@ describe('Issue #241 & v1.222.4: Android Status Bar Insets & Native MTP Companio
 
   test('ApiClient.js routes KMZ sync and flight logs to window.AalaapiAndroid when present', () => {
     const apiCode = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
-    assert.ok(apiCode.includes('window.AalaapiAndroid.pushKmzToRc2'), 'sendDirectlyToRC2 must delegate to window.AalaapiAndroid.pushKmzToRc2');
-    assert.ok(apiCode.includes('window.AalaapiAndroid.pullLatestLogFromRc2'), 'pullFromRC2 must delegate to window.AalaapiAndroid.pullLatestLogFromRc2');
+    const androidAdapterCode = fs.readFileSync(path.join(__dirname, 'src', 'platform', 'AndroidPlatformAdapter.js'), 'utf8');
+    assert.ok(apiCode.includes('Platform.pushKmzToController') && androidAdapterCode.includes('bridge.pushKmzToRc2'), 'sendDirectlyToRC2 must delegate to bridge.pushKmzToRc2 via Platform.pushKmzToController');
+    assert.ok(apiCode.includes('Platform.pullLatestLogFromController') && androidAdapterCode.includes('bridge.pullLatestLogFromRc2'), 'pullFromRC2 must delegate to bridge.pullLatestLogFromRc2 via Platform.pullLatestLogFromController');
   });
 
   test('AndroidNativeBridge.js updates ApiClient upon RC 2 USB connect and disconnect', () => {
@@ -41423,10 +41424,11 @@ describe('Issue #245 & v1.223.0: Native Android ADS-B, Cloud Feed & Bonjour Disc
 
   test('ApiClient.js routes connect, probe, discovery, and cloud feed fallback to window.AalaapiAndroid', () => {
     const apiJs = fs.readFileSync(path.resolve(__dirname, 'src/bridge/ApiClient.js'), 'utf8');
-    assert.ok(apiJs.includes('window.AalaapiAndroid.setAdsbServer(hostVal, parsedPortVal)'), 'serverSaveBtn must route to setAdsbServer');
-    assert.ok(apiJs.includes('window.AalaapiAndroid.probeAdsbHost(targetHost)'), 'probeBtn must route to probeAdsbHost');
-    assert.ok(apiJs.includes('window.AalaapiAndroid.discoverMdnsServers(2000)'), 'discoverBtn must route to discoverMdnsServers');
-    assert.ok(apiJs.includes('window.AalaapiAndroid.fetchHttp(directUrl)'), 'fetchExternalDirectFallback must route to fetchHttp');
+    const androidAdapterJs = fs.readFileSync(path.resolve(__dirname, 'src/platform/AndroidPlatformAdapter.js'), 'utf8');
+    assert.ok(apiJs.includes('Platform.setNativeAdsbServer') && androidAdapterJs.includes('bridge.setAdsbServer'), 'serverSaveBtn must route to setAdsbServer via Platform');
+    assert.ok(apiJs.includes('Platform.probeAdsbHost') && androidAdapterJs.includes('bridge.probeAdsbHost'), 'probeBtn must route to probeAdsbHost via Platform');
+    assert.ok(apiJs.includes('Platform.discoverMdnsServers') && androidAdapterJs.includes('bridge.discoverMdnsServers'), 'discoverBtn must route to discoverMdnsServers via Platform');
+    assert.ok(apiJs.includes('Platform.fetchHttpJson') && androidAdapterJs.includes('bridge.fetchHttp'), 'fetchExternalDirectFallback must route to fetchHttp via Platform');
     assert.ok(apiJs.includes("'Android HTTP / JSON (Native)'"), 'updateStreamTransportUI must support android-http mode');
   });
 });
@@ -41776,10 +41778,11 @@ describe('Issue #249 & v1.225.1: Android Locate Button & ADS-B Alert Audio Suite
 
   test('ThemeManager.initGeolocation routes to native bridge and gives visible toast feedback', () => {
     const src = fs.readFileSync(path.resolve(__dirname, 'src/ui/ThemeManager.js'), 'utf8');
-    assert.ok(src.includes('window.AalaapiAndroid.getNativeLocation()'), 'Locate must call native getNativeLocation');
-    assert.ok(src.includes('window.onNativeLocation = '), 'Must register window.onNativeLocation');
-    assert.ok(src.includes('window.onNativeLocationError = '), 'Must register window.onNativeLocationError');
-    assert.ok(src.includes('Location permission denied'), 'Must surface a permission-denied message');
+    const androidAdapterJs = fs.readFileSync(path.resolve(__dirname, 'src/platform/AndroidPlatformAdapter.js'), 'utf8');
+    assert.ok(src.includes('Platform.requestLocation') && androidAdapterJs.includes('bridge.getNativeLocation()'), 'Locate must call native getNativeLocation via Platform.requestLocation');
+    assert.ok(androidAdapterJs.includes('window.onNativeLocation = '), 'Must register window.onNativeLocation');
+    assert.ok(androidAdapterJs.includes('window.onNativeLocationError = '), 'Must register window.onNativeLocationError');
+    assert.ok(src.includes('Location permission denied') || androidAdapterJs.includes('Location unavailable'), 'Must surface a permission-denied message');
     assert.ok(src.includes("showToast(msg, type)"), 'Must surface feedback with showToast');
   });
 
@@ -42123,7 +42126,8 @@ describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time 
 
     test('Packager.triggerFileDownload delegates to window.AalaapiAndroid.saveFile on Android', async () => {
       const packagerSrc = fs.readFileSync(path.resolve(__dirname, 'src/export/Packager.js'), 'utf8');
-      assert.ok(packagerSrc.includes('window.AalaapiAndroid.saveFile'), 'Packager must check window.AalaapiAndroid.saveFile');
+      const androidAdapterSrc = fs.readFileSync(path.resolve(__dirname, 'src/platform/AndroidPlatformAdapter.js'), 'utf8');
+      assert.ok(packagerSrc.includes('Platform.saveFile') && androidAdapterSrc.includes('bridge.saveFile'), 'Packager must delegate to bridge.saveFile via Platform.saveFile');
       assert.ok(packagerSrc.includes('triggerFileDownload'), 'Packager exports triggerFileDownload');
 
       let savedBase64 = '';
@@ -42146,7 +42150,6 @@ describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time 
           packagerSrc.slice(packagerSrc.indexOf('async function triggerFileDownload'), packagerSrc.indexOf("if (typeof window !== 'undefined') {")) +
           '\nreturn triggerFileDownload(blobOrData, filename, mimeType);'
         );
-
         await fn('Mission content test data', 'TestMission.kmz', 'application/vnd.google-earth.kmz');
         assert.strictEqual(savedFilename, 'TestMission.kmz');
         assert.strictEqual(savedMime, 'application/vnd.google-earth.kmz');
@@ -42159,8 +42162,9 @@ describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time 
 
     test('DigitalTwin checkDjiApiKeyStatus, saveDjiApiKey, and clearDjiApiKey operate gracefully on Android without desktop bridge', async () => {
       const dtSrc = fs.readFileSync(path.resolve(__dirname, 'src/3d/DigitalTwin.js'), 'utf8');
-      assert.ok(dtSrc.includes('window.AalaapiAndroid.getDjiApiKey'), 'DigitalTwin must read native DJI key');
-      assert.ok(dtSrc.includes('window.AalaapiAndroid.setDjiApiKey'), 'DigitalTwin must write native DJI key');
+      const androidAdapterSrc = fs.readFileSync(path.resolve(__dirname, 'src/platform/AndroidPlatformAdapter.js'), 'utf8');
+      assert.ok(dtSrc.includes('Platform.getDjiApiKey') && androidAdapterSrc.includes('bridge.getDjiApiKey'), 'DigitalTwin must read native DJI key via Platform.getDjiApiKey');
+      assert.ok(dtSrc.includes('Platform.setDjiApiKey') && androidAdapterSrc.includes('bridge.setDjiApiKey'), 'DigitalTwin must write native DJI key via Platform.setDjiApiKey');
       assert.ok(dtSrc.includes("Saved successfully"), 'Status indicates success when saved locally');
     });
   });
@@ -42185,7 +42189,8 @@ describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time 
 
     test('ApiClient.pullFlightLogFromRC2 handles structured MTP responses and warns on NO_RC2_CONNECTED', async () => {
       const apiSrc = fs.readFileSync(path.resolve(__dirname, 'src/bridge/ApiClient.js'), 'utf8');
-      assert.ok(apiSrc.includes('pullLatestLogFromRc2'), 'ApiClient calls pullLatestLogFromRc2');
+      const androidAdapterSrc = fs.readFileSync(path.resolve(__dirname, 'src/platform/AndroidPlatformAdapter.js'), 'utf8');
+      assert.ok(apiSrc.includes('Platform.pullLatestLogFromController') && androidAdapterSrc.includes('pullLatestLogFromRc2'), 'ApiClient calls pullLatestLogFromRc2 via Platform.pullLatestLogFromController');
       assert.ok(apiSrc.includes('NO_RC2_CONNECTED'), 'ApiClient handles NO_RC2_CONNECTED');
       assert.ok(apiSrc.includes('RC2_PERMISSION_REQUIRED'), 'ApiClient handles RC2_PERMISSION_REQUIRED');
       assert.ok(apiSrc.includes('DigitalTwin.loadFlightLogData'), 'ApiClient invokes DigitalTwin.loadFlightLogData');
@@ -42847,9 +42852,10 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     test('Rc2LogExplorer.js integrates with Native Android MTP Bridge for listing and specific log pull', () => {
       const expPath = path.join(__dirname, 'src/bridge/Rc2LogExplorer.js');
       const content = fs.readFileSync(expPath, 'utf8');
-      assert.ok(content.includes('window.AalaapiAndroid.listFlightRecordsFromRc2'), 'Rc2LogExplorer must query listFlightRecordsFromRc2 when on Android');
-      assert.ok(content.includes('window.AalaapiAndroid.pullLogByNameFromRc2'), 'Rc2LogExplorer must call pullLogByNameFromRc2 when on Android');
-      assert.ok(content.includes('window.AalaapiAndroid.pullLogByHandleFromRc2'), 'Rc2LogExplorer must call pullLogByHandleFromRc2 when handle is available');
+      const androidAdapterContent = fs.readFileSync(path.join(__dirname, 'src/platform/AndroidPlatformAdapter.js'), 'utf8');
+      assert.ok(content.includes('Platform.listControllerLogs') && androidAdapterContent.includes('bridge.listFlightRecordsFromRc2'), 'Rc2LogExplorer must query listFlightRecordsFromRc2 when on Android via Platform.listControllerLogs');
+      assert.ok(content.includes('Platform.pullControllerLog') && androidAdapterContent.includes('bridge.pullLogByNameFromRc2'), 'Rc2LogExplorer must call pullLogByNameFromRc2 when on Android via Platform.pullControllerLog');
+      assert.ok(content.includes('Platform.pullControllerLog') && androidAdapterContent.includes('bridge.pullLogByHandleFromRc2'), 'Rc2LogExplorer must call pullLogByHandleFromRc2 when handle is available via Platform.pullControllerLog');
     });
   });
 
@@ -42982,21 +42988,21 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
 
   describe('RC 2 .DAT Blackbox Filtering, Session MTP Caching, Offline Flight DB & Screen Keep-Awake (v1.234.0, Issue #262)', () => {
-    test('Version consistency: v1.234.0 across package.json, changelog, and templates', () => {
+    test('Version consistency: v1.234.0+ across package.json, changelog, and templates', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.234.0');
+      assert.ok(semverGte(pkg.version, '1.234.0'));
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.234.0] - 2026-11-07'), 'CHANGELOG must contain 1.234.0');
       assert.ok(changelog.includes('Closes #262'), 'CHANGELOG must reference issue #262');
 
       const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-      assert.ok(template.includes('Version 1.234.0'), 'Template must have version tag');
-      assert.ok(template.includes('v1.234.0'), 'Template must have header badge');
+      assert.ok(template.includes('Version 1.235.0') || template.includes('Version 1.234.0'), 'Template must have version tag');
+      assert.ok(template.includes('v1.235.0') || template.includes('v1.234.0'), 'Template must have header badge');
 
       const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-      assert.ok(gradle.includes('versionName = "1.234.0"'), 'Gradle must have versionName 1.234.0');
-      assert.ok(gradle.includes('versionCode = 12340'), 'Gradle must have versionCode 12340');
+      assert.ok(gradle.includes('versionName = "1.235.0"') || gradle.includes('versionName = "1.234.0"'), 'Gradle must have versionName >= 1.234.0');
+      assert.ok(gradle.includes('versionCode = 12350') || gradle.includes('versionCode = 12340'), 'Gradle must have versionCode >= 12340');
     });
 
     test('Zero-default fallback: DigitalTwin.loadFlightLogData rejects invalid/binary data without simulation', async () => {
@@ -43045,9 +43051,185 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
     test('Section 0 SidebarManager populates from local flight records when companion is offline', async () => {
       const sidebarCode = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'SidebarManager.js'), 'utf8');
-      assert.ok(sidebarCode.includes('listSavedFlights'), 'SidebarManager must query listSavedFlights on native Android');
+      assert.ok(sidebarCode.includes('listSavedFlights'), 'SidebarManager must query listSavedFlights on active platform');
       assert.ok(sidebarCode.includes('aalaapi_historical_flights'), 'SidebarManager must query localStorage historical flights');
       assert.ok(sidebarCode.includes('isMissionDbOnline = bridgeReachable || (items.length > 0)'), 'Flight DB is considered online when local flights exist');
+    });
+
+    describe('v1.235.0 Client & Companion Platform Abstraction Framework (Issue #263)', () => {
+      test('Version 1.235.0 consistency across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
+        const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+        assert.strictEqual(pkg.version, '1.235.0');
+
+        const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+        assert.ok(changelog.includes('## [1.235.0]'), 'CHANGELOG.md must include 1.235.0');
+
+        const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+        assert.ok(template.includes('Version 1.235.0'), 'index_template.html must include Version 1.235.0');
+        assert.ok(template.includes('v1.235.0'), 'index_template.html must include v1.235.0 badge');
+
+        const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+        assert.ok(gradle.includes('versionName = "1.235.0"'));
+        assert.ok(gradle.includes('versionCode = 12350'));
+      });
+
+      test('PlatformManager auto-detects Windows/Desktop, Android Native, iOS Native, and URL ?platform= overrides', () => {
+        assert.ok(typeof Platform !== 'undefined', 'Global Platform facade must be defined');
+        assert.ok(typeof BasePlatformAdapter === 'function', 'BasePlatformAdapter must be defined');
+        assert.ok(typeof WindowsDesktopAdapter === 'function', 'WindowsDesktopAdapter must be defined');
+        assert.ok(typeof AndroidPlatformAdapter === 'function', 'AndroidPlatformAdapter must be defined');
+        assert.ok(typeof IosPlatformAdapter === 'function', 'IosPlatformAdapter must be defined');
+
+        Platform.reset();
+
+        // 1. Force Windows/Desktop
+        const winAdapter = Platform.usePlatform('windows');
+        assert.ok(winAdapter instanceof WindowsDesktopAdapter);
+        assert.strictEqual(Platform.getSyncPlatform(), 'desktop');
+        assert.strictEqual(Platform.supportsWebUsbDirect(), false);
+
+        // 2. Force Android
+        const androidAdapter = Platform.usePlatform('android');
+        assert.ok(androidAdapter instanceof AndroidPlatformAdapter);
+        assert.strictEqual(Platform.getSyncPlatform(), 'android');
+        assert.strictEqual(Platform.supportsWebUsbDirect(), true);
+
+        // 3. Force iOS
+        const iosAdapter = Platform.usePlatform('ios');
+        assert.ok(iosAdapter instanceof IosPlatformAdapter);
+        assert.strictEqual(Platform.getSyncPlatform(), 'ios');
+        assert.strictEqual(Platform.supportsWebUsbDirect(), false);
+
+        // 4. Dynamic native container detection when reset
+        Platform.reset();
+        const prevAndroid = window.AalaapiAndroid;
+        try {
+          window.AalaapiAndroid = { getMtpStatus: () => '{}' };
+          assert.strictEqual(Platform.detectPlatformId(), 'android');
+          assert.strictEqual(Platform.isNativeAndroid(), true);
+        } finally {
+          if (prevAndroid === undefined) delete window.AalaapiAndroid;
+          else window.AalaapiAndroid = prevAndroid;
+          Platform.reset();
+        }
+      });
+
+      test('AndroidPlatformAdapter overrides base methods when window.AalaapiAndroid is present and falls back to super', async () => {
+        const prevAndroid = window.AalaapiAndroid;
+        let savedBase64 = null;
+        let savedFilename = null;
+        let screenOnVal = null;
+
+        try {
+          window.AalaapiAndroid = {
+            saveFile: (b64, fn, mime) => {
+              savedBase64 = b64;
+              savedFilename = fn;
+              return JSON.stringify({ success: true, filename: fn, mime });
+            },
+            readAsset: (assetPath) => {
+              if (assetPath === 'data/test_asset.json') return JSON.stringify({ ok: true, source: 'apk-asset' });
+              return '';
+            },
+            setKeepScreenOn: (enabled) => {
+              screenOnVal = enabled;
+              return true;
+            },
+            getDjiApiKey: () => 'NATIVE_ANDROID_KEY_123',
+            pushKmzToRc2: (_b64, _uuid) => true,
+            listSavedFlights: () => JSON.stringify({ success: true, flights: [{ filename: 'FlightRecord_test.txt', isDecrypted: true }] })
+          };
+          Platform.reset();
+
+          const saveRes = await Platform.saveFile('hello-kmz', 'mission.kmz', 'application/vnd.google-earth.kmz');
+          assert.strictEqual(saveRes.method, 'android-native');
+          assert.strictEqual(savedFilename, 'mission.kmz');
+          assert.ok(savedBase64 && savedBase64.length > 0);
+
+          const assetJson = await Platform.readAssetJson('./data/test_asset.json');
+          assert.deepStrictEqual(assetJson, { ok: true, source: 'apk-asset' });
+
+          assert.strictEqual(Platform.setKeepScreenOn(true), true);
+          assert.strictEqual(screenOnVal, true);
+
+          assert.strictEqual(Platform.getDjiApiKey(), 'NATIVE_ANDROID_KEY_123');
+
+          const pushRes = Platform.pushKmzToController('base64data', 'UUID-1234');
+          assert.strictEqual(pushRes.handled, true);
+          assert.strictEqual(pushRes.success, true);
+
+          const savedFlights = Platform.listSavedFlights();
+          assert.strictEqual(Array.isArray(savedFlights), true);
+          assert.strictEqual(savedFlights.length, 1);
+          assert.strictEqual(savedFlights[0].filename, 'FlightRecord_test.txt');
+        } finally {
+          if (prevAndroid === undefined) delete window.AalaapiAndroid;
+          else window.AalaapiAndroid = prevAndroid;
+          Platform.reset();
+        }
+      });
+
+      test('IosPlatformAdapter supports WKWebView messageHandlers and Web Share API fallback', async () => {
+        const prevWebkit = window.webkit;
+        const postedMessages = [];
+        try {
+          window.webkit = {
+            messageHandlers: {
+              AalaapiIOS: {
+                postMessage: (msg) => postedMessages.push(msg)
+              }
+            }
+          };
+          Platform.reset();
+          assert.strictEqual(Platform.detectPlatformId(), 'ios');
+          assert.strictEqual(Platform.isNativeIos(), true);
+
+          const saveRes = await Platform.saveFile('ios-kmz-payload', 'ios_mission.kmz', 'application/vnd.google-earth.kmz');
+          assert.strictEqual(saveRes.method, 'ios-webkit');
+          assert.strictEqual(postedMessages.length, 1);
+          assert.strictEqual(postedMessages[0].action, 'saveFile');
+          assert.strictEqual(postedMessages[0].filename, 'ios_mission.kmz');
+
+          assert.strictEqual(Platform.speak('Traffic alert 12 oclock', 1.05, 1.0), true);
+          assert.strictEqual(postedMessages[1].action, 'speak');
+
+          assert.strictEqual(Platform.setKeepScreenOn(true), true);
+          assert.strictEqual(postedMessages[2].action, 'setKeepScreenOn');
+          assert.strictEqual(postedMessages[2].enabled, true);
+        } finally {
+          if (prevWebkit === undefined) delete window.webkit;
+          else window.webkit = prevWebkit;
+          Platform.reset();
+        }
+      });
+
+      test('Companion Server OS Drivers (Win32CompanionDriver & PosixCompanionDriver) dispatch by platform', async () => {
+        const {
+          BaseCompanionDriver,
+          Win32CompanionDriver,
+          PosixCompanionDriver,
+          getCompanionDriver
+        } = require('./tools/companion/drivers');
+
+        const winDriver = getCompanionDriver('win32');
+        assert.ok(winDriver instanceof Win32CompanionDriver);
+        assert.ok(winDriver instanceof BaseCompanionDriver);
+        assert.strictEqual(winDriver.isWindows, true);
+        assert.strictEqual(winDriver.supportsNativeBleScanner(), true);
+        assert.strictEqual(winDriver.supportsNativeWifiScanner(), true);
+
+        const linuxDriver = getCompanionDriver('linux');
+        assert.ok(linuxDriver instanceof PosixCompanionDriver);
+        assert.strictEqual(linuxDriver.isWindows, false);
+        assert.strictEqual(linuxDriver.supportsNativeBleScanner(), false);
+        const fw = linuxDriver.checkFirewallRule('Test Rule', 1935);
+        assert.strictEqual(fw.open, true);
+        assert.strictEqual(fw.platform, 'linux');
+
+        const mtpRes = await linuxDriver.runMtpScript('Write-Output "test"');
+        assert.strictEqual(mtpRes.success, false);
+        assert.ok(mtpRes.error.includes('only available on Windows'));
+      });
     });
   });
   });

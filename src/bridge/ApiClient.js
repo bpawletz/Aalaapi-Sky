@@ -27,101 +27,10 @@
 
 
 function getSyncPlatform() {
-
-
-
-  if (typeof window !== 'undefined' && window.AalaapiAndroid) return 'android';
-
-
-
-  if (typeof navigator === 'undefined') return 'desktop';
-
-
-
-
-
-
-
-  // 1. Check User-Agent Client Hints (navigator.userAgentData.platform)
-
-
-
-  if (navigator.userAgentData && typeof navigator.userAgentData.platform === 'string') {
-
-
-
-    const platform = navigator.userAgentData.platform.toLowerCase();
-
-
-
-    if (platform.includes('android')) return 'android';
-
-
-
-    if (platform.includes('chrome os') || platform.includes('cros')) return 'chromeos';
-
-
-
-    if (platform.includes('windows') || platform.includes('mac') || platform.includes('linux')) return 'desktop';
-
-
-
+  if (typeof Platform !== 'undefined' && typeof Platform.getSyncPlatform === 'function') {
+    return Platform.getSyncPlatform();
   }
-
-
-
-
-
-
-
-  // 2. Fallback to navigator.userAgent / navigator.platform
-
-
-
-  const ua = (navigator.userAgent || '').toLowerCase();
-
-
-
-  const navPlatform = (navigator.platform || '').toLowerCase();
-
-
-
-
-
-
-
-  if (ua.includes('android') || navPlatform.includes('android')) {
-
-
-
-    return 'android';
-
-
-
-  }
-
-
-
-  if (ua.includes('cros') || navPlatform.includes('cros')) {
-
-
-
-    return 'chromeos';
-
-
-
-  }
-
-
-
-
-
-
-
   return 'desktop';
-
-
-
 }
 
 
@@ -3930,7 +3839,7 @@ async function pollCompanionStatus() {
 
 
 
-    if (typeof window !== 'undefined' && window.AalaapiAndroid) {
+    if (typeof Platform !== 'undefined' && Platform.isNativeAndroid()) {
 
       updateNativeAndroidStatusUI();
 
@@ -4388,9 +4297,13 @@ async function pullFromRC2() {
 
 
 
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLatestLogFromRc2 === 'function') {
+    const nativeLogPull = (typeof Platform !== 'undefined' && typeof Platform.pullLatestLogFromController === 'function')
+      ? Platform.pullLatestLogFromController()
+      : { handled: false };
 
-      const logBase64 = window.AalaapiAndroid.pullLatestLogFromRc2();
+    if (nativeLogPull && nativeLogPull.handled) {
+
+      const logBase64 = nativeLogPull.rawRes;
 
       if (logBase64 && typeof atob === 'function') {
 
@@ -4720,9 +4633,13 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
 
 
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLatestLogFromRc2 === 'function') {
+    const nativeLogPull = (typeof Platform !== 'undefined' && typeof Platform.pullLatestLogFromController === 'function')
+      ? Platform.pullLatestLogFromController()
+      : { handled: false };
 
-      const rawRes = window.AalaapiAndroid.pullLatestLogFromRc2();
+    if (nativeLogPull && nativeLogPull.handled) {
+
+      const rawRes = nativeLogPull.rawRes;
 
       if (!rawRes) {
 
@@ -5256,11 +5173,14 @@ async function sendDirectlyToRC2() {
 
 
 
-    // If running inside Native Android container, transfer directly via window.AalaapiAndroid
+    // If running inside a Native Platform container, transfer directly via Platform.pushKmzToController
+    const nativePush = (typeof Platform !== 'undefined' && typeof Platform.pushKmzToController === 'function')
+      ? Platform.pushKmzToController(kmzBase64, uuid)
+      : { handled: false };
 
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pushKmzToRc2 === 'function') {
+    if (nativePush && nativePush.handled) {
 
-      const ok = window.AalaapiAndroid.pushKmzToRc2(kmzBase64, uuid);
+      const ok = nativePush.success;
 
       if (!ok) {
 
@@ -10047,7 +9967,7 @@ const RemoteIdRadar = {
 
 
       this.eventSource.onerror = () => {
-        if (typeof window !== 'undefined' && window.AalaapiAndroid) {
+        if (typeof Platform !== 'undefined' && Platform.isNativeAndroid()) {
           try { this.eventSource.close(); } catch (_) {}
           this.eventSource = null;
         }
@@ -15179,7 +15099,9 @@ const AdsbAirspaceManager = {
 
 
 
-    const nativeTts = !!(window.AalaapiAndroid && typeof window.AalaapiAndroid.speak === 'function');
+    const nativeTts = (typeof Platform !== 'undefined' && typeof Platform.hasNativeTts === 'function')
+      ? Platform.hasNativeTts()
+      : false;
 
 
 
@@ -15317,18 +15239,9 @@ const AdsbAirspaceManager = {
 
 
 
-      if (nativeTts) {
-
-
-
-        window.AalaapiAndroid.speak(text, 1.05, 1.0);
-
-
-
+      if (nativeTts && typeof Platform !== 'undefined' && typeof Platform.speak === 'function') {
+        Platform.speak(text, 1.05, 1.0);
         return;
-
-
-
       }
 
 
@@ -15997,50 +15910,23 @@ const AdsbAirspaceManager = {
 
     try {
 
-      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getAdsbStatus === 'function') {
-
-        const rawJson = window.AalaapiAndroid.getAdsbStatus();
-
-        if (rawJson) {
-
-          try {
-
-            const nativeStatus = JSON.parse(rawJson);
-
-            if (nativeStatus && (nativeStatus.connected || nativeStatus.connecting || nativeStatus.messagesReceived > 0)) {
-
-              const nativeSt = {
-
-                connected: Boolean(nativeStatus.connected),
-
-                connecting: Boolean(nativeStatus.connecting),
-
-                isRemoteServer: true,
-
-                tcpHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
-
-                tcpPort: nativeStatus.currentPort || this.serverPort || 30003,
-
-                adsbHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
-
-                adsbPort: nativeStatus.currentPort || this.serverPort || 30003,
-
-                totalPackets: nativeStatus.messagesReceived || 0,
-
-                driverType: 'Android Native Socket'
-
-              };
-
-              this.updateDiagnosticsUI(nativeSt);
-
-              return;
-
-            }
-
-          } catch (_) {}
-
+      if (typeof Platform !== 'undefined' && typeof Platform.getNativeAdsbStatus === 'function') {
+        const nativeStatus = Platform.getNativeAdsbStatus();
+        if (nativeStatus && (nativeStatus.connected || nativeStatus.connecting || nativeStatus.messagesReceived > 0)) {
+          const nativeSt = {
+            connected: Boolean(nativeStatus.connected),
+            connecting: Boolean(nativeStatus.connecting),
+            isRemoteServer: true,
+            tcpHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
+            tcpPort: nativeStatus.currentPort || this.serverPort || 30003,
+            adsbHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
+            adsbPort: nativeStatus.currentPort || this.serverPort || 30003,
+            totalPackets: nativeStatus.messagesReceived || 0,
+            driverType: 'Android Native Socket'
+          };
+          this.updateDiagnosticsUI(nativeSt);
+          return;
         }
-
       }
 
 
@@ -16793,7 +16679,7 @@ const AdsbAirspaceManager = {
 
     // If running on Native Android container without an explicit remote companion host,
     // ADS-B telemetry is provided natively via AndroidAdsbBridge TCP socket.
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && (!this.customEndpoint || !this.customEndpoint.trim())) {
+    if (typeof Platform !== 'undefined' && Platform.isNativeAndroid() && (!this.customEndpoint || !this.customEndpoint.trim())) {
       const storedComp = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi-companion-host') : null;
       if (!storedComp || storedComp.includes('127.0.0.1') || storedComp.includes('localhost')) {
         return;
@@ -21175,13 +21061,9 @@ const AdsbAirspaceManager = {
 
       let data;
 
-      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.fetchHttp === 'function') {
+      if (typeof Platform !== 'undefined' && typeof Platform.fetchHttpJson === 'function') {
 
-        const raw = window.AalaapiAndroid.fetchHttp(directUrl);
-
-        data = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
-        if (data && data.error) throw new Error(data.error);
+        data = await Platform.fetchHttpJson(directUrl);
 
       } else {
 
@@ -22909,9 +22791,7 @@ const AdsbAirspaceManager = {
 
         try {
 
-          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setAdsbServer === 'function') {
-
-            window.AalaapiAndroid.setAdsbServer(hostVal, parsedPortVal);
+          if (typeof Platform !== 'undefined' && typeof Platform.setNativeAdsbServer === 'function' && Platform.setNativeAdsbServer(hostVal, parsedPortVal)) {
 
             this.serverHost = hostVal;
 
@@ -23253,17 +23133,14 @@ const AdsbAirspaceManager = {
 
         try {
 
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
           let data;
 
-          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.probeAdsbHost === 'function') {
+          if (typeof Platform !== 'undefined' && typeof Platform.probeAdsbHost === 'function') {
 
-            const raw = window.AalaapiAndroid.probeAdsbHost(targetHost);
-
-            data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            data = await Platform.probeAdsbHost(targetHost, apiBase);
 
           } else {
-
-            const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
             const res = await fetch(`${apiBase}/api/config/adsb/probe?host=${encodeURIComponent(targetHost)}`);
 
@@ -23483,17 +23360,14 @@ const AdsbAirspaceManager = {
 
         try {
 
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
           let data;
 
-          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.discoverMdnsServers === 'function') {
+          if (typeof Platform !== 'undefined' && typeof Platform.discoverMdnsServers === 'function') {
 
-            const raw = window.AalaapiAndroid.discoverMdnsServers(2000);
-
-            data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            data = await Platform.discoverMdnsServers(2000, apiBase);
 
           } else {
-
-            const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
             const res = await fetch(`${apiBase}/api/airspace/discover?timeout=2000`);
 

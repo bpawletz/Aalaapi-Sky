@@ -1,44 +1,7 @@
 async function triggerFileDownload(blobOrData, filename, mimeType = 'application/octet-stream') {
-  if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.saveFile === 'function') {
-    try {
-      let base64 = '';
-      if (typeof blobOrData === 'string') {
-        base64 = btoa(unescape(encodeURIComponent(blobOrData)));
-      } else if (blobOrData instanceof Blob) {
-        const buffer = await blobOrData.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        let binary = '';
-        const chunk = 8192;
-        for (let i = 0; i < bytes.length; i += chunk) {
-          const sub = bytes.subarray(i, i + chunk);
-          binary += String.fromCharCode.apply(null, sub);
-        }
-        base64 = btoa(binary);
-      } else if (blobOrData instanceof Uint8Array || blobOrData instanceof ArrayBuffer) {
-        const bytes = blobOrData instanceof ArrayBuffer ? new Uint8Array(blobOrData) : blobOrData;
-        let binary = '';
-        const chunk = 8192;
-        for (let i = 0; i < bytes.length; i += chunk) {
-          const sub = bytes.subarray(i, i + chunk);
-          binary += String.fromCharCode.apply(null, sub);
-        }
-        base64 = btoa(binary);
-      }
-      const rawRes = window.AalaapiAndroid.saveFile(base64, filename, mimeType);
-      try {
-        const parsed = JSON.parse(rawRes);
-        if (parsed.success && typeof showToast === 'function') {
-          showToast(`💾 Saved to Downloads: ${filename}`, 'success');
-        }
-      } catch (_) {
-        if (typeof showToast === 'function') {
-          showToast(`💾 Saved to Downloads: ${filename}`, 'success');
-        }
-      }
-      return;
-    } catch (err) {
-      console.warn('[Packager] Native saveFile failed, falling back to browser anchor click:', err);
-    }
+  if (typeof Platform !== 'undefined' && typeof Platform.saveFile === 'function') {
+    await Platform.saveFile(blobOrData, filename, mimeType);
+    return;
   }
 
   if (typeof document === 'undefined' || !document.createElement) return;

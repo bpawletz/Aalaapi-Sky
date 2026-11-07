@@ -1086,47 +1086,8 @@ class AdsbAirspaceTracker extends EventEmitter {
       return this.cachedHardware;
     }
 
-    let result = {
-      detected: false,
-      driverStatus: 'not_found',
-      deviceName: null,
-      details: 'No RTL-SDR USB dongle detected.'
-    };
-
-    if (process.platform === 'win32') {
-      try {
-        const { execSync } = require('node:child_process');
-        const out = execSync('pnputil /enum-devices /connected', { encoding: 'utf8', timeout: 3000 });
-        if (out.includes('0BDA&PID_2838') || out.includes('0BDA&PID_2832')) {
-          result.detected = true;
-          result.deviceName = 'Realtek RTL2832U / RTL-SDR';
-          const blocks = out.split(/(?=Instance ID:)/g);
-          const rtlBlocks = blocks.filter(b => b.includes('0BDA&PID_2838') || b.includes('0BDA&PID_2832'));
-          const hasProblem = rtlBlocks.some(b => b.includes('Problem Code: 28') || b.includes('Status:                     Problem'));
-          if (hasProblem) {
-            result.driverStatus = 'needs_zadig';
-            result.details = 'RTL-SDR USB dongle detected, but WinUSB driver is missing (Problem Code 28). Please run Zadig to install WinUSB driver.';
-          } else {
-            result.driverStatus = 'ready';
-            result.details = 'RTL-SDR USB dongle detected and WinUSB driver is operational.';
-          }
-        }
-      } catch (e) {
-        result.driverStatus = 'error';
-        result.details = e.message;
-      }
-    } else if (process.platform === 'linux') {
-      try {
-        const { execSync } = require('node:child_process');
-        const out = execSync('lsusb', { encoding: 'utf8', timeout: 3000 });
-        if (/0bda:2838|0bda:2832/i.test(out)) {
-          result.detected = true;
-          result.driverStatus = 'ready';
-          result.deviceName = 'Realtek RTL2832U / RTL-SDR';
-          result.details = 'RTL-SDR USB dongle detected via lsusb.';
-        }
-      } catch (e) {}
-    }
+    const { getCompanionDriver } = require('./drivers');
+    const result = getCompanionDriver().checkRtlSdrHardware();
 
     this.cachedHardware = result;
     this.cachedHardwareTime = now;
