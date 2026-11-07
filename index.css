@@ -146,8 +146,23 @@ html, body {
   gap: 12px;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
+  cursor: grab;
+}
+
+.studio-topbar::-webkit-scrollbar {
+  display: none;
+}
+
+.studio-topbar.is-dragging {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+.studio-topbar.is-dragging * {
+  user-select: none;
 }
 
 .topbar-left {
@@ -155,16 +170,26 @@ html, body {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  z-index: 2;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: var(--bg-sidebar);
+  padding-right: 12px;
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.25);
 }
 
 .topbar-center {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 0 auto;
+  min-width: max-content;
   justify-content: center;
+}
+
+.topbar-center > * {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .topbar-right {
@@ -172,7 +197,13 @@ html, body {
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
+  min-width: max-content;
   z-index: 2;
+}
+
+.topbar-right > * {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Mobile Topbar Extra Elements - Hidden on Desktop */

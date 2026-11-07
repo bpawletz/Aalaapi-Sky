@@ -1,3 +1,23 @@
+## [1.240.0] - 2026-11-07
+
+Smooth mouse click-and-drag horizontal panning with grab/grabbing feedback and click suppression across the Studio Topbar, coupled with a zero-overlap flexbox layout and sticky pinned brand header.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Topbar Click-and-Drag Pan Gestures (Closes #270)**:
+  - Pilots can now click and drag (mouse pan) horizontally across the Studio Topbar (`.studio-topbar`) to effortlessly scroll between search, mission time, weather, hardware bridge pills, and right action buttons.
+  - Interactive cursor cues provide immediate feedback: `cursor: grab` when hovering over draggable space, dynamically switching to `cursor: grabbing` with disabled text selection during active drag motions.
+  - Built-in drag threshold (4px) with capture-phase click suppression ensures dragging across pills, status badges, or action buttons never triggers unintended modal dialogs upon mouse release.
+
+#### Under the Hood & Technical Details
+- **Zero-Overlap Flexbox Architecture (`index.css`)**:
+  - Refactored `.topbar-center` to `flex: 1 0 auto; min-width: max-content; justify-content: center;`, preventing flex items from collapsing below their natural dimensions on compact screens and eliminating negative centering overflow collisions with adjacent clusters.
+  - Set `flex-shrink: 0; min-width: max-content;` across `.topbar-center > *` and `.topbar-right > *` so pills and action buttons maintain pristine padding and typography.
+  - Pinned `.topbar-left` (Sidebar toggle, Logo, Version badge) with `position: sticky; left: 0; z-index: 10; background: var(--bg-sidebar);` and a subtle right shadow (`box-shadow: 4px 0 12px rgba(0,0,0,0.25)`) ensuring brand and navigation toggles remain accessible at all times while ribbon elements glide smoothly underneath.
+- **`src/ui/SidebarManager.js`**:
+  - Implemented `mousedown`, `mousemove`, `mouseup`, and capture-phase `click` event listeners on `.studio-topbar` for drag-to-scroll panning, while preserving mouse wheel horizontal scroll translation.
+
 ## [1.239.0] - 2026-11-07
 
 Adjustable high-altitude floor (default 10,000 ft / 3,050 m AGL) with automated trajectory cone suppression and pastel greenish marker styling for high-altitude traffic.

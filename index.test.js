@@ -43554,21 +43554,13 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       });
 
       describe('v1.239.0: ADS-B High-Altitude Cone Suppression & Pastel Greenish Markers (Issue #269)', () => {
-        test('Version consistency: v1.239.0 across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
-          const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-          assert.strictEqual(pkg.version, '1.239.0', 'package.json version must be 1.239.0');
-
+        test('Version consistency: v1.239.0 entry preserved in CHANGELOG.md and build history', () => {
           const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
           assert.ok(changelog.includes('## [1.239.0] - 2026-11-07'), 'CHANGELOG.md must include v1.239.0 header');
           assert.ok(changelog.includes('Closes #269'), 'CHANGELOG.md must reference issue #269');
 
           const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-          assert.ok(template.includes('Version 1.239.0'), 'index_template.html must include Version 1.239.0 in About modal');
-          assert.ok(template.includes('v1.239.0'), 'index_template.html must include v1.239.0 header badge');
-
-          const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-          assert.ok(gradle.includes('versionName = "1.239.0"'), 'Gradle versionName must be 1.239.0');
-          assert.ok(gradle.includes('versionCode = 12390'), 'Gradle versionCode must be 12390');
+          assert.ok(template.includes('Changelog (v1.239.0):'), 'index_template.html must include Changelog (v1.239.0)');
         });
 
         test('AdsbAirspaceManager highAltitudeThresholdFt and suppressHighAltitudeCones defaults and persistence', () => {
@@ -43698,6 +43690,56 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
           assert.strictEqual(res.isHighAltitude, true, 'Companion tracker must flag isHighAltitude');
           assert.strictEqual(res.coneSuppressed, true, 'Companion tracker must suppress cone when above threshold');
           assert.strictEqual(res.isConeWarning, false, 'No cone warning when suppressed');
+        });
+      });
+
+      describe('v1.240.0: Topbar Click-and-Drag Pan Gestures & Non-Overlapping Zero-Overlap Pill Ribbon (Issue #270)', () => {
+        test('Version consistency: v1.240.0 across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
+          const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+          assert.strictEqual(pkg.version, '1.240.0', 'package.json version must be 1.240.0');
+
+          const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+          assert.ok(changelog.includes('## [1.240.0] - 2026-11-07'), 'CHANGELOG.md must include v1.240.0 header');
+          assert.ok(changelog.includes('Closes #270'), 'CHANGELOG.md must reference issue #270');
+
+          const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+          assert.ok(template.includes('Version 1.240.0'), 'index_template.html must include Version 1.240.0 in About modal');
+          assert.ok(template.includes('v1.240.0'), 'index_template.html must include v1.240.0 header badge');
+
+          const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+          assert.ok(gradle.includes('versionName = "1.240.0"'), 'Gradle versionName must be 1.240.0');
+          assert.ok(gradle.includes('versionCode = 12400'), 'Gradle versionCode must be 12400');
+        });
+
+        test('CSS Architecture: .studio-topbar has grab cursor, hidden scrollbars, and .is-dragging feedback', () => {
+          const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+          assert.ok(css.includes('cursor: grab'), '.studio-topbar must specify cursor: grab');
+          assert.ok(css.includes('scrollbar-width: none'), '.studio-topbar must hide scrollbars cleanly');
+          assert.ok(css.includes('.studio-topbar.is-dragging'), '.studio-topbar.is-dragging state must exist');
+          assert.ok(css.includes('cursor: grabbing !important'), '.is-dragging must specify cursor: grabbing !important');
+        });
+
+        test('CSS Architecture: .topbar-left sticky pinning prevents brand cluster from scrolling or being obscured', () => {
+          const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+          assert.ok(css.includes('.topbar-left'), '.topbar-left must exist');
+          assert.ok(css.includes('position: sticky'), '.topbar-left must have sticky positioning');
+          assert.ok(css.includes('box-shadow: 4px 0 12px rgba(0, 0, 0, 0.25)'), '.topbar-left must have right shadow divider');
+        });
+
+        test('CSS Architecture: .topbar-center min-width: max-content eliminates negative overflow collision', () => {
+          const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+          assert.ok(css.includes('.topbar-center'), '.topbar-center must exist');
+          assert.ok(css.includes('min-width: max-content'), '.topbar-center must enforce min-width: max-content');
+          assert.ok(css.includes('flex: 1 0 auto'), '.topbar-center must have flex: 1 0 auto');
+        });
+
+        test('SidebarManager source code includes drag-to-scroll mouse gesture listeners with click suppression', () => {
+          const src = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'SidebarManager.js'), 'utf8');
+          assert.ok(src.includes('topbar.addEventListener(\'mousedown\''), 'SidebarManager must bind mousedown');
+          assert.ok(src.includes('window.addEventListener(\'mousemove\''), 'SidebarManager must bind mousemove');
+          assert.ok(src.includes('window.addEventListener(\'mouseup\''), 'SidebarManager must bind mouseup');
+          assert.ok(src.includes('topbar.classList.add(\'is-dragging\')'), 'SidebarManager must toggle is-dragging class');
+          assert.ok(src.includes('hasDragged'), 'SidebarManager must track hasDragged state for click suppression');
         });
       });
     });

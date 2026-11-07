@@ -12955,5 +12955,66 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(trafficState.highAltChipText, 'CRUISE (HIGH ALT)');
     assert.strictEqual(trafficState.hasHighAltCone, false, 'Cone polygon for high-altitude traffic must be suppressed in mapCones');
   });
+
+  test('E2E: Topbar Drag-to-Scroll Pan Gestures, Zero-Overlap Layout & Click Suppression (v1.240.0, Issue #270)', async () => {
+    // 1. Set viewport to compact laptop width (1200px)
+    await page.setViewportSize({ width: 1200, height: 768 });
+
+    // 2. Dismiss any open modals and show all ribbon items
+    await page.evaluate(() => {
+      localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+      document.querySelectorAll('.topbar-right > *').forEach(el => el.classList.add('ribbon-force-show'));
+      const topbar = document.querySelector('.studio-topbar');
+      if (topbar) topbar.scrollLeft = 0;
+    });
+    await page.waitForTimeout(200);
+
+    // 3. Verify zero overlap between .topbar-left, .topbar-center, and .topbar-right
+    const layoutMetrics = await page.evaluate(() => {
+      const topbar = document.querySelector('.studio-topbar');
+      const left = document.querySelector('.topbar-left').getBoundingClientRect();
+      const center = document.querySelector('.topbar-center').getBoundingClientRect();
+      const right = document.querySelector('.topbar-right').getBoundingClientRect();
+
+      return {
+        clientWidth: topbar.clientWidth,
+        scrollWidth: topbar.scrollWidth,
+        canScroll: topbar.scrollWidth > topbar.clientWidth,
+        leftRight: left.right,
+        centerLeft: center.left,
+        centerRight: center.right,
+        rightLeft: right.left,
+        overlapLeft: center.left < left.right,
+        overlapRight: center.right > right.left
+      };
+    });
+
+    assert.ok(layoutMetrics.canScroll, `Topbar must have horizontal scroll capacity: scrollWidth ${layoutMetrics.scrollWidth} > clientWidth ${layoutMetrics.clientWidth}`);
+    assert.strictEqual(layoutMetrics.overlapLeft, false, `Center must not overlap left: center.left (${layoutMetrics.centerLeft}) vs left.right (${layoutMetrics.leftRight})`);
+    assert.strictEqual(layoutMetrics.overlapRight, false, `Center must not overlap right: center.right (${layoutMetrics.centerRight}) vs right.left (${layoutMetrics.rightLeft})`);
+
+    // 4. Test mouse drag-to-scroll pan gesture
+    const scrollBefore = await page.evaluate(() => document.querySelector('.studio-topbar').scrollLeft);
+    assert.strictEqual(scrollBefore, 0, 'Initial scroll position must be 0');
+
+    await page.mouse.move(700, 26);
+    await page.mouse.down();
+    await page.mouse.move(400, 26, { steps: 8 });
+    await page.mouse.up();
+
+    const scrollAfter = await page.evaluate(() => document.querySelector('.studio-topbar').scrollLeft);
+    assert.ok(scrollAfter > 100, `Mouse drag must scroll topbar horizontally (actual: ${scrollAfter}px)`);
+
+    // 5. Verify accidental click suppression after drag
+    const isAboutOpen = await page.evaluate(() => {
+      const modal = document.getElementById('about-modal');
+      return modal && !modal.classList.contains('hidden');
+    });
+    assert.strictEqual(isAboutOpen, false, 'Modal should not accidentally open from a drag gesture');
+
+    // Restore viewport
+    await page.setViewportSize({ width: 1366, height: 768 });
+  });
   });
 });
