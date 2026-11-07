@@ -9255,7 +9255,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.2</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -16900,7 +16900,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.2</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17063,6 +17063,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.242.2):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Direct RC 2 Sync on Android (Closes #275):</strong> Resolved ReferenceError for <code>resetButtonStates</code> in <code>sendDirectlyToRC2</code>; prevented failing 127.0.0.1:8765 companion polling in standalone Android mode.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.242.1):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -45395,65 +45401,69 @@ async function refreshMissionDbList() {
 
   try {
     const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    const isLocalHost = !apiBase || apiBase.includes('127.0.0.1') || apiBase.includes('localhost');
+    const skipLocalBridge = (typeof Platform !== 'undefined' && typeof Platform.isNativeAndroid === 'function' && Platform.isNativeAndroid() && isLocalHost);
 
-    // 1. Fetch RC 2 recorded flights from companion bridge
-    try {
-      const fetchOpts = {};
-      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-        fetchOpts.signal = AbortSignal.timeout(2000);
-      }
-      const res = await fetch(`${apiBase}/api/flights`, fetchOpts);
-      if (res.ok) {
-        bridgeReachable = true;
-        const data = await res.json();
-        if (data.success && Array.isArray(data.flights)) {
-          data.flights.forEach(f => {
-            items.push({
-              id: f.filename,
-              type: 'rc2-recorded',
-              title: f.label || f.filename,
-              filename: f.filename,
-              date: f.flightDate || f.mtimeFormatted || 'Controller Log',
-              size: f.sizeFormatted || '',
-              statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
-              badgeColor: '#34d399',
-              badgeBg: 'rgba(16, 185, 129, 0.15)',
-              wpsText: f.isDecrypted ? 'Telemetry Ready' : 'Raw Record'
-            });
-          });
+    if (!skipLocalBridge) {
+      // 1. Fetch RC 2 recorded flights from companion bridge
+      try {
+        const fetchOpts = {};
+        if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+          fetchOpts.signal = AbortSignal.timeout(2000);
         }
-      }
-    } catch (_) {}
+        const res = await fetch(`${apiBase}/api/flights`, fetchOpts);
+        if (res.ok) {
+          bridgeReachable = true;
+          const data = await res.json();
+          if (data.success && Array.isArray(data.flights)) {
+            data.flights.forEach(f => {
+              items.push({
+                id: f.filename,
+                type: 'rc2-recorded',
+                title: f.label || f.filename,
+                filename: f.filename,
+                date: f.flightDate || f.mtimeFormatted || 'Controller Log',
+                size: f.sizeFormatted || '',
+                statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
+                badgeColor: '#34d399',
+                badgeBg: 'rgba(16, 185, 129, 0.15)',
+                wpsText: f.isDecrypted ? 'Telemetry Ready' : 'Raw Record'
+              });
+            });
+          }
+        }
+      } catch (_) {}
 
-    // 2. Fetch SQLite diagnostics history from companion bridge
-    try {
-      const fetchOpts = {};
-      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-        fetchOpts.signal = AbortSignal.timeout(2000);
-      }
-      const resDiag = await fetch(`${apiBase}/api/diagnostics/history`, fetchOpts);
-      if (resDiag.ok) {
-        bridgeReachable = true;
-        const dataDiag = await resDiag.json();
-        if (dataDiag.success && Array.isArray(dataDiag.missions)) {
-          dataDiag.missions.forEach(m => {
-            const ident = m.archive_id || m.id || m.uuid;
-            const isBad = (m.is_valid === 0 || m.execution_status === 'suspended' || m.execution_status === 'failed');
-            items.push({
-              id: `diag:${ident}`,
-              type: 'sqlite-diagnostic',
-              title: m.filename || m.uuid,
-              filename: m.filename || m.uuid,
-              date: (m.created_at || '').replace('T', ' ').replace(/\..+/, ''),
-              statusText: isBad ? 'Audit Alert ⚠️' : 'Diagnostic Archive',
-              badgeColor: isBad ? '#f87171' : '#38bdf8',
-              badgeBg: isBad ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-              wpsText: `${m.waypoint_count || 0} Waypoints`
-            });
-          });
+      // 2. Fetch SQLite diagnostics history from companion bridge
+      try {
+        const fetchOpts = {};
+        if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+          fetchOpts.signal = AbortSignal.timeout(2000);
         }
-      }
-    } catch (_) {}
+        const resDiag = await fetch(`${apiBase}/api/diagnostics/history`, fetchOpts);
+        if (resDiag.ok) {
+          bridgeReachable = true;
+          const dataDiag = await resDiag.json();
+          if (dataDiag.success && Array.isArray(dataDiag.missions)) {
+            dataDiag.missions.forEach(m => {
+              const ident = m.archive_id || m.id || m.uuid;
+              const isBad = (m.is_valid === 0 || m.execution_status === 'suspended' || m.execution_status === 'failed');
+              items.push({
+                id: `diag:${ident}`,
+                type: 'sqlite-diagnostic',
+                title: m.filename || m.uuid,
+                filename: m.filename || m.uuid,
+                date: (m.created_at || '').replace('T', ' ').replace(/\..+/, ''),
+                statusText: isBad ? 'Audit Alert ⚠️' : 'Diagnostic Archive',
+                badgeColor: isBad ? '#f87171' : '#38bdf8',
+                badgeBg: isBad ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                wpsText: `${m.waypoint_count || 0} Waypoints`
+              });
+            });
+          }
+        }
+      } catch (_) {}
+    }
 
     // 3. Check active platform adapter for saved/decrypted flight records
     try {
@@ -64392,16 +64402,28 @@ async function pollCompanionStatus() {
 
 
   const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
-
-
-
   const diagBrowseBtn = document.getElementById('diag-browse-rc2-logs-btn');
 
-
-
-
-
-
+  // On Native Android container without an explicit remote companion host,
+  // hardware status is updated directly via native Android bridge events and window.AalaapiAndroid.
+  if (typeof Platform !== 'undefined' && typeof Platform.isNativeAndroid === 'function' && Platform.isNativeAndroid()) {
+    const customHost = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi-companion-host') : null;
+    const isLocalhost = !customHost || customHost.includes('127.0.0.1') || customHost.includes('localhost');
+    if (isLocalhost) {
+      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getMtpStatus === 'function') {
+        try {
+          const rawStatus = window.AalaapiAndroid.getMtpStatus();
+          const parsed = typeof rawStatus === 'string' ? JSON.parse(rawStatus) : rawStatus;
+          if (parsed && typeof parsed.connected === 'boolean') {
+            isRc2MtpConnected = parsed.connected;
+          }
+        } catch (_) {}
+      }
+      updateNativeAndroidStatusUI();
+      scheduleNextStatusCheck();
+      return;
+    }
+  }
 
   try {
 
@@ -65708,70 +65730,47 @@ const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean
 
   const originalContents = new Map();
 
-
-
   buttonsToUpdate.forEach(b => {
-
-
-
-    originalContents.set(b, b.innerHTML);
-
-
-
+    originalContents.set(b, {
+      html: b.innerHTML,
+      background: b.style ? b.style.background : '',
+      borderColor: b.style ? b.style.borderColor : '',
+      color: b.style ? b.style.color : '',
+      title: b.title || ''
+    });
     b.disabled = true;
-
-
-
     const activeDev = getDeviceDisplayInfo(lastDetectedFlightDevice || {});
-
     b.innerHTML = `<span>⏳ Syncing to ${activeDev.shortName}...</span>`;
-
-
-
   });
 
-
-
-
-
-
+  const resetButtonStates = (delayMs = 4000) => {
+    setTimeout(() => {
+      buttonsToUpdate.forEach(b => {
+        const orig = originalContents.get(b);
+        b.disabled = false;
+        b.innerHTML = (orig && typeof orig === 'object' ? orig.html : orig) || '';
+        b.style.background = (orig && orig.background) || '';
+        b.style.borderColor = (orig && orig.borderColor) || '';
+        b.style.color = (orig && orig.color) || '';
+        b.title = (orig && orig.title) || '';
+      });
+    }, delayMs);
+  };
 
   try {
-
-
-
     const rawWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
-
-
-
     if (!rawWps || rawWps.length === 0) {
-
-
-
       alert("No waypoints generated to sync. Please place a mission or center point first.");
-
-
-
       buttonsToUpdate.forEach(b => {
-
-
-
+        const orig = originalContents.get(b);
         b.disabled = false;
-
-
-
-        b.innerHTML = originalContents.get(b) || '';
-
-
-
+        b.innerHTML = (orig && typeof orig === 'object' ? orig.html : orig) || '';
+        b.style.background = (orig && orig.background) || '';
+        b.style.borderColor = (orig && orig.borderColor) || '';
+        b.style.color = (orig && orig.color) || '';
+        b.title = (orig && orig.title) || '';
       });
-
-
-
       return;
-
-
-
     }
 
 
@@ -65875,7 +65874,11 @@ const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean
     // If running inside a Native Platform container, transfer directly via Platform.pushKmzToController
     const nativePush = (typeof Platform !== 'undefined' && typeof Platform.pushKmzToController === 'function')
       ? Platform.pushKmzToController(kmzBase64, uuid)
-      : { handled: false };
+      : (typeof window !== 'undefined' && window.Platform && typeof window.Platform.pushKmzToController === 'function')
+        ? window.Platform.pushKmzToController(kmzBase64, uuid)
+        : (typeof global !== 'undefined' && global.Platform && typeof global.Platform.pushKmzToController === 'function')
+          ? global.Platform.pushKmzToController(kmzBase64, uuid)
+          : { handled: false };
 
     if (nativePush && nativePush.handled) {
 
@@ -66315,41 +66318,7 @@ const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean
 
 
 
-      setTimeout(() => {
-
-
-
-        buttonsToUpdate.forEach(b => {
-
-
-
-          b.disabled = false;
-
-
-
-          b.innerHTML = originalContents.get(b) || '';
-
-
-
-          b.style.background = '';
-
-
-
-          b.style.borderColor = '';
-
-
-
-          b.style.color = '';
-
-
-
-        });
-
-
-
-      }, 4000);
-
-
+      resetButtonStates(4000);
 
     } else {
 
@@ -66364,9 +66333,6 @@ const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean
 
 
   } catch (err) {
-
-
-
     console.error('Direct RC 2 Sync Error:', err);
 
 
@@ -66416,45 +66382,9 @@ const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean
 
 
       showToast(`RC 2 Sync Error: ${errText}`, 'error');
-
-
-
     }
 
-
-
-    setTimeout(() => {
-
-
-
-      buttonsToUpdate.forEach(b => {
-
-
-
-        b.disabled = false;
-
-
-
-        b.innerHTML = originalContents.get(b) || '';
-
-
-
-        b.title = '';
-
-
-
-        b.style.color = '';
-
-
-
-      });
-
-
-
-    }, 4500);
-
-
-
+    resetButtonStates(4500);
   }
 
 
@@ -68412,11 +68342,11 @@ if (typeof window !== 'undefined') {
 
   window.setIsCompanionOnline = (v) => { isCompanionOnline = v; };
 
-
-
   window.getIsCompanionOnline = () => isCompanionOnline;
 
+  window.sendDirectlyToRC2 = sendDirectlyToRC2;
 
+  window.pullFlightLogFromRC2 = pullFlightLogFromRC2;
 
 }
 
@@ -68488,11 +68418,11 @@ if (typeof global !== 'undefined') {
 
   global.setIsCompanionOnline = (v) => { isCompanionOnline = v; };
 
-
-
   global.getIsCompanionOnline = () => isCompanionOnline;
 
+  global.sendDirectlyToRC2 = sendDirectlyToRC2;
 
+  global.pullFlightLogFromRC2 = pullFlightLogFromRC2;
 
 }
 
@@ -72610,13 +72540,11 @@ const AdsbAirspaceManager = {
 
 
     if (typeof fetch === 'function') {
-
-
-
       const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-
-
-
+      const isLocalHost = !apiBase || apiBase.includes('127.0.0.1') || apiBase.includes('localhost');
+      if (typeof Platform !== 'undefined' && typeof Platform.isNativeAndroid === 'function' && Platform.isNativeAndroid() && isLocalHost) {
+        return;
+      }
       fetch(apiBase + '/api/config/adsb', {
 
         headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
@@ -78191,12 +78119,16 @@ const AdsbAirspaceManager = {
 
 
   async pollAirspace() {
-
-
-
     if (!this.enabled) return;
 
-
+    // If running on Native Android container without an explicit remote companion host,
+    // ADS-B telemetry is provided natively via AndroidAdsbBridge TCP socket.
+    if (typeof Platform !== 'undefined' && typeof Platform.isNativeAndroid === 'function' && Platform.isNativeAndroid() && (!this.customEndpoint || !this.customEndpoint.trim())) {
+      const storedComp = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi-companion-host') : null;
+      if (!storedComp || storedComp.includes('127.0.0.1') || storedComp.includes('localhost')) {
+        return;
+      }
+    }
 
     try {
 
@@ -84659,9 +84591,9 @@ if (typeof module !== 'undefined' && module.exports) {
     updateServedLinksModalUI,
 
     setNativeRc2Connection,
-
-    updateNativeAndroidStatusUI
-
+    updateNativeAndroidStatusUI,
+    sendDirectlyToRC2,
+    pullFlightLogFromRC2
   };
 
 }
@@ -107038,21 +106970,26 @@ async function fetchAndProcessTFRs(centerLat, centerLon, force = false) {
 
   // Tier 1: Companion Bridge Proxy (dynamically resolved host, e.g. Port 8765)
   const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-  try {
-    const notamRes = await fetch(`${apiBase}/api/tfr/notams${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(3000) });
-    if (notamRes.ok) {
-      const json = await notamRes.json();
-      if (json && json.success && Array.isArray(json.data)) notamList = json.data;
-    }
-  } catch (err) {}
+  const isLocalHost = !apiBase || apiBase.includes('127.0.0.1') || apiBase.includes('localhost');
+  const skipLocalBridge = (typeof Platform !== 'undefined' && typeof Platform.isNativeAndroid === 'function' && Platform.isNativeAndroid() && isLocalHost);
 
-  try {
-    const geoRes = await fetch(`${apiBase}/api/tfr/geojson${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(4000) });
-    if (geoRes.ok) {
-      const json = await geoRes.json();
-      if (json && json.success && json.data) geojson = json.data;
-    }
-  } catch (err) {}
+  if (!skipLocalBridge) {
+    try {
+      const notamRes = await fetch(`${apiBase}/api/tfr/notams${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(3000) });
+      if (notamRes.ok) {
+        const json = await notamRes.json();
+        if (json && json.success && Array.isArray(json.data)) notamList = json.data;
+      }
+    } catch (err) {}
+
+    try {
+      const geoRes = await fetch(`${apiBase}/api/tfr/geojson${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(4000) });
+      if (geoRes.ok) {
+        const json = await geoRes.json();
+        if (json && json.success && json.data) geojson = json.data;
+      }
+    } catch (err) {}
+  }
 
   // Tier 2: Native FAA ArcGIS Online FeatureServers (Stadiums, Defense Airspace, Part-Time Security UAS)
   // Merged into geojson features so active TFR polygons and stadiums both coexist cleanly

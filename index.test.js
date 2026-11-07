@@ -39007,6 +39007,7 @@ describe('Planned Flight Plan Selection & Single-Point Max Error Verification in
 
   test('IrlVerifier openIrlVerificationModal manages planCandidates and enables switching planned missions', () => {
     const { IrlVerifier } = require('./src/qa/IrlVerifier.js');
+    const prevDoc = global.document;
 
     const plan1 = [
       { lat: 41.3215, lon: -88.9950, alt: 30, gimbalPitch: -90 },
@@ -39031,49 +39032,55 @@ describe('Planned Flight Plan Selection & Single-Point Max Error Verification in
       { id: 'plan-2', label: 'Plan 2 (3 WPs • 50m)', waypoints: plan2, pattern: 'double' }
     ];
 
-    // Mock DOM elements
-    global.document = {
-      getElementById: (id) => {
-        if (id === 'diag-irl-modal') return { classList: { remove: () => {}, add: () => {} } };
-        if (id === 'diag-irl-flight-name') return { textContent: '' };
-        if (id === 'diag-irl-pattern-name') return { textContent: '' };
-        if (id === 'diag-irl-outcome-badge') return { textContent: '', style: {} };
-        if (id === 'diag-irl-samples-badge') return { textContent: '' };
-        if (id === 'diag-irl-phases-container') return { innerHTML: '', appendChild: () => {} };
-        if (id === 'diag-irl-metrics-table-body') return { innerHTML: '' };
-        if (id === 'diag-irl-plan-select') return {
-          innerHTML: '',
-          appendChild: () => {},
-          options: [{ value: 'plan-1', textContent: 'Plan 1' }, { value: 'plan-2', textContent: 'Plan 2' }],
-          selectedIndex: 0,
-          value: 'plan-1'
-        };
-        if (id === 'diag-irl-pattern-select') return {
-          innerHTML: '',
-          appendChild: () => {},
-          options: [{ value: 'single', textContent: '2D Grid' }, { value: 'double', textContent: '3D Double' }],
-          selectedIndex: 0,
-          value: 'single'
-        };
-        return null;
-      },
-      createElement: () => ({ style: {}, appendChild: () => {} })
-    };
+    try {
+      // Mock DOM elements
+      global.document = {
+        getElementById: (id) => {
+          if (id === 'diag-irl-modal') return { classList: { remove: () => {}, add: () => {} } };
+          if (id === 'diag-irl-flight-name') return { textContent: '' };
+          if (id === 'diag-irl-pattern-name') return { textContent: '' };
+          if (id === 'diag-irl-outcome-badge') return { textContent: '', style: {} };
+          if (id === 'diag-irl-samples-badge') return { textContent: '' };
+          if (id === 'diag-irl-phases-container') return { innerHTML: '', appendChild: () => {} };
+          if (id === 'diag-irl-metrics-table-body') return { innerHTML: '' };
+          if (id === 'diag-irl-plan-select') return {
+            innerHTML: '',
+            appendChild: () => {},
+            options: [{ value: 'plan-1', textContent: 'Plan 1' }, { value: 'plan-2', textContent: 'Plan 2' }],
+            selectedIndex: 0,
+            value: 'plan-1'
+          };
+          if (id === 'diag-irl-pattern-select') return {
+            innerHTML: '',
+            appendChild: () => {},
+            options: [{ value: 'single', textContent: '2D Grid' }, { value: 'double', textContent: '3D Double' }],
+            selectedIndex: 0,
+            value: 'single'
+          };
+          return null;
+        },
+        createElement: () => ({ style: {}, appendChild: () => {} }),
+        addEventListener: () => {},
+        removeEventListener: () => {}
+      };
 
-    IrlVerifier.openIrlVerificationModal('TestFlight.txt', plan1, telemetry, {
-      planCandidates: candidates,
-      patternId: 'single'
-    });
+      IrlVerifier.openIrlVerificationModal('TestFlight.txt', plan1, telemetry, {
+        planCandidates: candidates,
+        patternId: 'single'
+      });
 
-    assert.strictEqual(IrlVerifier.currentFlightId, 'TestFlight.txt');
-    assert.strictEqual(IrlVerifier.planCandidates.length, 2);
-    assert.strictEqual(IrlVerifier.currentPlannedWaypoints.length, 2);
-    assert.strictEqual(IrlVerifier.currentResult.metrics.waypointCount, 2);
+      assert.strictEqual(IrlVerifier.currentFlightId, 'TestFlight.txt');
+      assert.strictEqual(IrlVerifier.planCandidates.length, 2);
+      assert.strictEqual(IrlVerifier.currentPlannedWaypoints.length, 2);
+      assert.strictEqual(IrlVerifier.currentResult.metrics.waypointCount, 2);
 
-    // Switch to plan 2
-    IrlVerifier.currentPlannedWaypoints = plan2;
-    IrlVerifier.runVerificationAndRender();
-    assert.strictEqual(IrlVerifier.currentResult.metrics.waypointCount, 3);
+      // Switch to plan 2
+      IrlVerifier.currentPlannedWaypoints = plan2;
+      IrlVerifier.runVerificationAndRender();
+      assert.strictEqual(IrlVerifier.currentResult.metrics.waypointCount, 3);
+    } finally {
+      global.document = prevDoc;
+    }
   });
 
   test('Issue #207: #diag-irl-copy-ai-btn exists in templates and index.html', () => {
@@ -40648,6 +40655,8 @@ describe('Native Android App, Tri-Link Field Bridge & USB-C RC 2 Auto-Sync (v1.2
   });
 
   test('AndroidNativeBridge handles DJI RC 2 USB connect, slot dropdown, and overwrite confirmation modal', () => {
+    const prevDoc = global.document;
+    const prevWin = global.window;
     const dom = new JSDOM(`<!DOCTYPE html><html><body>
       <div id="android-rc2-sync-bar" class="android-rc2-sync-bar hidden">
         <span id="android-rc2-device-name">--</span>
@@ -40665,49 +40674,54 @@ describe('Native Android App, Tri-Link Field Bridge & USB-C RC 2 Auto-Sync (v1.2
       <input id="mission-name-input" value="Solar Farm Alpha" />
     </body></html>`);
 
-    global.document = dom.window.document;
-    global.window = dom.window;
+    try {
+      global.document = dom.window.document;
+      global.window = dom.window;
 
-    AndroidNativeBridge.init();
+      AndroidNativeBridge.init();
 
-    // 1. Simulate RC 2 USB Connection
-    AndroidNativeBridge.handleRc2Connected({
-      deviceName: 'DJI RC 2 Enterprise',
-      slots: [
-        { uuid: 'SLOT-AAA-111', name: 'Slot 1' },
-        { uuid: 'SLOT-BBB-222', name: 'Slot 2' }
-      ]
-    });
+      // 1. Simulate RC 2 USB Connection
+      AndroidNativeBridge.handleRc2Connected({
+        deviceName: 'DJI RC 2 Enterprise',
+        slots: [
+          { uuid: 'SLOT-AAA-111', name: 'Slot 1' },
+          { uuid: 'SLOT-BBB-222', name: 'Slot 2' }
+        ]
+      });
 
-    const bar = dom.window.document.getElementById('android-rc2-sync-bar');
-    const devName = dom.window.document.getElementById('android-rc2-device-name');
-    const select = dom.window.document.getElementById('android-rc2-slot-select');
+      const bar = dom.window.document.getElementById('android-rc2-sync-bar');
+      const devName = dom.window.document.getElementById('android-rc2-device-name');
+      const select = dom.window.document.getElementById('android-rc2-slot-select');
 
-    assert.ok(bar.classList.contains('hidden'), 'Sync bar must remain suppressed on main screen (Issue #264)');
-    assert.strictEqual(devName.textContent, 'DJI RC 2 Enterprise');
-    assert.strictEqual(select.children.length, 2);
-    assert.strictEqual(select.value, 'SLOT-AAA-111');
+      assert.ok(bar.classList.contains('hidden'), 'Sync bar must remain suppressed on main screen (Issue #264)');
+      assert.strictEqual(devName.textContent, 'DJI RC 2 Enterprise');
+      assert.strictEqual(select.children.length, 2);
+      assert.strictEqual(select.value, 'SLOT-AAA-111');
 
-    // 2. Click Sync KMZ button -> should open Overwrite Confirmation Modal
-    const syncBtn = dom.window.document.getElementById('android-rc2-sync-btn');
-    syncBtn.click();
+      // 2. Click Sync KMZ button -> should open Overwrite Confirmation Modal
+      const syncBtn = dom.window.document.getElementById('android-rc2-sync-btn');
+      syncBtn.click();
 
-    const modal = dom.window.document.getElementById('android-rc2-confirm-modal');
-    const modalMission = dom.window.document.getElementById('android-rc2-modal-mission-name');
-    const modalUuid = dom.window.document.getElementById('android-rc2-modal-target-uuid');
+      const modal = dom.window.document.getElementById('android-rc2-confirm-modal');
+      const modalMission = dom.window.document.getElementById('android-rc2-modal-mission-name');
+      const modalUuid = dom.window.document.getElementById('android-rc2-modal-target-uuid');
 
-    assert.ok(!modal.classList.contains('hidden'), 'Confirmation modal must be displayed before overwriting');
-    assert.strictEqual(modalMission.textContent, 'Solar Farm Alpha');
-    assert.strictEqual(modalUuid.textContent, 'SLOT-AAA-111');
+      assert.ok(!modal.classList.contains('hidden'), 'Confirmation modal must be displayed before overwriting');
+      assert.strictEqual(modalMission.textContent, 'Solar Farm Alpha');
+      assert.strictEqual(modalUuid.textContent, 'SLOT-AAA-111');
 
-    // 3. Click Cancel -> should hide modal
-    const cancelBtn = dom.window.document.getElementById('android-rc2-cancel-overwrite-btn');
-    cancelBtn.click();
-    assert.ok(modal.classList.contains('hidden'), 'Confirmation modal must close on cancel');
+      // 3. Click Cancel -> should hide modal
+      const cancelBtn = dom.window.document.getElementById('android-rc2-cancel-overwrite-btn');
+      cancelBtn.click();
+      assert.ok(modal.classList.contains('hidden'), 'Confirmation modal must close on cancel');
 
-    // 4. Disconnect RC 2 -> should hide bar and modal
-    AndroidNativeBridge.handleRc2Disconnected();
-    assert.ok(bar.classList.contains('hidden'), 'Sync bar must be hidden on disconnect');
+      // 4. Disconnect RC 2 -> should hide bar and modal
+      AndroidNativeBridge.handleRc2Disconnected();
+      assert.ok(bar.classList.contains('hidden'), 'Sync bar must be hidden on disconnect');
+    } finally {
+      global.document = prevDoc;
+      global.window = prevWin;
+    }
   });
 
   test('AndroidManifest.xml configures launchMode singleTask and MainActivity overrides onNewIntent to prevent USB restarts (Closes #264)', () => {
@@ -44034,22 +44048,21 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       describe('Issue #274: ADS-B Simulation Button Layout & Windows Audio Alert Fixes', () => {
         test('Version consistency: v1.242.1 across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
           const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-          assert.strictEqual(pkg.version, '1.242.1', 'package.json version must be 1.242.1');
+          assert.ok(semverGte(pkg.version, '1.242.1'), 'package.json version must be >= 1.242.1');
 
           const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
           assert.ok(changelog.includes('## [1.242.1] - 2026-11-07'), 'CHANGELOG.md must include v1.242.1 header');
           assert.ok(changelog.includes('Closes #274'), 'CHANGELOG.md must reference issue #274');
 
           const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-          assert.ok(template.includes('Version 1.242.1'), 'index_template.html must include Version 1.242.1 in About modal');
-          assert.ok(template.includes('v1.242.1'), 'index_template.html must include v1.242.1 header badge');
+          assert.ok(template.includes('Changelog (v1.242.1):'), 'index_template.html must include Changelog v1.242.1');
 
           const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-          assert.ok(html.includes('Version 1.242.1'), 'index.html must include Version 1.242.1 in About modal');
+          assert.ok(html.includes('Changelog (v1.242.1):'), 'index.html must include Changelog v1.242.1');
 
           const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-          assert.ok(gradle.includes('versionName = "1.242.1"'), 'Gradle versionName must be 1.242.1');
-          assert.ok(gradle.includes('versionCode = 12421'), 'Gradle versionCode must be 12421');
+          assert.ok(gradle.includes('versionName = "1.242.'), 'Gradle versionName must be 1.242.x');
+          assert.ok(Number(gradle.match(/versionCode = (\d+)/)?.[1] || 0) >= 12421, 'Gradle versionCode must be >= 12421');
         });
 
         test('index_template.html contains responsive grid containers for simulation controls', () => {
@@ -44111,6 +44124,198 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
         });
       });    });
   });
+  });
+
+  describe('Issue #275: Fix ReferenceError resetButtonStates in sendDirectlyToRC2 and Guard Native Android Companion Polling (v1.242.2)', () => {
+    test('Version consistency: v1.242.2 across package.json, changelog, index_template.html, and android/app/build.gradle.kts', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.242.2', 'package.json must be 1.242.2');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.242.2] - 2026-11-07'), 'CHANGELOG must have 1.242.2 header');
+
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('Version 1.242.2'), 'index_template.html must have Version 1.242.2 in About modal');
+      assert.ok(template.includes('Changelog (v1.242.2):'), 'index_template.html must have Changelog (v1.242.2)');
+      assert.ok(template.includes('>v1.242.2</span>'), 'index_template.html must have header badge v1.242.2');
+
+      const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+      assert.ok(gradle.includes('versionName = "1.242.2"'), 'Gradle versionName must be 1.242.2');
+      assert.ok(gradle.includes('versionCode = 12422'), 'Gradle versionCode must be 12422');
+    });
+
+    test('sendDirectlyToRC2 defines resetButtonStates and completes without ReferenceError in native Android mode', async () => {
+      const { sendDirectlyToRC2, setNativeRc2Connection } = require('./src/bridge/ApiClient.js');
+      const prevPlatform = global.Platform;
+      const prevGetWaypoints = global.getCurrentWaypoints;
+      const prevGenerateKMZBlob = global.generateKMZBlob;
+      const prevStubElements = global._stubElements;
+      const origDoc = global.document;
+      const origGetEl = global.document && typeof global.document.getElementById === 'function' ? global.document.getElementById : null;
+
+      let pushedKmz = null;
+      let pushedUuid = null;
+      let toastShown = null;
+
+      const mockBtn = {
+        id: 'direct-rc2-sync-btn',
+        innerHTML: '<span>Send Directly to DJI RC 2</span>',
+        style: { background: '', borderColor: '', color: '' },
+        title: '',
+        disabled: false
+      };
+
+      try {
+        global.document = global.document || {};
+        global.document.getElementById = (id) => {
+          if (id === 'direct-rc2-sync-btn') return mockBtn;
+          if (id === 'speed') return { value: '4' };
+          if (id === 'gimbal-pitch') return { value: '-90' };
+          if (id === 'altitude') return { value: '50' };
+          if (global._stubElements && global._stubElements[id] !== undefined) return global._stubElements[id];
+          return origGetEl ? origGetEl.call(global.document, id) : null;
+        };
+
+        global._stubElements = {
+          'direct-rc2-sync-btn': mockBtn,
+          'sidebar-direct-rc2-sync-btn': null,
+          'dock-rc2-sync-btn': null,
+          'speed': { value: '4' },
+          'gimbal-pitch': { value: '-90' },
+          'altitude': { value: '50' }
+        };
+
+        setNativeRc2Connection(true);
+
+        global.window = global.window || {};
+        global.window.AalaapiAndroid = {
+          pushKmzToRc2: (kmz, uuid) => {
+            pushedKmz = kmz;
+            pushedUuid = uuid;
+            return true;
+          },
+          getMtpStatus: () => JSON.stringify({ connected: true, deviceName: 'DJI RC 2' })
+        };
+
+        if (typeof Platform !== 'undefined' && Platform.reset) {
+          Platform.reset();
+        }
+
+        global.getCurrentWaypoints = () => [
+          { lat: 41.3215, lon: -88.995, alt: 50, speed: 4, pitch: -90, heading: 0 },
+          { lat: 41.3216, lon: -88.9951, alt: 50, speed: 4, pitch: -90, heading: 0 }
+        ];
+
+        global.generateKMZBlob = async () => ({
+          blob: Buffer.from('fake-kmz-data'),
+          waylinesWpml: '<xml></xml>',
+          templateKml: '<kml></kml>',
+          validation: { valid: true }
+        });
+
+        global.showToast = (msg, type) => {
+          toastShown = { msg, type };
+        };
+
+        const result = await sendDirectlyToRC2();
+
+        // Must succeed without throwing ReferenceError: resetButtonStates is not defined
+        assert.ok(result, 'sendDirectlyToRC2 must return a result');
+        assert.strictEqual(result.success, true, 'Result must be success');
+        assert.ok(pushedKmz, 'Platform.pushKmzToController must receive kmz payload');
+        assert.ok(pushedUuid, 'Platform.pushKmzToController must receive slot uuid');
+
+        // Verify button status immediately after push
+        assert.ok(mockBtn.innerHTML.includes('Synced to DJI RC 2'), 'Button must show sync success');
+        assert.ok(toastShown && toastShown.type === 'success', 'Toast must be success');
+      } finally {
+        if (origDoc) {
+          global.document = origDoc;
+          if (origGetEl) global.document.getElementById = origGetEl;
+        }
+        global._stubElements = prevStubElements;
+        global.Platform = prevPlatform;
+        delete global.window.AalaapiAndroid;
+        if (typeof Platform !== 'undefined' && Platform.reset) {
+          Platform.reset();
+        }
+        setNativeRc2Connection(false);
+        global.getCurrentWaypoints = prevGetWaypoints;
+        global.generateKMZBlob = prevGenerateKMZBlob;
+      }
+    });
+
+    test('pollCompanionStatus guards against 127.0.0.1:8765 fetch when Platform.isNativeAndroid() is active', async () => {
+      const prevPlatform = global.Platform;
+      const prevFetch = global.fetch;
+
+      let fetchCalled = false;
+      let getMtpStatusCalled = false;
+
+      try {
+        if (typeof global.localStorage !== 'undefined' && global.localStorage.removeItem) {
+          global.localStorage.removeItem('aalaapi-companion-host');
+        }
+
+        global.window = global.window || {};
+        global.window.AalaapiAndroid = {
+          getMtpStatus: () => {
+            getMtpStatusCalled = true;
+            return JSON.stringify({ connected: true, deviceName: 'DJI RC 2' });
+          }
+        };
+
+        global.Platform = {
+          isNativeAndroid: () => true
+        };
+
+        global.fetch = async (url) => {
+          fetchCalled = true;
+          return { ok: false, status: 500 };
+        };
+
+        const pollFn = vm.runInThisContext('pollCompanionStatus');
+        await pollFn();
+
+        assert.strictEqual(fetchCalled, false, 'pollCompanionStatus must not call fetch(127.0.0.1:8765) on native Android');
+        assert.strictEqual(getMtpStatusCalled, true, 'pollCompanionStatus must query native Android getMtpStatus()');
+      } finally {
+        global.Platform = prevPlatform;
+        global.fetch = prevFetch;
+      }
+    });
+
+    test('AdsbAirspaceManager.pollAirspace returns early without fetching 127.0.0.1:8765 on native Android', async () => {
+      const prevPlatform = global.Platform;
+      const prevFetch = global.fetch;
+      let fetchCalled = false;
+
+      try {
+        if (typeof global.localStorage !== 'undefined' && global.localStorage.removeItem) {
+          global.localStorage.removeItem('aalaapi-companion-host');
+        }
+
+        global.Platform = {
+          isNativeAndroid: () => true
+        };
+
+        global.fetch = async (url) => {
+          fetchCalled = true;
+          return { ok: true, json: async () => ({ aircraft: [] }) };
+        };
+
+        AdsbAirspaceManager.enabled = true;
+        AdsbAirspaceManager.customEndpoint = '';
+
+        await AdsbAirspaceManager.pollAirspace();
+
+        assert.strictEqual(fetchCalled, false, 'pollAirspace must skip fetching 127.0.0.1:8765 when running on native Android');
+      } finally {
+        global.Platform = prevPlatform;
+        global.fetch = prevFetch;
+        AdsbAirspaceManager.enabled = false;
+      }
+    });
   });
 });
 

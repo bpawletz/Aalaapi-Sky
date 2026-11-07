@@ -3661,16 +3661,28 @@ async function pollCompanionStatus() {
 
 
   const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
-
-
-
   const diagBrowseBtn = document.getElementById('diag-browse-rc2-logs-btn');
 
-
-
-
-
-
+  // On Native Android container without an explicit remote companion host,
+  // hardware status is updated directly via native Android bridge events and window.AalaapiAndroid.
+  if (typeof Platform !== 'undefined' && typeof Platform.isNativeAndroid === 'function' && Platform.isNativeAndroid()) {
+    const customHost = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi-companion-host') : null;
+    const isLocalhost = !customHost || customHost.includes('127.0.0.1') || customHost.includes('localhost');
+    if (isLocalhost) {
+      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getMtpStatus === 'function') {
+        try {
+          const rawStatus = window.AalaapiAndroid.getMtpStatus();
+          const parsed = typeof rawStatus === 'string' ? JSON.parse(rawStatus) : rawStatus;
+          if (parsed && typeof parsed.connected === 'boolean') {
+            isRc2MtpConnected = parsed.connected;
+          }
+        } catch (_) {}
+      }
+      updateNativeAndroidStatusUI();
+      scheduleNextStatusCheck();
+      return;
+    }
+  }
 
   try {
 
@@ -4977,70 +4989,47 @@ const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean
 
   const originalContents = new Map();
 
-
-
   buttonsToUpdate.forEach(b => {
-
-
-
-    originalContents.set(b, b.innerHTML);
-
-
-
+    originalContents.set(b, {
+      html: b.innerHTML,
+      background: b.style ? b.style.background : '',
+      borderColor: b.style ? b.style.borderColor : '',
+      color: b.style ? b.style.color : '',
+      title: b.title || ''
+    });
     b.disabled = true;
-
-
-
     const activeDev = getDeviceDisplayInfo(lastDetectedFlightDevice || {});
-
     b.innerHTML = `<span>⏳ Syncing to ${activeDev.shortName}...</span>`;
-
-
-
   });
 
-
-
-
-
-
+  const resetButtonStates = (delayMs = 4000) => {
+    setTimeout(() => {
+      buttonsToUpdate.forEach(b => {
+        const orig = originalContents.get(b);
+        b.disabled = false;
+        b.innerHTML = (orig && typeof orig === 'object' ? orig.html : orig) || '';
+        b.style.background = (orig && orig.background) || '';
+        b.style.borderColor = (orig && orig.borderColor) || '';
+        b.style.color = (orig && orig.color) || '';
+        b.title = (orig && orig.title) || '';
+      });
+    }, delayMs);
+  };
 
   try {
-
-
-
     const rawWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
-
-
-
     if (!rawWps || rawWps.length === 0) {
-
-
-
       alert("No waypoints generated to sync. Please place a mission or center point first.");
-
-
-
       buttonsToUpdate.forEach(b => {
-
-
-
+        const orig = originalContents.get(b);
         b.disabled = false;
-
-
-
-        b.innerHTML = originalContents.get(b) || '';
-
-
-
+        b.innerHTML = (orig && typeof orig === 'object' ? orig.html : orig) || '';
+        b.style.background = (orig && orig.background) || '';
+        b.style.borderColor = (orig && orig.borderColor) || '';
+        b.style.color = (orig && orig.color) || '';
+        b.title = (orig && orig.title) || '';
       });
-
-
-
       return;
-
-
-
     }
 
 
@@ -5144,7 +5133,11 @@ const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean
     // If running inside a Native Platform container, transfer directly via Platform.pushKmzToController
     const nativePush = (typeof Platform !== 'undefined' && typeof Platform.pushKmzToController === 'function')
       ? Platform.pushKmzToController(kmzBase64, uuid)
-      : { handled: false };
+      : (typeof window !== 'undefined' && window.Platform && typeof window.Platform.pushKmzToController === 'function')
+        ? window.Platform.pushKmzToController(kmzBase64, uuid)
+        : (typeof global !== 'undefined' && global.Platform && typeof global.Platform.pushKmzToController === 'function')
+          ? global.Platform.pushKmzToController(kmzBase64, uuid)
+          : { handled: false };
 
     if (nativePush && nativePush.handled) {
 
@@ -5584,41 +5577,7 @@ const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean
 
 
 
-      setTimeout(() => {
-
-
-
-        buttonsToUpdate.forEach(b => {
-
-
-
-          b.disabled = false;
-
-
-
-          b.innerHTML = originalContents.get(b) || '';
-
-
-
-          b.style.background = '';
-
-
-
-          b.style.borderColor = '';
-
-
-
-          b.style.color = '';
-
-
-
-        });
-
-
-
-      }, 4000);
-
-
+      resetButtonStates(4000);
 
     } else {
 
@@ -5633,9 +5592,6 @@ const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean
 
 
   } catch (err) {
-
-
-
     console.error('Direct RC 2 Sync Error:', err);
 
 
@@ -5685,45 +5641,9 @@ const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean
 
 
       showToast(`RC 2 Sync Error: ${errText}`, 'error');
-
-
-
     }
 
-
-
-    setTimeout(() => {
-
-
-
-      buttonsToUpdate.forEach(b => {
-
-
-
-        b.disabled = false;
-
-
-
-        b.innerHTML = originalContents.get(b) || '';
-
-
-
-        b.title = '';
-
-
-
-        b.style.color = '';
-
-
-
-      });
-
-
-
-    }, 4500);
-
-
-
+    resetButtonStates(4500);
   }
 
 
@@ -7681,11 +7601,11 @@ if (typeof window !== 'undefined') {
 
   window.setIsCompanionOnline = (v) => { isCompanionOnline = v; };
 
-
-
   window.getIsCompanionOnline = () => isCompanionOnline;
 
+  window.sendDirectlyToRC2 = sendDirectlyToRC2;
 
+  window.pullFlightLogFromRC2 = pullFlightLogFromRC2;
 
 }
 
@@ -7757,11 +7677,11 @@ if (typeof global !== 'undefined') {
 
   global.setIsCompanionOnline = (v) => { isCompanionOnline = v; };
 
-
-
   global.getIsCompanionOnline = () => isCompanionOnline;
 
+  global.sendDirectlyToRC2 = sendDirectlyToRC2;
 
+  global.pullFlightLogFromRC2 = pullFlightLogFromRC2;
 
 }
 
@@ -11879,13 +11799,11 @@ const AdsbAirspaceManager = {
 
 
     if (typeof fetch === 'function') {
-
-
-
       const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-
-
-
+      const isLocalHost = !apiBase || apiBase.includes('127.0.0.1') || apiBase.includes('localhost');
+      if (typeof Platform !== 'undefined' && typeof Platform.isNativeAndroid === 'function' && Platform.isNativeAndroid() && isLocalHost) {
+        return;
+      }
       fetch(apiBase + '/api/config/adsb', {
 
         headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
@@ -17460,12 +17378,16 @@ const AdsbAirspaceManager = {
 
 
   async pollAirspace() {
-
-
-
     if (!this.enabled) return;
 
-
+    // If running on Native Android container without an explicit remote companion host,
+    // ADS-B telemetry is provided natively via AndroidAdsbBridge TCP socket.
+    if (typeof Platform !== 'undefined' && typeof Platform.isNativeAndroid === 'function' && Platform.isNativeAndroid() && (!this.customEndpoint || !this.customEndpoint.trim())) {
+      const storedComp = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi-companion-host') : null;
+      if (!storedComp || storedComp.includes('127.0.0.1') || storedComp.includes('localhost')) {
+        return;
+      }
+    }
 
     try {
 
@@ -23928,9 +23850,9 @@ if (typeof module !== 'undefined' && module.exports) {
     updateServedLinksModalUI,
 
     setNativeRc2Connection,
-
-    updateNativeAndroidStatusUI
-
+    updateNativeAndroidStatusUI,
+    sendDirectlyToRC2,
+    pullFlightLogFromRC2
   };
 
 }

@@ -2774,65 +2774,69 @@ async function refreshMissionDbList() {
 
   try {
     const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    const isLocalHost = !apiBase || apiBase.includes('127.0.0.1') || apiBase.includes('localhost');
+    const skipLocalBridge = (typeof Platform !== 'undefined' && typeof Platform.isNativeAndroid === 'function' && Platform.isNativeAndroid() && isLocalHost);
 
-    // 1. Fetch RC 2 recorded flights from companion bridge
-    try {
-      const fetchOpts = {};
-      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-        fetchOpts.signal = AbortSignal.timeout(2000);
-      }
-      const res = await fetch(`${apiBase}/api/flights`, fetchOpts);
-      if (res.ok) {
-        bridgeReachable = true;
-        const data = await res.json();
-        if (data.success && Array.isArray(data.flights)) {
-          data.flights.forEach(f => {
-            items.push({
-              id: f.filename,
-              type: 'rc2-recorded',
-              title: f.label || f.filename,
-              filename: f.filename,
-              date: f.flightDate || f.mtimeFormatted || 'Controller Log',
-              size: f.sizeFormatted || '',
-              statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
-              badgeColor: '#34d399',
-              badgeBg: 'rgba(16, 185, 129, 0.15)',
-              wpsText: f.isDecrypted ? 'Telemetry Ready' : 'Raw Record'
-            });
-          });
+    if (!skipLocalBridge) {
+      // 1. Fetch RC 2 recorded flights from companion bridge
+      try {
+        const fetchOpts = {};
+        if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+          fetchOpts.signal = AbortSignal.timeout(2000);
         }
-      }
-    } catch (_) {}
+        const res = await fetch(`${apiBase}/api/flights`, fetchOpts);
+        if (res.ok) {
+          bridgeReachable = true;
+          const data = await res.json();
+          if (data.success && Array.isArray(data.flights)) {
+            data.flights.forEach(f => {
+              items.push({
+                id: f.filename,
+                type: 'rc2-recorded',
+                title: f.label || f.filename,
+                filename: f.filename,
+                date: f.flightDate || f.mtimeFormatted || 'Controller Log',
+                size: f.sizeFormatted || '',
+                statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
+                badgeColor: '#34d399',
+                badgeBg: 'rgba(16, 185, 129, 0.15)',
+                wpsText: f.isDecrypted ? 'Telemetry Ready' : 'Raw Record'
+              });
+            });
+          }
+        }
+      } catch (_) {}
 
-    // 2. Fetch SQLite diagnostics history from companion bridge
-    try {
-      const fetchOpts = {};
-      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-        fetchOpts.signal = AbortSignal.timeout(2000);
-      }
-      const resDiag = await fetch(`${apiBase}/api/diagnostics/history`, fetchOpts);
-      if (resDiag.ok) {
-        bridgeReachable = true;
-        const dataDiag = await resDiag.json();
-        if (dataDiag.success && Array.isArray(dataDiag.missions)) {
-          dataDiag.missions.forEach(m => {
-            const ident = m.archive_id || m.id || m.uuid;
-            const isBad = (m.is_valid === 0 || m.execution_status === 'suspended' || m.execution_status === 'failed');
-            items.push({
-              id: `diag:${ident}`,
-              type: 'sqlite-diagnostic',
-              title: m.filename || m.uuid,
-              filename: m.filename || m.uuid,
-              date: (m.created_at || '').replace('T', ' ').replace(/\..+/, ''),
-              statusText: isBad ? 'Audit Alert ⚠️' : 'Diagnostic Archive',
-              badgeColor: isBad ? '#f87171' : '#38bdf8',
-              badgeBg: isBad ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-              wpsText: `${m.waypoint_count || 0} Waypoints`
-            });
-          });
+      // 2. Fetch SQLite diagnostics history from companion bridge
+      try {
+        const fetchOpts = {};
+        if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+          fetchOpts.signal = AbortSignal.timeout(2000);
         }
-      }
-    } catch (_) {}
+        const resDiag = await fetch(`${apiBase}/api/diagnostics/history`, fetchOpts);
+        if (resDiag.ok) {
+          bridgeReachable = true;
+          const dataDiag = await resDiag.json();
+          if (dataDiag.success && Array.isArray(dataDiag.missions)) {
+            dataDiag.missions.forEach(m => {
+              const ident = m.archive_id || m.id || m.uuid;
+              const isBad = (m.is_valid === 0 || m.execution_status === 'suspended' || m.execution_status === 'failed');
+              items.push({
+                id: `diag:${ident}`,
+                type: 'sqlite-diagnostic',
+                title: m.filename || m.uuid,
+                filename: m.filename || m.uuid,
+                date: (m.created_at || '').replace('T', ' ').replace(/\..+/, ''),
+                statusText: isBad ? 'Audit Alert ⚠️' : 'Diagnostic Archive',
+                badgeColor: isBad ? '#f87171' : '#38bdf8',
+                badgeBg: isBad ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                wpsText: `${m.waypoint_count || 0} Waypoints`
+              });
+            });
+          }
+        }
+      } catch (_) {}
+    }
 
     // 3. Check active platform adapter for saved/decrypted flight records
     try {
