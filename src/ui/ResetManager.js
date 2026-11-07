@@ -680,6 +680,11 @@ function updateMatrixActiveLayerTelemetry() {
 
 function openIntroModal(targetTab = 'workflow') {
   if (typeof document === 'undefined') return;
+  if (typeof window !== 'undefined' && typeof window.dismissActivePopovers === 'function') {
+    window.dismissActivePopovers();
+  } else if (typeof dismissActivePopovers === 'function') {
+    dismissActivePopovers();
+  }
   const canonicalTab = (typeof targetTab === 'string') ? targetTab : 'workflow';
   const modal = document.getElementById('quickstart-modal');
   if (!modal) return;

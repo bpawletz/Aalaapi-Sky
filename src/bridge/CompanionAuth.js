@@ -1396,6 +1396,11 @@ const CompanionAuth = {
   openModal() {
     const modal = document.getElementById('companion-auth-modal');
     if (!modal) return;
+    if (typeof window !== 'undefined' && typeof window.dismissActivePopovers === 'function') {
+      window.dismissActivePopovers();
+    } else if (typeof dismissActivePopovers === 'function') {
+      dismissActivePopovers();
+    }
     this.clearAuthError();
 
     // Check Companion status

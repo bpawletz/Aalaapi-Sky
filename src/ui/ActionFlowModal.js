@@ -118,6 +118,11 @@ function initActionFlowModal() {
 
 function openActionFlowModal(focusIndex = null) {
   if (typeof document === 'undefined') return;
+  if (typeof window !== 'undefined' && typeof window.dismissActivePopovers === 'function') {
+    window.dismissActivePopovers();
+  } else if (typeof dismissActivePopovers === 'function') {
+    dismissActivePopovers();
+  }
   const modal = document.getElementById('action-flow-modal');
   if (!modal) return;
 
