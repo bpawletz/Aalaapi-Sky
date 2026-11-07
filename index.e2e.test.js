@@ -13177,5 +13177,76 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     // Restore viewport
     await page.setViewportSize({ width: 1366, height: 768 });
   });
+
+  test('Issue #274: ADS-B Simulation Controls in Drawer Do Not Overhang or Overflow', async () => {
+    // 1. Open ADS-B drawer
+    await page.evaluate(() => {
+      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+        AdsbAirspaceManager.toggleDrawer(true);
+      }
+    });
+    await page.waitForTimeout(200);
+
+    // 2. Expand Preflight Audio & Traffic Simulation details
+    await page.evaluate(() => {
+      const details = document.querySelector('.adsb-sim-details');
+      if (details) details.open = true;
+    });
+    await page.waitForTimeout(100);
+
+    // 3. Measure bounding boxes
+    const layout = await page.evaluate(() => {
+      const drawer = document.getElementById('adsb-control-drawer');
+      const details = document.querySelector('.adsb-sim-details');
+      const testBtn = document.getElementById('adsb-test-audio-btn');
+      const scenariosGrid = document.querySelector('.adsb-sim-grid-scenarios');
+      const profilesGrid = document.querySelector('.adsb-sim-grid-profiles');
+
+      const drawerRect = drawer ? drawer.getBoundingClientRect() : null;
+      const detailsRect = details ? details.getBoundingClientRect() : null;
+
+      // Check all buttons inside details
+      const buttons = details ? Array.from(details.querySelectorAll('button')) : [];
+      const buttonOverhangs = buttons.map(b => {
+        const r = b.getBoundingClientRect();
+        return {
+          id: b.id,
+          right: r.right,
+          drawerRight: drawerRect ? drawerRect.right : 0,
+          overhangs: drawerRect ? r.right > (drawerRect.right + 2) : false
+        };
+      });
+
+      return {
+        drawerVisible: drawer && !drawer.classList.contains('hidden'),
+        detailsScrollWidth: details ? details.scrollWidth : 0,
+        detailsClientWidth: details ? details.clientWidth : 0,
+        buttonCount: buttons.length,
+        buttonOverhangs,
+        anyOverhang: buttonOverhangs.some(b => b.overhangs)
+      };
+    });
+
+    assert.ok(layout.drawerVisible, 'ADS-B drawer must be visible');
+    assert.strictEqual(layout.buttonCount, 9, 'Must have 9 simulation/audio buttons in details');
+    assert.ok(!layout.anyOverhang, `No buttons should overhang drawer right edge: ${JSON.stringify(layout.buttonOverhangs)}`);
+    assert.ok(layout.detailsScrollWidth <= layout.detailsClientWidth + 1, `details should not have horizontal overflow (scrollWidth=${layout.detailsScrollWidth}, clientWidth=${layout.detailsClientWidth})`);
+
+    // 4. Test clicking Test Audio button without errors
+    const audioClicked = await page.evaluate(async () => {
+      const btn = document.getElementById('adsb-test-audio-btn');
+      if (!btn) return false;
+      btn.click();
+      return true;
+    });
+    assert.ok(audioClicked, 'Test Audio button should be clickable');
+
+    // 5. Close drawer
+    await page.evaluate(() => {
+      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+        AdsbAirspaceManager.toggleDrawer(false);
+      }
+    });
+  });
   });
 });

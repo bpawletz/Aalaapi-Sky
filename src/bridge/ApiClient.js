@@ -12876,6 +12876,11 @@ const AdsbAirspaceManager = {
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
+      if (simAircraft && simAircraft.hex) {
+        this.lastAlertTimes.delete(simAircraft.hex);
+        this.lastApproachingAlertTimes.delete(simAircraft.hex);
+        this.previousStatus.delete(simAircraft.hex);
+      }
       await this.pollAirspace();
       this.updateVisualBanner();
       this.updateTopbarAndHud();
@@ -12955,6 +12960,10 @@ const AdsbAirspaceManager = {
 
       this.approachingAircraft = this.aircraft.filter(a => !a.isBreached && (a.isConeWarning || a.status === 'approaching'));
 
+      if (simAircraft && simAircraft.hex) {
+        this.lastAlertTimes.delete(simAircraft.hex);
+        this.lastApproachingAlertTimes.delete(simAircraft.hex);
+      }
       this.triggerAudioAlert(simAircraft, isApproaching ? 'approaching' : 'breached');
 
       this.updateVisualBanner();
@@ -14927,89 +14936,29 @@ const AdsbAirspaceManager = {
 
 
   initAudioContext() {
-
-
-
     if (!this.audioContext && typeof window !== 'undefined') {
-
-
-
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-
-
-
       if (AudioCtx) {
-
-
-
         try {
-
-
-
           this.audioContext = new AudioCtx();
-
-
-
         } catch (e) {}
-
-
-
       }
-
-
-
     }
-
-
-
     if (this.audioContext && this.audioContext.state === 'suspended') {
-
-
-
-      this.audioContext.resume().catch(() => {});
-
-
-
+      return this.audioContext.resume().catch(() => {});
     }
-
-
-
+    return Promise.resolve();
   },
 
-
-
-
-
-
-
-  playApproachingChime() {
-
-
-
+  async playApproachingChime() {
     try {
-
-
-
-      this.initAudioContext();
-
-
-
+      await this.initAudioContext();
       if (!this.audioContext) return;
-
-
-
       const ctx = this.audioContext;
-
-
-
+      if (ctx.state === 'suspended') {
+        try { await ctx.resume(); } catch (e) {}
+      }
       const now = ctx.currentTime;
-
-
-
-
-
-
-
       const masterGain = ctx.createGain();
 
 
@@ -15130,34 +15079,15 @@ const AdsbAirspaceManager = {
 
 
 
-  playWarningChime() {
-
-
-
+  async playWarningChime() {
     try {
-
-
-
-      this.initAudioContext();
-
-
-
+      await this.initAudioContext();
       if (!this.audioContext) return;
-
-
-
       const ctx = this.audioContext;
-
-
-
+      if (ctx.state === 'suspended') {
+        try { await ctx.resume(); } catch (e) {}
+      }
       const now = ctx.currentTime;
-
-
-
-
-
-
-
       const masterGain = ctx.createGain();
 
 
@@ -15279,32 +15209,21 @@ const AdsbAirspaceManager = {
 
 
   playVoiceAdvisory(aircraft, alertStage = 'breached') {
-
-
-
     if (typeof window === 'undefined') return;
-
-
 
     const nativeTts = (typeof Platform !== 'undefined' && typeof Platform.hasNativeTts === 'function')
       ? Platform.hasNativeTts()
       : false;
 
-
-
     if (!nativeTts && !window.speechSynthesis) {
-
       if (typeof console !== 'undefined') console.warn('Voice advisory unavailable: no speech engine');
-
       return;
-
     }
 
-
-
     try {
-
-      if (!nativeTts) window.speechSynthesis.cancel();
+      if (!nativeTts && typeof window.speechSynthesis.cancel === 'function') {
+        window.speechSynthesis.cancel();
+      }
 
       const text = this.formatVoiceAdvisoryText(aircraft, alertStage);
       if (!text) return;
@@ -15314,36 +15233,47 @@ const AdsbAirspaceManager = {
         return;
       }
 
+      const UtteranceCtor = (typeof window !== 'undefined' && window.SpeechSynthesisUtterance)
+        ? window.SpeechSynthesisUtterance
+        : (typeof SpeechSynthesisUtterance !== 'undefined' ? SpeechSynthesisUtterance : null);
+      if (!UtteranceCtor) return;
 
+      // Unstick paused speech synthesis if suspended by browser
+      if (window.speechSynthesis.paused && typeof window.speechSynthesis.resume === 'function') {
+        try { window.speechSynthesis.resume(); } catch (e) {}
+      }
 
-      const utterance = new SpeechSynthesisUtterance(text);
-
-
-
+      const utterance = new UtteranceCtor(text);
       utterance.rate = 1.05;
-
-
-
       utterance.pitch = 1.0;
-
-
-
       utterance.volume = 0.9;
 
+      // Select preferred English voice if available on Windows / desktop
+      if (typeof window.speechSynthesis.getVoices === 'function') {
+        try {
+          const voices = window.speechSynthesis.getVoices();
+          if (voices && voices.length > 0) {
+            const preferred = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en') && (
+              v.name.includes('Natural') || v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Google') || v.default
+            )) || voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+            if (preferred) utterance.voice = preferred;
+          }
+        } catch (e) {}
+      }
 
+      // Anchor reference to prevent V8 garbage collection mid-speech
+      this._activeUtterance = utterance;
+      utterance.onend = () => {
+        if (this._activeUtterance === utterance) this._activeUtterance = null;
+      };
+      utterance.onerror = () => {
+        if (this._activeUtterance === utterance) this._activeUtterance = null;
+      };
 
       window.speechSynthesis.speak(utterance);
-
-
-
     } catch (e) {
-
       if (typeof console !== 'undefined') console.warn('Voice advisory failed:', e);
-
     }
-
-
-
   },
 
 
@@ -21757,16 +21687,22 @@ const AdsbAirspaceManager = {
 
 
   bindEvents() {
-
-
-
     if (typeof document === 'undefined') return;
 
-
-
-
-
-
+    // Global user-gesture audio & speech unlock for desktop / Windows / mobile web
+    const unlockAudioAndSpeech = () => {
+      this.initAudioContext();
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        if (window.speechSynthesis.paused) {
+          try { window.speechSynthesis.resume(); } catch (e) {}
+        }
+      }
+    };
+    if (typeof window !== 'undefined') {
+      ['pointerdown', 'keydown', 'click'].forEach(evt => {
+        window.addEventListener(evt, unlockAudioAndSpeech, { passive: true });
+      });
+    }
 
     // Topbar & More menu buttons
 
@@ -22162,9 +22098,9 @@ const AdsbAirspaceManager = {
     }
 
     if (ttsPreviewBtn) {
-      ttsPreviewBtn.addEventListener('click', () => {
-        this.initAudioContext();
-        this.playWarningChime();
+      ttsPreviewBtn.addEventListener('click', async () => {
+        await this.initAudioContext();
+        await this.playWarningChime();
         setTimeout(() => {
           this.playVoiceAdvisory({
             callsign: 'UAL452',
@@ -22385,64 +22321,20 @@ const AdsbAirspaceManager = {
 
     const testAudioBtn = document.getElementById('adsb-test-audio-btn');
 
-
-
     if (testAudioBtn) {
-
-
-
-      testAudioBtn.addEventListener('click', () => {
-
-
-
-        this.initAudioContext();
-
-
-
-        this.playWarningChime();
-
-
-
+      testAudioBtn.addEventListener('click', async () => {
+        await this.initAudioContext();
+        await this.playWarningChime();
         setTimeout(() => {
-
-
-
           this.playVoiceAdvisory({
-
-
-
             callsign: 'UAL452',
-
-
-
             distanceMiles: 1.5,
-
-
-
             distanceMeters: 2414,
-
-
-
             altitude: 1850,
-
-
-
             bearingCardinal: 'NE'
-
-
-
-          });
-
-
-
+          }, 'breached');
         }, 220);
-
-
-
       });
-
-
-
     }
 
 

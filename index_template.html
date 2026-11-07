@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.1</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -4553,35 +4553,39 @@
                 <span>🧪 Preflight Audio &amp; Traffic Simulation</span>
                 <span style="font-size: 0.65rem; color: #38bdf8;">▾</span>
               </summary>
-              <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
-                <div style="display: flex; gap: 6px;">
-                  <button id="adsb-test-audio-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer;" title="Test Audio Synth &amp; Speech">
-                    <span>🔊</span> Test Audio
-                  </button>
-                  <button id="adsb-sim-trigger-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); cursor: pointer;" title="Simulate Approaching Aircraft Breach">
+              <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; width: 100%; box-sizing: border-box;">
+                <button id="adsb-test-audio-btn" type="button" class="btn-secondary adsb-sim-test-btn" title="Test Audio Synth &amp; Speech Alert">
+                  <span>🔊</span> Test Audio &amp; Voice Alert
+                </button>
+
+                <div class="adsb-sim-section-label">Alert Scenarios</div>
+                <div class="adsb-sim-grid-scenarios">
+                  <button id="adsb-sim-trigger-btn" type="button" class="btn-secondary" style="background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35);" title="Simulate Approaching Aircraft Breach">
                     <span>⚠️</span> Breach
                   </button>
-                  <button id="adsb-sim-approaching-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(245, 158, 11, 0.16); color: #f59e0b; border-color: rgba(245, 158, 11, 0.45); cursor: pointer;" title="Simulate Approaching Trajectory Cone Warning">
+                  <button id="adsb-sim-approaching-btn" type="button" class="btn-secondary" style="background: rgba(245, 158, 11, 0.16); color: #f59e0b; border-color: rgba(245, 158, 11, 0.45);" title="Simulate Approaching Trajectory Cone Warning">
                     <span>📐</span> Approaching
                   </button>
-                  <button id="adsb-sim-landing-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(56, 189, 248, 0.16); color: #38bdf8; border-color: rgba(56, 189, 248, 0.45); cursor: pointer;" title="Simulate Airport Traffic Pattern / Landing (Cone Suppressed)">
+                  <button id="adsb-sim-landing-btn" type="button" class="btn-secondary" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border-color: rgba(56, 189, 248, 0.45);" title="Simulate Airport Traffic Pattern / Landing (Cone Suppressed)">
                     <span>🛬</span> Landing
                   </button>
-                  <button id="adsb-sim-descending-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(234, 88, 12, 0.16); color: #ea580c; border-color: rgba(234, 88, 12, 0.45); cursor: pointer;" title="Simulate Descending Aircraft with Intrusion Gradient Cone">
+                  <button id="adsb-sim-descending-btn" type="button" class="btn-secondary" style="background: rgba(234, 88, 12, 0.16); color: #ea580c; border-color: rgba(234, 88, 12, 0.45);" title="Simulate Descending Aircraft with Intrusion Gradient Cone">
                     <span>📉</span> Descending
                   </button>
                 </div>
-                <div style="display: flex; gap: 4px;">
-                  <button id="adsb-sim-prop-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(16, 185, 129, 0.12); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); cursor: pointer;" title="Simulate GA Propeller Traffic (C172)">
+
+                <div class="adsb-sim-section-label">Aircraft Profiles</div>
+                <div class="adsb-sim-grid-profiles">
+                  <button id="adsb-sim-prop-btn" type="button" class="btn-secondary" style="background: rgba(16, 185, 129, 0.12); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35);" title="Simulate GA Propeller Traffic (C172)">
                     <span>🛩️</span> Prop
                   </button>
-                  <button id="adsb-sim-heli-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(234, 179, 8, 0.12); color: #fde047; border-color: rgba(234, 179, 8, 0.35); cursor: pointer;" title="Simulate Helicopter Traffic (Bell 407 / R44)">
+                  <button id="adsb-sim-heli-btn" type="button" class="btn-secondary" style="background: rgba(234, 179, 8, 0.12); color: #fde047; border-color: rgba(234, 179, 8, 0.35);" title="Simulate Helicopter Traffic (Bell 407 / R44)">
                     <span>🚁</span> Heli
                   </button>
-                  <button id="adsb-sim-jet-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); cursor: pointer;" title="Simulate Commercial / Jet Traffic (B738)">
+                  <button id="adsb-sim-jet-btn" type="button" class="btn-secondary" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.35);" title="Simulate Commercial / Jet Traffic (B738)">
                     <span>✈️</span> Jet
                   </button>
-                  <button id="adsb-sim-high-alt-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(134, 239, 172, 0.16); color: #86efac; border-color: rgba(134, 239, 172, 0.45); cursor: pointer;" title="Simulate High-Altitude Cruising Traffic (12,000 ft AGL / Cone Suppressed)">
+                  <button id="adsb-sim-high-alt-btn" type="button" class="btn-secondary" style="background: rgba(134, 239, 172, 0.16); color: #86efac; border-color: rgba(134, 239, 172, 0.45);" title="Simulate High-Altitude Cruising Traffic (12,000 ft AGL / Cone Suppressed)">
                     <span>🛫</span> High Alt
                   </button>
                 </div>
@@ -7731,7 +7735,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.1</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -7894,6 +7898,18 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.242.1):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>ADS-B Preflight Simulation Controls Containment (Closes #274):</strong> Reorganized the 9 simulation and test buttons into responsive grid layouts eliminating overhang outside the 350px drawer; fixed Windows AudioContext autoplay unlock and Chromium SpeechSynthesis bugs.</li>
+                </ul>
+              </li>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.242.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Mutual Exclusivity for ADS-B Drawer &amp; Modals (Closes #273):</strong> Opening the ADS-B drawer dismisses active ribbon popovers; selecting popovers/modals or pressing Escape closes the drawer.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.241.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">

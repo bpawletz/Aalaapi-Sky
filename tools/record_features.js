@@ -4196,6 +4196,64 @@ const scenarios = [
       });
       await page.waitForTimeout(600);
     }
+  },
+  {
+    id: 'feature_adsb_simulation_layout',
+    name: 'ADS-B Simulation Controls Containment & Preflight Audio Alert Flow',
+    description: 'Demonstrates the responsive, non-overhanging simulation layout in the 350px ADS-B drawer: full-width Test Audio button, 2-column Alert Scenarios grid, and 4-column Aircraft Profiles grid, and exercises preflight audio and scenario simulation.',
+    issueRef: 'Issue #274',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 1. Open ADS-B drawer
+      await page.evaluate(() => {
+        if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+          AdsbAirspaceManager.toggleDrawer(true);
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // 2. Expand Preflight Audio & Traffic Simulation details
+      await page.evaluate(() => {
+        const details = document.querySelector('.adsb-sim-details');
+        if (details) details.open = true;
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Click Test Audio button to demonstrate synth chimes and voice advisory trigger
+      await page.evaluate(() => {
+        const btn = document.getElementById('adsb-test-audio-btn');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(1200);
+
+      // 4. Click Breach scenario button
+      await page.evaluate(() => {
+        const btn = document.getElementById('adsb-sim-trigger-btn');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 5. Click Approaching scenario button
+      await page.evaluate(() => {
+        const btn = document.getElementById('adsb-sim-approaching-btn');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 6. Capture preview screenshot
+      await page.screenshot({ path: 'recordings/feature_adsb_simulation_layout_preview.png' });
+      await page.waitForTimeout(1000);
+
+      // 7. Close drawer
+      await page.evaluate(() => {
+        if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+          AdsbAirspaceManager.toggleDrawer(false);
+        }
+      });
+      await page.waitForTimeout(600);
+    }
   }
 ];
 
