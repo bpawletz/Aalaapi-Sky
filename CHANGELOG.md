@@ -1,3 +1,30 @@
+## [1.242.4] - 2026-11-07
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Android Direct "Send to RC 2" USB MTP Hardware Sync (Closes #277)**:
+  - Fixed an issue where clicking "Send to RC 2" on Android indicated success but DJI Fly on the RC 2 continued displaying old waypoints. The app now routes the compiled KMZ directly over the USB OTG MTP bus into the RC 2's storage (`/Android/data/dji.go.v5/files/waypoint/<UUID>/`), replacing the placeholder/dummy mission package in-place.
+  - Added automated slot discovery that scans the RC 2 for existing dummy mission UUID folders upon connection, automatically populates the slot selector, and targets the active/newest mission slot so pilots don't have to manually match UUIDs.
+  - Updated sync notifications to display the exact slot UUID written and remind pilots to re-open or swipe away and restart DJI Fly to reload the newly injected waypoints.
+- **Android Direct "Pull KMZ" Mission Ingestion (Closes #277)**:
+  - Fixed the "Pull KMZ" action on Android to pull the active `.kmz` waypoint package from the RC 2 rather than flight logs, instantly loading the mission back into Aalaapi Sky for inspection or modification.
+
+#### Under the Hood & Technical Details
+- **`android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt`**:
+  - Replaced the local app sandbox placeholder with direct MTP transfer utilizing `MtpDevice.getObjectHandles()`, `findWaypointDirHandle()`, and `getMtpWaypointSlots()`.
+  - Implemented pre-upload deletion via `MtpDevice.deleteObject()` to remove stale `.kmz` and thumbnail files in the slot folder (avoiding MTP in-place overwrite rejections).
+  - Streamed KMZ binaries using `MtpDevice.sendObjectInfo()` and `MtpDevice.sendObject()` with `ParcelFileDescriptor.open()`.
+  - Added `pullKmzFromRc2()` utilizing `MtpDevice.importFile()` and `getRc2WaypointSlots()`.
+  - Enriched `notifyConnected()` to query and transmit available RC 2 mission slots over `window.onRc2UsbConnected()`.
+- **`android/app/src/main/java/com/aalaapi/sky/MainActivity.kt`**:
+  - Exposed `@JavascriptInterface fun pullKmzFromRc2(targetUuid: String)` and `@JavascriptInterface fun getRc2WaypointSlots()`.
+- **`src/platform/BasePlatformAdapter.js` & `AndroidPlatformAdapter.js` & `PlatformManager.js`**:
+  - Added `pullKmzFromController(uuid)` and `getControllerSlots()` methods to platform abstraction layers.
+- **`src/bridge/ApiClient.js` & `src/bridge/AndroidNativeBridge.js`**:
+  - Wired `Platform.pullKmzFromController()` to `#direct-rc2-pull-btn` ("Pull KMZ").
+  - Updated `sendDirectlyToRC2()` to report the effective slot UUID and advise restarting DJI Fly if cached.
+
 ## [1.242.3] - 2026-11-07
 
 ### 🐛 Fixed

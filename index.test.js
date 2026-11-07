@@ -44375,6 +44375,83 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(src.includes('rightDock.style.display'), 'SidebarManager must update rightDock.style.display');
     });
   });
+
+  describe('Issue #277: Direct Send to RC 2 USB MTP Hardware Sync & Slot Discovery (v1.242.4)', () => {
+    test('Version consistency: v1.242.4 across package.json, changelog, index_template.html, and index.html', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.242.4', 'package.json version must be 1.242.4');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.242.4] - 2026-11-07'), 'CHANGELOG.md must contain 1.242.4 header');
+
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('Version 1.242.4'), 'index_template.html must contain Version 1.242.4');
+      assert.ok(template.includes('v1.242.4'), 'index_template.html must contain v1.242.4 header badge');
+
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      assert.ok(indexHtml.includes('Version 1.242.4'), 'index.html must contain Version 1.242.4');
+      assert.ok(indexHtml.includes('v1.242.4'), 'index.html must contain v1.242.4 header badge');
+
+      const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+      assert.ok(gradle.includes('versionCode = 12424'), 'build.gradle.kts must set versionCode = 12424');
+      assert.ok(gradle.includes('versionName = "1.242.4"'), 'build.gradle.kts must set versionName = "1.242.4"');
+    });
+
+    test('AndroidPlatformAdapter.js & PlatformManager.js implement pullKmzFromController and getControllerSlots', () => {
+      const androidAdapter = fs.readFileSync(path.join(__dirname, 'src', 'platform', 'AndroidPlatformAdapter.js'), 'utf8');
+      assert.ok(androidAdapter.includes('pullKmzFromController(uuid'), 'AndroidPlatformAdapter must implement pullKmzFromController');
+      assert.ok(androidAdapter.includes('getControllerSlots()'), 'AndroidPlatformAdapter must implement getControllerSlots');
+      assert.ok(androidAdapter.includes('bridge.pullKmzFromRc2'), 'AndroidPlatformAdapter must call bridge.pullKmzFromRc2');
+      assert.ok(androidAdapter.includes('bridge.getRc2WaypointSlots'), 'AndroidPlatformAdapter must call bridge.getRc2WaypointSlots');
+
+      const platformMgr = fs.readFileSync(path.join(__dirname, 'src', 'platform', 'PlatformManager.js'), 'utf8');
+      assert.ok(platformMgr.includes('pullKmzFromController(uuid)'), 'PlatformManager must delegate pullKmzFromController');
+      assert.ok(platformMgr.includes('getControllerSlots()'), 'PlatformManager must delegate getControllerSlots');
+    });
+
+    test('AndroidMtpBridge.kt routes KMZ over MTP with folder traversal, slot matching, asset cleanup, and PFD streaming', () => {
+      const kt = fs.readFileSync(path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'AndroidMtpBridge.kt'), 'utf8');
+      assert.ok(kt.includes('ParcelFileDescriptor'), 'AndroidMtpBridge.kt must import/use ParcelFileDescriptor');
+      assert.ok(kt.includes('findWaypointDirHandle'), 'AndroidMtpBridge.kt must implement findWaypointDirHandle');
+      assert.ok(kt.includes('getMtpWaypointSlots'), 'AndroidMtpBridge.kt must implement getMtpWaypointSlots');
+      assert.ok(kt.includes('deleteObject'), 'AndroidMtpBridge.kt must delete old KMZ assets before MTP write');
+      assert.ok(kt.includes('sendObjectInfo'), 'AndroidMtpBridge.kt must create placeholder with sendObjectInfo');
+      assert.ok(kt.includes('sendObject'), 'AndroidMtpBridge.kt must stream binary with sendObject');
+      assert.ok(kt.includes('pullKmzFromRc2'), 'AndroidMtpBridge.kt must implement pullKmzFromRc2');
+      assert.ok(kt.includes('getRc2WaypointSlots'), 'AndroidMtpBridge.kt must implement getRc2WaypointSlots');
+    });
+
+    test('MainActivity.kt exposes pullKmzFromRc2 and getRc2WaypointSlots JavascriptInterfaces', () => {
+      const mainKt = fs.readFileSync(path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'MainActivity.kt'), 'utf8');
+      assert.ok(mainKt.includes('fun pullKmzFromRc2'), 'MainActivity.kt must expose pullKmzFromRc2');
+      assert.ok(mainKt.includes('fun getRc2WaypointSlots'), 'MainActivity.kt must expose getRc2WaypointSlots');
+    });
+
+    test('ApiClient.js pullFromRC2 delegates to Platform.pullKmzFromController', () => {
+      const apiCode = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
+      assert.ok(apiCode.includes('Platform.pullKmzFromController'), 'ApiClient.js pullFromRC2 must delegate to Platform.pullKmzFromController');
+    });
+
+    test('Platform.pullKmzFromController returns handled: true when native bridge is active', () => {
+      let pulledTarget = null;
+      global.window = global.window || {};
+      global.window.AalaapiAndroid = {
+        pullKmzFromRc2: (uuid) => {
+          pulledTarget = uuid;
+          return JSON.stringify({ success: true, uuid: 'SLOT-999', data: 'dGVzdA==' });
+        }
+      };
+      if (typeof Platform !== 'undefined' && Platform.reset) {
+        Platform.reset();
+      }
+      const res = Platform.pullKmzFromController('TEST-UUID');
+      assert.strictEqual(res.handled, true, 'Must be handled by native platform');
+      assert.strictEqual(pulledTarget, 'TEST-UUID', 'Must pass requested UUID to native bridge');
+      const parsed = JSON.parse(res.rawRes);
+      assert.strictEqual(parsed.success, true);
+      assert.strictEqual(parsed.uuid, 'SLOT-999');
+    });
+  });
 });
 
 });

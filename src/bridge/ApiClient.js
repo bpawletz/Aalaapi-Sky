@@ -4324,43 +4324,37 @@ async function pullFromRC2() {
 
 
 
-    const nativeLogPull = (typeof Platform !== 'undefined' && typeof Platform.pullLatestLogFromController === 'function')
-      ? Platform.pullLatestLogFromController()
+    const targetUuid = getRC2UUID() || rc2MtpActiveUUID || '';
+    const nativeKmzPull = (typeof Platform !== 'undefined' && typeof Platform.pullKmzFromController === 'function')
+      ? Platform.pullKmzFromController(targetUuid)
       : { handled: false };
 
-    if (nativeLogPull && nativeLogPull.handled) {
-
-      const logBase64 = nativeLogPull.rawRes;
-
-      if (logBase64 && typeof atob === 'function') {
-
-        const rawText = atob(logBase64);
-
-        if (typeof DjiLogDecryptor !== 'undefined' && DjiLogDecryptor.parseLogText) {
-
-          DjiLogDecryptor.parseLogText(rawText);
-
+    if (nativeKmzPull && nativeKmzPull.handled) {
+      const rawRes = typeof nativeKmzPull.rawRes === 'string' ? JSON.parse(nativeKmzPull.rawRes) : nativeKmzPull.rawRes;
+      if (rawRes && rawRes.success && (rawRes.data || rawRes.base64 || rawRes.kmz)) {
+        const b64 = rawRes.data || rawRes.base64 || rawRes.kmz;
+        const binStr = atob(b64);
+        const len = binStr.length;
+        const u8 = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          u8[i] = binStr.charCodeAt(i);
         }
-
+        const kmzBlob = new Blob([u8], { type: 'application/vnd.google-earth.kmz' });
+        if (typeof importKMZFile === 'function') {
+          await importKMZFile(kmzBlob);
+        } else if (typeof loadKMZBlob === 'function') {
+          await loadKMZBlob(kmzBlob);
+        }
+        if (typeof showToast === 'function') {
+          showToast(`📥 Mission pulled from DJI RC 2 slot [${(rawRes.uuid || targetUuid).substring(0, 8)}...]`, 'success');
+        }
+      } else {
+        throw new Error((rawRes && rawRes.message) || 'No active mission KMZ found on RC 2');
       }
-
-      if (typeof showToast === 'function') {
-
-        showToast('📥 Flight log pulled from DJI RC 2', 'success');
-
-      }
-
       pullBtn.disabled = false;
-
       pullBtn.innerHTML = originalContent;
-
       return;
-
     }
-
-
-
-    const targetUuid = getRC2UUID() || rc2MtpActiveUUID || '';
 
 
 
@@ -5140,39 +5134,23 @@ const buttonsToUpdate = [directBtn, sidebarDirectBtn, dockRc2Btn].filter(Boolean
           : { handled: false };
 
     if (nativePush && nativePush.handled) {
-
       const ok = nativePush.success;
-
       if (!ok) {
-
         throw new Error('Native Android MTP transfer rejected.');
-
       }
-
+      const effectiveSlot = nativePush.slotUuid || uuid;
       buttonsToUpdate.forEach(b => {
-
         const activeDev = getDeviceDisplayInfo(lastDetectedFlightDevice || {});
-
         b.innerHTML = (activeDev.shortName === 'RC 2') ? `<span>✅ Synced to DJI RC 2! Re-open in DJI Fly</span>` : `<span>✅ Synced to ${activeDev.shortName}! Re-open in DJI Fly</span>`;
-
         b.style.background = 'rgba(34, 197, 94, 0.2)';
-
         b.style.borderColor = 'rgba(34, 197, 94, 0.5)';
-
         b.style.color = '#4ade80';
-
       });
-
       if (typeof showToast === 'function') {
-
-        showToast(`✅ Synced to DJI RC 2 slot ${uuid}! Re-open in DJI Fly.`, 'success');
-
+        showToast(`✅ Synced to DJI RC 2 slot [${effectiveSlot.substring(0, 8)}...]! Re-open or restart DJI Fly.`, 'success');
       }
-
       resetButtonStates(4000);
-
-      return { success: true, slotUuid: uuid };
-
+      return { success: true, slotUuid: effectiveSlot };
     }
 
 

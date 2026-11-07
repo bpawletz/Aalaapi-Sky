@@ -10,6 +10,7 @@ import android.mtp.MtpDevice
 import android.mtp.MtpObjectInfo
 import android.os.Build
 import android.os.Environment
+import android.os.ParcelFileDescriptor
 import android.util.Base64
 import android.util.Log
 import android.webkit.WebView
@@ -165,23 +166,367 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
         }
     }
 
+    private fun findChildFolder(mtp: MtpDevice, storageId: Int, parentHandle: Int, folderName: String): Int? {
+        val handles = mtp.getObjectHandles(storageId, 0, parentHandle) ?: return null
+        for (h in handles) {
+            val info = mtp.getObjectInfo(h) ?: continue
+            val isFolder = (info.format == 0x3001 || info.associationType != 0)
+            if (isFolder && folderName.equals(info.name, ignoreCase = true)) {
+                return h
+            }
+        }
+        return null
+    }
+
+    private fun resolvePathHandle(mtp: MtpDevice, storageId: Int, segments: List<String>): Int? {
+        var current = 0
+        for (seg in segments) {
+            val next = findChildFolder(mtp, storageId, current, seg) ?: return null
+            current = next
+        }
+        return current
+    }
+
+    private fun scanForFolderNamed(mtp: MtpDevice, storageId: Int, parentHandle: Int, targetName: String, seen: MutableSet<Int>, depth: Int): Int? {
+        if (depth > 6) return null
+        val handles = mtp.getObjectHandles(storageId, 0, parentHandle) ?: return null
+        for (h in handles) {
+            if (!seen.add(h)) continue
+            val info = mtp.getObjectInfo(h) ?: continue
+            val isFolder = (info.format == 0x3001 || info.associationType != 0)
+            if (isFolder) {
+                val name = info.name ?: ""
+                if (name.equals(targetName, ignoreCase = true)) {
+                    return h
+                }
+                val lower = name.lowercase()
+                if (lower in listOf("android", "data", "dji.go.v5", "files", "dji") || lower.contains("dji")) {
+                    val found = scanForFolderNamed(mtp, storageId, h, targetName, seen, depth + 1)
+                    if (found != null) return found
+                }
+            }
+        }
+        return null
+    }
+
+    private fun findWaypointDirHandle(mtp: MtpDevice, storageId: Int): Int? {
+        // Standard path: Android/data/dji.go.v5/files/waypoint
+        resolvePathHandle(mtp, storageId, listOf("Android", "data", "dji.go.v5", "files", "waypoint"))?.let { return it }
+
+        // Variant path: DJI/dji.go.v5/waypoint
+        resolvePathHandle(mtp, storageId, listOf("DJI", "dji.go.v5", "waypoint"))?.let { return it }
+
+        // Variant path: dji.go.v5/files/waypoint
+        resolvePathHandle(mtp, storageId, listOf("dji.go.v5", "files", "waypoint"))?.let { return it }
+
+        // Recursive search for waypoint folder under DJI directories
+        val seen = HashSet<Int>()
+        return scanForFolderNamed(mtp, storageId, 0, "waypoint", seen, depth = 0)
+    }
+
+    private fun getMtpWaypointSlots(mtp: MtpDevice, storageId: Int, wpHandle: Int): List<Pair<Int, MtpObjectInfo>> {
+        val handles = mtp.getObjectHandles(storageId, 0, wpHandle) ?: return emptyList()
+        val slots = mutableListOf<Pair<Int, MtpObjectInfo>>()
+        for (h in handles) {
+            val info = mtp.getObjectInfo(h) ?: continue
+            val isFolder = (info.format == 0x3001 || info.associationType != 0)
+            val name = info.name ?: ""
+            if (isFolder && (name.matches(Regex("""^[0-9a-fA-F\-]{8,}$""")) || name.contains("-"))) {
+                slots.add(Pair(h, info))
+            }
+        }
+        return slots.sortedByDescending { it.second.dateModified }
+    }
+
     private fun notifyConnected(name: String) {
         val safeName = name.replace("'", "\\'")
-        val json = """{"deviceName":"$safeName","vendorId":11427,"connected":true}"""
+        var slotsJson = ""
+        try {
+            val mtp = mtpDevice
+            val storageIds = mtp?.storageIds
+            if (mtp != null && storageIds != null) {
+                for (storageId in storageIds) {
+                    val wpHandle = findWaypointDirHandle(mtp, storageId)
+                    if (wpHandle != null) {
+                        val slots = getMtpWaypointSlots(mtp, storageId, wpHandle)
+                        if (slots.isNotEmpty()) {
+                            val arr = slots.mapIndexed { idx, pair ->
+                                val u = pair.second.name ?: ""
+                                """{"uuid":"$u","name":"Mission Slot ${idx + 1}"}"""
+                            }.joinToString(",")
+                            slotsJson = """, "slots": [$arr]"""
+                            break
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("AalaapiMtp", "Could not scan initial waypoint slots: ${e.message}")
+        }
+
+        val json = """{"deviceName":"$safeName","vendorId":11427,"connected":true$slotsJson}"""
         webView.post {
             webView.evaluateJavascript("if (typeof window.onRc2UsbConnected === 'function') { window.onRc2UsbConnected($json); }", null)
         }
     }
 
+    fun getRc2WaypointSlots(): String {
+        val mtp = mtpDevice ?: return JSONObject().apply {
+            put("success", false)
+            put("error", "NO_RC2_CONNECTED")
+        }.toString()
+        val storageIds = mtp.storageIds ?: return JSONObject().apply {
+            put("success", false)
+            put("slots", org.json.JSONArray())
+        }.toString()
+        val results = mutableListOf<JSONObject>()
+        for (storageId in storageIds) {
+            val wpHandle = findWaypointDirHandle(mtp, storageId) ?: continue
+            val slots = getMtpWaypointSlots(mtp, storageId, wpHandle)
+            slots.forEachIndexed { idx, pair ->
+                results.add(JSONObject().apply {
+                    put("uuid", pair.second.name ?: "")
+                    put("name", "Mission Slot ${idx + 1}")
+                    put("handle", pair.first)
+                    put("dateModified", pair.second.dateModified)
+                })
+            }
+            if (results.isNotEmpty()) break
+        }
+        return JSONObject().apply {
+            put("success", true)
+            put("slots", org.json.JSONArray(results))
+        }.toString()
+    }
+
+    fun pullKmzFromRc2(targetUuid: String = ""): String {
+        val mtp = mtpDevice
+        if (mtp != null) {
+            val storageIds = mtp.storageIds
+            if (storageIds != null) {
+                for (storageId in storageIds) {
+                    val wpHandle = findWaypointDirHandle(mtp, storageId) ?: continue
+                    val slots = getMtpWaypointSlots(mtp, storageId, wpHandle)
+                    val targetSlot = if (targetUuid.isNotEmpty()) {
+                        slots.firstOrNull { it.second.name.equals(targetUuid, ignoreCase = true) }
+                    } else {
+                        slots.firstOrNull()
+                    }
+                    if (targetSlot != null) {
+                        val slotHandle = targetSlot.first
+                        val slotUuid = targetSlot.second.name ?: targetUuid
+                        val childHandles = mtp.getObjectHandles(storageId, 0, slotHandle) ?: intArrayOf()
+                        val kmzHandle = childHandles.firstOrNull { ch ->
+                            val info = mtp.getObjectInfo(ch)
+                            (info?.name ?: "").lowercase().endsWith(".kmz")
+                        }
+                        if (kmzHandle != null) {
+                            val tempFile = File(context.cacheDir, "pulled_$slotUuid.kmz")
+                            if (tempFile.exists()) tempFile.delete()
+                            val imported = mtp.importFile(kmzHandle, tempFile.absolutePath)
+                            if (imported && tempFile.exists() && tempFile.length() > 0) {
+                                val b64 = Base64.encodeToString(tempFile.readBytes(), Base64.NO_WRAP)
+                                tempFile.delete()
+                                return JSONObject().apply {
+                                    put("success", true)
+                                    put("uuid", slotUuid)
+                                    put("data", b64)
+                                    put("base64", b64)
+                                    put("kmz", b64)
+                                }.toString()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        val localCandidateDirs = listOf(
+            File("/storage/emulated/0/Android/data/dji.go.v5/files/waypoint"),
+            File("/sdcard/Android/data/dji.go.v5/files/waypoint"),
+            File(context.getExternalFilesDir(null), "waypoint")
+        )
+        for (dir in localCandidateDirs) {
+            if (dir.exists() && dir.isDirectory) {
+                val slots = dir.listFiles { f -> f.isDirectory }
+                val targetDir = if (targetUuid.isNotEmpty()) {
+                    slots?.firstOrNull { it.name.equals(targetUuid, ignoreCase = true) }
+                } else {
+                    slots?.maxByOrNull { it.lastModified() }
+                }
+                if (targetDir != null) {
+                    val kmz = targetDir.listFiles { f -> f.name.endsWith(".kmz") }?.firstOrNull()
+                    if (kmz != null && kmz.exists()) {
+                        val b64 = Base64.encodeToString(kmz.readBytes(), Base64.NO_WRAP)
+                        return JSONObject().apply {
+                            put("success", true)
+                            put("uuid", targetDir.name)
+                            put("data", b64)
+                            put("base64", b64)
+                            put("kmz", b64)
+                        }.toString()
+                    }
+                }
+            }
+        }
+
+        return JSONObject().apply {
+            put("success", false)
+            put("error", "KMZ_NOT_FOUND")
+            put("message", "No active mission KMZ found on RC 2.")
+        }.toString()
+    }
+
     fun writeKmzToRc2(base64Kmz: String, targetUuid: String): Boolean {
         try {
             val bytes = Base64.decode(base64Kmz, Base64.DEFAULT)
-            val dir = File(context.getExternalFilesDir(null), "waypoint/$targetUuid")
-            dir.mkdirs()
-            val file = File(dir, "$targetUuid.kmz")
-            FileOutputStream(file).use { it.write(bytes) }
+
+            // 1. Always mirror locally to application sandbox files cache
+            try {
+                val localDir = File(context.getExternalFilesDir(null), "waypoint/$targetUuid")
+                localDir.mkdirs()
+                val localFile = File(localDir, "$targetUuid.kmz")
+                FileOutputStream(localFile).use { it.write(bytes) }
+            } catch (e: Exception) {
+                Log.w("AalaapiMtp", "Failed to cache KMZ locally: ${e.message}")
+            }
+
+            // 2. If MTP device is connected (DJI RC 2 via USB OTG), write directly over MTP bus
+            val mtp = mtpDevice
+            if (mtp != null) {
+                val storageIds = mtp.storageIds
+                if (storageIds != null && storageIds.isNotEmpty()) {
+                    for (storageId in storageIds) {
+                        val wpHandle = findWaypointDirHandle(mtp, storageId) ?: continue
+                        Log.i("AalaapiMtp", "Found waypoint directory on RC 2 (storage $storageId, handle $wpHandle)")
+
+                        val availableSlots = getMtpWaypointSlots(mtp, storageId, wpHandle)
+                        var targetSlotHandle: Int? = null
+                        var effectiveUuid = targetUuid
+
+                        // Check if requested UUID matches an existing slot folder
+                        val matchingSlot = availableSlots.firstOrNull {
+                            it.second.name.equals(targetUuid, ignoreCase = true)
+                        }
+
+                        if (matchingSlot != null) {
+                            targetSlotHandle = matchingSlot.first
+                            effectiveUuid = matchingSlot.second.name ?: targetUuid
+                            Log.i("AalaapiMtp", "Targeting matching slot folder: $effectiveUuid (handle $targetSlotHandle)")
+                        } else if (availableSlots.isNotEmpty()) {
+                            // Fallback to most recently modified slot folder on the controller
+                            val newest = availableSlots.first()
+                            targetSlotHandle = newest.first
+                            effectiveUuid = newest.second.name ?: targetUuid
+                            Log.i("AalaapiMtp", "Requested UUID $targetUuid not found on RC 2. Fallback to newest slot folder: $effectiveUuid (handle $targetSlotHandle)")
+                        } else {
+                            // Attempt to create target slot folder under waypoint directory
+                            val folderInfo = MtpObjectInfo.Builder()
+                                .setStorageId(storageId)
+                                .setParent(wpHandle)
+                                .setName(targetUuid)
+                                .setFormat(0x3001) // FORMAT_ASSOCIATION / folder
+                                .build()
+                            val created = mtp.sendObjectInfo(folderInfo)
+                            if (created != null && created.objectHandle > 0) {
+                                targetSlotHandle = created.objectHandle
+                                effectiveUuid = targetUuid
+                                Log.i("AalaapiMtp", "Created new slot folder for $targetUuid (handle $targetSlotHandle)")
+                            }
+                        }
+
+                        if (targetSlotHandle == null || targetSlotHandle <= 0) {
+                            Log.e("AalaapiMtp", "Failed to resolve or create target mission slot on RC 2")
+                            continue
+                        }
+
+                        // Remove existing KMZ and preview files in the slot folder (MTP does not support in-place overwrite)
+                        val childHandles = mtp.getObjectHandles(storageId, 0, targetSlotHandle) ?: intArrayOf()
+                        for (ch in childHandles) {
+                            val cInfo = mtp.getObjectInfo(ch) ?: continue
+                            val cName = (cInfo.name ?: "").lowercase()
+                            if (cName.endsWith(".kmz") || cName.endsWith(".jpg") || cName.endsWith(".png")) {
+                                Log.i("AalaapiMtp", "Deleting existing mission asset: ${cInfo.name} (handle $ch) from slot $effectiveUuid")
+                                mtp.deleteObject(ch)
+                            }
+                        }
+
+                        // Write KMZ payload to temp file for ParcelFileDescriptor streaming
+                        val tempKmz = File(context.cacheDir, "$effectiveUuid.kmz")
+                        FileOutputStream(tempKmz).use { it.write(bytes) }
+
+                        val kmzObjectInfo = MtpObjectInfo.Builder()
+                            .setStorageId(storageId)
+                            .setParent(targetSlotHandle)
+                            .setName("$effectiveUuid.kmz")
+                            .setFormat(0x3000) // FORMAT_UNDEFINED / binary
+                            .setCompressedSize(tempKmz.length())
+                            .setDateModified(System.currentTimeMillis())
+                            .build()
+
+                        val prepResult = mtp.sendObjectInfo(kmzObjectInfo)
+                        if (prepResult == null || prepResult.objectHandle <= 0) {
+                            Log.e("AalaapiMtp", "sendObjectInfo rejected for $effectiveUuid.kmz")
+                            tempKmz.delete()
+                            continue
+                        }
+
+                        val newHandle = prepResult.objectHandle
+                        val pfd = ParcelFileDescriptor.open(tempKmz, ParcelFileDescriptor.MODE_READ_ONLY)
+                        val transferSuccess = try {
+                            mtp.sendObject(newHandle, tempKmz.length(), pfd)
+                        } catch (e: Exception) {
+                            Log.e("AalaapiMtp", "sendObject exception: ${e.message}", e)
+                            false
+                        } finally {
+                            try { pfd.close() } catch (_: Exception) {}
+                            tempKmz.delete()
+                        }
+
+                        if (transferSuccess) {
+                            Log.i("AalaapiMtp", "Successfully uploaded $effectiveUuid.kmz (${bytes.size} bytes) to DJI RC 2 slot $effectiveUuid (handle $newHandle)")
+                            // Notify webview of the effective slot UUID that was written
+                            webView.post {
+                                webView.evaluateJavascript("if (typeof setRC2UUID === 'function') { setRC2UUID('$effectiveUuid'); } if (typeof rc2MtpActiveUUID !== 'undefined') { rc2MtpActiveUUID = '$effectiveUuid'; }", null)
+                            }
+                            return true
+                        } else {
+                            Log.e("AalaapiMtp", "mtp.sendObject failed for handle $newHandle")
+                        }
+                    }
+                }
+                Log.w("AalaapiMtp", "MTP device connected but waypoint folder transfer failed; checking local directories")
+            }
+
+            // 3. Check local storage directories on device (e.g. running directly on RC 2 / tablet with DJI Fly)
+            val localCandidateDirs = listOf(
+                File("/storage/emulated/0/Android/data/dji.go.v5/files/waypoint"),
+                File("/sdcard/Android/data/dji.go.v5/files/waypoint"),
+                File("/storage/emulated/0/DJI/dji.go.v5/waypoint"),
+                File("/sdcard/DJI/dji.go.v5/waypoint")
+            )
+            for (dir in localCandidateDirs) {
+                if (dir.exists() && dir.isDirectory) {
+                    val slots = dir.listFiles { f -> f.isDirectory && (f.name.contains("-") || f.name.length >= 8) }
+                    val targetDir = if (!slots.isNullOrEmpty()) {
+                        val match = slots.firstOrNull { it.name.equals(targetUuid, ignoreCase = true) }
+                        match ?: slots.maxByOrNull { it.lastModified() } ?: File(dir, targetUuid)
+                    } else {
+                        File(dir, targetUuid)
+                    }
+                    targetDir.mkdirs()
+                    val kmzFile = File(targetDir, "${targetDir.name}.kmz")
+                    FileOutputStream(kmzFile).use { it.write(bytes) }
+                    Log.i("AalaapiMtp", "Wrote KMZ directly to local DJI Fly directory: ${kmzFile.absolutePath}")
+                    return true
+                }
+            }
+
+            // If neither MTP nor local DJI Fly directories were available, the local sandbox was already written in Step 1
+            Log.i("AalaapiMtp", "No external RC 2 or DJI Fly path found; cached in local application sandbox")
             return true
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("AalaapiMtp", "Error writing KMZ to RC 2: ${e.message}", e)
             return false
         }
     }

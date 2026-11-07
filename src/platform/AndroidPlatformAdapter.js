@@ -219,6 +219,24 @@ class AndroidPlatformAdapter extends BasePlatformAdapter {
     return super.pushKmzToController(kmzBase64, uuid);
   }
 
+  pullKmzFromController(uuid = '') {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.pullKmzFromRc2 === 'function') {
+      const rawRes = bridge.pullKmzFromRc2(uuid);
+      return { handled: true, rawRes };
+    }
+    return super.pullKmzFromController(uuid);
+  }
+
+  getControllerSlots() {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.getRc2WaypointSlots === 'function') {
+      const rawRes = bridge.getRc2WaypointSlots();
+      return { handled: true, rawRes };
+    }
+    return super.getControllerSlots();
+  }
+
   pullLatestLogFromController() {
     const bridge = this._bridge();
     if (bridge && typeof bridge.pullLatestLogFromRc2 === 'function') {
