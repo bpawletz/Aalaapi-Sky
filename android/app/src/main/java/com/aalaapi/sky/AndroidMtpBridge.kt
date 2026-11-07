@@ -378,6 +378,10 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
             val isFolder = (info.format == 0x3001 || info.associationType != 0)
             if (isFolder) {
                 val lower = name.lowercase()
+                // Skip Flyc hardware blackbox sensor dump directories
+                if (lower.contains("mcdat") || lower.contains("datflightrecord")) {
+                    continue
+                }
                 val isFlightDir = inFlightRecordDir || lower.contains("flightrecord") || lower.contains("flight_record")
                 val isRelevantDir = inFlightRecordDir || depth == 0 || isFlightDir || lower in listOf(
                     "android", "data", "dji.go.v5", "files", "dji", "dji.pilot", "dji.pilot.pad", "dji.industry.pilot", "dji.go.v4"
@@ -387,8 +391,12 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
                 }
             } else {
                 val lower = name.lowercase()
-                val isFlightLog = (lower.contains("flightrecord") || lower.contains("flight_record") || lower.startsWith("fly_") || inFlightRecordDir) &&
-                    (lower.endsWith(".txt") || lower.endsWith(".csv") || lower.endsWith(".dat"))
+                // Skip raw .dat flight controller blackbox sensor dumps (not parseable as flight telemetry)
+                if (lower.endsWith(".dat")) {
+                    continue
+                }
+                val isFlightLog = (lower.contains("flightrecord") || lower.contains("flight_record") || inFlightRecordDir) &&
+                    (lower.endsWith(".txt") || lower.endsWith(".csv"))
                 if (isFlightLog) {
                     candidates.add(Pair(handle, info))
                 }
@@ -399,7 +407,9 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
     private fun getSortedMtpCandidates(mtp: MtpDevice, forceRefresh: Boolean = false): List<Pair<Int, MtpObjectInfo>> {
         val now = System.currentTimeMillis()
         val cached = cachedCandidates
-        if (!forceRefresh && cached != null && cached.isNotEmpty() && (now - cachedCandidatesTimeMs) < 30_000L) {
+        // Session-persistent cache: persists for the entire duration of the USB connection until physically detached
+        // or explicitly refreshed by the pilot.
+        if (!forceRefresh && cached != null && cached.isNotEmpty()) {
             return cached
         }
 
@@ -439,13 +449,13 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
         return deduplicated
     }
 
-    fun listRecentLogs(limit: Int = 30): String {
+    fun listRecentLogs(limit: Int = 30, forceRefresh: Boolean = false): String {
         val mtp = mtpDevice
         val results = mutableListOf<JSONObject>()
         val cacheDir = File(context.cacheDir, "decrypted_logs")
         if (mtp != null) {
             try {
-                val candidates = getSortedMtpCandidates(mtp)
+                val candidates = getSortedMtpCandidates(mtp, forceRefresh = forceRefresh)
                 for (pair in candidates.take(if (limit > 0) limit else 30)) {
                     val info = pair.second
                     val name = info.name ?: "Unknown"
@@ -492,6 +502,13 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
             }.toString()
 
             val filename = info.name ?: "FlightRecord_$handle.txt"
+            if (filename.lowercase().endsWith(".dat")) {
+                return JSONObject().apply {
+                    put("success", false)
+                    put("error", "DAT_UNSUPPORTED")
+                    put("message", ".DAT files are flight controller blackbox sensor dumps, not playback telemetry records. Only FlightRecord_*.txt files are supported.")
+                }.toString()
+            }
             val tempFile = File(context.cacheDir, filename)
             if (tempFile.exists()) tempFile.delete()
 
@@ -545,6 +562,14 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
     }
 
     fun pullLogByName(filename: String): String {
+        if (filename.lowercase().endsWith(".dat")) {
+            return JSONObject().apply {
+                put("success", false)
+                put("error", "DAT_UNSUPPORTED")
+                put("message", ".DAT files are flight controller blackbox sensor dumps, not playback telemetry records. Only FlightRecord_*.txt files are supported.")
+            }.toString()
+        }
+
         val mtp = mtpDevice ?: return JSONObject().apply {
             put("success", false)
             put("error", "NO_RC2_CONNECTED")
@@ -664,6 +689,84 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
                 put("error", "NO_LOGS_FOUND")
                 put("message", "No flight logs (FlightRecord_*.txt or DJIFlightRecord_*.txt) found on connected RC 2 storage.")
             }
+        }.toString()
+    }
+
+    fun listSavedFlights(): String {
+        val flights = mutableListOf<JSONObject>()
+        val seen = HashSet<String>()
+        val cacheDir = File(context.cacheDir, "decrypted_logs")
+        if (cacheDir.exists() && cacheDir.isDirectory) {
+            val csvFiles = cacheDir.listFiles { f -> f.isFile && f.name.endsWith("_decrypted.csv") }
+                ?.sortedByDescending { it.lastModified() }
+            if (csvFiles != null) {
+                for (csv in csvFiles) {
+                    val rawName = csv.name.removeSuffix("_decrypted.csv")
+                        .replace("_txt", ".txt")
+                        .replace("_csv", ".csv")
+                    if (!seen.add(rawName.lowercase())) continue
+                    val ts = extractLogTimestamp(rawName)
+                    val dateFormatted = formatLogDate(rawName, csv.lastModified())
+                    flights.add(JSONObject().apply {
+                        put("id", rawName)
+                        put("filename", rawName)
+                        put("flightDate", dateFormatted)
+                        put("mtimeFormatted", dateFormatted)
+                        put("timestamp", ts)
+                        put("size", csv.length())
+                        put("sizeFormatted", formatFileSize(csv.length()))
+                        put("isDecrypted", true)
+                        put("source", "tablet_local")
+                    })
+                }
+            }
+        }
+
+        return JSONObject().apply {
+            put("success", true)
+            put("flights", org.json.JSONArray(flights))
+            put("count", flights.size)
+        }.toString()
+    }
+
+    fun getSavedFlightTelemetry(filename: String): String {
+        val cleanName = filename.trim()
+        val safeBase = cleanName.replace(Regex("""[^a-zA-Z0-9._\-\[\]]"""), "_")
+        val cacheDir = File(context.cacheDir, "decrypted_logs")
+        val targetCsv = File(cacheDir, "${safeBase}_decrypted.csv")
+
+        if (targetCsv.exists() && targetCsv.length() > 0) {
+            val bytes = targetCsv.readBytes()
+            val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+            return JSONObject().apply {
+                put("success", true)
+                put("filename", cleanName)
+                put("isDecrypted", true)
+                put("size", targetCsv.length())
+                put("data", b64)
+                put("base64", b64)
+            }.toString()
+        }
+
+        // Try direct file matches in cacheDir or Downloads
+        val directInCache = File(cacheDir, cleanName)
+        if (directInCache.exists() && directInCache.length() > 0) {
+            val bytes = directInCache.readBytes()
+            val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+            return JSONObject().apply {
+                put("success", true)
+                put("filename", cleanName)
+                put("isDecrypted", cleanName.lowercase().endsWith(".csv"))
+                put("size", directInCache.length())
+                put("data", b64)
+                put("base64", b64)
+            }.toString()
+        }
+
+        return JSONObject().apply {
+            put("success", false)
+            put("error", "NOT_FOUND")
+            put("message", "Saved flight telemetry for '$cleanName' not found in local cache.")
         }.toString()
     }
 }

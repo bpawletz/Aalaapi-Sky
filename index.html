@@ -2395,7 +2395,8 @@ body.modal-drag-active {
     min-width: 140px;
   }
   #header-unit-toggle-btn:not(.ribbon-force-show),
-  #theme-toggle-btn:not(.ribbon-force-show) {
+  #theme-toggle-btn:not(.ribbon-force-show),
+  #screen-awake-toggle-btn:not(.ribbon-force-show) {
     display: none !important;
   }
 }
@@ -2433,7 +2434,8 @@ body.modal-drag-active {
   .header-bridge-container,
   .header-ambient-buffer-container,
   #header-unit-toggle-btn,
-  #theme-toggle-btn {
+  #theme-toggle-btn,
+  #screen-awake-toggle-btn {
     display: none !important;
   }
 
@@ -8638,6 +8640,37 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   }
 }
 
+.header-awake-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 2px 7px !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.header-awake-btn.is-active {
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.12) !important;
+  border-color: rgba(56, 189, 248, 0.45) !important;
+}
+
+.header-awake-btn:not(.is-active) {
+  color: var(--text-muted, #94a3b8) !important;
+  background: transparent !important;
+  opacity: 0.8 !important;
+}
+
+.header-awake-btn:hover {
+  filter: brightness(1.15) !important;
+}
+
 </style>
   
   <!-- App Icon & Favicon -->
@@ -8714,7 +8747,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.233.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.234.0</span></h1>
         </div>
       </div>
 
@@ -8784,6 +8817,9 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
       <div class="topbar-right">
         <button id="header-unit-toggle-btn" class="btn-secondary header-unit-btn" type="button" title="Toggle Measurement Units (Imperial / Metric)" aria-label="Toggle Units" onclick="toggleUnitSystem()"><span id="header-unit-badge">FT / MPH</span></button>
         <button id="theme-toggle-btn" class="btn-secondary header-theme-btn" type="button" title="Toggle Light / Dark Mode" aria-label="Toggle Theme" onclick="toggleAppTheme()">☀️</button>
+        <button id="screen-awake-toggle-btn" class="btn-secondary header-awake-btn is-active" type="button" title="Screen: Keep Awake Enabled (Screen will stay on). Click to allow sleep." aria-label="Toggle Screen Keep Awake">
+          <span id="screen-awake-icon">☕</span><span id="screen-awake-label">Awake</span>
+        </button>
         <button id="intro-tour-btn" class="btn-secondary header-about-btn" type="button" title="Quickstart Workflow Tour, What's New &amp; Pro Tips" onclick="openIntroModal('workflow')"><span>🎓</span><span>Intro</span></button>
         <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -8817,6 +8853,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
       <!-- Mobile More Actions Dropdown Menu Popover -->
       <div id="header-more-menu" class="header-more-menu glass hidden">
+        <button id="more-menu-awake-btn" class="more-menu-item" type="button">
+          <span class="more-menu-icon" id="more-menu-awake-icon">☕</span>
+          <span class="more-menu-label" id="more-menu-awake-label">Screen: Keep Awake</span>
+        </button>
         <button id="more-menu-bridge-btn" class="more-menu-item" type="button">
           <span class="more-menu-icon">🌉</span>
           <span class="more-menu-label">Aalaapi Bridge &amp; Hardware</span>
@@ -16188,7 +16228,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.233.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.234.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -16352,6 +16392,21 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.234.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Cross-Platform Screen Keep-Awake / Sleep Toggle (Closes #262):</strong> Added persistent topbar button (<code>☕ Awake</code> / <code>💤 Sleep</code>) and mobile overflow menu option using native Android <code>FLAG_KEEP_SCREEN_ON</code> and Web Screen Wake Lock API to prevent screen timeout during flights.</li>
+                  <li><strong>Offline Section 0 Historical Flight DB (Closes #262):</strong> Populated Section 0 directly from local tablet storage and browser history without requiring the desktop companion server, enabling instant 2D Replay and 3D View offline.</li>
+                  <li><strong>RC 2 .DAT Blackbox Filtering &amp; Session MTP Caching (Closes #262):</strong> Filtered out raw unparseable <code>.DAT</code> Flyc blackbox dumps, cached MTP candidates for instant 0 ms log browsing, and eliminated silent simulation fallbacks.</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.233.1):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Companion Bridge ADS-B Airspace Status &amp; Traffic Display (Closes #261):</strong> Restored real-time green connection indicator (ACTIVE) and live aircraft traffic map display by whitelisting read-only airspace and Remote ID endpoints from the pilot authentication wall.</li>
+                  <li><strong>Windows mDNS .local Hostname Auto-Resolution (Closes #261):</strong> Added automatic mDNS fallback resolution for .local target stations (e.g. Z83.local), resolving them directly to their active LAN IPv4 address (e.g. 192.168.1.250:30003) on Windows systems where standard OS getaddrinfo fails.</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.233.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                   <li><strong>Native ARM64 DJI v13/v14 Flight Log Decryptor on Android (Closes #260):</strong> Bundled native ARM64 dji-log binary (libdjilog.so) and loopback keychain relay inside the Android APK so encrypted FlightRecord_*.txt files pulled from DJI RC 2 over USB OTG decrypt directly on the tablet into full telemetry CSVs instead of falling back to simulated missions.</li>
@@ -28301,6 +28356,203 @@ let globalExclusionClearanceBuffer = 5; // meters above ceiling
 // Flight Pattern Layers & Multi-Layer Mission Manager (v1.62.0)
 // ==========================================================================
 
+// -------------------- src/ui/ScreenAwakeManager.js --------------------
+// Screen Awake & Sleep Manager (Cross-platform: Windows/Web & Android)
+// Keeps tablet and desktop displays awake during drone missions or allows normal sleep to save battery
+
+const SCREEN_AWAKE_STORAGE_KEY = 'aalaapi_screen_keep_awake';
+let _isAwakeEnabled = true;
+let _wakeLockSentinel = null;
+
+function isScreenAwakeActive() {
+  return _isAwakeEnabled;
+}
+
+async function requestScreenWakeLock() {
+  try {
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setKeepScreenOn === 'function') {
+      window.AalaapiAndroid.setKeepScreenOn(true);
+    }
+  } catch (_) {}
+
+  try {
+    if (typeof navigator !== 'undefined' && 'wakeLock' in navigator && !_wakeLockSentinel) {
+      _wakeLockSentinel = await navigator.wakeLock.request('screen');
+      _wakeLockSentinel.addEventListener('release', () => {
+        _wakeLockSentinel = null;
+      });
+    }
+  } catch (_) {}
+}
+
+function releaseScreenWakeLock() {
+  try {
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setKeepScreenOn === 'function') {
+      window.AalaapiAndroid.setKeepScreenOn(false);
+    }
+  } catch (_) {}
+
+  try {
+    if (_wakeLockSentinel) {
+      _wakeLockSentinel.release();
+      _wakeLockSentinel = null;
+    }
+  } catch (_) {}
+}
+
+function updateScreenAwakeUi() {
+  if (typeof document === 'undefined') return;
+
+  const btn = document.getElementById('screen-awake-toggle-btn');
+  const iconSpan = document.getElementById('screen-awake-icon');
+  const labelSpan = document.getElementById('screen-awake-label');
+
+  if (btn) {
+    if (_isAwakeEnabled) {
+      if (btn.classList && btn.classList.add) btn.classList.add('is-active');
+      btn.title = 'Screen: Keep Awake Enabled (Screen will stay on). Click to allow sleep.';
+      if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-pressed', 'true');
+      if (iconSpan) iconSpan.textContent = '☕';
+      if (labelSpan) labelSpan.textContent = 'Awake';
+      if (btn.style) {
+        btn.style.color = '#38bdf8';
+        btn.style.borderColor = 'rgba(56, 189, 248, 0.45)';
+        btn.style.background = 'rgba(56, 189, 248, 0.12)';
+      }
+    } else {
+      if (btn.classList && btn.classList.remove) btn.classList.remove('is-active');
+      btn.title = 'Screen: Normal OS Sleep Timeout. Click to keep awake.';
+      if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-pressed', 'false');
+      if (iconSpan) iconSpan.textContent = '💤';
+      if (labelSpan) labelSpan.textContent = 'Sleep';
+      if (btn.style) {
+        btn.style.color = 'var(--text-muted, #94a3b8)';
+        btn.style.borderColor = 'var(--border-color, rgba(255, 255, 255, 0.12))';
+        btn.style.background = 'transparent';
+      }
+    }
+  }
+
+  const moreIcon = document.getElementById('more-menu-awake-icon');
+  const moreLabel = document.getElementById('more-menu-awake-label');
+  if (moreIcon) moreIcon.textContent = _isAwakeEnabled ? '☕' : '💤';
+  if (moreLabel) moreLabel.textContent = _isAwakeEnabled ? 'Screen: Keep Awake' : 'Screen: Allow Sleep';
+}
+
+async function setScreenAwakeMode(enabled, notify = true) {
+  _isAwakeEnabled = !!enabled;
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(SCREEN_AWAKE_STORAGE_KEY, _isAwakeEnabled ? 'true' : 'false');
+    }
+  } catch (_) {}
+
+  // Update UI immediately for zero button latency
+  updateScreenAwakeUi();
+
+  if (_isAwakeEnabled) {
+    await requestScreenWakeLock();
+  } else {
+    releaseScreenWakeLock();
+  }
+
+  updateScreenAwakeUi();
+
+  if (notify && typeof showToast === 'function') {
+    if (_isAwakeEnabled) {
+      showToast('☕ Screen Keep Awake Enabled (Screen stays on)', 'info', 3000);
+    } else {
+      showToast('💤 Screen Sleep Allowed (Standard OS timeout)', 'info', 3000);
+    }
+  }
+
+  return _isAwakeEnabled;
+}
+
+function toggleScreenAwakeMode() {
+  return setScreenAwakeMode(!_isAwakeEnabled, true);
+}
+
+function initScreenAwake() {
+  let saved = true;
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const val = localStorage.getItem(SCREEN_AWAKE_STORAGE_KEY);
+      if (val !== null) {
+        saved = (val === 'true');
+      }
+    }
+  } catch (_) {}
+
+  setScreenAwakeMode(saved, false);
+
+  if (typeof document !== 'undefined') {
+    // Re-acquire wake lock when tab or app returns from background
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && _isAwakeEnabled) {
+        requestScreenWakeLock();
+      }
+    });
+
+    const btn = document.getElementById('screen-awake-toggle-btn');
+    if (btn && !btn.dataset.bound) {
+      btn.dataset.bound = 'true';
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleScreenAwakeMode();
+      });
+    }
+
+    const moreBtn = document.getElementById('more-menu-awake-btn');
+    if (moreBtn && !moreBtn.dataset.bound) {
+      moreBtn.dataset.bound = 'true';
+      moreBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleScreenAwakeMode();
+        if (typeof closeMoreMenu === 'function') closeMoreMenu();
+      });
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.isScreenAwakeActive = isScreenAwakeActive;
+  window.requestScreenWakeLock = requestScreenWakeLock;
+  window.releaseScreenWakeLock = releaseScreenWakeLock;
+  window.updateScreenAwakeUi = updateScreenAwakeUi;
+  window.setScreenAwakeMode = setScreenAwakeMode;
+  window.toggleScreenAwakeMode = toggleScreenAwakeMode;
+  window.initScreenAwake = initScreenAwake;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initScreenAwake);
+  } else {
+    setTimeout(initScreenAwake, 50);
+  }
+}
+
+if (typeof global !== 'undefined') {
+  global.isScreenAwakeActive = isScreenAwakeActive;
+  global.requestScreenWakeLock = requestScreenWakeLock;
+  global.releaseScreenWakeLock = releaseScreenWakeLock;
+  global.updateScreenAwakeUi = updateScreenAwakeUi;
+  global.setScreenAwakeMode = setScreenAwakeMode;
+  global.toggleScreenAwakeMode = toggleScreenAwakeMode;
+  global.initScreenAwake = initScreenAwake;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    isScreenAwakeActive,
+    requestScreenWakeLock,
+    releaseScreenWakeLock,
+    updateScreenAwakeUi,
+    setScreenAwakeMode,
+    toggleScreenAwakeMode,
+    initScreenAwake
+  };
+}
 // -------------------- src/ui/ModalDragManager.js --------------------
 /**
  * Aalaapi Sky - Modal Drag Manager
@@ -42930,7 +43182,63 @@ async function refreshMissionDbList() {
       }
     } catch (_) {}
 
-    // 3. Fallback bridge ping if flights/diagnostics endpoints returned error
+    // 3. Check Android native bridge for saved/decrypted flight records
+    try {
+      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.listSavedFlights === 'function') {
+        const rawSaved = window.AalaapiAndroid.listSavedFlights();
+        if (rawSaved) {
+          const savedData = JSON.parse(rawSaved);
+          if (savedData.success && Array.isArray(savedData.flights)) {
+            savedData.flights.forEach(f => {
+              if (!items.some(it => it.filename === f.filename)) {
+                items.push({
+                  id: f.filename,
+                  type: 'rc2-recorded',
+                  title: f.label || f.filename,
+                  filename: f.filename,
+                  date: f.flightDate || f.mtimeFormatted || 'Controller Log',
+                  size: f.sizeFormatted || '',
+                  statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
+                  badgeColor: '#34d399',
+                  badgeBg: 'rgba(16, 185, 129, 0.15)',
+                  wpsText: 'Tablet Storage'
+                });
+              }
+            });
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 4. Check localStorage for flights pulled or decrypted in browser session
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const storedJson = localStorage.getItem('aalaapi_historical_flights');
+        if (storedJson) {
+          const stored = JSON.parse(storedJson);
+          if (Array.isArray(stored)) {
+            stored.forEach(f => {
+              if (!items.some(it => it.filename === f.filename)) {
+                items.push({
+                  id: f.filename,
+                  type: 'rc2-recorded',
+                  title: f.label || f.filename,
+                  filename: f.filename,
+                  date: f.flightDate || f.mtimeFormatted || 'Controller Log',
+                  size: f.sizeFormatted || '',
+                  statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
+                  badgeColor: '#34d399',
+                  badgeBg: 'rgba(16, 185, 129, 0.15)',
+                  wpsText: 'Local Cache'
+                });
+              }
+            });
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 5. Fallback bridge ping if flights/diagnostics endpoints returned error
     if (!bridgeReachable) {
       if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
         bridgeReachable = true;
@@ -42948,7 +43256,8 @@ async function refreshMissionDbList() {
       }
     }
 
-    isMissionDbOnline = bridgeReachable;
+    // If local flights exist on device or bridge is reachable, consider flight DB online
+    isMissionDbOnline = bridgeReachable || (items.length > 0);
     cachedMissionDbItems = items;
 
     if (badgeEl) {
@@ -62960,19 +63269,47 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
       if (logBase64) {
 
+        let parseSuccess = false;
         if (typeof DigitalTwin !== 'undefined' && typeof DigitalTwin.loadFlightLogData === 'function') {
 
-          await DigitalTwin.loadFlightLogData(logFilename, logBase64);
+          parseSuccess = await DigitalTwin.loadFlightLogData(logFilename, logBase64);
 
         } else if (typeof atob === 'function' && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.parseLogText === 'function') {
 
           const rawText = atob(logBase64);
 
-          DjiLogDecryptor.parseLogText(rawText, logFilename);
+          const parsed = DjiLogDecryptor.parseLogText(rawText, logFilename);
+          parseSuccess = !!(parsed && parsed.points && parsed.points.length > 0);
 
         }
 
+        if (!parseSuccess || (typeof DigitalTwin !== 'undefined' && !DigitalTwin.telemetryData)) {
+          throw new Error(`Unable to decode flight trajectory from ${logFilename}`);
+        }
 
+        try {
+          if (typeof localStorage !== 'undefined') {
+            const existingJson = localStorage.getItem('aalaapi_historical_flights');
+            let flightsList = existingJson ? JSON.parse(existingJson) : [];
+            flightsList = flightsList.filter(f => f.filename !== logFilename);
+            flightsList.unshift({
+              id: logFilename,
+              filename: logFilename,
+              flightDate: (logPayload && (logPayload.flightDate || logPayload.mtimeFormatted)) || new Date().toISOString().replace('T', ' ').slice(0, 19),
+              mtimeFormatted: (logPayload && (logPayload.flightDate || logPayload.mtimeFormatted)) || new Date().toISOString().replace('T', ' ').slice(0, 19),
+              size: (logPayload && logPayload.size) || 0,
+              sizeFormatted: (logPayload && (logPayload.sizeFormatted || '')) || '',
+              isDecrypted: true,
+              source: 'pulled_rc2'
+            });
+            localStorage.setItem('aalaapi_historical_flights', JSON.stringify(flightsList.slice(0, 50)));
+            localStorage.setItem('aalaapi_offline_flight_' + logFilename, logBase64);
+          }
+        } catch (_) {}
+
+        if (typeof refreshMissionDbList === 'function') {
+          refreshMissionDbList();
+        }
 
         buttonsToUpdate.forEach(b => {
 
@@ -70979,6 +71316,10 @@ const AdsbAirspaceManager = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       await this.pollAirspace();
+      this.updateVisualBanner();
+      this.updateTopbarAndHud();
+      this.updateMapMarkers();
+      this.updateDrawerAircraftList();
 
     } catch (e) {
 
@@ -89703,7 +90044,41 @@ const FlightDiagnostics = {
         if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
         this.isDecrypted = false;
         this.needsDjiApiKey = false;
-        // For built-in demo flight profiles (e.g. 2026-08-20 demo logs), generate offline simulation
+
+        // Check if Android native bridge or localStorage has this flight saved offline!
+        let offlineLoaded = false;
+        try {
+          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getSavedFlightTelemetry === 'function') {
+            const rawJson = window.AalaapiAndroid.getSavedFlightTelemetry(flightId);
+            if (rawJson) {
+              const res = JSON.parse(rawJson);
+              if (res.success && res.data) {
+                const ok = this.loadFlightLogData(flightId, res.data);
+                if (ok && this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
+                  offlineLoaded = true;
+                }
+              }
+            }
+          }
+        } catch (_) {}
+
+        if (!offlineLoaded) {
+          try {
+            if (typeof localStorage !== 'undefined') {
+              const cachedTelem = localStorage.getItem('aalaapi_offline_flight_' + flightId);
+              if (cachedTelem) {
+                const ok = this.loadFlightLogData(flightId, cachedTelem);
+                if (ok && this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
+                  offlineLoaded = true;
+                }
+              }
+            }
+          } catch (_) {}
+        }
+
+        if (offlineLoaded) {
+          // Successfully restored telemetry from offline tablet/browser storage
+        } else // For built-in demo flight profiles (e.g. 2026-08-20 demo logs), generate offline simulation
         if (flightId && (flightId.includes('2026-08-20') || flightId.includes('19-39-07') || flightId.includes('19-41-15') || flightId.includes('19-42-28') || flightId.includes('19-47-15'))) {
           this.isActualFlown = false;
           this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
@@ -91952,11 +92327,10 @@ const FlightDiagnostics = {
       }
 
       if (!importedTelemetry) {
-        const wps = getActiveMissionWaypoints();
-        const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
-        const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
-        const gimbalPitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
-        importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
+        this.isActualFlown = false;
+        this.telemetryData = null;
+        this.comparisonData = null;
+        throw new Error('Unable to parse flight telemetry from ' + flightId + '. Ensure the file is a valid FlightRecord (.txt or .csv).');
       }
 
       if (importedTelemetry) {
@@ -92128,12 +92502,11 @@ const FlightDiagnostics = {
         }
       }
 
-      if (!importedTelemetry && typeof generateTelemetryFromWaypoints === 'function') {
-        const wps = (typeof getActiveMissionWaypoints === 'function') ? getActiveMissionWaypoints() : [];
-        const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
-        const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
-        const gimbalPitch = (typeof document !== 'undefined' && typeof parseGimbalPitch === 'function') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
-        importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
+      if (!importedTelemetry) {
+        this.isActualFlown = false;
+        this.telemetryData = null;
+        this.comparisonData = null;
+        throw new Error('Unable to parse flight telemetry from ' + flightId + '. Ensure the file is a valid FlightRecord (.txt or .csv).');
       }
 
       if (importedTelemetry) {
@@ -110363,7 +110736,11 @@ function openRc2LogManagerModal() {
   if (!modal) return;
   modal.classList.remove('hidden');
   updateRc2LogModalBranding();
-  refreshRc2LogList();
+  if (Array.isArray(rc2LogsCache) && rc2LogsCache.length > 0) {
+    renderRc2LogTable(rc2LogsCache);
+  } else {
+    refreshRc2LogList(false);
+  }
 }
 
 function closeRc2LogManagerModal() {
@@ -110372,7 +110749,7 @@ function closeRc2LogManagerModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-async function refreshRc2LogList() {
+async function refreshRc2LogList(force = false) {
   const container = document.getElementById('rc2-logs-table-container');
   const countSummary = document.getElementById('rc2-logs-count-summary');
   const refreshBtn = document.getElementById('rc2-logs-refresh-btn');
@@ -110387,17 +110764,21 @@ async function refreshRc2LogList() {
     refreshBtn.textContent = `⏳ Scanning ${devInfo.shortName}...`;
   }
 
-  container.innerHTML = `
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; color: var(--text-muted); gap: 10px;">
-      <div style="width: 24px; height: 24px; border: 2px solid rgba(56, 189, 248, 0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-      <span style="font-size: 0.8rem;">Querying connected ${devInfo.fullName} storage over USB MTP...</span>
-    </div>
-  `;
+  if (!rc2LogsCache || rc2LogsCache.length === 0 || force) {
+    container.innerHTML = `
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; color: var(--text-muted); gap: 10px;">
+        <div style="width: 24px; height: 24px; border: 2px solid rgba(56, 189, 248, 0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+        <span style="font-size: 0.8rem;">Querying connected ${devInfo.fullName} storage over USB MTP...</span>
+      </div>
+    `;
+  }
 
   try {
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.listFlightRecordsFromRc2 === 'function') {
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && (typeof window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh === 'function' || typeof window.AalaapiAndroid.listFlightRecordsFromRc2 === 'function')) {
       try {
-        const raw = window.AalaapiAndroid.listFlightRecordsFromRc2(30);
+        const raw = (force && typeof window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh === 'function')
+          ? window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh(30, true)
+          : window.AalaapiAndroid.listFlightRecordsFromRc2(30);
         const parsed = JSON.parse(raw || '[]');
         if (Array.isArray(parsed) && parsed.length > 0) {
           const seenNames = new Set();
@@ -110653,13 +111034,49 @@ async function pullSpecificRc2Log(filename, handle = null) {
       if (data && data.success && (data.data || data.base64)) {
         if (progText) progText.textContent = `Successfully pulled ${data.isDecrypted ? '& decrypted ' : ''}${filename}!`;
         const logBase64 = data.data || data.base64;
+        let parseOk = false;
         if (typeof DigitalTwin !== 'undefined' && typeof DigitalTwin.loadFlightLogData === 'function') {
-          await DigitalTwin.loadFlightLogData(filename, logBase64);
+          parseOk = await DigitalTwin.loadFlightLogData(filename, logBase64);
         } else if (typeof atob === 'function' && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.parseLogText === 'function') {
           const rawText = atob(logBase64);
-          DjiLogDecryptor.parseLogText(rawText, filename);
+          const parsed = DjiLogDecryptor.parseLogText(rawText, filename);
+          parseOk = !!(parsed && parsed.points && parsed.points.length > 0);
         }
-        await refreshRc2LogList();
+
+        if (!parseOk || (typeof DigitalTwin !== 'undefined' && !DigitalTwin.telemetryData)) {
+          if (progText) progText.textContent = `❌ Unable to decode flight trajectory from ${filename}`;
+          if (progBar) progBar.style.background = '#ef4444';
+          if (typeof showToast === 'function') {
+            showToast(`❌ Could not parse flight telemetry from ${filename}`, 'error', 6000);
+          }
+          return;
+        }
+
+        try {
+          if (typeof localStorage !== 'undefined') {
+            const existingJson = localStorage.getItem('aalaapi_historical_flights');
+            let flightsList = existingJson ? JSON.parse(existingJson) : [];
+            flightsList = flightsList.filter(f => f.filename !== filename);
+            flightsList.unshift({
+              id: filename,
+              filename: filename,
+              flightDate: data.flightDate || data.mtimeFormatted || new Date().toISOString().replace('T', ' ').slice(0, 19),
+              mtimeFormatted: data.flightDate || data.mtimeFormatted || new Date().toISOString().replace('T', ' ').slice(0, 19),
+              size: data.size || 0,
+              sizeFormatted: data.sizeFormatted || '',
+              isDecrypted: true,
+              source: 'rc2_pulled'
+            });
+            localStorage.setItem('aalaapi_historical_flights', JSON.stringify(flightsList.slice(0, 50)));
+            localStorage.setItem('aalaapi_offline_flight_' + filename, logBase64);
+          }
+        } catch (_) {}
+
+        if (typeof refreshMissionDbList === 'function') {
+          refreshMissionDbList();
+        }
+
+        await refreshRc2LogList(false);
         const telemetryPayload = (typeof DigitalTwin !== 'undefined' && DigitalTwin.telemetryData) ? {
           flightId: filename,
           telemetry: DigitalTwin.telemetryData,
@@ -112027,7 +112444,7 @@ if (typeof document !== 'undefined') {
     if (closeRc2LogsFooterBtn) closeRc2LogsFooterBtn.addEventListener('click', closeRc2LogManagerModal);
 
     const rc2LogsRefreshBtn = document.getElementById('rc2-logs-refresh-btn');
-    if (rc2LogsRefreshBtn) rc2LogsRefreshBtn.addEventListener('click', refreshRc2LogList);
+    if (rc2LogsRefreshBtn) rc2LogsRefreshBtn.addEventListener('click', () => refreshRc2LogList(true));
 
     const rc2LogsPullAllBtn = document.getElementById('rc2-logs-pull-all-btn');
     if (rc2LogsPullAllBtn) rc2LogsPullAllBtn.addEventListener('click', pullAllRc2Logs);

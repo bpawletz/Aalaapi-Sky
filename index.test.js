@@ -42598,7 +42598,7 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
     const m = gradleKts.match(/versionCode = (\d+)/);
     assert.ok(m && parseInt(m[1]) >= 12320, 'build.gradle.kts must have versionCode >= 12320');
-    assert.ok(gradleKts.includes('versionName = "1.233.0"'), 'build.gradle.kts must have versionName = "1.233.0"');
+    assert.ok(gradleKts.match(/versionName = "\d+\.\d+\.\d+"/), 'build.gradle.kts must have valid versionName');
   });
 
   test('pullFlightLogFromRC2 passes in-memory telemetry to FlightDiagnostics.open avoiding 127.0.0.1:8765 calls', async () => {
@@ -42758,7 +42758,7 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
     test('package.json contains android:push and android:install commands at v1.233.0', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.233.0', 'package.json must be version 1.233.0');
+      assert.ok(pkg.version && pkg.version >= '1.233.0', 'package.json must be version >= 1.233.0');
       assert.ok(pkg.scripts['android:push'], 'package.json must contain android:push script');
       assert.ok(pkg.scripts['android:install'], 'package.json must contain android:install script');
     });
@@ -42866,10 +42866,12 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(content.includes('android/app/src/main/jniLibs/arm64-v8a/libdjilog.so'), 'Workflow must write libdjilog.so to jniLibs/arm64-v8a');
     });
 
-    test('android/app/build.gradle.kts and AndroidManifest.xml configure native lib extraction and versionCode 12330', () => {
+    test('android/app/build.gradle.kts and AndroidManifest.xml configure native lib extraction and versionCode >= 12330', () => {
       const gradleContent = fs.readFileSync(path.join(__dirname, 'android/app/build.gradle.kts'), 'utf8');
-      assert.ok(gradleContent.includes('versionCode = 12330'), 'build.gradle.kts must have versionCode = 12330');
-      assert.ok(gradleContent.includes('versionName = "1.233.0"'), 'build.gradle.kts must have versionName = "1.233.0"');
+      const mCode = gradleContent.match(/versionCode = (\d+)/);
+      assert.ok(mCode && parseInt(mCode[1], 10) >= 12330, 'build.gradle.kts must have versionCode >= 12330');
+      const mName = gradleContent.match(/versionName = "([^"]+)"/);
+      assert.ok(mName && mName[1] >= '1.233.0', 'build.gradle.kts must have versionName >= 1.233.0');
       assert.ok(gradleContent.includes('useLegacyPackaging = true'), 'build.gradle.kts must enable useLegacyPackaging for jniLibs');
       assert.ok(gradleContent.includes('keepDebugSymbols += "**/libdjilog.so"'), 'build.gradle.kts must preserve libdjilog.so');
 
@@ -42918,6 +42920,136 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
       assert.ok(tpl.includes('dji-log-parser'), 'index_template.html #about-credits-section must include dji-log-parser');
     });
+  });
+
+  describe('Companion Bridge ADS-B Airspace Public Access & mDNS Fallback (v1.233.1, Issue #261)', () => {
+    test('Version consistency: v1.233.1 across package.json, changelog, and templates', () => {
+      assertVersionConsistency('1.233.1');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.233.1] - 2026-11-07'));
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('Changelog (v1.233.1):'));
+      assert.ok(template.includes('v1.233.1'));
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      assert.ok(indexHtml.includes('Changelog (v1.233.1):'));
+      assert.ok(indexHtml.includes('v1.233.1'));
+    });
+
+    test('isPublicAuthEndpoint permits read-only airspace and Remote ID endpoints without pilot authentication', () => {
+      const { isPublicAuthEndpoint } = require('./tools/companion/server.js');
+      assert.strictEqual(typeof isPublicAuthEndpoint, 'function');
+      assert.strictEqual(isPublicAuthEndpoint('/api/airspace/status', 'GET'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/api/airspace/bounds', 'GET'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/api/airspace/traffic', 'GET'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/api/airspace/external', 'GET'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/api/adsb/status', 'GET'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/api/adsb/bounds', 'GET'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/api/remote-id/drones', 'GET'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/api/remote-id/status', 'GET'), true);
+
+      assert.strictEqual(isPublicAuthEndpoint('/api/airspace/simulate', 'POST'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/api/airspace/clear', 'POST'), true);
+
+      // SSE streams and configuration mutations must still require authentication or token
+      assert.strictEqual(isPublicAuthEndpoint('/api/airspace/stream', 'GET'), false);
+      assert.strictEqual(isPublicAuthEndpoint('/api/remote-id/stream', 'GET'), false);
+      assert.strictEqual(isPublicAuthEndpoint('/api/config/adsb', 'POST'), false);
+    });
+
+    test('AdsbAirspaceTracker.resolveTargetHost transparently resolves mDNS .local hostnames', async () => {
+      const { AdsbAirspaceTracker } = require('./tools/companion/adsb_tracker.js');
+      const tracker = new AdsbAirspaceTracker({ autoConnect: false });
+      assert.strictEqual(typeof tracker.resolveTargetHost, 'function');
+
+      // Direct IPs and localhost pass through unchanged
+      assert.strictEqual(await tracker.resolveTargetHost('127.0.0.1'), '127.0.0.1');
+      assert.strictEqual(await tracker.resolveTargetHost('localhost'), 'localhost');
+      assert.strictEqual(await tracker.resolveTargetHost('192.168.1.100'), '192.168.1.100');
+
+      // Test with mock mDNS discovery for .local host
+      tracker._resolvedIpCache = { 'station.local': '192.168.1.50' };
+      assert.strictEqual(await tracker.resolveTargetHost('station.local'), '192.168.1.50');
+    });
+
+    test('AGENTS.md defines Section 17 Dual-Platform Architecture & Cross-Platform Parity Policy', () => {
+      const agentsMd = fs.readFileSync(path.join(__dirname, 'AGENTS.md'), 'utf8');
+      assert.ok(agentsMd.includes('## 17. Dual-Platform Architecture & Cross-Platform Parity Policy'), 'AGENTS.md must contain Section 17');
+      assert.ok(agentsMd.includes('Desktop / Windows / Browser Environment:'), 'Must document Desktop environment');
+      assert.ok(agentsMd.includes('Android Native / DJI RC 2 Mobile Environment:'), 'Must document Android environment');
+      assert.ok(agentsMd.includes('Mandatory Dual-Pathway Support for Hardware & Network Features'), 'Must enforce dual-pathway rule');
+      assert.ok(agentsMd.includes('Cross-Platform Test Verification & Mocking'), 'Must require dual-mode test assertions');
+      assert.ok(agentsMd.includes('Android WebView & Chromium Rendering Guardrails'), 'Must mandate SVG and CSS GPU guardrails');
+    });
+
+  describe('RC 2 .DAT Blackbox Filtering, Session MTP Caching, Offline Flight DB & Screen Keep-Awake (v1.234.0, Issue #262)', () => {
+    test('Version consistency: v1.234.0 across package.json, changelog, and templates', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.234.0');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.234.0] - 2026-11-07'), 'CHANGELOG must contain 1.234.0');
+      assert.ok(changelog.includes('Closes #262'), 'CHANGELOG must reference issue #262');
+
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('Version 1.234.0'), 'Template must have version tag');
+      assert.ok(template.includes('v1.234.0'), 'Template must have header badge');
+
+      const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+      assert.ok(gradle.includes('versionName = "1.234.0"'), 'Gradle must have versionName 1.234.0');
+      assert.ok(gradle.includes('versionCode = 12340'), 'Gradle must have versionCode 12340');
+    });
+
+    test('Zero-default fallback: DigitalTwin.loadFlightLogData rejects invalid/binary data without simulation', async () => {
+      DigitalTwin.telemetryData = null;
+      DigitalTwin.isActualFlown = false;
+
+      const result = await DigitalTwin.loadFlightLogData('FLY223.DAT', 'binary_unparseable_data');
+      assert.strictEqual(result, false, 'loadFlightLogData must return false on unparseable data');
+      assert.strictEqual(DigitalTwin.telemetryData, null, 'telemetryData must remain null and NOT fall back to simulation');
+      assert.strictEqual(DigitalTwin.isActualFlown, false, 'isActualFlown must remain false');
+    });
+
+    test('DigitalTwin.loadFlightLogData successfully loads valid CSV telemetry', async () => {
+      const sampleCsv = 'latitude,longitude,altitude\n41.3215,-88.9950,25.0\n41.3220,-88.9955,26.0\n';
+      const b64 = Buffer.from(sampleCsv).toString('base64');
+      const result = await DigitalTwin.loadFlightLogData('FlightRecord_2026-11-05_[17-58-48].csv', b64);
+      assert.strictEqual(result, true, 'loadFlightLogData must succeed for valid CSV');
+      assert.ok(DigitalTwin.telemetryData, 'telemetryData must be populated');
+      assert.strictEqual(DigitalTwin.isActualFlown, true, 'isActualFlown must be true');
+    });
+
+    test('AndroidMtpBridge.kt filters out .dat files and skips MCDatFlightRecords', () => {
+      const mtpKt = fs.readFileSync(path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'AndroidMtpBridge.kt'), 'utf8');
+      assert.ok(mtpKt.includes('mcdat') && mtpKt.includes('continue'), 'Must skip mcdat folder');
+      assert.ok(mtpKt.includes('lower.endsWith(".dat")') && mtpKt.includes('DAT_UNSUPPORTED'), 'Must reject .dat files');
+      assert.ok(mtpKt.includes('fun listSavedFlights(): String'), 'Must expose listSavedFlights');
+      assert.ok(mtpKt.includes('fun getSavedFlightTelemetry(filename: String): String'), 'Must expose getSavedFlightTelemetry');
+      assert.ok(!mtpKt.includes('30_000L'), 'Must eliminate arbitrary 30-second TTL cache');
+    });
+
+    test('ScreenAwakeManager controls keep-awake mode, UI classes, and persistence', async () => {
+      const { isScreenAwakeActive, setScreenAwakeMode, toggleScreenAwakeMode } = require('./src/ui/ScreenAwakeManager.js');
+      assert.strictEqual(typeof setScreenAwakeMode, 'function');
+      assert.strictEqual(typeof toggleScreenAwakeMode, 'function');
+
+      await setScreenAwakeMode(true, false);
+      assert.strictEqual(isScreenAwakeActive(), true);
+
+      await setScreenAwakeMode(false, false);
+      assert.strictEqual(isScreenAwakeActive(), false);
+
+      const toggled = await toggleScreenAwakeMode();
+      assert.strictEqual(toggled, true);
+      assert.strictEqual(isScreenAwakeActive(), true);
+    });
+
+    test('Section 0 SidebarManager populates from local flight records when companion is offline', async () => {
+      const sidebarCode = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'SidebarManager.js'), 'utf8');
+      assert.ok(sidebarCode.includes('listSavedFlights'), 'SidebarManager must query listSavedFlights on native Android');
+      assert.ok(sidebarCode.includes('aalaapi_historical_flights'), 'SidebarManager must query localStorage historical flights');
+      assert.ok(sidebarCode.includes('isMissionDbOnline = bridgeReachable || (items.length > 0)'), 'Flight DB is considered online when local flights exist');
+    });
+  });
   });
 });
 

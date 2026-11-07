@@ -2248,7 +2248,41 @@ const FlightDiagnostics = {
         if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
         this.isDecrypted = false;
         this.needsDjiApiKey = false;
-        // For built-in demo flight profiles (e.g. 2026-08-20 demo logs), generate offline simulation
+
+        // Check if Android native bridge or localStorage has this flight saved offline!
+        let offlineLoaded = false;
+        try {
+          if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getSavedFlightTelemetry === 'function') {
+            const rawJson = window.AalaapiAndroid.getSavedFlightTelemetry(flightId);
+            if (rawJson) {
+              const res = JSON.parse(rawJson);
+              if (res.success && res.data) {
+                const ok = this.loadFlightLogData(flightId, res.data);
+                if (ok && this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
+                  offlineLoaded = true;
+                }
+              }
+            }
+          }
+        } catch (_) {}
+
+        if (!offlineLoaded) {
+          try {
+            if (typeof localStorage !== 'undefined') {
+              const cachedTelem = localStorage.getItem('aalaapi_offline_flight_' + flightId);
+              if (cachedTelem) {
+                const ok = this.loadFlightLogData(flightId, cachedTelem);
+                if (ok && this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
+                  offlineLoaded = true;
+                }
+              }
+            }
+          } catch (_) {}
+        }
+
+        if (offlineLoaded) {
+          // Successfully restored telemetry from offline tablet/browser storage
+        } else // For built-in demo flight profiles (e.g. 2026-08-20 demo logs), generate offline simulation
         if (flightId && (flightId.includes('2026-08-20') || flightId.includes('19-39-07') || flightId.includes('19-41-15') || flightId.includes('19-42-28') || flightId.includes('19-47-15'))) {
           this.isActualFlown = false;
           this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
@@ -4497,11 +4531,10 @@ const FlightDiagnostics = {
       }
 
       if (!importedTelemetry) {
-        const wps = getActiveMissionWaypoints();
-        const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
-        const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
-        const gimbalPitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
-        importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
+        this.isActualFlown = false;
+        this.telemetryData = null;
+        this.comparisonData = null;
+        throw new Error('Unable to parse flight telemetry from ' + flightId + '. Ensure the file is a valid FlightRecord (.txt or .csv).');
       }
 
       if (importedTelemetry) {
@@ -4673,12 +4706,11 @@ const FlightDiagnostics = {
         }
       }
 
-      if (!importedTelemetry && typeof generateTelemetryFromWaypoints === 'function') {
-        const wps = (typeof getActiveMissionWaypoints === 'function') ? getActiveMissionWaypoints() : [];
-        const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
-        const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
-        const gimbalPitch = (typeof document !== 'undefined' && typeof parseGimbalPitch === 'function') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
-        importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
+      if (!importedTelemetry) {
+        this.isActualFlown = false;
+        this.telemetryData = null;
+        this.comparisonData = null;
+        throw new Error('Unable to parse flight telemetry from ' + flightId + '. Ensure the file is a valid FlightRecord (.txt or .csv).');
       }
 
       if (importedTelemetry) {
