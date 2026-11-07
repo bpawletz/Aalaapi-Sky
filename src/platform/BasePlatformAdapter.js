@@ -173,16 +173,64 @@ class BasePlatformAdapter {
   }
 
   speak(text, rate = 1.05, pitch = 1.0) {
-    if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
       return false;
     }
+    const UtteranceCtor = window.SpeechSynthesisUtterance || (typeof SpeechSynthesisUtterance !== 'undefined' ? SpeechSynthesisUtterance : null);
+    if (!UtteranceCtor) return false;
     try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = rate;
-      utterance.pitch = pitch;
-      utterance.volume = 0.9;
-      window.speechSynthesis.speak(utterance);
+      if (window.speechSynthesis.paused && typeof window.speechSynthesis.resume === 'function') {
+        try { window.speechSynthesis.resume(); } catch (_) {}
+      }
+
+      const dispatchSpeech = () => {
+        try {
+          const utterance = new UtteranceCtor(text);
+          utterance.rate = rate;
+          utterance.pitch = pitch;
+          utterance.volume = 0.9;
+
+          if (typeof window.speechSynthesis.getVoices === 'function') {
+            try {
+              const voices = window.speechSynthesis.getVoices();
+              if (voices && voices.length > 0) {
+                const localEn = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en') && v.localService);
+                const candidatePool = localEn.length > 0 ? localEn : voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+                const preferred = candidatePool.find(v => (
+                  v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Mark') || v.name.includes('Google') || v.default
+                )) || candidatePool[0] || voices[0];
+                if (preferred) utterance.voice = preferred;
+              }
+            } catch (_) {}
+          }
+
+          if (typeof window !== 'undefined') {
+            if (!window._aalaapiActiveUtterances) window._aalaapiActiveUtterances = new Set();
+            window._aalaapiActiveUtterances.add(utterance);
+          }
+
+          utterance.onend = () => {
+            if (typeof window !== 'undefined' && window._aalaapiActiveUtterances) {
+              window._aalaapiActiveUtterances.delete(utterance);
+            }
+          };
+          utterance.onerror = () => {
+            if (typeof window !== 'undefined' && window._aalaapiActiveUtterances) {
+              window._aalaapiActiveUtterances.delete(utterance);
+            }
+          };
+
+          window.speechSynthesis.speak(utterance);
+        } catch (_) {}
+      };
+
+      const isBusy = Boolean(window.speechSynthesis.speaking || window.speechSynthesis.pending);
+      if (isBusy && typeof window.speechSynthesis.cancel === 'function') {
+        try { window.speechSynthesis.cancel(); } catch (_) {}
+        setTimeout(dispatchSpeech, 40);
+      } else {
+        dispatchSpeech();
+      }
       return true;
     } catch (_) {
       return false;
@@ -191,7 +239,10 @@ class BasePlatformAdapter {
 
   stopSpeaking() {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-      try { window.speechSynthesis.cancel(); } catch (_) {}
+      try {
+        window.speechSynthesis.cancel();
+        if (window._aalaapiActiveUtterances) window._aalaapiActiveUtterances.clear();
+      } catch (_) {}
     }
   }
 

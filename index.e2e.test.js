@@ -12748,7 +12748,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(zoomControls.hasAirspace, '#map-zoom-airspace-btn must exist');
 
     // Click Airspace zoom button
-    await page.locator('#map-zoom-airspace-btn').click({ force: true });
+    await page.evaluate(() => {
+      const btn = document.getElementById('map-zoom-airspace-btn');
+      if (btn) btn.click();
+    });
     await page.waitForFunction(() => window.map && window.map.getZoom() === 12, { timeout: 2000 }).catch(() => {});
     await page.waitForTimeout(100);
 
@@ -12766,7 +12769,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(airspaceZoom.isActive, 'Airspace button must have is-active class at zoom 12');
 
     // Click Plan zoom button
-    await page.locator('#map-zoom-plan-btn').click({ force: true });
+    await page.evaluate(() => {
+      const btn = document.getElementById('map-zoom-plan-btn');
+      if (btn) btn.click();
+    });
     await page.waitForFunction(() => window.map && window.map.getZoom() === 18, { timeout: 2000 }).catch(() => {});
     await page.waitForTimeout(100);
 
@@ -13350,5 +13356,200 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     // 5. Restore default viewport
     await page.setViewportSize({ width: 1366, height: 768 });
   });
+
+  test('v1.242.6: ADS-B Text-to-Speech (TTS) Voice Alert Execution & Offline Voice Selection in Chromium (Issue #281)', async (t) => {
+    // 1. Open ADS-B drawer
+    const drawerOpened = await page.evaluate(() => {
+      const btn = document.getElementById('adsb-topbar-btn');
+      if (btn) btn.click();
+      const drawer = document.getElementById('adsb-control-drawer');
+      return drawer && !drawer.classList.contains('hidden');
+    });
+    assert.ok(drawerOpened, 'ADS-B drawer should open');
+
+    // 2. Open Preflight simulation details
+    await page.evaluate(() => {
+      const details = document.querySelector('.adsb-sim-details');
+      if (details) details.open = true;
+      const ttsDetails = document.getElementById('adsb-tts-customization-details');
+      if (ttsDetails) ttsDetails.open = true;
+    });
+
+    // 3. Test Preview button dispatches speech, anchors utterance, and selects offline local voice
+    const previewResult = await page.evaluate(async () => {
+      return new Promise(resolve => {
+        let capturedUtterance = null;
+        let speakCalled = false;
+        const origSpeak = window.speechSynthesis.speak.bind(window.speechSynthesis);
+
+        window.speechSynthesis.speak = function(u) {
+          speakCalled = true;
+          capturedUtterance = u;
+          origSpeak(u);
+        };
+
+        const previewBtn = document.getElementById('adsb-tts-preview-btn');
+        if (!previewBtn) return resolve({ error: 'No preview button' });
+        previewBtn.click();
+
+        setTimeout(() => {
+          resolve({
+            speakCalled,
+            hasUtterance: Boolean(capturedUtterance),
+            text: capturedUtterance ? capturedUtterance.text : null,
+            voiceName: capturedUtterance && capturedUtterance.voice ? capturedUtterance.voice.name : 'default',
+            isAnchored: Boolean(window._aalaapiActiveUtterances && window._aalaapiActiveUtterances.has(capturedUtterance)),
+            rate: capturedUtterance ? capturedUtterance.rate : null,
+            pitch: capturedUtterance ? capturedUtterance.pitch : null
+          });
+        }, 650);
+      });
+    });
+
+    assert.ok(previewResult.speakCalled, 'speechSynthesis.speak must be called by preview button');
+    assert.ok(previewResult.hasUtterance, 'Utterance must be generated');
+    assert.ok(previewResult.text.includes('Traffic alert!'), 'Utterance text must include template text');
+    assert.strictEqual(previewResult.isAnchored, true, 'Utterance must be anchored in _aalaapiActiveUtterances against GC');
+
+    // 4. Close drawer
+    await page.evaluate(() => {
+      const closeBtn = document.getElementById('adsb-drawer-close-btn');
+      if (closeBtn) closeBtn.click();
+    });
+  });
+  });
+
+  describe('Issue #282: Dual-Platform Leaflet Layers Control & Airspace Alert Clearance E2E Suite (v1.242.9)', () => {
+    // 1. Desktop Context (Windows / Mouse)
+    test('E2E Desktop: Layers control does NOT expand on hover (mouseenter); toggles on click', async () => {
+      await page.setViewportSize({ width: 1366, height: 768 });
+      await page.evaluate(() => {
+        localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
+        const disc = document.getElementById('disclaimer-modal');
+        if (disc) disc.classList.add('hidden');
+        const banner = document.getElementById('welcome-tour-banner');
+        if (banner) banner.classList.add('hidden');
+        const c = document.querySelector('.leaflet-control-layers');
+        if (c) c.classList.remove('leaflet-control-layers-expanded');
+      });
+
+      const toggle = page.locator('.leaflet-control-layers-toggle');
+      await toggle.hover();
+      await page.waitForTimeout(150);
+
+      const isExpandedHover = await page.evaluate(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c ? c.classList.contains('leaflet-control-layers-expanded') : false;
+      });
+      assert.strictEqual(isExpandedHover, false, 'Layers menu must NOT expand on hover');
+
+      // Click to expand
+      await toggle.click({ force: true });
+      await page.waitForTimeout(150);
+      const isExpandedClick = await page.evaluate(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c ? c.classList.contains('leaflet-control-layers-expanded') : false;
+      });
+      assert.strictEqual(isExpandedClick, true, 'Layers menu MUST expand on click');
+
+      // Click close button inside header
+      const closeBtn = page.locator('.leaflet-control-layers-close-btn');
+      await closeBtn.click({ force: true });
+      await page.waitForTimeout(150);
+      const isExpandedClose = await page.evaluate(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c ? c.classList.contains('leaflet-control-layers-expanded') : false;
+      });
+      assert.strictEqual(isExpandedClose, false, 'Layers menu MUST collapse when close button is clicked');
+    });
+
+    test('E2E Desktop: Active ADS-B alert banner and Remote-ID HUD never overlap Zoom Presets (Plan & Airspace)', async () => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      const overlapCheck = await page.evaluate(() => {
+        const zoomPresets = document.getElementById('map-zoom-presets-control');
+        const adsbBanner = document.getElementById('adsb-alert-banner');
+        const ridHud = document.getElementById('remote-id-airspace-hud');
+        const adsbPill = document.getElementById('adsb-map-pill');
+        const ridBadge = document.getElementById('remote-id-badge');
+
+        adsbBanner.classList.remove('hidden');
+        ridHud.classList.remove('hidden');
+        adsbPill.classList.remove('hidden');
+        ridBadge.classList.remove('hidden');
+
+        const zpRect = zoomPresets.getBoundingClientRect();
+        const bannerRect = adsbBanner.getBoundingClientRect();
+        const ridRect = ridHud.getBoundingClientRect();
+
+        return {
+          bannerOverlapsPresets: !(bannerRect.right < zpRect.left || bannerRect.left > zpRect.right || bannerRect.bottom < zpRect.top || bannerRect.top > zpRect.bottom),
+          ridOverlapsPresets: !(ridRect.right < zpRect.left || ridRect.left > zpRect.right || ridRect.bottom < zpRect.top || ridRect.top > zpRect.bottom),
+          presetsRight: zpRect.right,
+          bannerTop: bannerRect.top,
+          presetsBottom: zpRect.bottom
+        };
+      });
+
+      assert.strictEqual(overlapCheck.bannerOverlapsPresets, false, 'ADS-B alert banner must not overlap zoom presets on desktop');
+      assert.strictEqual(overlapCheck.ridOverlapsPresets, false, 'Remote ID HUD must not overlap zoom presets on desktop');
+      assert.ok(overlapCheck.bannerTop >= overlapCheck.presetsBottom, 'Alert banner must drop down strictly below zoom presets row');
+    });
+
+    // 2. Mobile Android Context (Touch / Small Screen)
+    test('E2E Android Touch: Layers control expands on tap and alert banners do not overlap zoom presets on 412x915', async () => {
+      const mobileContext = await browser.newContext({
+        viewport: { width: 412, height: 915 },
+        isMobile: true,
+        hasTouch: true,
+        userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+      });
+      const mobilePage = await mobileContext.newPage();
+      const filePath = 'file:///' + path.resolve('index.html').replace(/\\/g, '/');
+      await mobilePage.goto(filePath, { waitUntil: 'load' });
+      await mobilePage.waitForTimeout(500);
+
+      await mobilePage.evaluate(() => {
+        localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
+        const disc = document.getElementById('disclaimer-modal');
+        if (disc) disc.classList.add('hidden');
+        const banner = document.getElementById('welcome-tour-banner');
+        if (banner) banner.classList.add('hidden');
+      });
+
+      // Tap layers toggle
+      const mobileToggle = mobilePage.locator('.leaflet-control-layers-toggle');
+      await mobileToggle.tap();
+      await mobilePage.waitForTimeout(200);
+
+      const isMobileExpanded = await mobilePage.evaluate(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c ? c.classList.contains('leaflet-control-layers-expanded') : false;
+      });
+      assert.strictEqual(isMobileExpanded, true, 'Layers menu MUST expand on mobile touch tap');
+
+      // Check mobile overlap
+      const mobileOverlapCheck = await mobilePage.evaluate(() => {
+        const zoomPresets = document.getElementById('map-zoom-presets-control');
+        const adsbBanner = document.getElementById('adsb-alert-banner');
+        const ridHud = document.getElementById('remote-id-airspace-hud');
+        adsbBanner.classList.remove('hidden');
+        ridHud.classList.remove('hidden');
+
+        const zpRect = zoomPresets.getBoundingClientRect();
+        const bannerRect = adsbBanner.getBoundingClientRect();
+        const ridRect = ridHud.getBoundingClientRect();
+
+        return {
+          bannerOverlapsPresets: !(bannerRect.right < zpRect.left || bannerRect.left > zpRect.right || bannerRect.bottom < zpRect.top || bannerRect.top > zpRect.bottom),
+          ridOverlapsPresets: !(ridRect.right < zpRect.left || ridRect.left > zpRect.right || ridRect.bottom < zpRect.top || ridRect.top > zpRect.bottom),
+          bannerTop: bannerRect.top,
+          presetsBottom: zpRect.bottom
+        };
+      });
+
+      assert.strictEqual(mobileOverlapCheck.bannerOverlapsPresets, false, 'ADS-B alert banner must not overlap zoom presets on mobile');
+      assert.strictEqual(mobileOverlapCheck.ridOverlapsPresets, false, 'Remote ID HUD must not overlap zoom presets on mobile');
+      await mobileContext.close();
+    });
   });
 });

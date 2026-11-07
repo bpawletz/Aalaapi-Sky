@@ -41843,7 +41843,7 @@ describe('Issue #249 & v1.225.1: Android Locate Button & ADS-B Alert Audio Suite
     const prevCtor = global.SpeechSynthesisUtterance;
     const calls = { cancel: 0, speak: 0 };
     global.SpeechSynthesisUtterance = function (text) { this.text = text; };
-    global.window = { speechSynthesis: { cancel: () => { calls.cancel++; }, speak: () => { calls.speak++; } } };
+    global.window = { speechSynthesis: { speaking: false, cancel: () => { calls.cancel++; }, speak: () => { calls.speak++; } } };
     try {
       AdsbAirspaceManager.playVoiceAdvisory({
         callsign: 'N123AB', distanceMiles: 2, distanceMeters: 3218, altitude: 900, bearingCardinal: 'S'
@@ -41852,7 +41852,6 @@ describe('Issue #249 & v1.225.1: Android Locate Button & ADS-B Alert Audio Suite
       global.window = prevWindow;
       global.SpeechSynthesisUtterance = prevCtor;
     }
-    assert.strictEqual(calls.cancel, 1, 'speechSynthesis.cancel must be called');
     assert.strictEqual(calls.speak, 1, 'speechSynthesis.speak must be called');
   });
 
@@ -44664,6 +44663,226 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       ]);
       const res = ClientRemoteIdDecoder.decode(randomNoise, -75, 'ble');
       assert.strictEqual(res, null, 'Arbitrary BLE noise must be rejected as null');
+    });
+  });
+
+  describe('Issue #281: ADS-B Text-to-Speech (TTS) Voice Alert Deadlock, Offline Voice Selection & Acoustic Sequencing (v1.242.8)', () => {
+    test('Version consistency: v1.242.8 across package.json, changelog, index_template.html, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.242.8');
+    });
+
+    test('playVoiceAdvisory prefers localService offline voices over online cloud voices', () => {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      const prevWindow = global.window;
+      const prevCtor = global.SpeechSynthesisUtterance;
+      let spokenUtterance = null;
+      global.SpeechSynthesisUtterance = function (text) {
+        this.text = text;
+        this.voice = null;
+      };
+
+      const mockVoices = [
+        { name: 'Microsoft Jenny Online (Natural) - English (United States)', lang: 'en-US', localService: false },
+        { name: 'Microsoft David - English (United States)', lang: 'en-US', localService: true },
+        { name: 'Microsoft Zira - English (United States)', lang: 'en-US', localService: true }
+      ];
+
+      global.window = {
+        speechSynthesis: {
+          speaking: false,
+          pending: false,
+          getVoices: () => mockVoices,
+          speak: (u) => { spokenUtterance = u; },
+          cancel: () => {}
+        }
+      };
+
+      try {
+        AdsbAirspaceManager.playVoiceAdvisory({
+          callsign: 'UAL452', distanceMiles: 1.5, distanceMeters: 2414, altitude: 1850, bearingCardinal: 'NE'
+        }, 'breached');
+        assert.ok(spokenUtterance, 'Utterance must be spoken');
+        assert.ok(spokenUtterance.voice, 'A voice must be selected');
+        assert.strictEqual(spokenUtterance.voice.name, 'Microsoft David - English (United States)', 'Must pick local offline voice instead of online cloud voice');
+      } finally {
+        global.window = prevWindow;
+        global.SpeechSynthesisUtterance = prevCtor;
+      }
+    });
+
+    test('playVoiceAdvisory does not invoke cancel when speech synthesis is idle', () => {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      const prevWindow = global.window;
+      const prevCtor = global.SpeechSynthesisUtterance;
+      let cancelCalled = false;
+      let speakCalled = false;
+      global.SpeechSynthesisUtterance = function (text) { this.text = text; };
+
+      global.window = {
+        speechSynthesis: {
+          speaking: false,
+          pending: false,
+          speak: () => { speakCalled = true; },
+          cancel: () => { cancelCalled = true; }
+        }
+      };
+
+      try {
+        AdsbAirspaceManager.playVoiceAdvisory({ callsign: 'AAL100' }, 'breached');
+        assert.strictEqual(cancelCalled, false, 'cancel() must not be called when speech synthesis is idle');
+        assert.strictEqual(speakCalled, true, 'speak() must be invoked directly');
+      } finally {
+        global.window = prevWindow;
+        global.SpeechSynthesisUtterance = prevCtor;
+      }
+    });
+
+    test('playVoiceAdvisory yields tick before dispatching speech when cancelling active speech', (t, done) => {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      const prevWindow = global.window;
+      const prevCtor = global.SpeechSynthesisUtterance;
+      let cancelCalled = false;
+      let speakCalled = false;
+      global.SpeechSynthesisUtterance = function (text) { this.text = text; };
+
+      global.window = {
+        speechSynthesis: {
+          speaking: true,
+          pending: false,
+          speak: () => { speakCalled = true; },
+          cancel: () => { cancelCalled = true; }
+        }
+      };
+
+      try {
+        AdsbAirspaceManager.playVoiceAdvisory({ callsign: 'DAL200' }, 'breached');
+        assert.strictEqual(cancelCalled, true, 'cancel() must be called when speaking');
+        assert.strictEqual(speakCalled, false, 'speak() must be deferred to next tick');
+
+        setTimeout(() => {
+          assert.strictEqual(speakCalled, true, 'speak() must be invoked after tick delay');
+          global.window = prevWindow;
+          global.SpeechSynthesisUtterance = prevCtor;
+          done();
+        }, 60);
+      } catch (err) {
+        global.window = prevWindow;
+        global.SpeechSynthesisUtterance = prevCtor;
+        done(err);
+      }
+    });
+
+    test('playVoiceAdvisory anchors utterance in window._aalaapiActiveUtterances set', () => {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      const prevWindow = global.window;
+      const prevCtor = global.SpeechSynthesisUtterance;
+      let activeUtter = null;
+      global.SpeechSynthesisUtterance = function (text) { this.text = text; };
+
+      global.window = {
+        _aalaapiActiveUtterances: new Set(),
+        speechSynthesis: {
+          speaking: false,
+          pending: false,
+          speak: (u) => { activeUtter = u; }
+        }
+      };
+
+      try {
+        AdsbAirspaceManager.playVoiceAdvisory({ callsign: 'SWA300' }, 'breached');
+        assert.ok(activeUtter, 'Utterance must be dispatched');
+        assert.ok(global.window._aalaapiActiveUtterances.has(activeUtter), 'Utterance must be anchored in global set');
+
+        // Test cleanup on end
+        if (typeof activeUtter.onend === 'function') activeUtter.onend();
+        assert.strictEqual(global.window._aalaapiActiveUtterances.has(activeUtter), false, 'Utterance must be removed upon onend');
+      } finally {
+        global.window = prevWindow;
+        global.SpeechSynthesisUtterance = prevCtor;
+      }
+    });
+
+    test('BasePlatformAdapter.speak anchors utterance and selects offline local voice', () => {
+      const { BasePlatformAdapter } = require('./src/platform/BasePlatformAdapter.js');
+      const adapter = new BasePlatformAdapter('desktop');
+      const prevWindow = global.window;
+      const prevCtor = global.SpeechSynthesisUtterance;
+      let spokenUtter = null;
+      global.SpeechSynthesisUtterance = function (text) {
+        this.text = text;
+        this.voice = null;
+      };
+
+      const mockVoices = [
+        { name: 'Microsoft Jenny Online (Natural) - English (United States)', lang: 'en-US', localService: false },
+        { name: 'Microsoft Zira - English (United States)', lang: 'en-US', localService: true }
+      ];
+
+      global.window = {
+        _aalaapiActiveUtterances: new Set(),
+        speechSynthesis: {
+          speaking: false,
+          pending: false,
+          getVoices: () => mockVoices,
+          speak: (u) => { spokenUtter = u; },
+          cancel: () => {}
+        }
+      };
+
+      try {
+        const ok = adapter.speak('Hello from Platform');
+        assert.strictEqual(ok, true);
+        assert.ok(spokenUtter);
+        assert.strictEqual(spokenUtter.voice.name, 'Microsoft Zira - English (United States)');
+        assert.ok(global.window._aalaapiActiveUtterances.has(spokenUtter));
+      } finally {
+        global.window = prevWindow;
+        global.SpeechSynthesisUtterance = prevCtor;
+      }
+    });
+  });
+
+  describe('Issue #282: Leaflet Layers Control Click-to-Toggle & Airplane Alert Zoom Clearance Suite (v1.242.9)', () => {
+    test('Version consistency: v1.242.9 across package.json, changelog, templates, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.242.9');
+    });
+
+    test('AGENTS.md mandates Section 19 Dual-Platform Verification Policy', () => {
+      const agentsMd = fs.readFileSync(path.join(__dirname, 'AGENTS.md'), 'utf8');
+      assert.ok(agentsMd.includes('## 19. Dual-Platform Verification Policy (Android Touch & Desktop Mouse)'), 'Must define Section 19 in AGENTS.md');
+      assert.ok(agentsMd.includes('Click/Tap-to-Toggle Mandate'), 'Must define Click/Tap-to-Toggle mandate in AGENTS.md');
+      assert.ok(agentsMd.includes('Zone 1: Top-Left Control Dock'), 'Must define Zone 1 in AGENTS.md');
+      assert.ok(agentsMd.includes('Zone 2: Top-Right Preset Dock'), 'Must define Zone 2 in AGENTS.md');
+      assert.ok(agentsMd.includes('Zone 3: Center Notification Drop Zone'), 'Must define Zone 3 in AGENTS.md');
+    });
+
+    test('src/map/MapEngine.js implements click-to-toggle, removes hover listeners, and injects close button', () => {
+      const mapEngineSrc = fs.readFileSync(path.join(__dirname, 'src', 'map', 'MapEngine.js'), 'utf8');
+      assert.ok(mapEngineSrc.includes("L.DomEvent.off(layerContainer, 'mouseenter'"), 'Must remove hover mouseenter listener');
+      assert.ok(mapEngineSrc.includes("L.DomEvent.off(layerContainer, 'mouseleave'"), 'Must remove hover mouseleave listener');
+      assert.ok(mapEngineSrc.includes('layerControl._expandIfNotCollapsed = function () { return this; };'), 'Must override _expandIfNotCollapsed to prevent hover expand');
+      assert.ok(mapEngineSrc.includes('toggleLayersMenu'), 'Must define custom toggleLayersMenu click handler');
+      assert.ok(mapEngineSrc.includes("L.DomEvent.on(toggleLink, 'touchstart', L.DomEvent.stopPropagation);"), 'Must stop touchstart propagation on toggleLink');
+      assert.ok(mapEngineSrc.includes("L.DomEvent.on(layerContainer, 'touchstart', L.DomEvent.stopPropagation);"), 'Must stop touchstart propagation on layerContainer');
+      assert.ok(mapEngineSrc.includes('leaflet-control-layers-header'), 'Must inject header element');
+      assert.ok(mapEngineSrc.includes('leaflet-control-layers-close-btn'), 'Must inject close button');
+    });
+
+    test('index.css anchors zoom presets to right: 12px and offsets alert banners to top: 66px', () => {
+      const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+      assert.ok(css.includes('.map-floating-zoom-presets'), 'Must contain .map-floating-zoom-presets');
+      assert.ok(css.includes('right: 12px;'), 'Zoom presets must be anchored to right: 12px');
+      assert.ok(css.includes('.adsb-alert-banner'), 'Must contain .adsb-alert-banner');
+      assert.ok(css.includes('top: 66px;'), 'Alert banner must be positioned at top: 52px');
+      assert.ok(css.includes('.remote-id-airspace-hud.has-adsb-alert'), 'Must contain .remote-id-airspace-hud.has-adsb-alert');
+      assert.ok(css.includes('.leaflet-control-layers-expanded'), 'Must contain .leaflet-control-layers-expanded');
+      assert.ok(css.includes('.leaflet-control-layers-close-btn'), 'Expanded layers must define close button styling');
+    });
+
+    test('ApiClient.js synchronizes has-adsb-alert class on #remote-id-airspace-hud', () => {
+      const apiSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
+      assert.ok(apiSrc.includes("ridHud.classList.add('has-adsb-alert');"), 'Must add has-adsb-alert class when breach or approaching alert triggers');
+      assert.ok(apiSrc.includes("ridHud.classList.remove('has-adsb-alert');"), 'Must remove has-adsb-alert class when alert clears or closes');
     });
   });
 

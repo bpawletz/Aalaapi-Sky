@@ -705,7 +705,87 @@ function initMap() {
   }
   overlays["⛰️ Elevation DEM Grid & Terrain Heatmap (2D)"] = demGridOverlayGroup;
 
-  const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
+  // Defensive override on prototype BEFORE instantiation: enforce touch-first, explicit click-to-open
+  // across all platforms and completely prevent hover expansion on desktop per Section 19.
+  if (typeof L !== 'undefined' && L.Control && L.Control.Layers) {
+    L.Control.Layers.prototype._expandIfNotCollapsed = function () { return this; };
+  }
+
+  const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft', collapsed: true }).addTo(map);
+
+  // Configure Click-to-Toggle and Touch-First Interaction (Issue #282)
+  // Disable Leaflet's default hover-expansion on desktop, and ensure reliable touch toggle on Android.
+  const layerContainer = (layerControl && typeof layerControl.getContainer === 'function') ? layerControl.getContainer() : null;
+  if (layerContainer) {
+    // 1. Remove hover expansion listeners
+    if (typeof L !== 'undefined' && L.DomEvent) {
+      try {
+        L.DomEvent.off(layerContainer, 'mouseover');
+        L.DomEvent.off(layerContainer, 'mouseout');
+        L.DomEvent.off(layerContainer, 'mouseenter');
+        L.DomEvent.off(layerContainer, 'mouseleave');
+      } catch (_) {}
+    }
+    // Defensive override: enforce explicit click-to-open across all platforms
+    layerControl._expandIfNotCollapsed = function () { return this; };
+
+    // 2. Click/Tap-to-Toggle on toggle link
+    const toggleLink = layerControl._layersLink || layerContainer.querySelector('.leaflet-control-layers-toggle');
+    if (toggleLink) {
+      if (typeof L !== 'undefined' && L.DomEvent) {
+        try {
+          L.DomEvent.off(toggleLink, 'click');
+          L.DomEvent.off(toggleLink, 'focus');
+        } catch (_) {}
+      }
+
+      const toggleLayersMenu = (e) => {
+        if (e) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          if (typeof e.stopPropagation === 'function') e.stopPropagation();
+          if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        }
+        if (layerContainer.classList.contains('leaflet-control-layers-expanded')) {
+          layerControl.collapse();
+        } else {
+          layerControl.expand();
+        }
+      };
+
+      if (typeof L !== 'undefined' && L.DomEvent) {
+        L.DomEvent.on(toggleLink, 'click', toggleLayersMenu);
+        L.DomEvent.on(toggleLink, 'pointerdown', L.DomEvent.stopPropagation);
+        L.DomEvent.on(toggleLink, 'touchstart', L.DomEvent.stopPropagation);
+      } else {
+        toggleLink.addEventListener('click', toggleLayersMenu);
+      }
+    }
+
+    // 3. Stop touch/pointer propagation on layer container to prevent map click dismissing the menu prematurely on mobile
+    if (typeof L !== 'undefined' && L.DomEvent) {
+      L.DomEvent.on(layerContainer, 'pointerdown', L.DomEvent.stopPropagation);
+      L.DomEvent.on(layerContainer, 'touchstart', L.DomEvent.stopPropagation);
+    }
+
+    // 4. Inject mobile-friendly Header & Close Button into layers list section
+    const listSection = layerControl._section || layerContainer.querySelector('.leaflet-control-layers-list');
+    if (listSection && !listSection.querySelector('.leaflet-control-layers-header')) {
+      const headerEl = document.createElement('div');
+      headerEl.className = 'leaflet-control-layers-header';
+      headerEl.innerHTML = `
+        <span class="leaflet-control-layers-title">🗺️ Map Layers &amp; Overlays</span>
+        <button type="button" class="leaflet-control-layers-close-btn" aria-label="Close Map Layers" title="Close Map Layers">✕</button>
+      `;
+      const closeBtn = headerEl.querySelector('.leaflet-control-layers-close-btn');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          layerControl.collapse();
+        });
+      }
+      listSection.insertBefore(headerEl, listSection.firstChild);
+    }
+  }
 
   // On-map DEM Elevation Legend (v1.193.0 - Issue #168)
   const demLegendControl = L.control({ position: 'bottomleft' });
