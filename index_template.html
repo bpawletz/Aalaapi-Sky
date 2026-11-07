@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.227.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.228.0</span></h1>
         </div>
       </div>
 
@@ -4892,6 +4892,15 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>📡</span>
+              Unified ADS-B Feed Health &amp; RC 2 USB MTP Log Pull Fix (v1.228.0) (Closes #253, Closes #254)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              The <strong>Feed &amp; Hardware</strong> tab indicator dot now displays active green status whenever airspace telemetry streams from native Android dump1090/readsb sockets, the online cloud feed (<code>adsb.lol</code>), or Companion Bridge, preventing false-offline warnings. Fixed USB MTP log pulling from DJI RC 2 controllers on Android with broadened file detection (<code>DJIFlightRecord_*.txt</code>) and informative Mobile Debug Console error stack reporting.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>🔌</span>
               Android RC 2 USB MTP Log Extraction &amp; Mobile Debug Console (v1.227.0) (Closes #252)
             </strong>
@@ -7546,7 +7555,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.227.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.228.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -7706,7 +7715,14 @@
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
-              <li style="margin-bottom: 8px;">
+                            <li style="margin-bottom: 8px;">
+                <strong style="color: var(--text-main);">Changelog (v1.228.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Unified ADS-B Feed Health, RC 2 USB Log Extraction &amp; Debug Console Fix (Closes #253, Closes #254):</strong> Feed &amp; Hardware status dot turns green when streaming from Android native dump1090 sockets or online cloud feeds (adsb.lol). Fixed RC 2 flight log pulling on Android via USB MTP with DJIFlightRecord support, and resolved empty error formatting in Mobile Debug Console.</li>
+                </ul>
+              </li>
+              <br>
+<li style="margin-bottom: 8px;">
                 <strong style="color: var(--text-main);">Changelog (v1.227.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                   <li><strong>Android USB MTP RC 2 Flight Log Extraction, Chrome Remote Debugging &amp; Mobile Debug Console (Closes #252):</strong> Extract and replay DJI RC 2 flight logs over USB-C MTP directly on Android devices. Inspect WebView via PC Chrome DevTools (<code>chrome://inspect/#devices</code>) and view real-time logcat logs. Added on-device Mobile Debug Console (triple-tap header badge or tap Console in About) with live filtering and copying.</li>

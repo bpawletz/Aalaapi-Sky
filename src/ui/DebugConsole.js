@@ -72,9 +72,13 @@ class DebugConsoleManager {
       const formatted = args.map(arg => {
         if (arg === null) return 'null';
         if (arg === undefined) return 'undefined';
+        if (arg instanceof Error || (arg && typeof arg === 'object' && ('message' in arg || 'stack' in arg))) {
+          return arg.stack || `${arg.name || 'Error'}: ${arg.message || ''}`;
+        }
         if (typeof arg === 'object') {
           try {
-            return JSON.stringify(arg);
+            const str = JSON.stringify(arg);
+            return str === '{}' ? String(arg) : str;
           } catch (_) {
             return String(arg);
           }
