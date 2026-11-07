@@ -199,6 +199,11 @@ function checkAirportAirspace(ac, airports, maxLandingAltitudeFt = 3000, airport
  * @returns {{isConeWarning: boolean, etaSeconds: number|null, entryDistanceMeters: number|null, closingSpeedKts: number|null, coneLengthMeters: number, offBoresightDeg: number|null, isLanding: boolean, landingAirport: object|null, coneSuppressed: boolean, suppressReason: string|null, projectedAltitude: number|null, verticalRate: number|null}}
  */
 function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMeters, maxCeilingFeet, warningMinutes = 2.0, coneDeviationDeg = 15, options = {}) {
+  if (typeof distanceMeters === 'object' && distanceMeters !== null) {
+    options = distanceMeters;
+    distanceMeters = undefined;
+  }
+
   const result = {
     isConeWarning: false,
     etaSeconds: null,
@@ -218,7 +223,11 @@ function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMete
     verticalRate: null
   };
 
-  if (!ac || ac.latitude === null || ac.longitude === null) return result;
+  if (!ac) return result;
+  const acLat = (ac.latitude !== undefined && ac.latitude !== null) ? ac.latitude : ac.lat;
+  const acLon = (ac.longitude !== undefined && ac.longitude !== null) ? ac.longitude : ac.lon;
+  if (acLat === null || acLat === undefined || acLon === null || acLon === undefined) return result;
+
   const speedKts = typeof ac.speed === 'number' && !isNaN(ac.speed) ? ac.speed : 0;
   const trackDeg = typeof ac.track === 'number' && !isNaN(ac.track) ? ac.track : null;
   if (speedKts <= 0 || trackDeg === null) return result;
@@ -254,15 +263,31 @@ function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMete
     }
   }
 
+  const alt = ac.altitude !== null && ac.altitude !== undefined 
+    ? ac.altitude 
+    : (ac.alt !== null && ac.alt !== undefined ? ac.alt : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null));
+
+  // High-altitude cruising suppression (Issue #269)
+  const highAltFt = typeof options.highAltitudeThresholdFt === 'number' ? options.highAltitudeThresholdFt : 10000;
+  const suppressHighAlt = options.suppressHighAltitudeCones !== false;
+  if (alt !== null && alt >= highAltFt) {
+    result.isHighAltitude = true;
+    if (suppressHighAlt) {
+      result.coneSuppressed = true;
+      result.suppressReason = 'high_altitude_cruise';
+      return result;
+    }
+  }
+
   const d = typeof distanceMeters === 'number' 
     ? distanceMeters 
-    : calculateHaversineDistance(ac.latitude, ac.longitude, homeLat, homeLon);
+    : calculateHaversineDistance(acLat, acLon, homeLat, homeLon);
   const rProx = typeof radiusMeters === 'number' && radiusMeters > 0 ? radiusMeters : (3.0 * METERS_PER_STATUTE_MILE);
 
   // If already within proximity ring, this is handled by breach detection, not approaching cone
   if (d <= rProx) return result;
 
-  const bearingToHome = calculateBearing(ac.latitude, ac.longitude, homeLat, homeLon);
+  const bearingToHome = calculateBearing(acLat, acLon, homeLat, homeLon);
   const offBoresight = Math.abs(shortestAngularDifference(trackDeg, bearingToHome));
   result.offBoresightDeg = Math.round(offBoresight);
 
@@ -287,9 +312,6 @@ function evaluatePredictiveCone(ac, homeLat, homeLon, distanceMeters, radiusMete
 
   // Ceiling evaluation & Bidirectional vertical rate accounting
   const ceilingFt = typeof maxCeilingFeet === 'number' && maxCeilingFeet > 0 ? maxCeilingFeet : 2500;
-  const alt = ac.altitude !== null && ac.altitude !== undefined 
-    ? ac.altitude 
-    : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
 
 
 
@@ -807,6 +829,10 @@ class AdsbAirspaceTracker extends EventEmitter {
     const airportRadiusNm = typeof criteria.airportRadiusNm === 'number' && criteria.airportRadiusNm > 0
       ? criteria.airportRadiusNm
       : 4.0;
+    const highAltitudeThresholdFt = typeof criteria.highAltitudeThresholdFt === 'number' && criteria.highAltitudeThresholdFt > 0
+      ? criteria.highAltitudeThresholdFt
+      : 10000;
+    const suppressHighAltitudeCones = criteria.suppressHighAltitudeCones !== false;
     const airports = Array.isArray(criteria.airports) 
       ? criteria.airports 
       : (this.airports ? Array.from(this.airports.values()) : []);
@@ -890,7 +916,7 @@ class AdsbAirspaceTracker extends EventEmitter {
             maxCeilingFeet,
             warningMinutes,
             coneDeviationDeg,
-            { airports, suppressAirportLanding, airportRadiusNm }
+            { airports, suppressAirportLanding, airportRadiusNm, highAltitudeThresholdFt, suppressHighAltitudeCones }
           );
           coneLengthMeters = coneEval.coneLengthMeters;
           offBoresightDeg = coneEval.offBoresightDeg;
@@ -953,6 +979,7 @@ class AdsbAirspaceTracker extends EventEmitter {
           isDescending,
           descentSeverity,
           verticalRateFpm,
+          isHighAltitude: Boolean(ac.isHighAltitude || (ac.altitude !== null && ac.altitude >= highAltitudeThresholdFt)),
           breachReason,
           status: isBreached ? 'breached' : (isConeWarning ? 'approaching' : (isLanding ? 'landing' : 'safe')),
           history: Array.isArray(ac.history) ? ac.history : []

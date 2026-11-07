@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.237.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.239.0</span></h1>
         </div>
       </div>
 
@@ -4307,6 +4307,20 @@
                 </div>
               </div>
 
+              <!-- High-Altitude Floor / Cone Suppression Threshold Slider (Issue #269) -->
+              <div class="adsb-slider-group" style="margin-top: 8px;">
+                <div class="adsb-slider-header">
+                  <label for="adsb-high-alt-slider" style="font-size: 0.72rem; color: var(--text-muted);">High-Altitude Floor (AGL):</label>
+                  <span id="adsb-high-alt-val" style="font-size: 0.75rem; font-weight: 700; color: #86efac;">10,000 ft (3,050 m)</span>
+                </div>
+                <input type="range" id="adsb-high-alt-slider" min="3000" max="25000" step="500" value="10000" style="width: 100%; cursor: pointer;">
+                <div class="adsb-slider-range-labels">
+                  <span>3,000 ft</span>
+                  <span>10,000 ft</span>
+                  <span>25,000 ft</span>
+                </div>
+              </div>
+
               <!-- Predictive Warning Lookahead Time Slider (Issue #244) -->
               <div class="adsb-slider-group" style="margin-top: 8px;">
                 <div class="adsb-slider-header">
@@ -4420,6 +4434,62 @@
                 </select>
               </div>
 
+              <!-- Voice Alert Speech Customization (TTS) -->
+              <details id="adsb-tts-customization-details" style="margin-top: 10px; font-size: 0.72rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+                <summary style="cursor: pointer; user-select: none; font-weight: 600; color: #38bdf8; display: flex; align-items: center; justify-content: space-between;">
+                  <span>🗣️ Voice Alert Speech Customization (TTS)</span>
+                  <span style="font-size: 0.65rem;">▾</span>
+                </summary>
+                <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+                  <!-- Preset Selection -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <label for="adsb-tts-preset-select" style="color: var(--text-muted); font-size: 0.70rem; font-weight: 600;">Speech Preset:</label>
+                    <select id="adsb-tts-preset-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.70rem; border-radius: 5px; padding: 2px 6px;">
+                      <option value="standard" selected>Standard (Full Advisory)</option>
+                      <option value="concise">Concise (Distance &amp; Direction)</option>
+                      <option value="direction_first">Direction First</option>
+                      <option value="custom">Custom Template</option>
+                    </select>
+                  </div>
+
+                  <!-- Breach Alert Template -->
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <label for="adsb-tts-breach-input" style="color: var(--text-muted); font-size: 0.68rem; font-weight: 600;">Breach Alert Phrase:</label>
+                    </div>
+                    <input type="text" id="adsb-tts-breach-input" value="Traffic alert! {callsign}, {distance} {direction}, {altitude}." style="width: 100%; font-size: 0.70rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 4px 6px; box-sizing: border-box;">
+                  </div>
+
+                  <!-- Approaching Alert Template -->
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <label for="adsb-tts-approaching-input" style="color: var(--text-muted); font-size: 0.68rem; font-weight: 600;">Approaching Phrase:</label>
+                    </div>
+                    <input type="text" id="adsb-tts-approaching-input" value="Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}." style="width: 100%; font-size: 0.70rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 4px 6px; box-sizing: border-box;">
+                  </div>
+
+                  <!-- Dynamic Variable Token Chips -->
+                  <div style="font-size: 0.65rem; color: var(--text-muted); line-height: 1.4;">
+                    <span style="font-weight: 600;">Tokens:</span>
+                    <span class="badge-tag adsb-tts-token" data-token="{callsign}" style="cursor: pointer; padding: 1px 4px; margin: 1px; font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8;" title="Click to insert: Aircraft callsign">{callsign}</span>
+                    <span class="badge-tag adsb-tts-token" data-token="{direction}" style="cursor: pointer; padding: 1px 4px; margin: 1px; font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8;" title="Click to insert: Spoken direction (e.g. East South East)">{direction}</span>
+                    <span class="badge-tag adsb-tts-token" data-token="{distance}" style="cursor: pointer; padding: 1px 4px; margin: 1px; font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8;" title="Click to insert: Distance (e.g. 1.5 miles)">{distance}</span>
+                    <span class="badge-tag adsb-tts-token" data-token="{altitude}" style="cursor: pointer; padding: 1px 4px; margin: 1px; font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8;" title="Click to insert: Altitude (e.g. 1850 feet)">{altitude}</span>
+                    <span class="badge-tag adsb-tts-token" data-token="{eta}" style="cursor: pointer; padding: 1px 4px; margin: 1px; font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8;" title="Click to insert: Perimeter ETA (e.g. 45 seconds)">{eta}</span>
+                  </div>
+
+                  <!-- Actions: Test & Reset -->
+                  <div style="display: flex; gap: 6px; margin-top: 2px;">
+                    <button type="button" id="adsb-tts-preview-btn" class="btn-xs btn-secondary" style="flex: 1; padding: 3px 6px; font-size: 0.68rem; cursor: pointer; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px;" title="Preview speech with current templates">
+                      <span>🗣️</span> Preview Speech
+                    </button>
+                    <button type="button" id="adsb-tts-reset-btn" class="btn-xs btn-secondary" style="padding: 3px 6px; font-size: 0.68rem; cursor: pointer; border-radius: 4px; color: var(--text-muted);" title="Reset templates to default">
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              </details>
+
               <div class="adsb-card-row" style="margin-top: 10px; align-items: center;">
                 <label for="adsb-cones-toggle" class="adsb-control-label">
                   <span style="font-weight: 600;">Predictive Trajectory Cones (2D)</span>
@@ -4427,6 +4497,18 @@
                 </label>
                 <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0; margin: 0;">
                   <input type="checkbox" id="adsb-cones-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                  <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+                </label>
+              </div>
+
+              <!-- High-Altitude Cone Suppression Toggle (Issue #269) -->
+              <div class="adsb-card-row" style="margin-top: 10px; align-items: center;">
+                <label for="adsb-suppress-high-altitude-toggle" class="adsb-control-label">
+                  <span style="font-weight: 600;">🛫 Suppress High-Altitude Cones</span>
+                  <span class="adsb-control-sub">Hides trajectory cones for cruising traffic &ge; threshold AGL</span>
+                </label>
+                <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0; margin: 0;">
+                  <input type="checkbox" id="adsb-suppress-high-altitude-toggle" checked style="opacity: 0; width: 0; height: 0;">
                   <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
                 </label>
               </div>
@@ -4494,6 +4576,9 @@
                   </button>
                   <button id="adsb-sim-jet-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); cursor: pointer;" title="Simulate Commercial / Jet Traffic (B738)">
                     <span>✈️</span> Jet
+                  </button>
+                  <button id="adsb-sim-high-alt-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(134, 239, 172, 0.16); color: #86efac; border-color: rgba(134, 239, 172, 0.45); cursor: pointer;" title="Simulate High-Altitude Cruising Traffic (12,000 ft AGL / Cone Suppressed)">
+                    <span>🛫</span> High Alt
                   </button>
                 </div>
               </div>
@@ -4914,6 +4999,15 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>🗣️</span>
+              Full Spoken Compass Directions &amp; Traffic Alert TTS Phrasing Customization (v1.238.0) (Closes #268)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Traffic alert voice advisories now expand all 16 cardinal compass abbreviations into clear spoken words (e.g. <code>ESE</code> &rarr; <em>East South East</em>), eliminating phonetic word mispronunciations. In addition, pilots can customize what is spoken in the ADS-B drawer: choose from presets (Standard, Concise, Direction First, Custom), edit phrase templates with dynamic tokens (<code>{callsign}</code>, <code>{direction}</code>, <code>{distance}</code>, <code>{altitude}</code>, <code>{eta}</code>), preview speech, and persist preferences locally.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>🎯</span>
@@ -7615,7 +7709,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.237.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.239.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -7778,6 +7872,25 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.239.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>High-Altitude Trajectory Cone Suppression &amp; Pastel Greenish Markers (Closes #269):</strong> Added adjustable High-Altitude Floor slider (<code>#adsb-high-alt-slider</code>, default 10,000 ft / 3,050 m AGL) and automated cone suppression toggle (<code>#adsb-suppress-high-altitude-toggle</code>) to suppress trajectory cones and approaching alerts for high-cruising overhead aircraft, rendering them with soothing pastel greenish map markers (<code>#86efac</code>) and <code>CRUISE (HIGH ALT)</code> drawer chips.</li>
+                  <li><strong>Preflight Simulation for High-Altitude Traffic (Closes #269):</strong> Added <code>🛫 High Alt</code> simulation action (<code>#adsb-sim-high-alt-btn</code>) generating 12,000 ft AGL cruising traffic to test cone suppression and marker theme.</li>
+                </ul>
+              </li>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.238.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Full Spoken Compass Directions &amp; TTS Phrasing Customization (Closes #268):</strong> Expanded all 16 cardinal abbreviations into full spoken English (e.g. <code>ESE</code> &rarr; <em>East South East</em>) to eliminate phonetic garbling in voice advisories; added interactive speech phrase customization in the ADS-B drawer with presets (Standard, Concise, Direction First, Custom), template inputs, clickable token chips (<code>{callsign}</code>, <code>{direction}</code>, <code>{distance}</code>, <code>{altitude}</code>, <code>{eta}</code>), preview testing, and persistent local storage.</li>
+                </ul>
+              </li>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.237.1):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Flight Diagnostics Visual Working Indicators (Closes #267):</strong> Added accessible viewport loading spinner overlay (<code>#diag-loading-overlay</code>) and button-level busy states (<code>disabled</code>, <code>aria-busy="true"</code>, <code>.diag-btn-working</code>) across telemetry fetching, RC 2 USB log pulling, AI 3D mesh reconstruction, and IRL verification.</li>
+                </ul>
+              </li>
                                                         <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.237.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -12733,6 +12846,15 @@
                   <span style="width: 10px; height: 3px; background: #38bdf8; display: inline-block; border-radius: 2px; box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);"></span>
                   <span id="diag-legend-wireframe-text" style="color: #38bdf8; font-weight: 600;">3D Wireframe</span>
                 </div>
+              </div>
+            </div>
+
+            <!-- Viewport Asynchronous Loading & Busy Overlay (Issue #267) -->
+            <div id="diag-loading-overlay" class="diag-loading-overlay" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+              <div class="diag-loading-card">
+                <progress id="diag-loading-spinner" class="loading-spinner" aria-label="Loading telemetry and 3D visual data"></progress>
+                <div id="diag-loading-text" class="diag-loading-text">Loading telemetry...</div>
+                <div id="diag-loading-subtext" class="diag-loading-subtext">Fetching &amp; decrypting flight log</div>
               </div>
             </div>
           </div>

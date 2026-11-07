@@ -4566,76 +4566,34 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
   const originalStates = new Map();
 
-
-
   buttonsToUpdate.forEach(b => {
-
-
-
-    originalStates.set(b, { html: b.innerHTML, color: b.style.color });
-
-
-
+    originalStates.set(b, { html: b.innerHTML, color: b.style?.color });
     b.disabled = true;
-
-
-
+    if (typeof b.setAttribute === 'function') b.setAttribute('aria-busy', 'true');
+    if (b.classList && typeof b.classList.add === 'function') b.classList.add('diag-btn-working');
     b.innerHTML = `<span>⏳ Pulling Log...</span>`;
-
-
-
   });
 
-
-
-
-
-
+  if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.isOpen && typeof FlightDiagnostics.setWorkingState === 'function') {
+    FlightDiagnostics.setWorkingState(true, 'Pulling flight log from DJI RC 2...', 'Connecting over USB MTP & decrypting');
+  }
 
   const resetButtonStates = (delayMs = 3500) => {
-
-
-
     setTimeout(() => {
-
-
-
       buttonsToUpdate.forEach(b => {
-
-
-
         const orig = originalStates.get(b);
-
-
-
         if (orig) {
-
-
-
           b.disabled = false;
-
-
-
+          if (typeof b.removeAttribute === 'function') b.removeAttribute('aria-busy');
+          if (b.classList && typeof b.classList.remove === 'function') b.classList.remove('diag-btn-working');
           b.innerHTML = orig.html;
-
-
-
           b.style.color = orig.color || '';
-
-
-
         }
-
-
-
       });
-
-
-
+      if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.isOpen && typeof FlightDiagnostics.setWorkingState === 'function') {
+        FlightDiagnostics.setWorkingState(false);
+      }
     }, delayMs);
-
-
-
   };
 
 
@@ -11561,6 +11519,107 @@ const AdsbAirspaceManager = {
 
   soundType: 'both', // 'both' | 'chime' | 'voice'
 
+  ttsPreset: 'standard', // 'standard' | 'concise' | 'direction_first' | 'custom'
+
+  ttsBreachTemplate: 'Traffic alert! {callsign}, {distance} {direction}, {altitude}.',
+
+  ttsApproachingTemplate: 'Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}.',
+
+  CARDINAL_SPOKEN_MAP: {
+    'N': 'North',
+    'NNE': 'North North East',
+    'NE': 'North East',
+    'ENE': 'East North East',
+    'E': 'East',
+    'ESE': 'East South East',
+    'SE': 'South East',
+    'SSE': 'South South East',
+    'S': 'South',
+    'SSW': 'South South West',
+    'SW': 'South West',
+    'WSW': 'West South West',
+    'W': 'West',
+    'WNW': 'West North West',
+    'NW': 'North West',
+    'NNW': 'North North West'
+  },
+
+  TTS_PRESETS: {
+    standard: {
+      breach: 'Traffic alert! {callsign}, {distance} {direction}, {altitude}.',
+      approaching: 'Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}.'
+    },
+    concise: {
+      breach: 'Traffic alert! {distance} {direction}.',
+      approaching: 'Traffic approaching! {distance} {direction}, ETA {eta}.'
+    },
+    direction_first: {
+      breach: 'Traffic {direction}! {distance}, {altitude}.',
+      approaching: 'Traffic approaching {direction}! {distance}, ETA {eta}.'
+    }
+  },
+
+  getSpokenCardinal(cardinalCode) {
+    if (!cardinalCode || typeof cardinalCode !== 'string') return '';
+    const clean = cardinalCode.trim().toUpperCase();
+    return this.CARDINAL_SPOKEN_MAP[clean] || cardinalCode.trim();
+  },
+
+  formatVoiceAdvisoryText(aircraft, alertStage = 'breached') {
+    const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+    const rawCallsign = (aircraft && aircraft.callsign ? aircraft.callsign : 'Traffic').replace(/[^A-Za-z0-9]/g, ' ').trim();
+    const callsign = rawCallsign || 'Traffic';
+
+    let distText = '';
+    let altText = '';
+
+    if (aircraft) {
+      if (isMetric) {
+        const km = (aircraft.distanceMeters !== null && aircraft.distanceMeters !== undefined) ? (aircraft.distanceMeters / 1000).toFixed(1) : 'unknown';
+        const m = (aircraft.altitude !== null && aircraft.altitude !== undefined) ? Math.round(aircraft.altitude * 0.3048) : 'unknown';
+        distText = `${km} kilometers`;
+        altText = `${m} meters`;
+      } else {
+        const mi = (aircraft.distanceMiles !== null && aircraft.distanceMiles !== undefined) ? aircraft.distanceMiles : 'unknown';
+        const ft = (aircraft.altitude !== null && aircraft.altitude !== undefined) ? aircraft.altitude : 'unknown';
+        distText = `${mi} miles`;
+        altText = `${ft} feet`;
+      }
+    }
+
+    const spokenDirection = (aircraft && aircraft.bearingCardinal) ? this.getSpokenCardinal(aircraft.bearingCardinal) : '';
+
+    let etaText = 'soon';
+    if (aircraft && typeof aircraft.etaSeconds === 'number' && aircraft.etaSeconds > 0) {
+      const etaMin = Math.floor(aircraft.etaSeconds / 60);
+      const etaSec = aircraft.etaSeconds % 60;
+      etaText = etaMin > 0 ? `${etaMin} minute${etaMin > 1 ? 's' : ''} ${etaSec} seconds` : `${etaSec} seconds`;
+    }
+
+    const template = (alertStage === 'approaching')
+      ? (this.ttsApproachingTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.approaching : 'Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}.'))
+      : (this.ttsBreachTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.breach : 'Traffic alert! {callsign}, {distance} {direction}, {altitude}.'));
+
+    let text = template
+      .replace(/\{callsign\}/gi, callsign)
+      .replace(/\{distance\}/gi, distText)
+      .replace(/\{direction\}/gi, spokenDirection)
+      .replace(/\{cardinal\}/gi, spokenDirection)
+      .replace(/\{altitude\}/gi, altText)
+      .replace(/\{eta\}/gi, etaText)
+      .replace(/\{stage\}/gi, alertStage);
+
+    // Clean up extraneous whitespace and dangling punctuation if tokens are empty
+    text = text
+      .replace(/\s*,\s*,/g, ',')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/\s+,/g, ',')
+      .replace(/,\s*\./g, '.')
+      .trim();
+
+    return text;
+  },
+
 
 
   radiusMiles: 3.0,
@@ -11580,6 +11639,10 @@ const AdsbAirspaceManager = {
 
 
   showCones: true,
+
+  highAltitudeThresholdFt: 10000,
+
+  suppressHighAltitudeCones: true,
 
 
 
@@ -12703,6 +12766,38 @@ const AdsbAirspaceManager = {
 
 
 
+    } else if (targetType === 'high_alt') {
+
+      simAircraft = {
+
+        hex: 'A88888',
+
+        callsign: 'CRUISE450',
+
+        aircraftType: 'B738',
+
+        category: 'A3',
+
+        lat: homeLat + 0.035,
+
+        lon: homeLon + 0.035,
+
+        alt: 12000,
+
+        speed: 420,
+
+        track: 225,
+
+        verticalRate: 0,
+
+        isHighAltitude: true,
+
+        coneSuppressed: this.suppressHighAltitudeCones
+
+      };
+
+
+
     } else {
 
 
@@ -12791,23 +12886,26 @@ const AdsbAirspaceManager = {
 
       // If offline or unauthorized, inject directly into manager
 
-      const isApproaching = targetType === 'approaching' || targetType === 'descending';
+      const isHighAlt = targetType === 'high_alt';
+      const isApproaching = (targetType === 'approaching' || targetType === 'descending') && !isHighAlt;
 
       const isLanding = targetType === 'landing';
 
       const isDescending = targetType === 'descending';
 
-      simAircraft.distanceMeters = isApproaching ? 8368 : (isLanding ? 4200 : 1500);
+      simAircraft.distanceMeters = isHighAlt ? 7500 : (isApproaching ? 8368 : (isLanding ? 4200 : 1500));
 
-      simAircraft.distanceMiles = isApproaching ? 5.2 : (isLanding ? 2.6 : 0.93);
+      simAircraft.distanceMiles = isHighAlt ? 4.66 : (isApproaching ? 5.2 : (isLanding ? 2.6 : 0.93));
 
       simAircraft.bearingDeg = 45;
 
       simAircraft.bearingCardinal = 'NE';
 
-      simAircraft.isBreached = !isApproaching && !isLanding;
+      simAircraft.isBreached = !isApproaching && !isLanding && !isHighAlt;
 
       simAircraft.isConeWarning = isApproaching;
+
+      simAircraft.isHighAltitude = isHighAlt;
 
       simAircraft.isDescending = isDescending;
 
@@ -12821,9 +12919,9 @@ const AdsbAirspaceManager = {
 
       simAircraft.landingAirport = isLanding ? (simAircraft.landingAirport || 'KVYS') : null;
 
-      simAircraft.coneSuppressed = isLanding;
+      simAircraft.coneSuppressed = isLanding || (isHighAlt && this.suppressHighAltitudeCones);
 
-      simAircraft.status = isApproaching ? 'approaching' : (isLanding ? 'landing' : 'breached');
+      simAircraft.status = isApproaching ? 'approaching' : (isLanding ? 'landing' : (isHighAlt ? 'safe' : 'breached'));
 
       simAircraft.etaSeconds = isApproaching ? 51 : null;
 
@@ -12915,9 +13013,16 @@ const AdsbAirspaceManager = {
 
         const savedType = localStorage.getItem('aalaapi_adsb_sound_type');
 
-
-
         if (savedType) this.soundType = savedType;
+
+        const savedTtsPreset = localStorage.getItem('aalaapi_adsb_tts_preset');
+        if (savedTtsPreset) this.ttsPreset = savedTtsPreset;
+
+        const savedTtsBreach = localStorage.getItem('aalaapi_adsb_tts_breach_template');
+        if (savedTtsBreach) this.ttsBreachTemplate = savedTtsBreach;
+
+        const savedTtsApproaching = localStorage.getItem('aalaapi_adsb_tts_approaching_template');
+        if (savedTtsApproaching) this.ttsApproachingTemplate = savedTtsApproaching;
 
 
 
@@ -13014,6 +13119,22 @@ const AdsbAirspaceManager = {
 
 
         if (savedShowCones !== null) this.showCones = savedShowCones !== 'false';
+
+
+
+        const savedHighAlt = localStorage.getItem('aalaapi_adsb_high_altitude_ft');
+
+
+
+        if (savedHighAlt) this.highAltitudeThresholdFt = parseInt(savedHighAlt, 10) || 10000;
+
+
+
+        const savedSuppressHighAlt = localStorage.getItem('aalaapi_adsb_suppress_high_altitude_cones');
+
+
+
+        if (savedSuppressHighAlt !== null) this.suppressHighAltitudeCones = savedSuppressHighAlt !== 'false';
 
 
 
@@ -13167,6 +13288,10 @@ const AdsbAirspaceManager = {
 
         localStorage.setItem('aalaapi_adsb_sound_type', this.soundType);
 
+        localStorage.setItem('aalaapi_adsb_tts_preset', this.ttsPreset || 'standard');
+        localStorage.setItem('aalaapi_adsb_tts_breach_template', this.ttsBreachTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.breach : 'Traffic alert! {callsign}, {distance} {direction}, {altitude}.'));
+        localStorage.setItem('aalaapi_adsb_tts_approaching_template', this.ttsApproachingTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.approaching : 'Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}.'));
+
 
 
         localStorage.setItem('aalaapi_adsb_show_trails', String(this.showTrails));
@@ -13194,6 +13319,14 @@ const AdsbAirspaceManager = {
 
 
         localStorage.setItem('aalaapi_adsb_show_cones', String(this.showCones));
+
+
+
+        localStorage.setItem('aalaapi_adsb_high_altitude_ft', String(this.highAltitudeThresholdFt || 10000));
+
+
+
+        localStorage.setItem('aalaapi_adsb_suppress_high_altitude_cones', String(this.suppressHighAltitudeCones));
 
 
 
@@ -13911,6 +14044,23 @@ const AdsbAirspaceManager = {
 
 
 
+        const alt = ac.altitude !== null ? ac.altitude : (ac.altitudeGeometric !== null ? ac.altitudeGeometric : null);
+
+        let groundElevFt = 0;
+        if (typeof elevationServiceInstance !== 'undefined' && elevationServiceInstance) {
+          if (elevationServiceInstance.cachedDem && typeof elevationServiceInstance.cachedDem.sampleAt === 'function') {
+            const m = elevationServiceInstance.cachedDem.sampleAt(homeLat, homeLon);
+            if (m !== null && !isNaN(m)) groundElevFt = m * 3.28084;
+          }
+        }
+        const altAgl = alt !== null ? Math.max(0, alt - groundElevFt) : null;
+        ac.altitudeAgl = altAgl;
+        ac.isHighAltitude = (altAgl !== null && altAgl >= (this.highAltitudeThresholdFt || 10000));
+        if (ac.isHighAltitude && this.suppressHighAltitudeCones) {
+          ac.coneSuppressed = true;
+          ac.isConeWarning = false;
+        }
+
         if (!ac.isLanding && !ac.coneSuppressed) {
 
           const coneEval = this.evaluateAircraftCone(ac, homeLat, homeLon);
@@ -13930,8 +14080,6 @@ const AdsbAirspaceManager = {
         }
 
 
-
-        const alt = ac.altitude !== null ? ac.altitude : (ac.altitudeGeometric !== null ? ac.altitudeGeometric : null);
 
         ac.isWithinRadius = (d <= rProx);
 
@@ -14578,6 +14726,28 @@ const AdsbAirspaceManager = {
 
     }
 
+    // Suppress predictive cone if aircraft is at or above high-altitude threshold AGL
+    let groundElevFt = 0;
+    if (typeof elevationServiceInstance !== 'undefined' && elevationServiceInstance) {
+      if (elevationServiceInstance.cachedDem && typeof elevationServiceInstance.cachedDem.sampleAt === 'function') {
+        const m = elevationServiceInstance.cachedDem.sampleAt(homeLat, homeLon);
+        if (m !== null && !isNaN(m)) groundElevFt = m * 3.28084;
+      }
+    }
+    const altCheck = ac.altitude !== null && ac.altitude !== undefined
+      ? ac.altitude
+      : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
+    const altAglCheck = altCheck !== null ? Math.max(0, altCheck - groundElevFt) : null;
+    const highAltThreshold = typeof this.highAltitudeThresholdFt === 'number' ? this.highAltitudeThresholdFt : 10000;
+    if (altAglCheck !== null && altAglCheck >= highAltThreshold) {
+      result.isHighAltitude = true;
+      if (this.suppressHighAltitudeCones) {
+        result.coneSuppressed = true;
+        result.isConeWarning = false;
+        return result;
+      }
+    }
+
 
 
     const rProx = this.radiusMiles * 1609.344;
@@ -15134,127 +15304,10 @@ const AdsbAirspaceManager = {
 
     try {
 
-
-
       if (!nativeTts) window.speechSynthesis.cancel();
 
-
-
-      const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
-
-
-
-      const callsign = (aircraft.callsign || 'Traffic').replace(/[^A-Za-z0-9]/g, ' ');
-
-
-
-      let distText = '';
-
-
-
-      let altText = '';
-
-
-
-      if (isMetric) {
-
-
-
-        const km = aircraft.distanceMeters ? (aircraft.distanceMeters / 1000).toFixed(1) : 'unknown';
-
-
-
-        const m = aircraft.altitude ? Math.round(aircraft.altitude * 0.3048) : 'unknown';
-
-
-
-        distText = `${km} kilometers`;
-
-
-
-        altText = `${m} meters`;
-
-
-
-      } else {
-
-
-
-        const mi = aircraft.distanceMiles !== null && aircraft.distanceMiles !== undefined ? aircraft.distanceMiles : 'unknown';
-
-
-
-        const ft = aircraft.altitude !== null && aircraft.altitude !== undefined ? aircraft.altitude : 'unknown';
-
-
-
-        distText = `${mi} miles`;
-
-
-
-        altText = `${ft} feet`;
-
-
-
-      }
-
-
-
-      const cardinal = aircraft.bearingCardinal ? ` ${aircraft.bearingCardinal}` : '';
-
-
-
-      let text = '';
-
-
-
-      if (alertStage === 'approaching') {
-
-
-
-        let etaText = 'soon';
-
-
-
-        if (typeof aircraft.etaSeconds === 'number' && aircraft.etaSeconds > 0) {
-
-
-
-          const etaMin = Math.floor(aircraft.etaSeconds / 60);
-
-
-
-          const etaSec = aircraft.etaSeconds % 60;
-
-
-
-          etaText = etaMin > 0 ? `${etaMin} minute${etaMin > 1 ? 's' : ''} ${etaSec} seconds` : `${etaSec} seconds`;
-
-
-
-        }
-
-
-
-        text = `Traffic approaching! ${callsign}, ${distText}${cardinal}, perimeter ETA ${etaText}.`;
-
-
-
-      } else {
-
-
-
-        text = `Traffic alert! ${callsign}, ${distText}${cardinal}, ${altText}.`;
-
-
-
-      }
-
-
-
-
-
-
+      const text = this.formatVoiceAdvisoryText(aircraft, alertStage);
+      if (!text) return;
 
       if (nativeTts && typeof Platform !== 'undefined' && typeof Platform.speak === 'function') {
         Platform.speak(text, 1.05, 1.0);
@@ -16712,7 +16765,7 @@ const AdsbAirspaceManager = {
 
     const airportList = this.airports ? Array.from(this.airports.values()) : [];
     const airportsParam = airportList.length > 0 ? `&airports=${encodeURIComponent(JSON.stringify(airportList))}` : '';
-    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}${airportsParam}${tokenParam}`;
+    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}&highAltitudeThreshold=${this.highAltitudeThresholdFt || 10000}&suppressHighAltitudeCones=${this.suppressHighAltitudeCones}${airportsParam}${tokenParam}`;
 
 
 
@@ -17162,9 +17215,29 @@ const AdsbAirspaceManager = {
 
     // Evaluate client-side predictive cone if not already computed
 
-
+    let groundElevFt = 0;
+    if (typeof elevationServiceInstance !== 'undefined' && elevationServiceInstance) {
+      if (elevationServiceInstance.cachedDem && typeof elevationServiceInstance.cachedDem.sampleAt === 'function') {
+        const m = elevationServiceInstance.cachedDem.sampleAt(homeLat, homeLon);
+        if (m !== null && !isNaN(m)) groundElevFt = m * 3.28084;
+      }
+    }
 
     for (const ac of this.aircraft) {
+
+      const altVal = ac.altitude !== null && ac.altitude !== undefined
+        ? ac.altitude
+        : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
+      const altAglVal = altVal !== null ? Math.max(0, altVal - groundElevFt) : null;
+      ac.altitudeAgl = altAglVal;
+      if (ac.isHighAltitude === undefined) {
+        ac.isHighAltitude = (altAglVal !== null && altAglVal >= (this.highAltitudeThresholdFt || 10000));
+      }
+      if (ac.isHighAltitude && this.suppressHighAltitudeCones) {
+        ac.coneSuppressed = true;
+        ac.isConeWarning = false;
+        if (ac.status === 'approaching') ac.status = 'safe';
+      }
 
 
 
@@ -17204,9 +17277,14 @@ const AdsbAirspaceManager = {
 
         }
 
+        if (coneEval.isHighAltitude) {
+          ac.isHighAltitude = true;
+        }
 
-
-        if (coneEval.isConeWarning) {
+        if (coneEval.coneSuppressed && ac.isHighAltitude) {
+          ac.coneSuppressed = true;
+          ac.isConeWarning = false;
+        } else if (coneEval.isConeWarning && !ac.coneSuppressed) {
 
 
 
@@ -17454,7 +17532,7 @@ const AdsbAirspaceManager = {
 
       const airportList = this.airports ? Array.from(this.airports.values()) : [];
     const airportsParam = airportList.length > 0 ? `&airports=${encodeURIComponent(JSON.stringify(airportList))}` : '';
-    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}${airportsParam}${tokenParam}`;
+    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}&highAltitudeThreshold=${this.highAltitudeThresholdFt || 10000}&suppressHighAltitudeCones=${this.suppressHighAltitudeCones}${airportsParam}${tokenParam}`;
 
 
 
@@ -18578,6 +18656,18 @@ const AdsbAirspaceManager = {
 
 
 
+      } else if (ac.isHighAltitude) {
+
+
+
+        const altAglStr = (ac.altitudeAgl !== null && ac.altitudeAgl !== undefined) ? `${ac.altitudeAgl} ft AGL` : 'HIGH ALT';
+
+
+
+        alertBadgeTooltip = `<br><span style="font-weight: 700; color: #86efac;">✈️ HIGH ALTITUDE CRUISE (${altAglStr})</span><br><span style="font-size: 0.68rem; color: #94a3b8;">Cone Suppressed</span>`;
+
+
+
       }
 
 
@@ -18922,7 +19012,7 @@ const AdsbAirspaceManager = {
 
 
 
-      if (ac.isLanding || ac.coneSuppressed) {
+      if (ac.isLanding || ac.coneSuppressed || (this.suppressHighAltitudeCones && ac.isHighAltitude)) {
 
         const coneEntry = this.mapCones.get(ac.hex);
 
@@ -18960,7 +19050,7 @@ const AdsbAirspaceManager = {
 
 
 
-          : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : (ac.isLanding ? `adsb-marker-inner landing ${classified.type}` : `adsb-marker-inner ${classified.type}`));
+          : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : (ac.isLanding ? `adsb-marker-inner landing ${classified.type}` : (ac.isHighAltitude ? `adsb-marker-inner high-altitude ${classified.type}` : `adsb-marker-inner ${classified.type}`)));
 
 
 
@@ -19085,6 +19175,9 @@ const AdsbAirspaceManager = {
 
 
             this.hoveredHex = ac.hex;
+
+            if (this.suppressHighAltitudeCones && ac.isHighAltitude) return;
+            if (ac.isLanding || ac.coneSuppressed) return;
 
 
 
@@ -19280,7 +19373,7 @@ const AdsbAirspaceManager = {
 
 
 
-              : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : (ac.isLanding ? `adsb-marker-inner landing ${classified.type}` : `adsb-marker-inner ${classified.type}`));
+              : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : (ac.isLanding ? `adsb-marker-inner landing ${classified.type}` : (ac.isHighAltitude ? `adsb-marker-inner high-altitude ${classified.type}` : `adsb-marker-inner ${classified.type}`)));
 
 
 
@@ -19626,9 +19719,20 @@ const AdsbAirspaceManager = {
 
     const soundSelect = document.getElementById('adsb-sound-type-select');
 
-
-
     if (soundSelect) soundSelect.value = this.soundType;
+
+    const ttsPresetSelect = document.getElementById('adsb-tts-preset-select');
+    if (ttsPresetSelect) ttsPresetSelect.value = this.ttsPreset || 'standard';
+
+    const ttsBreachInput = document.getElementById('adsb-tts-breach-input');
+    if (ttsBreachInput && (typeof document === 'undefined' || document.activeElement !== ttsBreachInput)) {
+      ttsBreachInput.value = this.ttsBreachTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.breach : 'Traffic alert! {callsign}, {distance} {direction}, {altitude}.');
+    }
+
+    const ttsApproachingInput = document.getElementById('adsb-tts-approaching-input');
+    if (ttsApproachingInput && (typeof document === 'undefined' || document.activeElement !== ttsApproachingInput)) {
+      ttsApproachingInput.value = this.ttsApproachingTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.approaching : 'Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}.');
+    }
 
 
 
@@ -19785,6 +19889,27 @@ const AdsbAirspaceManager = {
 
 
     if (conesToggle) conesToggle.checked = this.showCones;
+
+
+
+    const highAltSlider = document.getElementById('adsb-high-alt-slider');
+
+    const highAltVal = document.getElementById('adsb-high-alt-val');
+
+    const suppressHighAltToggle = document.getElementById('adsb-suppress-high-altitude-toggle');
+
+    if (highAltSlider) highAltSlider.value = this.highAltitudeThresholdFt || 10000;
+
+    if (highAltVal) {
+      const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+      const ft = this.highAltitudeThresholdFt || 10000;
+      const m = Math.round(Math.round(ft * 0.3048) / 50) * 50;
+      highAltVal.textContent = isMetric 
+        ? `${m.toLocaleString()} m (${ft.toLocaleString()} ft)` 
+        : `${ft.toLocaleString()} ft (${m.toLocaleString()} m)`;
+    }
+
+    if (suppressHighAltToggle) suppressHighAltToggle.checked = this.suppressHighAltitudeCones;
 
 
 
@@ -20365,6 +20490,18 @@ const AdsbAirspaceManager = {
 
 
         distDisplay = `<span style="font-size: 0.68rem; font-weight: 600; color: #38bdf8;">${distStr} ${ac.bearingCardinal || ''}</span><span style="font-size: 0.62rem; color: #94a3b8; font-weight: 600;">Cone Suppressed</span>`;
+
+
+
+      } else if (ac.isHighAltitude) {
+
+
+
+        statusChip = '<span class="adsb-high-alt-chip">CRUISE (HIGH ALT)</span>';
+
+
+
+        distDisplay = `<span style="font-size: 0.68rem; font-weight: 600; color: #86efac;">${distStr} ${ac.bearingCardinal || ''}</span><span style="font-size: 0.62rem; color: #86efac; font-weight: 600;">Cone Suppressed</span>`;
 
 
 
@@ -21912,20 +22049,115 @@ const AdsbAirspaceManager = {
 
       soundSelect.addEventListener('change', (e) => {
 
-
-
         this.soundType = e.target.value;
-
-
 
         this.saveSettings();
 
-
-
       });
 
+    }
 
+    // TTS Speech Customization Controls
+    const ttsPresetSelect = document.getElementById('adsb-tts-preset-select');
+    const ttsBreachInput = document.getElementById('adsb-tts-breach-input');
+    const ttsApproachingInput = document.getElementById('adsb-tts-approaching-input');
+    const ttsPreviewBtn = document.getElementById('adsb-tts-preview-btn');
+    const ttsResetBtn = document.getElementById('adsb-tts-reset-btn');
+    let lastFocusedTtsInput = ttsBreachInput;
 
+    if (ttsBreachInput) {
+      ttsBreachInput.addEventListener('focus', () => { lastFocusedTtsInput = ttsBreachInput; });
+      ttsBreachInput.addEventListener('input', (e) => {
+        this.ttsBreachTemplate = e.target.value;
+        this.ttsPreset = 'custom';
+        if (ttsPresetSelect) ttsPresetSelect.value = 'custom';
+        this.saveSettings();
+      });
+    }
+
+    if (ttsApproachingInput) {
+      ttsApproachingInput.addEventListener('focus', () => { lastFocusedTtsInput = ttsApproachingInput; });
+      ttsApproachingInput.addEventListener('input', (e) => {
+        this.ttsApproachingTemplate = e.target.value;
+        this.ttsPreset = 'custom';
+        if (ttsPresetSelect) ttsPresetSelect.value = 'custom';
+        this.saveSettings();
+      });
+    }
+
+    if (ttsPresetSelect) {
+      ttsPresetSelect.addEventListener('change', (e) => {
+        const val = e.target.value;
+        this.ttsPreset = val;
+        if (val !== 'custom' && this.TTS_PRESETS && this.TTS_PRESETS[val]) {
+          this.ttsBreachTemplate = this.TTS_PRESETS[val].breach;
+          this.ttsApproachingTemplate = this.TTS_PRESETS[val].approaching;
+          if (ttsBreachInput) ttsBreachInput.value = this.ttsBreachTemplate;
+          if (ttsApproachingInput) ttsApproachingInput.value = this.ttsApproachingTemplate;
+        }
+        this.saveSettings();
+      });
+    }
+
+    // Interactive token badge chips: insert token into active template input
+    if (typeof document !== 'undefined') {
+      const tokenChips = document.querySelectorAll('.adsb-tts-token');
+      tokenChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          const token = chip.getAttribute('data-token');
+          if (!token) return;
+          const targetInput = lastFocusedTtsInput || ttsBreachInput;
+          if (!targetInput) return;
+
+          const start = targetInput.selectionStart ?? targetInput.value.length;
+          const end = targetInput.selectionEnd ?? targetInput.value.length;
+          const oldVal = targetInput.value;
+          targetInput.value = oldVal.slice(0, start) + token + oldVal.slice(end);
+          targetInput.selectionStart = targetInput.selectionEnd = start + token.length;
+          targetInput.focus();
+
+          if (targetInput === ttsApproachingInput) {
+            this.ttsApproachingTemplate = targetInput.value;
+          } else {
+            this.ttsBreachTemplate = targetInput.value;
+          }
+          this.ttsPreset = 'custom';
+          if (ttsPresetSelect) ttsPresetSelect.value = 'custom';
+          this.saveSettings();
+        });
+      });
+    }
+
+    if (ttsPreviewBtn) {
+      ttsPreviewBtn.addEventListener('click', () => {
+        this.initAudioContext();
+        this.playWarningChime();
+        setTimeout(() => {
+          this.playVoiceAdvisory({
+            callsign: 'UAL452',
+            distanceMiles: 1.5,
+            distanceMeters: 2414,
+            altitude: 1850,
+            bearingCardinal: 'ESE',
+            etaSeconds: 45
+          }, 'breached');
+        }, 220);
+      });
+    }
+
+    if (ttsResetBtn) {
+      ttsResetBtn.addEventListener('click', () => {
+        this.ttsPreset = 'standard';
+        this.ttsBreachTemplate = this.TTS_PRESETS.standard.breach;
+        this.ttsApproachingTemplate = this.TTS_PRESETS.standard.approaching;
+        if (ttsPresetSelect) ttsPresetSelect.value = 'standard';
+        if (ttsBreachInput) ttsBreachInput.value = this.ttsBreachTemplate;
+        if (ttsApproachingInput) ttsApproachingInput.value = this.ttsApproachingTemplate;
+        this.saveSettings();
+        if (typeof showToast === 'function') {
+          showToast('🗣️ Voice alert templates reset to default', 'info');
+        }
+      });
     }
 
 
@@ -22307,6 +22539,62 @@ const AdsbAirspaceManager = {
 
 
       simDescendingBtn.addEventListener('click', () => this.simulateAircraft('descending'));
+
+
+
+    }
+
+
+
+    const simHighAltBtn = document.getElementById('adsb-sim-high-alt-btn');
+
+
+
+    if (simHighAltBtn) {
+
+
+
+      simHighAltBtn.addEventListener('click', () => this.simulateAircraft('high_alt'));
+
+
+
+    }
+
+
+
+    const suppressHighAltToggle = document.getElementById('adsb-suppress-high-altitude-toggle');
+
+
+
+    if (suppressHighAltToggle) {
+
+
+
+      suppressHighAltToggle.addEventListener('change', (e) => {
+
+
+
+        this.suppressHighAltitudeCones = !!e.target.checked;
+
+
+
+        this.saveSettings();
+
+
+
+        this.updateControlsUI();
+
+
+
+        this.updateMapMarkers();
+
+
+
+        this.pollAirspace();
+
+
+
+      });
 
 
 
@@ -22731,6 +23019,46 @@ const AdsbAirspaceManager = {
 
 
         this.updateControlsUI();
+
+
+
+        this.pollAirspace();
+
+
+
+      });
+
+
+
+    }
+
+
+
+    const highAltSlider = document.getElementById('adsb-high-alt-slider');
+
+
+
+    if (highAltSlider) {
+
+
+
+      highAltSlider.addEventListener('input', (e) => {
+
+
+
+        this.highAltitudeThresholdFt = parseInt(e.target.value, 10) || 10000;
+
+
+
+        this.saveSettings();
+
+
+
+        this.updateControlsUI();
+
+
+
+        if (this.showCones) this.updateMapMarkers();
 
 
 

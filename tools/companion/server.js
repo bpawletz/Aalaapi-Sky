@@ -6285,6 +6285,15 @@ const handleHttpRequest = async (req, res) => {
         }
       }
 
+      const highAltParam = url.searchParams.get('highAltitudeThreshold') || url.searchParams.get('highAltitudeThresholdFt');
+      let highAltitudeThresholdFt = 10000;
+      if (highAltParam !== null) {
+        const parsedHighAlt = parseFloat(highAltParam);
+        if (!isNaN(parsedHighAlt) && parsedHighAlt > 0) highAltitudeThresholdFt = parsedHighAlt;
+      }
+      const suppressHighAltParam = url.searchParams.get('suppressHighAltitudeCones');
+      const suppressHighAltitudeCones = suppressHighAltParam !== 'false' && suppressHighAltParam !== '0';
+
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
@@ -6307,7 +6316,9 @@ const handleHttpRequest = async (req, res) => {
           coneDeviationDeg,
           suppressAirportLanding,
           airportRadiusNm,
-          airports
+          airports,
+          highAltitudeThresholdFt,
+          suppressHighAltitudeCones
         }
       };
 
@@ -6380,6 +6391,15 @@ const handleHttpRequest = async (req, res) => {
         }
       }
 
+      const highAltParam = url.searchParams.get('highAltitudeThreshold') || url.searchParams.get('highAltitudeThresholdFt');
+      let highAltitudeThresholdFt = 10000;
+      if (highAltParam !== null) {
+        const parsedHighAlt = parseFloat(highAltParam);
+        if (!isNaN(parsedHighAlt) && parsedHighAlt > 0) highAltitudeThresholdFt = parsedHighAlt;
+      }
+      const suppressHighAltParam = url.searchParams.get('suppressHighAltitudeCones');
+      const suppressHighAltitudeCones = suppressHighAltParam !== 'false' && suppressHighAltParam !== '0';
+
       const boundsResult = adsbTracker.getAirspaceBounds({
         homeLat,
         homeLon,
@@ -6390,7 +6410,9 @@ const handleHttpRequest = async (req, res) => {
         coneDeviationDeg,
         suppressAirportLanding,
         airportRadiusNm,
-        airports
+        airports,
+        highAltitudeThresholdFt,
+        suppressHighAltitudeCones
       });
 
       res.writeHead(200, { 'Content-Type': 'application/json' });

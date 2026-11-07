@@ -43095,6 +43095,8 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
         assert.ok(changelog.includes('## [1.235.1]'), 'CHANGELOG.md must include 1.235.1');
         assert.ok(changelog.includes('## [1.236.0]'), 'CHANGELOG.md must include 1.236.0');
         assert.ok(changelog.includes('## [1.237.0]'), 'CHANGELOG.md must include 1.237.0');
+        assert.ok(changelog.includes('## [1.237.1]'), 'CHANGELOG.md must include 1.237.1');
+        assert.ok(changelog.includes('## [1.238.0]'), 'CHANGELOG.md must include 1.238.0');
 
         const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
         assert.ok(template.includes(`Version ${pkg.version}`), `index_template.html must include Version ${pkg.version}`);
@@ -43102,7 +43104,8 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
         const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
         assert.ok(gradle.includes(`versionName = "${pkg.version}"`));
-        assert.ok(gradle.includes('versionCode = 12370'));
+        const mCode = gradle.match(/versionCode\s*=\s*(\d+)/);
+        assert.ok(mCode && parseInt(mCode[1], 10) >= 12370, 'Gradle must have versionCode >= 12370');
       });
 
       test('PlatformManager auto-detects Windows/Desktop, Android Native, iOS Native, and URL ?platform= overrides', () => {
@@ -43352,6 +43355,350 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
         assert.ok(indexHtml.includes('id="dock-rc2-sync-btn"'), '#dock-rc2-sync-btn must exist in sticky dock');
         assert.ok(indexHtml.includes('id="dock-rc2-status-dot"'), '#dock-rc2-status-dot must exist on button');
         assert.ok(indexHtml.includes('id="download-btn"'), '#download-btn must remain in dock');
+      });
+
+      describe('Issue #267: Flight Diagnostics Working Indicators & Busy States', () => {
+        test('DOM Architecture: Viewport loading overlay elements exist inside #diag-3d-canvas-container', () => {
+          const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+          assert.ok(indexHtml.includes('id="diag-loading-overlay"'), '#diag-loading-overlay must exist in compiled HTML');
+          assert.ok(indexHtml.includes('id="diag-loading-spinner"'), '#diag-loading-spinner must exist');
+          assert.ok(indexHtml.includes('id="diag-loading-text"'), '#diag-loading-text must exist');
+          assert.ok(indexHtml.includes('id="diag-loading-subtext"'), '#diag-loading-subtext must exist');
+          assert.ok(indexHtml.includes('role="status"'), 'Overlay must have role="status" for accessibility');
+          assert.ok(indexHtml.includes('aria-live="polite"'), 'Overlay must announce politely via aria-live="polite"');
+        });
+
+        test('CSS Architecture: .diag-loading-overlay and .diag-btn-working classes exist with reduced-motion support', () => {
+          const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+          assert.ok(css.includes('.diag-loading-overlay {'), '.diag-loading-overlay selector must exist');
+          assert.ok(css.includes('.diag-loading-overlay.is-active {'), '.diag-loading-overlay.is-active selector must exist');
+          assert.ok(css.includes('.loading-spinner {'), '.loading-spinner must exist');
+          assert.ok(css.includes('prefers-reduced-motion: reduce'), 'prefers-reduced-motion media query must be provided');
+          assert.ok(css.includes('.diag-btn-working {'), '.diag-btn-working selector must exist');
+          assert.ok(css.includes('cursor: progress'), '.diag-btn-working must use progress cursor');
+        });
+
+        test('DigitalTwin FlightDiagnostics: setWorkingState manages overlay and button busy attributes', () => {
+          const dtSrc = fs.readFileSync(path.join(__dirname, 'src', '3d', 'DigitalTwin.js'), 'utf8');
+          assert.ok(dtSrc.includes('setWorkingState(isBusy,'), 'FlightDiagnostics must implement setWorkingState');
+          assert.ok(dtSrc.includes('withButtonWorking(btn,'), 'FlightDiagnostics must implement withButtonWorking');
+          assert.ok(dtSrc.includes('diag-btn-working'), 'DigitalTwin must utilize .diag-btn-working');
+        });
+
+        test('Rc2LogExplorer & IrlVerifier: Time-consuming actions apply busy state feedback', () => {
+          const rc2Src = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'Rc2LogExplorer.js'), 'utf8');
+          assert.ok(rc2Src.includes('⏳ Pulling...'), 'Rc2LogExplorer must show pulling busy label on pull button click');
+          assert.ok(rc2Src.includes('⏳ Loading...'), 'Rc2LogExplorer must show loading busy label on load telemetry click');
+
+          const irlSrc = fs.readFileSync(path.join(__dirname, 'src', 'qa', 'IrlVerifier.js'), 'utf8');
+          assert.ok(irlSrc.includes('⏳ Recording...'), 'IrlVerifier must show recording busy state on sync button click');
+          assert.ok(irlSrc.includes('⏳ Loading Plan...'), 'IrlVerifier must show loading plan busy state');
+        });
+      });
+
+      describe('v1.238.0: Traffic Alert Full Spoken Cardinal Directions & Speech Template Customization (Issue #268)', () => {
+        test('Version consistency: v1.238.0 entry preserved in CHANGELOG.md and build history', () => {
+          const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+          assert.ok(pkg.version, 'package.json version must exist');
+
+          const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+          assert.ok(changelog.includes('## [1.238.0] - 2026-11-07'), 'CHANGELOG.md must include v1.238.0 header');
+          assert.ok(changelog.includes('Closes #268'), 'CHANGELOG.md must reference issue #268');
+        });
+
+        test('AdsbAirspaceManager.getSpokenCardinal maps all 16 cardinal abbreviations to full English names (specifically ESE -> East South East)', () => {
+          assert.ok(AdsbAirspaceManager, 'AdsbAirspaceManager must exist');
+          assert.strictEqual(typeof AdsbAirspaceManager.getSpokenCardinal, 'function');
+
+          // User-reported bug case: ESE must NOT be pronounced phonetically as an abbreviation
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('ESE'), 'East South East', 'ESE must expand to East South East');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('ese'), 'East South East', 'Case-insensitive lookup for ese');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal(' ESE '), 'East South East', 'Trim whitespace on cardinal');
+
+          // Check full 16-point compass suite
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('N'), 'North');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('NNE'), 'North North East');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('NE'), 'North East');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('ENE'), 'East North East');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('E'), 'East');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('SE'), 'South East');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('SSE'), 'South South East');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('S'), 'South');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('SSW'), 'South South West');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('SW'), 'South West');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('WSW'), 'West South West');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('W'), 'West');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('WNW'), 'West North West');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('NW'), 'North West');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('NNW'), 'North North West');
+
+          // Fallbacks
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal(''), '');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal(null), '');
+          assert.strictEqual(AdsbAirspaceManager.getSpokenCardinal('CustomHeading'), 'CustomHeading');
+        });
+
+        test('AdsbAirspaceManager.formatVoiceAdvisoryText renders default breach and approaching templates with full spoken direction', () => {
+          AdsbAirspaceManager.ttsPreset = 'standard';
+          AdsbAirspaceManager.ttsBreachTemplate = 'Traffic alert! {callsign}, {distance} {direction}, {altitude}.';
+          AdsbAirspaceManager.ttsApproachingTemplate = 'Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}.';
+
+          const acBreach = {
+            callsign: 'UAL452',
+            distanceMiles: 1.5,
+            distanceMeters: 2414,
+            altitude: 1850,
+            bearingCardinal: 'ESE'
+          };
+
+          const breachText = AdsbAirspaceManager.formatVoiceAdvisoryText(acBreach, 'breached');
+          assert.strictEqual(breachText, 'Traffic alert! UAL452, 1.5 miles East South East, 1850 feet.', 'Breach alert must format with expanded direction');
+
+          const acApproaching = {
+            callsign: 'DAL12',
+            distanceMiles: 3.2,
+            distanceMeters: 5150,
+            altitude: 2200,
+            bearingCardinal: 'WSW',
+            etaSeconds: 45
+          };
+
+          const approachingText = AdsbAirspaceManager.formatVoiceAdvisoryText(acApproaching, 'approaching');
+          assert.strictEqual(approachingText, 'Traffic approaching! DAL12, 3.2 miles West South West, perimeter ETA 45 seconds.', 'Approaching alert must format with expanded direction and ETA');
+        });
+
+        test('AdsbAirspaceManager.formatVoiceAdvisoryText supports custom user templates and token replacement', () => {
+          AdsbAirspaceManager.ttsPreset = 'custom';
+          AdsbAirspaceManager.ttsBreachTemplate = 'Warning! Aircraft {callsign} detected at {distance} heading {direction}.';
+
+          const ac = {
+            callsign: 'N172SP',
+            distanceMiles: 0.8,
+            altitude: 900,
+            bearingCardinal: 'NNE'
+          };
+
+          const text = AdsbAirspaceManager.formatVoiceAdvisoryText(ac, 'breached');
+          assert.strictEqual(text, 'Warning! Aircraft N172SP detected at 0.8 miles heading North North East.', 'Custom template tokens must cleanly interpolate');
+        });
+
+        test('AdsbAirspaceManager presets (standard, concise, direction_first) correctly populate phrase templates', () => {
+          assert.ok(AdsbAirspaceManager.TTS_PRESETS, 'TTS_PRESETS dictionary must exist');
+          assert.ok(AdsbAirspaceManager.TTS_PRESETS.standard);
+          assert.ok(AdsbAirspaceManager.TTS_PRESETS.concise);
+          assert.ok(AdsbAirspaceManager.TTS_PRESETS.direction_first);
+
+          const ac = {
+            callsign: 'C172',
+            distanceMiles: 2.0,
+            altitude: 1200,
+            bearingCardinal: 'SE'
+          };
+
+          // Test concise preset
+          AdsbAirspaceManager.ttsBreachTemplate = AdsbAirspaceManager.TTS_PRESETS.concise.breach;
+          const conciseText = AdsbAirspaceManager.formatVoiceAdvisoryText(ac, 'breached');
+          assert.strictEqual(conciseText, 'Traffic alert! 2 miles South East.');
+
+          // Test direction_first preset
+          AdsbAirspaceManager.ttsBreachTemplate = AdsbAirspaceManager.TTS_PRESETS.direction_first.breach;
+          const dirFirstText = AdsbAirspaceManager.formatVoiceAdvisoryText(ac, 'breached');
+          assert.strictEqual(dirFirstText, 'Traffic South East! 2 miles, 1200 feet.');
+        });
+
+        test('AdsbAirspaceManager settings persistence saves and loads TTS templates in localStorage', () => {
+          if (typeof localStorage !== 'undefined') {
+            AdsbAirspaceManager.ttsPreset = 'custom';
+            AdsbAirspaceManager.ttsBreachTemplate = 'Custom breach {callsign} {direction}';
+            AdsbAirspaceManager.ttsApproachingTemplate = 'Custom approaching {distance}';
+            AdsbAirspaceManager.saveSettings();
+
+            assert.strictEqual(localStorage.getItem('aalaapi_adsb_tts_preset'), 'custom');
+            assert.strictEqual(localStorage.getItem('aalaapi_adsb_tts_breach_template'), 'Custom breach {callsign} {direction}');
+            assert.strictEqual(localStorage.getItem('aalaapi_adsb_tts_approaching_template'), 'Custom approaching {distance}');
+
+            // Reset manager in-memory and reload from storage
+            AdsbAirspaceManager.ttsPreset = 'standard';
+            AdsbAirspaceManager.ttsBreachTemplate = '';
+            AdsbAirspaceManager.ttsApproachingTemplate = '';
+            AdsbAirspaceManager.loadSettings();
+
+            assert.strictEqual(AdsbAirspaceManager.ttsPreset, 'custom');
+            assert.strictEqual(AdsbAirspaceManager.ttsBreachTemplate, 'Custom breach {callsign} {direction}');
+            assert.strictEqual(AdsbAirspaceManager.ttsApproachingTemplate, 'Custom approaching {distance}');
+
+            // Restore defaults
+            AdsbAirspaceManager.ttsPreset = 'standard';
+            AdsbAirspaceManager.ttsBreachTemplate = AdsbAirspaceManager.TTS_PRESETS.standard.breach;
+            AdsbAirspaceManager.ttsApproachingTemplate = AdsbAirspaceManager.TTS_PRESETS.standard.approaching;
+            AdsbAirspaceManager.saveSettings();
+          }
+        });
+
+        test('DOM Architecture: TTS Customization drawer details, inputs, badges, and action buttons exist', () => {
+          const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+          assert.ok(indexHtml.includes('id="adsb-tts-customization-details"'), '#adsb-tts-customization-details must exist in index.html');
+          assert.ok(indexHtml.includes('id="adsb-tts-preset-select"'), '#adsb-tts-preset-select must exist');
+          assert.ok(indexHtml.includes('id="adsb-tts-breach-input"'), '#adsb-tts-breach-input must exist');
+          assert.ok(indexHtml.includes('id="adsb-tts-approaching-input"'), '#adsb-tts-approaching-input must exist');
+          assert.ok(indexHtml.includes('id="adsb-tts-preview-btn"'), '#adsb-tts-preview-btn must exist');
+          assert.ok(indexHtml.includes('id="adsb-tts-reset-btn"'), '#adsb-tts-reset-btn must exist');
+
+          // Verify token badges exist
+          assert.ok(indexHtml.includes('data-token="{callsign}"'), '{callsign} token badge must exist');
+          assert.ok(indexHtml.includes('data-token="{direction}"'), '{direction} token badge must exist');
+          assert.ok(indexHtml.includes('data-token="{distance}"'), '{distance} token badge must exist');
+          assert.ok(indexHtml.includes('data-token="{altitude}"'), '{altitude} token badge must exist');
+          assert.ok(indexHtml.includes('data-token="{eta}"'), '{eta} token badge must exist');
+        });
+      });
+
+      describe('v1.239.0: ADS-B High-Altitude Cone Suppression & Pastel Greenish Markers (Issue #269)', () => {
+        test('Version consistency: v1.239.0 across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
+          const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+          assert.strictEqual(pkg.version, '1.239.0', 'package.json version must be 1.239.0');
+
+          const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+          assert.ok(changelog.includes('## [1.239.0] - 2026-11-07'), 'CHANGELOG.md must include v1.239.0 header');
+          assert.ok(changelog.includes('Closes #269'), 'CHANGELOG.md must reference issue #269');
+
+          const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+          assert.ok(template.includes('Version 1.239.0'), 'index_template.html must include Version 1.239.0 in About modal');
+          assert.ok(template.includes('v1.239.0'), 'index_template.html must include v1.239.0 header badge');
+
+          const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+          assert.ok(gradle.includes('versionName = "1.239.0"'), 'Gradle versionName must be 1.239.0');
+          assert.ok(gradle.includes('versionCode = 12390'), 'Gradle versionCode must be 12390');
+        });
+
+        test('AdsbAirspaceManager highAltitudeThresholdFt and suppressHighAltitudeCones defaults and persistence', () => {
+          assert.ok(AdsbAirspaceManager, 'AdsbAirspaceManager must exist');
+          assert.strictEqual(typeof AdsbAirspaceManager.highAltitudeThresholdFt, 'number');
+          assert.strictEqual(typeof AdsbAirspaceManager.suppressHighAltitudeCones, 'boolean');
+
+          if (typeof localStorage !== 'undefined') {
+            AdsbAirspaceManager.highAltitudeThresholdFt = 12500;
+            AdsbAirspaceManager.suppressHighAltitudeCones = false;
+            AdsbAirspaceManager.saveSettings();
+
+            assert.strictEqual(localStorage.getItem('aalaapi_adsb_high_altitude_ft'), '12500');
+            assert.strictEqual(localStorage.getItem('aalaapi_adsb_suppress_high_altitude_cones'), 'false');
+
+            // Reset and reload
+            AdsbAirspaceManager.highAltitudeThresholdFt = 10000;
+            AdsbAirspaceManager.suppressHighAltitudeCones = true;
+            AdsbAirspaceManager.loadSettings();
+
+            assert.strictEqual(AdsbAirspaceManager.highAltitudeThresholdFt, 12500);
+            assert.strictEqual(AdsbAirspaceManager.suppressHighAltitudeCones, false);
+
+            // Restore defaults
+            AdsbAirspaceManager.highAltitudeThresholdFt = 10000;
+            AdsbAirspaceManager.suppressHighAltitudeCones = true;
+            AdsbAirspaceManager.saveSettings();
+          }
+        });
+
+        test('evaluateAircraftCone suppresses cone and sets isHighAltitude when aircraft altitude AGL >= threshold', () => {
+          AdsbAirspaceManager.highAltitudeThresholdFt = 10000;
+          AdsbAirspaceManager.suppressHighAltitudeCones = true;
+          AdsbAirspaceManager.warningMinutes = 2.0;
+
+          const homeLat = 41.3215;
+          const homeLon = -88.9950;
+
+          // Aircraft heading directly toward home at 12,000 ft
+          const highAltAc = {
+            hex: 'A88888',
+            callsign: 'CRUISE450',
+            latitude: homeLat + 0.03,
+            longitude: homeLon,
+            altitude: 12000,
+            speed: 400,
+            track: 180, // heading south toward homeLat
+            verticalRate: 0
+          };
+
+          const evalResult = AdsbAirspaceManager.evaluateAircraftCone(highAltAc, homeLat, homeLon);
+          assert.strictEqual(evalResult.isHighAltitude, true, 'Aircraft >= 10,000 ft must be flagged as high-altitude');
+          assert.strictEqual(evalResult.coneSuppressed, true, 'High altitude cone must be suppressed');
+          assert.strictEqual(evalResult.isConeWarning, false, 'Approaching warning cone must not fire for high altitude');
+
+          // Disable suppression toggle: cone warning can evaluate normally
+          AdsbAirspaceManager.suppressHighAltitudeCones = false;
+          const unsuppressedResult = AdsbAirspaceManager.evaluateAircraftCone(highAltAc, homeLat, homeLon);
+          assert.strictEqual(unsuppressedResult.isHighAltitude, true);
+          assert.strictEqual(unsuppressedResult.coneSuppressed, false, 'Cone should not be suppressed when toggle is false');
+
+          // Restore
+          AdsbAirspaceManager.suppressHighAltitudeCones = true;
+        });
+
+        test('Adjustable High-Altitude Floor: Raising floor above craft altitude re-enables predictive cone', () => {
+          AdsbAirspaceManager.suppressHighAltitudeCones = true;
+          AdsbAirspaceManager.highAltitudeThresholdFt = 15000; // Floor raised to 15,000 ft
+
+          const homeLat = 41.3215;
+          const homeLon = -88.9950;
+
+          const midAltAc = {
+            hex: 'A77777',
+            callsign: 'FLIGHT12K',
+            latitude: homeLat + 0.03,
+            longitude: homeLon,
+            altitude: 12000, // Below 15,000 ft floor
+            speed: 400,
+            track: 180,
+            verticalRate: 0
+          };
+
+          const evalResult = AdsbAirspaceManager.evaluateAircraftCone(midAltAc, homeLat, homeLon);
+          assert.strictEqual(evalResult.isHighAltitude, undefined, 'Craft below 15,000 ft is not high altitude');
+          assert.strictEqual(evalResult.coneSuppressed, false, 'Cone is not suppressed when below threshold floor');
+
+          // Restore
+          AdsbAirspaceManager.highAltitudeThresholdFt = 10000;
+        });
+
+        test('DOM Architecture: High-altitude slider, display badge, suppression toggle, and simulation button exist in index.html', () => {
+          const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+          assert.ok(indexHtml.includes('id="adsb-high-alt-slider"'), '#adsb-high-alt-slider must exist in index.html');
+          assert.ok(indexHtml.includes('id="adsb-high-alt-val"'), '#adsb-high-alt-val must exist in index.html');
+          assert.ok(indexHtml.includes('id="adsb-suppress-high-altitude-toggle"'), '#adsb-suppress-high-altitude-toggle must exist in index.html');
+          assert.ok(indexHtml.includes('id="adsb-sim-high-alt-btn"'), '#adsb-sim-high-alt-btn must exist in index.html');
+        });
+
+        test('CSS Architecture: Pastel greenish (#86efac / #15803d) styling for markers, replay, and drawer chips', () => {
+          const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+          assert.ok(css.includes('.adsb-marker-inner.high-altitude'), '.adsb-marker-inner.high-altitude class must exist in index.css');
+          assert.ok(css.includes('#86efac'), 'Pastel green #86efac must be present in index.css');
+          assert.ok(css.includes('.adsb-high-alt-chip'), '.adsb-high-alt-chip class must exist in index.css');
+        });
+
+        test('Companion Tracker adsb_tracker.js evaluatePredictiveCone honors highAltitudeThresholdFt and suppressHighAltitudeCones', () => {
+          const adsbTracker = require('./tools/companion/adsb_tracker');
+          assert.ok(adsbTracker, 'tools/companion/adsb_tracker must be loadable');
+          assert.strictEqual(typeof adsbTracker.evaluatePredictiveCone, 'function');
+
+          const craft = {
+            hex: 'A88888',
+            lat: 41.35,
+            lon: -88.995,
+            alt: 12500,
+            speed: 400,
+            track: 180,
+            verticalRate: 0
+          };
+
+          const res = adsbTracker.evaluatePredictiveCone(craft, 41.3215, -88.995, {
+            highAltitudeThresholdFt: 10000,
+            suppressHighAltitudeCones: true
+          });
+
+          assert.strictEqual(res.isHighAltitude, true, 'Companion tracker must flag isHighAltitude');
+          assert.strictEqual(res.coneSuppressed, true, 'Companion tracker must suppress cone when above threshold');
+          assert.strictEqual(res.isConeWarning, false, 'No cone warning when suppressed');
+        });
       });
     });
   });

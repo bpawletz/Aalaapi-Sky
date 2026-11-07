@@ -1,3 +1,92 @@
+## [1.239.0] - 2026-11-07
+
+Adjustable high-altitude floor (default 10,000 ft / 3,050 m AGL) with automated trajectory cone suppression and pastel greenish marker styling for high-altitude traffic.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **High-Altitude Trajectory Cone Suppression (Closes #269)**:
+  - Added an adjustable High-Altitude Floor slider (`#adsb-high-alt-slider`, range: 3,000 ft to 25,000 ft AGL, defaulting to 10,000 ft AGL / 3,050 m AGL) and an automated cone suppression toggle (`#adsb-suppress-high-altitude-toggle`).
+  - Manned aircraft cruising at or above this threshold AGL automatically have forward predictive trajectory cones suppressed to keep the map clean and decluttered during field drone operations.
+  - Hover cone generation on mouseover is also suppressed for high-altitude traffic.
+- **Pastel Greenish Icon Styling for High-Altitude Traffic (Closes #269)**:
+  - Aircraft cruising at or above the high-altitude threshold are rendered with a soothing pastel greenish marker icon (`#86efac` dark theme / `#15803d` sunlight theme) across map markers, SVG aircraft icons, tooltips, and the ADS-B drawer aircraft list.
+  - The ADS-B drawer displays a dedicated `CRUISE (HIGH ALT)` pastel green status badge and suppresses unnecessary alert sounds for non-threatening overhead traffic.
+- **Preflight High-Altitude Simulation Support (Closes #269)**:
+  - Added `🛫 High Alt` simulation button (`#adsb-sim-high-alt-btn`) to the Preflight Audio & Traffic Simulation panel, generating a 12,000 ft AGL cruising jet to verify cone suppression and pastel greenish marker appearance.
+
+#### Under the Hood & Technical Details
+- **`src/bridge/ApiClient.js`**:
+  - Implemented `highAltitudeThresholdFt` (default 10000) and `suppressHighAltitudeCones` (default true) in `AdsbAirspaceManager` with `localStorage` persistence.
+  - Integrated ground elevation sampling from `ElevationService` cache/DEM to accurately compute altitude AGL (`ac.altitudeAgl = Math.max(0, altFt - groundElevFt)`).
+  - Evaluated high-altitude status in `evaluateAircraftCone()`, `updateMapMarkers()`, and `updateDrawerAircraftList()`, marking `ac.isHighAltitude` and `ac.coneSuppressed = true`.
+  - Added `.high-altitude` class to marker inner rings and updated mouseover hover cone logic to respect suppression.
+  - Implemented preflight simulation handler for `high_alt` traffic at 12,000 ft.
+- **`index.css`**:
+  - Styled `.adsb-marker-inner.high-altitude` with pastel greenish border, glow, and background in both dark (`#86efac`) and light (`#16a34a`) themes.
+  - Added `.adsb-high-alt-chip` styling for drawer list.
+- **`src/map/MapEngine.js`**:
+  - Added `high-altitude` styling support in `getReplayAircraftMarkerHtml` for historical traffic playback.
+- **`tools/companion/adsb_tracker.js` & `server.js`**:
+  - Synchronized `highAltitudeThresholdFt` and `suppressHighAltitudeCones` in companion bridge tracker and `/api/airspace/*` query endpoints.
+
+## [1.238.0] - 2026-11-07
+
+Enhanced Text-To-Speech (TTS) voice alerts for traffic deconfliction with full spoken compass directions (e.g., "East South East" instead of "ESE") and interactive speech phrase template customization in the ADS-B drawer.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Full Spoken Compass Directions in Voice Advisories (Closes #268)**:
+  - Traffic alerts no longer mispronounce abbreviated compass headings as phonetics (e.g. `ESE` spoken as a word); all 16 cardinal points now expand to full spoken English (e.g. `East South East`, `North North East`, `West South West`).
+- **Customizable Traffic Alert Speech Phrasing (Closes #268)**:
+  - Added an interactive `🗣️ Voice Alert Speech Customization (TTS)` section to the ADS-B & Traffic Alerts drawer (`#adsb-control-drawer`).
+  - Supported speech presets: `Standard (Full Advisory)`, `Concise (Distance & Direction)`, `Direction First`, and `Custom Template`.
+  - Direct phrase template editing for Breach (`#adsb-tts-breach-input`) and Approaching (`#adsb-tts-approaching-input`) alert stages.
+  - Interactive token badges (`{callsign}`, `{direction}`, `{distance}`, `{altitude}`, `{eta}`) for 1-click token insertion.
+  - Live **Preview Speech** (`#adsb-tts-preview-btn`) and **Reset** (`#adsb-tts-reset-btn`) actions with `localStorage` persistence.
+
+#### Under the Hood & Technical Details
+- **`src/bridge/ApiClient.js`**:
+  - Added `CARDINAL_SPOKEN_MAP` and `getSpokenCardinal(code)` to `AdsbAirspaceManager` mapping 16 cardinal points.
+  - Implemented `formatVoiceAdvisoryText(aircraft, alertStage)` with robust dynamic token interpolation, whitespace/punctuation cleanup, and metric/imperial unit formatting.
+  - Added `ttsPreset`, `ttsBreachTemplate`, `ttsApproachingTemplate`, and `TTS_PRESETS` to `AdsbAirspaceManager`.
+  - Wired UI event bindings, interactive token insertion chips, preview testing, and persistence in `loadSettings()` and `saveSettings()`.
+- **`index_template.html` & `index.html`**:
+  - Integrated the collapsible `#adsb-tts-customization-details` card into the ADS-B drawer operations tab.
+
+## [1.237.1] - 2026-11-07
+
+Added visual working indicators, accessible indeterminate viewport spinner overlay, and button busy states for time-consuming actions in Flight Diagnostics, RC 2 Log Manager, and IRL Verification.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Flight Diagnostics Viewport Loading Overlay (Closes #267)**:
+  - Integrated an accessible backdrop loading overlay (`#diag-loading-overlay`) over the 3D canvas container with an indeterminate spinner, polite ARIA live status announcement, and progress indicators during telemetry loading, simulation generation, and flight record decryption.
+- **Button-Level Working & Busy States (Closes #267)**:
+  - Added visual busy state indicators (`disabled`, `aria-busy="true"`, `diag-btn-working`, progress cursor, and `⏳` text) across time-consuming operations:
+    - Log File Import button (`#diag-load-file-btn`) and DJI API Key save/clear actions (`#save-dji-key-btn`, `#clear-dji-key-btn`).
+    - RC 2 Log Explorer action buttons (`.rc2-pull-single-btn` -> `⏳ Pulling...` and `.rc2-load-log-btn` -> `⏳ Loading...`).
+    - AI 3D Mesh Reconstruction buttons (`#diag-btn-generate-ai-mesh` and `#diag-btn-ai-mesh-gallery` synchronized together).
+    - IRL Field Verification action buttons (`#diag-btn-irl-verify`, `#diag-sidebar-irl-verify-btn`, `#diag-irl-sync-bridge-btn`, and `#diag-irl-load-plan-btn`).
+    - Wireframe and GeoJSON export buttons (`#diag-wireframe-save-btn`, `#diag-export-geojson-btn`, `#diag-export-json-btn`).
+
+#### Under the Hood & Technical Details
+- **`src/3d/DigitalTwin.js`**:
+  - Implemented `FlightDiagnostics.setWorkingState(isBusy, statusText, subText, triggerBtn)` and `FlightDiagnostics.withButtonWorking(btn, workingHtml, asyncFn, doneHtml, doneDurationMs)`.
+  - Wrapped `loadSelectedFlight()` in a `try...finally` block synchronized with `_loadGeneration` tracking to avoid stale progress states.
+  - Synchronized dual AI mesh reconstruction triggers across the 3D replay and photo gallery tabs.
+- **`src/bridge/Rc2LogExplorer.js`**:
+  - Updated `renderRc2LogTable` with instant busy state feedback for individual flight log extraction and telemetry loading.
+- **`src/bridge/ApiClient.js`**:
+  - Wired `pullFlightLogFromRC2()` to trigger the diagnostic viewport working overlay and update button `aria-busy` states during USB MTP extraction.
+- **`src/qa/IrlVerifier.js`**:
+  - Added busy state indicators for `syncToBridge()` and `planFileInput.onchange`.
+- **`index.css` & `index_template.html`**:
+  - Added `.diag-loading-overlay`, `.diag-loading-card`, `.loading-spinner` (with `@media (prefers-reduced-motion: reduce)` pulse animation), and `.diag-btn-working`.
+  - Inserted `#diag-loading-overlay` inside `#diag-3d-canvas-container`.
+
 ## [1.237.0] - 2026-11-07
 
 Added map quick-zoom presets for Flight Planning and Airspace Observing, smooth horizontal scrolling for the topbar ribbon, standardized modal window controls (drag, minimize, maximize, close), and a 1-click "Send to RC 2" button in the bottom sticky dock.

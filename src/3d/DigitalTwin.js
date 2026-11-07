@@ -482,6 +482,79 @@ const FlightDiagnostics = {
     } catch (_) {}
   },
 
+  /**
+   * Toggles the visual working / loading state overlay in the Flight Diagnostics 3D canvas viewport.
+   * Conforms to Modern Web Guidance: accessible indeterminate spinner, aria-live, aria-busy.
+   */
+  setWorkingState(isBusy, statusText = 'Loading telemetry...', subText = 'Processing flight data and 3D visual models', triggerBtn = null) {
+    const overlay = (typeof document !== 'undefined') ? document.getElementById('diag-loading-overlay') : null;
+    const textEl = (typeof document !== 'undefined') ? document.getElementById('diag-loading-text') : null;
+    const subTextEl = (typeof document !== 'undefined') ? document.getElementById('diag-loading-subtext') : null;
+    if (overlay) {
+      if (isBusy) {
+        if (textEl && statusText) textEl.textContent = statusText;
+        if (subTextEl) subTextEl.textContent = subText || '';
+        if (overlay.classList && typeof overlay.classList.add === 'function') overlay.classList.add('is-active');
+        if (typeof overlay.setAttribute === 'function') overlay.setAttribute('aria-hidden', 'false');
+      } else {
+        if (overlay.classList && typeof overlay.classList.remove === 'function') overlay.classList.remove('is-active');
+        if (typeof overlay.setAttribute === 'function') overlay.setAttribute('aria-hidden', 'true');
+      }
+    }
+    if (triggerBtn) {
+      if (isBusy) {
+        triggerBtn.disabled = true;
+        if (typeof triggerBtn.setAttribute === 'function') triggerBtn.setAttribute('aria-busy', 'true');
+        if (triggerBtn.classList && typeof triggerBtn.classList.add === 'function') triggerBtn.classList.add('diag-btn-working');
+      } else {
+        triggerBtn.disabled = false;
+        if (typeof triggerBtn.removeAttribute === 'function') triggerBtn.removeAttribute('aria-busy');
+        if (triggerBtn.classList && typeof triggerBtn.classList.remove === 'function') triggerBtn.classList.remove('diag-btn-working');
+      }
+    }
+  },
+
+  /**
+   * Executes an asynchronous action while temporarily setting a busy/working state on a button.
+   */
+  async withButtonWorking(btn, workingHtml, asyncFn, doneHtml = null, doneDurationMs = 1500) {
+    if (!btn) {
+      return await asyncFn();
+    }
+    const origHtml = btn.innerHTML;
+    const wasDisabled = btn.disabled;
+    btn.disabled = true;
+    if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-busy', 'true');
+    if (btn.classList && typeof btn.classList.add === 'function') btn.classList.add('diag-btn-working');
+    if (workingHtml) {
+      btn.innerHTML = workingHtml;
+    }
+    try {
+      const result = await asyncFn();
+      if (doneHtml) {
+        btn.innerHTML = doneHtml;
+        setTimeout(() => {
+          btn.innerHTML = origHtml;
+          btn.disabled = wasDisabled;
+          if (typeof btn.removeAttribute === 'function') btn.removeAttribute('aria-busy');
+          if (btn.classList && typeof btn.classList.remove === 'function') btn.classList.remove('diag-btn-working');
+        }, doneDurationMs);
+      } else {
+        btn.innerHTML = origHtml;
+        btn.disabled = wasDisabled;
+        if (typeof btn.removeAttribute === 'function') btn.removeAttribute('aria-busy');
+        if (btn.classList && typeof btn.classList.remove === 'function') btn.classList.remove('diag-btn-working');
+      }
+      return result;
+    } catch (err) {
+      btn.innerHTML = origHtml;
+      btn.disabled = wasDisabled;
+      if (typeof btn.removeAttribute === 'function') btn.removeAttribute('aria-busy');
+      if (btn.classList && typeof btn.classList.remove === 'function') btn.classList.remove('diag-btn-working');
+      throw err;
+    }
+  },
+
   // HUD overlay toggle state (Diagnostics 3D replay)
   diagAutoRotate: false,
   diagShowCones: true,
@@ -1634,7 +1707,9 @@ const FlightDiagnostics = {
 
     if (saveBtn) {
       saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving...';
+      saveBtn.setAttribute('aria-busy', 'true');
+      saveBtn.classList.add('diag-btn-working');
+      saveBtn.textContent = '⏳ Saving...';
     }
 
     let savedLocally = false;
@@ -1698,6 +1773,8 @@ const FlightDiagnostics = {
 
     if (saveBtn) {
       saveBtn.disabled = false;
+      saveBtn.removeAttribute('aria-busy');
+      saveBtn.classList.remove('diag-btn-working');
       saveBtn.textContent = 'Save & Decrypt';
     }
   },
@@ -1707,7 +1784,12 @@ const FlightDiagnostics = {
     const clearBtn = typeof document !== 'undefined' ? document.getElementById('clear-dji-key-btn') : null;
     const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
 
-    if (clearBtn) clearBtn.disabled = true;
+    if (clearBtn) {
+      clearBtn.disabled = true;
+      clearBtn.setAttribute('aria-busy', 'true');
+      clearBtn.classList.add('diag-btn-working');
+      clearBtn.textContent = '⏳ Clearing...';
+    }
 
     if (typeof Platform !== 'undefined' && typeof Platform.setDjiApiKey === 'function') {
       Platform.setDjiApiKey('');
@@ -1743,7 +1825,12 @@ const FlightDiagnostics = {
     if (this.selectedFlightId) {
       this.loadSelectedFlight(this.selectedFlightId);
     }
-    if (clearBtn) clearBtn.disabled = false;
+    if (clearBtn) {
+      clearBtn.disabled = false;
+      clearBtn.removeAttribute('aria-busy');
+      clearBtn.classList.remove('diag-btn-working');
+      clearBtn.textContent = 'Clear Key';
+    }
   },
 
   copyAntigravityPrompt() {
@@ -1849,6 +1936,21 @@ const FlightDiagnostics = {
       }
       return;
     }
+    const headerBtn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-irl-verify') : null;
+    const sidebarBtn = (typeof document !== 'undefined') ? document.getElementById('diag-sidebar-irl-verify-btn') : null;
+    const irlBtns = [headerBtn, sidebarBtn].filter(Boolean);
+    irlBtns.forEach(b => {
+      b.disabled = true;
+      b.setAttribute('aria-busy', 'true');
+      b.classList.add('diag-btn-working');
+    });
+    setTimeout(() => {
+      irlBtns.forEach(b => {
+        b.disabled = false;
+        b.removeAttribute('aria-busy');
+        b.classList.remove('diag-btn-working');
+      });
+    }, 600);
     const planned = this.plannedWaypoints || (typeof getActiveMissionWaypoints === 'function' ? getActiveMissionWaypoints() : []);
     const activePattern = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || 'single';
 
@@ -2053,7 +2155,12 @@ const FlightDiagnostics = {
     const myGeneration = this._loadGeneration;
     this._pendingFlightId = flightId;
 
-    this.selectedFlightId = flightId;
+    const flightStatusLabel = flightId === 'active-mission' ? 'Generating 3D mission simulation...' : `Loading ${flightId}...`;
+    const flightSubLabel = flightId === 'active-mission' ? 'Synchronizing waypoints and camera frustums' : 'Fetching and decrypting flight log telemetry';
+    this.setWorkingState(true, flightStatusLabel, flightSubLabel);
+
+    try {
+      this.selectedFlightId = flightId;
     this.currentLoadedMission = null;
     this.plannedWaypoints = null;
     this.isActualFlown = false;
@@ -2367,6 +2474,11 @@ const FlightDiagnostics = {
     this.seekTo(resumeIdx, true, true);
     this.frameCameraToScene('3d');
     this.pause();
+  } finally {
+    if (this._loadGeneration === myGeneration) {
+      this.setWorkingState(false);
+    }
+  }
   },
 
   getSceneOrigin() {
@@ -4429,54 +4541,63 @@ const FlightDiagnostics = {
 
   exportGeoJSON() {
     if (!this.telemetryData || !this.telemetryData.points) return;
-    const coordinates = this.telemetryData.points.map(p => [p.lon, p.lat, p.alt]);
-    const geojson = {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          properties: {
-            name: "Actual Flight Track",
-            droneModel: this.telemetryData.droneModel,
-            duration: this.telemetryData.durationFormatted,
-            totalDistanceMeters: this.telemetryData.totalDistance,
-            maxAltitudeMeters: this.telemetryData.maxAltitude
-          },
-          geometry: {
-            type: "LineString",
-            coordinates: coordinates
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-export-geojson-btn') : null;
+    return this.withButtonWorking(btn, '<span>⏳ Exporting...</span>', () => {
+      const coordinates = this.telemetryData.points.map(p => [p.lon, p.lat, p.alt]);
+      const geojson = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {
+              name: "Actual Flight Track",
+              droneModel: this.telemetryData.droneModel,
+              duration: this.telemetryData.durationFormatted,
+              totalDistanceMeters: this.telemetryData.totalDistance,
+              maxAltitudeMeters: this.telemetryData.maxAltitude
+            },
+            geometry: {
+              type: "LineString",
+              coordinates: coordinates
+            }
           }
-        }
-      ]
-    };
+        ]
+      };
 
-    if (typeof document !== 'undefined') {
-      const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: "application/json" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      const flightDate = this.telemetryData?.flightDate || new Date();
-      const iso8601 = formatISO8601ForFilename(flightDate);
-      link.download = `FlightRecord_${iso8601}_Track.geojson`;
-      link.click();
-    }
+      if (typeof document !== 'undefined') {
+        const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        const flightDate = this.telemetryData?.flightDate || new Date();
+        const iso8601 = formatISO8601ForFilename(flightDate);
+        link.download = `FlightRecord_${iso8601}_Track.geojson`;
+        link.click();
+      }
+    }, '<span>✅ Exported!</span>', 1200);
   },
 
   exportDiagJSON() {
-    const wps = (typeof getActiveMissionWaypoints === 'function') ? getActiveMissionWaypoints() : [];
-    const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 50.0;
-    const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
-    const gimbalPitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
-    return exportFlightDiagnosticsJSON(wps, {
-      altitude,
-      speed,
-      gimbalPitch,
-      uuid: this.selectedFlightId || 'active-mission'
-    });
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-export-json-btn') : null;
+    return this.withButtonWorking(btn, '<span>⏳ Exporting...</span>', () => {
+      const wps = (typeof getActiveMissionWaypoints === 'function') ? getActiveMissionWaypoints() : [];
+      const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 50.0;
+      const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
+      const gimbalPitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
+      return exportFlightDiagnosticsJSON(wps, {
+        altitude,
+        speed,
+        gimbalPitch,
+        uuid: this.selectedFlightId || 'active-mission'
+      });
+    }, '<span>✅ Exported!</span>', 1200);
   },
 
   async handleLogFileImport(e) {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (!file) return;
+
+    const loadBtn = (typeof document !== 'undefined') ? document.getElementById('diag-load-file-btn') : null;
+    this.setWorkingState(true, `Importing ${file.name}...`, 'Parsing flight log data and generating 3D paths', loadBtn);
 
     try {
       const flightId = file.name;
@@ -4563,6 +4684,9 @@ const FlightDiagnostics = {
       }
     } catch (err) {
       if (typeof alert === 'function') alert('Could not parse file: ' + err.message);
+    } finally {
+      this.setWorkingState(false, '', '', loadBtn);
+      if (e.target) e.target.value = '';
     }
   },
 
@@ -5214,42 +5338,48 @@ const FlightDiagnostics = {
       ? this.gatherDigitalTwinData()
       : { elevationOffset: typeof this.wireframeElevationOffset === 'number' ? this.wireframeElevationOffset : 0.0 };
 
-    try {
-      const res = await fetch(`${apiBase}/api/process/wireframe/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          missionUuid: targetMissionUuid,
-          lines: this.wireframeData.lines,
-          elevationOffset: dtData.elevationOffset,
-          flightPath: dtData.flightPath,
-          photos: dtData.photos,
-          boundary: dtData.boundary
-        })
-      });
-      const data = await res.json();
-      if (data && data.success) {
-        if (this.activeInspectionManifest) {
-          this.activeInspectionManifest.wireframe = data.wireframe;
-        }
-        if (typeof showToast === 'function') {
-          showToast(`📦 3D Wireframe saved to package (${data.count} lines)!`, 'success');
+    const saveBtn = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-save-btn') : null;
+
+    await this.withButtonWorking(saveBtn, '<span>⏳ Saving...</span>', async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/process/wireframe/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            missionUuid: targetMissionUuid,
+            lines: this.wireframeData.lines,
+            elevationOffset: dtData.elevationOffset,
+            flightPath: dtData.flightPath,
+            photos: dtData.photos,
+            boundary: dtData.boundary
+          })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          if (this.activeInspectionManifest) {
+            this.activeInspectionManifest.wireframe = data.wireframe;
+          }
+          if (typeof showToast === 'function') {
+            showToast(`📦 3D Wireframe saved to package (${data.count} lines)!`, 'success');
+          } else {
+            alert(`📦 3D Wireframe saved to package (${data.count} lines)!`);
+          }
         } else {
-          alert(`📦 3D Wireframe saved to package (${data.count} lines)!`);
+          throw new Error((data && data.error) || 'Failed to save wireframe to package');
         }
-      } else {
-        throw new Error((data && data.error) || 'Failed to save wireframe to package');
+      } catch (err) {
+        if (typeof showToast === 'function') showToast(`Package note: ${err.message}`, 'warning');
+        else alert(`Package note: ${err.message}`);
       }
-    } catch (err) {
-      if (typeof showToast === 'function') showToast(`Package note: ${err.message}`, 'warning');
-      else alert(`Package note: ${err.message}`);
-    }
+    }, '<span>✅ Saved!</span>', 1500);
   },
 
   async extractWireframeFromCurrentPhotos() {
     const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-extract-wireframe') : null;
     if (btn) {
       btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      btn.classList.add('diag-btn-working');
       btn.textContent = '⏳ Extracting...';
     }
     try {
@@ -5287,6 +5417,8 @@ const FlightDiagnostics = {
     } finally {
       if (btn) {
         btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+        btn.classList.remove('diag-btn-working');
         btn.innerHTML = '<span>🏗️</span> Project 3D Wireframe';
       }
     }
@@ -5406,16 +5538,36 @@ const FlightDiagnostics = {
 
   async triggerAiMeshReconstruction() {
     const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-generate-ai-mesh') : null;
+    const btnGallery = (typeof document !== 'undefined') ? document.getElementById('diag-btn-ai-mesh-gallery') : null;
+    const allMeshBtns = [btn, btnGallery].filter(Boolean);
     const progressCard = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-card') : null;
     const progressBar = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-bar') : null;
     const progressPct = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-pct') : null;
     const statusText = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-status-text') : null;
     const engineSelect = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-engine-select') : null;
 
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = '⏳ Processing 3D...';
-    }
+    allMeshBtns.forEach(b => {
+      b.disabled = true;
+      b.setAttribute('aria-busy', 'true');
+      b.classList.add('diag-btn-working');
+      b.textContent = '⏳ Processing 3D...';
+    });
+    this.setWorkingState(true, 'AI 3D Reconstruction in progress...', 'Extracting features from aerial photos');
+
+    const resetMeshBtns = () => {
+      allMeshBtns.forEach(b => {
+        b.disabled = false;
+        b.removeAttribute('aria-busy');
+        b.classList.remove('diag-btn-working');
+        if (b.id === 'diag-btn-ai-mesh-gallery') {
+          b.textContent = '⚡ Reconstruct 3D Mesh';
+        } else {
+          b.textContent = '⚡ Reconstruct AI 3D Mesh';
+        }
+      });
+      this.setWorkingState(false);
+    };
+
     if (progressCard) progressCard.style.display = 'flex';
     if (progressBar) progressBar.style.width = '10%';
     if (progressPct) progressPct.textContent = '10%';
@@ -5476,10 +5628,7 @@ const FlightDiagnostics = {
                   }
                 }
 
-                if (btn) {
-                  btn.disabled = false;
-                  btn.textContent = '⚡ Reconstruct AI 3D Mesh';
-                }
+                resetMeshBtns();
               } else if (job.status === 'error') {
                 clearInterval(poll);
                 throw new Error(job.error || 'AI reconstruction failed');
@@ -5489,28 +5638,19 @@ const FlightDiagnostics = {
         } catch (err) {
           clearInterval(poll);
           if (statusText) statusText.textContent = `Error: ${err.message}`;
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = '⚡ Reconstruct AI 3D Mesh';
-          }
+          resetMeshBtns();
           if (typeof showToast === 'function') showToast(`AI 3D Assist: ${err.message}`, 'error');
         }
 
         if (attempts > 60) {
           clearInterval(poll);
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = '⚡ Reconstruct AI 3D Mesh';
-          }
+          resetMeshBtns();
         }
       }, 500);
 
     } catch (err) {
       if (statusText) statusText.textContent = `Error: ${err.message}`;
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = '⚡ Reconstruct AI 3D Mesh';
-      }
+      resetMeshBtns();
       if (typeof showToast === 'function') showToast(`AI 3D Assist: ${err.message}`, 'error');
     }
   }

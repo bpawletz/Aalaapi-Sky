@@ -914,6 +914,14 @@ const IrlVerifier = {
    */
   async syncToBridge() {
     if (!this.currentResult) return;
+    const syncBtn = document.getElementById('diag-irl-sync-bridge-btn');
+    const origHtml = syncBtn ? syncBtn.innerHTML : '';
+    if (syncBtn) {
+      syncBtn.disabled = true;
+      syncBtn.setAttribute('aria-busy', 'true');
+      syncBtn.classList.add('diag-btn-working');
+      syncBtn.innerHTML = '<span>⏳ Recording...</span>';
+    }
     const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
     const patternId = document.getElementById('diag-irl-pattern-select')?.value || 'double';
 
@@ -931,6 +939,15 @@ const IrlVerifier = {
       });
       if (res.ok) {
         const data = await res.json();
+        if (syncBtn) {
+          syncBtn.innerHTML = '<span>✅ Recorded!</span>';
+          setTimeout(() => {
+            syncBtn.innerHTML = origHtml;
+            syncBtn.disabled = false;
+            syncBtn.removeAttribute('aria-busy');
+            syncBtn.classList.remove('diag-btn-working');
+          }, 1500);
+        }
         if (typeof showToast === 'function') {
           showToast(`\u26A1 Recorded IRL verification for pattern "${patternId}" to local tracker!`, 4000);
         }
@@ -942,11 +959,23 @@ const IrlVerifier = {
           updateActiveLayerIrlBadge(patternId);
         }
       } else {
+        if (syncBtn) {
+          syncBtn.innerHTML = origHtml;
+          syncBtn.disabled = false;
+          syncBtn.removeAttribute('aria-busy');
+          syncBtn.classList.remove('diag-btn-working');
+        }
         if (typeof showToast === 'function') {
           showToast('\u26A0\uFE0F Bridge returned an error recording IRL status.', 4000);
         }
       }
     } catch (e) {
+      if (syncBtn) {
+        syncBtn.innerHTML = origHtml;
+        syncBtn.disabled = false;
+        syncBtn.removeAttribute('aria-busy');
+        syncBtn.classList.remove('diag-btn-working');
+      }
       if (typeof showToast === 'function') {
         showToast(`\u26A0\uFE0F Could not reach Companion Bridge: ${e.message}`, 4000);
       }
@@ -988,7 +1017,21 @@ const IrlVerifier = {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
 
+        loadPlanBtn.disabled = true;
+        loadPlanBtn.setAttribute('aria-busy', 'true');
+        loadPlanBtn.classList.add('diag-btn-working');
+        const origPlanText = loadPlanBtn.innerHTML;
+        loadPlanBtn.innerHTML = '<span>⏳ Loading Plan...</span>';
+
+        const resetPlanBtn = () => {
+          loadPlanBtn.disabled = false;
+          loadPlanBtn.removeAttribute('aria-busy');
+          loadPlanBtn.classList.remove('diag-btn-working');
+          loadPlanBtn.innerHTML = origPlanText;
+        };
+
         const reader = new FileReader();
+        reader.onerror = () => resetPlanBtn();
         reader.onload = (readEvt) => {
           try {
             const text = readEvt.target.result;
@@ -1051,6 +1094,7 @@ const IrlVerifier = {
               showToast(`\u26A0\uFE0F Error reading flight plan file: ${parseErr.message}`, 4000);
             }
           }
+          resetPlanBtn();
         };
         reader.readAsText(file);
       };

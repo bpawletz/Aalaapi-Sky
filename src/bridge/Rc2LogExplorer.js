@@ -268,6 +268,10 @@ function renderRc2LogTable(logs) {
     btn.addEventListener('click', () => {
       const fn = btn.getAttribute('data-filename');
       const handleAttr = btn.getAttribute('data-handle');
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      btn.classList.add('diag-btn-working');
+      btn.innerHTML = '<span>⏳ Loading...</span>';
       if (typeof Platform !== 'undefined' && Platform.isNativeContainer() && fn) {
         pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
       } else if (fn) {
@@ -278,10 +282,24 @@ function renderRc2LogTable(logs) {
 
   const pullBtns = container.querySelectorAll('.rc2-pull-single-btn');
   pullBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const fn = btn.getAttribute('data-filename');
       const handleAttr = btn.getAttribute('data-handle');
-      if (fn) pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
+      if (fn) {
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.classList.add('diag-btn-working');
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = '<span>⏳ Pulling...</span>';
+        try {
+          await pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
+        } finally {
+          btn.disabled = false;
+          btn.removeAttribute('aria-busy');
+          btn.classList.remove('diag-btn-working');
+          btn.innerHTML = origHtml;
+        }
+      }
     });
   });
 }
