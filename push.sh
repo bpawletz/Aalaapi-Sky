@@ -1,19 +1,59 @@
 #!/usr/bin/env bash
 set -e
 
-echo "🌐 Refreshing FAA TFR & NOTAM data cache..."
-node tools/fetch_tfr_data.js
+QUICK=false
+FULL=false
+COMMIT_MSG=""
 
-echo "🔨 Building single-file bundle..."
-python scratch/build.py
+for arg in "$@"; do
+    case "$arg" in
+        --quick|-quick)
+            QUICK=true
+            ;;
+        --full|-full)
+            FULL=true
+            ;;
+        *)
+            if [ -z "$COMMIT_MSG" ]; then
+                COMMIT_MSG="$arg"
+            fi
+            ;;
+    esac
+done
 
-echo "🧪 Running unit & E2E tests..."
-node --test tools/qa/irl_tracker.test.js tools/companion/cloud_workspace.test.js tools/companion/tile_cache.test.js index.test.js index.e2e.test.js
+if [ "$QUICK" = true ]; then
+    echo "⚡ Quick Mode: Building bundle and verifying module graph..."
+    python scratch/build.py
+    node tools/build/check_modules.js
+elif [ "$FULL" = true ]; then
+    echo "🔨 Full Mode: Building single-file bundle..."
+    python scratch/build.py
+
+    echo "🔍 Verifying static AST module graph..."
+    node tools/build/check_modules.js
+
+    echo "🧪 Running full unit & companion test suites..."
+    npm run test:unit
+
+    echo "🎭 Running Playwright E2E UI test suite..."
+    npm run test:e2e
+
+    echo "📐 Running strict DJI WPML 1.0.2 XSD schema validation..."
+    python tools/validation/validate_wpml.py --run-matrix
+else
+    echo "🔨 Building single-file bundle..."
+    python scratch/build.py
+
+    echo "🔍 Verifying static AST module graph..."
+    node tools/build/check_modules.js
+
+    echo "🧪 Running unit & companion tests..."
+    npm run test:unit
+fi
 
 echo "📦 Staging git changes..."
 git add .
 
-COMMIT_MSG="$1"
 if [ -z "$COMMIT_MSG" ]; then
     echo -n "Enter commit message: "
     read -r COMMIT_MSG

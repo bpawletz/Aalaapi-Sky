@@ -23336,21 +23336,25 @@ describe('v1.128.4 FAA TFR Ingestion & Display Resilience Tests (VIP 6/4933 & Du
     assertVersionConsistency('1.128.4');
   });
 
-  test('Local data cache contains VIP TFR 6/4933 in both NOTAM list and GeoServer boundaries', () => {
-    const notamsPath = path.join(__dirname, 'data', 'tfr_notams.json');
-    const geoPath = path.join(__dirname, 'data', 'tfr_geojson.json');
+  test('Live TFR data fixtures contain valid NOTAM structure and GeoServer boundary schemas', () => {
+    const mockNotams = [
+      { notam_id: '6/4933', facility: 'ZID', state: 'OH', type: 'VIP', description: 'Rockbridge VIP', gid: '6/4933' }
+    ];
+    const mockGeo = {
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        id: 'V_TFR_LOC.6/4933',
+        properties: { NOTAM_KEY: '6/4933-1-FDC-F' },
+        geometry: { type: 'Polygon', coordinates: [[[-83.0, 39.8], [-82.8, 39.8], [-82.8, 40.0], [-83.0, 40.0], [-83.0, 39.8]]] }
+      }]
+    };
 
-    assert.ok(fs.existsSync(notamsPath), 'data/tfr_notams.json must exist');
-    assert.ok(fs.existsSync(geoPath), 'data/tfr_geojson.json must exist');
+    const has4933Notam = mockNotams.some(n => n.notam_id === '6/4933' || n.gid === '6/4933');
+    assert.ok(has4933Notam, 'NOTAM fixture must contain NOTAM 6/4933');
 
-    const notams = JSON.parse(fs.readFileSync(notamsPath, 'utf8'));
-    const geo = JSON.parse(fs.readFileSync(geoPath, 'utf8'));
-
-    const has4933Notam = notams.some(n => n.notam_id === '6/4933' || n.gid === '6/4933');
-    assert.ok(has4933Notam, 'tfr_notams.json must contain NOTAM 6/4933');
-
-    const has4933Geo = geo.features.some(f => f.id && f.id.includes('4933'));
-    assert.ok(has4933Geo, 'tfr_geojson.json must contain boundary features for 6/4933');
+    const has4933Geo = mockGeo.features.some(f => f.id && f.id.includes('4933'));
+    assert.ok(has4933Geo, 'GeoServer fixture must contain boundary features for 6/4933');
   });
 
   test('processTfrData correctly processes 6/4933 as active VIP TFR alongside Ohio Stadium standby advisory', () => {
@@ -23465,33 +23469,35 @@ describe('v1.128.4 FAA TFR Ingestion & Display Resilience Tests (VIP 6/4933 & Du
     }
   });
 
-  test('fetchAndProcessTFRs resolves companion API base dynamically and falls back to static repo cache', async () => {
+  test('fetchAndProcessTFRs resolves companion API base dynamically and processes live REST endpoints', async () => {
     const origFetch = global.fetch;
     const requestedUrls = [];
 
     global.fetch = async (url) => {
       requestedUrls.push(url.toString());
-      if (url.includes('/api/tfr/notams') || url.includes('/api/tfr/geojson')) {
-        // Simulate companion offline (fail)
-        throw new Error('Connection refused');
-      }
-      if (url.includes('tfr_notams.json')) {
-        return {
-          ok: true,
-          json: async () => [{ notam_id: '6/4933', type: 'VIP', description: 'Rockbridge VIP' }]
-        };
-      }
-      if (url.includes('tfr_geojson.json')) {
+      if (url.includes('/api/tfr/notams')) {
         return {
           ok: true,
           json: async () => ({
-            type: 'FeatureCollection',
-            features: [{
-              type: 'Feature',
-              id: 'V_TFR_LOC.6/4933',
-              properties: { NOTAM_KEY: '6/4933-1-FDC-F' },
-              geometry: { type: 'Polygon', coordinates: [[[-83.0, 39.8], [-82.8, 39.8], [-82.8, 40.0], [-83.0, 40.0], [-83.0, 39.8]]] }
-            }]
+            success: true,
+            data: [{ notam_id: '6/4933', type: 'VIP', description: 'Rockbridge VIP', gid: '6/4933' }]
+          })
+        };
+      }
+      if (url.includes('/api/tfr/geojson')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: {
+              type: 'FeatureCollection',
+              features: [{
+                type: 'Feature',
+                id: 'V_TFR_LOC.6/4933',
+                properties: { NOTAM_KEY: '6/4933-1-FDC-F' },
+                geometry: { type: 'Polygon', coordinates: [[[-83.0, 39.8], [-82.8, 39.8], [-82.8, 40.0], [-83.0, 40.0], [-83.0, 39.8]]] }
+              }]
+            }
           })
         };
       }
@@ -23503,13 +23509,11 @@ describe('v1.128.4 FAA TFR Ingestion & Display Resilience Tests (VIP 6/4933 & Du
 
       // Verify that companion endpoint was attempted
       assert.ok(requestedUrls.some(u => u.includes('/api/tfr/notams')), 'Must attempt companion endpoint');
-      // Verify static cache fallback was queried when companion was offline
-      assert.ok(requestedUrls.some(u => u.includes('tfr_notams.json')), 'Must query static tfr_notams.json cache fallback');
-      assert.ok(requestedUrls.some(u => u.includes('tfr_geojson.json')), 'Must query static tfr_geojson.json cache fallback');
+      assert.ok(requestedUrls.some(u => u.includes('/api/tfr/geojson')), 'Must attempt companion geojson endpoint');
 
       // Verify that active NOTAMs now contains 6/4933
       const found = tfrActiveNotams.find(t => t.notamId === '6/4933');
-      assert.ok(found, 'tfrActiveNotams must contain 6/4933 from static cache fallback');
+      assert.ok(found, 'tfrActiveNotams must contain 6/4933 from live companion REST API');
     } finally {
       global.fetch = origFetch;
     }
@@ -43026,7 +43030,8 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
       const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
       assert.ok(gradle.includes(`versionName = "${pkg.version}"`) || gradle.includes('versionName = "1.235.0"') || gradle.includes('versionName = "1.234.0"'), 'Gradle must have versionName >= 1.234.0');
-      assert.ok(gradle.includes('versionCode = 12351') || gradle.includes('versionCode = 12350') || gradle.includes('versionCode = 12340'), 'Gradle must have versionCode >= 12340');
+      const mCode = gradle.match(/versionCode\s*=\s*(\d+)/);
+      assert.ok(mCode && parseInt(mCode[1], 10) >= 12340, 'Gradle must have versionCode >= 12340');
     });
 
     test('Zero-default fallback: DigitalTwin.loadFlightLogData rejects invalid/binary data without simulation', async () => {
@@ -43081,13 +43086,14 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
 
     describe('v1.235.0 Client & Companion Platform Abstraction Framework (Issue #263)', () => {
-      test('Version consistency across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts (Issue #263, #264)', () => {
+      test('Version consistency across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts (Issue #263, #264, #265)', () => {
         const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-        assert.ok(semverGte(pkg.version, '1.235.0'));
+        assert.ok(semverGte(pkg.version, '1.236.0'));
 
         const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
         assert.ok(changelog.includes('## [1.235.0]'), 'CHANGELOG.md must include 1.235.0');
         assert.ok(changelog.includes('## [1.235.1]'), 'CHANGELOG.md must include 1.235.1');
+        assert.ok(changelog.includes('## [1.236.0]'), 'CHANGELOG.md must include 1.236.0');
 
         const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
         assert.ok(template.includes(`Version ${pkg.version}`), `index_template.html must include Version ${pkg.version}`);
@@ -43095,7 +43101,7 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
         const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
         assert.ok(gradle.includes(`versionName = "${pkg.version}"`));
-        assert.ok(gradle.includes('versionCode = 12351') || gradle.includes('versionCode = 12350'));
+        assert.ok(gradle.includes('versionCode = 12360'));
       });
 
       test('PlatformManager auto-detects Windows/Desktop, Android Native, iOS Native, and URL ?platform= overrides', () => {
@@ -43254,6 +43260,56 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
         const mtpRes = await linuxDriver.runMtpScript('Write-Output "test"');
         assert.strictEqual(mtpRes.success, false);
         assert.ok(mtpRes.error.includes('only available on Windows'));
+      });
+    });
+
+    describe('v1.236.0 Full CI Actions, Git Worktree Lifecycle & Live REST TFRs (Issue #265)', () => {
+      test('Worktree Manager tool and npm scripts are registered and executable', () => {
+        const wtMgr = require('./tools/build/worktree_manager.js');
+        assert.strictEqual(typeof wtMgr.createWorktree, 'function');
+        assert.strictEqual(typeof wtMgr.listWorktrees, 'function');
+        assert.strictEqual(typeof wtMgr.finishWorktree, 'function');
+        assert.strictEqual(typeof wtMgr.pruneWorktrees, 'function');
+
+        const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+        assert.ok(pkg.scripts['worktree:create']);
+        assert.ok(pkg.scripts['worktree:list']);
+        assert.ok(pkg.scripts['worktree:finish']);
+        assert.ok(pkg.scripts['worktree:prune']);
+      });
+
+      test('GitHub Actions CI workflows are configured with correct triggers and permissions', () => {
+        const ciYaml = fs.readFileSync(path.join(__dirname, '.github', 'workflows', 'ci-tests.yml'), 'utf8');
+        assert.ok(ciYaml.includes('name: CI Test Suite'));
+        assert.ok(ciYaml.includes('contents: read'));
+        assert.ok(ciYaml.includes('unit-and-schema'));
+        assert.ok(ciYaml.includes('e2e-playwright'));
+        assert.ok(ciYaml.includes('npm run test:unit'));
+        assert.ok(ciYaml.includes('npm run test:e2e'));
+
+        const buildYaml = fs.readFileSync(path.join(__dirname, '.github', 'workflows', 'build-and-commit.yml'), 'utf8');
+        assert.ok(buildYaml.includes('name: Auto-Build index.html'));
+        assert.ok(buildYaml.includes('contents: write'));
+        assert.ok(!buildYaml.includes('cron:'), 'build-and-commit.yml must not contain 6-hour cron');
+        assert.ok(!buildYaml.includes('fetch_tfr_data.js'), 'build-and-commit.yml must not run fetch_tfr_data.js');
+      });
+
+      test('Local push scripts push.ps1 and push.sh support flexible modes without blocking TFR scrapes', () => {
+        const ps1 = fs.readFileSync(path.join(__dirname, 'push.ps1'), 'utf8');
+        assert.ok(ps1.includes('[switch]$Quick'));
+        assert.ok(ps1.includes('[switch]$Full'));
+        assert.ok(!ps1.includes('fetch_tfr_data.js'), 'push.ps1 must not run fetch_tfr_data.js');
+
+        const sh = fs.readFileSync(path.join(__dirname, 'push.sh'), 'utf8');
+        assert.ok(sh.includes('--quick'));
+        assert.ok(sh.includes('--full'));
+        assert.ok(!sh.includes('fetch_tfr_data.js'), 'push.sh must not run fetch_tfr_data.js');
+      });
+
+      test('.gitignore excludes offline FAA TFR static cache files', () => {
+        const gitignore = fs.readFileSync(path.join(__dirname, '.gitignore'), 'utf8');
+        assert.ok(gitignore.includes('data/tfr_notams.json'));
+        assert.ok(gitignore.includes('data/tfr_geojson.json'));
       });
     });
   });

@@ -36,3 +36,11 @@ dist/
 adsb_connection.json
 config/adsb_connection.json
 
+# Offline FAA TFR static scrape cache
+data/tfr_notams.json
+data/tfr_geojson.json
+android/app/src/main/assets/www/data/tfr_notams.json
+android/app/src/main/assets/www/data/tfr_geojson.json
+
+
+

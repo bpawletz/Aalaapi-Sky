@@ -452,38 +452,7 @@ async function fetchAndProcessTFRs(centerLat, centerLon, force = false) {
     }
   } catch (err) {}
 
-  // Tier 2: Static repository cache (zero-latency, CORS-safe bundle for GitHub Pages / web hosting / mobile assets)
-  if (notamList.length === 0) {
-    if (typeof Platform !== 'undefined' && typeof Platform.readAssetJson === 'function') {
-      const data = await Platform.readAssetJson('data/tfr_notams.json', 4000);
-      if (Array.isArray(data) && data.length > 0) notamList = data;
-    } else {
-      try {
-        const staticNotamRes = await fetch('./data/tfr_notams.json', { signal: AbortSignal.timeout(4000) });
-        if (staticNotamRes.ok) {
-          const data = await staticNotamRes.json();
-          if (Array.isArray(data) && data.length > 0) notamList = data;
-        }
-      } catch (e) {}
-    }
-  }
-
-  if (!geojson || !geojson.features || geojson.features.length === 0) {
-    if (typeof Platform !== 'undefined' && typeof Platform.readAssetJson === 'function') {
-      const g = await Platform.readAssetJson('data/tfr_geojson.json', 4000);
-      if (g && Array.isArray(g.features) && g.features.length > 0) geojson = g;
-    } else {
-      try {
-        const staticGeoRes = await fetch('./data/tfr_geojson.json', { signal: AbortSignal.timeout(4000) });
-        if (staticGeoRes.ok) {
-          const g = await staticGeoRes.json();
-          if (g && Array.isArray(g.features) && g.features.length > 0) geojson = g;
-        }
-      } catch (e) {}
-    }
-  }
-
-  // Tier 3: Native FAA ArcGIS Online FeatureServers (Stadiums, Defense Airspace, Part-Time Security UAS)
+  // Tier 2: Native FAA ArcGIS Online FeatureServers (Stadiums, Defense Airspace, Part-Time Security UAS)
   // Merged into geojson features so active TFR polygons and stadiums both coexist cleanly
   try {
     const arcgisUrls = [
