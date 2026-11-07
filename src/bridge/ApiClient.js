@@ -16693,7 +16693,9 @@ const AdsbAirspaceManager = {
 
     const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
 
-    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}${tokenParam}`;
+    const airportList = this.airports ? Array.from(this.airports.values()) : [];
+    const airportsParam = airportList.length > 0 ? `&airports=${encodeURIComponent(JSON.stringify(airportList))}` : '';
+    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}${airportsParam}${tokenParam}`;
 
 
 
@@ -17433,7 +17435,9 @@ const AdsbAirspaceManager = {
 
       const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
 
-      const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}${tokenParam}`;
+      const airportList = this.airports ? Array.from(this.airports.values()) : [];
+    const airportsParam = airportList.length > 0 ? `&airports=${encodeURIComponent(JSON.stringify(airportList))}` : '';
+    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}${airportsParam}${tokenParam}`;
 
 
 

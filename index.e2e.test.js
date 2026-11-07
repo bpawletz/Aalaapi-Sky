@@ -11711,8 +11711,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
   });
 
-  describe('Native Android App, Tri-Link & USB-C RC 2 Sync Bar E2E Tests (v1.221.0, Issue #234)', () => {
-    test('Simulated USB-C RC 2 connection displays #android-rc2-sync-bar and populates slot select', async () => {
+  describe('Native Android App, Tri-Link & Streamlined RC 2 Connection Indicators (Closes #264)', () => {
+    test('Simulated USB-C RC 2 connection suppresses floating bar and updates Top Nav & Left Nav indicators', async () => {
       await page.evaluate(() => {
         window.onRc2UsbConnected({
           deviceName: 'DJI RC 2 Enterprise',
@@ -11727,19 +11727,30 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       await page.waitForTimeout(300);
 
       const syncBar = page.locator('#android-rc2-sync-bar');
-      assert.ok(await syncBar.isVisible(), '#android-rc2-sync-bar must become visible upon RC 2 connection');
+      assert.ok(!(await syncBar.isVisible()), '#android-rc2-sync-bar must remain suppressed on main screen (Issue #264)');
 
-      const devName = await page.locator('#android-rc2-device-name').textContent();
-      assert.strictEqual(devName, 'DJI RC 2 Enterprise');
+      const topNavRc2Badge = page.locator('#header-rc2-summary-badge');
+      const topBadgeText = await topNavRc2Badge.textContent();
+      assert.ok(topBadgeText.includes('RC 2: OK') || topBadgeText.includes('RC 2'), 'Top nav pill badge must indicate RC 2');
 
-      const slotSelect = page.locator('#android-rc2-slot-select');
-      const optCount = await slotSelect.locator('option').count();
-      assert.strictEqual(optCount, 2, 'Must populate exactly 2 slots in dropdown');
+      const sidebarRc2Badge = page.locator('#sidebar-rc2-mini-badge');
+      const sidebarBadgeText = await sidebarRc2Badge.textContent();
+      assert.ok(sidebarBadgeText.includes('RC 2: OK') || sidebarBadgeText.includes('RC 2'), 'Sidebar status badge must indicate RC 2');
+
+      const quickActions = page.locator('#sidebar-rc2-quick-actions');
+      assert.ok(await quickActions.isVisible(), 'Sidebar quick actions area must be revealed');
     });
 
-    test('Clicking 1-Tap Sync KMZ triggers overwrite confirmation dialog', async () => {
-      const syncBtn = page.locator('#android-rc2-sync-btn');
-      await syncBtn.click();
+    test('Triggering Overwrite Confirmation Modal prompts pilot before overwriting mission slot', async () => {
+      await page.evaluate(() => {
+        if (typeof AalaapiAndroidBridge !== 'undefined' && typeof AalaapiAndroidBridge.promptOverwriteConfirmation === 'function') {
+          AalaapiAndroidBridge.promptOverwriteConfirmation();
+        } else if (typeof AndroidNativeBridge !== 'undefined' && typeof AndroidNativeBridge.promptOverwriteConfirmation === 'function') {
+          AndroidNativeBridge.promptOverwriteConfirmation();
+        } else if (typeof AndroidNativeBridge !== 'undefined' && AndroidNativeBridge.AndroidNativeBridge) {
+          AndroidNativeBridge.AndroidNativeBridge.promptOverwriteConfirmation();
+        }
+      });
 
       await page.waitForTimeout(300);
 
@@ -12157,7 +12168,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.ok(coneCount >= 1, `ADS-B cone layer should contain at least 1 rendered cone polygon, got: ${coneCount}`);
 
       // Clean up simulated aircraft
-      await page.evaluate(() => {
+      await page.evaluate(async () => {
         if (typeof AdsbAirspaceManager !== 'undefined') {
           AdsbAirspaceManager.aircraft = [];
           AdsbAirspaceManager.breachedAircraft = [];
@@ -12165,12 +12176,29 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
           AdsbAirspaceManager.updateVisualBanner();
           AdsbAirspaceManager.updateMapMarkers();
           AdsbAirspaceManager.updateDrawerAircraftList();
+          try {
+            const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+            await fetch(`${apiBase}/api/airspace/clear`, { method: 'POST' });
+          } catch (_) {}
         }
       });
       await page.waitForTimeout(200);
     });
 
   test('v1.224.0: Airport Airspace Traffic Pattern Detection & Cone Suppression E2E Controls', async () => {
+    // Clear any residual simulated aircraft from bridge or manager
+    await page.evaluate(async () => {
+      if (typeof AdsbAirspaceManager !== 'undefined') {
+        AdsbAirspaceManager.aircraft = [];
+        AdsbAirspaceManager.breachedAircraft = [];
+        AdsbAirspaceManager.approachingAircraft = [];
+        AdsbAirspaceManager.updateVisualBanner();
+        try {
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+          await fetch(`${apiBase}/api/airspace/clear`, { method: 'POST' });
+        } catch (_) {}
+      }
+    });
     // 1. Open ADS-B control drawer
     await page.evaluate(() => {
       const btn = document.getElementById('adsb-topbar-btn');

@@ -1,5 +1,16 @@
 [
   {
+    "notam_id": "6/6299",
+    "facility": "ZJX",
+    "state": "FL",
+    "type": "SECURITY",
+    "description": "MAYPORT, FL, Monday, November 9, 2026 through Wednesday, November 11, 2026 Local",
+    "mod_date": "11/07/2026 12:31:00",
+    "mod_abs_time": "202611071231",
+    "is_new": "Y",
+    "gid": "6/6299"
+  },
+  {
     "notam_id": "6/6283",
     "facility": "ZMA",
     "state": "FL",
@@ -116,7 +127,7 @@
     "description": "Socorro, NM, Monday, November 9, 2026 Local",
     "mod_date": "11/06/2026 12:56:00",
     "mod_abs_time": "202611061256",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/6149",
     "start_utc": "2026-11-09T12:45:00.000Z",
     "end_utc": "2026-11-09T15:30:59.000Z",

@@ -325,6 +325,24 @@ class MainActivity : AppCompatActivity() {
         webView.loadUrl("file:///android_asset/www/index.html")
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.action == UsbManager.ACTION_USB_DEVICE_ATTACHED) {
+            val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+            }
+            if (device != null) {
+                mtpBridge.onDeviceAttached(device)
+            } else {
+                mtpBridge.checkConnectedDevices()
+            }
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
