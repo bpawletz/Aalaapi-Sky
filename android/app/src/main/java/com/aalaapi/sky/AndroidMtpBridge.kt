@@ -3,6 +3,7 @@ package com.aalaapi.sky
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbManager
@@ -78,12 +79,28 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
             val mb = kb / 1024.0
             return String.format(Locale.US, "%.2f MB", mb)
         }
+        fun isDjiOrMtpDevice(device: UsbDevice): Boolean {
+            if (device.vendorId == DJI_VENDOR_ID) return true
+            if (device.deviceClass == UsbConstants.USB_CLASS_STILL_IMAGE) return true
+            for (i in 0 until device.interfaceCount) {
+                val iface = device.getInterface(i)
+                if (iface.interfaceClass == UsbConstants.USB_CLASS_STILL_IMAGE &&
+                    iface.interfaceSubclass == 1 && iface.interfaceProtocol == 1) {
+                    return true
+                }
+            }
+            val pName = (device.productName ?: "").lowercase(Locale.US)
+            if (pName.contains("dji") || pName.contains("rc 2") || pName.contains("rc2")) {
+                return true
+            }
+            return false
+        }
     }
 
     fun checkConnectedDevices() {
         val deviceList = usbManager?.deviceList ?: return
         for (device in deviceList.values) {
-            if (device.vendorId == DJI_VENDOR_ID || device.deviceClass == 6) {
+            if (isDjiOrMtpDevice(device)) {
                 onDeviceAttached(device)
                 break
             }
@@ -92,6 +109,10 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
 
     fun onDeviceAttached(device: UsbDevice) {
         try {
+            if (!isDjiOrMtpDevice(device)) {
+                Log.d("AalaapiMtp", "Ignoring non-DJI/MTP device in AndroidMtpBridge: ${device.deviceName} (VID: ${device.vendorId}, PID: ${device.productId})")
+                return
+            }
             connectedDevice = device
             val mgr = usbManager ?: return
 
@@ -119,6 +140,7 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
 
     fun onPermissionGranted(device: UsbDevice) {
         try {
+            if (!isDjiOrMtpDevice(device)) return
             openMtpDevice(device)
         } catch (e: Exception) {
             Log.e("AalaapiMtp", "Error during onPermissionGranted for ${device.deviceName}: ${e.message}", e)
@@ -127,9 +149,12 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
 
     private fun openMtpDevice(device: UsbDevice) {
         try {
+            if (!isDjiOrMtpDevice(device)) {
+                return
+            }
             if (mtpDevice != null && connectedDevice?.deviceName == device.deviceName) {
                 Log.i("AalaapiMtp", "MtpDevice already open for ${device.deviceName}, re-notifying connection")
-                notifyConnected(device.productName ?: "DJI RC 2")
+                notifyConnected(device.productName?.takeIf { it.isNotBlank() } ?: "DJI RC 2")
                 return
             }
             connectedDevice = device
@@ -142,11 +167,14 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
             if (mtp.open(connection)) {
                 mtpDevice = mtp
                 Log.i("AalaapiMtp", "MtpDevice opened successfully for ${device.deviceName}")
+                notifyConnected(device.productName?.takeIf { it.isNotBlank() } ?: "DJI RC 2")
             } else {
-                Log.w("AalaapiMtp", "Failed to open MtpDevice connection")
+                Log.w("AalaapiMtp", "Failed to open MtpDevice connection for ${device.deviceName} (non-MTP device rejected)")
+                try { mtp.close() } catch (_: Exception) {}
+                try { connection.close() } catch (_: Exception) {}
+                if (usbConnection == connection) usbConnection = null
+                if (connectedDevice == device) connectedDevice = null
             }
-
-            notifyConnected(device.productName ?: "DJI RC 2")
         } catch (e: Exception) {
             Log.e("AalaapiMtp", "Error opening MTP device: ${e.message}", e)
         }

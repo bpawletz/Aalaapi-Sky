@@ -8389,6 +8389,10 @@ const RemoteIdRadar = {
 
 
 
+    } else if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.startRemoteIdScan === 'function') {
+
+      try { window.AalaapiAndroid.startRemoteIdScan(); } catch (_) {}
+
     }
 
 
@@ -15813,17 +15817,19 @@ const AdsbAirspaceManager = {
 
       if (typeof Platform !== 'undefined' && typeof Platform.getNativeAdsbStatus === 'function') {
         const nativeStatus = Platform.getNativeAdsbStatus();
-        if (nativeStatus && (nativeStatus.connected || nativeStatus.connecting || nativeStatus.messagesReceived > 0)) {
+        const hasHw = Boolean(nativeStatus && nativeStatus.hardware && nativeStatus.hardware.detected);
+        if (nativeStatus && (nativeStatus.connected || nativeStatus.connecting || nativeStatus.messagesReceived > 0 || hasHw)) {
           const nativeSt = {
             connected: Boolean(nativeStatus.connected),
             connecting: Boolean(nativeStatus.connecting),
             isRemoteServer: true,
-            tcpHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
-            tcpPort: nativeStatus.currentPort || this.serverPort || 30003,
-            adsbHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
-            adsbPort: nativeStatus.currentPort || this.serverPort || 30003,
+            tcpHost: nativeStatus.currentHost || nativeStatus.host || this.serverHost || '127.0.0.1',
+            tcpPort: nativeStatus.currentPort || nativeStatus.port || this.serverPort || 30003,
+            adsbHost: nativeStatus.currentHost || nativeStatus.host || this.serverHost || '127.0.0.1',
+            adsbPort: nativeStatus.currentPort || nativeStatus.port || this.serverPort || 30003,
             totalPackets: nativeStatus.messagesReceived || 0,
-            driverType: 'Android Native Socket'
+            driverType: 'Android Native Socket',
+            hardware: nativeStatus.hardware || (typeof AndroidNativeBridge !== 'undefined' ? AndroidNativeBridge.adsbHardware : null)
           };
           this.updateDiagnosticsUI(nativeSt);
           return;
@@ -16251,97 +16257,65 @@ const AdsbAirspaceManager = {
     if (hwEl) {
 
       if (st.hardware && st.hardware.detected) {
-
         if (st.hardware.driverStatus === 'needs_zadig') {
-
           hwEl.textContent = 'Detected (Driver Missing)';
-
           hwEl.style.color = '#f59e0b';
-
           if (tipEl) {
-
             tipEl.style.display = 'block';
-
             tipEl.innerHTML = '⚠️ <strong>Driver Needed:</strong> Windows sees your RTL-SDR dongle, but needs the <strong>WinUSB</strong> driver. Run <a href="https://zadig.akeo.ie/" target="_blank" style="color: #60a5fa; text-decoration: underline;">Zadig</a>, select <em>Bulk-In, Interface</em>, and click <em>Install WinUSB</em>.';
-
           }
-
-        } else {
-
-          hwEl.textContent = 'Ready (WinUSB Active)';
-
+        } else if (st.hardware.driverStatus === 'needs_permission') {
+          hwEl.textContent = `${st.hardware.deviceName || 'RTL-SDR'} (Permission Needed)`;
+          hwEl.style.color = '#f59e0b';
+          if (tipEl) {
+            tipEl.style.display = 'block';
+            tipEl.innerHTML = '⚠️ <strong>USB Permission Required:</strong> Please allow USB access on your Android device for the RTL-SDR dongle.';
+          }
+        } else if (st.hardware.platform === 'android' || (typeof window !== 'undefined' && window.AalaapiAndroid)) {
+          hwEl.textContent = `${st.hardware.deviceName || 'RTL-SDR'} (USB OTG Ready)`;
           hwEl.style.color = '#10b981';
-
+          if (tipEl && !st.connected) {
+            tipEl.style.display = 'block';
+            tipEl.innerHTML = '🔌 <strong>RTL-SDR Detected via USB OTG:</strong> To stream local 1090 MHz frames into Aalaapi Sky, run an ADS-B decoder app (e.g. <em>RTL-SDR Driver</em> or <em>dump1090</em>) on port <code>30003</code>, or tap <strong>Start Watching</strong> above to stream live cloud radar from <strong>adsb.lol</strong>.';
+          }
+        } else {
+          hwEl.textContent = 'Ready (WinUSB Active)';
+          hwEl.style.color = '#10b981';
         }
-
       } else if (isAndroidConnected || (st && st.driverType === 'Android Native Socket')) {
-
         hwEl.textContent = 'Android Native / RTL-SDR Socket';
-
         hwEl.style.color = '#38bdf8';
-
       } else if (isCloudActive) {
-
         hwEl.textContent = 'Online Cloud Feed (adsb.lol)';
-
         hwEl.style.color = '#38bdf8';
-
       } else if (st && (st.isRemoteServer || (st.tcpHost && st.tcpHost !== '127.0.0.1' && st.tcpHost !== 'localhost'))) {
-
         hwEl.textContent = 'Remote Feed (No USB Dongle Needed)';
-
         hwEl.style.color = '#38bdf8';
-
       } else {
-
         hwEl.textContent = 'Not Detected';
-
         hwEl.style.color = '#94a3b8';
-
       }
-
     }
 
-
-
     // Stream status & summary
-
     if (st && st.connected || isAnyActive) {
-
       if (streamEl) {
-
         if (isCloudActive && (!st || !st.connected) && !isAndroidConnected) {
-
           streamEl.textContent = 'Connected (Online Cloud Feed adsb.lol)';
-
         } else if (isAndroidConnected) {
-
           streamEl.textContent = `Connected (${targetHost}:${targetPort})`;
-
         } else {
-
           streamEl.textContent = `Connected (${hostPortStr})`;
-
         }
-
         streamEl.style.color = '#10b981';
-
       }
-
       if (summaryEl) {
-
         summaryEl.textContent = 'ACTIVE';
-
         summaryEl.style.background = 'rgba(16, 185, 129, 0.2)';
-
         summaryEl.style.color = '#10b981';
-
       }
-
-      if (tipEl && (!st || !st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
-
+      if (tipEl && (!st || !st.hardware || (st.hardware.driverStatus !== 'needs_zadig' && st.hardware.driverStatus !== 'needs_permission' && !(st.hardware.platform === 'android' && !st.connected)))) {
         tipEl.style.display = 'none';
-
       }
 
     } else {
@@ -16364,12 +16338,9 @@ const AdsbAirspaceManager = {
 
       }
 
-      if (tipEl && (!st || !st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
-
+      if (tipEl && (!st || !st.hardware || (st.hardware.driverStatus !== 'needs_zadig' && st.hardware.driverStatus !== 'needs_permission' && !(st.hardware.platform === 'android' && st.hardware.detected)))) {
         tipEl.style.display = 'block';
-
         tipEl.innerHTML = `💡 <strong>Waiting for dump1090:</strong> Ensure dump1090 or your SBS feed is running on <code>${hostPortStr}</code>.`;
-
       }
 
     }
@@ -16383,9 +16354,9 @@ const AdsbAirspaceManager = {
     }
 
     if (hwDriverEl) {
-
-      if (isAndroidConnected || (st && st.driverType === 'Android Native Socket')) {
-
+      if (st && st.hardware && st.hardware.platform === 'android' && st.hardware.detected) {
+        hwDriverEl.textContent = `${st.hardware.deviceName || 'RTL-SDR'} / USB OTG`;
+      } else if (isAndroidConnected || (st && st.driverType === 'Android Native Socket')) {
         hwDriverEl.textContent = `Android Socket (${targetPort})`;
 
       } else if (isCloudActive && (!st || !st.connected)) {

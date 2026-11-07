@@ -1,6 +1,12 @@
 package com.aalaapi.sky
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
+import android.os.Build
+import android.util.Log
 import android.webkit.WebView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,8 +44,87 @@ class AndroidAdsbBridge(private val context: Context, private val webView: WebVi
     private var messagesReceived = 0L
     private var lastError: String? = null
 
+    // ── USB OTG RTL-SDR Hardware State (Issue #278) ──
+    private val usbManager = context.getSystemService(Context.USB_SERVICE) as? UsbManager
+    private var sdrDevice: UsbDevice? = null
+    private var sdrPermissionGranted = false
+
     fun getSavedHost(): String = prefs.getString("adsb_host", "127.0.0.1") ?: "127.0.0.1"
     fun getSavedPort(): Int = prefs.getInt("adsb_port", 30003)
+
+    fun onRtlSdrDeviceAttached(device: UsbDevice) {
+        try {
+            sdrDevice = device
+            val mgr = usbManager ?: return
+            if (!mgr.hasPermission(device)) {
+                val intent = Intent(AndroidMtpBridge.ACTION_USB_PERMISSION).apply {
+                    setPackage(context.packageName)
+                }
+                val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                } else {
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                }
+                val permissionIntent = PendingIntent.getBroadcast(
+                    context, 0, intent, flags
+                )
+                mgr.requestPermission(device, permissionIntent)
+                sdrPermissionGranted = false
+            } else {
+                sdrPermissionGranted = true
+            }
+            notifyHardwareChanged()
+        } catch (e: Exception) {
+            Log.e("AalaapiAdsb", "Error in onRtlSdrDeviceAttached: ${e.message}", e)
+        }
+    }
+
+    fun onRtlSdrDeviceDetached(device: UsbDevice? = null) {
+        if (device == null || sdrDevice?.deviceName == device.deviceName) {
+            sdrDevice = null
+            sdrPermissionGranted = false
+            notifyHardwareChanged()
+        }
+    }
+
+    fun onRtlSdrPermissionGranted(device: UsbDevice) {
+        sdrDevice = device
+        sdrPermissionGranted = true
+        notifyHardwareChanged()
+    }
+
+    fun getHardwareStatusJson(): JSONObject {
+        val dev = sdrDevice
+        val obj = JSONObject()
+        if (dev != null) {
+            obj.put("detected", true)
+            val rawName = dev.productName?.trim()
+            val cleanName = if (!rawName.isNullOrEmpty()) rawName else "Nooelec RTL-SDR v5"
+            obj.put("deviceName", cleanName)
+            obj.put("vendorId", dev.vendorId)
+            obj.put("productId", dev.productId)
+            obj.put("platform", "android")
+            obj.put("driverStatus", if (sdrPermissionGranted) "ready" else "needs_permission")
+            obj.put("details", "RTL-SDR USB dongle connected via USB OTG.")
+        } else {
+            obj.put("detected", false)
+            obj.put("driverStatus", "not_found")
+            obj.put("deviceName", JSONObject.NULL)
+            obj.put("platform", "android")
+            obj.put("details", "No RTL-SDR USB dongle detected.")
+        }
+        return obj
+    }
+
+    fun notifyHardwareChanged() {
+        val hwJson = getHardwareStatusJson().toString()
+        webView.post {
+            webView.evaluateJavascript(
+                "if (typeof window.onAdsbHardwareChanged === 'function') { window.onAdsbHardwareChanged($hwJson); }",
+                null
+            )
+        }
+    }
 
     fun start(host: String = getSavedHost(), port: Int = getSavedPort()) {
         if (isRunning) stop()
@@ -85,6 +170,7 @@ class AndroidAdsbBridge(private val context: Context, private val webView: WebVi
             put("mode", if (currentPort == 8080 || currentPort == 80) "http-json" else "tcp-sbs")
             put("messagesReceived", messagesReceived)
             put("lastError", lastError ?: JSONObject.NULL)
+            put("hardware", getHardwareStatusJson())
         }.toString()
     }
 

@@ -1,3 +1,56 @@
+## [1.242.6] - 2026-11-07
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **ASTM F3411 & DJI Broadcast Remote ID Detection on Android (Closes #279)**:
+  - Fixed an issue where Broadcast Remote ID beacons and drones (e.g. DJI Mini 4 Pro, Mavic 3, or standalone ASTM F3411 transmitters) were detected on Windows PC via Companion Bridge but failed to appear on Android.
+  - Resolved Android OS beacon filtering by removing the restrictive `neverForLocation` flag in `AndroidManifest.xml` and configuring multi-criteria BLE scanning for ASTM F3411 Service Data (UUID `0xFFFA`) and DJI Manufacturer Data (`0x0888` / `0x8808`).
+  - Active Remote ID drones now immediately plot on the Leaflet map on Android with live heading and altitude, display the floating pulsating radar pill with 1-click Locate, and reflect direct `Android BLE (Native)` transport mode.
+
+#### Under the Hood & Technical Details
+- **`android/app/src/main/AndroidManifest.xml`**:
+  - Removed `android:usesPermissionFlags="neverForLocation"` from `BLUETOOTH_SCAN` so Android OS does not suppress location beacon scan results.
+- **`android/app/src/main/java/com/aalaapi/sky/AndroidRemoteIdScanner.kt`**:
+  - Replaced flawed Service UUID list filter with multi-criteria filters matching Service Data UUID `0xFFFA` and DJI Manufacturer Data IDs `0x0888` / `0x8808`, with open low-latency scan fallback.
+  - Extracted `result.device.address` (MAC) and passed it to `dispatchToWebView`.
+  - Added permissions verification and exposed `isScanning()`, `hasPermission()`, `isBluetoothEnabled()`, and `getStatusJson()`.
+- **`android/app/src/main/java/com/aalaapi/sky/MainActivity.kt`**:
+  - Proactively verified and requested `BLUETOOTH_SCAN` / `ACCESS_FINE_LOCATION` on app startup and scanner launch.
+  - Registered `startRemoteIdScan()`, `stopRemoteIdScan()`, `getRemoteIdStatus()`, and `requestBluetoothPermissions()` on `window.AalaapiAndroid`.
+- **`src/bridge/AndroidNativeBridge.js`**:
+  - Updated `ClientRemoteIdDecoder.decode` to search for `0xFA, 0xFF` / `0xFF, 0xFA` and DJI Manufacturer Data (`0x0888` / `0x8808`) in raw advertisement payloads, stripping optional `[0x0D, sequence]` headers.
+  - Implemented MAC address correlation in `ingestRemoteIdFrame`, preventing standalone Location and System frames without embedded UAS IDs from being discarded.
+  - Linked `AalaapiAndroid.startRemoteIdScan()` in `init()`.
+
+## [1.242.5] - 2026-11-07
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **USB Device Classification & RTL-SDR False-Positive RC 2 Prevention (Closes #278)**:
+  - Fixed an issue where plugging a Nooelec RTL-SDR v5 (or compatible RTL2832U dongle) via USB hub or OTG cable into an Android device falsely reported "RC 2 is connected" and opened controller sync controls.
+  - Added strict USB device discrimination on Android distinguishing DJI controllers/MTP devices, RTL-SDR receivers, and USB hubs. Non-MTP devices are completely ignored by the controller synchronization bridge.
+- **Android Native RTL-SDR USB Dongle Detection & Hardware Diagnostics (Closes #278)**:
+  - Plugged RTL-SDR dongles are now immediately recognized on Android and reported in the ADS-B Control Drawer (`Feed & Hardware` tab) with green `Nooelec RTL-SDR v5 (USB OTG Ready)` status.
+  - Added clear operational guidance for Android pilots explaining how to feed local 1090 MHz Mode S frames via local decoder apps or stream concurrent live radar via the `adsb.lol` cloud feed.
+
+#### Under the Hood & Technical Details
+- **`android/app/src/main/java/com/aalaapi/sky/MainActivity.kt`**:
+  - Implemented `classifyUsbDevice(device: UsbDevice)` returning `DJI_RC2_MTP`, `RTL_SDR`, `USB_HUB`, or `UNKNOWN`.
+  - Routed attached, detached, and permission events specifically to `mtpBridge` for DJI/MTP devices and `adsbBridge` for RTL-SDR dongles.
+  - Added `scanAllConnectedUsbDevices()` to handle multi-port USB hub enumeration on startup and attachment.
+- **`android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt`**:
+  - Added `isDjiOrMtpDevice()` validation before accepting devices.
+  - Moved `notifyConnected()` strictly inside the `if (mtp.open(connection))` check, preventing non-MTP USB devices from triggering fake connection events.
+- **`android/app/src/main/java/com/aalaapi/sky/AndroidAdsbBridge.kt`**:
+  - Added USB OTG RTL-SDR hardware tracking (`onRtlSdrDeviceAttached`, `onRtlSdrDeviceDetached`, `onRtlSdrPermissionGranted`).
+  - Added `hardware` block to `getStatusJson()` with device name, VID/PID, and driver status.
+  - Emitted `window.onAdsbHardwareChanged()` to trigger real-time UI diagnostics updates.
+- **`src/bridge/ApiClient.js` & `src/bridge/AndroidNativeBridge.js`**:
+  - Updated `fetchAirspaceStatus()` to preserve native status when SDR hardware is detected even if the local TCP port is waiting.
+  - Updated `updateDiagnosticsUI()` to display `(USB OTG Ready)` for Android SDR hardware with dedicated pilot setup instructions.
+
 ## [1.242.4] - 2026-11-07
 
 ### 🐛 Fixed
