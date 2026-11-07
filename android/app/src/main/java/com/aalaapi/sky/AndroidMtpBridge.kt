@@ -171,6 +171,13 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
         }
     }
 
+    companion object {
+        fun extractLogTimestamp(name: String): String {
+            val regex = Regex("""\d{4}-\d{2}-\d{2}[_\[\-T ]+\d{2}[-\:]\d{2}[-\:]\d{2}\]?""")
+            return regex.find(name)?.value ?: ""
+        }
+    }
+
     fun pullLatestLog(): String {
         // 1. Check connected USB MTP device
         val mtp = mtpDevice
@@ -189,8 +196,22 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
                 }
 
                 if (candidateHandles.isNotEmpty()) {
-                    candidateHandles.sortByDescending { it.second.dateModified }
+                    candidateHandles.sortWith(
+                        compareByDescending<Pair<Int, MtpObjectInfo>> { 
+                            extractLogTimestamp(it.second.name ?: "") 
+                        }.thenByDescending { 
+                            it.second.dateModified 
+                        }.thenByDescending { 
+                            it.first 
+                        }
+                    )
                     val newest = candidateHandles.first()
+                    val timestamp = extractLogTimestamp(newest.second.name ?: "")
+                    Log.i("AalaapiMtp", "Selected latest flight record: ${newest.second.name} (timestamp: '$timestamp', handle: ${newest.first})")
+                    webView.post {
+                        webView.evaluateJavascript("console.info('📁 [MTP] Selected latest flight: ${newest.second.name} (handle: ${newest.first})');", null)
+                    }
+
                     val tempFile = File(context.cacheDir, newest.second.name)
                     if (tempFile.exists()) tempFile.delete()
 
@@ -199,6 +220,7 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
                         val bytes = tempFile.readBytes()
                         val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
                         tempFile.delete()
+                        Log.i("AalaapiMtp", "Successfully imported MTP log ${newest.second.name} (${bytes.size} bytes)")
                         return JSONObject().apply {
                             put("success", true)
                             put("filename", newest.second.name)
@@ -237,12 +259,19 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
                 if (dir.exists() && dir.isDirectory) {
                     val logFiles = dir.listFiles { f ->
                         f.isFile && (f.name.startsWith("FlightRecord_") || f.name.startsWith("DJIFlightRecord_")) && (f.name.endsWith(".txt") || f.name.endsWith(".csv"))
-                    }?.sortedByDescending { it.lastModified() }
+                    }?.sortedWith(
+                        compareByDescending<File> { 
+                            extractLogTimestamp(it.name) 
+                        }.thenByDescending { 
+                            it.lastModified() 
+                        }
+                    )
 
                     if (!logFiles.isNullOrEmpty()) {
                         val latest = logFiles[0]
                         val bytes = latest.readBytes()
                         val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                        Log.i("AalaapiMtp", "Selected local flight record: ${latest.name} (${bytes.size} bytes)")
                         return JSONObject().apply {
                             put("success", true)
                             put("filename", latest.name)

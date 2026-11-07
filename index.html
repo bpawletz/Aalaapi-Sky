@@ -8714,7 +8714,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.230.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.231.0</span></h1>
         </div>
       </div>
 
@@ -16188,7 +16188,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.230.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.231.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -16348,6 +16348,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.231.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>DJI RC 2 MTP Chronological Flight Log Selection (Closes #258):</strong> Fixed issue where pulling logs from RC 2 over USB selected an old flight from days ago due to missing MTP dateModified metadata. Candidate records are now sorted reverse-chronologically by their embedded ISO-8601 filename timestamps (YYYY-MM-DD_[HH-mm-ss]), guaranteeing the latest flight flown is always picked.</li>
+                  <li><strong>Unified 3D Flight Diagnostics Launching (Closes #258):</strong> Wired the USB sync bar button directly to pullFlightLogFromRC2 so that all buttons synchronize progress indicators and automatically pop open the 3D Flight Diagnostics view upon completion.</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.230.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                   <li><strong>Deterministic Android Debug Keystore & In-Place Update Fix (Closes #257):</strong> Committed a deterministic debug keystore (android/app/debug.keystore) and configured Gradle signingConfigs so that all GitHub Actions cloud builds and local builds share the exact same signature, enabling seamless in-place APK upgrades without requiring uninstalls or losing local flight data.</li>
@@ -62749,7 +62756,7 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
 
 
-  const primaryBtn = targetBtn || document.getElementById('diag-pull-rc2-btn') || document.getElementById('direct-rc2-pull-log-btn');
+  const primaryBtn = targetBtn || document.getElementById('diag-pull-rc2-btn') || document.getElementById('direct-rc2-pull-log-btn') || document.getElementById('android-rc2-pull-log-btn');
 
 
 
@@ -62761,7 +62768,11 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
 
 
-  const buttonsToUpdate = Array.from(new Set([primaryBtn, diagBtn, directBtn].filter(Boolean)));
+  const syncBarBtn = document.getElementById('android-rc2-pull-log-btn');
+
+
+
+  const buttonsToUpdate = Array.from(new Set([primaryBtn, diagBtn, directBtn, syncBarBtn].filter(Boolean)));
 
 
 
@@ -85453,7 +85464,11 @@ if (typeof module !== 'undefined' && module.exports) {
 
       if (pullLogBtn) {
         pullLogBtn.addEventListener('click', () => {
-          this.pullLatestLog();
+          if (typeof pullFlightLogFromRC2 === 'function') {
+            pullFlightLogFromRC2(pullLogBtn);
+          } else {
+            this.pullLatestLog();
+          }
         });
       }
     },
@@ -86004,6 +86019,20 @@ if (typeof module !== 'undefined' && module.exports) {
 
           if (typeof showToast === 'function') {
             showToast(`📥 Flight log pulled from DJI RC 2 (${logFilename})`, 'success');
+          }
+
+          try {
+            if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+              const telemetryPayload = (typeof DigitalTwin !== 'undefined' && DigitalTwin.telemetryData) ? {
+                flightId: logFilename,
+                telemetry: DigitalTwin.telemetryData,
+                comparison: DigitalTwin.comparisonData,
+                isActualFlown: true
+              } : logFilename;
+              await FlightDiagnostics.open('3d', telemetryPayload);
+            }
+          } catch (e) {
+            console.warn('FlightDiagnostics open error:', e);
           }
         } else if (typeof WebUsbMtp !== 'undefined') {
           if (typeof pullLogViaWebUsb === 'function') {

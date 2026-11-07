@@ -1,3 +1,31 @@
+## [1.231.0] - 2026-11-06
+
+Fix DJI RC 2 MTP Chronological Flight Log Selection and Unify 3D Diagnostics Auto-Launch.
+
+### 🐛 Fixed | 🚀 Added
+
+#### Pilot & Operational Features
+- **DJI RC 2 MTP Reverse-Chronological Flight Log Selection (Closes #258)**:
+  - Resolved an issue where pulling flight logs from a connected DJI RC 2 controller over USB OTG extracted an older flight from days ago instead of the most recent flight flown.
+  - On DJI RC 2 MTP storage, `dateModified` metadata is unpopulated (`0`), which previously caused stable sorting to preserve raw MTP handle creation order (oldest files first).
+  - Implemented multi-tier sorting that extracts the ISO-8601 date and time embedded in the filename (`YYYY-MM-DD_[HH-mm-ss]`), guaranteeing that the newest flight is always selected.
+  - Added clear informational messages to the Mobile Debug Console and Logcat showing the chosen flight record name and timestamp.
+- **Unified 3D Flight Diagnostics Auto-Launch (Closes #258)**:
+  - Wired the USB sync bar button `📥 Pull Latest Log` (`#android-rc2-pull-log-btn`) directly to `pullFlightLogFromRC2()`.
+  - All pull buttons (`#android-rc2-pull-log-btn`, `#diag-pull-rc2-btn`, and `#direct-rc2-pull-log-btn`) now share identical loading states (`⏳ Pulling Log...` → `✅ Log Pulled!`) and automatically pop open the 3D Flight Diagnostics visualizer to replay the flight path.
+
+#### Under the Hood & Technical Details
+- **android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt**:
+  - Added `extractLogTimestamp(name: String): String` with regex `\d{4}-\d{2}-\d{2}[_\[\-T ]+\d{2}[-\:]\d{2}[-\:]\d{2}`.
+  - Sorted `candidateHandles` by extracted timestamp descending, then `dateModified` descending, then MTP object handle descending.
+  - Applied the same timestamp sorting to local storage directory scanning.
+  - Added detailed logging of selected filename and size to Logcat and WebView console.
+- **src/bridge/ApiClient.js**:
+  - Added `#android-rc2-pull-log-btn` to `buttonsToUpdate` in `pullFlightLogFromRC2()`.
+- **src/bridge/AndroidNativeBridge.js**:
+  - Re-routed `#android-rc2-pull-log-btn` click handler to `pullFlightLogFromRC2(pullLogBtn)`.
+  - Ensured `pullLatestLog()` opens `FlightDiagnostics.open('3d', ...)` on success.
+
 ## [1.230.0] - 2026-11-06
 
 Establish Deterministic Android Debug Keystore for In-Place APK Upgrades & Automated ADB Push Utility.
