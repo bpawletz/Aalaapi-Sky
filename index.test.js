@@ -42985,6 +42985,13 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(agentsMd.includes('Mandatory Dual-Pathway Support for Hardware & Network Features'), 'Must enforce dual-pathway rule');
       assert.ok(agentsMd.includes('Cross-Platform Test Verification & Mocking'), 'Must require dual-mode test assertions');
       assert.ok(agentsMd.includes('Android WebView & Chromium Rendering Guardrails'), 'Must mandate SVG and CSS GPU guardrails');
+      assert.ok(agentsMd.includes('Platform Abstraction Framework (Common Base + OS Overrides)'), 'Must document Platform Abstraction Framework');
+      assert.ok(agentsMd.includes('src/platform/'), 'Must document src/platform/ directory');
+      assert.ok(agentsMd.includes('BasePlatformAdapter'), 'Must document BasePlatformAdapter');
+      assert.ok(agentsMd.includes('PlatformManager'), 'Must document PlatformManager');
+      assert.ok(agentsMd.includes('tools/companion/drivers/'), 'Must document tools/companion/drivers/');
+      assert.ok(agentsMd.includes('getCompanionDriver'), 'Must document getCompanionDriver');
+      assert.ok(agentsMd.includes('Strict Zero-Scattered-Conditionals Mandate'), 'Must mandate zero scattered conditionals');
     });
 
   describe('RC 2 .DAT Blackbox Filtering, Session MTP Caching, Offline Flight DB & Screen Keep-Awake (v1.234.0, Issue #262)', () => {
