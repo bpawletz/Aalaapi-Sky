@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.228.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.229.0</span></h1>
         </div>
       </div>
 
@@ -4892,6 +4892,15 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>🛡️</span>
+              Android 14+ USB Controller Stability, Standalone 3D Replay &amp; Keep-Awake (v1.229.0) (Closes #256)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Hot-plugging DJI RC 2 controllers over USB OTG is now fully crash-free on Android 14, 15, and 16. Flight logs pulled from RC 2 render directly in 3D Flight Diagnostics without requiring desktop Companion Bridge connections, and tablets stay awake during flights with native <code>FLAG_KEEP_SCREEN_ON</code>.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>📡</span>
               Unified ADS-B Feed Health &amp; RC 2 USB MTP Log Pull Fix (v1.228.0) (Closes #253, Closes #254)
             </strong>
@@ -7716,7 +7725,13 @@
                               <div>
                                                         <li style="margin-bottom: 8px;">
                             <li style="margin-bottom: 8px;">
-                                <strong style="color: var(--text-main);">Changelog (v1.228.1):</strong>
+                                <strong style="color: var(--text-main);">Changelog (v1.229.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Android 14+ PendingIntent USB Crash & RC 2 Standalone Replay Fix (Closes #256):</strong> Resolved fatal crash on USB RC 2 attachment under Android 14+ / 15 / 16 via explicit PendingIntent package target. Fixed 3D Flight Diagnostics wipeout by passing in-memory parsed telemetry directly to bypass unneeded localhost HTTP calls. Added display keep-awake (FLAG_KEEP_SCREEN_ON) and native offline NOTAM asset loading.</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 14px;">
+                <strong style="color: var(--text-main);">Changelog (v1.228.1):</strong>
                 <ul style="margin: 0.25rem 0 0 1rem; padding: 0;">
                   <li><strong>ADS-B Descent Gradient Trajectory Cones on Android (Issue #255)</strong>: Fixed dynamic gradient rendering on Android Chromium WebView by eliminating GPU-clipping CSS drop-shadow filters, co-locating SVG linearGradient definitions directly inside Leaflet's active renderer root SVG container, and instantiating gradient stop elements via standards-compliant SVG namespaces with inline styles.</li>
                 </ul>

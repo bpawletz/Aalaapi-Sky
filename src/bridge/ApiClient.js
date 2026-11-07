@@ -4830,7 +4830,13 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
           if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
 
-            await FlightDiagnostics.open('3d', logFilename);
+            const telemetryPayload = (typeof DigitalTwin !== 'undefined' && DigitalTwin.telemetryData) ? {
+              flightId: logFilename,
+              telemetry: DigitalTwin.telemetryData,
+              comparison: DigitalTwin.comparisonData,
+              isActualFlown: true
+            } : logFilename;
+            await FlightDiagnostics.open('3d', telemetryPayload);
 
           }
 
@@ -4988,7 +4994,7 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
 
 
-    console.error('Pull Flight Log Error:', err);
+    console.error('Pull Flight Log Error:', (err && (err.stack || err.message)) ? (err.message || err.stack) : err);
 
 
 
@@ -10009,6 +10015,10 @@ const RemoteIdRadar = {
 
 
       this.eventSource.onerror = () => {
+        if (typeof window !== 'undefined' && window.AalaapiAndroid) {
+          try { this.eventSource.close(); } catch (_) {}
+          this.eventSource = null;
+        }
 
 
 
@@ -16745,6 +16755,14 @@ const AdsbAirspaceManager = {
 
 
 
+    // If running on Native Android container without an explicit remote companion host,
+    // ADS-B telemetry is provided natively via AndroidAdsbBridge TCP socket.
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && (!this.customEndpoint || !this.customEndpoint.trim())) {
+      const storedComp = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi-companion-host') : null;
+      if (!storedComp || storedComp.includes('127.0.0.1') || storedComp.includes('localhost')) {
+        return;
+      }
+    }
     const endpoint = this.getEffectiveStreamEndpoint();
 
 

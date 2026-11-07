@@ -42425,7 +42425,8 @@ describe('Issue #255 & v1.228.1: Trajectory Cone Gradient Coloring on Android We
     const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
     const m = gradleKts.match(/versionCode = (\d+)/);
     assert.ok(m && parseInt(m[1]) >= 12281, 'build.gradle.kts must have versionCode >= 12281');
-    assert.ok(gradleKts.includes('versionName = "1.228.1"'), 'build.gradle.kts must have versionName = "1.228.1"');
+    const vm = gradleKts.match(/versionName = "([^"]+)"/);
+    assert.ok(vm && semverGte(vm[1], '1.228.1'), 'build.gradle.kts must have versionName >= 1.228.1');
   });
 
   test('index.css does NOT use CSS filter drop-shadow on adsb-cone-polygon descent-gradient', () => {
@@ -42582,6 +42583,145 @@ describe('Issue #255 & v1.228.1: Trajectory Cone Gradient Coloring on Android We
       assert.strictEqual(mockPoly._path.style.fill, 'url(#adsb-cone-grad-A99999)');
     } finally {
       document.createElementNS = origCreateElementNS;
+    }
+  });
+});
+
+
+// ─── Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake (Issue #256) ───
+describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake (Issue #256)', () => {
+  test('Version consistency: package.json, CHANGELOG, templates match v1.229.0', () => {
+    assertVersionConsistency('1.229.0');
+  });
+
+  test('Android build.gradle.kts matches version 1.229.0 and versionCode >= 12290', () => {
+    const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
+    const m = gradleKts.match(/versionCode = (\d+)/);
+    assert.ok(m && parseInt(m[1]) >= 12290, 'build.gradle.kts must have versionCode >= 12290');
+    assert.ok(gradleKts.includes('versionName = "1.229.0"'), 'build.gradle.kts must have versionName = "1.229.0"');
+  });
+
+  test('pullFlightLogFromRC2 passes in-memory telemetry to FlightDiagnostics.open avoiding 127.0.0.1:8765 calls', async () => {
+    let capturedOpenTab = null;
+    let capturedOpenPayload = null;
+
+    const originalAndroid = global.window ? global.window.AalaapiAndroid : undefined;
+    const originalDocGetElementById = global.document.getElementById;
+
+    const mockTelemetry = {
+      homePoint: { lat: 40.0127, lon: -83.1771 },
+      points: [{ lat: 40.0127, lon: -83.1771, alt: 25, speed: 4 }]
+    };
+
+    const origDiagOpen = vm.runInThisContext('FlightDiagnostics.open');
+    const origDtTelem = vm.runInThisContext('DigitalTwin.telemetryData');
+    const origDtComp = vm.runInThisContext('DigitalTwin.comparisonData');
+    const origDtLoad = vm.runInThisContext('DigitalTwin.loadFlightLogData');
+
+    vm.runInThisContext('FlightDiagnostics').open = async (tab, payload) => {
+      capturedOpenTab = tab;
+      capturedOpenPayload = payload;
+    };
+    vm.runInThisContext('DigitalTwin').telemetryData = mockTelemetry;
+    vm.runInThisContext('DigitalTwin').comparisonData = { maxDeviation: 0.2 };
+    vm.runInThisContext('DigitalTwin').loadFlightLogData = async () => true;
+
+    if (!global.window) global.window = {};
+    global.window.AalaapiAndroid = {
+      pullLatestLogFromRc2: () => JSON.stringify({
+        success: true,
+        filename: 'FlightRecord_2026-11-06_[12-00-00].txt',
+        data: 'ZmFrZSBsb2cgZGF0YQ=='
+      }),
+      setKeepScreenOn: () => true
+    };
+
+    const mockButtons = {
+      'diag-pull-rc2-btn': { disabled: false, innerHTML: '', style: {} },
+      'direct-rc2-pull-log-btn': { disabled: false, innerHTML: '', style: {} }
+    };
+    global.document.getElementById = (id) => mockButtons[id] || null;
+
+    try {
+      const res = await vm.runInThisContext('pullFlightLogFromRC2')(mockButtons['diag-pull-rc2-btn']);
+      assert.strictEqual(res.success, true);
+      assert.strictEqual(res.logName, 'FlightRecord_2026-11-06_[12-00-00].txt');
+      assert.strictEqual(capturedOpenTab, '3d');
+      assert.ok(capturedOpenPayload && typeof capturedOpenPayload === 'object', 'Payload passed to FlightDiagnostics.open must be an object');
+      assert.strictEqual(capturedOpenPayload.flightId, 'FlightRecord_2026-11-06_[12-00-00].txt');
+      assert.strictEqual(capturedOpenPayload.telemetry, mockTelemetry);
+      assert.strictEqual(capturedOpenPayload.isActualFlown, true);
+    } finally {
+      vm.runInThisContext('FlightDiagnostics').open = origDiagOpen;
+      vm.runInThisContext('DigitalTwin').telemetryData = origDtTelem;
+      vm.runInThisContext('DigitalTwin').comparisonData = origDtComp;
+      vm.runInThisContext('DigitalTwin').loadFlightLogData = origDtLoad;
+      if (originalAndroid !== undefined) {
+        global.window.AalaapiAndroid = originalAndroid;
+      } else if (global.window) {
+        delete global.window.AalaapiAndroid;
+      }
+      global.document.getElementById = originalDocGetElementById;
+    }
+  });
+
+  test('DigitalTwin.requestWakeLock and releaseWakeLock manage screen awake state cleanly', async () => {
+    let screenAwakeCalledWith = null;
+    const originalAndroid = global.window ? global.window.AalaapiAndroid : undefined;
+
+    if (!global.window) global.window = {};
+    global.window.AalaapiAndroid = {
+      setKeepScreenOn: (enabled) => { screenAwakeCalledWith = enabled; }
+    };
+
+    try {
+      const dt = vm.runInThisContext('DigitalTwin');
+      assert.ok(typeof dt.requestWakeLock === 'function', 'DigitalTwin must have requestWakeLock');
+      assert.ok(typeof dt.releaseWakeLock === 'function', 'DigitalTwin must have releaseWakeLock');
+
+      await dt.requestWakeLock();
+      assert.strictEqual(screenAwakeCalledWith, true, 'requestWakeLock must set screen awake on native Android');
+    } finally {
+      if (originalAndroid !== undefined) {
+        global.window.AalaapiAndroid = originalAndroid;
+      } else if (global.window) {
+        delete global.window.AalaapiAndroid;
+      }
+    }
+  });
+
+  test('AdsbAirspaceManager.connectStream guards against EventSource localhost connection loop when on native Android', () => {
+    let eventSourceCreated = false;
+    const origEventSource = global.EventSource;
+    const originalAndroid = global.window ? global.window.AalaapiAndroid : undefined;
+
+    global.EventSource = function(url) {
+      eventSourceCreated = true;
+      this.close = () => {};
+    };
+
+    if (!global.window) global.window = {};
+    global.window.AalaapiAndroid = {
+      getAdsbStatus: () => JSON.stringify({ connected: true })
+    };
+
+    try {
+      const mgr = vm.runInThisContext('AdsbAirspaceManager');
+      const origCustom = mgr.customEndpoint;
+      const origEnabled = mgr.enabled;
+      mgr.enabled = true;
+      mgr.customEndpoint = '';
+      mgr.connectStream();
+      assert.strictEqual(eventSourceCreated, false, 'AdsbAirspaceManager must not open EventSource to 127.0.0.1 on Android Native');
+      mgr.customEndpoint = origCustom;
+      mgr.enabled = origEnabled;
+    } finally {
+      global.EventSource = origEventSource;
+      if (originalAndroid !== undefined) {
+        global.window.AalaapiAndroid = originalAndroid;
+      } else if (global.window) {
+        delete global.window.AalaapiAndroid;
+      }
     }
   });
 });
