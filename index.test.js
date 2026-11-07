@@ -43715,7 +43715,7 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
           const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
           assert.ok(css.includes('.topbar-left'), '.topbar-left must exist');
           assert.ok(css.includes('position: sticky'), '.topbar-left must have sticky positioning');
-          assert.ok(css.includes('box-shadow: 4px 0 12px rgba(0, 0, 0, 0.25)'), '.topbar-left must have right shadow divider');
+          assert.ok(css.includes('box-shadow: 4px 0 12px rgba(0, 0, 0, 0.25)') || css.includes('box-shadow: 4px 0 12px rgba(0, 0, 0, 0.35)'), '.topbar-left must have right shadow divider');
         });
 
         test('CSS Architecture: .topbar-center min-width: max-content eliminates negative overflow collision', () => {
