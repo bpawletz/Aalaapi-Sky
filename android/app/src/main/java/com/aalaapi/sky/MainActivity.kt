@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.location.Location
@@ -74,7 +75,12 @@ class MainActivity : AppCompatActivity() {
         pendingGeoCallback?.invoke(pendingGeoOrigin, granted, false)
         pendingGeoCallback = null
         pendingGeoOrigin = null
-        if (result[Manifest.permission.BLUETOOTH_SCAN] == true) {
+        val btGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            result[Manifest.permission.BLUETOOTH_SCAN] == true
+        } else {
+            granted
+        }
+        if (btGranted) {
             remoteIdScanner.startScan()
         }
         if (pendingNativeLocation) {
@@ -110,6 +116,55 @@ class MainActivity : AppCompatActivity() {
     private var ttsReady = false
     private var pendingSpeech: Triple<String, Float, Float>? = null
 
+    enum class UsbDeviceRole {
+        DJI_RC2_MTP,
+        RTL_SDR,
+        USB_HUB,
+        UNKNOWN
+    }
+
+    private fun classifyUsbDevice(device: UsbDevice): UsbDeviceRole {
+        // 1. Check for USB Hub (Class 9)
+        if (device.deviceClass == UsbConstants.USB_CLASS_HUB || device.deviceClass == 9) {
+            return UsbDeviceRole.USB_HUB
+        }
+
+        // 2. Check for RTL-SDR Dongles (Realtek RTL2832U / Nooelec v5 / NESDR)
+        val isRtlVid = device.vendorId == 0x0BDA || device.vendorId == 3034
+        val isRtlPid = device.productId in listOf(0x2838, 0x2832, 0x2834, 10300, 10290, 10296)
+        val pName = (device.productName ?: "")
+        val mfg = (device.manufacturerName ?: "")
+        val nameMatch = pName.contains("RTL", ignoreCase = true) ||
+            pName.contains("Nooelec", ignoreCase = true) ||
+            pName.contains("NESDR", ignoreCase = true) ||
+            pName.contains("SDR", ignoreCase = true)
+        val mfgMatch = mfg.contains("Nooelec", ignoreCase = true) ||
+            mfg.contains("Realtek", ignoreCase = true)
+
+        if ((isRtlVid && isRtlPid) || (isRtlVid && nameMatch) || (nameMatch && mfgMatch) || (isRtlVid && !AndroidMtpBridge.isDjiOrMtpDevice(device))) {
+            return UsbDeviceRole.RTL_SDR
+        }
+
+        // 3. Check for DJI RC 2 / MTP Controller
+        if (AndroidMtpBridge.isDjiOrMtpDevice(device)) {
+            return UsbDeviceRole.DJI_RC2_MTP
+        }
+
+        return UsbDeviceRole.UNKNOWN
+    }
+
+    private fun scanAllConnectedUsbDevices() {
+        val mgr = getSystemService(Context.USB_SERVICE) as? UsbManager ?: return
+        val deviceList = mgr.deviceList ?: return
+        for (device in deviceList.values) {
+            when (classifyUsbDevice(device)) {
+                UsbDeviceRole.DJI_RC2_MTP -> mtpBridge.onDeviceAttached(device)
+                UsbDeviceRole.RTL_SDR -> adsbBridge.onRtlSdrDeviceAttached(device)
+                else -> {}
+            }
+        }
+    }
+
     private val usbReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             try {
@@ -121,10 +176,38 @@ class MainActivity : AppCompatActivity() {
                             @Suppress("DEPRECATION")
                             intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
                         }
-                        device?.let { mtpBridge.onDeviceAttached(it) }
+                        if (device != null) {
+                            when (classifyUsbDevice(device)) {
+                                UsbDeviceRole.DJI_RC2_MTP -> mtpBridge.onDeviceAttached(device)
+                                UsbDeviceRole.RTL_SDR -> adsbBridge.onRtlSdrDeviceAttached(device)
+                                UsbDeviceRole.USB_HUB -> scanAllConnectedUsbDevices()
+                                UsbDeviceRole.UNKNOWN -> {
+                                    Log.d("AalaapiUsb", "Ignored unrecognized USB device: ${device.deviceName} (VID: ${device.vendorId}, PID: ${device.productId})")
+                                }
+                            }
+                        }
                     }
                     UsbManager.ACTION_USB_DEVICE_DETACHED -> {
-                        mtpBridge.onDeviceDetached()
+                        val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+                        }
+                        if (device != null) {
+                            when (classifyUsbDevice(device)) {
+                                UsbDeviceRole.DJI_RC2_MTP -> mtpBridge.onDeviceDetached()
+                                UsbDeviceRole.RTL_SDR -> adsbBridge.onRtlSdrDeviceDetached(device)
+                                UsbDeviceRole.USB_HUB -> scanAllConnectedUsbDevices()
+                                else -> {
+                                    mtpBridge.onDeviceDetached()
+                                    adsbBridge.onRtlSdrDeviceDetached(device)
+                                }
+                            }
+                        } else {
+                            mtpBridge.onDeviceDetached()
+                            adsbBridge.onRtlSdrDeviceDetached()
+                        }
                     }
                     AndroidMtpBridge.ACTION_USB_PERMISSION -> {
                         val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -135,7 +218,11 @@ class MainActivity : AppCompatActivity() {
                         }
                         val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
                         if (granted && device != null) {
-                            mtpBridge.onPermissionGranted(device)
+                            when (classifyUsbDevice(device)) {
+                                UsbDeviceRole.DJI_RC2_MTP -> mtpBridge.onPermissionGranted(device)
+                                UsbDeviceRole.RTL_SDR -> adsbBridge.onRtlSdrPermissionGranted(device)
+                                else -> {}
+                            }
                         }
                     }
                 }
@@ -336,9 +423,14 @@ class MainActivity : AppCompatActivity() {
                 intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
             }
             if (device != null) {
-                mtpBridge.onDeviceAttached(device)
+                when (classifyUsbDevice(device)) {
+                    UsbDeviceRole.DJI_RC2_MTP -> mtpBridge.onDeviceAttached(device)
+                    UsbDeviceRole.RTL_SDR -> adsbBridge.onRtlSdrDeviceAttached(device)
+                    UsbDeviceRole.USB_HUB -> scanAllConnectedUsbDevices()
+                    else -> {}
+                }
             } else {
-                mtpBridge.checkConnectedDevices()
+                scanAllConnectedUsbDevices()
             }
         }
     }
@@ -368,9 +460,13 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                remoteIdScanner.startScan()
+                if (remoteIdScanner.hasPermission()) {
+                    remoteIdScanner.startScan()
+                } else {
+                    requestLocationPermissions()
+                }
                 adsbBridge.start(adsbBridge.getSavedHost(), adsbBridge.getSavedPort())
-                mtpBridge.checkConnectedDevices()
+                scanAllConnectedUsbDevices()
             }
         }
 
@@ -578,6 +674,32 @@ class MainActivity : AppCompatActivity() {
             @JavascriptInterface
             fun getAdsbStatus(): String {
                 return adsbBridge.getStatusJson()
+            }
+
+            @JavascriptInterface
+            fun startRemoteIdScan(): Boolean {
+                return if (remoteIdScanner.hasPermission()) {
+                    remoteIdScanner.startScan()
+                } else {
+                    runOnUiThread { requestLocationPermissions() }
+                    false
+                }
+            }
+
+            @JavascriptInterface
+            fun stopRemoteIdScan(): Boolean {
+                return remoteIdScanner.stopScan()
+            }
+
+            @JavascriptInterface
+            fun getRemoteIdStatus(): String {
+                return remoteIdScanner.getStatusJson()
+            }
+
+            @JavascriptInterface
+            fun requestBluetoothPermissions(): Boolean {
+                runOnUiThread { requestLocationPermissions() }
+                return true
             }
 
             @JavascriptInterface

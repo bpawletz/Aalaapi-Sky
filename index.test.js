@@ -44377,23 +44377,7 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
   describe('Issue #277: Direct Send to RC 2 USB MTP Hardware Sync & Slot Discovery (v1.242.4)', () => {
     test('Version consistency: v1.242.4 across package.json, changelog, index_template.html, and index.html', () => {
-      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.242.4', 'package.json version must be 1.242.4');
-
-      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-      assert.ok(changelog.includes('## [1.242.4] - 2026-11-07'), 'CHANGELOG.md must contain 1.242.4 header');
-
-      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-      assert.ok(template.includes('Version 1.242.4'), 'index_template.html must contain Version 1.242.4');
-      assert.ok(template.includes('v1.242.4'), 'index_template.html must contain v1.242.4 header badge');
-
-      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-      assert.ok(indexHtml.includes('Version 1.242.4'), 'index.html must contain Version 1.242.4');
-      assert.ok(indexHtml.includes('v1.242.4'), 'index.html must contain v1.242.4 header badge');
-
-      const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-      assert.ok(gradle.includes('versionCode = 12424'), 'build.gradle.kts must set versionCode = 12424');
-      assert.ok(gradle.includes('versionName = "1.242.4"'), 'build.gradle.kts must set versionName = "1.242.4"');
+      assertVersionConsistency('1.242.4');
     });
 
     test('AndroidPlatformAdapter.js & PlatformManager.js implement pullKmzFromController and getControllerSlots', () => {
@@ -44451,6 +44435,184 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.strictEqual(parsed.uuid, 'SLOT-999');
     });
   });
-});
 
+  describe('Issue #279: Android ASTM F3411 & DJI Broadcast Remote ID Detection Suite (v1.242.6)', () => {
+    test('Version consistency: v1.242.6 across package.json, changelog, index_template.html, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.242.6');
+    });
+
+    test('AndroidManifest.xml does not suppress BLE location beacons with neverForLocation', () => {
+      const manifestPath = path.join(__dirname, 'android', 'app', 'src', 'main', 'AndroidManifest.xml');
+      const manifest = fs.readFileSync(manifestPath, 'utf8');
+      assert.ok(manifest.includes('android.permission.BLUETOOTH_SCAN'), 'Manifest must declare BLUETOOTH_SCAN');
+      assert.ok(!manifest.includes('android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"'), 'BLUETOOTH_SCAN must not have neverForLocation flag');
+    });
+
+    test('AndroidRemoteIdScanner.kt implements multi-filter, MAC extraction, and status reporting', () => {
+      const scannerKtPath = path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'AndroidRemoteIdScanner.kt');
+      const scannerKt = fs.readFileSync(scannerKtPath, 'utf8');
+      assert.ok(scannerKt.includes('setServiceData'), 'Must filter by Service Data for 0xFFFA');
+      assert.ok(scannerKt.includes('0x0888'), 'Must filter DJI Manufacturer Data 0x0888');
+      assert.ok(scannerKt.includes('0x8808'), 'Must filter DJI Manufacturer Data 0x8808');
+      assert.ok(scannerKt.includes('device?.address'), 'Must extract device MAC address');
+      assert.ok(scannerKt.includes('hasPermission'), 'Must check permission');
+      assert.ok(scannerKt.includes('getStatusJson'), 'Must expose getStatusJson');
+    });
+
+    test('MainActivity.kt registers Remote ID methods on AalaapiAndroid interface', () => {
+      const mainKtPath = path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'MainActivity.kt');
+      const mainKt = fs.readFileSync(mainKtPath, 'utf8');
+      assert.ok(mainKt.includes('fun startRemoteIdScan(): Boolean'), 'MainActivity must expose startRemoteIdScan');
+      assert.ok(mainKt.includes('fun stopRemoteIdScan(): Boolean'), 'MainActivity must expose stopRemoteIdScan');
+      assert.ok(mainKt.includes('fun getRemoteIdStatus(): String'), 'MainActivity must expose getRemoteIdStatus');
+      assert.ok(mainKt.includes('fun requestBluetoothPermissions(): Boolean'), 'MainActivity must expose requestBluetoothPermissions');
+    });
+
+    test('ClientRemoteIdDecoder.decode parses raw advertisement payloads with 0xFA, 0xFF and DJI manufacturer data', () => {
+      const { ClientRemoteIdDecoder } = require('./src/bridge/AndroidNativeBridge.js');
+      assert.ok(ClientRemoteIdDecoder, 'ClientRemoteIdDecoder must exist');
+
+      // 1. Synthetic raw BLE advertisement with AD structure: Flags (3 bytes) + Service Data 0xFFFA with [0x0D, seq]
+      const rawAdv = new Uint8Array(37);
+      rawAdv[0] = 0x02; rawAdv[1] = 0x01; rawAdv[2] = 0x06; // Flags
+      rawAdv[3] = 0x1E; rawAdv[4] = 0x16; // Service Data
+      rawAdv[5] = 0xFA; rawAdv[6] = 0xFF; // UUID 0xFFFA
+      rawAdv[7] = 0x0D; rawAdv[8] = 0x01; // Application data header [0x0D, seq]
+      rawAdv[9] = 0x01; // BasicID msgType 0, proto 1
+      rawAdv[10] = 0x12; // ID type 1 (Serial), UA type 2
+      const idStr = '1581F4TEST9999';
+      for (let i = 0; i < idStr.length; i++) rawAdv[11 + i] = idStr.charCodeAt(i);
+
+      const decoded = ClientRemoteIdDecoder.decode(rawAdv, -68, 'ble');
+      assert.ok(decoded, 'Raw advertisement with 0xFFFA must decode');
+      assert.strictEqual(decoded.msgType, 'BasicID');
+      assert.strictEqual(decoded.uasId, '1581F4TEST9999');
+
+      // 2. DJI Manufacturer Specific Data: Company ID 0x0888 + 25-byte Location message
+      const djiPayload = new Uint8Array(27);
+      djiPayload[0] = 0x88; djiPayload[1] = 0x08; // DJI Company ID 0x0888 little-endian
+      djiPayload[2] = 0x11; // Location msgType 1, proto 1
+      djiPayload[3] = 0x20; // Airborne
+      djiPayload[4] = 45;   // Track
+      djiPayload[5] = 40;   // Speed
+      const view = new DataView(djiPayload.buffer);
+      view.setInt32(7, Math.round(41.3215 * 1e7), true);
+      view.setInt32(11, Math.round(-88.9950 * 1e7), true);
+      view.setUint16(17, 2240, true); // Alt 120m
+
+      const decodedDji = ClientRemoteIdDecoder.decode(djiPayload, -62, 'ble');
+      assert.ok(decodedDji, 'DJI Manufacturer Data must decode');
+      assert.strictEqual(decodedDji.msgType, 'Location');
+      assert.ok(Math.abs(decodedDji.latitude - 41.3215) < 0.0001);
+      assert.ok(Math.abs(decodedDji.longitude - (-88.9950)) < 0.0001);
+      assert.strictEqual(decodedDji.altitude, 120);
+    });
+
+    test('AndroidNativeBridge.ingestRemoteIdFrame correlates separate BasicID and Location frames by MAC address', () => {
+      const { AndroidNativeBridge } = require('./src/bridge/AndroidNativeBridge.js');
+      assert.ok(AndroidNativeBridge, 'AndroidNativeBridge must exist');
+
+      const mockRadar = {
+        activeDrones: [],
+        streamMode: 'disconnected',
+        streamConnected: false,
+        updateMapMarkers: () => {},
+        updateRadarUI: () => {},
+        updateStreamTransportUI: () => {}
+      };
+      global.RemoteIdRadar = mockRadar;
+      if (typeof window !== 'undefined') window.RemoteIdRadar = mockRadar;
+
+      AndroidNativeBridge.remoteIdDrones.clear();
+      AndroidNativeBridge.macToDroneId.clear();
+
+      const testMac = 'AA:BB:CC:11:22:33';
+
+      // 1. Frame 1: BasicID with Serial 1581F4ALPHA
+      const bIdBuf = new Uint8Array(25);
+      bIdBuf[0] = 0x01;
+      bIdBuf[1] = 0x12;
+      const sId = '1581F4ALPHA';
+      for (let i = 0; i < sId.length; i++) bIdBuf[2 + i] = sId.charCodeAt(i);
+
+      AndroidNativeBridge.ingestRemoteIdFrame(bIdBuf, -70, 'ble', testMac);
+      assert.ok(AndroidNativeBridge.remoteIdDrones.has('1581F4ALPHA'), 'Drone must be registered under serial');
+      let drone = AndroidNativeBridge.remoteIdDrones.get('1581F4ALPHA');
+      assert.strictEqual(drone.uasId, '1581F4ALPHA');
+      assert.strictEqual(drone.model, 'DJI Mini 4 Pro');
+      assert.strictEqual(drone.latitude, null, 'Latitude should initially be null');
+
+      // 2. Frame 2: Standalone Location frame from same MAC (does NOT contain uasId)
+      const locBuf = new Uint8Array(25);
+      locBuf[0] = 0x11;
+      locBuf[1] = 0x20;
+      locBuf[2] = 90;
+      locBuf[3] = 40;
+      const locView = new DataView(locBuf.buffer);
+      locView.setInt32(5, Math.round(41.3215 * 1e7), true);
+      locView.setInt32(9, Math.round(-88.9950 * 1e7), true);
+      locView.setUint16(15, 2240, true);
+
+      AndroidNativeBridge.ingestRemoteIdFrame(locBuf, -65, 'ble', testMac);
+
+      drone = AndroidNativeBridge.remoteIdDrones.get('1581F4ALPHA');
+      assert.ok(drone, 'Drone must exist after Location frame');
+      assert.ok(Math.abs(drone.latitude - 41.3215) < 0.0001, 'Latitude must be updated from correlated Location frame');
+      assert.ok(Math.abs(drone.longitude - (-88.9950)) < 0.0001, 'Longitude must be updated from correlated Location frame');
+      assert.strictEqual(drone.altitude, 120);
+      assert.strictEqual(drone.speed, 10.0);
+      assert.strictEqual(drone.heading, 180);
+
+      const actualRadar = AndroidNativeBridge._getRemoteIdRadar();
+      assert.ok(actualRadar, 'RemoteIdRadar must be resolved');
+      assert.strictEqual(actualRadar.streamMode, 'android-ble');
+      assert.strictEqual(actualRadar.streamConnected, true);
+      assert.strictEqual(actualRadar.activeDrones.length, 1);
+      assert.strictEqual(actualRadar.activeDrones[0].uasId, '1581F4ALPHA');
+    });
+
+    test('AndroidNativeBridge.ingestRemoteIdFrame migrates temporary MAC drone when BasicID arrives after Location', () => {
+      const { AndroidNativeBridge } = require('./src/bridge/AndroidNativeBridge.js');
+      AndroidNativeBridge.remoteIdDrones.clear();
+      AndroidNativeBridge.macToDroneId.clear();
+
+      const testMac2 = 'DD:EE:FF:44:55:66';
+
+      // 1. Frame 1: Location arrives FIRST before any BasicID
+      const locBuf = new Uint8Array(25);
+      locBuf[0] = 0x11;
+      locBuf[1] = 0x20;
+      const locView = new DataView(locBuf.buffer);
+      locView.setInt32(5, Math.round(41.3220 * 1e7), true);
+      locView.setInt32(9, Math.round(-88.9940 * 1e7), true);
+      locView.setUint16(15, 2100, true);
+
+      AndroidNativeBridge.ingestRemoteIdFrame(locBuf, -60, 'ble', testMac2);
+
+      assert.ok(AndroidNativeBridge.remoteIdDrones.has('BLE:DD:EE:FF:44:55:66'), 'Must have temporary BLE:MAC drone');
+      let tempDrone = AndroidNativeBridge.remoteIdDrones.get('BLE:DD:EE:FF:44:55:66');
+      assert.ok(Math.abs(tempDrone.latitude - 41.3220) < 0.0001);
+
+      // 2. Frame 2: BasicID arrives SECOND from same MAC
+      const bIdBuf = new Uint8Array(25);
+      bIdBuf[0] = 0x01;
+      bIdBuf[1] = 0x12;
+      const realId = '1581E9999999';
+      for (let i = 0; i < realId.length; i++) bIdBuf[2 + i] = realId.charCodeAt(i);
+
+      AndroidNativeBridge.ingestRemoteIdFrame(bIdBuf, -60, 'ble', testMac2);
+
+      assert.strictEqual(AndroidNativeBridge.remoteIdDrones.has('BLE:DD:EE:FF:44:55:66'), false, 'Temp drone must be removed');
+      assert.ok(AndroidNativeBridge.remoteIdDrones.has('1581E9999999'), 'Drone must now be keyed under real serial');
+
+      const realDrone = AndroidNativeBridge.remoteIdDrones.get('1581E9999999');
+      assert.strictEqual(realDrone.uasId, '1581E9999999');
+      assert.strictEqual(realDrone.model, 'DJI Mavic 3 / Air 3');
+      assert.ok(Math.abs(realDrone.latitude - 41.3220) < 0.0001, 'Latitude from first packet must be preserved');
+      assert.ok(Math.abs(realDrone.longitude - (-88.9940)) < 0.0001, 'Longitude from first packet must be preserved');
+      assert.strictEqual(realDrone.altitude, 50);
+    });
+  });
+
+});
 });

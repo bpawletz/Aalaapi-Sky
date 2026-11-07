@@ -63,6 +63,29 @@
 
       if (!bytes || bytes.length < 25) return null;
 
+      // 1. Search for ASTM F3411 16-bit UUID 0xFFFA (stored little-endian 0xFA, 0xFF or big-endian 0xFF, 0xFA)
+      let uuidIdx = -1;
+      for (let i = 0; i <= bytes.length - 2; i++) {
+        if ((bytes[i] === 0xFA && bytes[i + 1] === 0xFF) || (bytes[i] === 0xFF && bytes[i + 1] === 0xFA)) {
+          uuidIdx = i;
+          break;
+        }
+      }
+      if (uuidIdx !== -1) {
+        let candidate = bytes.subarray(uuidIdx + 2);
+        if (candidate.length >= 26 && candidate[0] === 0x0D) {
+          candidate = candidate.subarray(2); // Skip [0x0D, Sequence]
+        }
+        if (candidate.length >= 25) {
+          bytes = candidate;
+        }
+      } else if (bytes.length >= 27 && ((bytes[0] === 0x88 && bytes[1] === 0x08) || (bytes[0] === 0x08 && bytes[1] === 0x88))) {
+        // 2. Check for DJI Manufacturer Specific Data (Company ID 0x0888 / 0x8808)
+        bytes = bytes.subarray(2);
+      }
+
+      if (bytes.length < 25) return null;
+
       const header = bytes[0];
       const msgType = (header >> 4) & 0x0F;
       const protoVersion = header & 0x0F;
@@ -222,10 +245,15 @@
     },
 
     decodeMessagePack(bytes, rssi, transport) {
-      const packSize = bytes[1] || 0;
       const results = [];
       let offset = 2;
-      while (offset + 25 <= bytes.length) {
+      let count = bytes[1] || 0;
+      if (bytes.length >= 28 && (bytes[1] === 25 || bytes[1] === 0x19)) {
+        // Standard ASTM F3411: bytes[1]=singleMsgSize (25), bytes[2]=msgCount
+        offset = 3;
+        count = bytes[2] || Math.floor((bytes.length - 3) / 25);
+      }
+      for (let i = 0; i < count && offset + 25 <= bytes.length; i++) {
         const block = bytes.subarray(offset, offset + 25);
         const decoded = this.decodeSingleBlock(block, rssi, transport);
         if (decoded) results.push(decoded);
@@ -335,6 +363,7 @@
     selectedSlotUuid: null,
     adsbAircraft: new Map(), // hex -> aircraft record
     remoteIdDrones: new Map(), // uasId -> drone record
+    macToDroneId: new Map(), // mac -> droneId
     staleTimeoutMs: 60000,
     _lastPruneTime: 0,
     adsbCleanupInterval: null,
@@ -384,6 +413,11 @@
             if (status && status.connected) {
               this.handleRc2Connected(status);
             }
+          }
+        } catch (_) {}
+        try {
+          if (typeof window.AalaapiAndroid.startRemoteIdScan === 'function') {
+            window.AalaapiAndroid.startRemoteIdScan();
           }
         } catch (_) {}
       }
@@ -471,22 +505,63 @@
     },
 
     // ─── Remote ID Ingestion (BLE / Wi-Fi) ───────────────────────────────────
-    ingestRemoteIdFrame(rawPayload, rssi = -65, transport = 'ble') {
+    ingestRemoteIdFrame(rawPayload, rssi = -65, transport = 'ble', mac = null) {
       const decoded = ClientRemoteIdDecoder.decode(rawPayload, rssi, transport);
       if (!decoded) return;
+
+      const normMac = (mac && typeof mac === 'string' && mac !== 'UNKNOWN') ? mac.toUpperCase() : null;
 
       let droneId = decoded.uasId;
       if (!droneId && decoded.messages && decoded.messages.length > 0) {
         const bId = decoded.messages.find(m => m.msgType === 'BasicID');
         if (bId) droneId = bId.uasId;
       }
-      if (!droneId) return;
+
+      // If no uasId in this packet, correlate using MAC
+      if (!droneId && normMac && this.macToDroneId.has(normMac)) {
+        droneId = this.macToDroneId.get(normMac);
+      }
+
+      // If still no droneId, fallback to temporary MAC ID or single active drone
+      if (!droneId) {
+        if (normMac) {
+          droneId = `BLE:${normMac}`;
+        } else if (this.remoteIdDrones.size === 1) {
+          droneId = Array.from(this.remoteIdDrones.keys())[0];
+        } else {
+          droneId = 'RemoteID Drone';
+        }
+      }
+
+      // If we now have a genuine uasId and a MAC, check if we need to migrate from temporary BLE:MAC
+      if (normMac) {
+        const tempKey = `BLE:${normMac}`;
+        if (droneId !== tempKey && this.remoteIdDrones.has(tempKey)) {
+          const oldDrone = this.remoteIdDrones.get(tempKey);
+          this.remoteIdDrones.delete(tempKey);
+          let existing = this.remoteIdDrones.get(droneId);
+          if (!existing) {
+            existing = { ...oldDrone, id: droneId, uasId: droneId };
+            this.remoteIdDrones.set(droneId, existing);
+          } else {
+            if (oldDrone.latitude !== null && oldDrone.longitude !== null) {
+              existing.latitude = oldDrone.latitude;
+              existing.longitude = oldDrone.longitude;
+            }
+            if (oldDrone.altitude !== null) existing.altitude = oldDrone.altitude;
+            if (oldDrone.speed !== null) existing.speed = oldDrone.speed;
+            if (oldDrone.heading !== null) existing.heading = oldDrone.heading;
+          }
+        }
+        this.macToDroneId.set(normMac, droneId);
+      }
 
       let drone = this.remoteIdDrones.get(droneId);
       if (!drone) {
         drone = {
           id: droneId,
-          uasId: droneId,
+          uasId: droneId.startsWith('BLE:') ? 'Awaiting ID...' : droneId,
+          mac: normMac,
           model: decoded.uaType || 'Drone',
           latitude: null,
           longitude: null,
@@ -507,20 +582,27 @@
       // Merge decoded payload
       const msgs = decoded.messages ? decoded.messages : [decoded];
       msgs.forEach(m => {
-        if (m.latitude !== undefined && m.longitude !== undefined) {
+        if (m.uaType) drone.model = m.uaType;
+        if (m.uasId) {
+          drone.uasId = m.uasId;
+          if (m.uasId.startsWith('1581F')) drone.model = 'DJI Mini 4 Pro';
+          else if (m.uasId.startsWith('1581E')) drone.model = 'DJI Mavic 3 / Air 3';
+          else if (m.uasId.startsWith('1581D')) drone.model = 'DJI Avata';
+          else if (m.uasId.startsWith('2003F')) drone.model = 'Remote ID Beacon';
+        }
+        if (m.latitude !== undefined && m.longitude !== undefined && m.latitude !== null && m.longitude !== null) {
           drone.latitude = m.latitude;
           drone.longitude = m.longitude;
         }
-        if (m.altitude !== undefined) drone.altitude = m.altitude;
-        if (m.speedMps !== undefined) drone.speed = m.speedMps;
-        if (m.trackDirection !== undefined) drone.heading = m.trackDirection;
+        if (m.altitude !== undefined && m.altitude !== null) drone.altitude = m.altitude;
+        if (m.speedMps !== undefined && m.speedMps !== null) drone.speed = m.speedMps;
+        if (m.trackDirection !== undefined && m.trackDirection !== null) drone.heading = m.trackDirection;
         if (m.operatorLatitude !== undefined && m.operatorLatitude !== null) {
           drone.operatorLatitude = m.operatorLatitude;
           drone.operatorLongitude = m.operatorLongitude;
           drone.operatorAltitude = m.operatorAltitude;
           drone.operatorLocationType = m.locationType || 'Takeoff';
         }
-        if (m.uaType) drone.model = m.uaType;
       });
 
       drone.rssi = rssi;
@@ -528,18 +610,19 @@
       drone.lastSeen = Date.now();
 
       // Feed into global RemoteIdRadar in ApiClient.js
-      if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar) {
-        RemoteIdRadar.activeDrones = Array.from(this.remoteIdDrones.values());
-        RemoteIdRadar.streamMode = 'android-ble';
-        RemoteIdRadar.streamConnected = true;
-        if (typeof RemoteIdRadar.updateMapMarkers === 'function') {
-          RemoteIdRadar.updateMapMarkers();
+      const ridRadar = this._getRemoteIdRadar();
+      if (ridRadar) {
+        ridRadar.activeDrones = Array.from(this.remoteIdDrones.values());
+        ridRadar.streamMode = 'android-ble';
+        ridRadar.streamConnected = true;
+        if (typeof ridRadar.updateMapMarkers === 'function') {
+          ridRadar.updateMapMarkers();
         }
-        if (typeof RemoteIdRadar.updateRadarUI === 'function') {
-          RemoteIdRadar.updateRadarUI();
+        if (typeof ridRadar.updateRadarUI === 'function') {
+          ridRadar.updateRadarUI();
         }
-        if (typeof RemoteIdRadar.updateStreamTransportUI === 'function') {
-          RemoteIdRadar.updateStreamTransportUI();
+        if (typeof ridRadar.updateStreamTransportUI === 'function') {
+          ridRadar.updateStreamTransportUI();
         }
       }
     },
@@ -891,8 +974,25 @@
       }
     },
 
+    // ─── USB OTG RTL-SDR Hardware Event (Issue #278) ─────────────────────────
+    handleAdsbHardwareChanged(hwData = {}) {
+      console.log('📡 ADS-B Hardware Event from Android:', hwData);
+      this.adsbHardware = hwData;
+      if (typeof ApiClient !== 'undefined' && typeof ApiClient.updateDiagnosticsUI === 'function') {
+        ApiClient.updateDiagnosticsUI({
+          hardware: hwData,
+          connected: Boolean(this.isAdsbConnected),
+          driverType: 'Android Native Socket'
+        });
+      }
+    },
+
     // ─── DJI RC 2 USB Auto-Detection & 1-Tap Sync Bar ────────────────────────
     handleRc2Connected(deviceData = {}) {
+      if (deviceData && deviceData.vendorId && deviceData.vendorId !== 11427 && deviceData.vendorId !== 0x2CA3) {
+        console.warn('⚠️ Rejected non-DJI USB device in handleRc2Connected:', deviceData);
+        return;
+      }
       this.rc2Device = deviceData;
       console.log('🎮 DJI RC 2 Connected via USB-C:', deviceData);
 
@@ -1132,10 +1232,11 @@
   if (typeof window !== 'undefined') {
     window.AalaapiAndroidBridge = AndroidNativeBridge;
     window.AndroidNativeBridge = AndroidNativeBridge;
-    window.ingestRemoteIdFrame = (payload, rssi, transport) => AndroidNativeBridge.ingestRemoteIdFrame(payload, rssi, transport);
+    window.ingestRemoteIdFrame = (payload, rssi, transport, mac) => AndroidNativeBridge.ingestRemoteIdFrame(payload, rssi, transport, mac);
     window.ingestAdsbSbsLine = (line) => AndroidNativeBridge.ingestAdsbSbsLine(line);
     window.ingestAdsbJson = (jsonPayload) => AndroidNativeBridge.ingestAdsbJson(jsonPayload);
     window.onAdsbStatusChanged = (status, host, port, error) => AndroidNativeBridge.onAdsbStatusChanged(status, host, port, error);
+    window.onAdsbHardwareChanged = (hwData) => AndroidNativeBridge.handleAdsbHardwareChanged(hwData);
     window.onNativeTtsError = (message) => {
       if (typeof showToast === 'function') showToast('🔇 ' + (message || 'Voice advisory unavailable'), 'error');
     };
@@ -1143,7 +1244,7 @@
     window.onRc2UsbDisconnected = () => AndroidNativeBridge.handleRc2Disconnected();
 
     // Auto-init on DOMContentLoaded or immediate
-    if (document.readyState === 'loading') {
+    if (typeof document !== 'undefined' && document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => AndroidNativeBridge.init());
     } else {
       AndroidNativeBridge.init();

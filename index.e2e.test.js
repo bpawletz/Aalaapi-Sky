@@ -12749,7 +12749,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     // Click Airspace zoom button
     await page.locator('#map-zoom-airspace-btn').click({ force: true });
-    await page.waitForTimeout(300);
+    await page.waitForFunction(() => window.map && window.map.getZoom() === 12, { timeout: 2000 }).catch(() => {});
+    await page.waitForTimeout(100);
 
     const airspaceZoom = await page.evaluate(() => {
       const m = window.map;
@@ -12766,7 +12767,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     // Click Plan zoom button
     await page.locator('#map-zoom-plan-btn').click({ force: true });
-    await page.waitForTimeout(300);
+    await page.waitForFunction(() => window.map && window.map.getZoom() === 18, { timeout: 2000 }).catch(() => {});
+    await page.waitForTimeout(100);
 
     const planZoom = await page.evaluate(() => {
       const m = window.map;

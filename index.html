@@ -9309,7 +9309,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.4</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.6</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -16973,7 +16973,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.4</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.6</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17136,6 +17136,18 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.242.6):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>ASTM F3411 &amp; DJI Broadcast Remote ID Detection on Android (Closes #279):</strong> Restored Remote ID detection on Android by removing <code>neverForLocation</code> beacon-suppression flag in <code>AndroidManifest.xml</code>; configured multi-filter BLE scanning for Service Data UUID <code>0xFFFA</code> and DJI Manufacturer Data (<code>0x0888</code> / <code>0x8808</code>); passed device MAC addresses to WebView and correlated separate Basic ID and Location advertisement frames in <code>AndroidNativeBridge.js</code>; added robust raw advertisement packet decoding.</li>
+                </ul>
+              </li>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.242.5):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>USB Device Classification &amp; Android RTL-SDR Dongle Detection (Closes #278):</strong> Fixed false-positive "RC 2 is connected" trigger when connecting a Nooelec RTL-SDR v5 via USB hub or OTG on Android; added strict device role discrimination in <code>MainActivity.kt</code>; enabled real-time USB OTG RTL-SDR hardware detection and green status diagnostics in the ADS-B Control Drawer.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.242.4):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -69257,6 +69269,10 @@ const RemoteIdRadar = {
 
 
 
+    } else if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.startRemoteIdScan === 'function') {
+
+      try { window.AalaapiAndroid.startRemoteIdScan(); } catch (_) {}
+
     }
 
 
@@ -76681,17 +76697,19 @@ const AdsbAirspaceManager = {
 
       if (typeof Platform !== 'undefined' && typeof Platform.getNativeAdsbStatus === 'function') {
         const nativeStatus = Platform.getNativeAdsbStatus();
-        if (nativeStatus && (nativeStatus.connected || nativeStatus.connecting || nativeStatus.messagesReceived > 0)) {
+        const hasHw = Boolean(nativeStatus && nativeStatus.hardware && nativeStatus.hardware.detected);
+        if (nativeStatus && (nativeStatus.connected || nativeStatus.connecting || nativeStatus.messagesReceived > 0 || hasHw)) {
           const nativeSt = {
             connected: Boolean(nativeStatus.connected),
             connecting: Boolean(nativeStatus.connecting),
             isRemoteServer: true,
-            tcpHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
-            tcpPort: nativeStatus.currentPort || this.serverPort || 30003,
-            adsbHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
-            adsbPort: nativeStatus.currentPort || this.serverPort || 30003,
+            tcpHost: nativeStatus.currentHost || nativeStatus.host || this.serverHost || '127.0.0.1',
+            tcpPort: nativeStatus.currentPort || nativeStatus.port || this.serverPort || 30003,
+            adsbHost: nativeStatus.currentHost || nativeStatus.host || this.serverHost || '127.0.0.1',
+            adsbPort: nativeStatus.currentPort || nativeStatus.port || this.serverPort || 30003,
             totalPackets: nativeStatus.messagesReceived || 0,
-            driverType: 'Android Native Socket'
+            driverType: 'Android Native Socket',
+            hardware: nativeStatus.hardware || (typeof AndroidNativeBridge !== 'undefined' ? AndroidNativeBridge.adsbHardware : null)
           };
           this.updateDiagnosticsUI(nativeSt);
           return;
@@ -77119,97 +77137,65 @@ const AdsbAirspaceManager = {
     if (hwEl) {
 
       if (st.hardware && st.hardware.detected) {
-
         if (st.hardware.driverStatus === 'needs_zadig') {
-
           hwEl.textContent = 'Detected (Driver Missing)';
-
           hwEl.style.color = '#f59e0b';
-
           if (tipEl) {
-
             tipEl.style.display = 'block';
-
             tipEl.innerHTML = '⚠️ <strong>Driver Needed:</strong> Windows sees your RTL-SDR dongle, but needs the <strong>WinUSB</strong> driver. Run <a href="https://zadig.akeo.ie/" target="_blank" style="color: #60a5fa; text-decoration: underline;">Zadig</a>, select <em>Bulk-In, Interface</em>, and click <em>Install WinUSB</em>.';
-
           }
-
-        } else {
-
-          hwEl.textContent = 'Ready (WinUSB Active)';
-
+        } else if (st.hardware.driverStatus === 'needs_permission') {
+          hwEl.textContent = `${st.hardware.deviceName || 'RTL-SDR'} (Permission Needed)`;
+          hwEl.style.color = '#f59e0b';
+          if (tipEl) {
+            tipEl.style.display = 'block';
+            tipEl.innerHTML = '⚠️ <strong>USB Permission Required:</strong> Please allow USB access on your Android device for the RTL-SDR dongle.';
+          }
+        } else if (st.hardware.platform === 'android' || (typeof window !== 'undefined' && window.AalaapiAndroid)) {
+          hwEl.textContent = `${st.hardware.deviceName || 'RTL-SDR'} (USB OTG Ready)`;
           hwEl.style.color = '#10b981';
-
+          if (tipEl && !st.connected) {
+            tipEl.style.display = 'block';
+            tipEl.innerHTML = '🔌 <strong>RTL-SDR Detected via USB OTG:</strong> To stream local 1090 MHz frames into Aalaapi Sky, run an ADS-B decoder app (e.g. <em>RTL-SDR Driver</em> or <em>dump1090</em>) on port <code>30003</code>, or tap <strong>Start Watching</strong> above to stream live cloud radar from <strong>adsb.lol</strong>.';
+          }
+        } else {
+          hwEl.textContent = 'Ready (WinUSB Active)';
+          hwEl.style.color = '#10b981';
         }
-
       } else if (isAndroidConnected || (st && st.driverType === 'Android Native Socket')) {
-
         hwEl.textContent = 'Android Native / RTL-SDR Socket';
-
         hwEl.style.color = '#38bdf8';
-
       } else if (isCloudActive) {
-
         hwEl.textContent = 'Online Cloud Feed (adsb.lol)';
-
         hwEl.style.color = '#38bdf8';
-
       } else if (st && (st.isRemoteServer || (st.tcpHost && st.tcpHost !== '127.0.0.1' && st.tcpHost !== 'localhost'))) {
-
         hwEl.textContent = 'Remote Feed (No USB Dongle Needed)';
-
         hwEl.style.color = '#38bdf8';
-
       } else {
-
         hwEl.textContent = 'Not Detected';
-
         hwEl.style.color = '#94a3b8';
-
       }
-
     }
 
-
-
     // Stream status & summary
-
     if (st && st.connected || isAnyActive) {
-
       if (streamEl) {
-
         if (isCloudActive && (!st || !st.connected) && !isAndroidConnected) {
-
           streamEl.textContent = 'Connected (Online Cloud Feed adsb.lol)';
-
         } else if (isAndroidConnected) {
-
           streamEl.textContent = `Connected (${targetHost}:${targetPort})`;
-
         } else {
-
           streamEl.textContent = `Connected (${hostPortStr})`;
-
         }
-
         streamEl.style.color = '#10b981';
-
       }
-
       if (summaryEl) {
-
         summaryEl.textContent = 'ACTIVE';
-
         summaryEl.style.background = 'rgba(16, 185, 129, 0.2)';
-
         summaryEl.style.color = '#10b981';
-
       }
-
-      if (tipEl && (!st || !st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
-
+      if (tipEl && (!st || !st.hardware || (st.hardware.driverStatus !== 'needs_zadig' && st.hardware.driverStatus !== 'needs_permission' && !(st.hardware.platform === 'android' && !st.connected)))) {
         tipEl.style.display = 'none';
-
       }
 
     } else {
@@ -77232,12 +77218,9 @@ const AdsbAirspaceManager = {
 
       }
 
-      if (tipEl && (!st || !st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
-
+      if (tipEl && (!st || !st.hardware || (st.hardware.driverStatus !== 'needs_zadig' && st.hardware.driverStatus !== 'needs_permission' && !(st.hardware.platform === 'android' && st.hardware.detected)))) {
         tipEl.style.display = 'block';
-
         tipEl.innerHTML = `💡 <strong>Waiting for dump1090:</strong> Ensure dump1090 or your SBS feed is running on <code>${hostPortStr}</code>.`;
-
       }
 
     }
@@ -77251,9 +77234,9 @@ const AdsbAirspaceManager = {
     }
 
     if (hwDriverEl) {
-
-      if (isAndroidConnected || (st && st.driverType === 'Android Native Socket')) {
-
+      if (st && st.hardware && st.hardware.platform === 'android' && st.hardware.detected) {
+        hwDriverEl.textContent = `${st.hardware.deviceName || 'RTL-SDR'} / USB OTG`;
+      } else if (isAndroidConnected || (st && st.driverType === 'Android Native Socket')) {
         hwDriverEl.textContent = `Android Socket (${targetPort})`;
 
       } else if (isCloudActive && (!st || !st.connected)) {
@@ -87906,6 +87889,29 @@ if (typeof module !== 'undefined' && module.exports) {
 
       if (!bytes || bytes.length < 25) return null;
 
+      // 1. Search for ASTM F3411 16-bit UUID 0xFFFA (stored little-endian 0xFA, 0xFF or big-endian 0xFF, 0xFA)
+      let uuidIdx = -1;
+      for (let i = 0; i <= bytes.length - 2; i++) {
+        if ((bytes[i] === 0xFA && bytes[i + 1] === 0xFF) || (bytes[i] === 0xFF && bytes[i + 1] === 0xFA)) {
+          uuidIdx = i;
+          break;
+        }
+      }
+      if (uuidIdx !== -1) {
+        let candidate = bytes.subarray(uuidIdx + 2);
+        if (candidate.length >= 26 && candidate[0] === 0x0D) {
+          candidate = candidate.subarray(2); // Skip [0x0D, Sequence]
+        }
+        if (candidate.length >= 25) {
+          bytes = candidate;
+        }
+      } else if (bytes.length >= 27 && ((bytes[0] === 0x88 && bytes[1] === 0x08) || (bytes[0] === 0x08 && bytes[1] === 0x88))) {
+        // 2. Check for DJI Manufacturer Specific Data (Company ID 0x0888 / 0x8808)
+        bytes = bytes.subarray(2);
+      }
+
+      if (bytes.length < 25) return null;
+
       const header = bytes[0];
       const msgType = (header >> 4) & 0x0F;
       const protoVersion = header & 0x0F;
@@ -88065,10 +88071,15 @@ if (typeof module !== 'undefined' && module.exports) {
     },
 
     decodeMessagePack(bytes, rssi, transport) {
-      const packSize = bytes[1] || 0;
       const results = [];
       let offset = 2;
-      while (offset + 25 <= bytes.length) {
+      let count = bytes[1] || 0;
+      if (bytes.length >= 28 && (bytes[1] === 25 || bytes[1] === 0x19)) {
+        // Standard ASTM F3411: bytes[1]=singleMsgSize (25), bytes[2]=msgCount
+        offset = 3;
+        count = bytes[2] || Math.floor((bytes.length - 3) / 25);
+      }
+      for (let i = 0; i < count && offset + 25 <= bytes.length; i++) {
         const block = bytes.subarray(offset, offset + 25);
         const decoded = this.decodeSingleBlock(block, rssi, transport);
         if (decoded) results.push(decoded);
@@ -88178,6 +88189,7 @@ if (typeof module !== 'undefined' && module.exports) {
     selectedSlotUuid: null,
     adsbAircraft: new Map(), // hex -> aircraft record
     remoteIdDrones: new Map(), // uasId -> drone record
+    macToDroneId: new Map(), // mac -> droneId
     staleTimeoutMs: 60000,
     _lastPruneTime: 0,
     adsbCleanupInterval: null,
@@ -88227,6 +88239,11 @@ if (typeof module !== 'undefined' && module.exports) {
             if (status && status.connected) {
               this.handleRc2Connected(status);
             }
+          }
+        } catch (_) {}
+        try {
+          if (typeof window.AalaapiAndroid.startRemoteIdScan === 'function') {
+            window.AalaapiAndroid.startRemoteIdScan();
           }
         } catch (_) {}
       }
@@ -88314,22 +88331,63 @@ if (typeof module !== 'undefined' && module.exports) {
     },
 
     // ─── Remote ID Ingestion (BLE / Wi-Fi) ───────────────────────────────────
-    ingestRemoteIdFrame(rawPayload, rssi = -65, transport = 'ble') {
+    ingestRemoteIdFrame(rawPayload, rssi = -65, transport = 'ble', mac = null) {
       const decoded = ClientRemoteIdDecoder.decode(rawPayload, rssi, transport);
       if (!decoded) return;
+
+      const normMac = (mac && typeof mac === 'string' && mac !== 'UNKNOWN') ? mac.toUpperCase() : null;
 
       let droneId = decoded.uasId;
       if (!droneId && decoded.messages && decoded.messages.length > 0) {
         const bId = decoded.messages.find(m => m.msgType === 'BasicID');
         if (bId) droneId = bId.uasId;
       }
-      if (!droneId) return;
+
+      // If no uasId in this packet, correlate using MAC
+      if (!droneId && normMac && this.macToDroneId.has(normMac)) {
+        droneId = this.macToDroneId.get(normMac);
+      }
+
+      // If still no droneId, fallback to temporary MAC ID or single active drone
+      if (!droneId) {
+        if (normMac) {
+          droneId = `BLE:${normMac}`;
+        } else if (this.remoteIdDrones.size === 1) {
+          droneId = Array.from(this.remoteIdDrones.keys())[0];
+        } else {
+          droneId = 'RemoteID Drone';
+        }
+      }
+
+      // If we now have a genuine uasId and a MAC, check if we need to migrate from temporary BLE:MAC
+      if (normMac) {
+        const tempKey = `BLE:${normMac}`;
+        if (droneId !== tempKey && this.remoteIdDrones.has(tempKey)) {
+          const oldDrone = this.remoteIdDrones.get(tempKey);
+          this.remoteIdDrones.delete(tempKey);
+          let existing = this.remoteIdDrones.get(droneId);
+          if (!existing) {
+            existing = { ...oldDrone, id: droneId, uasId: droneId };
+            this.remoteIdDrones.set(droneId, existing);
+          } else {
+            if (oldDrone.latitude !== null && oldDrone.longitude !== null) {
+              existing.latitude = oldDrone.latitude;
+              existing.longitude = oldDrone.longitude;
+            }
+            if (oldDrone.altitude !== null) existing.altitude = oldDrone.altitude;
+            if (oldDrone.speed !== null) existing.speed = oldDrone.speed;
+            if (oldDrone.heading !== null) existing.heading = oldDrone.heading;
+          }
+        }
+        this.macToDroneId.set(normMac, droneId);
+      }
 
       let drone = this.remoteIdDrones.get(droneId);
       if (!drone) {
         drone = {
           id: droneId,
-          uasId: droneId,
+          uasId: droneId.startsWith('BLE:') ? 'Awaiting ID...' : droneId,
+          mac: normMac,
           model: decoded.uaType || 'Drone',
           latitude: null,
           longitude: null,
@@ -88350,20 +88408,27 @@ if (typeof module !== 'undefined' && module.exports) {
       // Merge decoded payload
       const msgs = decoded.messages ? decoded.messages : [decoded];
       msgs.forEach(m => {
-        if (m.latitude !== undefined && m.longitude !== undefined) {
+        if (m.uaType) drone.model = m.uaType;
+        if (m.uasId) {
+          drone.uasId = m.uasId;
+          if (m.uasId.startsWith('1581F')) drone.model = 'DJI Mini 4 Pro';
+          else if (m.uasId.startsWith('1581E')) drone.model = 'DJI Mavic 3 / Air 3';
+          else if (m.uasId.startsWith('1581D')) drone.model = 'DJI Avata';
+          else if (m.uasId.startsWith('2003F')) drone.model = 'Remote ID Beacon';
+        }
+        if (m.latitude !== undefined && m.longitude !== undefined && m.latitude !== null && m.longitude !== null) {
           drone.latitude = m.latitude;
           drone.longitude = m.longitude;
         }
-        if (m.altitude !== undefined) drone.altitude = m.altitude;
-        if (m.speedMps !== undefined) drone.speed = m.speedMps;
-        if (m.trackDirection !== undefined) drone.heading = m.trackDirection;
+        if (m.altitude !== undefined && m.altitude !== null) drone.altitude = m.altitude;
+        if (m.speedMps !== undefined && m.speedMps !== null) drone.speed = m.speedMps;
+        if (m.trackDirection !== undefined && m.trackDirection !== null) drone.heading = m.trackDirection;
         if (m.operatorLatitude !== undefined && m.operatorLatitude !== null) {
           drone.operatorLatitude = m.operatorLatitude;
           drone.operatorLongitude = m.operatorLongitude;
           drone.operatorAltitude = m.operatorAltitude;
           drone.operatorLocationType = m.locationType || 'Takeoff';
         }
-        if (m.uaType) drone.model = m.uaType;
       });
 
       drone.rssi = rssi;
@@ -88371,18 +88436,19 @@ if (typeof module !== 'undefined' && module.exports) {
       drone.lastSeen = Date.now();
 
       // Feed into global RemoteIdRadar in ApiClient.js
-      if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar) {
-        RemoteIdRadar.activeDrones = Array.from(this.remoteIdDrones.values());
-        RemoteIdRadar.streamMode = 'android-ble';
-        RemoteIdRadar.streamConnected = true;
-        if (typeof RemoteIdRadar.updateMapMarkers === 'function') {
-          RemoteIdRadar.updateMapMarkers();
+      const ridRadar = this._getRemoteIdRadar();
+      if (ridRadar) {
+        ridRadar.activeDrones = Array.from(this.remoteIdDrones.values());
+        ridRadar.streamMode = 'android-ble';
+        ridRadar.streamConnected = true;
+        if (typeof ridRadar.updateMapMarkers === 'function') {
+          ridRadar.updateMapMarkers();
         }
-        if (typeof RemoteIdRadar.updateRadarUI === 'function') {
-          RemoteIdRadar.updateRadarUI();
+        if (typeof ridRadar.updateRadarUI === 'function') {
+          ridRadar.updateRadarUI();
         }
-        if (typeof RemoteIdRadar.updateStreamTransportUI === 'function') {
-          RemoteIdRadar.updateStreamTransportUI();
+        if (typeof ridRadar.updateStreamTransportUI === 'function') {
+          ridRadar.updateStreamTransportUI();
         }
       }
     },
@@ -88734,8 +88800,25 @@ if (typeof module !== 'undefined' && module.exports) {
       }
     },
 
+    // ─── USB OTG RTL-SDR Hardware Event (Issue #278) ─────────────────────────
+    handleAdsbHardwareChanged(hwData = {}) {
+      console.log('📡 ADS-B Hardware Event from Android:', hwData);
+      this.adsbHardware = hwData;
+      if (typeof ApiClient !== 'undefined' && typeof ApiClient.updateDiagnosticsUI === 'function') {
+        ApiClient.updateDiagnosticsUI({
+          hardware: hwData,
+          connected: Boolean(this.isAdsbConnected),
+          driverType: 'Android Native Socket'
+        });
+      }
+    },
+
     // ─── DJI RC 2 USB Auto-Detection & 1-Tap Sync Bar ────────────────────────
     handleRc2Connected(deviceData = {}) {
+      if (deviceData && deviceData.vendorId && deviceData.vendorId !== 11427 && deviceData.vendorId !== 0x2CA3) {
+        console.warn('⚠️ Rejected non-DJI USB device in handleRc2Connected:', deviceData);
+        return;
+      }
       this.rc2Device = deviceData;
       console.log('🎮 DJI RC 2 Connected via USB-C:', deviceData);
 
@@ -88975,10 +89058,11 @@ if (typeof module !== 'undefined' && module.exports) {
   if (typeof window !== 'undefined') {
     window.AalaapiAndroidBridge = AndroidNativeBridge;
     window.AndroidNativeBridge = AndroidNativeBridge;
-    window.ingestRemoteIdFrame = (payload, rssi, transport) => AndroidNativeBridge.ingestRemoteIdFrame(payload, rssi, transport);
+    window.ingestRemoteIdFrame = (payload, rssi, transport, mac) => AndroidNativeBridge.ingestRemoteIdFrame(payload, rssi, transport, mac);
     window.ingestAdsbSbsLine = (line) => AndroidNativeBridge.ingestAdsbSbsLine(line);
     window.ingestAdsbJson = (jsonPayload) => AndroidNativeBridge.ingestAdsbJson(jsonPayload);
     window.onAdsbStatusChanged = (status, host, port, error) => AndroidNativeBridge.onAdsbStatusChanged(status, host, port, error);
+    window.onAdsbHardwareChanged = (hwData) => AndroidNativeBridge.handleAdsbHardwareChanged(hwData);
     window.onNativeTtsError = (message) => {
       if (typeof showToast === 'function') showToast('🔇 ' + (message || 'Voice advisory unavailable'), 'error');
     };
@@ -88986,7 +89070,7 @@ if (typeof module !== 'undefined' && module.exports) {
     window.onRc2UsbDisconnected = () => AndroidNativeBridge.handleRc2Disconnected();
 
     // Auto-init on DOMContentLoaded or immediate
-    if (document.readyState === 'loading') {
+    if (typeof document !== 'undefined' && document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => AndroidNativeBridge.init());
     } else {
       AndroidNativeBridge.init();
