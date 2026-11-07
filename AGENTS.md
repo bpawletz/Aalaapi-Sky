@@ -31,7 +31,7 @@ Every time you make a functional change to the codebase (bug fix, new feature, s
      ```
 
 ## 2. Required Version Locations
-When changing the project version, you must update the version tag in the following **four** locations:
+When changing the project version, you must update the version tag in the following **six** locations:
 
 1. **`package.json`:**
    - Update the `"version"` field:
@@ -52,10 +52,12 @@ When changing the project version, you must update the version tag in the follow
    - Update the `<span class="header-version-badge">vX.Y.Z</span>` element on line 72 inside the `<h1>` app title.
    - This is the small version badge shown next to "Aalaapi Sky" in the sidebar header (distinct from the About modal version-tag).
    - Example: `<span class="header-version-badge" ...>v1.26.14</span>`
+6. **`android/app/build.gradle.kts` (6th location):**
+   - Update `versionCode` (e.g. `versionCode = 12350` for `1.235.0`) and `versionName = "X.Y.Z"`.
 
 ## 3. Build & Compilation Step
 `index.html` is a single-file application bundle compiled from `index_template.html`, `index.css`, and modular JavaScript files organized in `src/`.
-The source JavaScript is split into domain-specific ES modules under `src/` (e.g. `src/core/`, `src/state/`, `src/export/`, `src/map/`, `src/patterns/`, `src/3d/`, `src/bridge/`, `src/ui/`), with module load sequencing defined in `src/main.js`.
+The source JavaScript is split into domain-specific ES modules under `src/` (e.g. `src/core/`, `src/platform/`, `src/state/`, `src/export/`, `src/map/`, `src/patterns/`, `src/3d/`, `src/bridge/`, `src/ui/`), with module load sequencing defined in `src/main.js`.
 **Never edit `dist/index.bundle.js` directly**; always make modifications in `src/`.
 After making edits to `src/`, `index.css`, or `index_template.html`, you **MUST** run the build script to compile the bundle and `index.html`:
 ```bash
@@ -307,4 +309,22 @@ Whenever implementing, modifying, refactoring, or testing features, AI agents **
 4. **Network & Address Resolution Nuances:**
    - **Desktop / Windows Node.js:** Standard `getaddrinfo` (`dns.lookup`) frequently fails to resolve multicast DNS (`.local`) hostnames. The Companion Bridge must provide automatic mDNS discovery fallback (`MdnsService.discoverAdsb()`) to resolve `.local` stations (e.g. `Z83.local`) to their active IPv4 address.
    - **Public Airspace Awareness Feeds:** ADS-B (FAA 1090 MHz) and Remote ID broadcast telemetry are public safety streams for mid-air collision avoidance. Read-only endpoints (`/api/airspace/*`, `/api/adsb/*`, `/api/remote-id/*`, `/api/stream`) MUST remain accessible without requiring pilot authentication.
+
+5. **Platform Abstraction Framework (Common Base + OS Overrides):**
+   - Both the Client web app and the Companion Bridge utilize a **Common Base + OS Override Adapter Pattern** rather than scattered inline conditionals:
+     - **Client Platform Adapter Hierarchy (`src/platform/`)**:
+       - `BasePlatformAdapter.js`: Common base class implementing default Web/Browser + Companion Bridge (`127.0.0.1:8765`) behaviors across all 8 capability domains (File Export, Asset Loading, Geolocation, Voice TTS, Screen Wake Lock, Keychain/Secret Storage, Controller MTP Sync/Logs, and Airspace Sockets).
+       - `WindowsDesktopAdapter.js`: Windows/Desktop adapter (`id = 'windows'`).
+       - `AndroidPlatformAdapter.js`: Android adapter (`id = 'android'`), routing to `window.AalaapiAndroid` when inside the Kotlin WebView container and falling back to `super` (WebUSB / standard Web APIs) when in mobile Chrome/PWA.
+       - `IosPlatformAdapter.js`: iOS adapter (`id = 'ios'`), routing to `window.AalaapiIOS` / `window.webkit.messageHandlers.AalaapiIOS` when inside a native WKWebView container and falling back to the Web Share API (`navigator.share({ files })`) for KMZ export in mobile Safari.
+       - `PlatformManager.js`: Singleton resolver exporting `window.Platform` and `window.PlatformManager`. Automatically detects the environment, supports URL query overrides (`?platform=android|ios|windows|web`), and programmatic test overrides (`Platform.usePlatform('<id>')`, `Platform.setAdapter(adapter)`).
+     - **Companion Bridge OS Driver Hierarchy (`tools/companion/drivers/`)**:
+       - `BaseCompanionDriver.js`: Base class for Node.js Companion Bridge OS operations (ADB discovery, ADB MTP sync, IPv4 resolution, process inspection).
+       - `Win32CompanionDriver.js`: Windows overrides (`tasklist`, `wmic`, PowerShell COM WPD MTP automation, `netsh advfirewall`, `dshow` DirectShow FFmpeg video input, `usbipd-win`).
+       - `PosixCompanionDriver.js`: Linux/macOS overrides (`ps -ef`, `df -k`, `v4l2`/`avfoundation` FFmpeg video input).
+       - `index.js`: Exposes `getCompanionDriver()` and `setCompanionDriver(driver)` singleton resolver.
+
+6. **Strict Zero-Scattered-Conditionals Mandate:**
+   - **Client App (`src/`)**: Feature modules (including `ApiClient.js`, `DigitalTwin.js`, `Rc2LogExplorer.js`, `DjiLogDecryptor.js`, `TfrNotam.js`, `Packager.js`, `ThemeManager.js`, `ScreenAwakeManager.js`, and `SidebarManager.js`) **MUST NEVER** invoke `window.AalaapiAndroid` or `window.webkit.messageHandlers` directly via inline conditionals. All platform-dependent capabilities must be declared as methods on `BasePlatformAdapter`, overridden in the corresponding adapter class, and accessed exclusively via `Platform.<method>()`.
+   - **Companion Bridge (`tools/companion/`)**: Server modules (including `server.js`, `adsb_tracker.js`, and `video_service.js`) **MUST NEVER** execute raw inline `process.platform === 'win32'` checks for shell commands or OS drivers. All platform-specific child process commands, firewall inquiries, and capture devices must be encapsulated inside `tools/companion/drivers/` and accessed via `getCompanionDriver()`.
 
