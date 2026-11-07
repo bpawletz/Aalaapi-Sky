@@ -69,9 +69,30 @@ function getConnectedDevices(adbPath) {
     }
 }
 
+function extractApkFromZip(zipPath) {
+    try {
+        const rootDir = path.resolve(__dirname, '..', '..');
+        const outDir = path.join(rootDir, 'scratch', 'unpacked-apk');
+        fs.mkdirSync(outDir, { recursive: true });
+        console.log(`📦 Unpacking APK artifact from ${path.basename(zipPath)}...`);
+        execSync(`tar -xf "${zipPath}" -C "${outDir}"`, { stdio: 'pipe' });
+        const extracted = fs.readdirSync(outDir).filter(f => f.endsWith('.apk'));
+        if (extracted.length > 0) {
+            return path.join(outDir, extracted[0]);
+        }
+    } catch (err) {
+        console.warn(`⚠️ Failed to extract zip with tar:`, err.message);
+    }
+    return null;
+}
+
 function findApk(customPath) {
     if (customPath) {
         const resolved = path.resolve(customPath);
+        if (resolved.endsWith('.zip')) {
+            const extracted = extractApkFromZip(resolved);
+            if (extracted) return extracted;
+        }
         if (fs.existsSync(resolved)) return resolved;
         console.error(`[ERROR] Specified APK not found at: ${resolved}`);
         process.exit(1);
@@ -96,22 +117,32 @@ function findApk(customPath) {
         try {
             const files = fs.readdirSync(dir);
             for (const f of files) {
-                if (f.endsWith('.apk') && (f.includes('debug') || f.includes('Aalaapi') || f.includes('app-'))) {
-                    const full = path.join(dir, f);
-                    try {
-                        const stat = fs.statSync(full);
-                        apkCandidates.push({ path: full, mtime: stat.mtimeMs });
-                    } catch (_) {}
-                }
+                const full = path.join(dir, f);
+                try {
+                    const stat = fs.statSync(full);
+                    if (f.endsWith('.apk') && (f.includes('debug') || f.includes('Aalaapi') || f.includes('app-'))) {
+                        apkCandidates.push({ path: full, mtime: stat.mtimeMs, isZip: false });
+                    } else if (f.endsWith('.zip') && (f.toLowerCase().includes('aalaapisky') || f.toLowerCase().includes('apk'))) {
+                        apkCandidates.push({ path: full, mtime: stat.mtimeMs, isZip: true });
+                    }
+                } catch (_) {}
             }
         } catch (_) {}
     }
 
     if (apkCandidates.length === 0) return null;
 
-    // Pick newest
+    // Pick newest valid candidate
     apkCandidates.sort((a, b) => b.mtime - a.mtime);
-    return apkCandidates[0].path;
+    for (const cand of apkCandidates) {
+        if (cand.isZip) {
+            const extracted = extractApkFromZip(cand.path);
+            if (extracted) return extracted;
+        } else {
+            return cand.path;
+        }
+    }
+    return null;
 }
 
 function main() {
