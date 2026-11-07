@@ -6443,11 +6443,16 @@ body.modal-drag-active {
 }
 
 .adsb-cone-polygon.descent-gradient {
-  filter: drop-shadow(0 0 6px rgba(234, 88, 12, 0.35));
+  /* Issue #255: CSS drop-shadow filters on SVG paths with <linearGradient> fills trigger
+     a Chromium/Skia GPU composite clipping bug on Android WebView that collapses the gradient fill.
+     Stroke styling and SVG stops provide vivid contrast without GPU layer clipping. */
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 .adsb-cone-polygon.descent-gradient.severe {
-  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.55));
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 @keyframes adsbStrobe {

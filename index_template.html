@@ -7716,7 +7716,11 @@
                               <div>
                                                         <li style="margin-bottom: 8px;">
                             <li style="margin-bottom: 8px;">
-                <strong style="color: var(--text-main);">Changelog (v1.228.0):</strong>
+                                <strong style="color: var(--text-main);">Changelog (v1.228.1):</strong>
+                <ul style="margin: 0.25rem 0 0 1rem; padding: 0;">
+                  <li><strong>ADS-B Descent Gradient Trajectory Cones on Android (Issue #255)</strong>: Fixed dynamic gradient rendering on Android Chromium WebView by eliminating GPU-clipping CSS drop-shadow filters, co-locating SVG linearGradient definitions directly inside Leaflet's active renderer root SVG container, and instantiating gradient stop elements via standards-compliant SVG namespaces with inline styles.</li>
+                </ul>
+<strong style="color: var(--text-main);">Changelog (v1.228.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                   <li><strong>Unified ADS-B Feed Health, RC 2 USB Log Extraction &amp; Debug Console Fix (Closes #253, Closes #254):</strong> Feed &amp; Hardware status dot turns green when streaming from Android native dump1090 sockets or online cloud feeds (adsb.lol). Fixed RC 2 flight log pulling on Android via USB MTP with DJIFlightRecord support, and resolved empty error formatting in Mobile Debug Console.</li>
                 </ul>
