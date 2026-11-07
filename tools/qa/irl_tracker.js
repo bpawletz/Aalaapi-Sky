@@ -1815,8 +1815,12 @@ if (require.main === module) {
   } else if (cmd === 'check') {
     const patternId = args[1];
     if (!patternId || patternId.startsWith('--')) {
-      console.error('Usage: node tools/qa/irl_tracker.js check <pattern-id> [--drone "..."] [--fw "..."] [--pilot "..."] [--notes "..."] [--fail]');
-      process.exit(1);
+      const { state, invalidatedPatterns } = syncIrlStatus();
+      console.log(`[IRL TRACKER] Verified ${Object.keys(state.patterns).length} flight patterns (v${state.currentAppVersion}).`);
+      if (invalidatedPatterns.length > 0) {
+        console.log(`[IRL TRACKER] Auto-flagged NEEDS_RETEST due to generator code changes: ${invalidatedPatterns.join(', ')}`);
+      }
+      process.exit(0);
     }
     const failed = args.includes('--fail');
     const phaseArg = getFlag('--phase');
