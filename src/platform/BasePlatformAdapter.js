@@ -242,6 +242,14 @@ class BasePlatformAdapter {
     return { handled: false };
   }
 
+  pullKmzFromController(_uuid = '') {
+    return { handled: false };
+  }
+
+  getControllerSlots() {
+    return { handled: false };
+  }
+
   pullLatestLogFromController() {
     return { handled: false };
   }

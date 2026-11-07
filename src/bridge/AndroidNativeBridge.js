@@ -1032,7 +1032,7 @@
         }
 
         if (typeof showToast === 'function') {
-          showToast(`✅ Successfully synced mission to DJI RC 2 slot [${targetUuid.substring(0, 8)}...]`, 'success');
+          showToast(`✅ Successfully synced mission to DJI RC 2 slot [${targetUuid.substring(0, 8)}...]! Re-open or restart DJI Fly.`, 'success');
         }
       } catch (err) {
         console.error('RC 2 Sync Error:', err);

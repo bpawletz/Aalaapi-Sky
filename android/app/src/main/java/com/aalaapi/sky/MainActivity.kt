@@ -525,6 +525,16 @@ class MainActivity : AppCompatActivity() {
             }
 
             @JavascriptInterface
+            fun pullKmzFromRc2(targetUuid: String): String {
+                return mtpBridge.pullKmzFromRc2(targetUuid)
+            }
+
+            @JavascriptInterface
+            fun getRc2WaypointSlots(): String {
+                return mtpBridge.getRc2WaypointSlots()
+            }
+
+            @JavascriptInterface
             fun pullLatestLogFromRc2(): String {
                 return mtpBridge.pullLatestLog()
             }

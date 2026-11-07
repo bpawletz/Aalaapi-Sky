@@ -220,6 +220,12 @@ const Platform = {
   pushKmzToController(kmzBase64, uuid) {
     return PlatformManager.getAdapter().pushKmzToController(kmzBase64, uuid);
   },
+  pullKmzFromController(uuid) {
+    return PlatformManager.getAdapter().pullKmzFromController(uuid);
+  },
+  getControllerSlots() {
+    return PlatformManager.getAdapter().getControllerSlots();
+  },
   pullLatestLogFromController() {
     return PlatformManager.getAdapter().pullLatestLogFromController();
   },
