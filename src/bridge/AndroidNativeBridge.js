@@ -335,6 +335,23 @@
     selectedSlotUuid: null,
     adsbAircraft: new Map(), // hex -> aircraft record
     remoteIdDrones: new Map(), // uasId -> drone record
+    staleTimeoutMs: 60000,
+    _lastPruneTime: 0,
+    adsbCleanupInterval: null,
+
+    _getAdsbAirspaceManager() {
+      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) return AdsbAirspaceManager;
+      if (typeof window !== 'undefined' && window.AdsbAirspaceManager) return window.AdsbAirspaceManager;
+      if (typeof global !== 'undefined' && global.AdsbAirspaceManager) return global.AdsbAirspaceManager;
+      return null;
+    },
+
+    _getRemoteIdRadar() {
+      if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar) return RemoteIdRadar;
+      if (typeof window !== 'undefined' && window.RemoteIdRadar) return window.RemoteIdRadar;
+      if (typeof global !== 'undefined' && global.RemoteIdRadar) return global.RemoteIdRadar;
+      return null;
+    },
 
     // Unlock Web Audio on the first user gesture so ADS-B chimes can play later (Issue #249)
     installAudioUnlock() {
@@ -373,6 +390,11 @@
 
       this.bindUiElements();
       this.installAudioUnlock();
+
+      // 2. Start periodic stale aircraft and drone pruning timer (15s interval)
+      if (!this.adsbCleanupInterval && typeof setInterval !== 'undefined') {
+        this.adsbCleanupInterval = setInterval(() => this.pruneStaleAircraft(), 15000);
+      }
 
       // Listen for browser/PWA WebUSB connect/disconnect events
       if (typeof navigator !== 'undefined' && navigator.usb) {
@@ -522,10 +544,68 @@
       }
     },
 
+    // ─── Stale Aircraft & Drone Pruning ──────────────────────────────────────
+    pruneStaleAircraft(now = Date.now(), staleTimeoutMs = this.staleTimeoutMs) {
+      this._lastPruneTime = now;
+      let prunedAdsb = 0;
+      for (const [hex, ac] of this.adsbAircraft.entries()) {
+        if (now - (ac.lastSeen || 0) > staleTimeoutMs) {
+          this.adsbAircraft.delete(hex);
+          prunedAdsb++;
+        }
+      }
+
+      const mgr = this._getAdsbAirspaceManager();
+      if (prunedAdsb > 0 && mgr && typeof mgr.processAirspaceData === 'function') {
+        const aircraftList = Array.from(this.adsbAircraft.values()).filter(a => a.latitude !== null);
+        mgr.processAirspaceData({
+          success: true,
+          source: 'android-prune',
+          aircraft: aircraftList,
+          total: aircraftList.length
+        });
+      }
+
+      // Also prune stale Remote ID drones if inactive > staleTimeoutMs
+      let prunedRid = 0;
+      for (const [id, drone] of this.remoteIdDrones.entries()) {
+        if (now - (drone.lastSeen || 0) > staleTimeoutMs) {
+          this.remoteIdDrones.delete(id);
+          prunedRid++;
+        }
+      }
+      const ridRadar = this._getRemoteIdRadar();
+      if (prunedRid > 0 && ridRadar) {
+        ridRadar.activeDrones = Array.from(this.remoteIdDrones.values());
+        if (typeof ridRadar.updateMapMarkers === 'function') ridRadar.updateMapMarkers();
+        if (typeof ridRadar.updateRadarUI === 'function') ridRadar.updateRadarUI();
+      }
+
+      return prunedAdsb + prunedRid;
+    },
+
+    clearAdsbAircraft() {
+      this.adsbAircraft.clear();
+      const mgr = this._getAdsbAirspaceManager();
+      if (mgr && typeof mgr.processAirspaceData === 'function') {
+        mgr.processAirspaceData({
+          success: true,
+          source: 'android-clear',
+          aircraft: [],
+          total: 0
+        });
+      }
+    },
+
     // ─── ADS-B Ingestion (TCP 30003 SBS-1 / RTL-SDR OTG) ─────────────────────
     ingestAdsbSbsLine(csvLine) {
       const update = ClientAdsbProcessor.parseSbsLine(csvLine);
       if (!update) return;
+
+      const now = Date.now();
+      if (now - this._lastPruneTime > 15000) {
+        this.pruneStaleAircraft(now);
+      }
 
       const hex = update.hex;
       let ac = this.adsbAircraft.get(hex);
@@ -538,8 +618,9 @@
           altitude: null,
           speed: null,
           track: null,
+          verticalRate: null,
           onGround: false,
-          lastSeen: Date.now()
+          lastSeen: now
         };
         this.adsbAircraft.set(hex, ac);
       }
@@ -550,13 +631,19 @@
       if (update.altitude !== undefined) ac.altitude = update.altitude;
       if (update.speed !== undefined) ac.speed = update.speed;
       if (update.track !== undefined) ac.track = update.track;
+      if (update.verticalRate !== undefined) ac.verticalRate = update.verticalRate;
       if (update.onGround !== undefined) ac.onGround = update.onGround;
-      ac.lastSeen = Date.now();
+      ac.lastSeen = now;
 
-      // Compute relative distance & bearing from pilot/centerMarker
+      // Compute relative distance & bearing from alert origin
       let refLat = 41.3215;
       let refLon = -88.9950;
-      if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+      const mgr = this._getAdsbAirspaceManager();
+      if (mgr && typeof mgr.getAlertOrigin === 'function') {
+        const origin = mgr.getAlertOrigin();
+        refLat = origin.lat;
+        refLon = origin.lon;
+      } else if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
         const cll = centerMarker.getLatLng();
         refLat = cll.lat;
         refLon = cll.lng;
@@ -572,16 +659,16 @@
       }
 
       // Feed into global AdsbAirspaceManager in ApiClient.js
-      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+      if (mgr) {
         const aircraftList = Array.from(this.adsbAircraft.values()).filter(a => a.latitude !== null);
-        AdsbAirspaceManager.enabled = true;
-        AdsbAirspaceManager.streamMode = 'android-tcp';
-        AdsbAirspaceManager.streamConnected = true;
-        if (typeof AdsbAirspaceManager.updateStreamTransportUI === 'function') {
-          AdsbAirspaceManager.updateStreamTransportUI();
+        mgr.enabled = true;
+        mgr.streamMode = 'android-tcp';
+        mgr.streamConnected = true;
+        if (typeof mgr.updateStreamTransportUI === 'function') {
+          mgr.updateStreamTransportUI();
         }
-        if (typeof AdsbAirspaceManager.processAirspaceData === 'function') {
-          AdsbAirspaceManager.processAirspaceData({
+        if (typeof mgr.processAirspaceData === 'function') {
+          mgr.processAirspaceData({
             success: true,
             source: 'android-sbs',
             aircraft: aircraftList,
@@ -605,15 +692,24 @@
       const rawList = Array.isArray(data) ? data : (Array.isArray(data.ac) ? data.ac : (Array.isArray(data.aircraft) ? data.aircraft : []));
       if (!rawList.length) return;
 
+      const now = Date.now();
+      if (now - this._lastPruneTime > 15000) {
+        this.pruneStaleAircraft(now);
+      }
+
       let refLat = 41.3215;
       let refLon = -88.9950;
-      if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+      const mgr = this._getAdsbAirspaceManager();
+      if (mgr && typeof mgr.getAlertOrigin === 'function') {
+        const origin = mgr.getAlertOrigin();
+        refLat = origin.lat;
+        refLon = origin.lon;
+      } else if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
         const cll = centerMarker.getLatLng();
         refLat = cll.lat;
         refLon = cll.lng;
       }
 
-      const now = Date.now();
       for (const item of rawList) {
         const hex = (item.hex || item.hex_ident || '').toString().toUpperCase();
         if (!hex) continue;
@@ -628,6 +724,7 @@
             altitude: null,
             speed: null,
             track: null,
+            verticalRate: null,
             onGround: false,
             lastSeen: now
           };
@@ -647,6 +744,8 @@
         if (spd !== undefined && !isNaN(spd)) ac.speed = spd;
         const trk = item.track !== undefined ? item.track : item.heading;
         if (trk !== undefined && !isNaN(trk)) ac.track = trk;
+        const vert = item.baro_rate !== undefined ? item.baro_rate : (item.geom_rate !== undefined ? item.geom_rate : item.vert_rate);
+        if (vert !== undefined && !isNaN(vert)) ac.verticalRate = vert;
         ac.lastSeen = now;
 
         if (ac.latitude !== null && ac.longitude !== null) {
@@ -659,16 +758,16 @@
         }
       }
 
-      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+      if (mgr) {
         const aircraftList = Array.from(this.adsbAircraft.values()).filter(a => a.latitude !== null);
-        AdsbAirspaceManager.enabled = true;
-        AdsbAirspaceManager.streamMode = 'android-http';
-        AdsbAirspaceManager.streamConnected = true;
-        if (typeof AdsbAirspaceManager.updateStreamTransportUI === 'function') {
-          AdsbAirspaceManager.updateStreamTransportUI();
+        mgr.enabled = true;
+        mgr.streamMode = 'android-http';
+        mgr.streamConnected = true;
+        if (typeof mgr.updateStreamTransportUI === 'function') {
+          mgr.updateStreamTransportUI();
         }
-        if (typeof AdsbAirspaceManager.processAirspaceData === 'function') {
-          AdsbAirspaceManager.processAirspaceData({
+        if (typeof mgr.processAirspaceData === 'function') {
+          mgr.processAirspaceData({
             success: true,
             source: 'android-http-json',
             aircraft: aircraftList,

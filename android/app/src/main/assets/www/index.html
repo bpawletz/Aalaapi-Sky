@@ -189,10 +189,82 @@ html, body {
   flex-shrink: 0;
   position: sticky;
   left: 0;
-  z-index: 10;
-  background: var(--bg-sidebar);
-  padding-right: 12px;
-  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.25);
+  z-index: 15;
+  background: #0f172a;
+  padding-right: 14px;
+  border-right: 1px solid var(--border-color);
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.35);
+  height: 100%;
+}
+
+[data-theme="light"] .topbar-left {
+  background: #ffffff;
+  border-right-color: rgba(15, 23, 42, 0.14);
+}
+
+.studio-topbar .btn-secondary,
+.header-unit-btn,
+.header-awake-btn {
+  width: auto !important;
+  max-width: max-content !important;
+  flex: 0 0 auto !important;
+}
+
+/* Side Swipeable Indicator Cues (v1.241.0, Issue #272) */
+.topbar-scroll-cue {
+  position: sticky;
+  z-index: 25;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-primary);
+  user-select: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.topbar-scroll-cue.cue-right {
+  right: 0;
+  height: 100%;
+  width: 34px;
+  background: linear-gradient(to right, transparent, rgba(15, 23, 42, 0.96) 55%);
+  color: #38bdf8;
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding-right: 4px;
+  flex-shrink: 0;
+}
+
+.topbar-scroll-cue.cue-left {
+  position: relative;
+  left: auto;
+  margin-left: 6px;
+  width: 22px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.45);
+  color: #38bdf8;
+  font-size: 0.95rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.topbar-scroll-cue:hover {
+  color: #06b6d4;
+  transform: scale(1.08);
+}
+
+[data-theme="light"] .topbar-scroll-cue.cue-right {
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.96) 55%);
+  color: #0284c7;
+}
+
+[data-theme="light"] .topbar-scroll-cue.cue-left {
+  background: rgba(2, 132, 199, 0.12);
+  border-color: rgba(2, 132, 199, 0.35);
+  color: #0284c7;
 }
 
 .topbar-center {
@@ -9102,8 +9174,9 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.240.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.241.0</span></h1>
         </div>
+        <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
 
       <!-- Center: Search & Locate + Telemetry & Weather HUD Pill -->
@@ -9205,6 +9278,9 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           </svg>
         </button>
       </div>
+
+      <!-- Right Side Swipeable Scroll Cue (v1.241.0, Issue #272) -->
+      <button id="topbar-scroll-cue-right" class="topbar-scroll-cue cue-right" type="button" aria-label="Scroll menu right" title="Click or swipe to scroll menu right">›</button>
 
       <!-- Mobile More Actions Dropdown Menu Popover -->
       <div id="header-more-menu" class="header-more-menu glass hidden">
@@ -14013,6 +14089,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>↔️</span>
+              Topbar Pill Auto-Fitting, Side Swipeable Indicators &amp; Opaque Brand Header (v1.241.0) (Closes #272)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Auto-fitted over-expanded pills (Sleep / Awake and FT/MPH) to natural content width (~70px), reclaiming &gt;1,400px of topbar space. Added dynamic side swipeable indicator chevrons (<code>‹</code> and <code>›</code>) with edge gradient fades indicating swipeability with 1-click smooth scrolling. Rendered the stationary brand header (menu icon, logo, title) with a 100% solid, fully opaque background and crisp right dividing border to completely eliminate bleed-through during scrolling.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>✋</span>
               Topbar Click-and-Drag Pan Gestures &amp; Zero-Overlap Ribbon (v1.240.0) (Closes #270)
             </strong>
@@ -16730,7 +16815,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.240.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.241.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -16893,6 +16978,19 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.241.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Topbar Pill Auto-Fitting, Side Swipeable Indicators &amp; Opaque Brand Header (Closes #272):</strong> Auto-fitted over-expanded pills (Sleep / Awake and FT/MPH) from 776px down to ~70px content width; added dynamic side swipeable indicator chevrons (<code>‹</code> and <code>›</code>) with edge gradient fades for 1-click smooth scrolling; rendered the stationary brand header with 100% solid, fully opaque background and crisp right dividing border to eliminate bleed-through during scrolling.</li>
+                </ul>
+              </li>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.240.1):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Stale ADS-B Traffic Cleanup on Android (Closes #271):</strong> Eliminated ghost/stale aircraft accumulation on the map canvas; inactive aircraft are automatically pruned after 60s and dismantled.</li>
+                  <li><strong>Predictive Cone Alert Reset When Pointed Away (Closes #271):</strong> Continuous client-side cone evaluation clears approaching alerts and silences audio chimes immediately when aircraft bank or turn away from perimeter.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.240.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -42732,7 +42830,62 @@ if (topbar) {
       }
     }
   }, { passive: false });
+
+  // Initialize side swipeable indicator cues (v1.241.0, Issue #272)
+  initTopbarScrollCues(topbar);
 }
+}
+
+/**
+ * Side Swipeable Indicator Cues (v1.241.0, Issue #272)
+ * Manages visibility and smooth scrolling on left and right edge indicators
+ * when topbar ribbon items overflow the viewport.
+ */
+function initTopbarScrollCues(topbarEl) {
+  if (typeof document === 'undefined') return;
+  const topbar = topbarEl || document.querySelector('.studio-topbar');
+  if (!topbar) return;
+
+  const leftCue = document.getElementById('topbar-scroll-cue-left');
+  const rightCue = document.getElementById('topbar-scroll-cue-right');
+
+  const updateCues = () => {
+    const maxScroll = topbar.scrollWidth - topbar.clientWidth;
+    if (maxScroll > 6) {
+      if (rightCue) {
+        rightCue.style.display = (topbar.scrollLeft < maxScroll - 6) ? 'flex' : 'none';
+      }
+      if (leftCue) {
+        leftCue.style.display = (topbar.scrollLeft > 6) ? 'flex' : 'none';
+      }
+    } else {
+      if (rightCue) rightCue.style.display = 'none';
+      if (leftCue) leftCue.style.display = 'none';
+    }
+  };
+
+  topbar.addEventListener('scroll', updateCues, { passive: true });
+  window.addEventListener('resize', updateCues, { passive: true });
+
+  if (rightCue) {
+    rightCue.addEventListener('click', (e) => {
+      e.stopPropagation();
+      topbar.scrollBy({ left: 240, behavior: 'smooth' });
+    });
+  }
+
+  if (leftCue) {
+    leftCue.addEventListener('click', (e) => {
+      e.stopPropagation();
+      topbar.scrollBy({ left: -240, behavior: 'smooth' });
+    });
+  }
+
+  // Initial and delayed update for font/layout settlement
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(updateCues);
+  }
+  setTimeout(updateCues, 150);
 }
 
 /**
@@ -42981,6 +43134,7 @@ if (typeof window !== 'undefined') {
   window.applyTopbarRibbonConfig = applyTopbarRibbonConfig;
   window.resetTopbarRibbonConfig = resetTopbarRibbonConfig;
   window.initTopbarRibbon = initTopbarRibbon;
+  window.initTopbarScrollCues = initTopbarScrollCues;
 }
 
 /**
@@ -77665,8 +77819,14 @@ const AdsbAirspaceManager = {
       }
     }
 
-    for (const ac of this.aircraft) {
+    const isClientSource = Boolean(
+      (data.source && data.source.startsWith('android-')) ||
+      data.isClientComputed ||
+      data.source === 'client-sdr' ||
+      data.source === 'client-simulator'
+    );
 
+    for (const ac of this.aircraft) {
       const altVal = ac.altitude !== null && ac.altitude !== undefined
         ? ac.altitude
         : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
@@ -77681,42 +77841,91 @@ const AdsbAirspaceManager = {
         if (ac.status === 'approaching') ac.status = 'safe';
       }
 
+      const isClientAircraft = isClientSource || (ac.isConeWarning === undefined && !ac.isBreached);
 
+      if (isClientAircraft && ac.latitude !== null && ac.longitude !== null && ac.latitude !== undefined && ac.longitude !== undefined) {
+        // Calculate distance from alert origin
+        const toRad = Math.PI / 180;
+        const dLat = (homeLat - ac.latitude) * toRad;
+        const dLon = (homeLon - ac.longitude) * toRad;
+        const aDist = Math.sin(dLat / 2) ** 2 + Math.cos(ac.latitude * toRad) * Math.cos(homeLat * toRad) * Math.sin(dLon / 2) ** 2;
+        const d = 6371000 * 2 * Math.atan2(Math.sqrt(aDist), Math.sqrt(1 - aDist));
+        ac.distanceMeters = Math.round(d);
+        ac.distanceMiles = parseFloat((d / 1609.344).toFixed(2));
 
-      if (!ac.isBreached && ac.isConeWarning === undefined && ac.latitude !== null && ac.longitude !== null && ac.latitude !== undefined && ac.longitude !== undefined) {
+        const rProx = this.radiusMiles * 1609.344;
+        const maxCeiling = this.ceilingFeet || 2500;
+        ac.isWithinRadius = (d <= rProx);
+        ac.isBreached = ac.isWithinRadius && !ac.isLanding && !ac.coneSuppressed && (altVal === null || altVal <= maxCeiling);
 
+        if (ac.isBreached) {
+          ac.status = 'breached';
+          ac.isConeWarning = false;
+        } else {
+          const coneEval = this.evaluateAircraftCone(ac, homeLat, homeLon);
+          ac.coneLengthMeters = coneEval.coneLengthMeters;
+          ac.offBoresightDeg = coneEval.offBoresightDeg;
+          if (coneEval.verticalRate !== undefined) ac.verticalRate = coneEval.verticalRate;
+          if (coneEval.verticalRateFpm !== undefined) ac.verticalRateFpm = coneEval.verticalRateFpm;
+          if (coneEval.isDescending !== undefined) ac.isDescending = coneEval.isDescending;
+          if (coneEval.descentSeverity !== undefined) ac.descentSeverity = coneEval.descentSeverity;
 
-
+          if (coneEval.isLanding) {
+            ac.isLanding = true;
+            ac.landingAirport = coneEval.landingAirport;
+            ac.coneSuppressed = true;
+            ac.status = 'landing';
+            ac.isConeWarning = false;
+          } else if (coneEval.isClimbingOut) {
+            ac.isClimbingOut = true;
+            ac.coneSuppressed = true;
+            ac.isConeWarning = false;
+            ac.status = 'safe';
+          } else if (coneEval.isHighAltitude || ac.isHighAltitude) {
+            ac.isHighAltitude = true;
+            if (this.suppressHighAltitudeCones || coneEval.coneSuppressed) {
+              ac.coneSuppressed = true;
+              ac.isConeWarning = false;
+              ac.status = 'safe';
+            } else if (coneEval.isConeWarning) {
+              ac.isConeWarning = true;
+              ac.status = 'approaching';
+              ac.etaSeconds = coneEval.etaSeconds;
+              ac.entryDistanceMeters = coneEval.entryDistanceMeters;
+              ac.closingSpeedKts = coneEval.closingSpeedKts;
+            } else {
+              ac.isConeWarning = false;
+              ac.status = 'safe';
+            }
+          } else if (coneEval.isConeWarning && !ac.coneSuppressed) {
+            ac.isConeWarning = true;
+            ac.status = 'approaching';
+            ac.etaSeconds = coneEval.etaSeconds;
+            ac.entryDistanceMeters = coneEval.entryDistanceMeters;
+            ac.closingSpeedKts = coneEval.closingSpeedKts;
+          } else {
+            // Turned away, outside cone, or clear of perimeter
+            ac.isConeWarning = false;
+            ac.status = 'safe';
+            ac.etaSeconds = null;
+            ac.entryDistanceMeters = null;
+            ac.closingSpeedKts = null;
+          }
+        }
+      } else if (!ac.isBreached && ac.isConeWarning === undefined && ac.latitude !== null && ac.longitude !== null && ac.latitude !== undefined && ac.longitude !== undefined) {
         const coneEval = this.evaluateAircraftCone(ac, homeLat, homeLon);
-
-
-
         ac.coneLengthMeters = coneEval.coneLengthMeters;
-
-
-
         ac.offBoresightDeg = coneEval.offBoresightDeg;
 
-
-
         if (coneEval.isLanding) {
-
           ac.isLanding = true;
-
           ac.landingAirport = coneEval.landingAirport;
-
           ac.coneSuppressed = true;
-
           ac.status = 'landing';
-
           ac.isConeWarning = false;
-
         } else if (coneEval.isClimbingOut) {
-
           ac.isClimbingOut = true;
-
           ac.coneSuppressed = true;
-
         }
 
         if (coneEval.isHighAltitude) {
@@ -77727,37 +77936,16 @@ const AdsbAirspaceManager = {
           ac.coneSuppressed = true;
           ac.isConeWarning = false;
         } else if (coneEval.isConeWarning && !ac.coneSuppressed) {
-
-
-
           ac.isConeWarning = true;
-
-
-
           ac.status = 'approaching';
-
-
-
           ac.etaSeconds = coneEval.etaSeconds;
-
-
-
           ac.entryDistanceMeters = coneEval.entryDistanceMeters;
-
-
-
           ac.closingSpeedKts = coneEval.closingSpeedKts;
-
-
-
+        } else {
+          ac.isConeWarning = false;
+          ac.status = 'safe';
         }
-
-
-
       }
-
-
-
     }
 
 
@@ -77874,22 +78062,16 @@ const AdsbAirspaceManager = {
 
 
 
-    // Clean up previousStatus for aircraft that left coverage
-
-
-
+    // Clean up previousStatus and alert timers for aircraft that left coverage
     const activeHexes = new Set(this.aircraft.map(a => a.hex));
-
-
-
     for (const hex of this.previousStatus.keys()) {
-
-
-
       if (!activeHexes.has(hex)) this.previousStatus.delete(hex);
-
-
-
+    }
+    for (const hex of this.lastAlertTimes.keys()) {
+      if (!activeHexes.has(hex)) this.lastAlertTimes.delete(hex);
+    }
+    for (const hex of this.lastApproachingAlertTimes.keys()) {
+      if (!activeHexes.has(hex)) this.lastApproachingAlertTimes.delete(hex);
     }
 
 
@@ -87922,6 +88104,23 @@ if (typeof module !== 'undefined' && module.exports) {
     selectedSlotUuid: null,
     adsbAircraft: new Map(), // hex -> aircraft record
     remoteIdDrones: new Map(), // uasId -> drone record
+    staleTimeoutMs: 60000,
+    _lastPruneTime: 0,
+    adsbCleanupInterval: null,
+
+    _getAdsbAirspaceManager() {
+      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) return AdsbAirspaceManager;
+      if (typeof window !== 'undefined' && window.AdsbAirspaceManager) return window.AdsbAirspaceManager;
+      if (typeof global !== 'undefined' && global.AdsbAirspaceManager) return global.AdsbAirspaceManager;
+      return null;
+    },
+
+    _getRemoteIdRadar() {
+      if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar) return RemoteIdRadar;
+      if (typeof window !== 'undefined' && window.RemoteIdRadar) return window.RemoteIdRadar;
+      if (typeof global !== 'undefined' && global.RemoteIdRadar) return global.RemoteIdRadar;
+      return null;
+    },
 
     // Unlock Web Audio on the first user gesture so ADS-B chimes can play later (Issue #249)
     installAudioUnlock() {
@@ -87960,6 +88159,11 @@ if (typeof module !== 'undefined' && module.exports) {
 
       this.bindUiElements();
       this.installAudioUnlock();
+
+      // 2. Start periodic stale aircraft and drone pruning timer (15s interval)
+      if (!this.adsbCleanupInterval && typeof setInterval !== 'undefined') {
+        this.adsbCleanupInterval = setInterval(() => this.pruneStaleAircraft(), 15000);
+      }
 
       // Listen for browser/PWA WebUSB connect/disconnect events
       if (typeof navigator !== 'undefined' && navigator.usb) {
@@ -88109,10 +88313,68 @@ if (typeof module !== 'undefined' && module.exports) {
       }
     },
 
+    // ─── Stale Aircraft & Drone Pruning ──────────────────────────────────────
+    pruneStaleAircraft(now = Date.now(), staleTimeoutMs = this.staleTimeoutMs) {
+      this._lastPruneTime = now;
+      let prunedAdsb = 0;
+      for (const [hex, ac] of this.adsbAircraft.entries()) {
+        if (now - (ac.lastSeen || 0) > staleTimeoutMs) {
+          this.adsbAircraft.delete(hex);
+          prunedAdsb++;
+        }
+      }
+
+      const mgr = this._getAdsbAirspaceManager();
+      if (prunedAdsb > 0 && mgr && typeof mgr.processAirspaceData === 'function') {
+        const aircraftList = Array.from(this.adsbAircraft.values()).filter(a => a.latitude !== null);
+        mgr.processAirspaceData({
+          success: true,
+          source: 'android-prune',
+          aircraft: aircraftList,
+          total: aircraftList.length
+        });
+      }
+
+      // Also prune stale Remote ID drones if inactive > staleTimeoutMs
+      let prunedRid = 0;
+      for (const [id, drone] of this.remoteIdDrones.entries()) {
+        if (now - (drone.lastSeen || 0) > staleTimeoutMs) {
+          this.remoteIdDrones.delete(id);
+          prunedRid++;
+        }
+      }
+      const ridRadar = this._getRemoteIdRadar();
+      if (prunedRid > 0 && ridRadar) {
+        ridRadar.activeDrones = Array.from(this.remoteIdDrones.values());
+        if (typeof ridRadar.updateMapMarkers === 'function') ridRadar.updateMapMarkers();
+        if (typeof ridRadar.updateRadarUI === 'function') ridRadar.updateRadarUI();
+      }
+
+      return prunedAdsb + prunedRid;
+    },
+
+    clearAdsbAircraft() {
+      this.adsbAircraft.clear();
+      const mgr = this._getAdsbAirspaceManager();
+      if (mgr && typeof mgr.processAirspaceData === 'function') {
+        mgr.processAirspaceData({
+          success: true,
+          source: 'android-clear',
+          aircraft: [],
+          total: 0
+        });
+      }
+    },
+
     // ─── ADS-B Ingestion (TCP 30003 SBS-1 / RTL-SDR OTG) ─────────────────────
     ingestAdsbSbsLine(csvLine) {
       const update = ClientAdsbProcessor.parseSbsLine(csvLine);
       if (!update) return;
+
+      const now = Date.now();
+      if (now - this._lastPruneTime > 15000) {
+        this.pruneStaleAircraft(now);
+      }
 
       const hex = update.hex;
       let ac = this.adsbAircraft.get(hex);
@@ -88125,8 +88387,9 @@ if (typeof module !== 'undefined' && module.exports) {
           altitude: null,
           speed: null,
           track: null,
+          verticalRate: null,
           onGround: false,
-          lastSeen: Date.now()
+          lastSeen: now
         };
         this.adsbAircraft.set(hex, ac);
       }
@@ -88137,13 +88400,19 @@ if (typeof module !== 'undefined' && module.exports) {
       if (update.altitude !== undefined) ac.altitude = update.altitude;
       if (update.speed !== undefined) ac.speed = update.speed;
       if (update.track !== undefined) ac.track = update.track;
+      if (update.verticalRate !== undefined) ac.verticalRate = update.verticalRate;
       if (update.onGround !== undefined) ac.onGround = update.onGround;
-      ac.lastSeen = Date.now();
+      ac.lastSeen = now;
 
-      // Compute relative distance & bearing from pilot/centerMarker
+      // Compute relative distance & bearing from alert origin
       let refLat = 41.3215;
       let refLon = -88.9950;
-      if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+      const mgr = this._getAdsbAirspaceManager();
+      if (mgr && typeof mgr.getAlertOrigin === 'function') {
+        const origin = mgr.getAlertOrigin();
+        refLat = origin.lat;
+        refLon = origin.lon;
+      } else if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
         const cll = centerMarker.getLatLng();
         refLat = cll.lat;
         refLon = cll.lng;
@@ -88159,16 +88428,16 @@ if (typeof module !== 'undefined' && module.exports) {
       }
 
       // Feed into global AdsbAirspaceManager in ApiClient.js
-      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+      if (mgr) {
         const aircraftList = Array.from(this.adsbAircraft.values()).filter(a => a.latitude !== null);
-        AdsbAirspaceManager.enabled = true;
-        AdsbAirspaceManager.streamMode = 'android-tcp';
-        AdsbAirspaceManager.streamConnected = true;
-        if (typeof AdsbAirspaceManager.updateStreamTransportUI === 'function') {
-          AdsbAirspaceManager.updateStreamTransportUI();
+        mgr.enabled = true;
+        mgr.streamMode = 'android-tcp';
+        mgr.streamConnected = true;
+        if (typeof mgr.updateStreamTransportUI === 'function') {
+          mgr.updateStreamTransportUI();
         }
-        if (typeof AdsbAirspaceManager.processAirspaceData === 'function') {
-          AdsbAirspaceManager.processAirspaceData({
+        if (typeof mgr.processAirspaceData === 'function') {
+          mgr.processAirspaceData({
             success: true,
             source: 'android-sbs',
             aircraft: aircraftList,
@@ -88192,15 +88461,24 @@ if (typeof module !== 'undefined' && module.exports) {
       const rawList = Array.isArray(data) ? data : (Array.isArray(data.ac) ? data.ac : (Array.isArray(data.aircraft) ? data.aircraft : []));
       if (!rawList.length) return;
 
+      const now = Date.now();
+      if (now - this._lastPruneTime > 15000) {
+        this.pruneStaleAircraft(now);
+      }
+
       let refLat = 41.3215;
       let refLon = -88.9950;
-      if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+      const mgr = this._getAdsbAirspaceManager();
+      if (mgr && typeof mgr.getAlertOrigin === 'function') {
+        const origin = mgr.getAlertOrigin();
+        refLat = origin.lat;
+        refLon = origin.lon;
+      } else if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
         const cll = centerMarker.getLatLng();
         refLat = cll.lat;
         refLon = cll.lng;
       }
 
-      const now = Date.now();
       for (const item of rawList) {
         const hex = (item.hex || item.hex_ident || '').toString().toUpperCase();
         if (!hex) continue;
@@ -88215,6 +88493,7 @@ if (typeof module !== 'undefined' && module.exports) {
             altitude: null,
             speed: null,
             track: null,
+            verticalRate: null,
             onGround: false,
             lastSeen: now
           };
@@ -88234,6 +88513,8 @@ if (typeof module !== 'undefined' && module.exports) {
         if (spd !== undefined && !isNaN(spd)) ac.speed = spd;
         const trk = item.track !== undefined ? item.track : item.heading;
         if (trk !== undefined && !isNaN(trk)) ac.track = trk;
+        const vert = item.baro_rate !== undefined ? item.baro_rate : (item.geom_rate !== undefined ? item.geom_rate : item.vert_rate);
+        if (vert !== undefined && !isNaN(vert)) ac.verticalRate = vert;
         ac.lastSeen = now;
 
         if (ac.latitude !== null && ac.longitude !== null) {
@@ -88246,16 +88527,16 @@ if (typeof module !== 'undefined' && module.exports) {
         }
       }
 
-      if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+      if (mgr) {
         const aircraftList = Array.from(this.adsbAircraft.values()).filter(a => a.latitude !== null);
-        AdsbAirspaceManager.enabled = true;
-        AdsbAirspaceManager.streamMode = 'android-http';
-        AdsbAirspaceManager.streamConnected = true;
-        if (typeof AdsbAirspaceManager.updateStreamTransportUI === 'function') {
-          AdsbAirspaceManager.updateStreamTransportUI();
+        mgr.enabled = true;
+        mgr.streamMode = 'android-http';
+        mgr.streamConnected = true;
+        if (typeof mgr.updateStreamTransportUI === 'function') {
+          mgr.updateStreamTransportUI();
         }
-        if (typeof AdsbAirspaceManager.processAirspaceData === 'function') {
-          AdsbAirspaceManager.processAirspaceData({
+        if (typeof mgr.processAirspaceData === 'function') {
+          mgr.processAirspaceData({
             success: true,
             source: 'android-http-json',
             aircraft: aircraftList,

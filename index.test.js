@@ -43694,21 +43694,13 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       });
 
       describe('v1.240.0: Topbar Click-and-Drag Pan Gestures & Non-Overlapping Zero-Overlap Pill Ribbon (Issue #270)', () => {
-        test('Version consistency: v1.240.0 across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
-          const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-          assert.strictEqual(pkg.version, '1.240.0', 'package.json version must be 1.240.0');
-
+        test('Version consistency: v1.240.0 entry preserved in CHANGELOG.md and build history', () => {
           const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
           assert.ok(changelog.includes('## [1.240.0] - 2026-11-07'), 'CHANGELOG.md must include v1.240.0 header');
           assert.ok(changelog.includes('Closes #270'), 'CHANGELOG.md must reference issue #270');
 
           const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-          assert.ok(template.includes('Version 1.240.0'), 'index_template.html must include Version 1.240.0 in About modal');
-          assert.ok(template.includes('v1.240.0'), 'index_template.html must include v1.240.0 header badge');
-
-          const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-          assert.ok(gradle.includes('versionName = "1.240.0"'), 'Gradle versionName must be 1.240.0');
-          assert.ok(gradle.includes('versionCode = 12400'), 'Gradle versionCode must be 12400');
+          assert.ok(template.includes('Changelog (v1.240.0):'), 'index_template.html must include Changelog (v1.240.0)');
         });
 
         test('CSS Architecture: .studio-topbar has grab cursor, hidden scrollbars, and .is-dragging feedback', () => {
@@ -43740,6 +43732,238 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
           assert.ok(src.includes('window.addEventListener(\'mouseup\''), 'SidebarManager must bind mouseup');
           assert.ok(src.includes('topbar.classList.add(\'is-dragging\')'), 'SidebarManager must toggle is-dragging class');
           assert.ok(src.includes('hasDragged'), 'SidebarManager must track hasDragged state for click suppression');
+        });
+      });
+
+      describe('v1.240.1: Stale ADS-B Traffic Cleanup on Android & Predictive Cone Alert Reset When Pointed Away (Issue #271)', () => {
+        test('Version consistency: v1.240.1 entry preserved in CHANGELOG.md and build history', () => {
+          const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+          assert.ok(changelog.includes('## [1.240.1] - 2026-11-07'), 'CHANGELOG.md must include v1.240.1 header');
+          assert.ok(changelog.includes('Closes #271'), 'CHANGELOG.md must reference issue #271');
+
+          const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+          assert.ok(template.includes('Changelog (v1.240.1):'), 'index_template.html must include Changelog (v1.240.1)');
+        });
+
+        test('AndroidNativeBridge.pruneStaleAircraft purges inactive aircraft (>60s) and notifies AdsbAirspaceManager', () => {
+          const { AndroidNativeBridge } = require('./src/bridge/AndroidNativeBridge.js');
+          const mgr = AndroidNativeBridge._getAdsbAirspaceManager();
+          const origProcess = mgr ? mgr.processAirspaceData : null;
+          let lastBroadcastData = null;
+          if (mgr) {
+            mgr.processAirspaceData = (data) => { lastBroadcastData = data; };
+          }
+
+          const now = 1000000;
+          AndroidNativeBridge.adsbAircraft.clear();
+
+          // Aircraft 1: Stale (last seen 70s ago)
+          AndroidNativeBridge.adsbAircraft.set('HEXSTALE', {
+            hex: 'HEXSTALE',
+            callsign: 'GHOST1',
+            latitude: 41.35,
+            longitude: -88.99,
+            altitude: 2500,
+            lastSeen: now - 70000
+          });
+
+          // Aircraft 2: Active (last seen 5s ago)
+          AndroidNativeBridge.adsbAircraft.set('HEXACTIVE', {
+            hex: 'HEXACTIVE',
+            callsign: 'ALIVE1',
+            latitude: 41.33,
+            longitude: -88.99,
+            altitude: 3000,
+            lastSeen: now - 5000
+          });
+
+          try {
+            const prunedCount = AndroidNativeBridge.pruneStaleAircraft(now, 60000);
+            assert.strictEqual(prunedCount, 1, 'Must report exactly 1 pruned aircraft');
+            assert.strictEqual(AndroidNativeBridge.adsbAircraft.has('HEXSTALE'), false, 'Stale aircraft must be removed');
+            assert.strictEqual(AndroidNativeBridge.adsbAircraft.has('HEXACTIVE'), true, 'Active aircraft must be preserved');
+            assert.ok(lastBroadcastData, 'Must broadcast updated aircraft list to AdsbAirspaceManager');
+            assert.strictEqual(lastBroadcastData.source, 'android-prune');
+            assert.strictEqual(lastBroadcastData.total, 1);
+            assert.strictEqual(lastBroadcastData.aircraft[0].hex, 'HEXACTIVE');
+          } finally {
+            if (mgr && origProcess) mgr.processAirspaceData = origProcess;
+          }
+        });
+
+        test('AndroidNativeBridge.clearAdsbAircraft resets tracked aircraft map and notifies AdsbAirspaceManager', () => {
+          const { AndroidNativeBridge } = require('./src/bridge/AndroidNativeBridge.js');
+          const mgr = AndroidNativeBridge._getAdsbAirspaceManager();
+          const origProcess = mgr ? mgr.processAirspaceData : null;
+          let clearedData = null;
+          if (mgr) {
+            mgr.processAirspaceData = (data) => { clearedData = data; };
+          }
+
+          AndroidNativeBridge.adsbAircraft.set('HEX999', { hex: 'HEX999', latitude: 41.3, longitude: -88.9, lastSeen: Date.now() });
+
+          try {
+            AndroidNativeBridge.clearAdsbAircraft();
+            assert.strictEqual(AndroidNativeBridge.adsbAircraft.size, 0, 'adsbAircraft map must be empty');
+            assert.ok(clearedData, 'Must notify AdsbAirspaceManager');
+            assert.strictEqual(clearedData.source, 'android-clear');
+            assert.strictEqual(clearedData.total, 0);
+          } finally {
+            if (mgr && origProcess) mgr.processAirspaceData = origProcess;
+          }
+        });
+
+        test('AdsbAirspaceManager.processAirspaceData clears cone alerts and reverts to safe when Android aircraft points away', () => {
+          const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+          AdsbAirspaceManager.radiusMiles = 2.0;
+          AdsbAirspaceManager.ceilingFeet = 2500;
+          AdsbAirspaceManager.warningMinutes = 2.0;
+          AdsbAirspaceManager.coneDeviationDeg = 15;
+          AdsbAirspaceManager.suppressHighAltitudeCones = false;
+          AdsbAirspaceManager.getAlertOrigin = () => ({ lat: 41.3215, lon: -88.9950 });
+
+          // Approaching aircraft: ~5,400m North of home (outside rProx=3218m, within coneLength=7407m at 120kts)
+          // heading South (track 180) directly towards home
+          const ac = {
+            hex: 'A1B2C3',
+            callsign: 'TEST01',
+            latitude: 41.3700,
+            longitude: -88.9950,
+            altitude: 1500,
+            speed: 120,
+            track: 180, // Facing towards home
+            lastSeen: Date.now()
+          };
+
+          AdsbAirspaceManager.processAirspaceData({
+            success: true,
+            source: 'android-sbs',
+            aircraft: [ac]
+          });
+
+          assert.strictEqual(ac.isConeWarning, true, 'Aircraft heading towards perimeter must trigger cone warning');
+          assert.strictEqual(ac.status, 'approaching', 'Status must be approaching');
+          assert.strictEqual(AdsbAirspaceManager.previousStatus.get('A1B2C3'), 'approaching');
+
+          // Aircraft turns 180 degrees away: now heading North (track 0), flying away from home
+          ac.track = 0;
+          AdsbAirspaceManager.processAirspaceData({
+            success: true,
+            source: 'android-sbs',
+            aircraft: [ac]
+          });
+
+          assert.strictEqual(ac.isConeWarning, false, 'Cone warning must clear to false when aircraft points away');
+          assert.strictEqual(ac.status, 'safe', 'Status must immediately revert to safe');
+          assert.strictEqual(ac.etaSeconds, null, 'ETA must be reset');
+          assert.strictEqual(AdsbAirspaceManager.previousStatus.get('A1B2C3'), 'safe', 'previousStatus must update to safe to silence alerts');
+        });
+
+        test('AdsbAirspaceManager.processAirspaceData dynamically evaluates perimeter breaches for Android traffic', () => {
+          const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+          AdsbAirspaceManager.radiusMiles = 2.0;
+          AdsbAirspaceManager.ceilingFeet = 2500;
+          AdsbAirspaceManager.getAlertOrigin = () => ({ lat: 41.3215, lon: -88.9950 });
+
+          // Aircraft inside 2.0-mile radius (approx 0.5 miles away) at 1000 ft altitude
+          const breachedAc = {
+            hex: 'BREACH01',
+            callsign: 'CLOSE1',
+            latitude: 41.3250,
+            longitude: -88.9950,
+            altitude: 1000,
+            speed: 80,
+            track: 180,
+            lastSeen: Date.now()
+          };
+
+          AdsbAirspaceManager.processAirspaceData({
+            success: true,
+            source: 'android-http-json',
+            aircraft: [breachedAc]
+          });
+
+          assert.strictEqual(breachedAc.isWithinRadius, true, 'Must detect inside radius');
+          assert.strictEqual(breachedAc.isBreached, true, 'Must flag breached');
+          assert.strictEqual(breachedAc.status, 'breached', 'Status must be breached');
+          assert.strictEqual(breachedAc.isConeWarning, false, 'Cone warning must be false when breached');
+        });
+
+        test('AdsbAirspaceManager removes stale map markers and trails when aircraft is pruned from active feed', () => {
+          const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+          const prevL = global.L;
+          global.L = { circle: () => ({ setStyle: () => {} }) };
+          try {
+            let removedLayers = [];
+            AdsbAirspaceManager.layerGroup = {
+              removeLayer: (layer) => {
+                removedLayers.push(layer);
+              },
+              addLayer: () => {}
+            };
+
+            const dummyMarker = { setTooltipContent: () => {}, setStyle: () => {} };
+            AdsbAirspaceManager.mapMarkers.set('DEADHEX', dummyMarker);
+
+            // Update with aircraft list that does NOT contain DEADHEX
+            AdsbAirspaceManager.aircraft = [];
+            AdsbAirspaceManager.updateMapMarkers();
+
+            assert.strictEqual(AdsbAirspaceManager.mapMarkers.has('DEADHEX'), false, 'Marker must be deleted from mapMarkers map');
+            assert.ok(removedLayers.includes(dummyMarker), 'Marker must be removed from Leaflet layerGroup');
+          } finally {
+            global.L = prevL;
+          }
+        });
+      });
+
+      describe('v1.241.0: Topbar Pill Auto-Fitting, Side Swipeable Indicators, Opaque Brand Header & Divider Border (Issue #272)', () => {
+        test('Version consistency: v1.241.0 across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
+          const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+          assert.strictEqual(pkg.version, '1.241.0', 'package.json version must be 1.241.0');
+
+          const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+          assert.ok(changelog.includes('## [1.241.0] - 2026-11-07'), 'CHANGELOG.md must include v1.241.0 header');
+          assert.ok(changelog.includes('Closes #272'), 'CHANGELOG.md must reference issue #272');
+
+          const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+          assert.ok(template.includes('Version 1.241.0'), 'index_template.html must include Version 1.241.0 in About modal');
+          assert.ok(template.includes('v1.241.0'), 'index_template.html must include v1.241.0 header badge');
+
+          const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+          assert.ok(gradle.includes('versionName = "1.241.0"'), 'Gradle versionName must be 1.241.0');
+          assert.ok(gradle.includes('versionCode = 12410'), 'Gradle versionCode must be 12410');
+        });
+
+        test('CSS Architecture: .topbar-left has 100% solid non-transparent background and right dividing border', () => {
+          const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+          assert.ok(css.includes('background: #0f172a'), '.topbar-left must have solid dark background #0f172a');
+          assert.ok(css.includes('border-right: 1px solid var(--border-color)'), '.topbar-left must have border-right divider');
+          assert.ok(css.includes('[data-theme="light"] .topbar-left'), 'Light theme override for .topbar-left must exist');
+        });
+
+        test('CSS Architecture: Topbar pills enforce auto-fit width: auto and max-width: max-content', () => {
+          const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+          assert.ok(css.includes('.studio-topbar .btn-secondary'), '.studio-topbar .btn-secondary rule must exist');
+          assert.ok(css.includes('width: auto !important'), 'Pills must have width: auto !important');
+          assert.ok(css.includes('max-width: max-content !important'), 'Pills must have max-width: max-content !important');
+        });
+
+        test('DOM & CSS Architecture: Side swipeable scroll indicators (#topbar-scroll-cue-left and #topbar-scroll-cue-right) exist', () => {
+          const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+          assert.ok(html.includes('id="topbar-scroll-cue-left"'), '#topbar-scroll-cue-left must exist in index.html');
+          assert.ok(html.includes('id="topbar-scroll-cue-right"'), '#topbar-scroll-cue-right must exist in index.html');
+
+          const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+          assert.ok(css.includes('.topbar-scroll-cue.cue-right'), '.cue-right class must exist');
+          assert.ok(css.includes('.topbar-scroll-cue.cue-left'), '.cue-left class must exist');
+        });
+
+        test('SidebarManager source code includes initTopbarScrollCues controller', () => {
+          const src = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'SidebarManager.js'), 'utf8');
+          assert.ok(src.includes('function initTopbarScrollCues'), 'initTopbarScrollCues function must exist');
+          assert.ok(src.includes('topbar-scroll-cue-left'), 'initTopbarScrollCues must query #topbar-scroll-cue-left');
+          assert.ok(src.includes('topbar-scroll-cue-right'), 'initTopbarScrollCues must query #topbar-scroll-cue-right');
         });
       });
     });

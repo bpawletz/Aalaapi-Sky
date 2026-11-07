@@ -17223,8 +17223,14 @@ const AdsbAirspaceManager = {
       }
     }
 
-    for (const ac of this.aircraft) {
+    const isClientSource = Boolean(
+      (data.source && data.source.startsWith('android-')) ||
+      data.isClientComputed ||
+      data.source === 'client-sdr' ||
+      data.source === 'client-simulator'
+    );
 
+    for (const ac of this.aircraft) {
       const altVal = ac.altitude !== null && ac.altitude !== undefined
         ? ac.altitude
         : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
@@ -17239,42 +17245,91 @@ const AdsbAirspaceManager = {
         if (ac.status === 'approaching') ac.status = 'safe';
       }
 
+      const isClientAircraft = isClientSource || (ac.isConeWarning === undefined && !ac.isBreached);
 
+      if (isClientAircraft && ac.latitude !== null && ac.longitude !== null && ac.latitude !== undefined && ac.longitude !== undefined) {
+        // Calculate distance from alert origin
+        const toRad = Math.PI / 180;
+        const dLat = (homeLat - ac.latitude) * toRad;
+        const dLon = (homeLon - ac.longitude) * toRad;
+        const aDist = Math.sin(dLat / 2) ** 2 + Math.cos(ac.latitude * toRad) * Math.cos(homeLat * toRad) * Math.sin(dLon / 2) ** 2;
+        const d = 6371000 * 2 * Math.atan2(Math.sqrt(aDist), Math.sqrt(1 - aDist));
+        ac.distanceMeters = Math.round(d);
+        ac.distanceMiles = parseFloat((d / 1609.344).toFixed(2));
 
-      if (!ac.isBreached && ac.isConeWarning === undefined && ac.latitude !== null && ac.longitude !== null && ac.latitude !== undefined && ac.longitude !== undefined) {
+        const rProx = this.radiusMiles * 1609.344;
+        const maxCeiling = this.ceilingFeet || 2500;
+        ac.isWithinRadius = (d <= rProx);
+        ac.isBreached = ac.isWithinRadius && !ac.isLanding && !ac.coneSuppressed && (altVal === null || altVal <= maxCeiling);
 
+        if (ac.isBreached) {
+          ac.status = 'breached';
+          ac.isConeWarning = false;
+        } else {
+          const coneEval = this.evaluateAircraftCone(ac, homeLat, homeLon);
+          ac.coneLengthMeters = coneEval.coneLengthMeters;
+          ac.offBoresightDeg = coneEval.offBoresightDeg;
+          if (coneEval.verticalRate !== undefined) ac.verticalRate = coneEval.verticalRate;
+          if (coneEval.verticalRateFpm !== undefined) ac.verticalRateFpm = coneEval.verticalRateFpm;
+          if (coneEval.isDescending !== undefined) ac.isDescending = coneEval.isDescending;
+          if (coneEval.descentSeverity !== undefined) ac.descentSeverity = coneEval.descentSeverity;
 
-
+          if (coneEval.isLanding) {
+            ac.isLanding = true;
+            ac.landingAirport = coneEval.landingAirport;
+            ac.coneSuppressed = true;
+            ac.status = 'landing';
+            ac.isConeWarning = false;
+          } else if (coneEval.isClimbingOut) {
+            ac.isClimbingOut = true;
+            ac.coneSuppressed = true;
+            ac.isConeWarning = false;
+            ac.status = 'safe';
+          } else if (coneEval.isHighAltitude || ac.isHighAltitude) {
+            ac.isHighAltitude = true;
+            if (this.suppressHighAltitudeCones || coneEval.coneSuppressed) {
+              ac.coneSuppressed = true;
+              ac.isConeWarning = false;
+              ac.status = 'safe';
+            } else if (coneEval.isConeWarning) {
+              ac.isConeWarning = true;
+              ac.status = 'approaching';
+              ac.etaSeconds = coneEval.etaSeconds;
+              ac.entryDistanceMeters = coneEval.entryDistanceMeters;
+              ac.closingSpeedKts = coneEval.closingSpeedKts;
+            } else {
+              ac.isConeWarning = false;
+              ac.status = 'safe';
+            }
+          } else if (coneEval.isConeWarning && !ac.coneSuppressed) {
+            ac.isConeWarning = true;
+            ac.status = 'approaching';
+            ac.etaSeconds = coneEval.etaSeconds;
+            ac.entryDistanceMeters = coneEval.entryDistanceMeters;
+            ac.closingSpeedKts = coneEval.closingSpeedKts;
+          } else {
+            // Turned away, outside cone, or clear of perimeter
+            ac.isConeWarning = false;
+            ac.status = 'safe';
+            ac.etaSeconds = null;
+            ac.entryDistanceMeters = null;
+            ac.closingSpeedKts = null;
+          }
+        }
+      } else if (!ac.isBreached && ac.isConeWarning === undefined && ac.latitude !== null && ac.longitude !== null && ac.latitude !== undefined && ac.longitude !== undefined) {
         const coneEval = this.evaluateAircraftCone(ac, homeLat, homeLon);
-
-
-
         ac.coneLengthMeters = coneEval.coneLengthMeters;
-
-
-
         ac.offBoresightDeg = coneEval.offBoresightDeg;
 
-
-
         if (coneEval.isLanding) {
-
           ac.isLanding = true;
-
           ac.landingAirport = coneEval.landingAirport;
-
           ac.coneSuppressed = true;
-
           ac.status = 'landing';
-
           ac.isConeWarning = false;
-
         } else if (coneEval.isClimbingOut) {
-
           ac.isClimbingOut = true;
-
           ac.coneSuppressed = true;
-
         }
 
         if (coneEval.isHighAltitude) {
@@ -17285,37 +17340,16 @@ const AdsbAirspaceManager = {
           ac.coneSuppressed = true;
           ac.isConeWarning = false;
         } else if (coneEval.isConeWarning && !ac.coneSuppressed) {
-
-
-
           ac.isConeWarning = true;
-
-
-
           ac.status = 'approaching';
-
-
-
           ac.etaSeconds = coneEval.etaSeconds;
-
-
-
           ac.entryDistanceMeters = coneEval.entryDistanceMeters;
-
-
-
           ac.closingSpeedKts = coneEval.closingSpeedKts;
-
-
-
+        } else {
+          ac.isConeWarning = false;
+          ac.status = 'safe';
         }
-
-
-
       }
-
-
-
     }
 
 
@@ -17432,22 +17466,16 @@ const AdsbAirspaceManager = {
 
 
 
-    // Clean up previousStatus for aircraft that left coverage
-
-
-
+    // Clean up previousStatus and alert timers for aircraft that left coverage
     const activeHexes = new Set(this.aircraft.map(a => a.hex));
-
-
-
     for (const hex of this.previousStatus.keys()) {
-
-
-
       if (!activeHexes.has(hex)) this.previousStatus.delete(hex);
-
-
-
+    }
+    for (const hex of this.lastAlertTimes.keys()) {
+      if (!activeHexes.has(hex)) this.lastAlertTimes.delete(hex);
+    }
+    for (const hex of this.lastApproachingAlertTimes.keys()) {
+      if (!activeHexes.has(hex)) this.lastApproachingAlertTimes.delete(hex);
     }
 
 

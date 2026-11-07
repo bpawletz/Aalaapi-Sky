@@ -1,3 +1,49 @@
+## [1.241.0] - 2026-11-07
+
+Auto-fitted over-expanded pills (Sleep Awake and FT/MPH), side swipeable indicator chevrons with edge gradient fades, and a solid non-transparent brand header with a dividing border.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Topbar Pill Auto-Fitting (Closes #272)**:
+  - Eliminated over-expanded 776px pill widths on `#screen-awake-toggle-btn` ("Awake") and `#header-unit-toggle-btn` ("FT / MPH"), auto-fitting them to their natural content dimensions (~70px) and reclaiming over 1,400px of topbar space.
+- **Side Swipeable Visual Indicators & Smooth Scroll Cues (Closes #272)**:
+  - Added interactive edge indicator chevrons (`‹` on the left and `›` on the right) with frosted gradient fades that dynamically appear whenever topbar content extends beyond the viewport.
+  - Clicking either chevron smoothly scrolls ±240px, giving pilots an effortless alternative to mouse dragging or touch swiping.
+- **Solid Non-Transparent Brand Header & Dividing Border (Closes #272)**:
+  - Upgraded `.topbar-left` (menu icon, logo, title) to a 100% solid, fully opaque background (`#0f172a` in dark mode, `#ffffff` in sunlight mode) with an elevated right shadow.
+  - Added a crisp vertical dividing border to the right of the title, creating a clean stationary toolbar dock where swiped elements slide underneath without any visual bleed-through.
+
+#### Under the Hood & Technical Details
+- **`index.css`**:
+  - Enforced `width: auto !important; max-width: max-content !important; flex: 0 0 auto !important;` on `.studio-topbar .btn-secondary`, `.header-unit-btn`, and `.header-awake-btn`.
+  - Configured `.topbar-left` with `background: #0f172a; border-right: 1px solid var(--border-color); box-shadow: 4px 0 12px rgba(0, 0, 0, 0.35);`.
+  - Added styles for `.topbar-scroll-cue`, `.cue-left`, and `.cue-right` with theme-adaptive linear gradients.
+- **`src/ui/SidebarManager.js`**:
+  - Implemented `initTopbarScrollCues(topbarEl)` dynamically tracking `topbar.scrollLeft` and `topbar.scrollWidth - topbar.clientWidth` across `scroll` and `resize` events.
+
+## [1.240.1] - 2026-11-07
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Stale ADS-B Traffic Cleanup on Android (Closes #271)**:
+  - Eliminated persistent ghost/stale aircraft accumulation on the map canvas in the Android app. Aircraft that fly out of range or stop transmitting are automatically pruned after 60 seconds of inactivity, dismantling their map markers, flight trails, and predictive cones.
+- **Predictive Cone Alert Reset When Traffic Turns Away (Closes #271)**:
+  - Resolved spurious repeating alerts ("Advisory: Traffic approaching") sounding on Android when an aircraft turns away from the perimeter.
+  - When an aircraft banks or changes heading away from the flight area (`offBoresight >= 90°`), its alert status immediately reverts from `'approaching'` back to `'safe'`, resetting the marker color to normal and silencing continuous 45-second audio chimes.
+
+#### Under the Hood & Technical Details
+- **`src/bridge/AndroidNativeBridge.js`**:
+  - Implemented `pruneStaleAircraft(now, staleTimeoutMs)` running on a 15-second background interval and throttled inline check upon SBS-1 and JSON frame ingestion, deleting inactive aircraft from `this.adsbAircraft` and pushing the pruned list to `AdsbAirspaceManager.processAirspaceData`.
+  - Added `clearAdsbAircraft()` to reset aircraft state on disconnects or layer resets.
+  - Aligned reference origin in `ingestAdsbSbsLine` and `ingestAdsbJson` to use `AdsbAirspaceManager.getAlertOrigin()`, falling back to center marker or rural defaults.
+  - Captured `verticalRate` from SBS MSG,4 and JSON `baro_rate`/`geom_rate` for 3D trajectory and climb-out evaluation.
+- **`src/bridge/ApiClient.js`**:
+  - Refactored `AdsbAirspaceManager.processAirspaceData` to continuously evaluate perimeter breaches and predictive cone trajectories for Android and client-side feeds (`android-sbs`, `android-http-json`, `android-prune`).
+  - Added explicit reset branches clearing `isConeWarning = false` and setting `status = 'safe'` when an aircraft turns away, enters airport landing suppression, or climbs out safely above ceiling.
+  - Enhanced stale aircraft cleanup to purge expired entries from `lastAlertTimes` and `lastApproachingAlertTimes`.
+
 ## [1.240.0] - 2026-11-07
 
 Smooth mouse click-and-drag horizontal panning with grab/grabbing feedback and click suppression across the Studio Topbar, coupled with a zero-overlap flexbox layout and sticky pinned brand header.
