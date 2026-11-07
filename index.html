@@ -5260,6 +5260,90 @@ body.modal-drag-active {
   min-height: 0;
 }
 
+/* Flight Diagnostics Viewport Loading Overlay & Working Indicators (Issue #267) */
+.diag-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 17, 32, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 50;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: auto;
+}
+
+.diag-loading-overlay.is-active {
+  display: flex;
+  opacity: 1;
+  visibility: visible;
+}
+
+.diag-loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(6, 182, 212, 0.15);
+  padding: 20px 28px;
+  border-radius: 12px;
+  max-width: 90%;
+  text-align: center;
+}
+
+/* Accessible indeterminate progress spinner according to Modern Web Guidance */
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #06b6d4;
+  animation: diag-spin 0.8s linear infinite;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+}
+
+@keyframes diag-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: diag-spin-pulse 2s ease-in-out infinite;
+  }
+  @keyframes diag-spin-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+}
+
+.diag-loading-text {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.diag-loading-subtext {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Busy state helper for buttons in Flight Diagnostics & Bridge modals */
+.diag-btn-working {
+  cursor: progress !important;
+  opacity: 0.8 !important;
+  pointer-events: none !important;
+}
+
 .diag-hud-overlay {
   position: absolute;
   top: 12px;
@@ -6410,6 +6494,45 @@ body.modal-drag-active {
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
 }
 
+.adsb-marker-inner.high-altitude {
+  border-color: #86efac !important;
+  color: #86efac !important;
+  background: rgba(16, 45, 28, 0.88) !important;
+  box-shadow: 0 0 10px rgba(134, 239, 172, 0.45) !important;
+}
+
+.adsb-marker-inner.high-altitude:hover {
+  border-color: #bbf7d0 !important;
+  color: #bbf7d0 !important;
+  box-shadow: 0 0 14px rgba(134, 239, 172, 0.65) !important;
+}
+
+[data-theme="light"] .adsb-marker-inner.high-altitude {
+  border-color: #16a34a !important;
+  color: #15803d !important;
+  background: rgba(220, 252, 231, 0.95) !important;
+  box-shadow: 0 0 8px rgba(22, 163, 74, 0.35) !important;
+}
+
+.adsb-high-alt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  background: rgba(134, 239, 172, 0.18);
+  border: 1px solid rgba(134, 239, 172, 0.45);
+  color: #86efac;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+[data-theme="light"] .adsb-high-alt-chip {
+  background: rgba(22, 163, 74, 0.14);
+  border-color: rgba(22, 163, 74, 0.4);
+  color: #15803d;
+}
+
 .adsb-landing-chip {
   display: inline-flex;
   align-items: center;
@@ -7029,6 +7152,13 @@ body.modal-drag-active {
 .adsb-marker-inner.historical-replay.prop {
   border-color: #34d399;
   color: #a7f3d0;
+}
+
+.adsb-marker-inner.historical-replay.high-altitude {
+  border-color: #86efac !important;
+  color: #86efac !important;
+  background: rgba(20, 38, 30, 0.92) !important;
+  box-shadow: 0 4px 12px rgba(134, 239, 172, 0.35) !important;
 }
 
 .adsb-marker-inner.historical-replay.breached {
@@ -8941,7 +9071,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.237.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.239.0</span></h1>
         </div>
       </div>
 
@@ -13158,6 +13288,20 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </div>
               </div>
 
+              <!-- High-Altitude Floor / Cone Suppression Threshold Slider (Issue #269) -->
+              <div class="adsb-slider-group" style="margin-top: 8px;">
+                <div class="adsb-slider-header">
+                  <label for="adsb-high-alt-slider" style="font-size: 0.72rem; color: var(--text-muted);">High-Altitude Floor (AGL):</label>
+                  <span id="adsb-high-alt-val" style="font-size: 0.75rem; font-weight: 700; color: #86efac;">10,000 ft (3,050 m)</span>
+                </div>
+                <input type="range" id="adsb-high-alt-slider" min="3000" max="25000" step="500" value="10000" style="width: 100%; cursor: pointer;">
+                <div class="adsb-slider-range-labels">
+                  <span>3,000 ft</span>
+                  <span>10,000 ft</span>
+                  <span>25,000 ft</span>
+                </div>
+              </div>
+
               <!-- Predictive Warning Lookahead Time Slider (Issue #244) -->
               <div class="adsb-slider-group" style="margin-top: 8px;">
                 <div class="adsb-slider-header">
@@ -13271,6 +13415,62 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </select>
               </div>
 
+              <!-- Voice Alert Speech Customization (TTS) -->
+              <details id="adsb-tts-customization-details" style="margin-top: 10px; font-size: 0.72rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+                <summary style="cursor: pointer; user-select: none; font-weight: 600; color: #38bdf8; display: flex; align-items: center; justify-content: space-between;">
+                  <span>🗣️ Voice Alert Speech Customization (TTS)</span>
+                  <span style="font-size: 0.65rem;">▾</span>
+                </summary>
+                <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+                  <!-- Preset Selection -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <label for="adsb-tts-preset-select" style="color: var(--text-muted); font-size: 0.70rem; font-weight: 600;">Speech Preset:</label>
+                    <select id="adsb-tts-preset-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.70rem; border-radius: 5px; padding: 2px 6px;">
+                      <option value="standard" selected>Standard (Full Advisory)</option>
+                      <option value="concise">Concise (Distance &amp; Direction)</option>
+                      <option value="direction_first">Direction First</option>
+                      <option value="custom">Custom Template</option>
+                    </select>
+                  </div>
+
+                  <!-- Breach Alert Template -->
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <label for="adsb-tts-breach-input" style="color: var(--text-muted); font-size: 0.68rem; font-weight: 600;">Breach Alert Phrase:</label>
+                    </div>
+                    <input type="text" id="adsb-tts-breach-input" value="Traffic alert! {callsign}, {distance} {direction}, {altitude}." style="width: 100%; font-size: 0.70rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 4px 6px; box-sizing: border-box;">
+                  </div>
+
+                  <!-- Approaching Alert Template -->
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <label for="adsb-tts-approaching-input" style="color: var(--text-muted); font-size: 0.68rem; font-weight: 600;">Approaching Phrase:</label>
+                    </div>
+                    <input type="text" id="adsb-tts-approaching-input" value="Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}." style="width: 100%; font-size: 0.70rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 4px 6px; box-sizing: border-box;">
+                  </div>
+
+                  <!-- Dynamic Variable Token Chips -->
+                  <div style="font-size: 0.65rem; color: var(--text-muted); line-height: 1.4;">
+                    <span style="font-weight: 600;">Tokens:</span>
+                    <span class="badge-tag adsb-tts-token" data-token="{callsign}" style="cursor: pointer; padding: 1px 4px; margin: 1px; font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8;" title="Click to insert: Aircraft callsign">{callsign}</span>
+                    <span class="badge-tag adsb-tts-token" data-token="{direction}" style="cursor: pointer; padding: 1px 4px; margin: 1px; font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8;" title="Click to insert: Spoken direction (e.g. East South East)">{direction}</span>
+                    <span class="badge-tag adsb-tts-token" data-token="{distance}" style="cursor: pointer; padding: 1px 4px; margin: 1px; font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8;" title="Click to insert: Distance (e.g. 1.5 miles)">{distance}</span>
+                    <span class="badge-tag adsb-tts-token" data-token="{altitude}" style="cursor: pointer; padding: 1px 4px; margin: 1px; font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8;" title="Click to insert: Altitude (e.g. 1850 feet)">{altitude}</span>
+                    <span class="badge-tag adsb-tts-token" data-token="{eta}" style="cursor: pointer; padding: 1px 4px; margin: 1px; font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8;" title="Click to insert: Perimeter ETA (e.g. 45 seconds)">{eta}</span>
+                  </div>
+
+                  <!-- Actions: Test & Reset -->
+                  <div style="display: flex; gap: 6px; margin-top: 2px;">
+                    <button type="button" id="adsb-tts-preview-btn" class="btn-xs btn-secondary" style="flex: 1; padding: 3px 6px; font-size: 0.68rem; cursor: pointer; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px;" title="Preview speech with current templates">
+                      <span>🗣️</span> Preview Speech
+                    </button>
+                    <button type="button" id="adsb-tts-reset-btn" class="btn-xs btn-secondary" style="padding: 3px 6px; font-size: 0.68rem; cursor: pointer; border-radius: 4px; color: var(--text-muted);" title="Reset templates to default">
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              </details>
+
               <div class="adsb-card-row" style="margin-top: 10px; align-items: center;">
                 <label for="adsb-cones-toggle" class="adsb-control-label">
                   <span style="font-weight: 600;">Predictive Trajectory Cones (2D)</span>
@@ -13278,6 +13478,18 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 </label>
                 <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0; margin: 0;">
                   <input type="checkbox" id="adsb-cones-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                  <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+                </label>
+              </div>
+
+              <!-- High-Altitude Cone Suppression Toggle (Issue #269) -->
+              <div class="adsb-card-row" style="margin-top: 10px; align-items: center;">
+                <label for="adsb-suppress-high-altitude-toggle" class="adsb-control-label">
+                  <span style="font-weight: 600;">🛫 Suppress High-Altitude Cones</span>
+                  <span class="adsb-control-sub">Hides trajectory cones for cruising traffic &ge; threshold AGL</span>
+                </label>
+                <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0; margin: 0;">
+                  <input type="checkbox" id="adsb-suppress-high-altitude-toggle" checked style="opacity: 0; width: 0; height: 0;">
                   <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
                 </label>
               </div>
@@ -13345,6 +13557,9 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                   </button>
                   <button id="adsb-sim-jet-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); cursor: pointer;" title="Simulate Commercial / Jet Traffic (B738)">
                     <span>✈️</span> Jet
+                  </button>
+                  <button id="adsb-sim-high-alt-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(134, 239, 172, 0.16); color: #86efac; border-color: rgba(134, 239, 172, 0.45); cursor: pointer;" title="Simulate High-Altitude Cruising Traffic (12,000 ft AGL / Cone Suppressed)">
+                    <span>🛫</span> High Alt
                   </button>
                 </div>
               </div>
@@ -13765,6 +13980,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>🗣️</span>
+              Full Spoken Compass Directions &amp; Traffic Alert TTS Phrasing Customization (v1.238.0) (Closes #268)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Traffic alert voice advisories now expand all 16 cardinal compass abbreviations into clear spoken words (e.g. <code>ESE</code> &rarr; <em>East South East</em>), eliminating phonetic word mispronunciations. In addition, pilots can customize what is spoken in the ADS-B drawer: choose from presets (Standard, Concise, Direction First, Custom), edit phrase templates with dynamic tokens (<code>{callsign}</code>, <code>{direction}</code>, <code>{distance}</code>, <code>{altitude}</code>, <code>{eta}</code>), preview speech, and persist preferences locally.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>🎯</span>
@@ -16466,7 +16690,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.237.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.239.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -16629,6 +16853,25 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.239.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>High-Altitude Trajectory Cone Suppression &amp; Pastel Greenish Markers (Closes #269):</strong> Added adjustable High-Altitude Floor slider (<code>#adsb-high-alt-slider</code>, default 10,000 ft / 3,050 m AGL) and automated cone suppression toggle (<code>#adsb-suppress-high-altitude-toggle</code>) to suppress trajectory cones and approaching alerts for high-cruising overhead aircraft, rendering them with soothing pastel greenish map markers (<code>#86efac</code>) and <code>CRUISE (HIGH ALT)</code> drawer chips.</li>
+                  <li><strong>Preflight Simulation for High-Altitude Traffic (Closes #269):</strong> Added <code>🛫 High Alt</code> simulation action (<code>#adsb-sim-high-alt-btn</code>) generating 12,000 ft AGL cruising traffic to test cone suppression and marker theme.</li>
+                </ul>
+              </li>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.238.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Full Spoken Compass Directions &amp; TTS Phrasing Customization (Closes #268):</strong> Expanded all 16 cardinal abbreviations into full spoken English (e.g. <code>ESE</code> &rarr; <em>East South East</em>) to eliminate phonetic garbling in voice advisories; added interactive speech phrase customization in the ADS-B drawer with presets (Standard, Concise, Direction First, Custom), template inputs, clickable token chips (<code>{callsign}</code>, <code>{direction}</code>, <code>{distance}</code>, <code>{altitude}</code>, <code>{eta}</code>), preview testing, and persistent local storage.</li>
+                </ul>
+              </li>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.237.1):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Flight Diagnostics Visual Working Indicators (Closes #267):</strong> Added accessible viewport loading spinner overlay (<code>#diag-loading-overlay</code>) and button-level busy states (<code>disabled</code>, <code>aria-busy="true"</code>, <code>.diag-btn-working</code>) across telemetry fetching, RC 2 USB log pulling, AI 3D mesh reconstruction, and IRL verification.</li>
+                </ul>
+              </li>
                                                         <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.237.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -21584,6 +21827,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                   <span style="width: 10px; height: 3px; background: #38bdf8; display: inline-block; border-radius: 2px; box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);"></span>
                   <span id="diag-legend-wireframe-text" style="color: #38bdf8; font-weight: 600;">3D Wireframe</span>
                 </div>
+              </div>
+            </div>
+
+            <!-- Viewport Asynchronous Loading & Busy Overlay (Issue #267) -->
+            <div id="diag-loading-overlay" class="diag-loading-overlay" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+              <div class="diag-loading-card">
+                <progress id="diag-loading-spinner" class="loading-spinner" aria-label="Loading telemetry and 3D visual data"></progress>
+                <div id="diag-loading-text" class="diag-loading-text">Loading telemetry...</div>
+                <div id="diag-loading-subtext" class="diag-loading-subtext">Fetching &amp; decrypting flight log</div>
               </div>
             </div>
           </div>
@@ -36154,9 +36406,13 @@ function getReplayAircraftMarkerHtml(craft) {
     (craft.distanceMeters && craft.distanceMeters <= 5556 && craft.vertDeltaMeters !== undefined && craft.vertDeltaMeters <= 300)
   );
 
+  const highAltFt = (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager.highAltitudeThresholdFt) || 10000;
+  const craftAlt = typeof craft.altitude === 'number' ? craft.altitude : (typeof craft.alt === 'number' ? craft.alt : null);
+  const isHighAltitude = !isBreached && Boolean(craft.isHighAltitude || (craftAlt !== null && craftAlt >= highAltFt));
+
   const innerClass = isBreached
     ? `adsb-marker-inner historical-replay breached ${classified.type}`
-    : `adsb-marker-inner historical-replay ${classified.type}`;
+    : (isHighAltitude ? `adsb-marker-inner historical-replay high-altitude ${classified.type}` : `adsb-marker-inner historical-replay ${classified.type}`);
 
   const track = Math.round(craft.track !== undefined ? craft.track : (craft.heading || 0));
 
@@ -64662,76 +64918,34 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
   const originalStates = new Map();
 
-
-
   buttonsToUpdate.forEach(b => {
-
-
-
-    originalStates.set(b, { html: b.innerHTML, color: b.style.color });
-
-
-
+    originalStates.set(b, { html: b.innerHTML, color: b.style?.color });
     b.disabled = true;
-
-
-
+    if (typeof b.setAttribute === 'function') b.setAttribute('aria-busy', 'true');
+    if (b.classList && typeof b.classList.add === 'function') b.classList.add('diag-btn-working');
     b.innerHTML = `<span>⏳ Pulling Log...</span>`;
-
-
-
   });
 
-
-
-
-
-
+  if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.isOpen && typeof FlightDiagnostics.setWorkingState === 'function') {
+    FlightDiagnostics.setWorkingState(true, 'Pulling flight log from DJI RC 2...', 'Connecting over USB MTP & decrypting');
+  }
 
   const resetButtonStates = (delayMs = 3500) => {
-
-
-
     setTimeout(() => {
-
-
-
       buttonsToUpdate.forEach(b => {
-
-
-
         const orig = originalStates.get(b);
-
-
-
         if (orig) {
-
-
-
           b.disabled = false;
-
-
-
+          if (typeof b.removeAttribute === 'function') b.removeAttribute('aria-busy');
+          if (b.classList && typeof b.classList.remove === 'function') b.classList.remove('diag-btn-working');
           b.innerHTML = orig.html;
-
-
-
           b.style.color = orig.color || '';
-
-
-
         }
-
-
-
       });
-
-
-
+      if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.isOpen && typeof FlightDiagnostics.setWorkingState === 'function') {
+        FlightDiagnostics.setWorkingState(false);
+      }
     }, delayMs);
-
-
-
   };
 
 
@@ -71657,6 +71871,107 @@ const AdsbAirspaceManager = {
 
   soundType: 'both', // 'both' | 'chime' | 'voice'
 
+  ttsPreset: 'standard', // 'standard' | 'concise' | 'direction_first' | 'custom'
+
+  ttsBreachTemplate: 'Traffic alert! {callsign}, {distance} {direction}, {altitude}.',
+
+  ttsApproachingTemplate: 'Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}.',
+
+  CARDINAL_SPOKEN_MAP: {
+    'N': 'North',
+    'NNE': 'North North East',
+    'NE': 'North East',
+    'ENE': 'East North East',
+    'E': 'East',
+    'ESE': 'East South East',
+    'SE': 'South East',
+    'SSE': 'South South East',
+    'S': 'South',
+    'SSW': 'South South West',
+    'SW': 'South West',
+    'WSW': 'West South West',
+    'W': 'West',
+    'WNW': 'West North West',
+    'NW': 'North West',
+    'NNW': 'North North West'
+  },
+
+  TTS_PRESETS: {
+    standard: {
+      breach: 'Traffic alert! {callsign}, {distance} {direction}, {altitude}.',
+      approaching: 'Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}.'
+    },
+    concise: {
+      breach: 'Traffic alert! {distance} {direction}.',
+      approaching: 'Traffic approaching! {distance} {direction}, ETA {eta}.'
+    },
+    direction_first: {
+      breach: 'Traffic {direction}! {distance}, {altitude}.',
+      approaching: 'Traffic approaching {direction}! {distance}, ETA {eta}.'
+    }
+  },
+
+  getSpokenCardinal(cardinalCode) {
+    if (!cardinalCode || typeof cardinalCode !== 'string') return '';
+    const clean = cardinalCode.trim().toUpperCase();
+    return this.CARDINAL_SPOKEN_MAP[clean] || cardinalCode.trim();
+  },
+
+  formatVoiceAdvisoryText(aircraft, alertStage = 'breached') {
+    const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+    const rawCallsign = (aircraft && aircraft.callsign ? aircraft.callsign : 'Traffic').replace(/[^A-Za-z0-9]/g, ' ').trim();
+    const callsign = rawCallsign || 'Traffic';
+
+    let distText = '';
+    let altText = '';
+
+    if (aircraft) {
+      if (isMetric) {
+        const km = (aircraft.distanceMeters !== null && aircraft.distanceMeters !== undefined) ? (aircraft.distanceMeters / 1000).toFixed(1) : 'unknown';
+        const m = (aircraft.altitude !== null && aircraft.altitude !== undefined) ? Math.round(aircraft.altitude * 0.3048) : 'unknown';
+        distText = `${km} kilometers`;
+        altText = `${m} meters`;
+      } else {
+        const mi = (aircraft.distanceMiles !== null && aircraft.distanceMiles !== undefined) ? aircraft.distanceMiles : 'unknown';
+        const ft = (aircraft.altitude !== null && aircraft.altitude !== undefined) ? aircraft.altitude : 'unknown';
+        distText = `${mi} miles`;
+        altText = `${ft} feet`;
+      }
+    }
+
+    const spokenDirection = (aircraft && aircraft.bearingCardinal) ? this.getSpokenCardinal(aircraft.bearingCardinal) : '';
+
+    let etaText = 'soon';
+    if (aircraft && typeof aircraft.etaSeconds === 'number' && aircraft.etaSeconds > 0) {
+      const etaMin = Math.floor(aircraft.etaSeconds / 60);
+      const etaSec = aircraft.etaSeconds % 60;
+      etaText = etaMin > 0 ? `${etaMin} minute${etaMin > 1 ? 's' : ''} ${etaSec} seconds` : `${etaSec} seconds`;
+    }
+
+    const template = (alertStage === 'approaching')
+      ? (this.ttsApproachingTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.approaching : 'Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}.'))
+      : (this.ttsBreachTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.breach : 'Traffic alert! {callsign}, {distance} {direction}, {altitude}.'));
+
+    let text = template
+      .replace(/\{callsign\}/gi, callsign)
+      .replace(/\{distance\}/gi, distText)
+      .replace(/\{direction\}/gi, spokenDirection)
+      .replace(/\{cardinal\}/gi, spokenDirection)
+      .replace(/\{altitude\}/gi, altText)
+      .replace(/\{eta\}/gi, etaText)
+      .replace(/\{stage\}/gi, alertStage);
+
+    // Clean up extraneous whitespace and dangling punctuation if tokens are empty
+    text = text
+      .replace(/\s*,\s*,/g, ',')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/\s+,/g, ',')
+      .replace(/,\s*\./g, '.')
+      .trim();
+
+    return text;
+  },
+
 
 
   radiusMiles: 3.0,
@@ -71676,6 +71991,10 @@ const AdsbAirspaceManager = {
 
 
   showCones: true,
+
+  highAltitudeThresholdFt: 10000,
+
+  suppressHighAltitudeCones: true,
 
 
 
@@ -72799,6 +73118,38 @@ const AdsbAirspaceManager = {
 
 
 
+    } else if (targetType === 'high_alt') {
+
+      simAircraft = {
+
+        hex: 'A88888',
+
+        callsign: 'CRUISE450',
+
+        aircraftType: 'B738',
+
+        category: 'A3',
+
+        lat: homeLat + 0.035,
+
+        lon: homeLon + 0.035,
+
+        alt: 12000,
+
+        speed: 420,
+
+        track: 225,
+
+        verticalRate: 0,
+
+        isHighAltitude: true,
+
+        coneSuppressed: this.suppressHighAltitudeCones
+
+      };
+
+
+
     } else {
 
 
@@ -72887,23 +73238,26 @@ const AdsbAirspaceManager = {
 
       // If offline or unauthorized, inject directly into manager
 
-      const isApproaching = targetType === 'approaching' || targetType === 'descending';
+      const isHighAlt = targetType === 'high_alt';
+      const isApproaching = (targetType === 'approaching' || targetType === 'descending') && !isHighAlt;
 
       const isLanding = targetType === 'landing';
 
       const isDescending = targetType === 'descending';
 
-      simAircraft.distanceMeters = isApproaching ? 8368 : (isLanding ? 4200 : 1500);
+      simAircraft.distanceMeters = isHighAlt ? 7500 : (isApproaching ? 8368 : (isLanding ? 4200 : 1500));
 
-      simAircraft.distanceMiles = isApproaching ? 5.2 : (isLanding ? 2.6 : 0.93);
+      simAircraft.distanceMiles = isHighAlt ? 4.66 : (isApproaching ? 5.2 : (isLanding ? 2.6 : 0.93));
 
       simAircraft.bearingDeg = 45;
 
       simAircraft.bearingCardinal = 'NE';
 
-      simAircraft.isBreached = !isApproaching && !isLanding;
+      simAircraft.isBreached = !isApproaching && !isLanding && !isHighAlt;
 
       simAircraft.isConeWarning = isApproaching;
+
+      simAircraft.isHighAltitude = isHighAlt;
 
       simAircraft.isDescending = isDescending;
 
@@ -72917,9 +73271,9 @@ const AdsbAirspaceManager = {
 
       simAircraft.landingAirport = isLanding ? (simAircraft.landingAirport || 'KVYS') : null;
 
-      simAircraft.coneSuppressed = isLanding;
+      simAircraft.coneSuppressed = isLanding || (isHighAlt && this.suppressHighAltitudeCones);
 
-      simAircraft.status = isApproaching ? 'approaching' : (isLanding ? 'landing' : 'breached');
+      simAircraft.status = isApproaching ? 'approaching' : (isLanding ? 'landing' : (isHighAlt ? 'safe' : 'breached'));
 
       simAircraft.etaSeconds = isApproaching ? 51 : null;
 
@@ -73011,9 +73365,16 @@ const AdsbAirspaceManager = {
 
         const savedType = localStorage.getItem('aalaapi_adsb_sound_type');
 
-
-
         if (savedType) this.soundType = savedType;
+
+        const savedTtsPreset = localStorage.getItem('aalaapi_adsb_tts_preset');
+        if (savedTtsPreset) this.ttsPreset = savedTtsPreset;
+
+        const savedTtsBreach = localStorage.getItem('aalaapi_adsb_tts_breach_template');
+        if (savedTtsBreach) this.ttsBreachTemplate = savedTtsBreach;
+
+        const savedTtsApproaching = localStorage.getItem('aalaapi_adsb_tts_approaching_template');
+        if (savedTtsApproaching) this.ttsApproachingTemplate = savedTtsApproaching;
 
 
 
@@ -73110,6 +73471,22 @@ const AdsbAirspaceManager = {
 
 
         if (savedShowCones !== null) this.showCones = savedShowCones !== 'false';
+
+
+
+        const savedHighAlt = localStorage.getItem('aalaapi_adsb_high_altitude_ft');
+
+
+
+        if (savedHighAlt) this.highAltitudeThresholdFt = parseInt(savedHighAlt, 10) || 10000;
+
+
+
+        const savedSuppressHighAlt = localStorage.getItem('aalaapi_adsb_suppress_high_altitude_cones');
+
+
+
+        if (savedSuppressHighAlt !== null) this.suppressHighAltitudeCones = savedSuppressHighAlt !== 'false';
 
 
 
@@ -73263,6 +73640,10 @@ const AdsbAirspaceManager = {
 
         localStorage.setItem('aalaapi_adsb_sound_type', this.soundType);
 
+        localStorage.setItem('aalaapi_adsb_tts_preset', this.ttsPreset || 'standard');
+        localStorage.setItem('aalaapi_adsb_tts_breach_template', this.ttsBreachTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.breach : 'Traffic alert! {callsign}, {distance} {direction}, {altitude}.'));
+        localStorage.setItem('aalaapi_adsb_tts_approaching_template', this.ttsApproachingTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.approaching : 'Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}.'));
+
 
 
         localStorage.setItem('aalaapi_adsb_show_trails', String(this.showTrails));
@@ -73290,6 +73671,14 @@ const AdsbAirspaceManager = {
 
 
         localStorage.setItem('aalaapi_adsb_show_cones', String(this.showCones));
+
+
+
+        localStorage.setItem('aalaapi_adsb_high_altitude_ft', String(this.highAltitudeThresholdFt || 10000));
+
+
+
+        localStorage.setItem('aalaapi_adsb_suppress_high_altitude_cones', String(this.suppressHighAltitudeCones));
 
 
 
@@ -74007,6 +74396,23 @@ const AdsbAirspaceManager = {
 
 
 
+        const alt = ac.altitude !== null ? ac.altitude : (ac.altitudeGeometric !== null ? ac.altitudeGeometric : null);
+
+        let groundElevFt = 0;
+        if (typeof elevationServiceInstance !== 'undefined' && elevationServiceInstance) {
+          if (elevationServiceInstance.cachedDem && typeof elevationServiceInstance.cachedDem.sampleAt === 'function') {
+            const m = elevationServiceInstance.cachedDem.sampleAt(homeLat, homeLon);
+            if (m !== null && !isNaN(m)) groundElevFt = m * 3.28084;
+          }
+        }
+        const altAgl = alt !== null ? Math.max(0, alt - groundElevFt) : null;
+        ac.altitudeAgl = altAgl;
+        ac.isHighAltitude = (altAgl !== null && altAgl >= (this.highAltitudeThresholdFt || 10000));
+        if (ac.isHighAltitude && this.suppressHighAltitudeCones) {
+          ac.coneSuppressed = true;
+          ac.isConeWarning = false;
+        }
+
         if (!ac.isLanding && !ac.coneSuppressed) {
 
           const coneEval = this.evaluateAircraftCone(ac, homeLat, homeLon);
@@ -74026,8 +74432,6 @@ const AdsbAirspaceManager = {
         }
 
 
-
-        const alt = ac.altitude !== null ? ac.altitude : (ac.altitudeGeometric !== null ? ac.altitudeGeometric : null);
 
         ac.isWithinRadius = (d <= rProx);
 
@@ -74674,6 +75078,28 @@ const AdsbAirspaceManager = {
 
     }
 
+    // Suppress predictive cone if aircraft is at or above high-altitude threshold AGL
+    let groundElevFt = 0;
+    if (typeof elevationServiceInstance !== 'undefined' && elevationServiceInstance) {
+      if (elevationServiceInstance.cachedDem && typeof elevationServiceInstance.cachedDem.sampleAt === 'function') {
+        const m = elevationServiceInstance.cachedDem.sampleAt(homeLat, homeLon);
+        if (m !== null && !isNaN(m)) groundElevFt = m * 3.28084;
+      }
+    }
+    const altCheck = ac.altitude !== null && ac.altitude !== undefined
+      ? ac.altitude
+      : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
+    const altAglCheck = altCheck !== null ? Math.max(0, altCheck - groundElevFt) : null;
+    const highAltThreshold = typeof this.highAltitudeThresholdFt === 'number' ? this.highAltitudeThresholdFt : 10000;
+    if (altAglCheck !== null && altAglCheck >= highAltThreshold) {
+      result.isHighAltitude = true;
+      if (this.suppressHighAltitudeCones) {
+        result.coneSuppressed = true;
+        result.isConeWarning = false;
+        return result;
+      }
+    }
+
 
 
     const rProx = this.radiusMiles * 1609.344;
@@ -75230,127 +75656,10 @@ const AdsbAirspaceManager = {
 
     try {
 
-
-
       if (!nativeTts) window.speechSynthesis.cancel();
 
-
-
-      const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
-
-
-
-      const callsign = (aircraft.callsign || 'Traffic').replace(/[^A-Za-z0-9]/g, ' ');
-
-
-
-      let distText = '';
-
-
-
-      let altText = '';
-
-
-
-      if (isMetric) {
-
-
-
-        const km = aircraft.distanceMeters ? (aircraft.distanceMeters / 1000).toFixed(1) : 'unknown';
-
-
-
-        const m = aircraft.altitude ? Math.round(aircraft.altitude * 0.3048) : 'unknown';
-
-
-
-        distText = `${km} kilometers`;
-
-
-
-        altText = `${m} meters`;
-
-
-
-      } else {
-
-
-
-        const mi = aircraft.distanceMiles !== null && aircraft.distanceMiles !== undefined ? aircraft.distanceMiles : 'unknown';
-
-
-
-        const ft = aircraft.altitude !== null && aircraft.altitude !== undefined ? aircraft.altitude : 'unknown';
-
-
-
-        distText = `${mi} miles`;
-
-
-
-        altText = `${ft} feet`;
-
-
-
-      }
-
-
-
-      const cardinal = aircraft.bearingCardinal ? ` ${aircraft.bearingCardinal}` : '';
-
-
-
-      let text = '';
-
-
-
-      if (alertStage === 'approaching') {
-
-
-
-        let etaText = 'soon';
-
-
-
-        if (typeof aircraft.etaSeconds === 'number' && aircraft.etaSeconds > 0) {
-
-
-
-          const etaMin = Math.floor(aircraft.etaSeconds / 60);
-
-
-
-          const etaSec = aircraft.etaSeconds % 60;
-
-
-
-          etaText = etaMin > 0 ? `${etaMin} minute${etaMin > 1 ? 's' : ''} ${etaSec} seconds` : `${etaSec} seconds`;
-
-
-
-        }
-
-
-
-        text = `Traffic approaching! ${callsign}, ${distText}${cardinal}, perimeter ETA ${etaText}.`;
-
-
-
-      } else {
-
-
-
-        text = `Traffic alert! ${callsign}, ${distText}${cardinal}, ${altText}.`;
-
-
-
-      }
-
-
-
-
-
-
+      const text = this.formatVoiceAdvisoryText(aircraft, alertStage);
+      if (!text) return;
 
       if (nativeTts && typeof Platform !== 'undefined' && typeof Platform.speak === 'function') {
         Platform.speak(text, 1.05, 1.0);
@@ -76808,7 +77117,7 @@ const AdsbAirspaceManager = {
 
     const airportList = this.airports ? Array.from(this.airports.values()) : [];
     const airportsParam = airportList.length > 0 ? `&airports=${encodeURIComponent(JSON.stringify(airportList))}` : '';
-    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}${airportsParam}${tokenParam}`;
+    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}&highAltitudeThreshold=${this.highAltitudeThresholdFt || 10000}&suppressHighAltitudeCones=${this.suppressHighAltitudeCones}${airportsParam}${tokenParam}`;
 
 
 
@@ -77258,9 +77567,29 @@ const AdsbAirspaceManager = {
 
     // Evaluate client-side predictive cone if not already computed
 
-
+    let groundElevFt = 0;
+    if (typeof elevationServiceInstance !== 'undefined' && elevationServiceInstance) {
+      if (elevationServiceInstance.cachedDem && typeof elevationServiceInstance.cachedDem.sampleAt === 'function') {
+        const m = elevationServiceInstance.cachedDem.sampleAt(homeLat, homeLon);
+        if (m !== null && !isNaN(m)) groundElevFt = m * 3.28084;
+      }
+    }
 
     for (const ac of this.aircraft) {
+
+      const altVal = ac.altitude !== null && ac.altitude !== undefined
+        ? ac.altitude
+        : (ac.altitudeGeometric !== null && ac.altitudeGeometric !== undefined ? ac.altitudeGeometric : null);
+      const altAglVal = altVal !== null ? Math.max(0, altVal - groundElevFt) : null;
+      ac.altitudeAgl = altAglVal;
+      if (ac.isHighAltitude === undefined) {
+        ac.isHighAltitude = (altAglVal !== null && altAglVal >= (this.highAltitudeThresholdFt || 10000));
+      }
+      if (ac.isHighAltitude && this.suppressHighAltitudeCones) {
+        ac.coneSuppressed = true;
+        ac.isConeWarning = false;
+        if (ac.status === 'approaching') ac.status = 'safe';
+      }
 
 
 
@@ -77300,9 +77629,14 @@ const AdsbAirspaceManager = {
 
         }
 
+        if (coneEval.isHighAltitude) {
+          ac.isHighAltitude = true;
+        }
 
-
-        if (coneEval.isConeWarning) {
+        if (coneEval.coneSuppressed && ac.isHighAltitude) {
+          ac.coneSuppressed = true;
+          ac.isConeWarning = false;
+        } else if (coneEval.isConeWarning && !ac.coneSuppressed) {
 
 
 
@@ -77550,7 +77884,7 @@ const AdsbAirspaceManager = {
 
       const airportList = this.airports ? Array.from(this.airports.values()) : [];
     const airportsParam = airportList.length > 0 ? `&airports=${encodeURIComponent(JSON.stringify(airportList))}` : '';
-    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}${airportsParam}${tokenParam}`;
+    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&warningMinutes=${this.warningMinutes}&coneDeviationDeg=${this.coneDeviationDeg}&includeSafe=true&suppressAirportLanding=${this.suppressAirportLanding}&airportRadiusNm=${this.airportRadiusNm}&highAltitudeThreshold=${this.highAltitudeThresholdFt || 10000}&suppressHighAltitudeCones=${this.suppressHighAltitudeCones}${airportsParam}${tokenParam}`;
 
 
 
@@ -78674,6 +79008,18 @@ const AdsbAirspaceManager = {
 
 
 
+      } else if (ac.isHighAltitude) {
+
+
+
+        const altAglStr = (ac.altitudeAgl !== null && ac.altitudeAgl !== undefined) ? `${ac.altitudeAgl} ft AGL` : 'HIGH ALT';
+
+
+
+        alertBadgeTooltip = `<br><span style="font-weight: 700; color: #86efac;">✈️ HIGH ALTITUDE CRUISE (${altAglStr})</span><br><span style="font-size: 0.68rem; color: #94a3b8;">Cone Suppressed</span>`;
+
+
+
       }
 
 
@@ -79018,7 +79364,7 @@ const AdsbAirspaceManager = {
 
 
 
-      if (ac.isLanding || ac.coneSuppressed) {
+      if (ac.isLanding || ac.coneSuppressed || (this.suppressHighAltitudeCones && ac.isHighAltitude)) {
 
         const coneEntry = this.mapCones.get(ac.hex);
 
@@ -79056,7 +79402,7 @@ const AdsbAirspaceManager = {
 
 
 
-          : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : (ac.isLanding ? `adsb-marker-inner landing ${classified.type}` : `adsb-marker-inner ${classified.type}`));
+          : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : (ac.isLanding ? `adsb-marker-inner landing ${classified.type}` : (ac.isHighAltitude ? `adsb-marker-inner high-altitude ${classified.type}` : `adsb-marker-inner ${classified.type}`)));
 
 
 
@@ -79181,6 +79527,9 @@ const AdsbAirspaceManager = {
 
 
             this.hoveredHex = ac.hex;
+
+            if (this.suppressHighAltitudeCones && ac.isHighAltitude) return;
+            if (ac.isLanding || ac.coneSuppressed) return;
 
 
 
@@ -79376,7 +79725,7 @@ const AdsbAirspaceManager = {
 
 
 
-              : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : (ac.isLanding ? `adsb-marker-inner landing ${classified.type}` : `adsb-marker-inner ${classified.type}`));
+              : (isApproaching ? `adsb-marker-inner approaching ${classified.type}` : (ac.isLanding ? `adsb-marker-inner landing ${classified.type}` : (ac.isHighAltitude ? `adsb-marker-inner high-altitude ${classified.type}` : `adsb-marker-inner ${classified.type}`)));
 
 
 
@@ -79722,9 +80071,20 @@ const AdsbAirspaceManager = {
 
     const soundSelect = document.getElementById('adsb-sound-type-select');
 
-
-
     if (soundSelect) soundSelect.value = this.soundType;
+
+    const ttsPresetSelect = document.getElementById('adsb-tts-preset-select');
+    if (ttsPresetSelect) ttsPresetSelect.value = this.ttsPreset || 'standard';
+
+    const ttsBreachInput = document.getElementById('adsb-tts-breach-input');
+    if (ttsBreachInput && (typeof document === 'undefined' || document.activeElement !== ttsBreachInput)) {
+      ttsBreachInput.value = this.ttsBreachTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.breach : 'Traffic alert! {callsign}, {distance} {direction}, {altitude}.');
+    }
+
+    const ttsApproachingInput = document.getElementById('adsb-tts-approaching-input');
+    if (ttsApproachingInput && (typeof document === 'undefined' || document.activeElement !== ttsApproachingInput)) {
+      ttsApproachingInput.value = this.ttsApproachingTemplate || (this.TTS_PRESETS && this.TTS_PRESETS.standard ? this.TTS_PRESETS.standard.approaching : 'Traffic approaching! {callsign}, {distance} {direction}, perimeter ETA {eta}.');
+    }
 
 
 
@@ -79881,6 +80241,27 @@ const AdsbAirspaceManager = {
 
 
     if (conesToggle) conesToggle.checked = this.showCones;
+
+
+
+    const highAltSlider = document.getElementById('adsb-high-alt-slider');
+
+    const highAltVal = document.getElementById('adsb-high-alt-val');
+
+    const suppressHighAltToggle = document.getElementById('adsb-suppress-high-altitude-toggle');
+
+    if (highAltSlider) highAltSlider.value = this.highAltitudeThresholdFt || 10000;
+
+    if (highAltVal) {
+      const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+      const ft = this.highAltitudeThresholdFt || 10000;
+      const m = Math.round(Math.round(ft * 0.3048) / 50) * 50;
+      highAltVal.textContent = isMetric 
+        ? `${m.toLocaleString()} m (${ft.toLocaleString()} ft)` 
+        : `${ft.toLocaleString()} ft (${m.toLocaleString()} m)`;
+    }
+
+    if (suppressHighAltToggle) suppressHighAltToggle.checked = this.suppressHighAltitudeCones;
 
 
 
@@ -80461,6 +80842,18 @@ const AdsbAirspaceManager = {
 
 
         distDisplay = `<span style="font-size: 0.68rem; font-weight: 600; color: #38bdf8;">${distStr} ${ac.bearingCardinal || ''}</span><span style="font-size: 0.62rem; color: #94a3b8; font-weight: 600;">Cone Suppressed</span>`;
+
+
+
+      } else if (ac.isHighAltitude) {
+
+
+
+        statusChip = '<span class="adsb-high-alt-chip">CRUISE (HIGH ALT)</span>';
+
+
+
+        distDisplay = `<span style="font-size: 0.68rem; font-weight: 600; color: #86efac;">${distStr} ${ac.bearingCardinal || ''}</span><span style="font-size: 0.62rem; color: #86efac; font-weight: 600;">Cone Suppressed</span>`;
 
 
 
@@ -82008,20 +82401,115 @@ const AdsbAirspaceManager = {
 
       soundSelect.addEventListener('change', (e) => {
 
-
-
         this.soundType = e.target.value;
-
-
 
         this.saveSettings();
 
-
-
       });
 
+    }
 
+    // TTS Speech Customization Controls
+    const ttsPresetSelect = document.getElementById('adsb-tts-preset-select');
+    const ttsBreachInput = document.getElementById('adsb-tts-breach-input');
+    const ttsApproachingInput = document.getElementById('adsb-tts-approaching-input');
+    const ttsPreviewBtn = document.getElementById('adsb-tts-preview-btn');
+    const ttsResetBtn = document.getElementById('adsb-tts-reset-btn');
+    let lastFocusedTtsInput = ttsBreachInput;
 
+    if (ttsBreachInput) {
+      ttsBreachInput.addEventListener('focus', () => { lastFocusedTtsInput = ttsBreachInput; });
+      ttsBreachInput.addEventListener('input', (e) => {
+        this.ttsBreachTemplate = e.target.value;
+        this.ttsPreset = 'custom';
+        if (ttsPresetSelect) ttsPresetSelect.value = 'custom';
+        this.saveSettings();
+      });
+    }
+
+    if (ttsApproachingInput) {
+      ttsApproachingInput.addEventListener('focus', () => { lastFocusedTtsInput = ttsApproachingInput; });
+      ttsApproachingInput.addEventListener('input', (e) => {
+        this.ttsApproachingTemplate = e.target.value;
+        this.ttsPreset = 'custom';
+        if (ttsPresetSelect) ttsPresetSelect.value = 'custom';
+        this.saveSettings();
+      });
+    }
+
+    if (ttsPresetSelect) {
+      ttsPresetSelect.addEventListener('change', (e) => {
+        const val = e.target.value;
+        this.ttsPreset = val;
+        if (val !== 'custom' && this.TTS_PRESETS && this.TTS_PRESETS[val]) {
+          this.ttsBreachTemplate = this.TTS_PRESETS[val].breach;
+          this.ttsApproachingTemplate = this.TTS_PRESETS[val].approaching;
+          if (ttsBreachInput) ttsBreachInput.value = this.ttsBreachTemplate;
+          if (ttsApproachingInput) ttsApproachingInput.value = this.ttsApproachingTemplate;
+        }
+        this.saveSettings();
+      });
+    }
+
+    // Interactive token badge chips: insert token into active template input
+    if (typeof document !== 'undefined') {
+      const tokenChips = document.querySelectorAll('.adsb-tts-token');
+      tokenChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          const token = chip.getAttribute('data-token');
+          if (!token) return;
+          const targetInput = lastFocusedTtsInput || ttsBreachInput;
+          if (!targetInput) return;
+
+          const start = targetInput.selectionStart ?? targetInput.value.length;
+          const end = targetInput.selectionEnd ?? targetInput.value.length;
+          const oldVal = targetInput.value;
+          targetInput.value = oldVal.slice(0, start) + token + oldVal.slice(end);
+          targetInput.selectionStart = targetInput.selectionEnd = start + token.length;
+          targetInput.focus();
+
+          if (targetInput === ttsApproachingInput) {
+            this.ttsApproachingTemplate = targetInput.value;
+          } else {
+            this.ttsBreachTemplate = targetInput.value;
+          }
+          this.ttsPreset = 'custom';
+          if (ttsPresetSelect) ttsPresetSelect.value = 'custom';
+          this.saveSettings();
+        });
+      });
+    }
+
+    if (ttsPreviewBtn) {
+      ttsPreviewBtn.addEventListener('click', () => {
+        this.initAudioContext();
+        this.playWarningChime();
+        setTimeout(() => {
+          this.playVoiceAdvisory({
+            callsign: 'UAL452',
+            distanceMiles: 1.5,
+            distanceMeters: 2414,
+            altitude: 1850,
+            bearingCardinal: 'ESE',
+            etaSeconds: 45
+          }, 'breached');
+        }, 220);
+      });
+    }
+
+    if (ttsResetBtn) {
+      ttsResetBtn.addEventListener('click', () => {
+        this.ttsPreset = 'standard';
+        this.ttsBreachTemplate = this.TTS_PRESETS.standard.breach;
+        this.ttsApproachingTemplate = this.TTS_PRESETS.standard.approaching;
+        if (ttsPresetSelect) ttsPresetSelect.value = 'standard';
+        if (ttsBreachInput) ttsBreachInput.value = this.ttsBreachTemplate;
+        if (ttsApproachingInput) ttsApproachingInput.value = this.ttsApproachingTemplate;
+        this.saveSettings();
+        if (typeof showToast === 'function') {
+          showToast('🗣️ Voice alert templates reset to default', 'info');
+        }
+      });
     }
 
 
@@ -82403,6 +82891,62 @@ const AdsbAirspaceManager = {
 
 
       simDescendingBtn.addEventListener('click', () => this.simulateAircraft('descending'));
+
+
+
+    }
+
+
+
+    const simHighAltBtn = document.getElementById('adsb-sim-high-alt-btn');
+
+
+
+    if (simHighAltBtn) {
+
+
+
+      simHighAltBtn.addEventListener('click', () => this.simulateAircraft('high_alt'));
+
+
+
+    }
+
+
+
+    const suppressHighAltToggle = document.getElementById('adsb-suppress-high-altitude-toggle');
+
+
+
+    if (suppressHighAltToggle) {
+
+
+
+      suppressHighAltToggle.addEventListener('change', (e) => {
+
+
+
+        this.suppressHighAltitudeCones = !!e.target.checked;
+
+
+
+        this.saveSettings();
+
+
+
+        this.updateControlsUI();
+
+
+
+        this.updateMapMarkers();
+
+
+
+        this.pollAirspace();
+
+
+
+      });
 
 
 
@@ -82827,6 +83371,46 @@ const AdsbAirspaceManager = {
 
 
         this.updateControlsUI();
+
+
+
+        this.pollAirspace();
+
+
+
+      });
+
+
+
+    }
+
+
+
+    const highAltSlider = document.getElementById('adsb-high-alt-slider');
+
+
+
+    if (highAltSlider) {
+
+
+
+      highAltSlider.addEventListener('input', (e) => {
+
+
+
+        this.highAltitudeThresholdFt = parseInt(e.target.value, 10) || 10000;
+
+
+
+        this.saveSettings();
+
+
+
+        this.updateControlsUI();
+
+
+
+        if (this.showCones) this.updateMapMarkers();
 
 
 
@@ -89148,6 +89732,14 @@ const IrlVerifier = {
    */
   async syncToBridge() {
     if (!this.currentResult) return;
+    const syncBtn = document.getElementById('diag-irl-sync-bridge-btn');
+    const origHtml = syncBtn ? syncBtn.innerHTML : '';
+    if (syncBtn) {
+      syncBtn.disabled = true;
+      syncBtn.setAttribute('aria-busy', 'true');
+      syncBtn.classList.add('diag-btn-working');
+      syncBtn.innerHTML = '<span>⏳ Recording...</span>';
+    }
     const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
     const patternId = document.getElementById('diag-irl-pattern-select')?.value || 'double';
 
@@ -89165,6 +89757,15 @@ const IrlVerifier = {
       });
       if (res.ok) {
         const data = await res.json();
+        if (syncBtn) {
+          syncBtn.innerHTML = '<span>✅ Recorded!</span>';
+          setTimeout(() => {
+            syncBtn.innerHTML = origHtml;
+            syncBtn.disabled = false;
+            syncBtn.removeAttribute('aria-busy');
+            syncBtn.classList.remove('diag-btn-working');
+          }, 1500);
+        }
         if (typeof showToast === 'function') {
           showToast(`\u26A1 Recorded IRL verification for pattern "${patternId}" to local tracker!`, 4000);
         }
@@ -89176,11 +89777,23 @@ const IrlVerifier = {
           updateActiveLayerIrlBadge(patternId);
         }
       } else {
+        if (syncBtn) {
+          syncBtn.innerHTML = origHtml;
+          syncBtn.disabled = false;
+          syncBtn.removeAttribute('aria-busy');
+          syncBtn.classList.remove('diag-btn-working');
+        }
         if (typeof showToast === 'function') {
           showToast('\u26A0\uFE0F Bridge returned an error recording IRL status.', 4000);
         }
       }
     } catch (e) {
+      if (syncBtn) {
+        syncBtn.innerHTML = origHtml;
+        syncBtn.disabled = false;
+        syncBtn.removeAttribute('aria-busy');
+        syncBtn.classList.remove('diag-btn-working');
+      }
       if (typeof showToast === 'function') {
         showToast(`\u26A0\uFE0F Could not reach Companion Bridge: ${e.message}`, 4000);
       }
@@ -89222,7 +89835,21 @@ const IrlVerifier = {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
 
+        loadPlanBtn.disabled = true;
+        loadPlanBtn.setAttribute('aria-busy', 'true');
+        loadPlanBtn.classList.add('diag-btn-working');
+        const origPlanText = loadPlanBtn.innerHTML;
+        loadPlanBtn.innerHTML = '<span>⏳ Loading Plan...</span>';
+
+        const resetPlanBtn = () => {
+          loadPlanBtn.disabled = false;
+          loadPlanBtn.removeAttribute('aria-busy');
+          loadPlanBtn.classList.remove('diag-btn-working');
+          loadPlanBtn.innerHTML = origPlanText;
+        };
+
         const reader = new FileReader();
+        reader.onerror = () => resetPlanBtn();
         reader.onload = (readEvt) => {
           try {
             const text = readEvt.target.result;
@@ -89285,6 +89912,7 @@ const IrlVerifier = {
               showToast(`\u26A0\uFE0F Error reading flight plan file: ${parseErr.message}`, 4000);
             }
           }
+          resetPlanBtn();
         };
         reader.readAsText(file);
       };
@@ -89805,6 +90433,79 @@ const FlightDiagnostics = {
         this._wakeLockSentinel = null;
       }
     } catch (_) {}
+  },
+
+  /**
+   * Toggles the visual working / loading state overlay in the Flight Diagnostics 3D canvas viewport.
+   * Conforms to Modern Web Guidance: accessible indeterminate spinner, aria-live, aria-busy.
+   */
+  setWorkingState(isBusy, statusText = 'Loading telemetry...', subText = 'Processing flight data and 3D visual models', triggerBtn = null) {
+    const overlay = (typeof document !== 'undefined') ? document.getElementById('diag-loading-overlay') : null;
+    const textEl = (typeof document !== 'undefined') ? document.getElementById('diag-loading-text') : null;
+    const subTextEl = (typeof document !== 'undefined') ? document.getElementById('diag-loading-subtext') : null;
+    if (overlay) {
+      if (isBusy) {
+        if (textEl && statusText) textEl.textContent = statusText;
+        if (subTextEl) subTextEl.textContent = subText || '';
+        if (overlay.classList && typeof overlay.classList.add === 'function') overlay.classList.add('is-active');
+        if (typeof overlay.setAttribute === 'function') overlay.setAttribute('aria-hidden', 'false');
+      } else {
+        if (overlay.classList && typeof overlay.classList.remove === 'function') overlay.classList.remove('is-active');
+        if (typeof overlay.setAttribute === 'function') overlay.setAttribute('aria-hidden', 'true');
+      }
+    }
+    if (triggerBtn) {
+      if (isBusy) {
+        triggerBtn.disabled = true;
+        if (typeof triggerBtn.setAttribute === 'function') triggerBtn.setAttribute('aria-busy', 'true');
+        if (triggerBtn.classList && typeof triggerBtn.classList.add === 'function') triggerBtn.classList.add('diag-btn-working');
+      } else {
+        triggerBtn.disabled = false;
+        if (typeof triggerBtn.removeAttribute === 'function') triggerBtn.removeAttribute('aria-busy');
+        if (triggerBtn.classList && typeof triggerBtn.classList.remove === 'function') triggerBtn.classList.remove('diag-btn-working');
+      }
+    }
+  },
+
+  /**
+   * Executes an asynchronous action while temporarily setting a busy/working state on a button.
+   */
+  async withButtonWorking(btn, workingHtml, asyncFn, doneHtml = null, doneDurationMs = 1500) {
+    if (!btn) {
+      return await asyncFn();
+    }
+    const origHtml = btn.innerHTML;
+    const wasDisabled = btn.disabled;
+    btn.disabled = true;
+    if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-busy', 'true');
+    if (btn.classList && typeof btn.classList.add === 'function') btn.classList.add('diag-btn-working');
+    if (workingHtml) {
+      btn.innerHTML = workingHtml;
+    }
+    try {
+      const result = await asyncFn();
+      if (doneHtml) {
+        btn.innerHTML = doneHtml;
+        setTimeout(() => {
+          btn.innerHTML = origHtml;
+          btn.disabled = wasDisabled;
+          if (typeof btn.removeAttribute === 'function') btn.removeAttribute('aria-busy');
+          if (btn.classList && typeof btn.classList.remove === 'function') btn.classList.remove('diag-btn-working');
+        }, doneDurationMs);
+      } else {
+        btn.innerHTML = origHtml;
+        btn.disabled = wasDisabled;
+        if (typeof btn.removeAttribute === 'function') btn.removeAttribute('aria-busy');
+        if (btn.classList && typeof btn.classList.remove === 'function') btn.classList.remove('diag-btn-working');
+      }
+      return result;
+    } catch (err) {
+      btn.innerHTML = origHtml;
+      btn.disabled = wasDisabled;
+      if (typeof btn.removeAttribute === 'function') btn.removeAttribute('aria-busy');
+      if (btn.classList && typeof btn.classList.remove === 'function') btn.classList.remove('diag-btn-working');
+      throw err;
+    }
   },
 
   // HUD overlay toggle state (Diagnostics 3D replay)
@@ -90959,7 +91660,9 @@ const FlightDiagnostics = {
 
     if (saveBtn) {
       saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving...';
+      saveBtn.setAttribute('aria-busy', 'true');
+      saveBtn.classList.add('diag-btn-working');
+      saveBtn.textContent = '⏳ Saving...';
     }
 
     let savedLocally = false;
@@ -91023,6 +91726,8 @@ const FlightDiagnostics = {
 
     if (saveBtn) {
       saveBtn.disabled = false;
+      saveBtn.removeAttribute('aria-busy');
+      saveBtn.classList.remove('diag-btn-working');
       saveBtn.textContent = 'Save & Decrypt';
     }
   },
@@ -91032,7 +91737,12 @@ const FlightDiagnostics = {
     const clearBtn = typeof document !== 'undefined' ? document.getElementById('clear-dji-key-btn') : null;
     const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
 
-    if (clearBtn) clearBtn.disabled = true;
+    if (clearBtn) {
+      clearBtn.disabled = true;
+      clearBtn.setAttribute('aria-busy', 'true');
+      clearBtn.classList.add('diag-btn-working');
+      clearBtn.textContent = '⏳ Clearing...';
+    }
 
     if (typeof Platform !== 'undefined' && typeof Platform.setDjiApiKey === 'function') {
       Platform.setDjiApiKey('');
@@ -91068,7 +91778,12 @@ const FlightDiagnostics = {
     if (this.selectedFlightId) {
       this.loadSelectedFlight(this.selectedFlightId);
     }
-    if (clearBtn) clearBtn.disabled = false;
+    if (clearBtn) {
+      clearBtn.disabled = false;
+      clearBtn.removeAttribute('aria-busy');
+      clearBtn.classList.remove('diag-btn-working');
+      clearBtn.textContent = 'Clear Key';
+    }
   },
 
   copyAntigravityPrompt() {
@@ -91174,6 +91889,21 @@ const FlightDiagnostics = {
       }
       return;
     }
+    const headerBtn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-irl-verify') : null;
+    const sidebarBtn = (typeof document !== 'undefined') ? document.getElementById('diag-sidebar-irl-verify-btn') : null;
+    const irlBtns = [headerBtn, sidebarBtn].filter(Boolean);
+    irlBtns.forEach(b => {
+      b.disabled = true;
+      b.setAttribute('aria-busy', 'true');
+      b.classList.add('diag-btn-working');
+    });
+    setTimeout(() => {
+      irlBtns.forEach(b => {
+        b.disabled = false;
+        b.removeAttribute('aria-busy');
+        b.classList.remove('diag-btn-working');
+      });
+    }, 600);
     const planned = this.plannedWaypoints || (typeof getActiveMissionWaypoints === 'function' ? getActiveMissionWaypoints() : []);
     const activePattern = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || 'single';
 
@@ -91378,7 +92108,12 @@ const FlightDiagnostics = {
     const myGeneration = this._loadGeneration;
     this._pendingFlightId = flightId;
 
-    this.selectedFlightId = flightId;
+    const flightStatusLabel = flightId === 'active-mission' ? 'Generating 3D mission simulation...' : `Loading ${flightId}...`;
+    const flightSubLabel = flightId === 'active-mission' ? 'Synchronizing waypoints and camera frustums' : 'Fetching and decrypting flight log telemetry';
+    this.setWorkingState(true, flightStatusLabel, flightSubLabel);
+
+    try {
+      this.selectedFlightId = flightId;
     this.currentLoadedMission = null;
     this.plannedWaypoints = null;
     this.isActualFlown = false;
@@ -91692,6 +92427,11 @@ const FlightDiagnostics = {
     this.seekTo(resumeIdx, true, true);
     this.frameCameraToScene('3d');
     this.pause();
+  } finally {
+    if (this._loadGeneration === myGeneration) {
+      this.setWorkingState(false);
+    }
+  }
   },
 
   getSceneOrigin() {
@@ -93754,54 +94494,63 @@ const FlightDiagnostics = {
 
   exportGeoJSON() {
     if (!this.telemetryData || !this.telemetryData.points) return;
-    const coordinates = this.telemetryData.points.map(p => [p.lon, p.lat, p.alt]);
-    const geojson = {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          properties: {
-            name: "Actual Flight Track",
-            droneModel: this.telemetryData.droneModel,
-            duration: this.telemetryData.durationFormatted,
-            totalDistanceMeters: this.telemetryData.totalDistance,
-            maxAltitudeMeters: this.telemetryData.maxAltitude
-          },
-          geometry: {
-            type: "LineString",
-            coordinates: coordinates
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-export-geojson-btn') : null;
+    return this.withButtonWorking(btn, '<span>⏳ Exporting...</span>', () => {
+      const coordinates = this.telemetryData.points.map(p => [p.lon, p.lat, p.alt]);
+      const geojson = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {
+              name: "Actual Flight Track",
+              droneModel: this.telemetryData.droneModel,
+              duration: this.telemetryData.durationFormatted,
+              totalDistanceMeters: this.telemetryData.totalDistance,
+              maxAltitudeMeters: this.telemetryData.maxAltitude
+            },
+            geometry: {
+              type: "LineString",
+              coordinates: coordinates
+            }
           }
-        }
-      ]
-    };
+        ]
+      };
 
-    if (typeof document !== 'undefined') {
-      const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: "application/json" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      const flightDate = this.telemetryData?.flightDate || new Date();
-      const iso8601 = formatISO8601ForFilename(flightDate);
-      link.download = `FlightRecord_${iso8601}_Track.geojson`;
-      link.click();
-    }
+      if (typeof document !== 'undefined') {
+        const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        const flightDate = this.telemetryData?.flightDate || new Date();
+        const iso8601 = formatISO8601ForFilename(flightDate);
+        link.download = `FlightRecord_${iso8601}_Track.geojson`;
+        link.click();
+      }
+    }, '<span>✅ Exported!</span>', 1200);
   },
 
   exportDiagJSON() {
-    const wps = (typeof getActiveMissionWaypoints === 'function') ? getActiveMissionWaypoints() : [];
-    const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 50.0;
-    const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
-    const gimbalPitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
-    return exportFlightDiagnosticsJSON(wps, {
-      altitude,
-      speed,
-      gimbalPitch,
-      uuid: this.selectedFlightId || 'active-mission'
-    });
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-export-json-btn') : null;
+    return this.withButtonWorking(btn, '<span>⏳ Exporting...</span>', () => {
+      const wps = (typeof getActiveMissionWaypoints === 'function') ? getActiveMissionWaypoints() : [];
+      const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 50.0;
+      const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
+      const gimbalPitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
+      return exportFlightDiagnosticsJSON(wps, {
+        altitude,
+        speed,
+        gimbalPitch,
+        uuid: this.selectedFlightId || 'active-mission'
+      });
+    }, '<span>✅ Exported!</span>', 1200);
   },
 
   async handleLogFileImport(e) {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (!file) return;
+
+    const loadBtn = (typeof document !== 'undefined') ? document.getElementById('diag-load-file-btn') : null;
+    this.setWorkingState(true, `Importing ${file.name}...`, 'Parsing flight log data and generating 3D paths', loadBtn);
 
     try {
       const flightId = file.name;
@@ -93888,6 +94637,9 @@ const FlightDiagnostics = {
       }
     } catch (err) {
       if (typeof alert === 'function') alert('Could not parse file: ' + err.message);
+    } finally {
+      this.setWorkingState(false, '', '', loadBtn);
+      if (e.target) e.target.value = '';
     }
   },
 
@@ -94539,42 +95291,48 @@ const FlightDiagnostics = {
       ? this.gatherDigitalTwinData()
       : { elevationOffset: typeof this.wireframeElevationOffset === 'number' ? this.wireframeElevationOffset : 0.0 };
 
-    try {
-      const res = await fetch(`${apiBase}/api/process/wireframe/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          missionUuid: targetMissionUuid,
-          lines: this.wireframeData.lines,
-          elevationOffset: dtData.elevationOffset,
-          flightPath: dtData.flightPath,
-          photos: dtData.photos,
-          boundary: dtData.boundary
-        })
-      });
-      const data = await res.json();
-      if (data && data.success) {
-        if (this.activeInspectionManifest) {
-          this.activeInspectionManifest.wireframe = data.wireframe;
-        }
-        if (typeof showToast === 'function') {
-          showToast(`📦 3D Wireframe saved to package (${data.count} lines)!`, 'success');
+    const saveBtn = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-save-btn') : null;
+
+    await this.withButtonWorking(saveBtn, '<span>⏳ Saving...</span>', async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/process/wireframe/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            missionUuid: targetMissionUuid,
+            lines: this.wireframeData.lines,
+            elevationOffset: dtData.elevationOffset,
+            flightPath: dtData.flightPath,
+            photos: dtData.photos,
+            boundary: dtData.boundary
+          })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          if (this.activeInspectionManifest) {
+            this.activeInspectionManifest.wireframe = data.wireframe;
+          }
+          if (typeof showToast === 'function') {
+            showToast(`📦 3D Wireframe saved to package (${data.count} lines)!`, 'success');
+          } else {
+            alert(`📦 3D Wireframe saved to package (${data.count} lines)!`);
+          }
         } else {
-          alert(`📦 3D Wireframe saved to package (${data.count} lines)!`);
+          throw new Error((data && data.error) || 'Failed to save wireframe to package');
         }
-      } else {
-        throw new Error((data && data.error) || 'Failed to save wireframe to package');
+      } catch (err) {
+        if (typeof showToast === 'function') showToast(`Package note: ${err.message}`, 'warning');
+        else alert(`Package note: ${err.message}`);
       }
-    } catch (err) {
-      if (typeof showToast === 'function') showToast(`Package note: ${err.message}`, 'warning');
-      else alert(`Package note: ${err.message}`);
-    }
+    }, '<span>✅ Saved!</span>', 1500);
   },
 
   async extractWireframeFromCurrentPhotos() {
     const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-extract-wireframe') : null;
     if (btn) {
       btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      btn.classList.add('diag-btn-working');
       btn.textContent = '⏳ Extracting...';
     }
     try {
@@ -94612,6 +95370,8 @@ const FlightDiagnostics = {
     } finally {
       if (btn) {
         btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+        btn.classList.remove('diag-btn-working');
         btn.innerHTML = '<span>🏗️</span> Project 3D Wireframe';
       }
     }
@@ -94731,16 +95491,36 @@ const FlightDiagnostics = {
 
   async triggerAiMeshReconstruction() {
     const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-generate-ai-mesh') : null;
+    const btnGallery = (typeof document !== 'undefined') ? document.getElementById('diag-btn-ai-mesh-gallery') : null;
+    const allMeshBtns = [btn, btnGallery].filter(Boolean);
     const progressCard = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-card') : null;
     const progressBar = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-bar') : null;
     const progressPct = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-progress-pct') : null;
     const statusText = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-status-text') : null;
     const engineSelect = (typeof document !== 'undefined') ? document.getElementById('diag-ai-mesh-engine-select') : null;
 
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = '⏳ Processing 3D...';
-    }
+    allMeshBtns.forEach(b => {
+      b.disabled = true;
+      b.setAttribute('aria-busy', 'true');
+      b.classList.add('diag-btn-working');
+      b.textContent = '⏳ Processing 3D...';
+    });
+    this.setWorkingState(true, 'AI 3D Reconstruction in progress...', 'Extracting features from aerial photos');
+
+    const resetMeshBtns = () => {
+      allMeshBtns.forEach(b => {
+        b.disabled = false;
+        b.removeAttribute('aria-busy');
+        b.classList.remove('diag-btn-working');
+        if (b.id === 'diag-btn-ai-mesh-gallery') {
+          b.textContent = '⚡ Reconstruct 3D Mesh';
+        } else {
+          b.textContent = '⚡ Reconstruct AI 3D Mesh';
+        }
+      });
+      this.setWorkingState(false);
+    };
+
     if (progressCard) progressCard.style.display = 'flex';
     if (progressBar) progressBar.style.width = '10%';
     if (progressPct) progressPct.textContent = '10%';
@@ -94801,10 +95581,7 @@ const FlightDiagnostics = {
                   }
                 }
 
-                if (btn) {
-                  btn.disabled = false;
-                  btn.textContent = '⚡ Reconstruct AI 3D Mesh';
-                }
+                resetMeshBtns();
               } else if (job.status === 'error') {
                 clearInterval(poll);
                 throw new Error(job.error || 'AI reconstruction failed');
@@ -94814,28 +95591,19 @@ const FlightDiagnostics = {
         } catch (err) {
           clearInterval(poll);
           if (statusText) statusText.textContent = `Error: ${err.message}`;
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = '⚡ Reconstruct AI 3D Mesh';
-          }
+          resetMeshBtns();
           if (typeof showToast === 'function') showToast(`AI 3D Assist: ${err.message}`, 'error');
         }
 
         if (attempts > 60) {
           clearInterval(poll);
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = '⚡ Reconstruct AI 3D Mesh';
-          }
+          resetMeshBtns();
         }
       }, 500);
 
     } catch (err) {
       if (statusText) statusText.textContent = `Error: ${err.message}`;
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = '⚡ Reconstruct AI 3D Mesh';
-      }
+      resetMeshBtns();
       if (typeof showToast === 'function') showToast(`AI 3D Assist: ${err.message}`, 'error');
     }
   }
@@ -112439,6 +113207,10 @@ function renderRc2LogTable(logs) {
     btn.addEventListener('click', () => {
       const fn = btn.getAttribute('data-filename');
       const handleAttr = btn.getAttribute('data-handle');
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      btn.classList.add('diag-btn-working');
+      btn.innerHTML = '<span>⏳ Loading...</span>';
       if (typeof Platform !== 'undefined' && Platform.isNativeContainer() && fn) {
         pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
       } else if (fn) {
@@ -112449,10 +113221,24 @@ function renderRc2LogTable(logs) {
 
   const pullBtns = container.querySelectorAll('.rc2-pull-single-btn');
   pullBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const fn = btn.getAttribute('data-filename');
       const handleAttr = btn.getAttribute('data-handle');
-      if (fn) pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
+      if (fn) {
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.classList.add('diag-btn-working');
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = '<span>⏳ Pulling...</span>';
+        try {
+          await pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
+        } finally {
+          btn.disabled = false;
+          btn.removeAttribute('aria-busy');
+          btn.classList.remove('diag-btn-working');
+          btn.innerHTML = origHtml;
+        }
+      }
     });
   });
 }

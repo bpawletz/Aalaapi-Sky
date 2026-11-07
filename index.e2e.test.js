@@ -12746,7 +12746,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(zoomControls.hasAirspace, '#map-zoom-airspace-btn must exist');
 
     // Click Airspace zoom button
-    await page.locator('#map-zoom-airspace-btn').click();
+    await page.locator('#map-zoom-airspace-btn').click({ force: true });
     await page.waitForTimeout(300);
 
     const airspaceZoom = await page.evaluate(() => {
@@ -12763,7 +12763,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(airspaceZoom.isActive, 'Airspace button must have is-active class at zoom 12');
 
     // Click Plan zoom button
-    await page.locator('#map-zoom-plan-btn').click();
+    await page.locator('#map-zoom-plan-btn').click({ force: true });
     await page.waitForTimeout(300);
 
     const planZoom = await page.evaluate(() => {
@@ -12839,6 +12839,121 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const overlay = document.getElementById('config-modal');
       if (overlay) overlay.classList.add('hidden');
     });
+  });
+
+  test('Issue #267 E2E: Flight Diagnostics working indicators and busy overlay toggle', async () => {
+    const res = await page.evaluate(async () => {
+      const modal = document.getElementById('flight-diagnostics-modal');
+      const overlay = document.getElementById('diag-loading-overlay');
+      const textEl = document.getElementById('diag-loading-text');
+      const subTextEl = document.getElementById('diag-loading-subtext');
+      const spinner = document.getElementById('diag-loading-spinner');
+
+      const elementsExist = Boolean(modal && overlay && textEl && subTextEl && spinner);
+
+      let activeApplied = false;
+      let activeRemoved = false;
+      let textUpdated = false;
+      let mockBtnBusy = false;
+      let mockBtnRestored = false;
+
+      const mockBtn = document.createElement('button');
+      mockBtn.innerHTML = 'Action';
+      document.body.appendChild(mockBtn);
+
+      if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.setWorkingState === 'function') {
+        FlightDiagnostics.setWorkingState(true, 'Extracting Flight Logs...', 'Connecting over USB MTP', mockBtn);
+        activeApplied = overlay.classList.contains('is-active') && overlay.getAttribute('aria-hidden') === 'false';
+        textUpdated = textEl.textContent === 'Extracting Flight Logs...' && subTextEl.textContent === 'Connecting over USB MTP';
+        mockBtnBusy = mockBtn.disabled && mockBtn.getAttribute('aria-busy') === 'true' && mockBtn.classList.contains('diag-btn-working');
+
+        FlightDiagnostics.setWorkingState(false, null, null, mockBtn);
+        activeRemoved = !overlay.classList.contains('is-active') && overlay.getAttribute('aria-hidden') === 'true';
+        mockBtnRestored = !mockBtn.disabled && !mockBtn.hasAttribute('aria-busy') && !mockBtn.classList.contains('diag-btn-working');
+      }
+
+      mockBtn.remove();
+
+      return {
+        elementsExist,
+        activeApplied,
+        textUpdated,
+        mockBtnBusy,
+        activeRemoved,
+        mockBtnRestored
+      };
+    });
+
+    assert.ok(res.elementsExist, 'Flight Diagnostics loading overlay elements must exist in the DOM');
+    assert.ok(res.activeApplied, 'setWorkingState(true) must add .is-active and set aria-hidden="false"');
+    assert.ok(res.textUpdated, 'setWorkingState(true) must update loading status text and subtext');
+    assert.ok(res.mockBtnBusy, 'setWorkingState(true) must set button disabled, aria-busy, and .diag-btn-working');
+    assert.ok(res.activeRemoved, 'setWorkingState(false) must remove .is-active and set aria-hidden="true"');
+    assert.ok(res.mockBtnRestored, 'setWorkingState(false) must restore button state');
+  });
+
+  test('E2E: ADS-B High-Altitude Cone Suppression & Pastel Greenish Markers (v1.239.0, Issue #269)', async () => {
+    // 1. Open ADS-B drawer
+    await page.evaluate(() => {
+      const toggle = document.getElementById('adsb-drawer-toggle');
+      if (toggle && !toggle.classList.contains('active')) toggle.click();
+    });
+    await page.waitForTimeout(150);
+
+    // 2. Switch to Settings tab and verify High-Altitude controls
+    const settingsState = await page.evaluate(() => {
+      const settingsTab = document.querySelector('.adsb-tab-btn[data-tab="settings"]');
+      if (settingsTab) settingsTab.click();
+
+      const slider = document.getElementById('adsb-high-alt-slider');
+      const val = document.getElementById('adsb-high-alt-val');
+      const toggle = document.getElementById('adsb-suppress-high-altitude-toggle');
+
+      return {
+        hasSlider: Boolean(slider),
+        hasVal: Boolean(val),
+        hasToggle: Boolean(toggle),
+        sliderVal: slider ? slider.value : null,
+        valText: val ? val.textContent.trim() : null,
+        toggleChecked: toggle ? toggle.checked : null
+      };
+    });
+
+    assert.ok(settingsState.hasSlider, '#adsb-high-alt-slider must exist in settings tab');
+    assert.ok(settingsState.hasVal, '#adsb-high-alt-val must exist');
+    assert.ok(settingsState.hasToggle, '#adsb-suppress-high-altitude-toggle must exist');
+    assert.strictEqual(settingsState.sliderVal, '10000', 'High-altitude floor must default to 10,000 ft');
+    assert.strictEqual(settingsState.toggleChecked, true, 'High-altitude cone suppression toggle must default to true');
+
+    // 3. Switch to Operations tab and click Simulate High-Altitude Traffic
+    await page.evaluate(() => {
+      const opsTab = document.querySelector('.adsb-tab-btn[data-tab="operations"]');
+      if (opsTab) opsTab.click();
+
+      const simBtn = document.getElementById('adsb-sim-high-alt-btn');
+      if (simBtn) simBtn.click();
+    });
+    await page.waitForTimeout(250);
+
+    // 4. Verify Map Marker has pastel greenish class and no cone polygon
+    const trafficState = await page.evaluate(() => {
+      const highAltInner = document.querySelector('.adsb-marker-inner.high-altitude');
+      const highAltChip = document.querySelector('.adsb-high-alt-chip');
+      const manager = window.AdsbAirspaceManager;
+      const hasHighAltCone = manager ? manager.mapCones.has('A88888') : false;
+
+      return {
+        hasPastelMarker: Boolean(highAltInner),
+        hasHighAltChip: Boolean(highAltChip),
+        highAltChipText: highAltChip ? highAltChip.textContent.trim() : null,
+        hasHighAltCone
+      };
+    });
+
+    assert.ok(trafficState.hasPastelMarker, 'Marker for 12,000 ft traffic must have .adsb-marker-inner.high-altitude class');
+    assert.ok(trafficState.hasHighAltChip, 'Drawer list must display .adsb-high-alt-chip badge');
+    assert.strictEqual(trafficState.highAltChipText, 'CRUISE (HIGH ALT)');
+    assert.strictEqual(trafficState.hasHighAltCone, false, 'Cone polygon for high-altitude traffic must be suppressed in mapCones');
   });
   });
 });

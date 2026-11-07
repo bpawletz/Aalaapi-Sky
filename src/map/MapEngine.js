@@ -1328,9 +1328,13 @@ function getReplayAircraftMarkerHtml(craft) {
     (craft.distanceMeters && craft.distanceMeters <= 5556 && craft.vertDeltaMeters !== undefined && craft.vertDeltaMeters <= 300)
   );
 
+  const highAltFt = (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager.highAltitudeThresholdFt) || 10000;
+  const craftAlt = typeof craft.altitude === 'number' ? craft.altitude : (typeof craft.alt === 'number' ? craft.alt : null);
+  const isHighAltitude = !isBreached && Boolean(craft.isHighAltitude || (craftAlt !== null && craftAlt >= highAltFt));
+
   const innerClass = isBreached
     ? `adsb-marker-inner historical-replay breached ${classified.type}`
-    : `adsb-marker-inner historical-replay ${classified.type}`;
+    : (isHighAltitude ? `adsb-marker-inner historical-replay high-altitude ${classified.type}` : `adsb-marker-inner historical-replay ${classified.type}`);
 
   const track = Math.round(craft.track !== undefined ? craft.track : (craft.heading || 0));
 
