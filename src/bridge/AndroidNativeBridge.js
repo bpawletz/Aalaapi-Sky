@@ -667,9 +667,16 @@
 
     // ─── Connection Status Notification Handler ─────────────────────────────
     onAdsbStatusChanged(status, host, port, errorMsg) {
+      this.isAdsbConnected = (status === 'connected');
       if (typeof document === 'undefined') return;
       const hwBadge = document.getElementById('adsb-hardware-badge');
       const trBadge = document.getElementById('adsb-transport-badge');
+      const tabDot = document.getElementById('adsb-tab-status-dot');
+      const summaryEl = document.getElementById('adsb-diag-summary');
+      const streamEl = document.getElementById('adsb-stream-status');
+      const hwEl = document.getElementById('adsb-hw-status');
+
+      const isExternalWatchActive = typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager.externalWatchActive;
 
       if (status === 'connected') {
         if (hwBadge) {
@@ -680,6 +687,25 @@
           trBadge.textContent = `Android Native (${host}:${port})`;
           trBadge.style.color = '#34d399';
         }
+        if (tabDot) {
+          tabDot.className = 'adsb-tab-dot is-connected';
+          tabDot.title = isExternalWatchActive
+            ? `Connected: Android Native (${host}:${port}) + adsb.lol Cloud Feed`
+            : `Connected to Android Native (${host}:${port})`;
+        }
+        if (summaryEl) {
+          summaryEl.textContent = 'ACTIVE';
+          summaryEl.style.background = 'rgba(16, 185, 129, 0.2)';
+          summaryEl.style.color = '#10b981';
+        }
+        if (streamEl) {
+          streamEl.textContent = `Connected (${host}:${port})`;
+          streamEl.style.color = '#10b981';
+        }
+        if (hwEl) {
+          hwEl.textContent = 'Android Native / RTL-SDR Socket';
+          hwEl.style.color = '#38bdf8';
+        }
       } else if (status === 'connecting') {
         if (hwBadge) {
           hwBadge.textContent = 'CONNECTING...';
@@ -688,6 +714,19 @@
         if (trBadge) {
           trBadge.textContent = `Connecting to ${host}:${port}...`;
           trBadge.style.color = '#38bdf8';
+        }
+        if (tabDot && !isExternalWatchActive) {
+          tabDot.className = 'adsb-tab-dot is-waiting';
+          tabDot.title = `Connecting to ${host}:${port}...`;
+        }
+        if (summaryEl && !isExternalWatchActive) {
+          summaryEl.textContent = 'CONNECTING';
+          summaryEl.style.background = 'rgba(56, 189, 248, 0.2)';
+          summaryEl.style.color = '#38bdf8';
+        }
+        if (streamEl && !isExternalWatchActive) {
+          streamEl.textContent = `Connecting to ${host}:${port}...`;
+          streamEl.style.color = '#38bdf8';
         }
       } else if (status === 'error') {
         if (hwBadge) {
@@ -698,6 +737,21 @@
           trBadge.textContent = `Error (${errorMsg || 'Failed'})`;
           trBadge.style.color = '#f87171';
         }
+        if (!isExternalWatchActive) {
+          if (tabDot) {
+            tabDot.className = 'adsb-tab-dot is-offline';
+            tabDot.title = `Error (${errorMsg || 'Connection Failed'})`;
+          }
+          if (summaryEl) {
+            summaryEl.textContent = 'ERROR';
+            summaryEl.style.background = 'rgba(239, 68, 68, 0.2)';
+            summaryEl.style.color = '#ef4444';
+          }
+          if (streamEl) {
+            streamEl.textContent = `Error: ${errorMsg || 'Failed'}`;
+            streamEl.style.color = '#ef4444';
+          }
+        }
       } else if (status === 'disconnected') {
         if (hwBadge) {
           hwBadge.textContent = 'READY';
@@ -706,6 +760,21 @@
         if (trBadge) {
           trBadge.textContent = 'Disconnected';
           trBadge.style.color = '#94a3b8';
+        }
+        if (!isExternalWatchActive) {
+          if (tabDot) {
+            tabDot.className = 'adsb-tab-dot is-offline';
+            tabDot.title = 'Disconnected';
+          }
+          if (summaryEl) {
+            summaryEl.textContent = 'OFFLINE';
+            summaryEl.style.background = 'rgba(239, 68, 68, 0.2)';
+            summaryEl.style.color = '#ef4444';
+          }
+          if (streamEl) {
+            streamEl.textContent = 'Disconnected';
+            streamEl.style.color = '#94a3b8';
+          }
         }
       }
     },
@@ -874,21 +943,49 @@
 
       try {
         if (window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLatestLogFromRc2 === 'function') {
-          const logBase64 = window.AalaapiAndroid.pullLatestLogFromRc2();
-          if (logBase64 && typeof window.atob === 'function') {
+          const rawRes = window.AalaapiAndroid.pullLatestLogFromRc2();
+          if (!rawRes) {
+            throw new Error('No flight logs found on connected RC 2');
+          }
+
+          let logPayload = null;
+          let logBase64 = null;
+          let logFilename = 'FlightRecord_latest.txt';
+
+          try {
+            logPayload = JSON.parse(rawRes);
+          } catch (_) {
+            logBase64 = rawRes;
+          }
+
+          if (logPayload) {
+            if (!logPayload.success) {
+              throw new Error(logPayload.message || logPayload.error || 'RC 2 flight log pull failed');
+            }
+            logBase64 = logPayload.data || logPayload.base64;
+            logFilename = logPayload.filename || logFilename;
+          }
+
+          if (!logBase64) {
+            throw new Error('Empty flight log payload received from RC 2');
+          }
+
+          if (typeof DigitalTwin !== 'undefined' && typeof DigitalTwin.loadFlightLogData === 'function') {
+            await DigitalTwin.loadFlightLogData(logFilename, logBase64);
+          } else if (typeof window.atob === 'function') {
             const rawText = window.atob(logBase64);
             if (typeof DjiLogDecryptor !== 'undefined' && DjiLogDecryptor.parseLogText) {
-              DjiLogDecryptor.parseLogText(rawText);
+              DjiLogDecryptor.parseLogText(rawText, logFilename);
             }
+          }
+
+          if (typeof showToast === 'function') {
+            showToast(`📥 Flight log pulled from DJI RC 2 (${logFilename})`, 'success');
           }
         } else if (typeof WebUsbMtp !== 'undefined') {
           if (typeof pullLogViaWebUsb === 'function') {
             await pullLogViaWebUsb();
           }
-        }
-
-        if (typeof showToast === 'function') {
-          showToast('📥 Flight log pulled from DJI RC 2', 'success');
         }
       } catch (err) {
         console.error('Log pull error:', err);

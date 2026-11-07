@@ -12520,5 +12520,37 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
     assert.strictEqual(isModalClosed, true, 'Close button should hide debug console modal');
   });
+
+  test('Feed & Hardware status dot and Debug Console Error formatting verify correctly (Issues #253 & #254)', async () => {
+    // 1. Verify DebugConsole does not format Error as empty {}
+    await page.evaluate(() => {
+      console.error('Test error serialization:', new Error('USB MTP Timeout'));
+      if (typeof DebugConsole !== 'undefined') DebugConsole.renderLogs();
+    });
+    await page.waitForTimeout(100);
+
+    const hasFormattedError = await page.evaluate(() => {
+      const out = document.getElementById('debug-console-output');
+      return out && out.textContent.includes('USB MTP Timeout') && !out.textContent.includes('Test error serialization: {}');
+    });
+    assert.strictEqual(hasFormattedError, true, 'Debug console must render actual Error message instead of empty {}');
+
+    // 2. Verify Feed & Hardware dot turns green on Android native connect
+    await page.evaluate(() => {
+      if (typeof window.onAdsbStatusChanged === 'function') {
+        window.onAdsbStatusChanged('connected', '127.0.0.1', 30003);
+      } else if (typeof window.AalaapiAndroidBridge !== 'undefined' && window.AalaapiAndroidBridge.onAdsbStatusChanged) {
+        window.AalaapiAndroidBridge.onAdsbStatusChanged('connected', '127.0.0.1', 30003);
+      }
+    });
+    await page.waitForTimeout(100);
+
+    const isConnectedDot = await page.evaluate(() => {
+      const dot = document.getElementById('adsb-tab-status-dot');
+      return dot && dot.classList.contains('is-connected');
+    });
+    assert.strictEqual(isConnectedDot, true, 'Tab dot must show is-connected (green) when feed is connected');
+  });
+
   });
 });

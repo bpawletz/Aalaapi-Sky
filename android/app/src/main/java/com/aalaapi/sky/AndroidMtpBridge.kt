@@ -137,12 +137,17 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
         for (handle in handles) {
             val info = mtp.getObjectInfo(handle) ?: continue
             val name = info.name ?: ""
-            if (info.format == 0x3001) { // MTP Association / Directory
+            val isFolder = (info.format == 0x3001 || info.associationType != 0)
+            if (isFolder) {
                 val lower = name.lowercase()
-                if (depth == 0 || lower in listOf("android", "data", "dji.go.v5", "files", "flightrecord", "dji")) {
+                val isRelevantDir = depth == 0 || lower in listOf(
+                    "android", "data", "dji.go.v5", "files", "flightrecord", "flightrecords",
+                    "flight_record", "dji", "dji.pilot", "dji.pilot.pad", "dji.industry.pilot", "dji.go.v4"
+                ) || lower.contains("flight") || lower.contains("record") || lower.contains("dji")
+                if (isRelevantDir) {
                     scanMtpForFlightRecords(mtp, storageId, handle, candidates, depth + 1)
                 }
-            } else if (name.startsWith("FlightRecord_") && (name.endsWith(".txt") || name.endsWith(".csv"))) {
+            } else if ((name.startsWith("FlightRecord_") || name.startsWith("DJIFlightRecord_")) && (name.endsWith(".txt") || name.endsWith(".csv"))) {
                 candidates.add(Pair(handle, info))
             }
         }
@@ -161,6 +166,10 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
                     }
                 }
 
+                webView.post {
+                    webView.evaluateJavascript("console.info('📁 [MTP] Scanned RC 2 storage: found ${candidateHandles.size} flight records');", null)
+                }
+
                 if (candidateHandles.isNotEmpty()) {
                     candidateHandles.sortByDescending { it.second.dateModified }
                     val newest = candidateHandles.first()
@@ -177,8 +186,14 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
                             put("filename", newest.second.name)
                             put("source", "usb_mtp")
                             put("size", bytes.size)
+                            put("data", b64)
                             put("base64", b64)
                         }.toString()
+                    } else {
+                        Log.e("AalaapiMtp", "Failed to import file via MTP handle ${newest.first}")
+                        webView.post {
+                            webView.evaluateJavascript("console.warn('⚠️ [MTP] importFile returned false for ${newest.second.name}');", null)
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -203,7 +218,7 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
             try {
                 if (dir.exists() && dir.isDirectory) {
                     val logFiles = dir.listFiles { f ->
-                        f.isFile && f.name.startsWith("FlightRecord_") && (f.name.endsWith(".txt") || f.name.endsWith(".csv"))
+                        f.isFile && (f.name.startsWith("FlightRecord_") || f.name.startsWith("DJIFlightRecord_")) && (f.name.endsWith(".txt") || f.name.endsWith(".csv"))
                     }?.sortedByDescending { it.lastModified() }
 
                     if (!logFiles.isNullOrEmpty()) {
@@ -216,6 +231,7 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
                             put("source", "local_storage")
                             put("path", latest.absolutePath)
                             put("size", bytes.size)
+                            put("data", b64)
                             put("base64", b64)
                         }.toString()
                     }
@@ -234,7 +250,7 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
                 put("message", "USB controller detected but USB permission was not granted. Reconnect cable and allow permission.")
             } else {
                 put("error", "NO_LOGS_FOUND")
-                put("message", "No FlightRecord_*.txt logs found on connected RC 2 storage.")
+                put("message", "No flight logs (FlightRecord_*.txt or DJIFlightRecord_*.txt) found on connected RC 2 storage.")
             }
         }.toString()
     }

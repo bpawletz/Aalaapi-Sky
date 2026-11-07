@@ -8709,7 +8709,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.227.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.228.0</span></h1>
         </div>
       </div>
 
@@ -13511,6 +13511,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>📡</span>
+              Unified ADS-B Feed Health &amp; RC 2 USB MTP Log Pull Fix (v1.228.0) (Closes #253, Closes #254)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              The <strong>Feed &amp; Hardware</strong> tab indicator dot now displays active green status whenever airspace telemetry streams from native Android dump1090/readsb sockets, the online cloud feed (<code>adsb.lol</code>), or Companion Bridge, preventing false-offline warnings. Fixed USB MTP log pulling from DJI RC 2 controllers on Android with broadened file detection (<code>DJIFlightRecord_*.txt</code>) and informative Mobile Debug Console error stack reporting.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>🔌</span>
               Android RC 2 USB MTP Log Extraction &amp; Mobile Debug Console (v1.227.0) (Closes #252)
             </strong>
@@ -16165,7 +16174,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.227.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.228.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -16325,7 +16334,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
-              <li style="margin-bottom: 8px;">
+                            <li style="margin-bottom: 8px;">
+                <strong style="color: var(--text-main);">Changelog (v1.228.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Unified ADS-B Feed Health, RC 2 USB Log Extraction &amp; Debug Console Fix (Closes #253, Closes #254):</strong> Feed &amp; Hardware status dot turns green when streaming from Android native dump1090 sockets or online cloud feeds (adsb.lol). Fixed RC 2 flight log pulling on Android via USB MTP with DJIFlightRecord support, and resolved empty error formatting in Mobile Debug Console.</li>
+                </ul>
+              </li>
+              <br>
+<li style="margin-bottom: 8px;">
                 <strong style="color: var(--text-main);">Changelog (v1.227.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                   <li><strong>Android USB MTP RC 2 Flight Log Extraction, Chrome Remote Debugging &amp; Mobile Debug Console (Closes #252):</strong> Extract and replay DJI RC 2 flight logs over USB-C MTP directly on Android devices. Inspect WebView via PC Chrome DevTools (<code>chrome://inspect/#devices</code>) and view real-time logcat logs. Added on-device Mobile Debug Console (triple-tap header badge or tap Console in About) with live filtering and copying.</li>
@@ -28862,9 +28878,13 @@ class DebugConsoleManager {
       const formatted = args.map(arg => {
         if (arg === null) return 'null';
         if (arg === undefined) return 'undefined';
+        if (arg instanceof Error || (arg && typeof arg === 'object' && ('message' in arg || 'stack' in arg))) {
+          return arg.stack || `${arg.name || 'Error'}: ${arg.message || ''}`;
+        }
         if (typeof arg === 'object') {
           try {
-            return JSON.stringify(arg);
+            const str = JSON.stringify(arg);
+            return str === '{}' ? String(arg) : str;
           } catch (_) {
             return String(arg);
           }
@@ -60478,7 +60498,7 @@ async function pullFlightLogFromRC2(targetBtn = null) {
           }
           throw new Error(errMsg);
         }
-        logBase64 = logPayload.data;
+        logBase64 = logPayload.data || logPayload.base64;
         logFilename = logPayload.filename || logFilename;
       }
 
@@ -60509,6 +60529,8 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
         resetButtonStates(3500);
         return { success: true, logName: logFilename };
+      } else {
+        throw new Error((logPayload && (logPayload.message || logPayload.error)) || 'No flight log data received from RC 2');
       }
     }
 
@@ -65971,27 +65993,49 @@ const AdsbAirspaceManager = {
 
 
   async fetchAirspaceStatus() {
-
     try {
+      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.getAdsbStatus === 'function') {
+        const rawJson = window.AalaapiAndroid.getAdsbStatus();
+        if (rawJson) {
+          try {
+            const nativeStatus = JSON.parse(rawJson);
+            if (nativeStatus && (nativeStatus.connected || nativeStatus.connecting || nativeStatus.messagesReceived > 0)) {
+              const nativeSt = {
+                connected: Boolean(nativeStatus.connected),
+                connecting: Boolean(nativeStatus.connecting),
+                isRemoteServer: true,
+                tcpHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
+                tcpPort: nativeStatus.currentPort || this.serverPort || 30003,
+                adsbHost: nativeStatus.currentHost || this.serverHost || '127.0.0.1',
+                adsbPort: nativeStatus.currentPort || this.serverPort || 30003,
+                totalPackets: nativeStatus.messagesReceived || 0,
+                driverType: 'Android Native Socket'
+              };
+              this.updateDiagnosticsUI(nativeSt);
+              return;
+            }
+          } catch (_) {}
+        }
+      }
 
       const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-
       const res = await fetch(`${apiBase}/api/airspace/status`, {
         headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
       });
-
       if (!res.ok) return;
-
       const st = await res.json();
-
       this.updateDiagnosticsUI(st);
-
     } catch (e) {
+      const isAndroidConnected = (typeof AndroidNativeBridge !== 'undefined' && AndroidNativeBridge.isAdsbConnected) || (typeof global !== 'undefined' && global.AndroidNativeBridge && global.AndroidNativeBridge.isAdsbConnected);
+      const isCloudActive = Boolean(this.externalWatchActive);
+      const isStreamActive = Boolean(this.streamConnected);
 
-      this.updateDiagnosticsUI(null);
-
+      if (!isAndroidConnected && !isCloudActive && !isStreamActive) {
+        this.updateDiagnosticsUI(null);
+      } else {
+        this.updateDiagnosticsUI(this.synthesizeActiveStatus ? this.synthesizeActiveStatus() : null);
+      }
     }
-
   },
 
 
@@ -66081,266 +66125,204 @@ const AdsbAirspaceManager = {
 
 
 
+  synthesizeActiveStatus() {
+    const isAndroidConnected = (typeof AndroidNativeBridge !== 'undefined' && AndroidNativeBridge.isAdsbConnected) || (typeof global !== 'undefined' && global.AndroidNativeBridge && global.AndroidNativeBridge.isAdsbConnected);
+    const isCloudActive = Boolean(this.externalWatchActive);
+    const host = this.serverHost || '127.0.0.1';
+    const port = this.serverPort || 30003;
+
+    if (isAndroidConnected) {
+      return {
+        connected: true,
+        isRemoteServer: true,
+        tcpHost: host,
+        tcpPort: port,
+        adsbHost: host,
+        adsbPort: port,
+        driverType: 'Android Native Socket'
+      };
+    }
+    if (isCloudActive) {
+      return {
+        connected: true,
+        isRemoteServer: true,
+        tcpHost: 'adsb.lol',
+        tcpPort: 443,
+        adsbHost: 'adsb.lol',
+        adsbPort: 443,
+        driverType: 'Online Cloud Feed (adsb.lol)'
+      };
+    }
+    return null;
+  },
+
   updateDiagnosticsUI(st) {
-
     if (typeof document === 'undefined') return;
-
     const hwEl = document.getElementById('adsb-hw-status');
-
     const streamEl = document.getElementById('adsb-stream-status');
-
     const summaryEl = document.getElementById('adsb-diag-summary');
-
     const tipEl = document.getElementById('adsb-diag-tip');
-
     const hwPacketsEl = document.getElementById('adsb-hw-packets');
-
     const hwDriverEl = document.getElementById('adsb-hw-driver');
+    const tabDot = document.getElementById('adsb-tab-status-dot');
 
-    if (!hwEl || !streamEl) return;
+    const isAndroidConnected = (typeof AndroidNativeBridge !== 'undefined' && AndroidNativeBridge.isAdsbConnected) || (typeof global !== 'undefined' && global.AndroidNativeBridge && global.AndroidNativeBridge.isAdsbConnected);
+    const isCloudActive = Boolean(this.externalWatchActive);
+    const isAnyActive = (st && st.connected) || isAndroidConnected || isCloudActive || this.streamConnected;
 
-
-
-    if (!st) {
-
-      hwEl.textContent = 'Bridge Offline';
-
-      hwEl.style.color = '#ef4444';
-
-      streamEl.textContent = 'Offline';
-
-      streamEl.style.color = '#ef4444';
-
+    if (!st && !isAnyActive) {
+      if (hwEl) {
+        hwEl.textContent = 'Bridge Offline';
+        hwEl.style.color = '#ef4444';
+      }
+      if (streamEl) {
+        streamEl.textContent = 'Offline';
+        streamEl.style.color = '#ef4444';
+      }
       if (summaryEl) {
-
         summaryEl.textContent = 'OFFLINE';
-
         summaryEl.style.background = 'rgba(239, 68, 68, 0.2)';
-
         summaryEl.style.color = '#ef4444';
-
       }
-
-      const tabDot = document.getElementById('adsb-tab-status-dot');
-
       if (tabDot) {
-
         tabDot.className = 'adsb-tab-dot is-offline';
-
-        tabDot.title = 'Bridge Offline';
-
+        tabDot.title = 'Offline';
       }
-
       return;
-
     }
 
-
+    if (!st && isAnyActive) {
+      st = this.synthesizeActiveStatus() || { connected: true };
+    }
 
     if (st) {
-
       this.syncAdsbConfigWithBridge(st);
-
     }
 
-
-
     const bridgeHost = (st && (st.tcpHost || st.adsbHost));
-
     const bridgePort = (st && (st.tcpPort || st.adsbPort));
-
     const hasCustomLocal = this.serverHost && this.serverHost !== '127.0.0.1' && this.serverHost !== 'localhost';
 
-
-
-    // If local preference is a custom remote host, preserve it in the UI input rather than clobbering it back to 127.0.0.1 or bridgeHost
-
     const targetHost = hasCustomLocal
-
       ? this.serverHost
-
       : (bridgeHost || this.serverHost || '127.0.0.1');
 
-
-
     const targetPort = hasCustomLocal
-
       ? this.serverPort
-
       : (bridgePort || this.serverPort || 30003);
-
-
 
     const hostPortStr = `${bridgeHost || targetHost}:${bridgePort || targetPort}`;
 
-
-
     const hostInput = document.getElementById('adsb-host-input');
-
     const portInput = document.getElementById('adsb-port-input');
-
     const isEditingInputs = (document.activeElement === hostInput || document.activeElement === portInput);
-
     if (!this.isConnectingAdsbServer && !isEditingInputs) {
-
       if (hostInput && document.activeElement !== hostInput) {
-
         hostInput.value = targetHost;
-
       }
-
       if (portInput && document.activeElement !== portInput) {
-
         portInput.value = targetPort;
-
       }
-
     }
-
-
 
     // Hardware status
-
-    if (st.hardware && st.hardware.detected) {
-
-      if (st.hardware.driverStatus === 'needs_zadig') {
-
-        hwEl.textContent = 'Detected (Driver Missing)';
-
-        hwEl.style.color = '#f59e0b';
-
-        if (tipEl) {
-
-          tipEl.style.display = 'block';
-
-          tipEl.innerHTML = '⚠️ <strong>Driver Needed:</strong> Windows sees your RTL-SDR dongle, but needs the <strong>WinUSB</strong> driver. Run <a href="https://zadig.akeo.ie/" target="_blank" style="color: #60a5fa; text-decoration: underline;">Zadig</a>, select <em>Bulk-In, Interface</em>, and click <em>Install WinUSB</em>.';
-
+    if (hwEl) {
+      if (st.hardware && st.hardware.detected) {
+        if (st.hardware.driverStatus === 'needs_zadig') {
+          hwEl.textContent = 'Detected (Driver Missing)';
+          hwEl.style.color = '#f59e0b';
+          if (tipEl) {
+            tipEl.style.display = 'block';
+            tipEl.innerHTML = '⚠️ <strong>Driver Needed:</strong> Windows sees your RTL-SDR dongle, but needs the <strong>WinUSB</strong> driver. Run <a href="https://zadig.akeo.ie/" target="_blank" style="color: #60a5fa; text-decoration: underline;">Zadig</a>, select <em>Bulk-In, Interface</em>, and click <em>Install WinUSB</em>.';
+          }
+        } else {
+          hwEl.textContent = 'Ready (WinUSB Active)';
+          hwEl.style.color = '#10b981';
         }
-
+      } else if (isAndroidConnected || (st && st.driverType === 'Android Native Socket')) {
+        hwEl.textContent = 'Android Native / RTL-SDR Socket';
+        hwEl.style.color = '#38bdf8';
+      } else if (isCloudActive) {
+        hwEl.textContent = 'Online Cloud Feed (adsb.lol)';
+        hwEl.style.color = '#38bdf8';
+      } else if (st && (st.isRemoteServer || (st.tcpHost && st.tcpHost !== '127.0.0.1' && st.tcpHost !== 'localhost'))) {
+        hwEl.textContent = 'Remote Feed (No USB Dongle Needed)';
+        hwEl.style.color = '#38bdf8';
       } else {
-
-        hwEl.textContent = 'Ready (WinUSB Active)';
-
-        hwEl.style.color = '#10b981';
-
+        hwEl.textContent = 'Not Detected';
+        hwEl.style.color = '#94a3b8';
       }
-
-    } else if (st.isRemoteServer || (st.tcpHost && st.tcpHost !== '127.0.0.1' && st.tcpHost !== 'localhost')) {
-
-      hwEl.textContent = 'Remote Feed (No USB Dongle Needed)';
-
-      hwEl.style.color = '#38bdf8';
-
-    } else {
-
-      hwEl.textContent = 'Not Detected';
-
-      hwEl.style.color = '#94a3b8';
-
     }
 
-
-
-    // dump1090 daemon stream status
-
-    if (st.connected) {
-
-      streamEl.textContent = `Connected (${hostPortStr})`;
-
-      streamEl.style.color = '#10b981';
-
+    // Stream status & summary
+    if (st && st.connected || isAnyActive) {
+      if (streamEl) {
+        if (isCloudActive && (!st || !st.connected) && !isAndroidConnected) {
+          streamEl.textContent = 'Connected (Online Cloud Feed adsb.lol)';
+        } else if (isAndroidConnected) {
+          streamEl.textContent = `Connected (${targetHost}:${targetPort})`;
+        } else {
+          streamEl.textContent = `Connected (${hostPortStr})`;
+        }
+        streamEl.style.color = '#10b981';
+      }
       if (summaryEl) {
-
         summaryEl.textContent = 'ACTIVE';
-
         summaryEl.style.background = 'rgba(16, 185, 129, 0.2)';
-
         summaryEl.style.color = '#10b981';
-
       }
-
-      if (tipEl && (!st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
-
+      if (tipEl && (!st || !st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
         tipEl.style.display = 'none';
-
       }
-
     } else {
-
-      streamEl.textContent = `Waiting on ${hostPortStr}...`;
-
-      streamEl.style.color = '#f59e0b';
-
+      if (streamEl) {
+        streamEl.textContent = `Waiting on ${hostPortStr}...`;
+        streamEl.style.color = '#f59e0b';
+      }
       if (summaryEl) {
-
         summaryEl.textContent = 'WAITING';
-
         summaryEl.style.background = 'rgba(245, 158, 11, 0.2)';
-
         summaryEl.style.color = '#f59e0b';
-
       }
-
-      if (tipEl && (!st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
-
+      if (tipEl && (!st || !st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
         tipEl.style.display = 'block';
-
         tipEl.innerHTML = `💡 <strong>Waiting for dump1090:</strong> Ensure dump1090 or your SBS feed is running on <code>${hostPortStr}</code>.`;
-
       }
-
     }
 
-
-
-    if (hwPacketsEl && typeof st.totalPackets === 'number') {
-
+    if (hwPacketsEl && st && typeof st.totalPackets === 'number') {
       hwPacketsEl.textContent = st.totalPackets.toLocaleString();
-
     }
-
     if (hwDriverEl) {
-
-      if (st.driverType === 'dump1090-tcp') {
-
+      if (isAndroidConnected || (st && st.driverType === 'Android Native Socket')) {
+        hwDriverEl.textContent = `Android Socket (${targetPort})`;
+      } else if (isCloudActive && (!st || !st.connected)) {
+        hwDriverEl.textContent = 'Cloud REST API (adsb.lol)';
+      } else if (st && st.driverType === 'dump1090-tcp') {
         hwDriverEl.textContent = `TCP Stream (${targetPort})`;
-
-      } else if (st.driverType) {
-
+      } else if (st && st.driverType) {
         hwDriverEl.textContent = st.driverType;
-
       }
-
     }
-
-
-
-    const tabDot = document.getElementById('adsb-tab-status-dot');
 
     if (tabDot) {
-
       tabDot.className = 'adsb-tab-dot';
-
-      if (!st.connected) {
-
-        tabDot.classList.add('is-waiting');
-
-        tabDot.title = `Waiting on ${hostPortStr}`;
-
-      } else {
-
+      if ((st && st.connected) || isAnyActive) {
         tabDot.classList.add('is-connected');
-
-        tabDot.title = `Connected to ${hostPortStr}`;
-
+        if (isCloudActive && ((st && st.connected) || isAndroidConnected)) {
+          tabDot.title = 'Connected: Local/Native + Online Cloud Feed (adsb.lol)';
+        } else if (isCloudActive) {
+          tabDot.title = 'Online Cloud Feed (adsb.lol) Active';
+        } else {
+          tabDot.title = `Connected to ${hostPortStr}`;
+        }
+      } else {
+        tabDot.classList.add('is-waiting');
+        tabDot.title = `Waiting on ${hostPortStr}`;
       }
-
     }
 
-
-
     this.updateStreamTransportUI();
-
   },
 
 
@@ -68391,6 +68373,17 @@ const AdsbAirspaceManager = {
     const nextPollSec = Math.max(0, 30 - elapsedSinceLast);
 
 
+
+    const tabDot = document.getElementById('adsb-tab-status-dot');
+    if (tabDot) {
+      if (this.externalWatchActive) {
+        tabDot.className = 'adsb-tab-dot is-connected';
+        tabDot.title = 'Online Cloud Feed (adsb.lol) Active';
+      } else if (!this.streamConnected && (!this.lastStatus || !this.lastStatus.connected) && (typeof AndroidNativeBridge === 'undefined' || !AndroidNativeBridge.isAdsbConnected)) {
+        tabDot.className = 'adsb-tab-dot is-offline';
+        tabDot.title = 'Offline';
+      }
+    }
 
     if (this.externalWatchActive && remainingSec <= 0) {
 
@@ -73657,9 +73650,16 @@ if (typeof module !== 'undefined' && module.exports) {
 
     // ─── Connection Status Notification Handler ─────────────────────────────
     onAdsbStatusChanged(status, host, port, errorMsg) {
+      this.isAdsbConnected = (status === 'connected');
       if (typeof document === 'undefined') return;
       const hwBadge = document.getElementById('adsb-hardware-badge');
       const trBadge = document.getElementById('adsb-transport-badge');
+      const tabDot = document.getElementById('adsb-tab-status-dot');
+      const summaryEl = document.getElementById('adsb-diag-summary');
+      const streamEl = document.getElementById('adsb-stream-status');
+      const hwEl = document.getElementById('adsb-hw-status');
+
+      const isExternalWatchActive = typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager.externalWatchActive;
 
       if (status === 'connected') {
         if (hwBadge) {
@@ -73670,6 +73670,25 @@ if (typeof module !== 'undefined' && module.exports) {
           trBadge.textContent = `Android Native (${host}:${port})`;
           trBadge.style.color = '#34d399';
         }
+        if (tabDot) {
+          tabDot.className = 'adsb-tab-dot is-connected';
+          tabDot.title = isExternalWatchActive
+            ? `Connected: Android Native (${host}:${port}) + adsb.lol Cloud Feed`
+            : `Connected to Android Native (${host}:${port})`;
+        }
+        if (summaryEl) {
+          summaryEl.textContent = 'ACTIVE';
+          summaryEl.style.background = 'rgba(16, 185, 129, 0.2)';
+          summaryEl.style.color = '#10b981';
+        }
+        if (streamEl) {
+          streamEl.textContent = `Connected (${host}:${port})`;
+          streamEl.style.color = '#10b981';
+        }
+        if (hwEl) {
+          hwEl.textContent = 'Android Native / RTL-SDR Socket';
+          hwEl.style.color = '#38bdf8';
+        }
       } else if (status === 'connecting') {
         if (hwBadge) {
           hwBadge.textContent = 'CONNECTING...';
@@ -73678,6 +73697,19 @@ if (typeof module !== 'undefined' && module.exports) {
         if (trBadge) {
           trBadge.textContent = `Connecting to ${host}:${port}...`;
           trBadge.style.color = '#38bdf8';
+        }
+        if (tabDot && !isExternalWatchActive) {
+          tabDot.className = 'adsb-tab-dot is-waiting';
+          tabDot.title = `Connecting to ${host}:${port}...`;
+        }
+        if (summaryEl && !isExternalWatchActive) {
+          summaryEl.textContent = 'CONNECTING';
+          summaryEl.style.background = 'rgba(56, 189, 248, 0.2)';
+          summaryEl.style.color = '#38bdf8';
+        }
+        if (streamEl && !isExternalWatchActive) {
+          streamEl.textContent = `Connecting to ${host}:${port}...`;
+          streamEl.style.color = '#38bdf8';
         }
       } else if (status === 'error') {
         if (hwBadge) {
@@ -73688,6 +73720,21 @@ if (typeof module !== 'undefined' && module.exports) {
           trBadge.textContent = `Error (${errorMsg || 'Failed'})`;
           trBadge.style.color = '#f87171';
         }
+        if (!isExternalWatchActive) {
+          if (tabDot) {
+            tabDot.className = 'adsb-tab-dot is-offline';
+            tabDot.title = `Error (${errorMsg || 'Connection Failed'})`;
+          }
+          if (summaryEl) {
+            summaryEl.textContent = 'ERROR';
+            summaryEl.style.background = 'rgba(239, 68, 68, 0.2)';
+            summaryEl.style.color = '#ef4444';
+          }
+          if (streamEl) {
+            streamEl.textContent = `Error: ${errorMsg || 'Failed'}`;
+            streamEl.style.color = '#ef4444';
+          }
+        }
       } else if (status === 'disconnected') {
         if (hwBadge) {
           hwBadge.textContent = 'READY';
@@ -73696,6 +73743,21 @@ if (typeof module !== 'undefined' && module.exports) {
         if (trBadge) {
           trBadge.textContent = 'Disconnected';
           trBadge.style.color = '#94a3b8';
+        }
+        if (!isExternalWatchActive) {
+          if (tabDot) {
+            tabDot.className = 'adsb-tab-dot is-offline';
+            tabDot.title = 'Disconnected';
+          }
+          if (summaryEl) {
+            summaryEl.textContent = 'OFFLINE';
+            summaryEl.style.background = 'rgba(239, 68, 68, 0.2)';
+            summaryEl.style.color = '#ef4444';
+          }
+          if (streamEl) {
+            streamEl.textContent = 'Disconnected';
+            streamEl.style.color = '#94a3b8';
+          }
         }
       }
     },
@@ -73864,21 +73926,49 @@ if (typeof module !== 'undefined' && module.exports) {
 
       try {
         if (window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLatestLogFromRc2 === 'function') {
-          const logBase64 = window.AalaapiAndroid.pullLatestLogFromRc2();
-          if (logBase64 && typeof window.atob === 'function') {
+          const rawRes = window.AalaapiAndroid.pullLatestLogFromRc2();
+          if (!rawRes) {
+            throw new Error('No flight logs found on connected RC 2');
+          }
+
+          let logPayload = null;
+          let logBase64 = null;
+          let logFilename = 'FlightRecord_latest.txt';
+
+          try {
+            logPayload = JSON.parse(rawRes);
+          } catch (_) {
+            logBase64 = rawRes;
+          }
+
+          if (logPayload) {
+            if (!logPayload.success) {
+              throw new Error(logPayload.message || logPayload.error || 'RC 2 flight log pull failed');
+            }
+            logBase64 = logPayload.data || logPayload.base64;
+            logFilename = logPayload.filename || logFilename;
+          }
+
+          if (!logBase64) {
+            throw new Error('Empty flight log payload received from RC 2');
+          }
+
+          if (typeof DigitalTwin !== 'undefined' && typeof DigitalTwin.loadFlightLogData === 'function') {
+            await DigitalTwin.loadFlightLogData(logFilename, logBase64);
+          } else if (typeof window.atob === 'function') {
             const rawText = window.atob(logBase64);
             if (typeof DjiLogDecryptor !== 'undefined' && DjiLogDecryptor.parseLogText) {
-              DjiLogDecryptor.parseLogText(rawText);
+              DjiLogDecryptor.parseLogText(rawText, logFilename);
             }
+          }
+
+          if (typeof showToast === 'function') {
+            showToast(`📥 Flight log pulled from DJI RC 2 (${logFilename})`, 'success');
           }
         } else if (typeof WebUsbMtp !== 'undefined') {
           if (typeof pullLogViaWebUsb === 'function') {
             await pullLogViaWebUsb();
           }
-        }
-
-        if (typeof showToast === 'function') {
-          showToast('📥 Flight log pulled from DJI RC 2', 'success');
         }
       } catch (err) {
         console.error('Log pull error:', err);

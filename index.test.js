@@ -30860,6 +30860,11 @@ describe('Global Mission Flight Time, Planned Schedule Picker & Telemetry Playba
   });
 
   test('3D Viewport: update3DSunPosition positions threeSunLight and threeSunMesh', () => {
+    const origWeatherDirs = (typeof currentWeatherDirections !== 'undefined') ? currentWeatherDirections : null;
+    if (typeof currentWeatherDirections !== 'undefined') {
+      try { currentWeatherDirections = null; } catch (_) {}
+    }
+    global.currentWeatherDirections = null;
     const mockDirLight = {
       position: { x: 0, y: 0, z: 0, set: function(x, y, z) { this.x = x; this.y = y; this.z = z; } },
       target: { position: { x: 0, y: 0, z: 0, set: function(x, y, z) { this.x = x; this.y = y; this.z = z; } } },
@@ -42247,5 +42252,168 @@ describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time 
       debugMgr.clearLogs();
       assert.strictEqual(debugMgr.logs.length, 0, 'clearLogs must empty buffer');
     });
+
+    test('DebugConsoleManager serializes Error and DOMException objects meaningfully instead of "{}" (Issue #254)', () => {
+      const { DebugConsoleManager } = require('./src/ui/DebugConsole.js');
+      const debugMgr = new DebugConsoleManager();
+      debugMgr.captureLog('error', [new Error('Pull Flight Log Error: USB connection reset')]);
+      assert.strictEqual(debugMgr.logs.length, 1);
+      assert.ok(!debugMgr.logs[0].message.includes('{}'), 'Must not serialize error as empty object {}');
+      assert.ok(debugMgr.logs[0].message.includes('USB connection reset'), 'Must include actual error message text');
+
+      const customObj = { message: 'DOM exception error', stack: 'DOMException: Failed to decode' };
+      debugMgr.captureLog('error', ['Log pull error:', customObj]);
+      assert.ok(debugMgr.logs[1].message.includes('DOMException'), 'Must include custom exception stack or message');
+    });
+
+    test('pullFlightLogFromRC2 parses base64 payload from Android native bridge and rejects on error without localhost fallback (Issue #254)', async () => {
+      const origAndroid = global.window ? global.window.AalaapiAndroid : undefined;
+      const dt = vm.runInThisContext('DigitalTwin');
+      const origLoad = dt ? dt.loadFlightLogData : null;
+
+      try {
+        let loadedFilename = null;
+        let loadedBase64 = null;
+        if (dt) {
+          dt.loadFlightLogData = async (filename, base64) => {
+            loadedFilename = filename;
+            loadedBase64 = base64;
+            return true;
+          };
+        }
+
+        const testBase64 = Buffer.from('FlyTime,latitude,longitude,altitude\n1,41.3215,-88.9950,25.0').toString('base64');
+        global.window = global.window || {};
+        global.window.AalaapiAndroid = {
+          pullLatestLogFromRc2: () => JSON.stringify({
+            success: true,
+            filename: 'FlightRecord_2026-11-06_[19-30-00].txt',
+            base64: testBase64,
+            source: 'usb_mtp'
+          })
+        };
+
+        const fn = vm.runInThisContext('pullFlightLogFromRC2');
+        const res = await fn();
+        assert.strictEqual(res.success, true);
+        assert.strictEqual(res.logName, 'FlightRecord_2026-11-06_[19-30-00].txt');
+        assert.strictEqual(loadedFilename, 'FlightRecord_2026-11-06_[19-30-00].txt');
+        assert.strictEqual(loadedBase64, testBase64);
+
+        // Test error without localhost fallback
+        global.window.AalaapiAndroid.pullLatestLogFromRc2 = () => JSON.stringify({
+          success: false,
+          error: 'NO_LOGS_FOUND',
+          message: 'No flight logs found on connected RC 2 storage.'
+        });
+
+        const errRes = await fn();
+        assert.strictEqual(errRes.success, false);
+        assert.strictEqual(errRes.error, 'No flight logs found on connected RC 2 storage.');
+      } finally {
+        if (origAndroid !== undefined) global.window.AalaapiAndroid = origAndroid;
+        else if (global.window) delete global.window.AalaapiAndroid;
+        if (dt && origLoad) dt.loadFlightLogData = origLoad;
+      }
+    });
+
+    test('AndroidNativeBridge.onAdsbStatusChanged updates tab dot and diagnostics UI elements (Issue #253)', () => {
+      const { AndroidNativeBridge } = require('./src/bridge/AndroidNativeBridge.js');
+      global.AndroidNativeBridge = AndroidNativeBridge;
+      let tabDot; tabDot = { className: '', title: '', classList: { add: (c) => { tabDot.className = (tabDot.className + ' ' + c).trim(); } } };
+      const summaryEl = { textContent: '', style: {} };
+      const streamEl = { textContent: '', style: {} };
+      const hwEl = { textContent: '', style: {} };
+
+      const mockElements = {
+        'adsb-tab-status-dot': tabDot,
+        'adsb-diag-summary': summaryEl,
+        'adsb-stream-status': streamEl,
+        'adsb-hw-status': hwEl
+      };
+
+      const origDoc = global.document;
+      const origGetEl = global.document ? global.document.getElementById : null;
+      if (global.document) {
+        global.document.getElementById = (id) => mockElements[id] || (origGetEl ? origGetEl.call(global.document, id) : null);
+      } else {
+        global.document = { getElementById: (id) => mockElements[id] || null };
+      }
+
+      try {
+        // Connected state
+        AndroidNativeBridge.onAdsbStatusChanged('connected', '192.168.1.100', 30003);
+        assert.strictEqual(AndroidNativeBridge.isAdsbConnected, true);
+        assert.strictEqual(tabDot.className, 'adsb-tab-dot is-connected');
+        assert.strictEqual(summaryEl.textContent, 'ACTIVE');
+        assert.ok(streamEl.textContent.includes('192.168.1.100:30003'));
+        assert.ok(hwEl.textContent.includes('Android Native'));
+
+        // Disconnected state
+        AndroidNativeBridge.onAdsbStatusChanged('disconnected', '192.168.1.100', 30003);
+        assert.strictEqual(AndroidNativeBridge.isAdsbConnected, false);
+        assert.strictEqual(tabDot.className, 'adsb-tab-dot is-offline');
+        assert.strictEqual(summaryEl.textContent, 'OFFLINE');
+      } finally {
+        if (origGetEl && global.document) global.document.getElementById = origGetEl;
+        global.document = origDoc;
+      }
+    });
+
+    test('AdsbAirspaceManager.updateDiagnosticsUI keeps tab dot green when cloud watch or Android native feed is active (Issue #253)', () => {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      const { AndroidNativeBridge } = require('./src/bridge/AndroidNativeBridge.js');
+      global.AndroidNativeBridge = AndroidNativeBridge;
+
+      let tabDot; tabDot = { className: '', title: '', classList: { add: (c) => { tabDot.className = (tabDot.className + ' ' + c).trim(); } } };
+      const summaryEl = { textContent: '', style: {} };
+      const streamEl = { textContent: '', style: {} };
+      const hwEl = { textContent: '', style: {} };
+
+      const mockElements = {
+        'adsb-tab-status-dot': tabDot,
+        'adsb-diag-summary': summaryEl,
+        'adsb-stream-status': streamEl,
+        'adsb-hw-status': hwEl
+      };
+
+      const origDoc = global.document;
+      const origGetEl = global.document ? global.document.getElementById : null;
+      if (global.document) {
+        global.document.getElementById = (id) => mockElements[id] || (origGetEl ? origGetEl.call(global.document, id) : null);
+      } else {
+        global.document = { getElementById: (id) => mockElements[id] || null };
+      }
+
+      try {
+        // Case 1: Companion server is offline (null), but Android native is connected
+        AndroidNativeBridge.isAdsbConnected = true;
+        AdsbAirspaceManager.externalWatchActive = false;
+        AdsbAirspaceManager.updateDiagnosticsUI(null);
+
+        assert.strictEqual(tabDot.className, 'adsb-tab-dot is-connected');
+        assert.strictEqual(summaryEl.textContent, 'ACTIVE');
+
+        // Case 2: Companion server is offline (null), Android is offline, but cloud feed is active
+        AndroidNativeBridge.isAdsbConnected = false;
+        AdsbAirspaceManager.externalWatchActive = true;
+        AdsbAirspaceManager.updateDiagnosticsUI(null);
+
+        assert.strictEqual(tabDot.className, 'adsb-tab-dot is-connected');
+        assert.strictEqual(summaryEl.textContent, 'ACTIVE');
+
+        // Case 3: All feeds offline
+        AdsbAirspaceManager.externalWatchActive = false;
+        AdsbAirspaceManager.streamConnected = false;
+        AdsbAirspaceManager.updateDiagnosticsUI(null);
+
+        assert.strictEqual(tabDot.className, 'adsb-tab-dot is-offline');
+        assert.strictEqual(summaryEl.textContent, 'OFFLINE');
+      } finally {
+        if (origGetEl && global.document) global.document.getElementById = origGetEl;
+        global.document = origDoc;
+      }
+    });
+
   });
 });

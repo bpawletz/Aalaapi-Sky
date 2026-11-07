@@ -1,3 +1,37 @@
+## [1.228.0] - 2026-11-06
+
+Unified ADS-B Feed Health Monitoring, RC 2 USB MTP Log Pull Fix & Informative Mobile Debug Logging.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Unified ADS-B Feed & Hardware Status Indicator (Closes #253)**:
+  - The **⚙️ Feed & Hardware** tab dot (`#adsb-tab-status-dot`) and Receiver Diagnostics status summary (`#adsb-diag-summary`) now display active green health when ADS-B data is actively streaming from **any** available source—including native Android TCP/HTTP dump1090/readsb/Stratux sockets, the 10-minute online cloud feed (`adsb.lol`), or the desktop Companion Bridge.
+  - Eliminated the false-offline red state on Android and cloud feed setups caused by desktop companion localhost polling timeouts.
+  - Starting or stopping the online cloud feed now immediately synchronizes the Feed & Hardware indicator status dot and tooltip.
+- **DJI RC 2 Flight Log Pull on Android (Closes #254)**:
+  - Fixed an issue where tapping **Pull from RC 2** on Android failed with `[ERROR] Pull Flight Log Error: {}` and `[ERROR] Log pull error: {}`.
+  - Resolved payload key mismatch between Android native MTP bridge (`base64`) and client log reader (`data`), and prevented unparsed JSON strings from being passed directly into `window.atob()`.
+  - Android log pulls now properly extract the base64 flight log and load it directly into 3D Flight Diagnostics without falling through to desktop companion bridge localhost endpoints.
+  - Added support for both `FlightRecord_*.txt` and `DJIFlightRecord_*.txt` DJI Fly log naming formats, with broadened recursive folder scanning across connected RC 2 storage partitions.
+- **Informative Error Formatting in Mobile Debug Console (Closes #254)**:
+  - JavaScript `Error` and `DOMException` instances captured by `DebugConsoleManager` now serialize their full error message and stack trace rather than displaying empty `{}` brackets, ensuring pilots and developers have immediate diagnostic visibility directly on touch screens and mobile devices.
+
+#### Under the Hood & Technical Details
+- **src/bridge/ApiClient.js**:
+  - `fetchAirspaceStatus()`: Added native Android ADS-B inspection (`window.AalaapiAndroid.getAdsbStatus()`) and guarded catch block against wiping diagnostics when alternative feeds are streaming.
+  - `updateDiagnosticsUI()`: Implemented unified feed health checks evaluating Companion Bridge, Android Native Socket, Online Cloud Feed (`adsb.lol`), and live SSE streams. Added `synthesizeActiveStatus()` helper.
+  - `updateExternalWatchUI()`: Added instant synchronization of `#adsb-tab-status-dot` on cloud watch start and stop.
+  - `pullFlightLogFromRC2()`: Accepted both `data` and `base64` envelope keys and prevented companion server fallback when running inside Android WebView.
+- **src/bridge/AndroidNativeBridge.js**:
+  - `onAdsbStatusChanged()`: Added state tracking (`this.isAdsbConnected`) and synchronized `#adsb-tab-status-dot`, `#adsb-diag-summary`, `#adsb-stream-status`, and `#adsb-hw-status` across connected, connecting, error, and disconnected states.
+  - `pullLatestLog()`: Implemented JSON envelope parsing and error handling before base64 decoding.
+- **src/ui/DebugConsole.js**:
+  - `captureLog()`: Formatted `Error` and `DOMException` objects with `err.stack || `${err.name}: ${err.message}`` and prevented `JSON.stringify(arg) === '{}'` masking.
+- **android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt**:
+  - Added both `"data"` and `"base64"` keys to `pullLatestLog()` response JSON.
+  - Extended `scanMtpForFlightRecords()` to detect `DJIFlightRecord_*.txt` files and scan additional DJI directory variants. Forwarded scan progress logs to WebView console.
+
 ## [1.227.0] - 2026-11-06
 
 Android USB MTP Flight Log Extraction, Chrome Remote Debugging & On-Device Mobile Debug Console.
