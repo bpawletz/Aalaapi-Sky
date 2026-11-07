@@ -78,10 +78,26 @@
         }
         if (candidate.length >= 25) {
           bytes = candidate;
+        } else {
+          return null;
         }
+      } else if (bytes.length >= 27 && bytes[0] === 0x0D) {
+        // Direct ASTM F3411 Service Data without 16-bit UUID header (e.g. from Android record.getServiceData)
+        bytes = bytes.subarray(2); // Skip [0x0D, Sequence]
       } else if (bytes.length >= 27 && ((bytes[0] === 0x88 && bytes[1] === 0x08) || (bytes[0] === 0x08 && bytes[1] === 0x88))) {
         // 2. Check for DJI Manufacturer Specific Data (Company ID 0x0888 / 0x8808)
         bytes = bytes.subarray(2);
+      } else if ((bytes[0] & 0xF0) === 0xF0 && (bytes[0] & 0x0F) <= 2) {
+        // 3. Direct OpenDroneID MessagePack (Type 0xF0..0xF2)
+      } else if (bytes.length === 25) {
+        // 4. Direct isolated 25-byte OpenDroneID message block
+        const h = bytes[0];
+        const mt = (h >> 4) & 0x0F;
+        const pv = h & 0x0F;
+        if (mt > 5 || pv > 2) return null;
+      } else {
+        // Reject non-Remote ID binary noise to prevent random household BLE devices from creating phantom drones
+        return null;
       }
 
       if (bytes.length < 25) return null;
@@ -89,6 +105,9 @@
       const header = bytes[0];
       const msgType = (header >> 4) & 0x0F;
       const protoVersion = header & 0x0F;
+
+      // Validate protocol version (ASTM F3411 specifies protoVersion 0, 1, or 2)
+      if (protoVersion > 2) return null;
 
       // Handle MessagePack (Type 0xF): 1 byte header, 1 byte count/size, followed by 25-byte blocks
       if (msgType === 0x0F) {
@@ -104,13 +123,16 @@
       const msgType = (header >> 4) & 0x0F;
       const protoVersion = header & 0x0F;
 
+      if (protoVersion > 2) return null;
+
       switch (msgType) {
         case 0x0: return this.decodeBasicId(buf, protoVersion, rssi, transport);
         case 0x1: return this.decodeLocation(buf, protoVersion, rssi, transport);
+        case 0x2: return { msgType: 'Authentication', protoVersion, rssi, transport };
         case 0x3: return this.decodeSelfId(buf, protoVersion, rssi, transport);
         case 0x4: return this.decodeSystem(buf, protoVersion, rssi, transport);
         case 0x5: return this.decodeOperatorId(buf, protoVersion, rssi, transport);
-        default: return { msgType, protoVersion, raw: true, rssi, transport };
+        default: return null;
       }
     },
 

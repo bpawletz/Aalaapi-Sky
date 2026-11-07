@@ -9309,7 +9309,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.6</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.7</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -16973,7 +16973,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.6</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.7</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17136,6 +17136,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.242.7):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Bluetooth 5 Extended Advertising &amp; Live Remote ID Detection (Closes #280):</strong> Restored detection of modern ASTM F3411 Remote ID drone beacons and broadcast modules on Android by configuring <code>setLegacy(false)</code> and <code>setPhy(PHY_LE_ALL_SUPPORTED)</code> scanning; updated <code>ClientRemoteIdDecoder.decode</code> to parse direct service data starting with <code>0x0D</code> prefix without UUID; added strict protocol validation and noise rejection to discard non-Remote ID household BLE packets in native Kotlin and JavaScript.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.242.6):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -87904,10 +87910,26 @@ if (typeof module !== 'undefined' && module.exports) {
         }
         if (candidate.length >= 25) {
           bytes = candidate;
+        } else {
+          return null;
         }
+      } else if (bytes.length >= 27 && bytes[0] === 0x0D) {
+        // Direct ASTM F3411 Service Data without 16-bit UUID header (e.g. from Android record.getServiceData)
+        bytes = bytes.subarray(2); // Skip [0x0D, Sequence]
       } else if (bytes.length >= 27 && ((bytes[0] === 0x88 && bytes[1] === 0x08) || (bytes[0] === 0x08 && bytes[1] === 0x88))) {
         // 2. Check for DJI Manufacturer Specific Data (Company ID 0x0888 / 0x8808)
         bytes = bytes.subarray(2);
+      } else if ((bytes[0] & 0xF0) === 0xF0 && (bytes[0] & 0x0F) <= 2) {
+        // 3. Direct OpenDroneID MessagePack (Type 0xF0..0xF2)
+      } else if (bytes.length === 25) {
+        // 4. Direct isolated 25-byte OpenDroneID message block
+        const h = bytes[0];
+        const mt = (h >> 4) & 0x0F;
+        const pv = h & 0x0F;
+        if (mt > 5 || pv > 2) return null;
+      } else {
+        // Reject non-Remote ID binary noise to prevent random household BLE devices from creating phantom drones
+        return null;
       }
 
       if (bytes.length < 25) return null;
@@ -87915,6 +87937,9 @@ if (typeof module !== 'undefined' && module.exports) {
       const header = bytes[0];
       const msgType = (header >> 4) & 0x0F;
       const protoVersion = header & 0x0F;
+
+      // Validate protocol version (ASTM F3411 specifies protoVersion 0, 1, or 2)
+      if (protoVersion > 2) return null;
 
       // Handle MessagePack (Type 0xF): 1 byte header, 1 byte count/size, followed by 25-byte blocks
       if (msgType === 0x0F) {
@@ -87930,13 +87955,16 @@ if (typeof module !== 'undefined' && module.exports) {
       const msgType = (header >> 4) & 0x0F;
       const protoVersion = header & 0x0F;
 
+      if (protoVersion > 2) return null;
+
       switch (msgType) {
         case 0x0: return this.decodeBasicId(buf, protoVersion, rssi, transport);
         case 0x1: return this.decodeLocation(buf, protoVersion, rssi, transport);
+        case 0x2: return { msgType: 'Authentication', protoVersion, rssi, transport };
         case 0x3: return this.decodeSelfId(buf, protoVersion, rssi, transport);
         case 0x4: return this.decodeSystem(buf, protoVersion, rssi, transport);
         case 0x5: return this.decodeOperatorId(buf, protoVersion, rssi, transport);
-        default: return { msgType, protoVersion, raw: true, rssi, transport };
+        default: return null;
       }
     },
 

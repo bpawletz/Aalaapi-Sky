@@ -44614,5 +44614,58 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('Issue #280: Android Bluetooth 5 Extended Advertising & Direct ASTM F3411 Service Data Decoding Suite (v1.242.7)', () => {
+    test('Version consistency: v1.242.7 across package.json, changelog, index_template.html, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.242.7');
+    });
+
+    test('AndroidRemoteIdScanner.kt configures Bluetooth 5 Extended Advertising & Coded PHY scan settings', () => {
+      const scannerKtPath = path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'AndroidRemoteIdScanner.kt');
+      const scannerKt = fs.readFileSync(scannerKtPath, 'utf8');
+      assert.ok(scannerKt.includes('isLeExtendedAdvertisingSupported'), 'Must check isLeExtendedAdvertisingSupported');
+      assert.ok(scannerKt.includes('settingsBuilder.setLegacy(false)'), 'Must disable legacy scan mode for Bluetooth 5 extended advertising');
+      assert.ok(scannerKt.includes('isLeCodedPhySupported'), 'Must check isLeCodedPhySupported');
+      assert.ok(scannerKt.includes('settingsBuilder.setPhy(ScanSettings.PHY_LE_ALL_SUPPORTED)'), 'Must configure Coded PHY');
+      assert.ok(scannerKt.includes('isPotentialRemoteId'), 'Must pre-filter advertisements in native Kotlin');
+    });
+
+    test('ClientRemoteIdDecoder.decode parses direct ASTM F3411 Service Data without 16-bit UUID prefix', () => {
+      const { ClientRemoteIdDecoder } = require('./src/bridge/AndroidNativeBridge.js');
+      const directSd = new Uint8Array(27);
+      directSd[0] = 0x0D;
+      directSd[1] = 0x24;
+      directSd[2] = 0x01;
+      directSd[3] = 0x12;
+      const uasId = '2003F100000000000500';
+      for (let i = 0; i < uasId.length; i++) directSd[4 + i] = uasId.charCodeAt(i);
+
+      const decoded = ClientRemoteIdDecoder.decode(directSd, -45, 'ble');
+      assert.ok(decoded, 'Direct Service Data without UUID must decode successfully');
+      assert.strictEqual(decoded.msgType, 'BasicID');
+      assert.strictEqual(decoded.uasId, '2003F100000000000500');
+      assert.strictEqual(decoded.uaType, 'Helicopter (Multirotor)');
+    });
+
+    test('ClientRemoteIdDecoder.decode decodes real-world live beacon broadcast packet', () => {
+      const { ClientRemoteIdDecoder } = require('./src/bridge/AndroidNativeBridge.js');
+      const livePktBase64 = '+v8NWQISMjAwM0YxMDAwMDAwMDAwMDA1MDAAAAA=';
+      const decoded = ClientRemoteIdDecoder.decode(livePktBase64, -40, 'ble');
+      assert.ok(decoded, 'Live beacon packet must decode');
+      assert.strictEqual(decoded.msgType, 'BasicID');
+      assert.strictEqual(decoded.uasId, '2003F100000000000500');
+      assert.strictEqual(decoded.uaType, 'Helicopter (Multirotor)');
+    });
+
+    test('ClientRemoteIdDecoder.decode rejects arbitrary non-Remote ID household BLE noise', () => {
+      const { ClientRemoteIdDecoder } = require('./src/bridge/AndroidNativeBridge.js');
+      const randomNoise = new Uint8Array([
+        0x02, 0x01, 0x06, 0x1A, 0xFF, 0x4C, 0x00, 0x02, 0x15, 0xE2, 0xC5, 0x6D, 0xB5, 0xDF, 0xFB,
+        0x48, 0xD2, 0xB0, 0x60, 0xD0, 0xF5, 0xA7, 0x10, 0x96, 0xE0, 0x00, 0x00, 0x00, 0x00, 0xC5
+      ]);
+      const res = ClientRemoteIdDecoder.decode(randomNoise, -75, 'ble');
+      assert.strictEqual(res, null, 'Arbitrary BLE noise must be rejected as null');
+    });
+  });
+
 });
 });
