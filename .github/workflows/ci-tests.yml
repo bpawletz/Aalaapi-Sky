@@ -1,0 +1,117 @@
+name: CI Test Suite
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'src/**'
+      - 'schemas/**'
+      - 'tools/**'
+      - 'index.css'
+      - 'index_template.html'
+      - 'scratch/build.py'
+      - 'index.test.js'
+      - 'index.e2e.test.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/ci-tests.yml'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'src/**'
+      - 'schemas/**'
+      - 'tools/**'
+      - 'index.css'
+      - 'index_template.html'
+      - 'scratch/build.py'
+      - 'index.test.js'
+      - 'index.e2e.test.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/ci-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-and-schema:
+    name: Build, Unit Tests & WPML XSD Matrix
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Python Dependencies
+        run: pip install xmlschema numpy
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Run Single-File Bundle Compiler
+        run: python scratch/build.py
+
+      - name: Verify Static AST Module Graph
+        run: npm run check:modules
+
+      - name: Verify IRL Function Hashes & Test Plan Synchronization
+        run: npm run irl:check
+
+      - name: Run Full Unit & Companion Test Suites
+        run: npm run test:unit
+
+      - name: Run Strict DJI WPML 1.0.2 XSD Schema Validation
+        run: npm run validate:xsd
+
+  e2e-playwright:
+    name: Playwright Headless Chromium E2E UI Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Cache Playwright Chromium
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-chromium-
+
+      - name: Install Playwright Chromium & System Dependencies
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Single-File Bundle Compiler
+        run: python scratch/build.py
+
+      - name: Run Playwright E2E UI Test Suite
+        run: npm run test:e2e

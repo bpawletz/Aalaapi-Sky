@@ -89,18 +89,37 @@ Aalaapi Sky includes an interactive **Intro Guide Hub (`#quickstart-modal`)** wi
 - Whenever you introduce a major user-facing feature, workflow improvement, or new flight pattern, you **MUST** review and update the feature bullet points in the "What's New" pane inside `index_template.html` (and recompile `index.html`) so that pilots and field operators always see current capabilities.
 
 ## 6. Automated Build, Test & Push Workflow
-To automate building, verifying unit and E2E tests, committing, and pushing changes to the remote repository, you can use the included convenience scripts:
+To automate building, verifying tests, committing, and pushing changes to the remote repository, you can use the included convenience scripts:
 
 - **Git Bash / Linux / macOS:**
   ```bash
+  # Balanced Default (Runs build.py + check:modules + test:unit locally; Playwright E2E runs in GitHub Actions CI):
   ./push.sh "feat(scope): brief description of changes"
+
+  # Quick Mode (Runs build.py + check:modules only; full unit + E2E runs in GitHub Actions CI):
+  ./push.sh "docs(guide): update docs" --quick
+
+  # Full Mode (Runs build.py + check:modules + test:unit + test:e2e + validate:xsd locally):
+  ./push.sh "feat(scope): major pattern overhaul" --full
   ```
 - **PowerShell / Windows:**
   ```powershell
+  # Balanced Default:
   .\push.ps1 "feat(scope): brief description of changes"
+
+  # Quick Mode:
+  .\push.ps1 "docs(guide): update docs" --quick
+
+  # Full Mode:
+  .\push.ps1 "feat(scope): major pattern overhaul" --full
   ```
 
-These scripts automatically run the build step (`python scratch/build.py`), run unit & E2E tests (`node --test index.test.js index.e2e.test.js`), stage changes (`git add .`), create a git commit, and push to `origin/main`.
+### GitHub Actions CI Verification (`.github/workflows/ci-tests.yml`)
+The repository executes a dedicated GitHub Actions CI matrix on all branch pushes and pull requests:
+- **`unit-and-schema` Job**: Runs single-file compilation (`scratch/build.py`), AST module graph verification (`npm run check:modules`), IRL test synchronization (`npm run irl:check`), full unit & companion test suites (`npm run test:unit`), and strict DJI WPML 1.0.2 XSD schema validation (`npm run validate:xsd`).
+- **`e2e-playwright` Job**: Runs headless Chromium Playwright UI tests (`npm run test:e2e`) with automated browser caching.
+
+These scripts automatically build, test according to the selected mode, stage changes (`git add .`), create a git commit, and push to the remote repository.
 
 ## 7. Three-Tier Architectural Hierarchy (Global → Layer → Waypoint)
 All flight parameters in Aalaapi Sky (including Capture Mode, Turn / Path Type, Heading Mode, Speed, Hover Dwell Time, Camera Actions, and Camera Zoom) MUST follow a strict **Three-Tier Cascading Hierarchy**:
@@ -328,3 +347,35 @@ Whenever implementing, modifying, refactoring, or testing features, AI agents **
    - **Client App (`src/`)**: Feature modules (including `ApiClient.js`, `DigitalTwin.js`, `Rc2LogExplorer.js`, `DjiLogDecryptor.js`, `TfrNotam.js`, `Packager.js`, `ThemeManager.js`, `ScreenAwakeManager.js`, and `SidebarManager.js`) **MUST NEVER** invoke `window.AalaapiAndroid` or `window.webkit.messageHandlers` directly via inline conditionals. All platform-dependent capabilities must be declared as methods on `BasePlatformAdapter`, overridden in the corresponding adapter class, and accessed exclusively via `Platform.<method>()`.
    - **Companion Bridge (`tools/companion/`)**: Server modules (including `server.js`, `adsb_tracker.js`, and `video_service.js`) **MUST NEVER** execute raw inline `process.platform === 'win32'` checks for shell commands or OS drivers. All platform-specific child process commands, firewall inquiries, and capture devices must be encapsulated inside `tools/companion/drivers/` and accessed via `getCompanionDriver()`.
 
+
+
+## 18. Parallel Feature Development & Automated Git Worktree Lifecycle
+When developing multiple features or working across concurrent AI agent sessions, agents **MUST NEVER** share the same physical working directory if both are modifying source files, running builds, or executing git operations. Doing so causes bundle overwrites (`dist/index.bundle.js` / `index.html`), git staging contamination (`git add .`), and version bump collisions.
+
+To safely isolate parallel tasks, agents and pilots use the automated Git Worktree manager:
+
+1. **Spinning Up an Isolated Worktree (`npm run worktree:create`)**:
+   ```bash
+   npm run worktree:create -- <issue-or-feature-id>
+   ```
+   - This creates an isolated sibling workspace `../Aalaapi-Sky-wt-<id>` on branch `wt/<id>`.
+   - It automatically creates a Windows directory junction (`mklink /J`) or POSIX symlink pointing to the main repo's `node_modules`, enabling instant builds and test execution with zero `npm install` wait time or disk duplication.
+   - For subagents within the same conversation, agents may also configure `Workspace: "share"` or `Workspace: "branch"`.
+
+2. **Monitoring Active Worktrees (`npm run worktree:list`)**:
+   ```bash
+   npm run worktree:list
+   ```
+   - Inspects all active worktrees, branch names, filesystem locations, and dirty modification counts.
+
+3. **Mandatory Issue Auto-Closure Worktree Cleanup (`npm run worktree:finish`)**:
+   - Whenever an issue, PR, or feature task completed in a worktree is merged and ready for closure, the agent **MUST** run the worktree finish command as part of the Section 10 Issue Auto-Closure workflow:
+     ```bash
+     npm run worktree:finish -- <issue-or-feature-id>
+     ```
+   - This safely:
+     1. Verifies there are no uncommitted or unpushed modifications in the worktree.
+     2. Safely unlinks the `node_modules` junction/symlink without modifying or deleting parent repository modules.
+     3. Removes the worktree directory (`git worktree remove`).
+     4. Deletes the temporary local `wt/<id>` branch (`git branch -d`).
+     5. Prunes git tracking references (`git worktree prune`).

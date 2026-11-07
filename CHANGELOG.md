@@ -1,3 +1,31 @@
+## [1.236.0] - 2026-11-07
+
+Full-suite GitHub Actions CI pipeline, automated Git worktree lifecycle management for concurrent multi-feature isolation, flexible local push modes (`--quick`, balanced default, `--full`), and live REST TFR updates without static cache reliance.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Automated Git Worktree Lifecycle Manager (`tools/build/worktree_manager.js`) (Closes #265)**:
+  - Added CLI and npm script commands (`npm run worktree:create -- <id>`, `npm run worktree:list`, `npm run worktree:finish -- <id>`, and `npm run worktree:prune`) to spin up isolated filesystem development worktrees (`../Aalaapi-Sky-wt-<id>`) for parallel multi-feature engineering.
+  - Automatically links `node_modules` via Windows directory junctions (`mklink /J`) and POSIX symlinks, providing instant test and build availability with zero `npm install` wait time or duplicate disk usage.
+  - Automatically verifies dirty worktree status, unlinks junctions safely without touching parent modules, removes worktree directories, and prunes git references upon issue completion.
+- **Flexible Local Push Modes in `push.ps1` & `push.sh` (Closes #265)**:
+  - Introduced balanced default mode (`.\push.ps1 "msg"`) running bundle compilation, AST module graph check, and full unit test suite locally while offloading heavy Playwright E2E testing to GitHub Actions.
+  - Added `--quick` mode (`.\push.ps1 "msg" --quick`) for rapid docs/CSS/minor updates running build and module checks only.
+  - Added `--full` mode (`.\push.ps1 "msg" --full`) for pre-push local execution of unit tests, Playwright E2E UI tests, and strict WPML 1.0.2 XSD schema validation.
+
+#### Under the Hood & Technical Details
+- **`.github/workflows/ci-tests.yml`**:
+  - Implemented dedicated, read-only CI workflow running across all branch pushes and pull requests.
+  - Parallelized `unit-and-schema` (build, module graph check, `irl:check`, full unit test suite, and WPML XSD schema validation) and `e2e-playwright` (Chromium-cached headless E2E UI suite).
+- **`.github/workflows/build-and-commit.yml`**:
+  - Streamlined workflow into dedicated `Auto-Build index.html`, eliminating redundant Playwright browser installations, test suites, and 6-hour cron scraping.
+- **`src/airspace/TfrNotam.js` & `tools/companion/server.js`**:
+  - Transitioned TFR airspace processing exclusively to live REST APIs (`/api/tfr/notams`, `/api/tfr/geojson`, and live FAA ArcGIS Online FeatureServers), eliminating stale committed static JSON fallbacks.
+  - Added `data/tfr_notams.json` and `data/tfr_geojson.json` to `.gitignore` and untracked them from git index.
+- **`AGENTS.md`**:
+  - Added Section 19 mandating automated Git worktree isolation and issue auto-closure cleanup for concurrent tasks.
+
 ## [1.235.1] - 2026-11-07
 
 Fixed Android app restarts on DJI RC 2 USB-C connection via `singleTask` launchMode and streamlined hardware connection state to the Top Nav Pill and Left Nav Actions area.
