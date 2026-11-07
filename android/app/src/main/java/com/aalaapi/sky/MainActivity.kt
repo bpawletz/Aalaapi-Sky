@@ -512,6 +512,21 @@ class MainActivity : AppCompatActivity() {
             }
 
             @JavascriptInterface
+            fun listFlightRecordsFromRc2(limit: Int): String {
+                return mtpBridge.listRecentLogs(if (limit > 0) limit else 30)
+            }
+
+            @JavascriptInterface
+            fun pullLogByHandleFromRc2(handle: Int): String {
+                return mtpBridge.pullLogByHandle(handle)
+            }
+
+            @JavascriptInterface
+            fun pullLogByNameFromRc2(filename: String): String {
+                return mtpBridge.pullLogByName(filename)
+            }
+
+            @JavascriptInterface
             fun setAdsbServer(host: String, port: Int): Boolean {
                 adsbBridge.start(host, port)
                 return true

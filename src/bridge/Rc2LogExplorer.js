@@ -63,6 +63,31 @@ async function refreshRc2LogList() {
   `;
 
   try {
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.listFlightRecordsFromRc2 === 'function') {
+      try {
+        const raw = window.AalaapiAndroid.listFlightRecordsFromRc2(30);
+        const parsed = JSON.parse(raw || '[]');
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          rc2LogsCache = parsed.map(item => ({
+            filename: item.filename,
+            size: item.size || 0,
+            dateModified: item.dateModified || 0,
+            timestamp: item.timestamp,
+            handle: item.handle,
+            isDecrypted: true,
+            source: 'usb_mtp'
+          }));
+          renderRc2LogTable(rc2LogsCache);
+          if (countSummary) {
+            countSummary.textContent = `Found ${rc2LogsCache.length} logs on ${devInfo.shortName} via Android USB MTP`;
+          }
+          return;
+        }
+      } catch (e) {
+        console.warn('Native Android MTP list error:', e);
+      }
+    }
+
     const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
     const fetchOptions = {};
     if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
@@ -240,6 +265,37 @@ async function pullSpecificRc2Log(filename) {
       if (progPct) progPct.textContent = `${currentPct}%`;
     }
   }, 250);
+
+  if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLogByNameFromRc2 === 'function') {
+    try {
+      const raw = window.AalaapiAndroid.pullLogByNameFromRc2(filename);
+      const data = JSON.parse(raw);
+      clearInterval(pollTimer);
+      if (progBar) progBar.style.width = '100%';
+      if (progPct) progPct.textContent = '100%';
+
+      if (data && data.success && (data.data || data.base64)) {
+        if (progText) progText.textContent = `Successfully pulled ${filename}!`;
+        const logBase64 = data.data || data.base64;
+        if (typeof DigitalTwin !== 'undefined' && typeof DigitalTwin.loadFlightLogData === 'function') {
+          await DigitalTwin.loadFlightLogData(filename, logBase64);
+        } else if (typeof atob === 'function' && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.parseLogText === 'function') {
+          const rawText = atob(logBase64);
+          DjiLogDecryptor.parseLogText(rawText, filename);
+        }
+        await refreshRc2LogList();
+        loadRc2LogToDiagnostics(filename);
+        return;
+      } else {
+        if (progText) progText.textContent = `Pull error: ${data?.message || data?.error || 'Failed to pull log'}`;
+        return;
+      }
+    } catch (e) {
+      clearInterval(pollTimer);
+      if (progText) progText.textContent = `Native pull error: ${e.message}`;
+      return;
+    }
+  }
 
   try {
     const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';

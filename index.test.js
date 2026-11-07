@@ -42590,15 +42590,15 @@ describe('Issue #255 & v1.228.1: Trajectory Cone Gradient Coloring on Android We
 
 // ─── Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake (Issue #256) ───
 describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake (Issue #256)', () => {
-  test('Version consistency: package.json, CHANGELOG, templates match v1.231.0', () => {
-    assertVersionConsistency('1.231.0');
+  test('Version consistency: package.json, CHANGELOG, templates match v1.232.0', () => {
+    assertVersionConsistency('1.232.0');
   });
 
-  test('Android build.gradle.kts matches version 1.231.0 and versionCode >= 12310', () => {
+  test('Android build.gradle.kts matches version 1.232.0 and versionCode >= 12320', () => {
     const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
     const m = gradleKts.match(/versionCode = (\d+)/);
-    assert.ok(m && parseInt(m[1]) >= 12310, 'build.gradle.kts must have versionCode >= 12310');
-    assert.ok(gradleKts.includes('versionName = "1.231.0"'), 'build.gradle.kts must have versionName = "1.231.0"');
+    assert.ok(m && parseInt(m[1]) >= 12320, 'build.gradle.kts must have versionCode >= 12320');
+    assert.ok(gradleKts.includes('versionName = "1.232.0"'), 'build.gradle.kts must have versionName = "1.232.0"');
   });
 
   test('pullFlightLogFromRC2 passes in-memory telemetry to FlightDiagnostics.open avoiding 127.0.0.1:8765 calls', async () => {
@@ -42756,9 +42756,9 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(typeof pushApk.findApk === 'function', 'push_apk.js must export findApk');
     });
 
-    test('package.json contains android:push and android:install commands at v1.231.0', () => {
+    test('package.json contains android:push and android:install commands at v1.232.0', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.231.0', 'package.json must be version 1.231.0');
+      assert.strictEqual(pkg.version, '1.232.0', 'package.json must be version 1.232.0');
       assert.ok(pkg.scripts['android:push'], 'package.json must contain android:push script');
       assert.ok(pkg.scripts['android:install'], 'package.json must contain android:install script');
     });
@@ -42813,6 +42813,42 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       const content = fs.readFileSync(bridgePath, 'utf8');
       assert.ok(content.includes('pullFlightLogFromRC2(pullLogBtn)'), 'AndroidNativeBridge must delegate pullLogBtn to pullFlightLogFromRC2');
       assert.ok(content.includes('FlightDiagnostics.open(\'3d\', telemetryPayload)'), 'AndroidNativeBridge must open 3D Flight Diagnostics');
+    });
+  });
+
+  describe('RC 2 MTP Subfolder Traversal, Native Log Browser & Extended Regex (Issue #259)', () => {
+    test('extended extractLogTimestamp regex matches all bracketed, unbracketed and dash-separated date formats', () => {
+      const regex = /\d{4}[-_]?\d{2}[-_]?\d{2}[_\[\-T ]+\d{2}[-\:]?\d{2}[-\:]?\d{2}\]?/;
+      assert.strictEqual(('FlightRecord_2026-11-05_[17-58-48].txt'.match(regex) || [''])[0], '2026-11-05_[17-58-48]');
+      assert.strictEqual(('DJIFlightRecord_2026-11-06_[21-15-30].txt'.match(regex) || [''])[0], '2026-11-06_[21-15-30]');
+      assert.strictEqual(('FlightRecord_2026-11-06-18-20-00.txt'.match(regex) || [''])[0], '2026-11-06-18-20-00');
+      assert.strictEqual(('FlightRecord_20261106_182000.txt'.match(regex) || [''])[0], '20261106_182000');
+      assert.strictEqual(('flightrecord_2026-11-06_12-00-00.dat'.match(regex) || [''])[0], '2026-11-06_12-00-00');
+    });
+
+    test('AndroidMtpBridge.kt contains inFlightRecordDir recursion flag and extended regex', () => {
+      const ktPath = path.join(__dirname, 'android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt');
+      const content = fs.readFileSync(ktPath, 'utf8');
+      assert.ok(content.includes('inFlightRecordDir: Boolean = false'), 'AndroidMtpBridge must support inFlightRecordDir flag');
+      assert.ok(content.includes('fun listRecentLogs'), 'AndroidMtpBridge must expose listRecentLogs');
+      assert.ok(content.includes('fun pullLogByHandle'), 'AndroidMtpBridge must expose pullLogByHandle');
+      assert.ok(content.includes('fun pullLogByName'), 'AndroidMtpBridge must expose pullLogByName');
+      assert.ok(content.includes('=== TOP FLIGHT RECORD CANDIDATES'), 'AndroidMtpBridge must log top flight candidates');
+    });
+
+    test('MainActivity.kt exposes listFlightRecordsFromRc2, pullLogByHandleFromRc2, and pullLogByNameFromRc2', () => {
+      const actPath = path.join(__dirname, 'android/app/src/main/java/com/aalaapi/sky/MainActivity.kt');
+      const content = fs.readFileSync(actPath, 'utf8');
+      assert.ok(content.includes('fun listFlightRecordsFromRc2'), 'MainActivity must expose listFlightRecordsFromRc2');
+      assert.ok(content.includes('fun pullLogByHandleFromRc2'), 'MainActivity must expose pullLogByHandleFromRc2');
+      assert.ok(content.includes('fun pullLogByNameFromRc2'), 'MainActivity must expose pullLogByNameFromRc2');
+    });
+
+    test('Rc2LogExplorer.js integrates with Native Android MTP Bridge for listing and specific log pull', () => {
+      const expPath = path.join(__dirname, 'src/bridge/Rc2LogExplorer.js');
+      const content = fs.readFileSync(expPath, 'utf8');
+      assert.ok(content.includes('window.AalaapiAndroid.listFlightRecordsFromRc2'), 'Rc2LogExplorer must query listFlightRecordsFromRc2 when on Android');
+      assert.ok(content.includes('window.AalaapiAndroid.pullLogByNameFromRc2'), 'Rc2LogExplorer must call pullLogByNameFromRc2 when on Android');
     });
   });
 });

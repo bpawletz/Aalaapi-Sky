@@ -11,8 +11,8 @@ android {
         applicationId = "com.aalaapi.sky"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12310
-        versionName = "1.231.0"
+        versionCode = 12320
+        versionName = "1.232.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
