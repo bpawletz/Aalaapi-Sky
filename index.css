@@ -134,8 +134,8 @@ html, body {
   justify-content: space-between;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: 0;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-left: 0;
+  padding-right: 0;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-sidebar);
   backdrop-filter: blur(16px);
@@ -174,6 +174,7 @@ html, body {
   left: 0;
   z-index: 15;
   background: #0f172a;
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
   padding-right: 14px;
   border-right: 1px solid var(--border-color);
   box-shadow: 4px 0 12px rgba(0, 0, 0, 0.35);
@@ -185,6 +186,28 @@ html, body {
   border-right-color: rgba(15, 23, 42, 0.14);
 }
 
+/* Stationary Opaque Right Dock (v1.241.1, Issue #276) */
+.topbar-right-dock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  position: sticky;
+  right: 0;
+  z-index: 15;
+  background: #0f172a;
+  border-left: 1px solid var(--border-color);
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.35);
+  height: 100%;
+  padding-left: 10px;
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+}
+
+[data-theme="light"] .topbar-right-dock {
+  background: #ffffff;
+  border-left-color: rgba(15, 23, 42, 0.14);
+}
+
 .studio-topbar .btn-secondary,
 .header-unit-btn,
 .header-awake-btn {
@@ -193,10 +216,8 @@ html, body {
   flex: 0 0 auto !important;
 }
 
-/* Side Swipeable Indicator Cues (v1.241.0, Issue #272) */
+/* Side Swipeable Indicator Cues (v1.241.0, Issue #272; v1.241.1, Issue #276) */
 .topbar-scroll-cue {
-  position: sticky;
-  z-index: 25;
   display: none;
   align-items: center;
   justify-content: center;
@@ -208,14 +229,17 @@ html, body {
 }
 
 .topbar-scroll-cue.cue-right {
-  right: 0;
-  height: 100%;
-  width: 34px;
-  background: linear-gradient(to right, transparent, rgba(15, 23, 42, 0.96) 55%);
+  position: relative;
+  right: auto;
+  margin-right: 2px;
+  width: 22px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.45);
   color: #38bdf8;
-  font-size: 1.25rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  padding-right: 4px;
   flex-shrink: 0;
 }
 
@@ -239,11 +263,7 @@ html, body {
   transform: scale(1.08);
 }
 
-[data-theme="light"] .topbar-scroll-cue.cue-right {
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.96) 55%);
-  color: #0284c7;
-}
-
+[data-theme="light"] .topbar-scroll-cue.cue-right,
 [data-theme="light"] .topbar-scroll-cue.cue-left {
   background: rgba(2, 132, 199, 0.12);
   border-color: rgba(2, 132, 199, 0.35);
@@ -280,14 +300,39 @@ html, body {
 
 /* Mobile Topbar Extra Elements - Hidden on Desktop */
 .mobile-search-toggle-btn,
-.mobile-search-close-btn,
+.mobile-search-close-btn {
+  display: none;
+}
+
 .header-more-btn {
   display: none;
 }
 
+.topbar-right-dock .header-more-btn {
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--transition-smooth);
+}
+
+.topbar-right-dock .header-more-btn:hover {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
 .header-more-menu {
   position: fixed;
-  top: 54px;
+  top: calc(52px + env(safe-area-inset-top, 0px) + 6px);
   right: 12px;
   background: rgba(15, 23, 42, 0.96);
   border: 1px solid var(--border-color);
@@ -296,10 +341,10 @@ html, body {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  z-index: 1100;
+  z-index: 10050;
   min-width: 200px;
-  max-height: calc(100vh - 60px);
-  max-height: calc(100dvh - 60px);
+  max-height: calc(100vh - 70px);
+  max-height: calc(100dvh - 70px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -507,7 +552,7 @@ html, body {
   display: flex;
   gap: 6px;
   align-items: center;
-  flex: 0 1 210px;
+  flex: 0 0 auto;
   max-width: 240px;
   min-width: 175px;
 }
@@ -2221,8 +2266,8 @@ body.modal-drag-active {
   .studio-topbar {
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: 0;
-    padding-left: max(8px, env(safe-area-inset-left, 0px));
-    padding-right: max(8px, env(safe-area-inset-right, 0px));
+    padding-left: 0;
+    padding-right: 0;
     gap: 6px;
     height: calc(48px + env(safe-area-inset-top, 0px));
     min-height: calc(48px + env(safe-area-inset-top, 0px));
@@ -2231,8 +2276,20 @@ body.modal-drag-active {
   }
 
   .topbar-left {
+    padding-left: max(10px, env(safe-area-inset-left, 0px));
+    padding-right: 10px;
     gap: 6px;
     flex-shrink: 0;
+  }
+
+  .topbar-right-dock {
+    padding-left: 6px;
+    padding-right: max(10px, env(safe-area-inset-right, 0px));
+  }
+
+  .header-more-menu {
+    top: calc(48px + env(safe-area-inset-top, 0px) + 4px);
+    right: 8px;
   }
 
   .logo h1 {
@@ -2249,7 +2306,8 @@ body.modal-drag-active {
   }
 
   .header-search-container {
-    max-width: 170px;
+    min-width: 175px;
+    max-width: 200px;
   }
 
   #locate-me-label {
@@ -2477,12 +2535,12 @@ body.modal-drag-active {
 /* Compact Laptop Screens (<= 1150px) */
 @media (max-width: 1150px) {
   .studio-topbar {
-    padding: 0 10px;
+    padding: 0;
     gap: 8px;
   }
   .header-search-container {
-    max-width: 180px;
-    min-width: 140px;
+    max-width: 200px;
+    min-width: 175px;
   }
   #header-unit-toggle-btn:not(.ribbon-force-show),
   #theme-toggle-btn:not(.ribbon-force-show),
@@ -2495,10 +2553,6 @@ body.modal-drag-active {
 @media (max-width: 1024px) {
   #adsb-topbar-btn {
     display: none !important;
-  }
-  .header-search-container {
-    max-width: 120px;
-    min-width: 80px;
   }
 }
 

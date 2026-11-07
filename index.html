@@ -151,8 +151,8 @@ html, body {
   justify-content: space-between;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: 0;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-left: 0;
+  padding-right: 0;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-sidebar);
   backdrop-filter: blur(16px);
@@ -191,6 +191,7 @@ html, body {
   left: 0;
   z-index: 15;
   background: #0f172a;
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
   padding-right: 14px;
   border-right: 1px solid var(--border-color);
   box-shadow: 4px 0 12px rgba(0, 0, 0, 0.35);
@@ -202,6 +203,28 @@ html, body {
   border-right-color: rgba(15, 23, 42, 0.14);
 }
 
+/* Stationary Opaque Right Dock (v1.241.1, Issue #276) */
+.topbar-right-dock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  position: sticky;
+  right: 0;
+  z-index: 15;
+  background: #0f172a;
+  border-left: 1px solid var(--border-color);
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.35);
+  height: 100%;
+  padding-left: 10px;
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+}
+
+[data-theme="light"] .topbar-right-dock {
+  background: #ffffff;
+  border-left-color: rgba(15, 23, 42, 0.14);
+}
+
 .studio-topbar .btn-secondary,
 .header-unit-btn,
 .header-awake-btn {
@@ -210,10 +233,8 @@ html, body {
   flex: 0 0 auto !important;
 }
 
-/* Side Swipeable Indicator Cues (v1.241.0, Issue #272) */
+/* Side Swipeable Indicator Cues (v1.241.0, Issue #272; v1.241.1, Issue #276) */
 .topbar-scroll-cue {
-  position: sticky;
-  z-index: 25;
   display: none;
   align-items: center;
   justify-content: center;
@@ -225,14 +246,17 @@ html, body {
 }
 
 .topbar-scroll-cue.cue-right {
-  right: 0;
-  height: 100%;
-  width: 34px;
-  background: linear-gradient(to right, transparent, rgba(15, 23, 42, 0.96) 55%);
+  position: relative;
+  right: auto;
+  margin-right: 2px;
+  width: 22px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.45);
   color: #38bdf8;
-  font-size: 1.25rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  padding-right: 4px;
   flex-shrink: 0;
 }
 
@@ -256,11 +280,7 @@ html, body {
   transform: scale(1.08);
 }
 
-[data-theme="light"] .topbar-scroll-cue.cue-right {
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.96) 55%);
-  color: #0284c7;
-}
-
+[data-theme="light"] .topbar-scroll-cue.cue-right,
 [data-theme="light"] .topbar-scroll-cue.cue-left {
   background: rgba(2, 132, 199, 0.12);
   border-color: rgba(2, 132, 199, 0.35);
@@ -297,14 +317,39 @@ html, body {
 
 /* Mobile Topbar Extra Elements - Hidden on Desktop */
 .mobile-search-toggle-btn,
-.mobile-search-close-btn,
+.mobile-search-close-btn {
+  display: none;
+}
+
 .header-more-btn {
   display: none;
 }
 
+.topbar-right-dock .header-more-btn {
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--transition-smooth);
+}
+
+.topbar-right-dock .header-more-btn:hover {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
 .header-more-menu {
   position: fixed;
-  top: 54px;
+  top: calc(52px + env(safe-area-inset-top, 0px) + 6px);
   right: 12px;
   background: rgba(15, 23, 42, 0.96);
   border: 1px solid var(--border-color);
@@ -313,10 +358,10 @@ html, body {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  z-index: 1100;
+  z-index: 10050;
   min-width: 200px;
-  max-height: calc(100vh - 60px);
-  max-height: calc(100dvh - 60px);
+  max-height: calc(100vh - 70px);
+  max-height: calc(100dvh - 70px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -524,7 +569,7 @@ html, body {
   display: flex;
   gap: 6px;
   align-items: center;
-  flex: 0 1 210px;
+  flex: 0 0 auto;
   max-width: 240px;
   min-width: 175px;
 }
@@ -2238,8 +2283,8 @@ body.modal-drag-active {
   .studio-topbar {
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: 0;
-    padding-left: max(8px, env(safe-area-inset-left, 0px));
-    padding-right: max(8px, env(safe-area-inset-right, 0px));
+    padding-left: 0;
+    padding-right: 0;
     gap: 6px;
     height: calc(48px + env(safe-area-inset-top, 0px));
     min-height: calc(48px + env(safe-area-inset-top, 0px));
@@ -2248,8 +2293,20 @@ body.modal-drag-active {
   }
 
   .topbar-left {
+    padding-left: max(10px, env(safe-area-inset-left, 0px));
+    padding-right: 10px;
     gap: 6px;
     flex-shrink: 0;
+  }
+
+  .topbar-right-dock {
+    padding-left: 6px;
+    padding-right: max(10px, env(safe-area-inset-right, 0px));
+  }
+
+  .header-more-menu {
+    top: calc(48px + env(safe-area-inset-top, 0px) + 4px);
+    right: 8px;
   }
 
   .logo h1 {
@@ -2266,7 +2323,8 @@ body.modal-drag-active {
   }
 
   .header-search-container {
-    max-width: 170px;
+    min-width: 175px;
+    max-width: 200px;
   }
 
   #locate-me-label {
@@ -2494,12 +2552,12 @@ body.modal-drag-active {
 /* Compact Laptop Screens (<= 1150px) */
 @media (max-width: 1150px) {
   .studio-topbar {
-    padding: 0 10px;
+    padding: 0;
     gap: 8px;
   }
   .header-search-container {
-    max-width: 180px;
-    min-width: 140px;
+    max-width: 200px;
+    min-width: 175px;
   }
   #header-unit-toggle-btn:not(.ribbon-force-show),
   #theme-toggle-btn:not(.ribbon-force-show),
@@ -2512,10 +2570,6 @@ body.modal-drag-active {
 @media (max-width: 1024px) {
   #adsb-topbar-btn {
     display: none !important;
-  }
-  .header-search-container {
-    max-width: 120px;
-    min-width: 80px;
   }
 }
 
@@ -9255,7 +9309,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.3</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -9350,7 +9404,11 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <span id="adsb-topbar-label">ADS-B</span>
           <span id="adsb-topbar-badge" class="badge-tag hidden" style="font-size: 0.6rem; padding: 1px 5px; border-radius: 4px; background: rgba(239, 68, 68, 0.25); color: #fca5a5; font-weight: 700;">0</span>
         </button>
-        <!-- Mobile More Menu Button (visible on small screens) -->
+      </div>
+
+      <!-- Right Stationary Dock: Scroll Cue + Mobile/Tablet 3-Dot More Button (v1.241.1, Issue #276) -->
+      <div class="topbar-right-dock">
+        <button id="topbar-scroll-cue-right" class="topbar-scroll-cue cue-right" type="button" aria-label="Scroll menu right" title="Click or swipe to scroll menu right">›</button>
         <button id="header-more-btn" class="btn-secondary header-more-btn" type="button" title="More Options" aria-label="More options">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
             <circle cx="12" cy="5" r="2"/>
@@ -9359,62 +9417,59 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           </svg>
         </button>
       </div>
-
-      <!-- Right Side Swipeable Scroll Cue (v1.241.0, Issue #272) -->
-      <button id="topbar-scroll-cue-right" class="topbar-scroll-cue cue-right" type="button" aria-label="Scroll menu right" title="Click or swipe to scroll menu right">›</button>
-
-      <!-- Mobile More Actions Dropdown Menu Popover -->
-      <div id="header-more-menu" class="header-more-menu glass hidden">
-        <button id="more-menu-awake-btn" class="more-menu-item" type="button">
-          <span class="more-menu-icon" id="more-menu-awake-icon">☕</span>
-          <span class="more-menu-label" id="more-menu-awake-label">Screen: Keep Awake</span>
-        </button>
-        <button id="more-menu-bridge-btn" class="more-menu-item" type="button">
-          <span class="more-menu-icon">🌉</span>
-          <span class="more-menu-label">Aalaapi Bridge &amp; Hardware</span>
-        </button>
-        <button id="more-menu-adsb-btn" class="more-menu-item" type="button">
-          <span class="more-menu-icon">✈️</span>
-          <span class="more-menu-label">ADS-B Airspace Awareness</span>
-        </button>
-        <button id="more-menu-diagnostics-btn" class="more-menu-item" type="button">
-          <span class="more-menu-icon">📊</span>
-          <span class="more-menu-label">Flight Diagnostics &amp; Replay</span>
-        </button>
-        <button id="more-menu-photos-btn" class="more-menu-item" type="button">
-          <span class="more-menu-icon">📸</span>
-          <span class="more-menu-label">Photo Ingestion &amp; Inspection</span>
-        </button>
-                <button id="more-menu-pilot-btn" class="more-menu-item" type="button">
-          <span class="more-menu-icon">👤</span>
-          <span class="more-menu-label">Pilot Identity &amp; Profile</span>
-        </button>
-        <button id="more-menu-intro-btn" class="more-menu-item" type="button">
-          <span class="more-menu-icon">🎓</span>
-          <span class="more-menu-label">Intro &amp; Quickstart Tour</span>
-        </button>
-        <button id="more-menu-action-flow-btn" class="more-menu-item" type="button" onclick="openActionFlowModal(); closeMoreMenu();">
-          <span class="more-menu-icon">🔀</span>
-          <span class="more-menu-label">Flight Action Flow</span>
-        </button>
-        <button id="more-menu-about-btn" class="more-menu-item" type="button">
-          <span class="more-menu-icon">ℹ️</span>
-          <span class="more-menu-label">About &amp; Changelog</span>
-        </button>
-        <button id="more-menu-links-btn" class="more-menu-item" type="button">
-          <span class="more-menu-icon">🔗</span>
-          <span class="more-menu-label">Useful Aviation Links</span>
-        </button>
-        <a id="more-menu-coffee-btn" href="https://buymeacoffee.com/romah74" target="_blank" rel="noopener noreferrer" class="more-menu-item" style="text-decoration: none; color: #fcd34d;">
-          <span class="more-menu-icon">☕</span>
-          <span class="more-menu-label">Buy Me a Coffee</span>
-        </a>
-        <button id="more-menu-customize-ribbon-btn" class="more-menu-item" type="button" style="border-top: 1px solid var(--border-color); margin-top: 4px; padding-top: 8px;">
-          <span class="more-menu-icon">🎛️</span>
-          <span class="more-menu-label">Customize Top Ribbon...</span>
-        </button>
-      </div>
     </header>
+
+    <!-- Mobile More Actions Dropdown Menu Popover (v1.241.1, Issue #276) -->
+    <div id="header-more-menu" class="header-more-menu glass hidden">
+      <button id="more-menu-awake-btn" class="more-menu-item" type="button">
+        <span class="more-menu-icon" id="more-menu-awake-icon">☕</span>
+        <span class="more-menu-label" id="more-menu-awake-label">Screen: Keep Awake</span>
+      </button>
+      <button id="more-menu-bridge-btn" class="more-menu-item" type="button">
+        <span class="more-menu-icon">🌉</span>
+        <span class="more-menu-label">Aalaapi Bridge &amp; Hardware</span>
+      </button>
+      <button id="more-menu-adsb-btn" class="more-menu-item" type="button">
+        <span class="more-menu-icon">✈️</span>
+        <span class="more-menu-label">ADS-B Airspace Awareness</span>
+      </button>
+      <button id="more-menu-diagnostics-btn" class="more-menu-item" type="button">
+        <span class="more-menu-icon">📊</span>
+        <span class="more-menu-label">Flight Diagnostics &amp; Replay</span>
+      </button>
+      <button id="more-menu-photos-btn" class="more-menu-item" type="button">
+        <span class="more-menu-icon">📸</span>
+        <span class="more-menu-label">Photo Ingestion &amp; Inspection</span>
+      </button>
+      <button id="more-menu-pilot-btn" class="more-menu-item" type="button">
+        <span class="more-menu-icon">👤</span>
+        <span class="more-menu-label">Pilot Identity &amp; Profile</span>
+      </button>
+      <button id="more-menu-intro-btn" class="more-menu-item" type="button">
+        <span class="more-menu-icon">🎓</span>
+        <span class="more-menu-label">Intro &amp; Quickstart Tour</span>
+      </button>
+      <button id="more-menu-action-flow-btn" class="more-menu-item" type="button" onclick="openActionFlowModal(); closeMoreMenu();">
+        <span class="more-menu-icon">🔀</span>
+        <span class="more-menu-label">Flight Action Flow</span>
+      </button>
+      <button id="more-menu-about-btn" class="more-menu-item" type="button">
+        <span class="more-menu-icon">ℹ️</span>
+        <span class="more-menu-label">About &amp; Changelog</span>
+      </button>
+      <button id="more-menu-links-btn" class="more-menu-item" type="button">
+        <span class="more-menu-icon">🔗</span>
+        <span class="more-menu-label">Useful Aviation Links</span>
+      </button>
+      <a id="more-menu-coffee-btn" href="https://buymeacoffee.com/romah74" target="_blank" rel="noopener noreferrer" class="more-menu-item" style="text-decoration: none; color: #fcd34d;">
+        <span class="more-menu-icon">☕</span>
+        <span class="more-menu-label">Buy Me a Coffee</span>
+      </a>
+      <button id="more-menu-customize-ribbon-btn" class="more-menu-item" type="button" style="border-top: 1px solid var(--border-color); margin-top: 4px; padding-top: 8px;">
+        <span class="more-menu-icon">🎛️</span>
+        <span class="more-menu-label">Customize Top Ribbon...</span>
+      </button>
+    </div>
 
     <!-- App Body Row: Sidebar (Flight Tools Palette) + Map Canvas -->
     <div class="app-container app-body">
@@ -14174,6 +14229,15 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>🚀</span>
+              Stationary Right Dock, Android Dropdown Popover &amp; Search Containment (v1.242.3) (Closes #276)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Frees the 3-dot More Actions dropdown menu from topbar clipping so it reliably drops down on Android. Pinned a dedicated stationary opaque right dock (<code>.topbar-right-dock</code>) to house the right swipe cue and firmly plant the 3-dot menu button, completely masking horizontally scrolling pills. Eliminated outer left padding gutter beside the hamburger menu and prevented search container width constraints from overlapping the locate button beneath the time pill.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>↔️</span>
               Topbar Pill Auto-Fitting, Side Swipeable Indicators &amp; Opaque Brand Header (v1.241.0) (Closes #272)
             </strong>
@@ -16900,7 +16964,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.3</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17063,6 +17127,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.242.3):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Android 3-Dot Dropdown Clipping, Right Swipe Dock Masking, Left Margin Leak &amp; Locate Button Overlap (Closes #276):</strong> Moved <code>#header-more-menu</code> outside the topbar header to prevent <code>overflow-y: hidden</code> and <code>backdrop-filter</code> clipping on Android; added stationary opaque <code>.topbar-right-dock</code> to firmly plant the 3-dot button and mask pills scrolling underneath the swipe cue; eliminated left gutter gap beside <code>#sidebar-toggle</code>; prevented search container from squeezing and covering the locate button with the time pill.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.242.2):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -42989,19 +43059,27 @@ function initTopbarScrollCues(topbarEl) {
 
   const leftCue = document.getElementById('topbar-scroll-cue-left');
   const rightCue = document.getElementById('topbar-scroll-cue-right');
+  const rightDock = document.querySelector('.topbar-right-dock');
+  const moreBtn = document.getElementById('header-more-btn');
 
   const updateCues = () => {
     const maxScroll = topbar.scrollWidth - topbar.clientWidth;
-    if (maxScroll > 6) {
-      if (rightCue) {
-        rightCue.style.display = (topbar.scrollLeft < maxScroll - 6) ? 'flex' : 'none';
-      }
-      if (leftCue) {
-        leftCue.style.display = (topbar.scrollLeft > 6) ? 'flex' : 'none';
-      }
-    } else {
-      if (rightCue) rightCue.style.display = 'none';
-      if (leftCue) leftCue.style.display = 'none';
+    const isOverflowing = maxScroll > 6;
+    const isScrollLeft = topbar.scrollLeft > 6;
+    const isScrollRight = isOverflowing && (topbar.scrollLeft < maxScroll - 6);
+
+    if (rightCue) {
+      rightCue.style.display = isScrollRight ? 'flex' : 'none';
+    }
+    if (leftCue) {
+      leftCue.style.display = isScrollLeft ? 'flex' : 'none';
+    }
+    if (rightDock) {
+      const isMoreVisible = moreBtn && (
+        moreBtn.style.display === 'inline-flex' ||
+        (typeof window !== 'undefined' && window.getComputedStyle(moreBtn).display !== 'none')
+      );
+      rightDock.style.display = (isScrollRight || isMoreVisible) ? 'flex' : 'none';
     }
   };
 
@@ -43122,9 +43200,11 @@ function applyTopbarRibbonConfig(cfg) {
   });
 
   const moreBtn = document.getElementById('header-more-btn');
+  const rightDock = document.querySelector('.topbar-right-dock');
   if (moreBtn) {
     if (hasHiddenItem) {
       moreBtn.style.display = 'inline-flex';
+      if (rightDock) rightDock.style.display = 'flex';
     } else if (typeof window !== 'undefined' && window.innerWidth > 1500) {
       moreBtn.style.display = '';
     }
