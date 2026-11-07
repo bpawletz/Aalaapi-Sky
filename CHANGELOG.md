@@ -1,3 +1,29 @@
+## [1.232.0] - 2026-11-06
+
+Optimize RC 2 MTP Flight Log Discovery, Unconditional Subfolder Traversal & Native Android Log Browser.
+
+### 🐛 Fixed | 🚀 Added
+
+#### Pilot & Operational Features
+- **Unconditional Subfolder Traversal for DJI Flight Records (Closes #259)**:
+  - Ensured that once inside the `FlightRecord` directory on the connected DJI RC 2 controller, all nested subdirectories (such as date-based folders, cache folders, and recent session directories) are traversed unconditionally without restriction.
+  - Accommodates all DJI flight log naming variations, including bracketed and unbracketed ISO timestamps (`YYYY-MM-DD_[HH-mm-ss]`, `YYYY-MM-DD-HH-mm-ss`, `YYYYMMDD_HHmmss`), case-insensitive prefixes (`FlightRecord_`, `DJIFlightRecord_`, `flightrecord_`), and `.txt`, `.csv`, `.dat` file extensions.
+- **Native Android Flight Log Browser & Selection (Closes #259)**:
+  - Directly connected the "Browse All Flight Logs" modal (`#rc2-flight-logs-modal`) to the Native Android MTP Bridge.
+  - Pilots can now view the top 30 flight logs stored on the RC 2 directly within the app table (with formatted dates, times, and file sizes), and select any individual flight to pull and replay in 3D Flight Diagnostics.
+- **Real-Time Logcat Diagnostic Inspection (Closes #259)**:
+  - Added structured Logcat output logging the top 15 candidate flight records with their extracted timestamps, handles, and file sizes for transparent on-device verification.
+
+#### Under the Hood & Technical Details
+- **android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt**:
+  - Enhanced `scanMtpForFlightRecords` with `inFlightRecordDir: Boolean` state flag for unconditional recursive descent once `FlightRecord` is located.
+  - Expanded `extractLogTimestamp` regex to `\d{4}[-_]?\d{2}[-_]?\d{2}[_\[\-T ]+\d{2}[-\:]\d{2}[-\:]\d{2}\]?`.
+  - Added `getSortedMtpCandidates(mtp)`, `listRecentLogs(limit)`, `pullLogByHandle(handle)`, and `pullLogByName(filename)`.
+- **android/app/src/main/java/com/aalaapi/sky/MainActivity.kt**:
+  - Registered `listFlightRecordsFromRc2(limit)`, `pullLogByHandleFromRc2(handle)`, and `pullLogByNameFromRc2(filename)` on `window.AalaapiAndroid`.
+- **src/bridge/Rc2LogExplorer.js**:
+  - Integrated `refreshRc2LogList()` and `pullSpecificRc2Log()` with `window.AalaapiAndroid` native methods while preserving the existing Companion Bridge network fallback.
+
 ## [1.231.0] - 2026-11-06
 
 Fix DJI RC 2 MTP Chronological Flight Log Selection and Unify 3D Diagnostics Auto-Launch.

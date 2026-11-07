@@ -33,7 +33,7 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
         const val ACTION_USB_PERMISSION = "com.aalaapi.sky.USB_PERMISSION"
 
         fun extractLogTimestamp(name: String): String {
-            val regex = Regex("""\d{4}-\d{2}-\d{2}[_\[\-T ]+\d{2}[-\:]\d{2}[-\:]\d{2}\]?""")
+            val regex = Regex("""\d{4}[-_]?\d{2}[-_]?\d{2}[_\[\-T ]+\d{2}[-\:]?\d{2}[-\:]?\d{2}\]?""")
             return regex.find(name)?.value ?: ""
         }
     }
@@ -153,26 +153,153 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
         storageId: Int,
         parentHandle: Int,
         candidates: MutableList<Pair<Int, MtpObjectInfo>>,
-        depth: Int
+        depth: Int,
+        inFlightRecordDir: Boolean = false
     ) {
-        if (depth > 6) return
+        if (depth > 8) return
         val handles = mtp.getObjectHandles(storageId, 0, parentHandle) ?: return
+
         for (handle in handles) {
             val info = mtp.getObjectInfo(handle) ?: continue
             val name = info.name ?: ""
             val isFolder = (info.format == 0x3001 || info.associationType != 0)
             if (isFolder) {
                 val lower = name.lowercase()
-                val isRelevantDir = depth == 0 || lower in listOf(
-                    "android", "data", "dji.go.v5", "files", "flightrecord", "flightrecords",
-                    "flight_record", "dji", "dji.pilot", "dji.pilot.pad", "dji.industry.pilot", "dji.go.v4"
-                ) || lower.contains("flight") || lower.contains("record") || lower.contains("dji")
+                val isFlightDir = inFlightRecordDir || lower.contains("flightrecord") || lower.contains("flight_record")
+                val isRelevantDir = inFlightRecordDir || depth == 0 || isFlightDir || lower in listOf(
+                    "android", "data", "dji.go.v5", "files", "dji", "dji.pilot", "dji.pilot.pad", "dji.industry.pilot", "dji.go.v4"
+                ) || lower.contains("dji") || lower.contains("record") || lower.contains("flight")
                 if (isRelevantDir) {
-                    scanMtpForFlightRecords(mtp, storageId, handle, candidates, depth + 1)
+                    scanMtpForFlightRecords(mtp, storageId, handle, candidates, depth + 1, inFlightRecordDir = isFlightDir)
                 }
-            } else if ((name.startsWith("FlightRecord_") || name.startsWith("DJIFlightRecord_")) && (name.endsWith(".txt") || name.endsWith(".csv"))) {
-                candidates.add(Pair(handle, info))
+            } else {
+                val lower = name.lowercase()
+                val isFlightLog = (lower.contains("flightrecord") || lower.contains("flight_record") || lower.startsWith("fly_") || inFlightRecordDir) &&
+                    (lower.endsWith(".txt") || lower.endsWith(".csv") || lower.endsWith(".dat"))
+                if (isFlightLog) {
+                    candidates.add(Pair(handle, info))
+                }
             }
+        }
+    }
+
+    private fun getSortedMtpCandidates(mtp: MtpDevice): List<Pair<Int, MtpObjectInfo>> {
+        val candidateHandles = mutableListOf<Pair<Int, MtpObjectInfo>>()
+        val storageIds = mtp.storageIds
+        if (storageIds != null) {
+            for (storageId in storageIds) {
+                scanMtpForFlightRecords(mtp, storageId, 0, candidateHandles, depth = 0)
+            }
+        }
+
+        candidateHandles.sortWith(
+            compareByDescending<Pair<Int, MtpObjectInfo>> { 
+                extractLogTimestamp(it.second.name ?: "") 
+            }.thenByDescending { 
+                it.second.dateModified 
+            }.thenByDescending { 
+                it.first 
+            }
+        )
+
+        Log.i("AalaapiMtp", "=== TOP FLIGHT RECORD CANDIDATES (Total: ${candidateHandles.size}) ===")
+        candidateHandles.take(15).forEachIndexed { i, c ->
+            val ts = extractLogTimestamp(c.second.name ?: "")
+            Log.i("AalaapiMtp", "#$i: ${c.second.name} | ts: '$ts' | mtime: ${c.second.dateModified} | size: ${c.second.compressedSizeLong} | handle: ${c.first}")
+        }
+        return candidateHandles
+    }
+
+    fun listRecentLogs(limit: Int = 30): String {
+        val mtp = mtpDevice
+        val results = mutableListOf<JSONObject>()
+        if (mtp != null) {
+            try {
+                val candidates = getSortedMtpCandidates(mtp)
+                for (pair in candidates.take(if (limit > 0) limit else 30)) {
+                    val info = pair.second
+                    results.add(JSONObject().apply {
+                        put("filename", info.name ?: "Unknown")
+                        put("timestamp", extractLogTimestamp(info.name ?: ""))
+                        put("handle", pair.first)
+                        put("size", info.compressedSizeLong)
+                        put("dateModified", info.dateModified)
+                        put("isDecrypted", true)
+                        put("source", "usb_mtp")
+                    })
+                }
+            } catch (e: Exception) {
+                Log.e("AalaapiMtp", "Error listing recent MTP flight logs: ${e.message}", e)
+            }
+        }
+        return org.json.JSONArray(results).toString()
+    }
+
+    fun pullLogByHandle(handle: Int): String {
+        val mtp = mtpDevice ?: return JSONObject().apply {
+            put("success", false)
+            put("error", "NO_RC2_CONNECTED")
+            put("message", "DJI RC 2 is not connected via USB.")
+        }.toString()
+
+        try {
+            val info = mtp.getObjectInfo(handle) ?: return JSONObject().apply {
+                put("success", false)
+                put("error", "HANDLE_NOT_FOUND")
+                put("message", "Specified MTP object handle $handle not found.")
+            }.toString()
+
+            val filename = info.name ?: "FlightRecord_$handle.txt"
+            val tempFile = File(context.cacheDir, filename)
+            if (tempFile.exists()) tempFile.delete()
+
+            val imported = mtp.importFile(handle, tempFile.absolutePath)
+            if (imported && tempFile.exists() && tempFile.length() > 0) {
+                val bytes = tempFile.readBytes()
+                val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                tempFile.delete()
+                Log.i("AalaapiMtp", "Successfully pulled flight log by handle $handle ($filename, ${bytes.size} bytes)")
+                return JSONObject().apply {
+                    put("success", true)
+                    put("filename", filename)
+                    put("source", "usb_mtp")
+                    put("size", bytes.size)
+                    put("data", b64)
+                    put("base64", b64)
+                }.toString()
+            } else {
+                return JSONObject().apply {
+                    put("success", false)
+                    put("error", "IMPORT_FAILED")
+                    put("message", "Failed to import MTP object handle $handle ($filename).")
+                }.toString()
+            }
+        } catch (e: Exception) {
+            return JSONObject().apply {
+                put("success", false)
+                put("error", "EXCEPTION")
+                put("message", e.message ?: "Failed to import file via MTP")
+            }.toString()
+        }
+    }
+
+    fun pullLogByName(filename: String): String {
+        val mtp = mtpDevice ?: return JSONObject().apply {
+            put("success", false)
+            put("error", "NO_RC2_CONNECTED")
+            put("message", "DJI RC 2 is not connected via USB.")
+        }.toString()
+
+        val candidates = getSortedMtpCandidates(mtp)
+        val match = candidates.firstOrNull { it.second.name.equals(filename, ignoreCase = true) }
+        return if (match != null) {
+            pullLogByHandle(match.first)
+        } else {
+            JSONObject().apply {
+                put("success", false)
+                put("error", "FILE_NOT_FOUND")
+                put("message", "Flight log '$filename' not found on connected RC 2 storage.")
+            }.toString()
         }
     }
 
@@ -181,28 +308,13 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
         val mtp = mtpDevice
         if (mtp != null) {
             try {
-                val candidateHandles = mutableListOf<Pair<Int, MtpObjectInfo>>()
-                val storageIds = mtp.storageIds
-                if (storageIds != null) {
-                    for (storageId in storageIds) {
-                        scanMtpForFlightRecords(mtp, storageId, 0, candidateHandles, depth = 0)
-                    }
-                }
+                val candidateHandles = getSortedMtpCandidates(mtp)
 
                 webView.post {
                     webView.evaluateJavascript("console.info('📁 [MTP] Scanned RC 2 storage: found ${candidateHandles.size} flight records');", null)
                 }
 
                 if (candidateHandles.isNotEmpty()) {
-                    candidateHandles.sortWith(
-                        compareByDescending<Pair<Int, MtpObjectInfo>> { 
-                            extractLogTimestamp(it.second.name ?: "") 
-                        }.thenByDescending { 
-                            it.second.dateModified 
-                        }.thenByDescending { 
-                            it.first 
-                        }
-                    )
                     val newest = candidateHandles.first()
                     val timestamp = extractLogTimestamp(newest.second.name ?: "")
                     Log.i("AalaapiMtp", "Selected latest flight record: ${newest.second.name} (timestamp: '$timestamp', handle: ${newest.first})")
@@ -210,23 +322,10 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
                         webView.evaluateJavascript("console.info('📁 [MTP] Selected latest flight: ${newest.second.name} (handle: ${newest.first})');", null)
                     }
 
-                    val tempFile = File(context.cacheDir, newest.second.name)
-                    if (tempFile.exists()) tempFile.delete()
-
-                    val imported = mtp.importFile(newest.first, tempFile.absolutePath)
-                    if (imported && tempFile.exists() && tempFile.length() > 0) {
-                        val bytes = tempFile.readBytes()
-                        val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                        tempFile.delete()
-                        Log.i("AalaapiMtp", "Successfully imported MTP log ${newest.second.name} (${bytes.size} bytes)")
-                        return JSONObject().apply {
-                            put("success", true)
-                            put("filename", newest.second.name)
-                            put("source", "usb_mtp")
-                            put("size", bytes.size)
-                            put("data", b64)
-                            put("base64", b64)
-                        }.toString()
+                    val res = pullLogByHandle(newest.first)
+                    val json = JSONObject(res)
+                    if (json.optBoolean("success")) {
+                        return res
                     } else {
                         Log.e("AalaapiMtp", "Failed to import file via MTP handle ${newest.first}")
                         webView.post {
