@@ -4682,6 +4682,10 @@ const FlightDiagnostics = {
       }
 
       if (importedTelemetry) {
+        if (!importedTelemetry.isSimulation) {
+          importedTelemetry.flightId = flightId;
+          importedTelemetry.isActualFlown = true;
+        }
         this.isActualFlown = (importedTelemetry.isActualFlown !== undefined) ? !!importedTelemetry.isActualFlown : true;
         const comp = (typeof computeFlightComparison === 'function') ? computeFlightComparison({ waypointCount: (typeof getActiveMissionWaypoints === 'function' ? getActiveMissionWaypoints().length : 0), altitude: importedTelemetry.maxAltitude, totalDistance: importedTelemetry.totalDistance }, importedTelemetry) : null;
 

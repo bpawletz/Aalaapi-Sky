@@ -8714,7 +8714,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.232.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.233.0</span></h1>
         </div>
       </div>
 
@@ -16188,7 +16188,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.232.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.233.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -16323,6 +16323,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               <strong style="color: var(--text-main); display: block;">Google Fonts: Outfit &amp; Jakarta</strong>
               <span style="color: var(--text-muted);">SIL Open Font License 1.1 by On caps, Rodrigo Fuenzalida, and Tokotype.</span>
             </div>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 6px 8px; grid-column: span 2;">
+              <strong style="color: var(--text-main); display: block;">dji-log-parser (v0.5.7)</strong>
+              <span style="color: var(--text-muted);">MIT License &copy; Louis Vauvillier (lvauvillier). Native DJI v13/v14 flight record parser &amp; keychain decryptor.</span>
+            </div>
           </div>
         </div>
 
@@ -16348,6 +16352,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.233.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Native ARM64 DJI v13/v14 Flight Log Decryptor on Android (Closes #260):</strong> Bundled native ARM64 dji-log binary (libdjilog.so) and loopback keychain relay inside the Android APK so encrypted FlightRecord_*.txt files pulled from DJI RC 2 over USB OTG decrypt directly on the tablet into full telemetry CSVs instead of falling back to simulated missions.</li>
+                  <li><strong>6x Faster Deduplicated MTP Scanning &amp; Formatted Log Browser (Closes #260):</strong> Eliminated 6x duplicate MTP object traversal, cached sorted candidates for 30s, formatted dates and file sizes in Browse All Flight Logs, and wired O(1) handle-based pulling.</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.232.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                   <li><strong>RC 2 MTP Subfolder Traversal & Discovery (Closes #259):</strong> Ensured that once inside FlightRecord directory, all child subfolders (date-based and session folders) are traversed unconditionally, supporting all DJI flight record filename patterns and extensions.</li>
@@ -92126,6 +92137,10 @@ const FlightDiagnostics = {
       }
 
       if (importedTelemetry) {
+        if (!importedTelemetry.isSimulation) {
+          importedTelemetry.flightId = flightId;
+          importedTelemetry.isActualFlown = true;
+        }
         this.isActualFlown = (importedTelemetry.isActualFlown !== undefined) ? !!importedTelemetry.isActualFlown : true;
         const comp = (typeof computeFlightComparison === 'function') ? computeFlightComparison({ waypointCount: (typeof getActiveMissionWaypoints === 'function' ? getActiveMissionWaypoints().length : 0), altitude: importedTelemetry.maxAltitude, totalDistance: importedTelemetry.totalDistance }, importedTelemetry) : null;
 
@@ -110385,18 +110400,51 @@ async function refreshRc2LogList() {
         const raw = window.AalaapiAndroid.listFlightRecordsFromRc2(30);
         const parsed = JSON.parse(raw || '[]');
         if (Array.isArray(parsed) && parsed.length > 0) {
-          rc2LogsCache = parsed.map(item => ({
-            filename: item.filename,
-            size: item.size || 0,
-            dateModified: item.dateModified || 0,
-            timestamp: item.timestamp,
-            handle: item.handle,
-            isDecrypted: true,
-            source: 'usb_mtp'
-          }));
+          const seenNames = new Set();
+          rc2LogsCache = [];
+          parsed.forEach(item => {
+            const fn = item.filename || 'Unknown';
+            const key = fn.toLowerCase();
+            if (seenNames.has(key)) return;
+            seenNames.add(key);
+
+            let formattedDate = item.flightDate || item.mtimeFormatted || '';
+            if (!formattedDate || formattedDate === '—') {
+              const m = fn.match(/(\d{4})[-_]?(\d{2})[-_]?(\d{2})[_\[\-T ]+(\d{2})[-\:]?(\d{2})[-\:]?(\d{2})/);
+              if (m) {
+                formattedDate = `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6]}`;
+              } else {
+                formattedDate = item.timestamp || '—';
+              }
+            }
+
+            const sz = Number(item.size || 0);
+            let sizeFormatted = item.sizeFormatted || '';
+            if (!sizeFormatted || sizeFormatted === '—') {
+              if (sz > 1048576) sizeFormatted = `${(sz / 1048576).toFixed(2)} MB`;
+              else if (sz > 1024) sizeFormatted = `${(sz / 1024).toFixed(1)} KB`;
+              else if (sz > 0) sizeFormatted = `${sz} B`;
+              else sizeFormatted = '—';
+            }
+
+            rc2LogsCache.push({
+              filename: fn,
+              size: sz,
+              sizeFormatted,
+              dateModified: item.dateModified || 0,
+              timestamp: item.timestamp,
+              flightDate: formattedDate,
+              mtimeFormatted: formattedDate,
+              handle: item.handle,
+              isDecrypted: Boolean(item.isDecrypted),
+              isDownloaded: Boolean(item.isDownloaded),
+              source: 'usb_mtp'
+            });
+          });
           renderRc2LogTable(rc2LogsCache);
           if (countSummary) {
-            countSummary.textContent = `Found ${rc2LogsCache.length} logs on ${devInfo.shortName} via Android USB MTP`;
+            const decryptedCount = rc2LogsCache.filter(l => l.isDecrypted).length;
+            countSummary.textContent = `Found ${rc2LogsCache.length} logs on ${devInfo.shortName} via Android USB MTP (${decryptedCount} ready / decrypted)`;
           }
           return;
         }
@@ -110510,13 +110558,13 @@ function renderRc2LogTable(logs) {
     let actionBtn = '';
     if (isDec) {
       actionBtn = `
-        <button type="button" class="btn-primary rc2-load-log-btn" data-filename="${safeEscape(log.filename)}" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+        <button type="button" class="btn-primary rc2-load-log-btn" data-filename="${safeEscape(log.filename)}" data-handle="${log.handle !== undefined ? safeEscape(log.handle) : ''}" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
           📊 Load Telemetry
         </button>
       `;
     } else {
       actionBtn = `
-        <button type="button" class="btn-secondary rc2-pull-single-btn" data-filename="${safeEscape(log.filename)}" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.4); color: #38bdf8; cursor: pointer;">
+        <button type="button" class="btn-secondary rc2-pull-single-btn" data-filename="${safeEscape(log.filename)}" data-handle="${log.handle !== undefined ? safeEscape(log.handle) : ''}" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.4); color: #38bdf8; cursor: pointer;">
           📥 Pull &amp; Decrypt
         </button>
       `;
@@ -110546,7 +110594,12 @@ function renderRc2LogTable(logs) {
   loadBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const fn = btn.getAttribute('data-filename');
-      if (fn) loadRc2LogToDiagnostics(fn);
+      const handleAttr = btn.getAttribute('data-handle');
+      if (typeof window !== 'undefined' && window.AalaapiAndroid && fn) {
+        pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
+      } else if (fn) {
+        loadRc2LogToDiagnostics(fn);
+      }
     });
   });
 
@@ -110554,12 +110607,13 @@ function renderRc2LogTable(logs) {
   pullBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const fn = btn.getAttribute('data-filename');
-      if (fn) pullSpecificRc2Log(fn);
+      const handleAttr = btn.getAttribute('data-handle');
+      if (fn) pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
     });
   });
 }
 
-async function pullSpecificRc2Log(filename) {
+async function pullSpecificRc2Log(filename, handle = null) {
   if (!filename) return;
   const progContainer = document.getElementById('rc2-logs-progress-container');
   const progBar = document.getElementById('rc2-logs-progress-bar');
@@ -110573,7 +110627,7 @@ async function pullSpecificRc2Log(filename) {
   const devInfo = (typeof getDeviceDisplayInfo === 'function')
     ? getDeviceDisplayInfo((typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {})
     : { fullName: 'DJI RC 2', shortName: 'RC 2' };
-  if (progText) progText.textContent = `Extracting ${filename} from ${devInfo.shortName} over USB MTP...`;
+  if (progText) progText.textContent = `Extracting & decrypting ${filename} from ${devInfo.shortName} over USB MTP...`;
 
   const pollTimer = setInterval(() => {
     if (currentPct < 90) {
@@ -110583,16 +110637,21 @@ async function pullSpecificRc2Log(filename) {
     }
   }, 250);
 
-  if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLogByNameFromRc2 === 'function') {
+  if (typeof window !== 'undefined' && window.AalaapiAndroid && (typeof window.AalaapiAndroid.pullLogByHandleFromRc2 === 'function' || typeof window.AalaapiAndroid.pullLogByNameFromRc2 === 'function')) {
     try {
-      const raw = window.AalaapiAndroid.pullLogByNameFromRc2(filename);
-      const data = JSON.parse(raw);
+      let raw = null;
+      if (handle && !isNaN(handle) && typeof window.AalaapiAndroid.pullLogByHandleFromRc2 === 'function') {
+        raw = window.AalaapiAndroid.pullLogByHandleFromRc2(handle);
+      } else if (typeof window.AalaapiAndroid.pullLogByNameFromRc2 === 'function') {
+        raw = window.AalaapiAndroid.pullLogByNameFromRc2(filename);
+      }
+      const data = JSON.parse(raw || '{}');
       clearInterval(pollTimer);
       if (progBar) progBar.style.width = '100%';
       if (progPct) progPct.textContent = '100%';
 
       if (data && data.success && (data.data || data.base64)) {
-        if (progText) progText.textContent = `Successfully pulled ${filename}!`;
+        if (progText) progText.textContent = `Successfully pulled ${data.isDecrypted ? '& decrypted ' : ''}${filename}!`;
         const logBase64 = data.data || data.base64;
         if (typeof DigitalTwin !== 'undefined' && typeof DigitalTwin.loadFlightLogData === 'function') {
           await DigitalTwin.loadFlightLogData(filename, logBase64);
@@ -110601,7 +110660,13 @@ async function pullSpecificRc2Log(filename) {
           DjiLogDecryptor.parseLogText(rawText, filename);
         }
         await refreshRc2LogList();
-        loadRc2LogToDiagnostics(filename);
+        const telemetryPayload = (typeof DigitalTwin !== 'undefined' && DigitalTwin.telemetryData) ? {
+          flightId: filename,
+          telemetry: DigitalTwin.telemetryData,
+          comparison: DigitalTwin.comparisonData,
+          isActualFlown: true
+        } : filename;
+        loadRc2LogToDiagnostics(telemetryPayload);
         return;
       } else {
         if (progText) progText.textContent = `Pull error: ${data?.message || data?.error || 'Failed to pull log'}`;

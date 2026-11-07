@@ -68,18 +68,51 @@ async function refreshRc2LogList() {
         const raw = window.AalaapiAndroid.listFlightRecordsFromRc2(30);
         const parsed = JSON.parse(raw || '[]');
         if (Array.isArray(parsed) && parsed.length > 0) {
-          rc2LogsCache = parsed.map(item => ({
-            filename: item.filename,
-            size: item.size || 0,
-            dateModified: item.dateModified || 0,
-            timestamp: item.timestamp,
-            handle: item.handle,
-            isDecrypted: true,
-            source: 'usb_mtp'
-          }));
+          const seenNames = new Set();
+          rc2LogsCache = [];
+          parsed.forEach(item => {
+            const fn = item.filename || 'Unknown';
+            const key = fn.toLowerCase();
+            if (seenNames.has(key)) return;
+            seenNames.add(key);
+
+            let formattedDate = item.flightDate || item.mtimeFormatted || '';
+            if (!formattedDate || formattedDate === '—') {
+              const m = fn.match(/(\d{4})[-_]?(\d{2})[-_]?(\d{2})[_\[\-T ]+(\d{2})[-\:]?(\d{2})[-\:]?(\d{2})/);
+              if (m) {
+                formattedDate = `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6]}`;
+              } else {
+                formattedDate = item.timestamp || '—';
+              }
+            }
+
+            const sz = Number(item.size || 0);
+            let sizeFormatted = item.sizeFormatted || '';
+            if (!sizeFormatted || sizeFormatted === '—') {
+              if (sz > 1048576) sizeFormatted = `${(sz / 1048576).toFixed(2)} MB`;
+              else if (sz > 1024) sizeFormatted = `${(sz / 1024).toFixed(1)} KB`;
+              else if (sz > 0) sizeFormatted = `${sz} B`;
+              else sizeFormatted = '—';
+            }
+
+            rc2LogsCache.push({
+              filename: fn,
+              size: sz,
+              sizeFormatted,
+              dateModified: item.dateModified || 0,
+              timestamp: item.timestamp,
+              flightDate: formattedDate,
+              mtimeFormatted: formattedDate,
+              handle: item.handle,
+              isDecrypted: Boolean(item.isDecrypted),
+              isDownloaded: Boolean(item.isDownloaded),
+              source: 'usb_mtp'
+            });
+          });
           renderRc2LogTable(rc2LogsCache);
           if (countSummary) {
-            countSummary.textContent = `Found ${rc2LogsCache.length} logs on ${devInfo.shortName} via Android USB MTP`;
+            const decryptedCount = rc2LogsCache.filter(l => l.isDecrypted).length;
+            countSummary.textContent = `Found ${rc2LogsCache.length} logs on ${devInfo.shortName} via Android USB MTP (${decryptedCount} ready / decrypted)`;
           }
           return;
         }
@@ -193,13 +226,13 @@ function renderRc2LogTable(logs) {
     let actionBtn = '';
     if (isDec) {
       actionBtn = `
-        <button type="button" class="btn-primary rc2-load-log-btn" data-filename="${safeEscape(log.filename)}" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+        <button type="button" class="btn-primary rc2-load-log-btn" data-filename="${safeEscape(log.filename)}" data-handle="${log.handle !== undefined ? safeEscape(log.handle) : ''}" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
           📊 Load Telemetry
         </button>
       `;
     } else {
       actionBtn = `
-        <button type="button" class="btn-secondary rc2-pull-single-btn" data-filename="${safeEscape(log.filename)}" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.4); color: #38bdf8; cursor: pointer;">
+        <button type="button" class="btn-secondary rc2-pull-single-btn" data-filename="${safeEscape(log.filename)}" data-handle="${log.handle !== undefined ? safeEscape(log.handle) : ''}" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.4); color: #38bdf8; cursor: pointer;">
           📥 Pull &amp; Decrypt
         </button>
       `;
@@ -229,7 +262,12 @@ function renderRc2LogTable(logs) {
   loadBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const fn = btn.getAttribute('data-filename');
-      if (fn) loadRc2LogToDiagnostics(fn);
+      const handleAttr = btn.getAttribute('data-handle');
+      if (typeof window !== 'undefined' && window.AalaapiAndroid && fn) {
+        pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
+      } else if (fn) {
+        loadRc2LogToDiagnostics(fn);
+      }
     });
   });
 
@@ -237,12 +275,13 @@ function renderRc2LogTable(logs) {
   pullBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const fn = btn.getAttribute('data-filename');
-      if (fn) pullSpecificRc2Log(fn);
+      const handleAttr = btn.getAttribute('data-handle');
+      if (fn) pullSpecificRc2Log(fn, handleAttr ? parseInt(handleAttr, 10) : null);
     });
   });
 }
 
-async function pullSpecificRc2Log(filename) {
+async function pullSpecificRc2Log(filename, handle = null) {
   if (!filename) return;
   const progContainer = document.getElementById('rc2-logs-progress-container');
   const progBar = document.getElementById('rc2-logs-progress-bar');
@@ -256,7 +295,7 @@ async function pullSpecificRc2Log(filename) {
   const devInfo = (typeof getDeviceDisplayInfo === 'function')
     ? getDeviceDisplayInfo((typeof getLastDetectedFlightDevice === 'function' ? getLastDetectedFlightDevice() : null) || {})
     : { fullName: 'DJI RC 2', shortName: 'RC 2' };
-  if (progText) progText.textContent = `Extracting ${filename} from ${devInfo.shortName} over USB MTP...`;
+  if (progText) progText.textContent = `Extracting & decrypting ${filename} from ${devInfo.shortName} over USB MTP...`;
 
   const pollTimer = setInterval(() => {
     if (currentPct < 90) {
@@ -266,16 +305,21 @@ async function pullSpecificRc2Log(filename) {
     }
   }, 250);
 
-  if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.pullLogByNameFromRc2 === 'function') {
+  if (typeof window !== 'undefined' && window.AalaapiAndroid && (typeof window.AalaapiAndroid.pullLogByHandleFromRc2 === 'function' || typeof window.AalaapiAndroid.pullLogByNameFromRc2 === 'function')) {
     try {
-      const raw = window.AalaapiAndroid.pullLogByNameFromRc2(filename);
-      const data = JSON.parse(raw);
+      let raw = null;
+      if (handle && !isNaN(handle) && typeof window.AalaapiAndroid.pullLogByHandleFromRc2 === 'function') {
+        raw = window.AalaapiAndroid.pullLogByHandleFromRc2(handle);
+      } else if (typeof window.AalaapiAndroid.pullLogByNameFromRc2 === 'function') {
+        raw = window.AalaapiAndroid.pullLogByNameFromRc2(filename);
+      }
+      const data = JSON.parse(raw || '{}');
       clearInterval(pollTimer);
       if (progBar) progBar.style.width = '100%';
       if (progPct) progPct.textContent = '100%';
 
       if (data && data.success && (data.data || data.base64)) {
-        if (progText) progText.textContent = `Successfully pulled ${filename}!`;
+        if (progText) progText.textContent = `Successfully pulled ${data.isDecrypted ? '& decrypted ' : ''}${filename}!`;
         const logBase64 = data.data || data.base64;
         if (typeof DigitalTwin !== 'undefined' && typeof DigitalTwin.loadFlightLogData === 'function') {
           await DigitalTwin.loadFlightLogData(filename, logBase64);
@@ -284,7 +328,13 @@ async function pullSpecificRc2Log(filename) {
           DjiLogDecryptor.parseLogText(rawText, filename);
         }
         await refreshRc2LogList();
-        loadRc2LogToDiagnostics(filename);
+        const telemetryPayload = (typeof DigitalTwin !== 'undefined' && DigitalTwin.telemetryData) ? {
+          flightId: filename,
+          telemetry: DigitalTwin.telemetryData,
+          comparison: DigitalTwin.comparisonData,
+          isActualFlown: true
+        } : filename;
+        loadRc2LogToDiagnostics(telemetryPayload);
         return;
       } else {
         if (progText) progText.textContent = `Pull error: ${data?.message || data?.error || 'Failed to pull log'}`;

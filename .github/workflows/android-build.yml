@@ -29,6 +29,24 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Provision Native ARM64 DJI Log Decryptor Binary
+        run: |
+          mkdir -p android/app/src/main/jniLibs/arm64-v8a
+          curl -sSL https://github.com/lvauvillier/dji-log-parser/releases/download/v0.5.7/dji-log-aarch64-unknown-linux-musl.tar.gz -o /tmp/dji-log-arm64.tar.gz
+          tar -xzf /tmp/dji-log-arm64.tar.gz -C /tmp
+          python3 -c '
+          with open("/tmp/dji-log", "rb") as f:
+              data = f.read()
+          old_url = b"https://dev.dji.com/openapi/v1/flight-records/keychains"
+          new_url = b"http://127.0.0.1:18765/openapi/v1/flight-records/keycha"
+          assert len(old_url) == len(new_url)
+          assert old_url in data, "Target URL not found in dji-log binary"
+          patched = data.replace(old_url, new_url)
+          with open("android/app/src/main/jniLibs/arm64-v8a/libdjilog.so", "wb") as f:
+              f.write(patched)
+          '
+          chmod +x android/app/src/main/jniLibs/arm64-v8a/libdjilog.so
+
       - name: Bundle Web Assets into Android Assets
         run: |
           python scratch/build.py

@@ -42594,11 +42594,11 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     assertVersionConsistency('1.232.0');
   });
 
-  test('Android build.gradle.kts matches version 1.232.0 and versionCode >= 12320', () => {
+  test('Android build.gradle.kts matches version >= 1.232.0 and versionCode >= 12320', () => {
     const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
     const m = gradleKts.match(/versionCode = (\d+)/);
     assert.ok(m && parseInt(m[1]) >= 12320, 'build.gradle.kts must have versionCode >= 12320');
-    assert.ok(gradleKts.includes('versionName = "1.232.0"'), 'build.gradle.kts must have versionName = "1.232.0"');
+    assert.ok(gradleKts.includes('versionName = "1.233.0"'), 'build.gradle.kts must have versionName = "1.233.0"');
   });
 
   test('pullFlightLogFromRC2 passes in-memory telemetry to FlightDiagnostics.open avoiding 127.0.0.1:8765 calls', async () => {
@@ -42756,9 +42756,9 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(typeof pushApk.findApk === 'function', 'push_apk.js must export findApk');
     });
 
-    test('package.json contains android:push and android:install commands at v1.232.0', () => {
+    test('package.json contains android:push and android:install commands at v1.233.0', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.232.0', 'package.json must be version 1.232.0');
+      assert.strictEqual(pkg.version, '1.233.0', 'package.json must be version 1.233.0');
       assert.ok(pkg.scripts['android:push'], 'package.json must contain android:push script');
       assert.ok(pkg.scripts['android:install'], 'package.json must contain android:install script');
     });
@@ -42849,6 +42849,74 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       const content = fs.readFileSync(expPath, 'utf8');
       assert.ok(content.includes('window.AalaapiAndroid.listFlightRecordsFromRc2'), 'Rc2LogExplorer must query listFlightRecordsFromRc2 when on Android');
       assert.ok(content.includes('window.AalaapiAndroid.pullLogByNameFromRc2'), 'Rc2LogExplorer must call pullLogByNameFromRc2 when on Android');
+      assert.ok(content.includes('window.AalaapiAndroid.pullLogByHandleFromRc2'), 'Rc2LogExplorer must call pullLogByHandleFromRc2 when handle is available');
+    });
+  });
+
+  describe('Native ARM64 DJI Log Decryptor & Deduplicated MTP Scanning on Android (Issue #260)', () => {
+    test('Version Consistency across required locations for v1.233.0', () => {
+      assertVersionConsistency('1.233.0');
+    });
+
+    test('.github/workflows/android-build.yml provisions patched ARM64 libdjilog.so', () => {
+      const wfPath = path.join(__dirname, '.github', 'workflows', 'android-build.yml');
+      const content = fs.readFileSync(wfPath, 'utf8');
+      assert.ok(content.includes('dji-log-aarch64-unknown-linux-musl.tar.gz'), 'Workflow must download ARM64 dji-log binary');
+      assert.ok(content.includes('http://127.0.0.1:18765/openapi/v1/flight-records/keycha'), 'Workflow must patch loopback keychain URL');
+      assert.ok(content.includes('android/app/src/main/jniLibs/arm64-v8a/libdjilog.so'), 'Workflow must write libdjilog.so to jniLibs/arm64-v8a');
+    });
+
+    test('android/app/build.gradle.kts and AndroidManifest.xml configure native lib extraction and versionCode 12330', () => {
+      const gradleContent = fs.readFileSync(path.join(__dirname, 'android/app/build.gradle.kts'), 'utf8');
+      assert.ok(gradleContent.includes('versionCode = 12330'), 'build.gradle.kts must have versionCode = 12330');
+      assert.ok(gradleContent.includes('versionName = "1.233.0"'), 'build.gradle.kts must have versionName = "1.233.0"');
+      assert.ok(gradleContent.includes('useLegacyPackaging = true'), 'build.gradle.kts must enable useLegacyPackaging for jniLibs');
+      assert.ok(gradleContent.includes('keepDebugSymbols += "**/libdjilog.so"'), 'build.gradle.kts must preserve libdjilog.so');
+
+      const manifestContent = fs.readFileSync(path.join(__dirname, 'android/app/src/main/AndroidManifest.xml'), 'utf8');
+      assert.ok(manifestContent.includes('android:extractNativeLibs="true"'), 'AndroidManifest.xml must set extractNativeLibs="true"');
+    });
+
+    test('AndroidMtpBridge.kt implements seenHandles deduplication, keychain loopback relay, and native decryption', () => {
+      const ktContent = fs.readFileSync(path.join(__dirname, 'android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt'), 'utf8');
+      assert.ok(ktContent.includes('seenHandles: MutableSet<Int>'), 'scanMtpForFlightRecords must track seenHandles');
+      assert.ok(ktContent.includes('if (!seenHandles.add(handle)) continue'), 'scanMtpForFlightRecords must skip already visited handles');
+      assert.ok(ktContent.includes('.distinctBy { it.first }'), 'getSortedMtpCandidates must deduplicate by handle');
+      assert.ok(ktContent.includes('fun ensureKeychainRelayRunning()'), 'AndroidMtpBridge must implement ensureKeychainRelayRunning');
+      assert.ok(ktContent.includes('ServerSocket(18765'), 'AndroidMtpBridge must listen on loopback port 18765');
+      assert.ok(ktContent.includes('fun decryptFlightLogIfPossible'), 'AndroidMtpBridge must implement decryptFlightLogIfPossible');
+      assert.ok(ktContent.includes('libdjilog.so'), 'AndroidMtpBridge must execute libdjilog.so');
+      assert.ok(ktContent.includes('fun formatLogDate'), 'AndroidMtpBridge must format log dates');
+      assert.ok(ktContent.includes('fun formatFileSize'), 'AndroidMtpBridge must format file sizes');
+    });
+
+    test('DigitalTwin.loadFlightLogData preserves flightId and isActualFlown on parsed CSV telemetry', async () => {
+      const dt = vm.runInThisContext('DigitalTwin');
+      const sampleCsv = [
+        'CUSTOM.updateTime,OSD.flyTime,OSD.latitude,OSD.longitude,OSD.height,OSD.speed,GIMBAL.pitch,OSD.yaw,BATTERY.chargeLevel',
+        '2026-11-05 17:58:48,0.0,41.321500,-88.995000,0.0,0.0,-60.0,0.0,99',
+        '2026-11-05 17:58:58,10.0,41.321600,-88.995100,25.0,5.0,-60.0,45.0,98',
+        '2026-11-05 18:04:32,343.7,41.321700,-88.995200,41.0,4.2,-60.0,90.0,75'
+      ].join('\n');
+      const b64 = Buffer.from(sampleCsv, 'utf8').toString('base64');
+
+      const ok = await dt.loadFlightLogData('FlightRecord_2026-11-05_[17-58-48].txt', b64);
+      assert.strictEqual(ok, true, 'loadFlightLogData must return true');
+      assert.strictEqual(dt.selectedFlightId, 'FlightRecord_2026-11-05_[17-58-48].txt');
+      assert.strictEqual(dt.telemetryData.flightId, 'FlightRecord_2026-11-05_[17-58-48].txt');
+      assert.strictEqual(dt.telemetryData.isActualFlown, true);
+      assert.strictEqual(Boolean(dt.telemetryData.isSimulation), false);
+      assert.strictEqual(dt.telemetryData.points.length, 3);
+      assert.strictEqual(dt.telemetryData.maxAltitude, 41);
+    });
+
+    test('CREDITS.md and index_template.html document dji-log-parser under MIT license', () => {
+      const credits = fs.readFileSync(path.join(__dirname, 'CREDITS.md'), 'utf8');
+      assert.ok(credits.includes('dji-log-parser'), 'CREDITS.md must attribute dji-log-parser');
+      assert.ok(credits.includes('lvauvillier'), 'CREDITS.md must attribute lvauvillier');
+
+      const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(tpl.includes('dji-log-parser'), 'index_template.html #about-credits-section must include dji-log-parser');
     });
   });
 });
