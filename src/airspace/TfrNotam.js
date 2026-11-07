@@ -452,25 +452,55 @@ async function fetchAndProcessTFRs(centerLat, centerLon, force = false) {
     }
   } catch (err) {}
 
-  // Tier 2: Static repository cache (zero-latency, CORS-safe bundle for GitHub Pages / web hosting)
+  // Tier 2: Static repository cache (zero-latency, CORS-safe bundle for GitHub Pages / web hosting / Android assets)
   if (notamList.length === 0) {
-    try {
-      const staticNotamRes = await fetch('./data/tfr_notams.json', { signal: AbortSignal.timeout(4000) });
-      if (staticNotamRes.ok) {
-        const data = await staticNotamRes.json();
-        if (Array.isArray(data) && data.length > 0) notamList = data;
-      }
-    } catch (e) {}
+    let loadedFromAsset = false;
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.readAsset === 'function') {
+      try {
+        const rawNotamText = window.AalaapiAndroid.readAsset('data/tfr_notams.json');
+        if (rawNotamText) {
+          const data = JSON.parse(rawNotamText);
+          if (Array.isArray(data) && data.length > 0) {
+            notamList = data;
+            loadedFromAsset = true;
+          }
+        }
+      } catch (_) {}
+    }
+    if (!loadedFromAsset) {
+      try {
+        const staticNotamRes = await fetch('./data/tfr_notams.json', { signal: AbortSignal.timeout(4000) });
+        if (staticNotamRes.ok) {
+          const data = await staticNotamRes.json();
+          if (Array.isArray(data) && data.length > 0) notamList = data;
+        }
+      } catch (e) {}
+    }
   }
 
   if (!geojson || !geojson.features || geojson.features.length === 0) {
-    try {
-      const staticGeoRes = await fetch('./data/tfr_geojson.json', { signal: AbortSignal.timeout(4000) });
-      if (staticGeoRes.ok) {
-        const g = await staticGeoRes.json();
-        if (g && Array.isArray(g.features) && g.features.length > 0) geojson = g;
-      }
-    } catch (e) {}
+    let loadedFromAsset = false;
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.readAsset === 'function') {
+      try {
+        const rawGeoText = window.AalaapiAndroid.readAsset('data/tfr_geojson.json');
+        if (rawGeoText) {
+          const g = JSON.parse(rawGeoText);
+          if (g && Array.isArray(g.features) && g.features.length > 0) {
+            geojson = g;
+            loadedFromAsset = true;
+          }
+        }
+      } catch (_) {}
+    }
+    if (!loadedFromAsset) {
+      try {
+        const staticGeoRes = await fetch('./data/tfr_geojson.json', { signal: AbortSignal.timeout(4000) });
+        if (staticGeoRes.ok) {
+          const g = await staticGeoRes.json();
+          if (g && Array.isArray(g.features) && g.features.length > 0) geojson = g;
+        }
+      } catch (e) {}
+    }
   }
 
   // Tier 3: Native FAA ArcGIS Online FeatureServers (Stadiums, Defense Airspace, Part-Time Security UAS)

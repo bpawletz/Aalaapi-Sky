@@ -1,3 +1,42 @@
+## [1.229.0] - 2026-11-06
+
+Resolve Android 14+ USB PendingIntent Crash, DJI RC 2 Standalone MTP Log Replay & Screen Keep-Awake.
+
+### 🐛 Fixed | 🚀 Added
+
+#### Pilot & Operational Features
+- **Android 14+ / 15 / 16 USB RC 2 Attachment Crash Fix (Closes #256)**:
+  - Resolved a fatal IllegalArgumentException (PendingIntent FLAG_MUTABLE on implicit intent) that crashed the application whenever a DJI RC 2 controller or USB OTG device was connected to an Android device running Android 14 (U+ / API 34+), Android 15, or Android 16.
+  - Pilots can now hot-plug the USB-C cable between controller and Android tablet/phone with zero crashes, immediately seeing the Android OS USB permission prompt.
+- **Standalone 3D Replay for RC 2 Flight Logs on Android (Closes #256)**:
+  - Fixed an issue where pulling a flight log from RC 2 via USB MTP on Android succeeded in extracting the log (e.g. 1,920 records scanned), but immediately wiped out the telemetry and threw a connection refused error because the UI attempted to query the desktop Companion Bridge daemon on http://127.0.0.1:8765.
+  - Flight Diagnostics now receives and displays the in-memory parsed 3D flight path directly, allowing complete standalone flight replay in the field without any external desktop bridge.
+- **Display Keep-Awake / Sleep Prevention (Closes #256)**:
+  - Added Android native FLAG_KEEP_SCREEN_ON and bridge control window.AalaapiAndroid.setKeepScreenOn(enabled).
+  - Tablets and phones running Aalaapi Sky will no longer dim, lock, or sleep during active flight monitoring, FPV operations, or 3D diagnostics replay.
+- **Offline TFR & NOTAM Asset Loading on Android (Closes #256)**:
+  - Fixed Chromium WebView Fetch API cannot load file:/// URL scheme errors by adding native asset streaming (readAsset) and bundling static NOTAM caches directly into the APK build.
+- **Eliminated Reconnection Loop on 127.0.0.1:8765 (Closes #256)**:
+  - Guarded ADS-B streaming on Android to prevent starting unwanted desktop companion EventSource loops to localhost when native dump1090/readsb sockets are active.
+
+#### Under the Hood & Technical Details
+- **android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt**:
+  - onDeviceAttached(): Set explicit package intent.setPackage(context.packageName) on Intent(ACTION_USB_PERMISSION) satisfying Android 14+ security mandates for mutable PendingIntents. Wrapped in defensive try-catch blocks with explicit Logcat logging.
+  - openMtpDevice(): Added defensive exception handling and informational logging.
+- **android/app/src/main/java/com/aalaapi/sky/MainActivity.kt**:
+  - onCreate(): Applied window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) so the display stays awake during flight missions.
+  - setupWebView(): Added @JavascriptInterface fun setKeepScreenOn(enabled: Boolean) and @JavascriptInterface fun readAsset(path: String): String.
+  - usbReceiver: Wrapped onReceive() in defensive try-catch logging to prevent unhandled broadcast exceptions from crashing the process.
+  - Removed accidental unregisterReceiver(usbReceiver) call inside the TextToSpeech error handler.
+- **src/bridge/ApiClient.js**:
+  - pullFlightLogFromRC2(): Passed the loaded telemetry payload { flightId: logFilename, telemetry, comparison, isActualFlown: true } to FlightDiagnostics.open('3d', payload) so it displays the in-memory telemetry immediately without querying 127.0.0.1:8765.
+  - AdsbAirspaceManager.connectStream(): Added guard skipping 127.0.0.1:8765 EventSource creation when running on native Android without a remote companion host.
+  - this.eventSource.onerror: Closed EventSource on error when running on Android to eliminate 3-second reconnection spam.
+- **src/airspace/TfrNotam.js**:
+  - Integrated window.AalaapiAndroid.readAsset() for synchronous asset loading of data/tfr_notams.json and data/tfr_geojson.json on Android devices.
+- **scratch/build.py**:
+  - Added automatic synchronization of data/ assets to android/app/src/main/assets/www/data/.
+
 ## [1.228.1] - 2026-11-06
 
 Fix ADS-B Trajectory Cone Gradient Coloring Failure on Android Chromium WebView.

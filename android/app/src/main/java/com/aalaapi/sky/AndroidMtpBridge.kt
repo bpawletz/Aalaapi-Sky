@@ -44,40 +44,58 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
     }
 
     fun onDeviceAttached(device: UsbDevice) {
-        connectedDevice = device
-        val mgr = usbManager ?: return
+        try {
+            connectedDevice = device
+            val mgr = usbManager ?: return
 
-        if (!mgr.hasPermission(device)) {
-            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            } else {
-                PendingIntent.FLAG_UPDATE_CURRENT
+            if (!mgr.hasPermission(device)) {
+                val intent = Intent(ACTION_USB_PERMISSION).apply {
+                    setPackage(context.packageName)
+                }
+                val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                } else {
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                }
+                val permissionIntent = PendingIntent.getBroadcast(
+                    context, 0, intent, flags
+                )
+                mgr.requestPermission(device, permissionIntent)
+                return
             }
-            val permissionIntent = PendingIntent.getBroadcast(
-                context, 0, Intent(ACTION_USB_PERMISSION), flags
-            )
-            mgr.requestPermission(device, permissionIntent)
-            return
-        }
 
-        openMtpDevice(device)
+            openMtpDevice(device)
+        } catch (e: Exception) {
+            Log.e("AalaapiMtp", "Error during onDeviceAttached for ${device.deviceName}: ${e.message}", e)
+        }
     }
 
     fun onPermissionGranted(device: UsbDevice) {
-        openMtpDevice(device)
+        try {
+            openMtpDevice(device)
+        } catch (e: Exception) {
+            Log.e("AalaapiMtp", "Error during onPermissionGranted for ${device.deviceName}: ${e.message}", e)
+        }
     }
 
     private fun openMtpDevice(device: UsbDevice) {
-        connectedDevice = device
-        val connection = usbManager?.openDevice(device) ?: return
-        usbConnection = connection
+        try {
+            connectedDevice = device
+            val connection = usbManager?.openDevice(device) ?: return
+            usbConnection = connection
 
-        val mtp = MtpDevice(device)
-        if (mtp.open(connection)) {
-            mtpDevice = mtp
+            val mtp = MtpDevice(device)
+            if (mtp.open(connection)) {
+                mtpDevice = mtp
+                Log.i("AalaapiMtp", "MtpDevice opened successfully for ${device.deviceName}")
+            } else {
+                Log.w("AalaapiMtp", "Failed to open MtpDevice connection")
+            }
+
+            notifyConnected(device.productName ?: "DJI RC 2")
+        } catch (e: Exception) {
+            Log.e("AalaapiMtp", "Error opening MTP device: ${e.message}", e)
         }
-
-        notifyConnected(device.productName ?: "DJI RC 2")
     }
 
     fun onDeviceDetached() {

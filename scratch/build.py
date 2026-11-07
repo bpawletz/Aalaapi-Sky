@@ -156,6 +156,17 @@ def build(banners=True):
         if os.path.exists(manifest_path):
             shutil.copy2(manifest_path, os.path.join(android_www, 'manifest.json'))
 
+        # Ensure static data directory is synced for offline flight planning
+        data_src = os.path.join(project_dir, 'data')
+        data_dst = os.path.join(android_www, 'data')
+        if os.path.exists(data_src):
+            os.makedirs(data_dst, exist_ok=True)
+            for item in os.listdir(data_src):
+                s = os.path.join(data_src, item)
+                d = os.path.join(data_dst, item)
+                if os.path.isfile(s):
+                    shutil.copy2(s, d)
+
     nojekyll_path = os.path.join(project_dir, '.nojekyll')
     if not os.path.exists(nojekyll_path):
         with open(nojekyll_path, 'wb') as f:

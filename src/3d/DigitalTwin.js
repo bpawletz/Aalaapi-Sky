@@ -458,6 +458,30 @@ const FlightDiagnostics = {
   activePhotoFilter: 'all',
   activePhotoSearch: '',
 
+  // Screen Wake Lock helper for drone flights and 3D diagnostics
+  _wakeLockSentinel: null,
+  async requestWakeLock() {
+    try {
+      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.setKeepScreenOn === 'function') {
+        window.AalaapiAndroid.setKeepScreenOn(true);
+      }
+      if (typeof navigator !== 'undefined' && 'wakeLock' in navigator && !this._wakeLockSentinel) {
+        this._wakeLockSentinel = await navigator.wakeLock.request('screen');
+        this._wakeLockSentinel.addEventListener('release', () => {
+          this._wakeLockSentinel = null;
+        });
+      }
+    } catch (_) {}
+  },
+  releaseWakeLock() {
+    try {
+      if (this._wakeLockSentinel) {
+        this._wakeLockSentinel.release();
+        this._wakeLockSentinel = null;
+      }
+    } catch (_) {}
+  },
+
   // HUD overlay toggle state (Diagnostics 3D replay)
   diagAutoRotate: false,
   diagShowCones: true,
@@ -2155,7 +2179,6 @@ const FlightDiagnostics = {
           speed: Number(w.speed || speed || 4.0),
           gimbalPitch: Number(w.gimbalPitch !== undefined ? w.gimbalPitch : gimbalPitch)
         })) : [];
-
         const currentPattern = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || null;
         const queryPatternParam = (!flightId || !flightId.startsWith('FlightRecord_')) && currentPattern ? `&pattern=${encodeURIComponent(currentPattern)}` : '';
         let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}${queryPatternParam}`, {

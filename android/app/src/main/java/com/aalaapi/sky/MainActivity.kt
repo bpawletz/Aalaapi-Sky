@@ -25,6 +25,7 @@ import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
 import android.util.Base64
 import android.util.Log
+import android.view.WindowManager
 import android.webkit.ConsoleMessage
 import android.webkit.GeolocationPermissions
 import android.webkit.JavascriptInterface
@@ -111,31 +112,35 @@ class MainActivity : AppCompatActivity() {
 
     private val usbReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
-                    val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+            try {
+                when (intent?.action) {
+                    UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                        val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+                        }
+                        device?.let { mtpBridge.onDeviceAttached(it) }
                     }
-                    device?.let { mtpBridge.onDeviceAttached(it) }
-                }
-                UsbManager.ACTION_USB_DEVICE_DETACHED -> {
-                    mtpBridge.onDeviceDetached()
-                }
-                AndroidMtpBridge.ACTION_USB_PERMISSION -> {
-                    val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+                    UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                        mtpBridge.onDeviceDetached()
                     }
-                    val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
-                    if (granted && device != null) {
-                        mtpBridge.onPermissionGranted(device)
+                    AndroidMtpBridge.ACTION_USB_PERMISSION -> {
+                        val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+                        }
+                        val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                        if (granted && device != null) {
+                            mtpBridge.onPermissionGranted(device)
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                Log.e("AalaapiUsb", "Error handling USB broadcast ${intent?.action}: ${e.message}", e)
             }
         }
     }
@@ -236,7 +241,6 @@ class MainActivity : AppCompatActivity() {
                         pendingSpeech = null
                     } else {
                         tts = null
-        unregisterReceiver(usbReceiver)
                         pendingSpeech = null
                         notifyTtsError("No text-to-speech engine available (check Settings > Text-to-speech)")
                     }
@@ -264,6 +268,7 @@ class MainActivity : AppCompatActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.parseColor("#0f172a")
         window.navigationBarColor = Color.parseColor("#0f172a")
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.isAppearanceLightStatusBars = false
         controller.isAppearanceLightNavigationBars = false
@@ -418,6 +423,33 @@ class MainActivity : AppCompatActivity() {
                 val prefs = getSharedPreferences("aalaapi_prefs", Context.MODE_PRIVATE)
                 prefs.edit().putString("dji_developer_key", key.trim()).apply()
                 return true
+            }
+
+            @JavascriptInterface
+            fun setKeepScreenOn(enabled: Boolean): Boolean {
+                runOnUiThread {
+                    if (enabled) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    } else {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                }
+                return true
+            }
+
+            @JavascriptInterface
+            fun readAsset(path: String): String {
+                return try {
+                    val clean = path.removePrefix("./").removePrefix("/")
+                    assets.open("www/$clean").bufferedReader().use { it.readText() }
+                } catch (e: Exception) {
+                    try {
+                        val clean = path.removePrefix("./").removePrefix("/")
+                        assets.open(clean).bufferedReader().use { it.readText() }
+                    } catch (_: Exception) {
+                        ""
+                    }
+                }
             }
 
             @JavascriptInterface
