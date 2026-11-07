@@ -163,8 +163,23 @@ html, body {
   gap: 12px;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
+  cursor: grab;
+}
+
+.studio-topbar::-webkit-scrollbar {
+  display: none;
+}
+
+.studio-topbar.is-dragging {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+.studio-topbar.is-dragging * {
+  user-select: none;
 }
 
 .topbar-left {
@@ -172,16 +187,26 @@ html, body {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  z-index: 2;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: var(--bg-sidebar);
+  padding-right: 12px;
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.25);
 }
 
 .topbar-center {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 0 auto;
+  min-width: max-content;
   justify-content: center;
+}
+
+.topbar-center > * {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .topbar-right {
@@ -189,7 +214,13 @@ html, body {
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
+  min-width: max-content;
   z-index: 2;
+}
+
+.topbar-right > * {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Mobile Topbar Extra Elements - Hidden on Desktop */
@@ -9071,7 +9102,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.239.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.240.0</span></h1>
         </div>
       </div>
 
@@ -13982,11 +14013,20 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-              <span>🗣️</span>
-              Full Spoken Compass Directions &amp; Traffic Alert TTS Phrasing Customization (v1.238.0) (Closes #268)
+              <span>✋</span>
+              Topbar Click-and-Drag Pan Gestures &amp; Zero-Overlap Ribbon (v1.240.0) (Closes #270)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
-              Traffic alert voice advisories now expand all 16 cardinal compass abbreviations into clear spoken words (e.g. <code>ESE</code> &rarr; <em>East South East</em>), eliminating phonetic word mispronunciations. In addition, pilots can customize what is spoken in the ADS-B drawer: choose from presets (Standard, Concise, Direction First, Custom), edit phrase templates with dynamic tokens (<code>{callsign}</code>, <code>{direction}</code>, <code>{distance}</code>, <code>{altitude}</code>, <code>{eta}</code>), preview speech, and persist preferences locally.
+              Pilots can now click and drag (mouse pan) horizontally across the Studio Topbar to effortlessly navigate menus, pills, and action buttons with grab/grabbing cursor feedback. Accidental button/pill triggering during a drag gesture is prevented via capture-phase click suppression. The flexbox layout has been refactored with <code>min-width: max-content</code> and a sticky pinned brand header, completely eliminating visual collisions and overlap between the logo, search bar, weather/telemetry pills, and action buttons.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>✈️</span>
+              High-Altitude Trajectory Cone Suppression &amp; Pastel Greenish Markers (v1.239.0) (Closes #269)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Added an adjustable High-Altitude Floor slider (<code>#adsb-high-alt-slider</code>, default 10,000 ft / 3,050 m AGL) and automated cone suppression toggle (<code>#adsb-suppress-high-altitude-toggle</code>) to suppress trajectory cones and approaching alerts for high-cruising overhead aircraft, rendering them with soothing pastel greenish map markers (<code>#86efac</code>) and <code>CRUISE (HIGH ALT)</code> drawer chips.
             </p>
           </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
@@ -16690,7 +16730,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.239.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.240.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -16853,6 +16893,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.240.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Topbar Click-and-Drag Pan Gestures &amp; Zero-Overlap Ribbon (Closes #270):</strong> Implemented mouse drag-to-scroll panning with grab/grabbing feedback and click suppression across the topbar; refactored flexbox layout with <code>min-width: max-content</code> and sticky pinned brand header to completely eliminate pill and button overlapping.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.239.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -42632,8 +42678,52 @@ function initMobileNav() {
   // Initialize Top Ribbon layout customizer
 initTopbarRibbon();
 
-// Smooth Horizontal Mouse Wheel Scroll for Topbar Ribbon (Issue #266)
+// Smooth Horizontal Mouse Drag-to-Scroll (Pan) & Wheel Scroll for Topbar Ribbon (Issues #266, #270)
 if (topbar) {
+  let isDown = false;
+  let startX = 0;
+  let scrollStart = 0;
+  let hasDragged = false;
+
+  topbar.addEventListener('mousedown', (e) => {
+    // Only drag with primary mouse button and ignore form inputs/selects/textareas
+    if (e.button !== 0 || (e.target && e.target.closest && e.target.closest('input, textarea, select, [contenteditable]'))) {
+      return;
+    }
+    isDown = true;
+    hasDragged = false;
+    startX = e.clientX;
+    scrollStart = topbar.scrollLeft;
+    topbar.classList.add('is-dragging');
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) > 4) {
+      hasDragged = true;
+    }
+    topbar.scrollLeft = scrollStart - dx;
+  });
+
+  const stopDrag = () => {
+    if (!isDown) return;
+    isDown = false;
+    topbar.classList.remove('is-dragging');
+  };
+
+  window.addEventListener('mouseup', stopDrag);
+  window.addEventListener('pointercancel', stopDrag);
+
+  // Suppress accidental button/pill clicks when releasing a drag gesture
+  topbar.addEventListener('click', (e) => {
+    if (hasDragged) {
+      e.preventDefault();
+      e.stopPropagation();
+      hasDragged = false;
+    }
+  }, true);
+
   topbar.addEventListener('wheel', (e) => {
     if (e.deltaY !== 0 && !e.shiftKey) {
       if (topbar.scrollWidth > topbar.clientWidth) {

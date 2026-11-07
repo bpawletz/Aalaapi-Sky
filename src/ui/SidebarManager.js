@@ -290,8 +290,52 @@ function initMobileNav() {
   // Initialize Top Ribbon layout customizer
 initTopbarRibbon();
 
-// Smooth Horizontal Mouse Wheel Scroll for Topbar Ribbon (Issue #266)
+// Smooth Horizontal Mouse Drag-to-Scroll (Pan) & Wheel Scroll for Topbar Ribbon (Issues #266, #270)
 if (topbar) {
+  let isDown = false;
+  let startX = 0;
+  let scrollStart = 0;
+  let hasDragged = false;
+
+  topbar.addEventListener('mousedown', (e) => {
+    // Only drag with primary mouse button and ignore form inputs/selects/textareas
+    if (e.button !== 0 || (e.target && e.target.closest && e.target.closest('input, textarea, select, [contenteditable]'))) {
+      return;
+    }
+    isDown = true;
+    hasDragged = false;
+    startX = e.clientX;
+    scrollStart = topbar.scrollLeft;
+    topbar.classList.add('is-dragging');
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) > 4) {
+      hasDragged = true;
+    }
+    topbar.scrollLeft = scrollStart - dx;
+  });
+
+  const stopDrag = () => {
+    if (!isDown) return;
+    isDown = false;
+    topbar.classList.remove('is-dragging');
+  };
+
+  window.addEventListener('mouseup', stopDrag);
+  window.addEventListener('pointercancel', stopDrag);
+
+  // Suppress accidental button/pill clicks when releasing a drag gesture
+  topbar.addEventListener('click', (e) => {
+    if (hasDragged) {
+      e.preventDefault();
+      e.stopPropagation();
+      hasDragged = false;
+    }
+  }, true);
+
   topbar.addEventListener('wheel', (e) => {
     if (e.deltaY !== 0 && !e.shiftKey) {
       if (topbar.scrollWidth > topbar.clientWidth) {
