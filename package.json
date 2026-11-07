@@ -4,10 +4,12 @@
     "playwright": "^1.64.1"
   },
   "name": "aalaapi-sky",
-  "version": "1.229.0",
+  "version": "1.230.0",
   "description": "Aalaapi-Sky Drone Flight Planner & Editor for DJI Fly",
   "main": "src/main.js",
   "scripts": {
+    "android:push": "node tools/android/push_apk.js",
+    "android:install": "node tools/android/push_apk.js",
     "android:sync": "python scratch/build.py",
     "android:build": "cd android && ./gradlew assembleDebug",
     "build": "python scratch/build.py",

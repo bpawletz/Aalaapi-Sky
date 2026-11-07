@@ -42590,15 +42590,15 @@ describe('Issue #255 & v1.228.1: Trajectory Cone Gradient Coloring on Android We
 
 // ─── Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake (Issue #256) ───
 describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake (Issue #256)', () => {
-  test('Version consistency: package.json, CHANGELOG, templates match v1.229.0', () => {
-    assertVersionConsistency('1.229.0');
+  test('Version consistency: package.json, CHANGELOG, templates match v1.230.0', () => {
+    assertVersionConsistency('1.230.0');
   });
 
-  test('Android build.gradle.kts matches version 1.229.0 and versionCode >= 12290', () => {
+  test('Android build.gradle.kts matches version 1.230.0 and versionCode >= 12300', () => {
     const gradleKts = fs.readFileSync(path.resolve(__dirname, 'android/app/build.gradle.kts'), 'utf8');
     const m = gradleKts.match(/versionCode = (\d+)/);
-    assert.ok(m && parseInt(m[1]) >= 12290, 'build.gradle.kts must have versionCode >= 12290');
-    assert.ok(gradleKts.includes('versionName = "1.229.0"'), 'build.gradle.kts must have versionName = "1.229.0"');
+    assert.ok(m && parseInt(m[1]) >= 12300, 'build.gradle.kts must have versionCode >= 12300');
+    assert.ok(gradleKts.includes('versionName = "1.230.0"'), 'build.gradle.kts must have versionName = "1.230.0"');
   });
 
   test('pullFlightLogFromRC2 passes in-memory telemetry to FlightDiagnostics.open avoiding 127.0.0.1:8765 calls', async () => {
@@ -42723,6 +42723,45 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
         delete global.window.AalaapiAndroid;
       }
     }
+  });
+
+  describe('Android Deterministic Signing Keystore & ADB Push Workflow (Issue #257)', () => {
+    test('android/app/debug.keystore exists and has valid keystore size', () => {
+      const keystorePath = path.join(__dirname, 'android', 'app', 'debug.keystore');
+      assert.ok(fs.existsSync(keystorePath), 'android/app/debug.keystore must exist in the repository');
+      const stat = fs.statSync(keystorePath);
+      assert.ok(stat.size > 2000, `debug.keystore size must be > 2000 bytes (got ${stat.size})`);
+    });
+
+    test('android/app/build.gradle.kts configures deterministic signingConfigs.debug', () => {
+      const gradlePath = path.join(__dirname, 'android', 'app', 'build.gradle.kts');
+      assert.ok(fs.existsSync(gradlePath), 'android/app/build.gradle.kts must exist');
+      const content = fs.readFileSync(gradlePath, 'utf8');
+      assert.ok(content.includes('signingConfigs'), 'build.gradle.kts must define signingConfigs');
+      assert.ok(content.includes('storeFile = file("debug.keystore")'), 'signingConfigs.debug must specify storeFile = file("debug.keystore")');
+      assert.ok(content.includes('storePassword = "android"'), 'signingConfigs.debug must specify storePassword = "android"');
+      assert.ok(content.includes('keyAlias = "androiddebugkey"'), 'signingConfigs.debug must specify keyAlias = "androiddebugkey"');
+      assert.ok(content.includes('signingConfig = signingConfigs.getByName("debug")'), 'buildTypes.debug must reference signingConfig');
+    });
+
+    test('push-apk.ps1 and tools/android/push_apk.js exist and export utility functions', () => {
+      const psScript = path.join(__dirname, 'push-apk.ps1');
+      const jsTool = path.join(__dirname, 'tools', 'android', 'push_apk.js');
+      assert.ok(fs.existsSync(psScript), 'push-apk.ps1 must exist');
+      assert.ok(fs.existsSync(jsTool), 'tools/android/push_apk.js must exist');
+
+      const pushApk = require('./tools/android/push_apk.js');
+      assert.ok(typeof pushApk.findAdb === 'function', 'push_apk.js must export findAdb');
+      assert.ok(typeof pushApk.getConnectedDevices === 'function', 'push_apk.js must export getConnectedDevices');
+      assert.ok(typeof pushApk.findApk === 'function', 'push_apk.js must export findApk');
+    });
+
+    test('package.json contains android:push and android:install commands at v1.230.0', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.230.0', 'package.json must be version 1.230.0');
+      assert.ok(pkg.scripts['android:push'], 'package.json must contain android:push script');
+      assert.ok(pkg.scripts['android:install'], 'package.json must contain android:install script');
+    });
   });
 });
 

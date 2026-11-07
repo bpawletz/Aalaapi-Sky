@@ -3,7 +3,7 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.229.0` | **WPML Compiler Hash:** `eb2417f42275` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.230.0` | **WPML Compiler Hash:** `eb2417f42275` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
 **Summary Progress:** **7 / 26** Patterns Verified | **0** Needs Re-Test | **19** Untested | **0** Failed
 
@@ -435,6 +435,12 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 ---
 
 ## 6. Post-Update Release IRL Test Plans Log
+
+### [v1.230.0] Deterministic Android Debug Keystore for In-Place APK Upgrades and Automated ADB Push Utility — 2026-11-07 ([Issue #257](https://github.com/bpawletz/Aalaapi-Sky/issues/257))
+- **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `--steps`
+- [ ] Download GitHub Actions APK artifact or run ./push-apk.ps1 to install via ADB
+- [ ] Verify app installs in-place without requiring uninstall and retains existing mission data
+- [ ] Verify Aalaapi Sky launches automatically on tablet
 
 ### [v1.229.0] Resolve Android 14+ USB PendingIntent Crash, DJI RC 2 Standalone MTP Log Replay & Screen Keep-Awake — 2026-11-07 ([Issue #256](https://github.com/bpawletz/Aalaapi-Sky/issues/256))
 - **Status:** `PENDING_IRL_TEST` | **Affected Patterns:** `grid`, `orbit`, `corridor`, `facade`

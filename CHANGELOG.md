@@ -1,3 +1,34 @@
+## [1.230.0] - 2026-11-06
+
+Establish Deterministic Android Debug Keystore for In-Place APK Upgrades & Automated ADB Push Utility.
+
+### 🐛 Fixed | 🚀 Added
+
+#### Pilot & Operational Features
+- **Deterministic Android Debug Keystore for In-Place Updates (Closes #257)**:
+  - Eliminated the `INSTALL_FAILED_UPDATE_INCOMPATIBLE` error when updating Aalaapi Sky using APK artifacts downloaded from GitHub Actions.
+  - Previously, ephemeral GitHub Actions runners generated a random private key on every build, forcing pilots to completely uninstall the app (wiping local flight logs, cached map tiles, and preferences).
+  - All GitHub Actions builds and local Gradle debug builds now sign with the same permanent repository debug certificate, enabling seamless in-place updates via package installer or ADB.
+- **Automated ADB Push & Launch Script (Closes #257)**:
+  - Added `push-apk.ps1` and `npm run android:push` (`npm run android:install`) for pilots working with connected Android devices (such as Samsung Galaxy Tab S9, RC 2, or other Android controllers).
+  - Automatically auto-detects `adb.exe` across WinGet, Android SDK, and PATH.
+  - Automatically identifies connected authorized devices.
+  - Finds the newest APK build (from `android/app/build/...`, `Downloads/`, or `scratch/`) or accepts a direct path.
+  - Performs a clean data-preserving install (`adb install -r -d`) and automatically wakes and launches `com.aalaapi.sky/.MainActivity` on the screen.
+
+#### Under the Hood & Technical Details
+- **android/app/debug.keystore**:
+  - Generated and committed standard deterministic PKCS#12 debug keystore (`alias: androiddebugkey`, `pass: android`, 10,000 days validity) to ensure reproducible build signatures across all CI/CD runners and local developer machines.
+- **android/app/build.gradle.kts**:
+  - Configured `signingConfigs.getByName("debug")` with `storeFile = file("debug.keystore")`, `storePassword = "android"`, `keyAlias = "androiddebugkey"`, and `keyPassword = "android"`.
+  - Linked `buildTypes.debug.signingConfig = signingConfigs.getByName("debug")`.
+  - Bumped `versionCode = 12300`, `versionName = "1.230.0"`.
+- **tools/android/push_apk.js & push-apk.ps1**:
+  - Cross-platform ADB discovery and automated installation engine with auto-detection of connected hardware and auto-launch of the main Android Activity.
+- **package.json**:
+  - Added `"android:push": "node tools/android/push_apk.js"` and `"android:install": "node tools/android/push_apk.js"`.
+  - Bumped version to `1.230.0`.
+
 ## [1.229.0] - 2026-11-06
 
 Resolve Android 14+ USB PendingIntent Crash, DJI RC 2 Standalone MTP Log Replay & Screen Keep-Awake.

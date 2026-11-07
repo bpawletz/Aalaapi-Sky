@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.229.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.230.0</span></h1>
         </div>
       </div>
 
@@ -7564,7 +7564,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.228.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.230.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -7724,7 +7724,13 @@
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
-                            <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.230.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Deterministic Android Debug Keystore & In-Place Update Fix (Closes #257):</strong> Committed a deterministic debug keystore (android/app/debug.keystore) and configured Gradle signingConfigs so that all GitHub Actions cloud builds and local builds share the exact same signature, enabling seamless in-place APK upgrades without requiring uninstalls or losing local flight data.</li>
+                  <li><strong>Automated ADB Push &amp; Launch Workflow (Closes #257):</strong> Added push-apk.ps1 and npm run android:push to automatically discover connected tablets/controllers, install the latest APK via adb install -r -d, and launch Aalaapi Sky on screen.</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.229.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                   <li><strong>Android 14+ PendingIntent USB Crash & RC 2 Standalone Replay Fix (Closes #256):</strong> Resolved fatal crash on USB RC 2 attachment under Android 14+ / 15 / 16 via explicit PendingIntent package target. Fixed 3D Flight Diagnostics wipeout by passing in-memory parsed telemetry directly to bypass unneeded localhost HTTP calls. Added display keep-awake (FLAG_KEEP_SCREEN_ON) and native offline NOTAM asset loading.</li>
