@@ -48,6 +48,25 @@ class AndroidRemoteIdScanner(private val context: Context, private val webView: 
         }
     }
 
+    private fun isPotentialRemoteId(bytes: ByteArray): Boolean {
+        // Fast byte scan for ASTM F3411 16-bit UUID 0xFFFA (0xFA, 0xFF or 0xFF, 0xFA),
+        // OpenDroneID Application Code (0x0D), DJI Manufacturer IDs (0x0888 / 0x8808),
+        // or ASTM F3411 MessagePack headers (0xF0..0xF2)
+        for (i in 0 until bytes.size - 1) {
+            val b0 = bytes[i].toInt() and 0xFF
+            val b1 = bytes[i + 1].toInt() and 0xFF
+            if ((b0 == 0xFA && b1 == 0xFF) ||
+                (b0 == 0xFF && b1 == 0xFA) ||
+                (b0 == 0x88 && b1 == 0x08) ||
+                (b0 == 0x08 && b1 == 0x88)) {
+                return true
+            }
+        }
+        val first = bytes[0].toInt() and 0xFF
+        if (first == 0x0D) return true
+        return (first and 0xF0) == 0xF0 && (first and 0x0F) <= 2
+    }
+
     private fun handleScanResult(result: ScanResult) {
         val record = result.scanRecord ?: return
         val mac = try { result.device?.address ?: "UNKNOWN" } catch (_: Exception) { "UNKNOWN" }
@@ -75,9 +94,9 @@ class AndroidRemoteIdScanner(private val context: Context, private val webView: 
             return
         }
 
-        // 3. Fallback: Raw advertisement bytes (ClientRemoteIdDecoder will scan for 0xFFFA / 0x0888 patterns)
+        // 3. Fallback: Raw advertisement bytes only if it contains ASTM F3411 or DJI patterns
         val rawBytes = record.bytes
-        if (rawBytes != null && rawBytes.size >= 25) {
+        if (rawBytes != null && rawBytes.size >= 25 && isPotentialRemoteId(rawBytes)) {
             val base64Str = Base64.encodeToString(rawBytes, Base64.NO_WRAP)
             dispatchToWebView(base64Str, result.rssi, "ble", mac)
         }
@@ -121,38 +140,41 @@ class AndroidRemoteIdScanner(private val context: Context, private val webView: 
 
         bleScanner = bluetoothAdapter?.bluetoothLeScanner ?: return false
 
-        // Multi-criteria filter:
-        // 1. Service Data with ASTM F3411 UUID 0xFFFA
-        // 2. DJI Manufacturer Data 0x0888
-        // 3. DJI Manufacturer Data 0x8808
-        val filters = listOf(
-            ScanFilter.Builder()
-                .setServiceData(REMOTE_ID_SERVICE_UUID, null)
-                .build(),
-            ScanFilter.Builder()
-                .setManufacturerData(0x0888, null)
-                .build(),
-            ScanFilter.Builder()
-                .setManufacturerData(0x8808, null)
-                .build()
-        )
-
-        val settings = ScanSettings.Builder()
+        // Configure Bluetooth 5 Extended Advertising and Coded PHY scanning when supported
+        val settingsBuilder = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .setReportDelay(0)
-            .build()
+
+        var extendedSupported = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (bluetoothAdapter?.isLeExtendedAdvertisingSupported == true) {
+                settingsBuilder.setLegacy(false)
+                extendedSupported = true
+            }
+            if (bluetoothAdapter?.isLeCodedPhySupported == true) {
+                settingsBuilder.setPhy(ScanSettings.PHY_LE_ALL_SUPPORTED)
+            }
+        }
+
+        val settings = settingsBuilder.build()
 
         return try {
-            bleScanner?.startScan(filters, settings, scanCallback)
+            // Open scan without hardware filter offload registers (e.g. ScanFilter setServiceData / setManufacturerData)
+            // to ensure Bluetooth 5 Extended Advertisements and multi-frame Remote ID packets are not dropped by OEM filters.
+            bleScanner?.startScan(null, settings, scanCallback)
             isScanning = true
-            Log.i("AndroidRemoteIdScanner", "Started ASTM F3411 BLE Remote ID scan with multi-filter")
+            Log.i("AndroidRemoteIdScanner", "Started ASTM F3411 BLE Remote ID scan (extendedSupported=$extendedSupported)")
             true
         } catch (e: Exception) {
-            // If device OEM rejects complex filters, fallback to open low-latency scan
+            // If device OEM rejects extended settings, fallback to standard legacy low-latency scan
             try {
-                bleScanner?.startScan(null, settings, scanCallback)
+                val legacySettings = ScanSettings.Builder()
+                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                    .setReportDelay(0)
+                    .build()
+                bleScanner?.startScan(null, legacySettings, scanCallback)
                 isScanning = true
-                Log.i("AndroidRemoteIdScanner", "Started ASTM F3411 BLE Remote ID open scan fallback")
+                Log.i("AndroidRemoteIdScanner", "Started ASTM F3411 BLE Remote ID scan (legacy fallback)")
                 true
             } catch (e2: Exception) {
                 Log.e("AndroidRemoteIdScanner", "Failed to start BLE scan: ${e2.message}", e2)
