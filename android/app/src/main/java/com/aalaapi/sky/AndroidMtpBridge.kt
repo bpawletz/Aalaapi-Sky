@@ -31,6 +31,11 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
     companion object {
         const val DJI_VENDOR_ID = 0x2CA3 // 11427
         const val ACTION_USB_PERMISSION = "com.aalaapi.sky.USB_PERMISSION"
+
+        fun extractLogTimestamp(name: String): String {
+            val regex = Regex("""\d{4}-\d{2}-\d{2}[_\[\-T ]+\d{2}[-\:]\d{2}[-\:]\d{2}\]?""")
+            return regex.find(name)?.value ?: ""
+        }
     }
 
     fun checkConnectedDevices() {
@@ -168,13 +173,6 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
             } else if ((name.startsWith("FlightRecord_") || name.startsWith("DJIFlightRecord_")) && (name.endsWith(".txt") || name.endsWith(".csv"))) {
                 candidates.add(Pair(handle, info))
             }
-        }
-    }
-
-    companion object {
-        fun extractLogTimestamp(name: String): String {
-            val regex = Regex("""\d{4}-\d{2}-\d{2}[_\[\-T ]+\d{2}[-\:]\d{2}[-\:]\d{2}\]?""")
-            return regex.find(name)?.value ?: ""
         }
     }
 
