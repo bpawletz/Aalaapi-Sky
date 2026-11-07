@@ -129,6 +129,27 @@ The following third-party software libraries and components are utilized in Aala
 * **License**: Apache 2.0 / Google APIs Terms of Service
 * **Usage**: Client-side library for Google Single Sign-On (SSO), OAuth 2.0 token acquisition, automated mission storage in Google Drive, automated preflight and telemetry logbook sync in Google Sheets, and offline-first profile/mission sync with Firestore (including AI Studio-provisioned projects).
 
+### dji-log-parser
+* **Project**: [dji-log-parser](https://github.com/lvauvillier/dji-log-parser)
+* **Authors**: Louis Vauvillier (`lvauvillier`) and contributors
+* **License**: MIT License
+* **Usage**: Native binary parser and AES keychain decryptor (`dji-log`) for DJI v13/v14 flight records (`FlightRecord_*.txt`) on Companion Bridge and Android ARM64 (`libdjilog.so`).
+* **Notice**:
+  ```text
+  MIT License
+  Copyright (c) Louis Vauvillier
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+  ```
+
 ### Web Fonts: Outfit & Plus Jakarta Sans
 * **Outfit**: Designed by On caps and Rodrigo Fuenzalida. Licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/).
 * **Plus Jakarta Sans**: Designed by Tokotype and Gumpita Rahayu. Licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/).

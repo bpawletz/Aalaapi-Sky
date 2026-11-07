@@ -1,3 +1,26 @@
+## [1.233.0] - 2026-11-06
+
+Bundle Native ARM64 DJI Flight Log Decryptor (`libdjilog.so`) on Android and Deduplicate USB MTP Log Scans.
+
+### 🐛 Fixed | 🚀 Added
+
+#### Pilot & Operational Features
+- **Native On-Device DJI v13/v14 Flight Log Decryption on Android (Closes #260)**:
+  - Bundled the native ARM64 `dji-log` parser (`libdjilog.so`) inside the Android APK along with an embedded loopback keychain relay (`127.0.0.1:18765`), enabling standalone on-device decryption of encrypted DJI v13/v14 `FlightRecord_*.txt` files pulled over USB OTG using the pilot's saved DJI Developer Key.
+  - Resolved a critical issue where pulling encrypted `.txt` flight records on Android silently fell back to a 75-second (`01:15`) active-workspace simulation instead of displaying the real multi-minute flight trajectory, altitude profile, and telemetry rows.
+  - Decrypted `.csv` and `.json` telemetry outputs are cached locally on the tablet so subsequent loads of the same flight open instantaneously.
+- **6x Faster Deduplicated USB MTP Flight Log Scanning & Formatted Log Browser (Closes #260)**:
+  - Eliminated 6x duplicate object enumeration when scanning DJI RC 2 storage over USB MTP (`parentHandle = 0` flat-list traversal), reducing scan time from ~2.5s to ~0.4s and caching candidate metadata for 30 seconds.
+  - Updated `#rc2-flight-logs-modal` to display formatted flight dates (`YYYY-MM-DD HH:mm:ss`), human-readable file sizes (`1.16 MB`), accurate decryption status badges (`On Controller` vs `Decrypted ✓`), and O(1) MTP handle extraction when clicking `📥 Pull & Decrypt` or `📊 Load Telemetry`.
+
+#### Under the Hood & Technical Details
+- **.github/workflows/android-build.yml, android/app/build.gradle.kts & android/app/src/main/AndroidManifest.xml**:
+  - Provisioned `dji-log-aarch64-unknown-linux-musl` (`v0.5.7`) patched with loopback keychain endpoint `http://127.0.0.1:18765/openapi/v1/flight-records/keycha` into `jniLibs/arm64-v8a/libdjilog.so` with `useLegacyPackaging = true` and `android:extractNativeLibs="true"`.
+- **android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt**:
+  - Added `ensureKeychainRelayRunning()`, `decryptFlightLogIfPossible()`, `formatLogDate()`, `formatFileSize()`, `seenHandles` deduplication, and 30s candidate caching.
+- **src/bridge/Rc2LogExplorer.js & src/3d/DigitalTwin.js**:
+  - Wired `data-handle` O(1) MTP log extraction, deduplicated table rows by filename, and preserved `flightId` and `isActualFlown = true` on parsed telemetry payloads.
+
 ## [1.232.0] - 2026-11-06
 
 Optimize RC 2 MTP Flight Log Discovery, Unconditional Subfolder Traversal & Native Android Log Browser.

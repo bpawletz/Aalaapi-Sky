@@ -11,10 +11,17 @@ android {
         applicationId = "com.aalaapi.sky"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12320
-        versionName = "1.232.0"
+        versionCode = 12330
+        versionName = "1.233.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+            keepDebugSymbols += "**/libdjilog.so"
+        }
     }
 
     signingConfigs {
