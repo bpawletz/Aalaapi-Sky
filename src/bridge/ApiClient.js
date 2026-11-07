@@ -4798,19 +4798,47 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
       if (logBase64) {
 
+        let parseSuccess = false;
         if (typeof DigitalTwin !== 'undefined' && typeof DigitalTwin.loadFlightLogData === 'function') {
 
-          await DigitalTwin.loadFlightLogData(logFilename, logBase64);
+          parseSuccess = await DigitalTwin.loadFlightLogData(logFilename, logBase64);
 
         } else if (typeof atob === 'function' && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.parseLogText === 'function') {
 
           const rawText = atob(logBase64);
 
-          DjiLogDecryptor.parseLogText(rawText, logFilename);
+          const parsed = DjiLogDecryptor.parseLogText(rawText, logFilename);
+          parseSuccess = !!(parsed && parsed.points && parsed.points.length > 0);
 
         }
 
+        if (!parseSuccess || (typeof DigitalTwin !== 'undefined' && !DigitalTwin.telemetryData)) {
+          throw new Error(`Unable to decode flight trajectory from ${logFilename}`);
+        }
 
+        try {
+          if (typeof localStorage !== 'undefined') {
+            const existingJson = localStorage.getItem('aalaapi_historical_flights');
+            let flightsList = existingJson ? JSON.parse(existingJson) : [];
+            flightsList = flightsList.filter(f => f.filename !== logFilename);
+            flightsList.unshift({
+              id: logFilename,
+              filename: logFilename,
+              flightDate: (logPayload && (logPayload.flightDate || logPayload.mtimeFormatted)) || new Date().toISOString().replace('T', ' ').slice(0, 19),
+              mtimeFormatted: (logPayload && (logPayload.flightDate || logPayload.mtimeFormatted)) || new Date().toISOString().replace('T', ' ').slice(0, 19),
+              size: (logPayload && logPayload.size) || 0,
+              sizeFormatted: (logPayload && (logPayload.sizeFormatted || '')) || '',
+              isDecrypted: true,
+              source: 'pulled_rc2'
+            });
+            localStorage.setItem('aalaapi_historical_flights', JSON.stringify(flightsList.slice(0, 50)));
+            localStorage.setItem('aalaapi_offline_flight_' + logFilename, logBase64);
+          }
+        } catch (_) {}
+
+        if (typeof refreshMissionDbList === 'function') {
+          refreshMissionDbList();
+        }
 
         buttonsToUpdate.forEach(b => {
 
@@ -12817,6 +12845,10 @@ const AdsbAirspaceManager = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       await this.pollAirspace();
+      this.updateVisualBanner();
+      this.updateTopbarAndHud();
+      this.updateMapMarkers();
+      this.updateDrawerAircraftList();
 
     } catch (e) {
 

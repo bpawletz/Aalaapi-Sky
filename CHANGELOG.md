@@ -1,3 +1,49 @@
+## [1.234.0] - 2026-11-07
+
+Session-persistent MTP caching, RC 2 .DAT blackbox sensor filtering with zero-default fallback, offline Section 0 historical flight database, and cross-platform Screen Keep-Awake / Sleep toggle for Android and Windows.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Cross-Platform Screen Keep-Awake / Sleep Toggle**: Added a dedicated topbar button (`#screen-awake-toggle-btn`) and mobile overflow menu option allowing pilots on both Android tablets and Windows/browsers to toggle between `☕ Awake` (display stays on indefinitely during flights via native `FLAG_KEEP_SCREEN_ON` on Android and Screen Wake Lock API on Web/Desktop) and `💤 Sleep` (allows standard OS display timeout to conserve battery when idling). State is preserved across app restarts.
+- **Offline Historical Flight DB (Section 0)**: The left sidebar's "Historical Flight DB & Missions" panel now populates directly from local tablet storage (`cacheDir/decrypted_logs`) and browser local history even when the desktop companion HTTP server is offline. Pilots can trigger **▶ 2D Replay** and **🧊 3D View** on any previously flown mission without external connections.
+- **Session-Persistent RC 2 MTP Caching**: Flight log candidate listings from the DJI RC 2 over USB OTG now cache in memory for the entire duration of the USB connection, allowing "Browse All Flight Logs" to open in 0 ms without full-screen loading spinners on repeated clicks. An explicit "🔄 Refresh" button allows on-demand re-querying over USB.
+
+#### Under the Hood & Technical Details
+- **`src/ui/ScreenAwakeManager.js`**: Introduced a modular screen awake controller orchestrating the Web Screen Wake Lock API (`navigator.wakeLock`), `document.visibilitychange` auto-recovery, and Android native bridge `window.AalaapiAndroid.setKeepScreenOn`.
+- **`android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt`**: Implemented `listSavedFlights()` and `getSavedFlightTelemetry()`, eliminated arbitrary 30-second TTL in `getSortedMtpCandidates()`, and exposed `forceRefresh` in `listRecentLogs()`.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **RC 2 `.DAT` Blackbox Filtering & Zero-Default Fallback (Closes #262)**: Excluded raw Flyc blackbox diagnostic dumps (`.DAT` files in `MCDatFlightRecords`) from MTP candidate enumeration. Eliminated silent simulation fallbacks that synthesized fake simulated tracks from editor waypoints when flight logs failed to parse, surfacing explicit error notifications (`❌ Could not load flight log`) and keeping viewers clean.
+
+#### Under the Hood & Technical Details
+- **`src/3d/DigitalTwin.js`**: Removed silent `generateTelemetryFromWaypoints(wps, ... isSimulation: true)` fallbacks from `loadFlightLogData()` and `loadFlightLogFromFile()`, throwing informative errors on invalid telemetry and recovering saved flights directly from Android local storage.
+- **`src/bridge/ApiClient.js` & `src/bridge/Rc2LogExplorer.js`**: Validated `DigitalTwin.telemetryData` non-null status on pull, updating button status to `⚠️ Pull Failed` on decoding errors and saving verified flights to local storage.
+
+## [1.233.1] - 2026-11-07
+
+Companion Bridge ADS-B Airspace Status & Traffic Restoration, Windows mDNS `.local` Auto-Resolution, and Cross-Platform Dual Architecture Policy.
+
+### 🐛 Fixed | 🚀 Added
+
+#### Pilot & Operational Features
+- **Companion Bridge ADS-B Airspace Status & Traffic Display (Closes #261)**:
+  - Restored real-time green connection indicator (`ACTIVE`) and live aircraft traffic map display when connecting to the Companion Bridge.
+  - Resolved an issue where unauthenticated web app sessions received `401 Unauthorized` on airspace endpoints, which silently aborted airspace polling and left the status indicator grey.
+- **Windows mDNS `.local` Hostname Auto-Resolution for ADS-B Receivers (Closes #261)**:
+  - Added automatic mDNS fallback resolution for `.local` target stations (e.g. `Z83.local`), resolving them directly to their active LAN IPv4 address (e.g. `192.168.1.250:30003`) on Windows systems where standard OS `getaddrinfo` fails.
+
+#### Under the Hood & Technical Details
+- **tools/companion/server.js**:
+  - Whitelisted read-only airspace and Remote ID endpoints in `isPublicAuthEndpoint()` (`/api/airspace/*`, `/api/adsb/*`, `/api/remote-id/*`, `/api/stream`, `/api/events`) so public flight safety collision avoidance feeds remain accessible without requiring pilot authentication.
+  - Exported `isPublicAuthEndpoint` for regression unit testing.
+- **tools/companion/adsb_tracker.js**:
+  - Implemented `resolveTargetHost(host)` using `MdnsService.discoverAdsb()` to resolve `.local` stations to IPv4 addresses with caching on successful connections and cache invalidation on socket errors.
+- **AGENTS.md Policy Update**:
+  - Added Section 17 defining the **Dual-Platform Architecture & Cross-Platform Parity Policy (Desktop / Windows vs. Android Native)**, establishing guidelines for dual-pathway feature implementations, cross-platform unit test mocking, mobile Chromium/Skia rendering constraints, and address resolution nuances.
+
 ## [1.233.0] - 2026-11-06
 
 Bundle Native ARM64 DJI Flight Log Decryptor (`libdjilog.so`) on Android and Deduplicate USB MTP Log Scans.

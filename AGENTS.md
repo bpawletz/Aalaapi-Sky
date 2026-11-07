@@ -279,3 +279,32 @@ To guarantee zero motion blur and prevent camera shutter triggers while the gimb
 
 5. **Zero-Masking Policy in Telemetry Verification (`IrlVerifier.js`):**
    - `IrlVerifier.js` MUST evaluate gimbal pitch compliance at the actual `CAMERA.isPhoto` shutter trigger sample. Agents are strictly prohibited from masking mid-slew shutter triggers by sampling post-photo resting states.
+
+## 17. Dual-Platform Architecture & Cross-Platform Parity Policy (Desktop / Windows vs. Android Native)
+Aalaapi Sky is engineered as a unified dual-platform mission planner and flight execution system running across two distinct target environments:
+1. **Desktop / Windows / Browser Environment:** Operates as a web application connected to the local Node.js Companion Bridge daemon (`tools/companion/server.js` on port 8765). Hardware communications (ADS-B 1090 MHz Mode S, RTMP video ingest on port 1935, MTP flight log retrieval) run via server-side child processes, TCP sockets (`adsb_tracker.js`), and REST/SSE endpoints (`/api/airspace/*`, `/api/remote-id/*`, `/api/stream`).
+2. **Android Native / DJI RC 2 Mobile Environment:** Operates as an offline-first native Android APK running within Chromium WebView (`file:///android_asset/www/index.html`). Hardware communications run directly via the injected `window.AalaapiAndroid` bridge, native Kotlin TCP socket background services (`AdsbReceiverService.kt`), native USB Host MTP drivers (`AndroidMtpBridge.kt`), and bundled ARM64 decryption binaries (`dji-log-decryptor`).
+
+Whenever implementing, modifying, refactoring, or testing features, AI agents **MUST** adhere to the following cross-platform parity rules:
+
+1. **Mandatory Dual-Pathway Support for Hardware & Network Features:**
+   - Any capability interfacing with hardware, external telemetry, or real-world protocols MUST support both execution pathways:
+     - **Pathway A (Desktop / Windows):** Check for and interface with the Companion Bridge REST/SSE API (`ApiClient.js`, `fetchAirspaceStatus`, `fetch('/api/...')`).
+     - **Pathway B (Android Native):** Check for `window.AalaapiAndroid` or `AndroidNativeBridge` and invoke the corresponding native method before falling back to network HTTP.
+   - Agents are strictly prohibited from implementing or modifying a feature in a way that breaks or ignores the other platform.
+
+2. **Cross-Platform Test Verification & Mocking (`index.test.js`):**
+   - Unit tests covering telemetry, hardware status, or flight logs MUST assert behavior in both modes:
+     - Mode 1: Desktop Browser Mode (`window.AalaapiAndroid = undefined`, mocking Companion Bridge REST/SSE endpoints).
+     - Mode 2: Android Native Mode (`window.AalaapiAndroid` defined with mocked native bridge methods).
+
+3. **Android WebView & Chromium Rendering Guardrails:**
+   - Client-side DOM, SVG, and CSS modifications must conform strictly to mobile Chromium/Blink and Skia rendering constraints:
+     - **SVG Namespaces:** Dynamically injected SVG elements (such as `<defs>`, `<linearGradient>`, and `<stop>`) MUST be created using `document.createElementNS('http://www.w3.org/2000/svg', tag)` rather than raw HTML parsing.
+     - **No CSS Filters on Gradient Paths:** Avoid combining CSS `filter: drop-shadow(...)` directly on vector `<path>` or `<polygon>` elements utilizing `fill="url(#id)"`, which causes GPU layer clipping on Android WebView.
+     - **Co-located `<defs>`:** Ensure vector paint servers reside within Leaflet's active renderer `<svg>` root rather than disconnected standalone SVG nodes.
+
+4. **Network & Address Resolution Nuances:**
+   - **Desktop / Windows Node.js:** Standard `getaddrinfo` (`dns.lookup`) frequently fails to resolve multicast DNS (`.local`) hostnames. The Companion Bridge must provide automatic mDNS discovery fallback (`MdnsService.discoverAdsb()`) to resolve `.local` stations (e.g. `Z83.local`) to their active IPv4 address.
+   - **Public Airspace Awareness Feeds:** ADS-B (FAA 1090 MHz) and Remote ID broadcast telemetry are public safety streams for mid-air collision avoidance. Read-only endpoints (`/api/airspace/*`, `/api/adsb/*`, `/api/remote-id/*`, `/api/stream`) MUST remain accessible without requiring pilot authentication.
+

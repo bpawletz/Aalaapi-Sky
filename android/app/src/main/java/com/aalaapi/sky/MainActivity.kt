@@ -513,7 +513,22 @@ class MainActivity : AppCompatActivity() {
 
             @JavascriptInterface
             fun listFlightRecordsFromRc2(limit: Int): String {
-                return mtpBridge.listRecentLogs(if (limit > 0) limit else 30)
+                return mtpBridge.listRecentLogs(if (limit > 0) limit else 30, forceRefresh = false)
+            }
+
+            @JavascriptInterface
+            fun listFlightRecordsFromRc2WithRefresh(limit: Int, forceRefresh: Boolean): String {
+                return mtpBridge.listRecentLogs(if (limit > 0) limit else 30, forceRefresh = forceRefresh)
+            }
+
+            @JavascriptInterface
+            fun listSavedFlights(): String {
+                return mtpBridge.listSavedFlights()
+            }
+
+            @JavascriptInterface
+            fun getSavedFlightTelemetry(filename: String): String {
+                return mtpBridge.getSavedFlightTelemetry(filename)
             }
 
             @JavascriptInterface

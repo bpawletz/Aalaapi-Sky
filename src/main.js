@@ -10,6 +10,7 @@ import './core/PlaybackManager.js';
 import './core/TelemetryInterpolator.js';
 import './core/MissionClock.js';
 import './ui/ThemeManager.js';
+import './ui/ScreenAwakeManager.js';
 import './ui/ModalDragManager.js';
 import './ui/DebugConsole.js';
 import './layers/LayerManager.js';

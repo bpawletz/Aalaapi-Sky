@@ -130,16 +130,29 @@ def build(banners=True):
     modified = js_pattern_bytes.sub(lambda _: js_replacement, modified)
 
     print(f"Writing output to {output_path}...")
-    with open(output_path, 'wb') as f:
-        f.write(modified)
+    import time
+    for attempt in range(5):
+        try:
+            with open(output_path, 'wb') as f:
+                f.write(modified)
+            break
+        except OSError as e:
+            if attempt == 4: raise
+            time.sleep(0.3)
 
     # Sync assets into Android app assets directory if android/ exists
     android_www = os.path.join(project_dir, 'android', 'app', 'src', 'main', 'assets', 'www')
     if os.path.exists(android_www):
         import shutil
         print(f"Syncing bundle and web assets to {android_www}...")
-        with open(os.path.join(android_www, 'index.html'), 'wb') as f:
-            f.write(modified)
+        for attempt in range(5):
+            try:
+                with open(os.path.join(android_www, 'index.html'), 'wb') as f:
+                    f.write(modified)
+                break
+            except OSError as e:
+                if attempt == 4: raise
+                time.sleep(0.3)
         icon_path = os.path.join(project_dir, 'icon.png')
         if os.path.exists(icon_path):
             shutil.copy2(icon_path, os.path.join(android_www, 'icon.png'))

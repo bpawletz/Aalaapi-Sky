@@ -273,7 +273,7 @@ describe('Companion Server Authentication Enforcement Suite', () => {
       assert.equal(res.body.authenticated, true);
     });
 
-    it('rejects unauthenticated GET /api/airspace/bounds with 401 Unauthorized', async () => {
+    it('allows unauthenticated GET /api/airspace/bounds for real-time flight safety telemetry (Issue #261)', async () => {
       const res = await new Promise((resolve, reject) => {
         const req = http.request({
           hostname: '127.0.0.1',
@@ -286,6 +286,28 @@ describe('Companion Server Authentication Enforcement Suite', () => {
           r.on('end', () => resolve({ statusCode: r.statusCode, body: JSON.parse(body) }));
         });
         req.on('error', reject);
+        req.end();
+      });
+
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.body.success, true);
+    });
+
+    it('rejects unauthenticated mutating POST /api/config/adsb with 401 Unauthorized', async () => {
+      const res = await new Promise((resolve, reject) => {
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: testPort,
+          path: '/api/config/adsb',
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        }, r => {
+          let body = '';
+          r.on('data', chunk => { body += chunk; });
+          r.on('end', () => resolve({ statusCode: r.statusCode, body: JSON.parse(body) }));
+        });
+        req.on('error', reject);
+        req.write(JSON.stringify({ adsbHost: '127.0.0.1', adsbPort: 30003 }));
         req.end();
       });
 

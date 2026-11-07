@@ -2722,7 +2722,63 @@ async function refreshMissionDbList() {
       }
     } catch (_) {}
 
-    // 3. Fallback bridge ping if flights/diagnostics endpoints returned error
+    // 3. Check Android native bridge for saved/decrypted flight records
+    try {
+      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.listSavedFlights === 'function') {
+        const rawSaved = window.AalaapiAndroid.listSavedFlights();
+        if (rawSaved) {
+          const savedData = JSON.parse(rawSaved);
+          if (savedData.success && Array.isArray(savedData.flights)) {
+            savedData.flights.forEach(f => {
+              if (!items.some(it => it.filename === f.filename)) {
+                items.push({
+                  id: f.filename,
+                  type: 'rc2-recorded',
+                  title: f.label || f.filename,
+                  filename: f.filename,
+                  date: f.flightDate || f.mtimeFormatted || 'Controller Log',
+                  size: f.sizeFormatted || '',
+                  statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
+                  badgeColor: '#34d399',
+                  badgeBg: 'rgba(16, 185, 129, 0.15)',
+                  wpsText: 'Tablet Storage'
+                });
+              }
+            });
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 4. Check localStorage for flights pulled or decrypted in browser session
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const storedJson = localStorage.getItem('aalaapi_historical_flights');
+        if (storedJson) {
+          const stored = JSON.parse(storedJson);
+          if (Array.isArray(stored)) {
+            stored.forEach(f => {
+              if (!items.some(it => it.filename === f.filename)) {
+                items.push({
+                  id: f.filename,
+                  type: 'rc2-recorded',
+                  title: f.label || f.filename,
+                  filename: f.filename,
+                  date: f.flightDate || f.mtimeFormatted || 'Controller Log',
+                  size: f.sizeFormatted || '',
+                  statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
+                  badgeColor: '#34d399',
+                  badgeBg: 'rgba(16, 185, 129, 0.15)',
+                  wpsText: 'Local Cache'
+                });
+              }
+            });
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 5. Fallback bridge ping if flights/diagnostics endpoints returned error
     if (!bridgeReachable) {
       if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
         bridgeReachable = true;
@@ -2740,7 +2796,8 @@ async function refreshMissionDbList() {
       }
     }
 
-    isMissionDbOnline = bridgeReachable;
+    // If local flights exist on device or bridge is reachable, consider flight DB online
+    isMissionDbOnline = bridgeReachable || (items.length > 0);
     cachedMissionDbItems = items;
 
     if (badgeEl) {

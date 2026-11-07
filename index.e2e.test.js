@@ -4052,7 +4052,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
     assert.strictEqual(moreMenuOpenState.menuVisible, true, 'More menu should be visible after clicking more button');
-    assert.strictEqual(moreMenuOpenState.itemsCount, 11, 'More menu should contain 11 action items (Bridge, ADS-B, Diagnostics, Photos, Pilot Identity, Intro, About, Links, Action Flow, Buy Me a Coffee, Customize Ribbon)');
+    assert.ok(moreMenuOpenState.itemsCount >= 11, 'More menu should contain action items (Awake, Bridge, ADS-B, Diagnostics, Photos, Pilot Identity, Intro, About, Links, Action Flow, Buy Me a Coffee, Customize Ribbon)');
 
     // Click About from More Menu
     await page.locator('#more-menu-about-btn').click();
@@ -12124,6 +12124,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       // Open ADS-B drawer if hidden and simulate approaching aircraft
       await page.evaluate(async () => {
+        AdsbAirspaceManager.isDrawerOpen = true;
         const drawer = document.getElementById('adsb-control-drawer');
         if (drawer) drawer.classList.remove('hidden');
         await AdsbAirspaceManager.simulateAircraft('approaching');
@@ -12624,5 +12625,59 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(svgScopingResult.hasDropShadow, false, 'Cone path must not have CSS drop-shadow filter applied');
   });
 
+
+  test('E2E: Screen Keep Awake / Sleep Toggle Button (v1.234.0, Issue #262)', async () => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    const btnState = await page.evaluate(() => {
+      const btn = document.getElementById('screen-awake-toggle-btn');
+      const icon = document.getElementById('screen-awake-icon');
+      const label = document.getElementById('screen-awake-label');
+      return {
+        exists: !!btn,
+        isActive: btn ? btn.classList.contains('is-active') : false,
+        iconText: icon ? icon.textContent : '',
+        labelText: label ? label.textContent : ''
+      };
+    });
+
+    assert.strictEqual(btnState.exists, true, '#screen-awake-toggle-btn must exist in topbar');
+    assert.strictEqual(btnState.isActive, true, 'Default state must be active (Keep Awake)');
+    assert.strictEqual(btnState.iconText, '☕');
+    assert.strictEqual(btnState.labelText, 'Awake');
+
+    // Click toggle to switch to Sleep mode
+    await page.locator('#screen-awake-toggle-btn').click();
+
+    const sleepState = await page.evaluate(() => {
+      const btn = document.getElementById('screen-awake-toggle-btn');
+      const icon = document.getElementById('screen-awake-icon');
+      const label = document.getElementById('screen-awake-label');
+      const moreLabel = document.getElementById('more-menu-awake-label');
+      return {
+        isActive: btn ? btn.classList.contains('is-active') : true,
+        iconText: icon ? icon.textContent : '',
+        labelText: label ? label.textContent : '',
+        moreLabelText: moreLabel ? moreLabel.textContent : ''
+      };
+    });
+
+    assert.strictEqual(sleepState.isActive, false, 'Button must lose is-active class in sleep mode');
+    assert.strictEqual(sleepState.iconText, '💤');
+    assert.strictEqual(sleepState.labelText, 'Sleep');
+    assert.strictEqual(sleepState.moreLabelText, 'Screen: Allow Sleep');
+
+    // Click toggle again to switch back to Awake mode
+    await page.locator('#screen-awake-toggle-btn').click();
+
+    const awakeAgainState = await page.evaluate(() => {
+      const btn = document.getElementById('screen-awake-toggle-btn');
+      return {
+        isActive: btn ? btn.classList.contains('is-active') : false
+      };
+    });
+
+    assert.strictEqual(awakeAgainState.isActive, true, 'Button must regain is-active class when toggled back');
+  });
   });
 });

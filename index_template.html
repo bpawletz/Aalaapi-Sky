@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.233.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.234.0</span></h1>
         </div>
       </div>
 
@@ -160,6 +160,9 @@
       <div class="topbar-right">
         <button id="header-unit-toggle-btn" class="btn-secondary header-unit-btn" type="button" title="Toggle Measurement Units (Imperial / Metric)" aria-label="Toggle Units" onclick="toggleUnitSystem()"><span id="header-unit-badge">FT / MPH</span></button>
         <button id="theme-toggle-btn" class="btn-secondary header-theme-btn" type="button" title="Toggle Light / Dark Mode" aria-label="Toggle Theme" onclick="toggleAppTheme()">☀️</button>
+        <button id="screen-awake-toggle-btn" class="btn-secondary header-awake-btn is-active" type="button" title="Screen: Keep Awake Enabled (Screen will stay on). Click to allow sleep." aria-label="Toggle Screen Keep Awake">
+          <span id="screen-awake-icon">☕</span><span id="screen-awake-label">Awake</span>
+        </button>
         <button id="intro-tour-btn" class="btn-secondary header-about-btn" type="button" title="Quickstart Workflow Tour, What's New &amp; Pro Tips" onclick="openIntroModal('workflow')"><span>🎓</span><span>Intro</span></button>
         <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -193,6 +196,10 @@
 
       <!-- Mobile More Actions Dropdown Menu Popover -->
       <div id="header-more-menu" class="header-more-menu glass hidden">
+        <button id="more-menu-awake-btn" class="more-menu-item" type="button">
+          <span class="more-menu-icon" id="more-menu-awake-icon">☕</span>
+          <span class="more-menu-label" id="more-menu-awake-label">Screen: Keep Awake</span>
+        </button>
         <button id="more-menu-bridge-btn" class="more-menu-item" type="button">
           <span class="more-menu-icon">🌉</span>
           <span class="more-menu-label">Aalaapi Bridge &amp; Hardware</span>
@@ -7564,7 +7571,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.233.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.234.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -7728,6 +7735,21 @@
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.234.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Cross-Platform Screen Keep-Awake / Sleep Toggle (Closes #262):</strong> Added persistent topbar button (<code>☕ Awake</code> / <code>💤 Sleep</code>) and mobile overflow menu option using native Android <code>FLAG_KEEP_SCREEN_ON</code> and Web Screen Wake Lock API to prevent screen timeout during flights.</li>
+                  <li><strong>Offline Section 0 Historical Flight DB (Closes #262):</strong> Populated Section 0 directly from local tablet storage and browser history without requiring the desktop companion server, enabling instant 2D Replay and 3D View offline.</li>
+                  <li><strong>RC 2 .DAT Blackbox Filtering &amp; Session MTP Caching (Closes #262):</strong> Filtered out raw unparseable <code>.DAT</code> Flyc blackbox dumps, cached MTP candidates for instant 0 ms log browsing, and eliminated silent simulation fallbacks.</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.233.1):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Companion Bridge ADS-B Airspace Status &amp; Traffic Display (Closes #261):</strong> Restored real-time green connection indicator (ACTIVE) and live aircraft traffic map display by whitelisting read-only airspace and Remote ID endpoints from the pilot authentication wall.</li>
+                  <li><strong>Windows mDNS .local Hostname Auto-Resolution (Closes #261):</strong> Added automatic mDNS fallback resolution for .local target stations (e.g. Z83.local), resolving them directly to their active LAN IPv4 address (e.g. 192.168.1.250:30003) on Windows systems where standard OS getaddrinfo fails.</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.233.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                   <li><strong>Native ARM64 DJI v13/v14 Flight Log Decryptor on Android (Closes #260):</strong> Bundled native ARM64 dji-log binary (libdjilog.so) and loopback keychain relay inside the Android APK so encrypted FlightRecord_*.txt files pulled from DJI RC 2 over USB OTG decrypt directly on the tablet into full telemetry CSVs instead of falling back to simulated missions.</li>

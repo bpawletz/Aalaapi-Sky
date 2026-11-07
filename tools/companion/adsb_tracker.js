@@ -14,6 +14,7 @@
  */
 
 const net = require('node:net');
+const dns = require('node:dns');
 const { EventEmitter } = require('node:events');
 const { spawn, execFile } = require('node:child_process');
 const fs = require('node:fs');
@@ -1203,6 +1204,7 @@ class AdsbAirspaceTracker extends EventEmitter {
       driverType: this.driverType,
       tcpHost: this.tcpHost,
       tcpPort: this.tcpPort,
+      resolvedHost: this._resolvedIpCache?.[this.tcpHost] || this.tcpHost,
       isRemoteServer,
       totalPackets: this.totalPackets,
       lastPacketTimestamp: this.lastPacketTimestamp,
@@ -1219,13 +1221,60 @@ class AdsbAirspaceTracker extends EventEmitter {
   }
 
   /**
+   * Resolves target hostname to IPv4 address with automatic mDNS / Bonjour fallback
+   * for .local addresses on Windows / Node.js environments.
+   * @param {string} host Hostname or IP to resolve
+   * @returns {Promise<string>} Resolved IPv4 address or original host
+   */
+  async resolveTargetHost(host) {
+    if (!host || host === '127.0.0.1' || host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+      return host;
+    }
+    if (this._resolvedIpCache && this._resolvedIpCache[host]) {
+      return this._resolvedIpCache[host];
+    }
+    // Attempt standard OS DNS lookup first
+    try {
+      const res = await new Promise((resolve, reject) => {
+        dns.lookup(host, (err, address) => {
+          if (err) reject(err);
+          else resolve(address);
+        });
+      });
+      if (res) return res;
+    } catch (_) {}
+
+    // Fallback: if .local hostname or standard DNS failed, query mDNS Bonjour
+    if (host.toLowerCase().endsWith('.local') || host.toLowerCase().includes('.local')) {
+      try {
+        const { MdnsService } = require('./mdns_service.js');
+        const servers = await MdnsService.discoverAdsb({ timeoutMs: 1500 });
+        const cleanTarget = host.toLowerCase().replace(/\.local$/, '');
+        const matched = servers.find(s =>
+          (s.host && s.host.toLowerCase() === host.toLowerCase()) ||
+          (s.name && s.name.toLowerCase().includes(cleanTarget)) ||
+          (s.host && s.host.toLowerCase().includes(cleanTarget))
+        );
+        if (matched && matched.address) {
+          if (!this._resolvedIpCache) this._resolvedIpCache = {};
+          this._resolvedIpCache[host] = matched.address;
+          this.log('[ADS-B TRACKER]', `Resolved mDNS hostname ${host} -> ${matched.address}`);
+          return matched.address;
+        }
+      } catch (_) {}
+    }
+    return host;
+  }
+
+  /**
    * Connects to dump1090 TCP stream on port 30003.
    */
-  connectTcp() {
+  async connectTcp() {
     if (this.connected || this.connecting) return;
     this.connecting = true;
 
     try {
+      const targetHost = await this.resolveTargetHost(this.tcpHost);
       this.socket = new net.Socket();
       if (this.socket.unref) this.socket.unref();
       this.socket.setTimeout(2500);
@@ -1244,7 +1293,7 @@ class AdsbAirspaceTracker extends EventEmitter {
         }
       });
 
-      this.socket.connect(this.tcpPort, this.tcpHost, () => {
+      this.socket.connect(this.tcpPort, targetHost, () => {
         if (this.socket) {
           this.socket.setTimeout(0);
           if (this.socket.unref) this.socket.unref();
@@ -1252,12 +1301,13 @@ class AdsbAirspaceTracker extends EventEmitter {
         this.connected = true;
         this.connecting = false;
         this.driverType = 'dump1090-tcp';
-        this.log('[ADS-B TRACKER]', `Connected to dump1090 daemon on ${this.tcpHost}:${this.tcpPort} - streaming Mode S frames`);
+        const hostDisplay = (targetHost !== this.tcpHost) ? `${this.tcpHost} (${targetHost})` : this.tcpHost;
+        this.log('[ADS-B TRACKER]', `Connected to dump1090 daemon on ${hostDisplay}:${this.tcpPort} - streaming Mode S frames`);
         if (this.reconnectTimer) {
           clearTimeout(this.reconnectTimer);
           this.reconnectTimer = null;
         }
-        this.emit('connected', { tcpHost: this.tcpHost, tcpPort: this.tcpPort });
+        this.emit('connected', { tcpHost: this.tcpHost, tcpPort: this.tcpPort, resolvedHost: targetHost });
       });
 
       this.socket.on('data', (chunk) => {
@@ -1283,6 +1333,9 @@ class AdsbAirspaceTracker extends EventEmitter {
         const wasConnected = this.connected;
         this.connected = false;
         this.connecting = false;
+        if (this._resolvedIpCache && this._resolvedIpCache[this.tcpHost]) {
+          delete this._resolvedIpCache[this.tcpHost];
+        }
         const now = Date.now();
         if (wasConnected) {
           this.log('[ADS-B TRACKER]', `Lost connection to dump1090 on ${this.tcpHost}:${this.tcpPort}. Reconnecting in 10s...`);

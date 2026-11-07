@@ -31,7 +31,11 @@ function openRc2LogManagerModal() {
   if (!modal) return;
   modal.classList.remove('hidden');
   updateRc2LogModalBranding();
-  refreshRc2LogList();
+  if (Array.isArray(rc2LogsCache) && rc2LogsCache.length > 0) {
+    renderRc2LogTable(rc2LogsCache);
+  } else {
+    refreshRc2LogList(false);
+  }
 }
 
 function closeRc2LogManagerModal() {
@@ -40,7 +44,7 @@ function closeRc2LogManagerModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-async function refreshRc2LogList() {
+async function refreshRc2LogList(force = false) {
   const container = document.getElementById('rc2-logs-table-container');
   const countSummary = document.getElementById('rc2-logs-count-summary');
   const refreshBtn = document.getElementById('rc2-logs-refresh-btn');
@@ -55,17 +59,21 @@ async function refreshRc2LogList() {
     refreshBtn.textContent = `⏳ Scanning ${devInfo.shortName}...`;
   }
 
-  container.innerHTML = `
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; color: var(--text-muted); gap: 10px;">
-      <div style="width: 24px; height: 24px; border: 2px solid rgba(56, 189, 248, 0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-      <span style="font-size: 0.8rem;">Querying connected ${devInfo.fullName} storage over USB MTP...</span>
-    </div>
-  `;
+  if (!rc2LogsCache || rc2LogsCache.length === 0 || force) {
+    container.innerHTML = `
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; color: var(--text-muted); gap: 10px;">
+        <div style="width: 24px; height: 24px; border: 2px solid rgba(56, 189, 248, 0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+        <span style="font-size: 0.8rem;">Querying connected ${devInfo.fullName} storage over USB MTP...</span>
+      </div>
+    `;
+  }
 
   try {
-    if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.listFlightRecordsFromRc2 === 'function') {
+    if (typeof window !== 'undefined' && window.AalaapiAndroid && (typeof window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh === 'function' || typeof window.AalaapiAndroid.listFlightRecordsFromRc2 === 'function')) {
       try {
-        const raw = window.AalaapiAndroid.listFlightRecordsFromRc2(30);
+        const raw = (force && typeof window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh === 'function')
+          ? window.AalaapiAndroid.listFlightRecordsFromRc2WithRefresh(30, true)
+          : window.AalaapiAndroid.listFlightRecordsFromRc2(30);
         const parsed = JSON.parse(raw || '[]');
         if (Array.isArray(parsed) && parsed.length > 0) {
           const seenNames = new Set();
@@ -321,13 +329,49 @@ async function pullSpecificRc2Log(filename, handle = null) {
       if (data && data.success && (data.data || data.base64)) {
         if (progText) progText.textContent = `Successfully pulled ${data.isDecrypted ? '& decrypted ' : ''}${filename}!`;
         const logBase64 = data.data || data.base64;
+        let parseOk = false;
         if (typeof DigitalTwin !== 'undefined' && typeof DigitalTwin.loadFlightLogData === 'function') {
-          await DigitalTwin.loadFlightLogData(filename, logBase64);
+          parseOk = await DigitalTwin.loadFlightLogData(filename, logBase64);
         } else if (typeof atob === 'function' && typeof DjiLogDecryptor !== 'undefined' && typeof DjiLogDecryptor.parseLogText === 'function') {
           const rawText = atob(logBase64);
-          DjiLogDecryptor.parseLogText(rawText, filename);
+          const parsed = DjiLogDecryptor.parseLogText(rawText, filename);
+          parseOk = !!(parsed && parsed.points && parsed.points.length > 0);
         }
-        await refreshRc2LogList();
+
+        if (!parseOk || (typeof DigitalTwin !== 'undefined' && !DigitalTwin.telemetryData)) {
+          if (progText) progText.textContent = `❌ Unable to decode flight trajectory from ${filename}`;
+          if (progBar) progBar.style.background = '#ef4444';
+          if (typeof showToast === 'function') {
+            showToast(`❌ Could not parse flight telemetry from ${filename}`, 'error', 6000);
+          }
+          return;
+        }
+
+        try {
+          if (typeof localStorage !== 'undefined') {
+            const existingJson = localStorage.getItem('aalaapi_historical_flights');
+            let flightsList = existingJson ? JSON.parse(existingJson) : [];
+            flightsList = flightsList.filter(f => f.filename !== filename);
+            flightsList.unshift({
+              id: filename,
+              filename: filename,
+              flightDate: data.flightDate || data.mtimeFormatted || new Date().toISOString().replace('T', ' ').slice(0, 19),
+              mtimeFormatted: data.flightDate || data.mtimeFormatted || new Date().toISOString().replace('T', ' ').slice(0, 19),
+              size: data.size || 0,
+              sizeFormatted: data.sizeFormatted || '',
+              isDecrypted: true,
+              source: 'rc2_pulled'
+            });
+            localStorage.setItem('aalaapi_historical_flights', JSON.stringify(flightsList.slice(0, 50)));
+            localStorage.setItem('aalaapi_offline_flight_' + filename, logBase64);
+          }
+        } catch (_) {}
+
+        if (typeof refreshMissionDbList === 'function') {
+          refreshMissionDbList();
+        }
+
+        await refreshRc2LogList(false);
         const telemetryPayload = (typeof DigitalTwin !== 'undefined' && DigitalTwin.telemetryData) ? {
           flightId: filename,
           telemetry: DigitalTwin.telemetryData,
@@ -1695,7 +1739,7 @@ if (typeof document !== 'undefined') {
     if (closeRc2LogsFooterBtn) closeRc2LogsFooterBtn.addEventListener('click', closeRc2LogManagerModal);
 
     const rc2LogsRefreshBtn = document.getElementById('rc2-logs-refresh-btn');
-    if (rc2LogsRefreshBtn) rc2LogsRefreshBtn.addEventListener('click', refreshRc2LogList);
+    if (rc2LogsRefreshBtn) rc2LogsRefreshBtn.addEventListener('click', () => refreshRc2LogList(true));
 
     const rc2LogsPullAllBtn = document.getElementById('rc2-logs-pull-all-btn');
     if (rc2LogsPullAllBtn) rc2LogsPullAllBtn.addEventListener('click', pullAllRc2Logs);

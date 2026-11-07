@@ -2378,7 +2378,8 @@ body.modal-drag-active {
     min-width: 140px;
   }
   #header-unit-toggle-btn:not(.ribbon-force-show),
-  #theme-toggle-btn:not(.ribbon-force-show) {
+  #theme-toggle-btn:not(.ribbon-force-show),
+  #screen-awake-toggle-btn:not(.ribbon-force-show) {
     display: none !important;
   }
 }
@@ -2416,7 +2417,8 @@ body.modal-drag-active {
   .header-bridge-container,
   .header-ambient-buffer-container,
   #header-unit-toggle-btn,
-  #theme-toggle-btn {
+  #theme-toggle-btn,
+  #screen-awake-toggle-btn {
     display: none !important;
   }
 
@@ -8619,4 +8621,35 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
   .android-rc2-select {
     max-width: 130px;
   }
+}
+
+.header-awake-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 2px 7px !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.header-awake-btn.is-active {
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.12) !important;
+  border-color: rgba(56, 189, 248, 0.45) !important;
+}
+
+.header-awake-btn:not(.is-active) {
+  color: var(--text-muted, #94a3b8) !important;
+  background: transparent !important;
+  opacity: 0.8 !important;
+}
+
+.header-awake-btn:hover {
+  filter: brightness(1.15) !important;
 }

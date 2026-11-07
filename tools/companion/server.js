@@ -194,6 +194,11 @@ function isPublicAuthEndpoint(pathname, method) {
   if (pathname === '/health' || pathname === '/favicon.ico') return true;
   if (pathname === '/api/discovery' || pathname === '/api/airspace/discover' || pathname === '/api/adsb/discover' || pathname === '/api/bridge/discover') return true;
 
+  // Airspace, ADS-B & Remote ID public safety telemetry (FAA 1090/UAT broadcast feeds & mid-air collision avoidance)
+  if ((pathname === '/api/airspace/status' || pathname === '/api/airspace/bounds' || pathname === '/api/airspace/traffic' || pathname === '/api/airspace/external' || pathname === '/api/airspace/probe' || pathname === '/api/adsb/status' || pathname === '/api/adsb/bounds') && method === 'GET') return true;
+  if ((pathname === '/api/airspace/simulate' || pathname === '/api/adsb/simulate' || pathname === '/api/airspace/clear' || pathname === '/api/adsb/clear') && method === 'POST') return true;
+  if ((pathname === '/api/remote-id/drones' || pathname === '/api/remote-id/status' || pathname === '/api/drone/locate' || pathname === '/api/drones') && method === 'GET') return true;
+
   // Public geospatial tile proxy & DEM elevation (needed for Leaflet DOM <img> rendering & terrain)
   if ((pathname === '/api/proxy/tile' || pathname === '/proxy' || pathname === '/api/proxy' || pathname === '/proxy/tile') && method === 'GET') return true;
   if (pathname === '/api/elevation' && (method === 'GET' || method === 'POST')) return true;
@@ -540,11 +545,11 @@ const airspaceTracker = new RemoteIdAirspaceTracker(15);
 const adsbTracker = new AdsbAirspaceTracker({
   tcpHost: initialAdsbCfg.adsbHost,
   tcpPort: initialAdsbCfg.adsbPort,
-  autoConnect: process.env.NODE_ENV !== 'test' && !process.env.npm_lifecycle_event?.includes('test') && !process.argv.includes('--test')
+  autoConnect: process.env.NODE_ENV !== 'test' && !process.env.npm_lifecycle_event?.includes('test') && !process.argv.includes('--test') && !process.execArgv.includes('--test') && !process.argv.some(a => a.includes('.test.js'))
 });
 
-adsbTracker.on('connected', ({ tcpHost, tcpPort }) => {
-  saveWorkingAdsbConnection(tcpHost, tcpPort, { driverType: 'dump1090-tcp' });
+adsbTracker.on('connected', ({ tcpHost, tcpPort, resolvedHost }) => {
+  saveWorkingAdsbConnection(tcpHost, tcpPort, { driverType: 'dump1090-tcp', resolvedHost });
 });
 
 if (!isNoMdns) {
@@ -7919,6 +7924,7 @@ module.exports = {
   authDb,
   AuthDatabase,
   isAuthRequired,
+  isPublicAuthEndpoint,
   getGoogleClientId,
   saveGoogleClientId,
   broadcastAuthUpdate,
