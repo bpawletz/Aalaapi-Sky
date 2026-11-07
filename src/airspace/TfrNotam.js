@@ -436,21 +436,26 @@ async function fetchAndProcessTFRs(centerLat, centerLon, force = false) {
 
   // Tier 1: Companion Bridge Proxy (dynamically resolved host, e.g. Port 8765)
   const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-  try {
-    const notamRes = await fetch(`${apiBase}/api/tfr/notams${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(3000) });
-    if (notamRes.ok) {
-      const json = await notamRes.json();
-      if (json && json.success && Array.isArray(json.data)) notamList = json.data;
-    }
-  } catch (err) {}
+  const isLocalHost = !apiBase || apiBase.includes('127.0.0.1') || apiBase.includes('localhost');
+  const skipLocalBridge = (typeof Platform !== 'undefined' && typeof Platform.isNativeAndroid === 'function' && Platform.isNativeAndroid() && isLocalHost);
 
-  try {
-    const geoRes = await fetch(`${apiBase}/api/tfr/geojson${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(4000) });
-    if (geoRes.ok) {
-      const json = await geoRes.json();
-      if (json && json.success && json.data) geojson = json.data;
-    }
-  } catch (err) {}
+  if (!skipLocalBridge) {
+    try {
+      const notamRes = await fetch(`${apiBase}/api/tfr/notams${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(3000) });
+      if (notamRes.ok) {
+        const json = await notamRes.json();
+        if (json && json.success && Array.isArray(json.data)) notamList = json.data;
+      }
+    } catch (err) {}
+
+    try {
+      const geoRes = await fetch(`${apiBase}/api/tfr/geojson${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(4000) });
+      if (geoRes.ok) {
+        const json = await geoRes.json();
+        if (json && json.success && json.data) geojson = json.data;
+      }
+    } catch (err) {}
+  }
 
   // Tier 2: Native FAA ArcGIS Online FeatureServers (Stadiums, Defense Airspace, Part-Time Security UAS)
   // Merged into geojson features so active TFR polygons and stadiums both coexist cleanly

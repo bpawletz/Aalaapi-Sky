@@ -1,3 +1,21 @@
+## [1.242.2] - 2026-11-07
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Direct RC 2 Sync on Android (Closes #275)**:
+  - Fixed a false failure error ("Unable to Send to RC2" / "❌ ReferenceError: rese...") occurring when initiating a Direct RC 2 Sync in the native Android app.
+  - The direct sync button now correctly displays confirmation (`✅ Synced to DJI RC 2! Re-open in DJI Fly`) upon transferring the mission KMZ file to the flight controller and gracefully resets button states back to idle.
+  - Eliminated continuous network error console spam (`net::ERR_CONNECTION_REFUSED`) on Android devices when running standalone in the field without a remote companion server.
+
+#### Under the Hood & Technical Details
+- **`src/bridge/ApiClient.js`**:
+  - Defined scoped `resetButtonStates(delayMs = 4000)` inside `sendDirectlyToRC2()` restoring button `disabled`, `innerHTML`, `background`, `borderColor`, `color`, and `title`, resolving `ReferenceError: resetButtonStates is not defined` (Closes #275).
+  - Added proactive `Platform.isNativeAndroid()` and localhost checks in `pollCompanionStatus()` to directly update status UI via `updateNativeAndroidStatusUI()` and query `window.AalaapiAndroid.getMtpStatus()`, preventing repeated failing `fetch('http://127.0.0.1:8765/api/status')` requests.
+  - Guarded `AdsbAirspaceManager.pollAirspace()` and `syncAdsbConfigWithBridge()` against polling `127.0.0.1:8765` when running on native Android without a custom companion host.
+- **`src/airspace/TfrNotam.js` & `src/ui/SidebarManager.js`**:
+  - Guarded local companion bridge proxy calls in `fetchTfrData()` and `loadRecentMissionsList()` on native Android when targeting localhost, bypassing unreachable ports and utilizing native FAA sources and `Platform.listSavedFlights()`.
+
 ## [1.242.1] - 2026-11-07
 
 ### 🐛 Fixed
