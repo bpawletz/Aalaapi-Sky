@@ -1,3 +1,30 @@
+## [1.237.0] - 2026-11-07
+
+Added map quick-zoom presets for Flight Planning and Airspace Observing, smooth horizontal scrolling for the topbar ribbon, standardized modal window controls (drag, minimize, maximize, close), and a 1-click "Send to RC 2" button in the bottom sticky dock.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Map Quick-Zoom Presets (Flight Planning & Airspace Observing) (Closes #266)**:
+  - Added floating 1-click zoom buttons (`#map-zoom-presets-control`) on the 2D map: `🎯 Plan` (jumps to zoom 18 or fits active mission bounds) and `✈️ Airspace` (jumps to zoom 12 / ADS-B proximity ring where LAANC, FAA obstacles, power lines, and VFR sectionals are active).
+  - Included a real-time zoom level badge (`#map-zoom-level-badge`, e.g. `Z17`) with live `.is-active` state indicators.
+- **Scrollable Top Navigation Menu (Closes #266)**:
+  - Enabled smooth horizontal scrolling on the topbar ribbon (`.studio-topbar`) with mouse-wheel translation, preventing pills from overlapping, wrapping, or crowding on smaller screens.
+  - Re-anchored `#header-more-menu` with fixed positioning so overflow scrolling never clips dropdown menus.
+- **Standardized Modal Window Controls (Closes #266)**:
+  - Universal window headers now feature consistent left drag grip (`⋮⋮`) and right-aligned control cluster (`.modal-window-controls`): **Minimize (`▼`/`▲`)**, **Maximize/Restore (`⛶`/`🗗`)**, and **Close (`✕`)**.
+  - Supports 1-click window maximizing (`96vw × 94vh`) and full-screen 3D synchronization across all modal dialogs.
+- **Sticky Dock "Send to RC 2" Action (Closes #266)**:
+  - Integrated `#dock-rc2-sync-btn` ("⚡ Send to RC 2") right alongside "Export KMZ" in `#sidebar-sticky-dock` for instant 1-click mission sync from the bottom menu at all times.
+  - Features real-time connection status dot (`#dock-rc2-status-dot`) with preflight safety checklist gate integration.
+
+#### Under the Hood & Technical Details
+- **`src/map/MapEngine.js`**: Exported `setMapPlanningZoom()` and `setMapAirspaceZoom()` methods; integrated zoom preset button listeners into `src/ui/EventBindings.js`.
+- **`src/geo/MathUtils.js`**: Extended `applyZoomGates()` to dynamically toggle `.is-active` states on plan and airspace zoom buttons and update `#map-zoom-level-badge`.
+- **`src/ui/ModalDragManager.js`**: Upgraded `initUniversalModalWindowControls()` to systematically normalize all modal cards and header classes across the DOM.
+- **`src/bridge/ApiClient.js`**: Added `#dock-rc2-sync-btn` to `sendDirectlyToRC2()` progress update array and wired live link status updates.
+- **`index.css`**: Added styles for `.map-floating-zoom-presets`, `.dock-primary-actions-row`, `.dock-rc2-sync-btn`, `.modal-window-controls`, `.modal.modal-maximized`, and topbar horizontal scrolling.
+
 ## [1.236.0] - 2026-11-07
 
 Full-suite GitHub Actions CI pipeline, automated Git worktree lifecycle management for concurrent multi-feature isolation, flexible local push modes (`--quick`, balanced default, `--full`), and live REST TFR updates without static cache reliance.

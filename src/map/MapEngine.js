@@ -1673,6 +1673,33 @@ function initReplay2dBarListeners() {
 }
 
 
+// Map Quick-Zoom Preset Actions (v1.237.0 - Issue #266)
+function setMapPlanningZoom() {
+  const activeMap = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
+  if (!activeMap) return;
+  const wps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+  if (wps && wps.length > 1) {
+    const latLngs = wps.map(wp => [wp.lat, wp.lon]);
+    activeMap.fitBounds(L.latLngBounds(latLngs), { padding: [50, 50], maxZoom: 18 });
+  } else if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+    activeMap.setView(centerMarker.getLatLng(), 18);
+  } else {
+    activeMap.setZoom(18);
+  }
+}
+
+function setMapAirspaceZoom() {
+  const activeMap = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
+  if (!activeMap) return;
+  if (typeof adsbProximityCircle !== 'undefined' && adsbProximityCircle && typeof adsbProximityCircle.getBounds === 'function' && activeMap.hasLayer(adsbProximityCircle)) {
+    activeMap.fitBounds(adsbProximityCircle.getBounds(), { padding: [40, 40], maxZoom: 12 });
+  } else if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+    activeMap.setView(centerMarker.getLatLng(), 12);
+  } else {
+    activeMap.setZoom(12);
+  }
+}
+
 // Computes current state of modified settings across all 5 domains
 
 // Night Flight Map Layer & Cloud Cover Layer exports (v1.161.0 - Issue #143, v1.166.0)
@@ -1681,10 +1708,23 @@ if (typeof window !== 'undefined') {
   window.cloudCoverLayer = cloudCoverLayer;
   window.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
   window.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
+  window.setMapPlanningZoom = setMapPlanningZoom;
+  window.setMapAirspaceZoom = setMapAirspaceZoom;
 }
 if (typeof global !== 'undefined') {
   global.nasaNightLightsLayer = nasaNightLightsLayer;
   global.cloudCoverLayer = cloudCoverLayer;
   global.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
   global.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
+  global.setMapPlanningZoom = setMapPlanningZoom;
+  global.setMapAirspaceZoom = setMapAirspaceZoom;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    setMapPlanningZoom,
+    setMapAirspaceZoom,
+    getReplayAircraftMarkerHtml,
+    getReplayDroneMarkerHtml
+  };
 }

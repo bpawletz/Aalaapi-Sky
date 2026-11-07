@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.236.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.237.0</span></h1>
         </div>
       </div>
 
@@ -3452,14 +3452,20 @@
               Preflight
             </button>
           </div>
-          <button id="download-btn" class="btn-primary" type="button" style="width: 100%; padding: 8px 6px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0;" title="Export WPML Mission KMZ">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Export KMZ
-          </button>
+          <div class="dock-primary-actions-row" style="display: flex; gap: 6px; width: 100%;">
+  <button id="download-btn" class="btn-primary" type="button" style="flex: 1; padding: 8px 4px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0;" title="Export WPML Mission KMZ">
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    <span>Export KMZ</span>
+  </button>
+  <button id="dock-rc2-sync-btn" class="btn-primary dock-rc2-sync-btn" type="button" style="flex: 1; padding: 8px 4px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0; background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(59, 130, 246, 0.3)); border: 1px solid rgba(56, 189, 248, 0.45); color: #38bdf8;" title="Send mission directly to DJI RC 2 via Companion Bridge or USB MTP">
+    <span id="dock-rc2-status-dot" class="dock-rc2-dot"></span>
+    <span id="dock-rc2-sync-label">⚡ Send to RC 2</span>
+  </button>
+</div>
           <!-- Cloud & Google Workspace Field Dock (v1.219.0, Issue #227) -->
           <div style="display: flex; gap: 4px; margin-top: 4px;">
             <button id="cloud-drive-save-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 2px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.72rem; margin: 0; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); color: #38bdf8;" title="Save KMZ &amp; Project to Google Drive">
@@ -3483,24 +3489,35 @@
       <div id="map"></div>
 
       <!-- Floating Map Undo & Redo Controls (v1.206.0) -->
-      <div id="map-undo-control" class="map-floating-undo-control">
-        <button id="map-undo-btn" type="button" class="map-undo-button" disabled title="Undo Last Map Action (Ctrl+Z)" aria-label="Undo Last Map Action">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 7v6h6"/>
-            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
-          </svg>
-          <span>Undo</span>
-          <span id="map-undo-badge" class="map-undo-badge" style="display: none;">0</span>
-        </button>
-        <button id="map-redo-btn" type="button" class="map-undo-button" disabled title="Redo Last Map Action (Ctrl+Y)" aria-label="Redo Last Map Action">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 7v6h-6"/>
-            <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
-          </svg>
-          <span>Redo</span>
-          <span id="map-redo-badge" class="map-undo-badge" style="display: none;">0</span>
-        </button>
-      </div>
+<div id="map-undo-control" class="map-floating-undo-control">
+  <button id="map-undo-btn" type="button" class="map-undo-button" disabled title="Undo Last Map Action (Ctrl+Z)" aria-label="Undo Last Map Action">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 7v6h6"/>
+      <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+    </svg>
+    <span>Undo</span>
+    <span id="map-undo-badge" class="map-undo-badge" style="display: none;">0</span>
+  </button>
+  <button id="map-redo-btn" type="button" class="map-undo-button" disabled title="Redo Last Map Action (Ctrl+Y)" aria-label="Redo Last Map Action">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 7v6h-6"/>
+      <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+    </svg>
+    <span>Redo</span>
+    <span id="map-redo-badge" class="map-undo-badge" style="display: none;">0</span>
+  </button>
+</div>
+
+<!-- Floating Map Zoom Presets: Flight Planning & Airspace Observing (v1.237.0, Issue #266) -->
+<div id="map-zoom-presets-control" class="map-floating-zoom-presets">
+  <button id="map-zoom-plan-btn" type="button" class="map-zoom-preset-button is-active" title="Jump to Flight Planning Zoom (18 / Mission Bounds)" aria-label="Jump to Flight Planning Zoom">
+    <span>🎯 Plan</span>
+  </button>
+  <button id="map-zoom-airspace-btn" type="button" class="map-zoom-preset-button" title="Jump to Airspace Observing Zoom (12 / VFR &amp; ADS-B)" aria-label="Jump to Airspace Observing Zoom">
+    <span>✈️ Airspace</span>
+  </button>
+  <span id="map-zoom-level-badge" class="map-zoom-level-badge" title="Current Map Zoom Level">Z17</span>
+</div>
       <div id="undo-feedback-toast" class="undo-feedback-toast" style="display: none; position: absolute; top: 48px; left: 54px; z-index: 1001; pointer-events: none;"></div>
 
       <!-- 2D Elevation Profile Drawer (Issue #129, #158) -->
@@ -4897,6 +4914,15 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>🎯</span>
+              Map Zoom Presets, Scrollable Topbar, Modal Controls &amp; Sticky Dock RC 2 (v1.237.0) (Closes #266)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              1-click map quick-zoom presets for tight Flight Planning (<strong>🎯 Plan</strong>, zoom 18) and wide-area Airspace Observing (<strong>✈️ Airspace</strong>, zoom 12 / ADS-B proximity ring), non-wrapping horizontally scrollable top navigation ribbon with mouse wheel support, standardized modal window controls (<strong>⋮⋮ Drag Grip</strong>, <strong>▼/▲ Minimize</strong>, <strong>⛶/🗗 Maximize</strong>, <strong>✕ Close</strong>), and 1-click <strong>⚡ Send to RC 2</strong> button added directly to the bottom sticky dock alongside Export KMZ.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>🚀</span>
@@ -7589,7 +7615,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.236.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.237.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -7753,7 +7779,15 @@
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
                                                         <li style="margin-bottom: 8px;">
-                                <strong style="color: var(--text-main);">Changelog (v1.236.0):</strong>
+                                <strong style="color: var(--text-main);">Changelog (v1.237.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Map Zoom Presets (Closes #266):</strong> 1-click quick-zoom buttons on 2D map: <code>🎯 Plan</code> (zoom 18 / mission bounds) and <code>✈️ Airspace</code> (zoom 12 / ADS-B ring) with live zoom indicator (<code>Z17</code>).</li>
+                  <li><strong>Scrollable Topbar &amp; Sticky Dock RC 2 (Closes #266):</strong> Smooth horizontal mouse-wheel scrolling prevents pill overlap on smaller screens; added 1-click <code>⚡ Send to RC 2</code> button directly into bottom dock alongside Export KMZ.</li>
+                  <li><strong>Standardized Modal Window Controls (Closes #266):</strong> Unified headers across all dialogs with left drag grip (<code>⋮⋮</code>), minimize (<code>▼/▲</code>), maximize/restore (<code>⛶/🗗</code>), and close (<code>✕</code>).</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 8px;">
+                <strong style="color: var(--text-main);">Changelog (v1.236.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
                   <li><strong>GitHub Actions CI &amp; Parallel Worktree Isolation (Closes #265):</strong> Full unit, Companion Bridge, and Playwright E2E UI testing automated on GitHub Actions; integrated automated Git worktree lifecycle commands (<code>npm run worktree:create</code> / <code>list</code> / <code>finish</code> / <code>prune</code>) with zero-delay <code>node_modules</code> junction linking.</li>
                   <li><strong>Flexible Push Modes &amp; Live REST TFRs (Closes #265):</strong> Added balanced default, <code>--quick</code>, and <code>--full</code> modes to <code>push.ps1</code> / <code>push.sh</code>; removed blocking pre-push TFR scrapes and transitioned airspace TFRs to strictly live REST feeds.</li>

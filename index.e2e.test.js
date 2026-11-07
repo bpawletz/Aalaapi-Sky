@@ -12707,5 +12707,138 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.strictEqual(awakeAgainState.isActive, true, 'Button must regain is-active class when toggled back');
   });
+
+  test('v1.237.0 UI Suite: Map Zoom Presets, Scrollable Topbar, Modal Controls & Sticky Dock RC 2 (Issue #266)', async () => {
+    // 1. Verify Sticky Dock has Export KMZ and Send to RC 2 side-by-side
+    const dockButtons = await page.evaluate(() => {
+      const exportBtn = document.getElementById('download-btn');
+      const rc2Btn = document.getElementById('dock-rc2-sync-btn');
+      const dot = document.getElementById('dock-rc2-status-dot');
+      return {
+        hasExport: Boolean(exportBtn),
+        hasRc2: Boolean(rc2Btn),
+        rc2Text: rc2Btn ? rc2Btn.textContent.trim() : '',
+        hasDot: Boolean(dot)
+      };
+    });
+
+    assert.ok(dockButtons.hasExport, 'Sticky dock must contain Export KMZ button');
+    assert.ok(dockButtons.hasRc2, 'Sticky dock must contain Send to RC 2 button');
+    assert.ok(dockButtons.rc2Text.includes('Send to RC 2'), 'Send to RC 2 button must have descriptive label');
+    assert.ok(dockButtons.hasDot, 'Send to RC 2 button must have status indicator dot');
+
+    // 2. Verify Map Quick-Zoom Presets and interactions
+    const zoomControls = await page.evaluate(() => {
+      const container = document.getElementById('map-zoom-presets-control');
+      const planBtn = document.getElementById('map-zoom-plan-btn');
+      const airspaceBtn = document.getElementById('map-zoom-airspace-btn');
+      const badge = document.getElementById('map-zoom-level-badge');
+      return {
+        hasContainer: Boolean(container),
+        hasPlan: Boolean(planBtn),
+        hasAirspace: Boolean(airspaceBtn),
+        badgeText: badge ? badge.textContent.trim() : ''
+      };
+    });
+
+    assert.ok(zoomControls.hasContainer, '#map-zoom-presets-control must exist on 2D map');
+    assert.ok(zoomControls.hasPlan, '#map-zoom-plan-btn must exist');
+    assert.ok(zoomControls.hasAirspace, '#map-zoom-airspace-btn must exist');
+
+    // Click Airspace zoom button
+    await page.locator('#map-zoom-airspace-btn').click();
+    await page.waitForTimeout(300);
+
+    const airspaceZoom = await page.evaluate(() => {
+      const m = window.map;
+      const z = m ? m.getZoom() : 0;
+      const airspaceBtn = document.getElementById('map-zoom-airspace-btn');
+      return {
+        zoom: z,
+        isActive: airspaceBtn ? airspaceBtn.classList.contains('is-active') : false
+      };
+    });
+
+    assert.strictEqual(airspaceZoom.zoom, 12, 'Clicking Airspace zoom preset must change map zoom to 12');
+    assert.ok(airspaceZoom.isActive, 'Airspace button must have is-active class at zoom 12');
+
+    // Click Plan zoom button
+    await page.locator('#map-zoom-plan-btn').click();
+    await page.waitForTimeout(300);
+
+    const planZoom = await page.evaluate(() => {
+      const m = window.map;
+      const z = m ? m.getZoom() : 0;
+      const planBtn = document.getElementById('map-zoom-plan-btn');
+      return {
+        zoom: z,
+        isActive: planBtn ? planBtn.classList.contains('is-active') : false
+      };
+    });
+
+    assert.strictEqual(planZoom.zoom, 18, 'Clicking Plan zoom preset must restore planning zoom 18');
+    assert.ok(planZoom.isActive, 'Plan button must have is-active class at zoom 18');
+
+    // 3. Verify Topbar has overflow-x auto and flex-shrink: 0
+    const topbarStyles = await page.evaluate(() => {
+      const tb = document.querySelector('.studio-topbar');
+      const cs = tb ? window.getComputedStyle(tb) : null;
+      return {
+        overflowX: cs ? cs.overflowX : ''
+      };
+    });
+
+    assert.strictEqual(topbarStyles.overflowX, 'auto', 'studio-topbar must have overflow-x: auto');
+
+    // 4. Verify Modal Window Controls on opening a dialog (e.g. Config Modal)
+    await page.locator('#config-btn').click();
+    await page.waitForTimeout(200);
+
+    const modalControlsState = await page.evaluate(() => {
+      const modal = document.querySelector('#config-modal .modal');
+      const header = modal ? modal.querySelector('.modal-header') : null;
+      const grip = header ? header.querySelector('.modal-drag-grip') : null;
+      const controls = header ? header.querySelector('.modal-window-controls') : null;
+      const collapseBtn = controls ? controls.querySelector('.modal-collapse-btn') : null;
+      const maxBtn = controls ? controls.querySelector('.modal-maximize-btn') : null;
+      const closeBtn = controls ? controls.querySelector('.close-btn') : null;
+
+      let isCollapsedAfterClick = false;
+      if (collapseBtn) {
+        collapseBtn.click();
+        isCollapsedAfterClick = modal.classList.contains('modal-collapsed');
+      }
+
+      let isMaximizedAfterClick = false;
+      if (maxBtn) {
+        maxBtn.click();
+        isMaximizedAfterClick = modal.classList.contains('modal-maximized');
+      }
+
+      return {
+        hasGrip: Boolean(grip),
+        hasControls: Boolean(controls),
+        hasCollapse: Boolean(collapseBtn),
+        hasMax: Boolean(maxBtn),
+        hasClose: Boolean(closeBtn),
+        isCollapsedAfterClick,
+        isMaximizedAfterClick
+      };
+    });
+
+    assert.ok(modalControlsState.hasGrip, 'Modal header must have .modal-drag-grip');
+    assert.ok(modalControlsState.hasControls, 'Modal header must have .modal-window-controls');
+    assert.ok(modalControlsState.hasCollapse, 'Controls must contain .modal-collapse-btn');
+    assert.ok(modalControlsState.hasMax, 'Controls must contain .modal-maximize-btn');
+    assert.ok(modalControlsState.hasClose, 'Controls must contain .close-btn');
+    assert.ok(modalControlsState.isCollapsedAfterClick, 'Clicking collapse must toggle modal-collapsed');
+    assert.ok(modalControlsState.isMaximizedAfterClick, 'Clicking maximize must toggle modal-maximized');
+
+    // Close config modal
+    await page.evaluate(() => {
+      const overlay = document.getElementById('config-modal');
+      if (overlay) overlay.classList.add('hidden');
+    });
+  });
   });
 });
