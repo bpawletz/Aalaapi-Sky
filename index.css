@@ -2011,6 +2011,51 @@ body.modal-drag-active {
   backdrop-filter: blur(10px);
 }
 
+.leaflet-control-layers-expanded {
+  max-height: calc(100dvh - 120px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  z-index: 1005 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5) !important;
+  padding: 8px 12px !important;
+}
+
+.leaflet-control-layers-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaflet-control-layers-title {
+  font-weight: 700;
+  font-size: 0.76rem;
+  color: var(--accent-cyan, #06b6d4);
+  user-select: none;
+}
+
+.leaflet-control-layers-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.leaflet-control-layers-close-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
 /* Grid preview graphics on map */
 .flight-path-line {
   stroke-dasharray: 6;
@@ -3453,7 +3498,7 @@ body.modal-drag-active {
 /* Remote ID Live Airspace Floating HUD & Pills */
 .remote-id-airspace-hud {
   position: absolute;
-  top: 16px;
+  top: 66px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -3462,6 +3507,11 @@ body.modal-drag-active {
   align-items: center;
   gap: 8px;
   pointer-events: none;
+  transition: top 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.remote-id-airspace-hud.has-adsb-alert {
+  top: 175px;
 }
 
 .remote-id-airspace-hud.hidden {
@@ -6549,12 +6599,12 @@ body.modal-drag-active {
 /* Flashing Visual Alert Banner */
 .adsb-alert-banner {
   position: absolute;
-  top: 14px;
+  top: 66px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 2000;
   width: calc(100% - 32px);
-  max-width: 620px;
+  max-width: 580px;
   background: rgba(26, 11, 15, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -8518,7 +8568,8 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 .map-floating-zoom-presets {
   position: absolute;
   top: 12px;
-  left: 216px;
+  right: 12px;
+  left: auto;
   z-index: 1000;
   pointer-events: auto;
   display: flex;
@@ -8605,8 +8656,9 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
 @media (max-width: 768px) {
   .map-floating-zoom-presets {
-    top: 48px;
-    left: 54px;
+    top: 12px;
+    right: 12px;
+    left: auto;
   }
 }
 

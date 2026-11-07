@@ -15121,10 +15121,6 @@ const AdsbAirspaceManager = {
     }
 
     try {
-      if (!nativeTts && typeof window.speechSynthesis.cancel === 'function') {
-        window.speechSynthesis.cancel();
-      }
-
       const text = this.formatVoiceAdvisoryText(aircraft, alertStage);
       if (!text) return;
 
@@ -15143,34 +15139,105 @@ const AdsbAirspaceManager = {
         try { window.speechSynthesis.resume(); } catch (e) {}
       }
 
-      const utterance = new UtteranceCtor(text);
-      utterance.rate = 1.05;
-      utterance.pitch = 1.0;
-      utterance.volume = 0.9;
-
-      // Select preferred English voice if available on Windows / desktop
-      if (typeof window.speechSynthesis.getVoices === 'function') {
+      const dispatchSpeech = () => {
         try {
-          const voices = window.speechSynthesis.getVoices();
-          if (voices && voices.length > 0) {
-            const preferred = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en') && (
-              v.name.includes('Natural') || v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Google') || v.default
-            )) || voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
-            if (preferred) utterance.voice = preferred;
+          const utterance = new UtteranceCtor(text);
+          utterance.rate = 1.05;
+          utterance.pitch = 1.0;
+          utterance.volume = 0.9;
+
+          // Select preferred English voice prioritizing local/offline voices on Windows & desktop
+          if (typeof window.speechSynthesis.getVoices === 'function') {
+            try {
+              const voices = window.speechSynthesis.getVoices();
+              if (voices && voices.length > 0) {
+                // Prefer localService offline voices (David, Zira, Mark, Google US English)
+                // Avoid online-only cloud voices (e.g. Natural in Edge) that fail offline in the field
+                const localEn = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en') && v.localService);
+                const anyEn = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+                const candidatePool = localEn.length > 0 ? localEn : anyEn;
+
+                const preferred = candidatePool.find(v => (
+                  v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Mark') || v.name.includes('Google') || v.default
+                )) || candidatePool[0] || voices[0];
+
+                if (preferred) utterance.voice = preferred;
+              }
+            } catch (e) {}
           }
-        } catch (e) {}
+
+          // Anchor reference globally and on instance to prevent V8 GC mid-speech
+          this._activeUtterance = utterance;
+          if (typeof window !== 'undefined') {
+            if (!window._aalaapiActiveUtterances) window._aalaapiActiveUtterances = new Set();
+            window._aalaapiActiveUtterances.add(utterance);
+          }
+
+          // Heartbeat & watchdog to prevent Chromium Windows 15-second speech hang bug
+          let heartbeatTimer = null;
+          let watchdogTimer = null;
+
+          const cleanup = () => {
+            if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+            if (watchdogTimer) { clearTimeout(watchdogTimer); watchdogTimer = null; }
+            if (this._activeUtterance === utterance) this._activeUtterance = null;
+            if (typeof window !== 'undefined' && window._aalaapiActiveUtterances) {
+              window._aalaapiActiveUtterances.delete(utterance);
+            }
+          };
+
+          utterance.onstart = () => {
+            // Pulse pause/resume every 500ms while speaking to keep Windows Chromium speech alive
+            if (!heartbeatTimer && typeof window !== 'undefined' && window.speechSynthesis) {
+              heartbeatTimer = setInterval(() => {
+                if (!window.speechSynthesis || !window.speechSynthesis.speaking) {
+                  cleanup();
+                  return;
+                }
+                try {
+                  window.speechSynthesis.pause();
+                  window.speechSynthesis.resume();
+                } catch (_) {}
+              }, 500);
+            }
+
+            // Safety watchdog: clear stuck speaking state if utterance exceeds estimated duration
+            const wordCount = (text.match(/\S+/g) || []).length;
+            const maxDurationMs = Math.max(7000, wordCount * 650);
+            watchdogTimer = setTimeout(() => {
+              if (window.speechSynthesis && window.speechSynthesis.speaking) {
+                try { window.speechSynthesis.cancel(); } catch (_) {}
+              }
+              cleanup();
+            }, maxDurationMs);
+          };
+
+          utterance.onend = () => {
+            cleanup();
+          };
+
+          utterance.onerror = (e) => {
+            cleanup();
+            if (e && e.error !== 'interrupted' && e.error !== 'canceled' && typeof console !== 'undefined') {
+              console.warn('SpeechSynthesis error:', e.error);
+            }
+          };
+
+          window.speechSynthesis.speak(utterance);
+        } catch (err) {
+          if (typeof console !== 'undefined') console.warn('Voice advisory dispatch failed:', err);
+        }
+      };
+
+      // Only cancel if speech is actively speaking/pending to prevent Chromium Windows cancel-race abort
+      const isBusy = Boolean(window.speechSynthesis.speaking || window.speechSynthesis.pending);
+      if (isBusy && typeof window.speechSynthesis.cancel === 'function') {
+        try { window.speechSynthesis.cancel(); } catch (_) {}
+        // Yield one tick for the browser process to flush cancellation before enqueueing new speech
+        setTimeout(dispatchSpeech, 40);
+      } else {
+        dispatchSpeech();
       }
-
-      // Anchor reference to prevent V8 garbage collection mid-speech
-      this._activeUtterance = utterance;
-      utterance.onend = () => {
-        if (this._activeUtterance === utterance) this._activeUtterance = null;
-      };
-      utterance.onerror = () => {
-        if (this._activeUtterance === utterance) this._activeUtterance = null;
-      };
-
-      window.speechSynthesis.speak(utterance);
     } catch (e) {
       if (typeof console !== 'undefined') console.warn('Voice advisory failed:', e);
     }
@@ -15252,7 +15319,7 @@ const AdsbAirspaceManager = {
 
       if (this.soundType === 'voice' || this.soundType === 'both') {
 
-
+        const delay = this.soundType === 'both' ? 480 : 0;
 
         setTimeout(() => {
 
@@ -15262,7 +15329,7 @@ const AdsbAirspaceManager = {
 
 
 
-        }, 220);
+        }, delay);
 
 
 
@@ -15304,7 +15371,7 @@ const AdsbAirspaceManager = {
 
       if (this.soundType === 'voice' || this.soundType === 'both') {
 
-
+        const delay = this.soundType === 'both' ? 580 : 0;
 
         setTimeout(() => {
 
@@ -15314,7 +15381,7 @@ const AdsbAirspaceManager = {
 
 
 
-        }, 220);
+        }, delay);
 
 
 
@@ -17635,12 +17702,9 @@ const AdsbAirspaceManager = {
 
 
       banner.classList.remove('hidden', 'is-approaching');
-
-
-
       banner.classList.add('is-breached');
-
-
+      const ridHud = typeof document !== 'undefined' ? document.getElementById('remote-id-airspace-hud') : null;
+      if (ridHud) ridHud.classList.add('has-adsb-alert');
 
     } else if (this.approachingAircraft.length > 0 && this.enabled) {
 
@@ -17847,24 +17911,16 @@ const AdsbAirspaceManager = {
 
 
       banner.classList.remove('hidden', 'is-breached');
-
-
-
       banner.classList.add('is-approaching');
-
-
+      const ridHud = typeof document !== 'undefined' ? document.getElementById('remote-id-airspace-hud') : null;
+      if (ridHud) ridHud.classList.add('has-adsb-alert');
 
     } else {
 
-
-
       banner.classList.add('hidden');
-
-
-
       banner.classList.remove('is-breached', 'is-approaching');
-
-
+      const ridHud = typeof document !== 'undefined' ? document.getElementById('remote-id-airspace-hud') : null;
+      if (ridHud) ridHud.classList.remove('has-adsb-alert');
 
     }
 
@@ -21567,6 +21623,18 @@ const AdsbAirspaceManager = {
         if (window.speechSynthesis.paused) {
           try { window.speechSynthesis.resume(); } catch (e) {}
         }
+        // Prime speech synthesis on first user gesture with a zero-volume silent utterance
+        if (!this._speechSynthesizerPrimed) {
+          try {
+            const UtteranceCtor = window.SpeechSynthesisUtterance || (typeof SpeechSynthesisUtterance !== 'undefined' ? SpeechSynthesisUtterance : null);
+            if (UtteranceCtor) {
+              const silent = new UtteranceCtor('');
+              silent.volume = 0;
+              window.speechSynthesis.speak(silent);
+              this._speechSynthesizerPrimed = true;
+            }
+          } catch (e) {}
+        }
       }
     };
     if (typeof window !== 'undefined') {
@@ -21981,7 +22049,7 @@ const AdsbAirspaceManager = {
             bearingCardinal: 'ESE',
             etaSeconds: 45
           }, 'breached');
-        }, 220);
+        }, 580);
       });
     }
 
@@ -22204,7 +22272,7 @@ const AdsbAirspaceManager = {
             altitude: 1850,
             bearingCardinal: 'NE'
           }, 'breached');
-        }, 220);
+        }, 580);
       });
     }
 
@@ -23703,6 +23771,8 @@ const AdsbAirspaceManager = {
 
 
         if (banner) banner.classList.add('hidden');
+        const ridHud = document.getElementById('remote-id-airspace-hud');
+        if (ridHud) ridHud.classList.remove('has-adsb-alert');
 
 
 

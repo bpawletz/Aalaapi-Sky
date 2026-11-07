@@ -1,3 +1,54 @@
+## [1.242.9] - 2026-11-07
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Leaflet Layers Control Click-to-Toggle on Windows & Android (Closes #282)**:
+  - Eliminated annoying accidental hover popups on Windows and desktop browsers by converting the Leaflet Map Layers control (`L.control.layers`) to an explicit click-to-toggle interaction model.
+  - Fixed mobile touch failure on Android WebView and mobile devices by stopping touch propagation to the map canvas, preventing premature dismissal upon tapping.
+  - Added a dedicated mobile-friendly header with an explicit close button (`✕`) and scroll container (`max-height: calc(100dvh - 120px)`), allowing smooth scrolling across all 22 base maps and overlays on any screen size.
+- **Airplane Traffic Alerts Clearance Over Zoom Presets (Closes #282)**:
+  - Re-anchored the floating Map Quick-Zoom Presets (`#map-zoom-presets-control`: `🎯 Plan` and `✈️ Airspace`) to the top-right dock (`top: 12px; right: 12px`).
+  - Vertically offset high-priority ADS-B Traffic Alert Banners (`#adsb-alert-banner`) and the Remote-ID Airspace HUD (`#remote-id-airspace-hud`) to `top: 52px` (dropping down below the 30px top floating controls row) with dynamic stacking.
+  - Guaranteed that pilots can always access `✈️ Airspace` (Zoom 12) and `🎯 Plan` (Zoom 18) during active airspace traffic advisories without alerts obscuring the controls.
+
+#### Under the Hood & Technical Details
+- **`src/map/MapEngine.js`**:
+  - Detached Leaflet's default `mouseenter` and `mouseleave` listeners from the layer control container and overrode `_expandIfNotCollapsed` to prevent hover expansion on desktop.
+  - Bound unified `click` toggle on `.leaflet-control-layers-toggle` with `pointerdown` and `touchstart` propagation prevention.
+  - Dynamically injected `.leaflet-control-layers-header` with title and `.leaflet-control-layers-close-btn` for 1-tap mobile closure.
+- **`src/bridge/ApiClient.js`**:
+  - Updated `updateVisualBanner()` and alert dismissal handlers to dynamically synchronize the `.has-adsb-alert` class on `#remote-id-airspace-hud` for automatic vertical stacking.
+- **`index.css`**:
+  - Re-anchored `.map-floating-zoom-presets` to `top: 12px; right: 12px; left: auto;` across desktop and mobile.
+  - Updated `.adsb-alert-banner` to `top: 52px; max-width: 580px;`.
+  - Updated `.remote-id-airspace-hud` to `top: 52px;` and added `.has-adsb-alert { top: 122px; }`.
+  - Added `.leaflet-control-layers-expanded` scroll styling, header, and close button styling.
+- **`AGENTS.md`**:
+  - Added **Section 19: Dual-Platform Verification Policy (Android Touch & Desktop Mouse)** establishing touch-first pointer independence, strict coordinate zones, and mandatory dual-context Playwright regression gates.
+
+## [1.242.8] - 2026-11-07
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **ADS-B Voice Alert Text-to-Speech (TTS) Restoration on Windows (Closes #281)**:
+  - Fixed an issue where Text-to-Speech (TTS) vocal advisories for approaching and breached aircraft traffic were silent or deadlocked on Windows PCs (Google Chrome, Microsoft Edge, and desktop web containers).
+  - Resolved asynchronous speech synthesis cancellation deadlock, ensuring consecutive alert announcements speak cleanly without `interrupted` errors or dropped notifications.
+  - Prioritized offline local voices (*Microsoft David*, *Microsoft Zira*, *Microsoft Mark*) over cloud neural voices that fail when operating offline in the field.
+  - Adjusted acoustic alert timing so the multi-tone auditory chimes complete cleanly before the vocal advisory begins speaking, preventing audio clashing.
+
+#### Under the Hood & Technical Details
+- **`src/bridge/ApiClient.js`**:
+  - Guarded `window.speechSynthesis.cancel()` in `playVoiceAdvisory` to only execute when `speechSynthesis` is actively `speaking` or `pending`, yielding a microtask tick before enqueueing new speech to eliminate Chromium IPC cancel-race aborts.
+  - Updated voice selection to prioritize `v.localService === true` and standard Windows local voices (*David*, *Zira*, *Mark*) over Edge online neural voices that fail on local/file origins or offline networks.
+  - Anchored active utterances in a persistent `window._aalaapiActiveUtterances` Set to protect against V8 garbage collection mid-speech.
+  - Added pause/resume unsticking heartbeat and an utterance duration safety watchdog to prevent Windows SAPI speech driver queue deadlocks.
+  - Added zero-volume speech synthesis priming on first user interaction in `bindEvents()`.
+  - Staggered vocal advisory start delays (480ms for approaching, 580ms for breach) to cleanly sequence after Web Audio chimes.
+- **`src/platform/BasePlatformAdapter.js`**:
+  - Hardened `speak()` and `stopSpeaking()` with safe cancel sequencing, local offline voice filtering, and global utterance retention.
+
 ## [1.242.7] - 2026-11-07
 
 ### 🐛 Fixed

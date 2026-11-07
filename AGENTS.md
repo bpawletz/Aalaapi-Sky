@@ -379,3 +379,25 @@ To safely isolate parallel tasks, agents and pilots use the automated Git Worktr
      3. Removes the worktree directory (`git worktree remove`).
      4. Deletes the temporary local `wt/<id>` branch (`git branch -d`).
      5. Prunes git tracking references (`git worktree prune`).
+
+## 19. Dual-Platform Verification Policy (Android Touch & Desktop Mouse)
+To prevent platform regressions where an Android fix breaks Windows Desktop (or a Windows desktop fix breaks Android touch / RC 2 controllers), all UI modifications in Aalaapi Sky MUST follow these strict principles:
+
+1. **Touch-First, Pointer-Independent Design (Never Hide Essential Actions Behind Hover):**
+   - **Hover Is Strictly Cosmetic:** CSS `:hover`, mouseover, and `mouseenter` events may only be used for cosmetic treatments (subtle button glows, mouse cursor styling, non-blocking informational tooltips).
+   - **Click/Tap-to-Toggle Mandate:** All interactive toggles, layers menus, popovers, drawers, and modal panels MUST be operable via discrete `click` / tap events. Never require a user to hover to keep a control or dropdown menu expanded.
+   - **Clean Event Propagation on Touch Devices:** When handling clicks on floating map controls, buttons, or custom overlays, stop touch event propagation (`touchstart`, `pointerdown`) to Leaflet map containers so mobile gestures do not inadvertently trigger map canvas click handlers (e.g., prematurely dismissing newly expanded menus).
+
+2. **Strict Coordinate Zones & Collision-Proof Geometry:**
+   - Map UI controls and floating HUDs MUST be placed into distinct, non-overlapping geometric zones:
+     - **Zone 1: Top-Left Control Dock (`y: 12px`, `left: 10px–180px`):** Map Zoom (+/-), Layer Toggle, Undo/Redo.
+     - **Zone 2: Top-Right Preset Dock (`y: 12px`, `right: 12px`):** Map Quick-Zoom Presets (`🎯 Plan`, `✈️ Airspace`, Z-badge).
+     - **Zone 3: Center Notification Drop Zone (`y: 52px+`, centered):** ADS-B Traffic Alert Banners and Remote-ID Airspace HUDs.
+   - High-priority notification banners must never enter the top strip (`y: 12px` to `44px`) so essential navigation controls (`🎯 Plan`, `✈️ Airspace`, Undo/Redo) remain 100% visible and interactive during active traffic advisories.
+
+3. **Mandatory Dual-Platform E2E Verification in Tests (`index.e2e.test.js`):**
+   - Any new or modified UI feature, control popup, or navigation button MUST be asserted against both Playwright test contexts:
+     1. **Desktop Web Context:** `viewport: 1366x768`, mouse cursor, desktop user agent.
+     2. **Mobile / Android Touch Context:** `viewport: 412x915`, `isMobile: true`, `hasTouch: true`, Android/mobile user agent.
+   - Assertions must verify that controls open on click/tap, close cleanly, and have zero bounding-box overlaps with active alert banners.
+

@@ -2028,6 +2028,51 @@ body.modal-drag-active {
   backdrop-filter: blur(10px);
 }
 
+.leaflet-control-layers-expanded {
+  max-height: calc(100dvh - 120px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  z-index: 1005 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5) !important;
+  padding: 8px 12px !important;
+}
+
+.leaflet-control-layers-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaflet-control-layers-title {
+  font-weight: 700;
+  font-size: 0.76rem;
+  color: var(--accent-cyan, #06b6d4);
+  user-select: none;
+}
+
+.leaflet-control-layers-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.leaflet-control-layers-close-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
 /* Grid preview graphics on map */
 .flight-path-line {
   stroke-dasharray: 6;
@@ -3470,7 +3515,7 @@ body.modal-drag-active {
 /* Remote ID Live Airspace Floating HUD & Pills */
 .remote-id-airspace-hud {
   position: absolute;
-  top: 16px;
+  top: 66px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -3479,6 +3524,11 @@ body.modal-drag-active {
   align-items: center;
   gap: 8px;
   pointer-events: none;
+  transition: top 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.remote-id-airspace-hud.has-adsb-alert {
+  top: 175px;
 }
 
 .remote-id-airspace-hud.hidden {
@@ -6566,12 +6616,12 @@ body.modal-drag-active {
 /* Flashing Visual Alert Banner */
 .adsb-alert-banner {
   position: absolute;
-  top: 14px;
+  top: 66px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 2000;
   width: calc(100% - 32px);
-  max-width: 620px;
+  max-width: 580px;
   background: rgba(26, 11, 15, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -8535,7 +8585,8 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 .map-floating-zoom-presets {
   position: absolute;
   top: 12px;
-  left: 216px;
+  right: 12px;
+  left: auto;
   z-index: 1000;
   pointer-events: auto;
   display: flex;
@@ -8622,8 +8673,9 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
 @media (max-width: 768px) {
   .map-floating-zoom-presets {
-    top: 48px;
-    left: 54px;
+    top: 12px;
+    right: 12px;
+    left: auto;
   }
 }
 
@@ -9309,7 +9361,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.7</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.242.9</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -16973,7 +17025,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.7</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.242.9</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17136,6 +17188,19 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.242.9):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Leaflet Layers Control Click-to-Toggle &amp; Mobile Scrolling (Closes #282):</strong> Converted Leaflet Map Layers control to explicit click-to-toggle, preventing accidental hover popups on desktop; fixed mobile touch failure on Android by stopping touch event propagation to map canvas; added mobile-friendly header with <code>✕</code> close button and scrollable container for all 22 layers.</li>
+                  <li><strong>Airplane Traffic Alerts Clearance Over Zoom Presets (Closes #282):</strong> Re-anchored floating Map Quick-Zoom Presets (<code>🎯 Plan</code> &amp; <code>✈️ Airspace</code>) to top-right dock (<code>top: 12px; right: 12px</code>); offset ADS-B traffic alerts and Remote-ID HUD to <code>top: 52px</code> with dynamic vertical stacking so notifications never obscure map zoom controls.</li>
+                </ul>
+              </li>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.242.8):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>ADS-B Voice Alert Text-to-Speech (TTS) Restoration on Windows (Closes #281):</strong> Restored vocal alert playback for approaching and breached aircraft traffic on Windows PCs (Chrome, Edge, desktop web); resolved asynchronous SpeechSynthesis cancellation deadlock and IPC race aborts; prioritized local offline SAPI5/OneCore voices (David, Zira, Mark) over cloud voices that fail offline; added pause/resume heartbeat, utterance duration watchdog, and desktop user-gesture speech priming; staggered voice advisory delay (480ms / 580ms) to sequence cleanly after Web Audio chimes.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.242.7):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -27292,16 +27357,64 @@ class BasePlatformAdapter {
   }
 
   speak(text, rate = 1.05, pitch = 1.0) {
-    if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
       return false;
     }
+    const UtteranceCtor = window.SpeechSynthesisUtterance || (typeof SpeechSynthesisUtterance !== 'undefined' ? SpeechSynthesisUtterance : null);
+    if (!UtteranceCtor) return false;
     try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = rate;
-      utterance.pitch = pitch;
-      utterance.volume = 0.9;
-      window.speechSynthesis.speak(utterance);
+      if (window.speechSynthesis.paused && typeof window.speechSynthesis.resume === 'function') {
+        try { window.speechSynthesis.resume(); } catch (_) {}
+      }
+
+      const dispatchSpeech = () => {
+        try {
+          const utterance = new UtteranceCtor(text);
+          utterance.rate = rate;
+          utterance.pitch = pitch;
+          utterance.volume = 0.9;
+
+          if (typeof window.speechSynthesis.getVoices === 'function') {
+            try {
+              const voices = window.speechSynthesis.getVoices();
+              if (voices && voices.length > 0) {
+                const localEn = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en') && v.localService);
+                const candidatePool = localEn.length > 0 ? localEn : voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+                const preferred = candidatePool.find(v => (
+                  v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Mark') || v.name.includes('Google') || v.default
+                )) || candidatePool[0] || voices[0];
+                if (preferred) utterance.voice = preferred;
+              }
+            } catch (_) {}
+          }
+
+          if (typeof window !== 'undefined') {
+            if (!window._aalaapiActiveUtterances) window._aalaapiActiveUtterances = new Set();
+            window._aalaapiActiveUtterances.add(utterance);
+          }
+
+          utterance.onend = () => {
+            if (typeof window !== 'undefined' && window._aalaapiActiveUtterances) {
+              window._aalaapiActiveUtterances.delete(utterance);
+            }
+          };
+          utterance.onerror = () => {
+            if (typeof window !== 'undefined' && window._aalaapiActiveUtterances) {
+              window._aalaapiActiveUtterances.delete(utterance);
+            }
+          };
+
+          window.speechSynthesis.speak(utterance);
+        } catch (_) {}
+      };
+
+      const isBusy = Boolean(window.speechSynthesis.speaking || window.speechSynthesis.pending);
+      if (isBusy && typeof window.speechSynthesis.cancel === 'function') {
+        try { window.speechSynthesis.cancel(); } catch (_) {}
+        setTimeout(dispatchSpeech, 40);
+      } else {
+        dispatchSpeech();
+      }
       return true;
     } catch (_) {
       return false;
@@ -27310,7 +27423,10 @@ class BasePlatformAdapter {
 
   stopSpeaking() {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-      try { window.speechSynthesis.cancel(); } catch (_) {}
+      try {
+        window.speechSynthesis.cancel();
+        if (window._aalaapiActiveUtterances) window._aalaapiActiveUtterances.clear();
+      } catch (_) {}
     }
   }
 
@@ -36171,7 +36287,87 @@ function initMap() {
   }
   overlays["⛰️ Elevation DEM Grid & Terrain Heatmap (2D)"] = demGridOverlayGroup;
 
-  const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
+  // Defensive override on prototype BEFORE instantiation: enforce touch-first, explicit click-to-open
+  // across all platforms and completely prevent hover expansion on desktop per Section 19.
+  if (typeof L !== 'undefined' && L.Control && L.Control.Layers) {
+    L.Control.Layers.prototype._expandIfNotCollapsed = function () { return this; };
+  }
+
+  const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft', collapsed: true }).addTo(map);
+
+  // Configure Click-to-Toggle and Touch-First Interaction (Issue #282)
+  // Disable Leaflet's default hover-expansion on desktop, and ensure reliable touch toggle on Android.
+  const layerContainer = (layerControl && typeof layerControl.getContainer === 'function') ? layerControl.getContainer() : null;
+  if (layerContainer) {
+    // 1. Remove hover expansion listeners
+    if (typeof L !== 'undefined' && L.DomEvent) {
+      try {
+        L.DomEvent.off(layerContainer, 'mouseover');
+        L.DomEvent.off(layerContainer, 'mouseout');
+        L.DomEvent.off(layerContainer, 'mouseenter');
+        L.DomEvent.off(layerContainer, 'mouseleave');
+      } catch (_) {}
+    }
+    // Defensive override: enforce explicit click-to-open across all platforms
+    layerControl._expandIfNotCollapsed = function () { return this; };
+
+    // 2. Click/Tap-to-Toggle on toggle link
+    const toggleLink = layerControl._layersLink || layerContainer.querySelector('.leaflet-control-layers-toggle');
+    if (toggleLink) {
+      if (typeof L !== 'undefined' && L.DomEvent) {
+        try {
+          L.DomEvent.off(toggleLink, 'click');
+          L.DomEvent.off(toggleLink, 'focus');
+        } catch (_) {}
+      }
+
+      const toggleLayersMenu = (e) => {
+        if (e) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          if (typeof e.stopPropagation === 'function') e.stopPropagation();
+          if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        }
+        if (layerContainer.classList.contains('leaflet-control-layers-expanded')) {
+          layerControl.collapse();
+        } else {
+          layerControl.expand();
+        }
+      };
+
+      if (typeof L !== 'undefined' && L.DomEvent) {
+        L.DomEvent.on(toggleLink, 'click', toggleLayersMenu);
+        L.DomEvent.on(toggleLink, 'pointerdown', L.DomEvent.stopPropagation);
+        L.DomEvent.on(toggleLink, 'touchstart', L.DomEvent.stopPropagation);
+      } else {
+        toggleLink.addEventListener('click', toggleLayersMenu);
+      }
+    }
+
+    // 3. Stop touch/pointer propagation on layer container to prevent map click dismissing the menu prematurely on mobile
+    if (typeof L !== 'undefined' && L.DomEvent) {
+      L.DomEvent.on(layerContainer, 'pointerdown', L.DomEvent.stopPropagation);
+      L.DomEvent.on(layerContainer, 'touchstart', L.DomEvent.stopPropagation);
+    }
+
+    // 4. Inject mobile-friendly Header & Close Button into layers list section
+    const listSection = layerControl._section || layerContainer.querySelector('.leaflet-control-layers-list');
+    if (listSection && !listSection.querySelector('.leaflet-control-layers-header')) {
+      const headerEl = document.createElement('div');
+      headerEl.className = 'leaflet-control-layers-header';
+      headerEl.innerHTML = `
+        <span class="leaflet-control-layers-title">🗺️ Map Layers &amp; Overlays</span>
+        <button type="button" class="leaflet-control-layers-close-btn" aria-label="Close Map Layers" title="Close Map Layers">✕</button>
+      `;
+      const closeBtn = headerEl.querySelector('.leaflet-control-layers-close-btn');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          layerControl.collapse();
+        });
+      }
+      listSection.insertBefore(headerEl, listSection.firstChild);
+    }
+  }
 
   // On-map DEM Elevation Legend (v1.193.0 - Issue #168)
   const demLegendControl = L.control({ position: 'bottomleft' });
@@ -76007,10 +76203,6 @@ const AdsbAirspaceManager = {
     }
 
     try {
-      if (!nativeTts && typeof window.speechSynthesis.cancel === 'function') {
-        window.speechSynthesis.cancel();
-      }
-
       const text = this.formatVoiceAdvisoryText(aircraft, alertStage);
       if (!text) return;
 
@@ -76029,34 +76221,105 @@ const AdsbAirspaceManager = {
         try { window.speechSynthesis.resume(); } catch (e) {}
       }
 
-      const utterance = new UtteranceCtor(text);
-      utterance.rate = 1.05;
-      utterance.pitch = 1.0;
-      utterance.volume = 0.9;
-
-      // Select preferred English voice if available on Windows / desktop
-      if (typeof window.speechSynthesis.getVoices === 'function') {
+      const dispatchSpeech = () => {
         try {
-          const voices = window.speechSynthesis.getVoices();
-          if (voices && voices.length > 0) {
-            const preferred = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en') && (
-              v.name.includes('Natural') || v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Google') || v.default
-            )) || voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
-            if (preferred) utterance.voice = preferred;
+          const utterance = new UtteranceCtor(text);
+          utterance.rate = 1.05;
+          utterance.pitch = 1.0;
+          utterance.volume = 0.9;
+
+          // Select preferred English voice prioritizing local/offline voices on Windows & desktop
+          if (typeof window.speechSynthesis.getVoices === 'function') {
+            try {
+              const voices = window.speechSynthesis.getVoices();
+              if (voices && voices.length > 0) {
+                // Prefer localService offline voices (David, Zira, Mark, Google US English)
+                // Avoid online-only cloud voices (e.g. Natural in Edge) that fail offline in the field
+                const localEn = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en') && v.localService);
+                const anyEn = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+                const candidatePool = localEn.length > 0 ? localEn : anyEn;
+
+                const preferred = candidatePool.find(v => (
+                  v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Mark') || v.name.includes('Google') || v.default
+                )) || candidatePool[0] || voices[0];
+
+                if (preferred) utterance.voice = preferred;
+              }
+            } catch (e) {}
           }
-        } catch (e) {}
+
+          // Anchor reference globally and on instance to prevent V8 GC mid-speech
+          this._activeUtterance = utterance;
+          if (typeof window !== 'undefined') {
+            if (!window._aalaapiActiveUtterances) window._aalaapiActiveUtterances = new Set();
+            window._aalaapiActiveUtterances.add(utterance);
+          }
+
+          // Heartbeat & watchdog to prevent Chromium Windows 15-second speech hang bug
+          let heartbeatTimer = null;
+          let watchdogTimer = null;
+
+          const cleanup = () => {
+            if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+            if (watchdogTimer) { clearTimeout(watchdogTimer); watchdogTimer = null; }
+            if (this._activeUtterance === utterance) this._activeUtterance = null;
+            if (typeof window !== 'undefined' && window._aalaapiActiveUtterances) {
+              window._aalaapiActiveUtterances.delete(utterance);
+            }
+          };
+
+          utterance.onstart = () => {
+            // Pulse pause/resume every 500ms while speaking to keep Windows Chromium speech alive
+            if (!heartbeatTimer && typeof window !== 'undefined' && window.speechSynthesis) {
+              heartbeatTimer = setInterval(() => {
+                if (!window.speechSynthesis || !window.speechSynthesis.speaking) {
+                  cleanup();
+                  return;
+                }
+                try {
+                  window.speechSynthesis.pause();
+                  window.speechSynthesis.resume();
+                } catch (_) {}
+              }, 500);
+            }
+
+            // Safety watchdog: clear stuck speaking state if utterance exceeds estimated duration
+            const wordCount = (text.match(/\S+/g) || []).length;
+            const maxDurationMs = Math.max(7000, wordCount * 650);
+            watchdogTimer = setTimeout(() => {
+              if (window.speechSynthesis && window.speechSynthesis.speaking) {
+                try { window.speechSynthesis.cancel(); } catch (_) {}
+              }
+              cleanup();
+            }, maxDurationMs);
+          };
+
+          utterance.onend = () => {
+            cleanup();
+          };
+
+          utterance.onerror = (e) => {
+            cleanup();
+            if (e && e.error !== 'interrupted' && e.error !== 'canceled' && typeof console !== 'undefined') {
+              console.warn('SpeechSynthesis error:', e.error);
+            }
+          };
+
+          window.speechSynthesis.speak(utterance);
+        } catch (err) {
+          if (typeof console !== 'undefined') console.warn('Voice advisory dispatch failed:', err);
+        }
+      };
+
+      // Only cancel if speech is actively speaking/pending to prevent Chromium Windows cancel-race abort
+      const isBusy = Boolean(window.speechSynthesis.speaking || window.speechSynthesis.pending);
+      if (isBusy && typeof window.speechSynthesis.cancel === 'function') {
+        try { window.speechSynthesis.cancel(); } catch (_) {}
+        // Yield one tick for the browser process to flush cancellation before enqueueing new speech
+        setTimeout(dispatchSpeech, 40);
+      } else {
+        dispatchSpeech();
       }
-
-      // Anchor reference to prevent V8 garbage collection mid-speech
-      this._activeUtterance = utterance;
-      utterance.onend = () => {
-        if (this._activeUtterance === utterance) this._activeUtterance = null;
-      };
-      utterance.onerror = () => {
-        if (this._activeUtterance === utterance) this._activeUtterance = null;
-      };
-
-      window.speechSynthesis.speak(utterance);
     } catch (e) {
       if (typeof console !== 'undefined') console.warn('Voice advisory failed:', e);
     }
@@ -76138,7 +76401,7 @@ const AdsbAirspaceManager = {
 
       if (this.soundType === 'voice' || this.soundType === 'both') {
 
-
+        const delay = this.soundType === 'both' ? 480 : 0;
 
         setTimeout(() => {
 
@@ -76148,7 +76411,7 @@ const AdsbAirspaceManager = {
 
 
 
-        }, 220);
+        }, delay);
 
 
 
@@ -76190,7 +76453,7 @@ const AdsbAirspaceManager = {
 
       if (this.soundType === 'voice' || this.soundType === 'both') {
 
-
+        const delay = this.soundType === 'both' ? 580 : 0;
 
         setTimeout(() => {
 
@@ -76200,7 +76463,7 @@ const AdsbAirspaceManager = {
 
 
 
-        }, 220);
+        }, delay);
 
 
 
@@ -78521,12 +78784,9 @@ const AdsbAirspaceManager = {
 
 
       banner.classList.remove('hidden', 'is-approaching');
-
-
-
       banner.classList.add('is-breached');
-
-
+      const ridHud = typeof document !== 'undefined' ? document.getElementById('remote-id-airspace-hud') : null;
+      if (ridHud) ridHud.classList.add('has-adsb-alert');
 
     } else if (this.approachingAircraft.length > 0 && this.enabled) {
 
@@ -78733,24 +78993,16 @@ const AdsbAirspaceManager = {
 
 
       banner.classList.remove('hidden', 'is-breached');
-
-
-
       banner.classList.add('is-approaching');
-
-
+      const ridHud = typeof document !== 'undefined' ? document.getElementById('remote-id-airspace-hud') : null;
+      if (ridHud) ridHud.classList.add('has-adsb-alert');
 
     } else {
 
-
-
       banner.classList.add('hidden');
-
-
-
       banner.classList.remove('is-breached', 'is-approaching');
-
-
+      const ridHud = typeof document !== 'undefined' ? document.getElementById('remote-id-airspace-hud') : null;
+      if (ridHud) ridHud.classList.remove('has-adsb-alert');
 
     }
 
@@ -82453,6 +82705,18 @@ const AdsbAirspaceManager = {
         if (window.speechSynthesis.paused) {
           try { window.speechSynthesis.resume(); } catch (e) {}
         }
+        // Prime speech synthesis on first user gesture with a zero-volume silent utterance
+        if (!this._speechSynthesizerPrimed) {
+          try {
+            const UtteranceCtor = window.SpeechSynthesisUtterance || (typeof SpeechSynthesisUtterance !== 'undefined' ? SpeechSynthesisUtterance : null);
+            if (UtteranceCtor) {
+              const silent = new UtteranceCtor('');
+              silent.volume = 0;
+              window.speechSynthesis.speak(silent);
+              this._speechSynthesizerPrimed = true;
+            }
+          } catch (e) {}
+        }
       }
     };
     if (typeof window !== 'undefined') {
@@ -82867,7 +83131,7 @@ const AdsbAirspaceManager = {
             bearingCardinal: 'ESE',
             etaSeconds: 45
           }, 'breached');
-        }, 220);
+        }, 580);
       });
     }
 
@@ -83090,7 +83354,7 @@ const AdsbAirspaceManager = {
             altitude: 1850,
             bearingCardinal: 'NE'
           }, 'breached');
-        }, 220);
+        }, 580);
       });
     }
 
@@ -84589,6 +84853,8 @@ const AdsbAirspaceManager = {
 
 
         if (banner) banner.classList.add('hidden');
+        const ridHud = document.getElementById('remote-id-airspace-hud');
+        if (ridHud) ridHud.classList.remove('has-adsb-alert');
 
 
 
