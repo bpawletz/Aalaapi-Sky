@@ -1,3 +1,27 @@
+## [1.242.3] - 2026-11-07
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Android 3-Dot More Actions Dropdown Menu (Closes #276)**:
+  - Tapping or clicking the 3-dot More Actions button (`#header-more-btn`) on Android devices, tablets, and mobile WebViews now reliably opens the dropdown menu instead of being swallowed or clipped by the top navigation bar.
+- **Stationary Opaque Right Dock & Swipe Indicator Concealment (Closes #276)**:
+  - Added a dedicated stationary opaque dock (`.topbar-right-dock`) pinned at the right edge of the topbar that houses both the right swipe cue (`›`) and the 3-dot More button.
+  - Horizontally scrolling pills and buttons now slide smoothly underneath the right dock with zero visual leak behind the swipe chevron or to the right of it.
+- **Zero-Gap Left Boundary beside Hamburger Menu (Closes #276)**:
+  - Eliminated the unmasked outer padding gutter on the topbar ribbon; the stationary brand header now extends flush from the absolute left viewport boundary ($x = 0$), preventing scrolled pills from showing to the far left of the `#sidebar-toggle` menu button.
+- **Locate Button Protection from Time Pill Overlap (Closes #276)**:
+  - Removed restrictive width constraints on the location search container on tablet/compact screens ($\le 1024\text{px}$), ensuring the GPS Locate Me button (`#locate-me-btn`) remains fully visible and is never pushed underneath or hidden by the adjacent Mission Time pill.
+
+#### Under the Hood & Technical Details
+- **`index_template.html` & `index.css`**:
+  - Relocated `#header-more-menu` outside of `<header class="studio-topbar">` to the top-level app overlay container, bypassing `.studio-topbar`'s `overflow-y: hidden` and `backdrop-filter: blur(16px)` clipping context on mobile browsers (Closes #276).
+  - Defined `.topbar-right-dock` with `position: sticky; right: 0; background: #0f172a; border-left: 1px solid var(--border-color); box-shadow: -4px 0 12px rgba(0, 0, 0, 0.35); z-index: 15;` (and light mode `#ffffff`), mirroring `.topbar-left`.
+  - Set `.studio-topbar { padding-left: 0; padding-right: 0; }` and moved outer spacing into `.topbar-left` (`padding-left: max(14px, env(safe-area-inset-left, 0px))`).
+  - Configured `.header-search-container { flex: 0 0 auto; min-width: 175px; max-width: 240px; }` and `.header-locate-btn { flex-shrink: 0 !important; }`.
+- **`src/ui/SidebarManager.js`**:
+  - Updated `initTopbarScrollCues()` and `applyTopbarRibbonConfig()` to synchronize `.topbar-right-dock` visibility based on overflow state and `header-more-btn` presence.
+
 ## [1.242.2] - 2026-11-07
 
 ### 🐛 Fixed

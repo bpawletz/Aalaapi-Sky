@@ -362,19 +362,27 @@ function initTopbarScrollCues(topbarEl) {
 
   const leftCue = document.getElementById('topbar-scroll-cue-left');
   const rightCue = document.getElementById('topbar-scroll-cue-right');
+  const rightDock = document.querySelector('.topbar-right-dock');
+  const moreBtn = document.getElementById('header-more-btn');
 
   const updateCues = () => {
     const maxScroll = topbar.scrollWidth - topbar.clientWidth;
-    if (maxScroll > 6) {
-      if (rightCue) {
-        rightCue.style.display = (topbar.scrollLeft < maxScroll - 6) ? 'flex' : 'none';
-      }
-      if (leftCue) {
-        leftCue.style.display = (topbar.scrollLeft > 6) ? 'flex' : 'none';
-      }
-    } else {
-      if (rightCue) rightCue.style.display = 'none';
-      if (leftCue) leftCue.style.display = 'none';
+    const isOverflowing = maxScroll > 6;
+    const isScrollLeft = topbar.scrollLeft > 6;
+    const isScrollRight = isOverflowing && (topbar.scrollLeft < maxScroll - 6);
+
+    if (rightCue) {
+      rightCue.style.display = isScrollRight ? 'flex' : 'none';
+    }
+    if (leftCue) {
+      leftCue.style.display = isScrollLeft ? 'flex' : 'none';
+    }
+    if (rightDock) {
+      const isMoreVisible = moreBtn && (
+        moreBtn.style.display === 'inline-flex' ||
+        (typeof window !== 'undefined' && window.getComputedStyle(moreBtn).display !== 'none')
+      );
+      rightDock.style.display = (isScrollRight || isMoreVisible) ? 'flex' : 'none';
     }
   };
 
@@ -495,9 +503,11 @@ function applyTopbarRibbonConfig(cfg) {
   });
 
   const moreBtn = document.getElementById('header-more-btn');
+  const rightDock = document.querySelector('.topbar-right-dock');
   if (moreBtn) {
     if (hasHiddenItem) {
       moreBtn.style.display = 'inline-flex';
+      if (rightDock) rightDock.style.display = 'flex';
     } else if (typeof window !== 'undefined' && window.innerWidth > 1500) {
       moreBtn.style.display = '';
     }

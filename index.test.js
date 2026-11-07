@@ -44127,21 +44127,12 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
   });
 
   describe('Issue #275: Fix ReferenceError resetButtonStates in sendDirectlyToRC2 and Guard Native Android Companion Polling (v1.242.2)', () => {
-    test('Version consistency: v1.242.2 across package.json, changelog, index_template.html, and android/app/build.gradle.kts', () => {
-      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.242.2', 'package.json must be 1.242.2');
-
+    test('Version consistency: v1.242.2 entry preserved in CHANGELOG.md and build history', () => {
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.242.2] - 2026-11-07'), 'CHANGELOG must have 1.242.2 header');
 
       const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-      assert.ok(template.includes('Version 1.242.2'), 'index_template.html must have Version 1.242.2 in About modal');
       assert.ok(template.includes('Changelog (v1.242.2):'), 'index_template.html must have Changelog (v1.242.2)');
-      assert.ok(template.includes('>v1.242.2</span>'), 'index_template.html must have header badge v1.242.2');
-
-      const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-      assert.ok(gradle.includes('versionName = "1.242.2"'), 'Gradle versionName must be 1.242.2');
-      assert.ok(gradle.includes('versionCode = 12422'), 'Gradle versionCode must be 12422');
     });
 
     test('sendDirectlyToRC2 defines resetButtonStates and completes without ReferenceError in native Android mode', async () => {
@@ -44315,6 +44306,73 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
         global.fetch = prevFetch;
         AdsbAirspaceManager.enabled = false;
       }
+    });
+  });
+
+  describe('Issue #276: Android 3-dot dropdown menu clipping, right swipe dock masking, left gutter leak & locate button overlap (v1.242.3)', () => {
+    test('Version consistency: v1.242.3 across package.json, changelog, index_template.html, and android/app/build.gradle.kts', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.242.3', 'package.json must be 1.242.3');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.242.3] - 2026-11-07'), 'CHANGELOG must have 1.242.3 header');
+      assert.ok(changelog.includes('Closes #276'), 'CHANGELOG must reference Issue #276');
+
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('Version 1.242.3'), 'index_template.html must have Version 1.242.3 in About modal');
+      assert.ok(template.includes('Changelog (v1.242.3):'), 'index_template.html must have Changelog (v1.242.3)');
+      assert.ok(template.includes('>v1.242.3</span>'), 'index_template.html must have header badge v1.242.3');
+
+      const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+      assert.ok(gradle.includes('versionName = "1.242.3"'), 'Gradle versionName must be 1.242.3');
+      assert.ok(gradle.includes('versionCode = 12423'), 'Gradle versionCode must be 12423');
+    });
+
+    test('DOM Architecture: #header-more-menu is placed outside of <header class="studio-topbar"> to prevent clipping', () => {
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const headerCloseIdx = template.indexOf('</header>');
+      const moreMenuIdx = template.indexOf('id="header-more-menu"');
+      assert.ok(headerCloseIdx > 0, 'index_template.html must contain </header>');
+      assert.ok(moreMenuIdx > 0, 'index_template.html must contain id="header-more-menu"');
+      assert.ok(moreMenuIdx > headerCloseIdx, '#header-more-menu must be placed AFTER </header> so overflow-y: hidden does not clip on Android');
+    });
+
+    test('DOM Architecture: .topbar-right-dock contains #topbar-scroll-cue-right and #header-more-btn inside <header>', () => {
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const dockMatch = template.match(/<div class="topbar-right-dock">([\s\S]*?)<\/div>/);
+      assert.ok(dockMatch, 'index_template.html must contain <div class="topbar-right-dock">');
+      assert.ok(dockMatch[1].includes('id="topbar-scroll-cue-right"'), '.topbar-right-dock must contain #topbar-scroll-cue-right');
+      assert.ok(dockMatch[1].includes('id="header-more-btn"'), '.topbar-right-dock must contain #header-more-btn');
+    });
+
+    test('CSS Architecture: .topbar-right-dock has sticky positioning, solid dark/light background, and elevation shadow', () => {
+      const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+      assert.ok(css.includes('.topbar-right-dock'), 'index.css must define .topbar-right-dock');
+      assert.ok(css.includes('position: sticky'), '.topbar-right-dock must be sticky');
+      assert.ok(css.includes('border-left: 1px solid var(--border-color)'), '.topbar-right-dock must have left dividing border');
+      assert.ok(css.includes('box-shadow: -4px 0 12px rgba(0, 0, 0, 0.35)'), '.topbar-right-dock must have drop shadow');
+      assert.ok(css.includes('[data-theme="light"] .topbar-right-dock'), 'Light theme override for .topbar-right-dock must exist');
+    });
+
+    test('CSS Architecture: .studio-topbar padding is 0 and .topbar-left extends flush to x=0', () => {
+      const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+      assert.ok(css.includes('.studio-topbar'), 'index.css must define .studio-topbar');
+      assert.ok(css.includes('padding-left: 0;'), '.studio-topbar must set padding-left: 0;');
+      assert.ok(css.includes('padding-right: 0;'), '.studio-topbar must set padding-right: 0;');
+      assert.ok(css.includes('padding-left: max(14px, env(safe-area-inset-left, 0px))'), '.topbar-left must have padding-left for internal breathing room');
+    });
+
+    test('CSS Architecture: .header-search-container and .header-locate-btn maintain minimum widths preventing time pill overlap', () => {
+      const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+      assert.ok(css.includes('flex: 0 0 auto;'), '.header-search-container must have flex: 0 0 auto to prevent crushing');
+      assert.ok(css.includes('min-width: 175px;'), '.header-search-container must maintain min-width: 175px');
+      assert.ok(css.includes('flex-shrink: 0 !important;'), '.header-locate-btn must have flex-shrink: 0 !important');
+    });
+
+    test('SidebarManager script updates .topbar-right-dock visibility alongside right scroll cue and more button', () => {
+      const src = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'SidebarManager.js'), 'utf8');
+      assert.ok(src.includes('const rightDock = document.querySelector(\'.topbar-right-dock\')'), 'SidebarManager must query .topbar-right-dock');
+      assert.ok(src.includes('rightDock.style.display'), 'SidebarManager must update rightDock.style.display');
     });
   });
 });

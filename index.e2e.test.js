@@ -13248,5 +13248,105 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       }
     });
   });
+
+  test('v1.242.3: Topbar Right Dock, Android More Dropdown Menu & Locate Button Non-Overlap (Issue #276)', async (t) => {
+    // 1. Mobile/tablet viewport simulation (1024px)
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.waitForTimeout(200);
+
+    // 2. Verify .topbar-right-dock exists and is styled
+    const rightDockInfo = await page.evaluate(() => {
+      const dock = document.querySelector('.topbar-right-dock');
+      const cue = document.getElementById('topbar-scroll-cue-right');
+      const moreBtn = document.getElementById('header-more-btn');
+      if (!dock) return null;
+      const cs = window.getComputedStyle(dock);
+      return {
+        exists: true,
+        bg: cs.backgroundColor,
+        position: cs.position,
+        borderLeftWidth: cs.borderLeftWidth,
+        containsCue: dock.contains(cue),
+        containsMoreBtn: dock.contains(moreBtn)
+      };
+    });
+
+    assert.ok(rightDockInfo, '.topbar-right-dock must exist');
+    assert.strictEqual(rightDockInfo.bg, 'rgb(15, 23, 42)', '.topbar-right-dock must have solid dark background');
+    assert.strictEqual(rightDockInfo.position, 'sticky', '.topbar-right-dock must be sticky');
+    assert.strictEqual(rightDockInfo.borderLeftWidth, '1px', '.topbar-right-dock must have 1px left border');
+    assert.ok(rightDockInfo.containsCue, '.topbar-right-dock must contain #topbar-scroll-cue-right');
+    assert.ok(rightDockInfo.containsMoreBtn, '.topbar-right-dock must contain #header-more-btn');
+
+    // 3. Verify #header-more-menu is placed OUTSIDE .studio-topbar and drops down cleanly
+    const moreMenuDropped = await page.evaluate(async () => {
+      const topbar = document.querySelector('.studio-topbar');
+      const moreMenu = document.getElementById('header-more-menu');
+      const moreBtn = document.getElementById('header-more-btn');
+      if (!moreMenu || !moreBtn || !topbar) return null;
+
+      // Click moreBtn to toggle menu open
+      moreBtn.click();
+
+      const rect = moreMenu.getBoundingClientRect();
+      const isOutsideTopbar = !topbar.contains(moreMenu);
+      const isVisible = !moreMenu.classList.contains('hidden') && rect.height > 100;
+
+      // Click again to close
+      moreBtn.click();
+
+      return {
+        isOutsideTopbar,
+        isVisible,
+        top: rect.top,
+        height: rect.height,
+        closedAfter: moreMenu.classList.contains('hidden')
+      };
+    });
+
+    assert.ok(moreMenuDropped, 'More menu elements must exist');
+    assert.ok(moreMenuDropped.isOutsideTopbar, '#header-more-menu must be outside .studio-topbar DOM hierarchy');
+    assert.ok(moreMenuDropped.isVisible, '#header-more-menu must drop down visibly with height > 100px');
+    assert.ok(moreMenuDropped.closedAfter, '#header-more-menu must close cleanly on subsequent toggle');
+
+    // 4. Verify Search container and Locate button do not overlap Mission Time Pill at 1024px & 768px
+    for (const testWidth of [1024, 768]) {
+      await page.setViewportSize({ width: testWidth, height: 768 });
+      await page.waitForTimeout(150);
+
+      const overlapCheck = await page.evaluate(() => {
+        const searchContainer = document.getElementById('header-search-container');
+        const locateBtn = document.getElementById('locate-me-btn');
+        const timePill = document.getElementById('header-mission-time-pill');
+        if (!searchContainer || !locateBtn || !timePill) return null;
+
+        const locateRect = locateBtn.getBoundingClientRect();
+        const timeRect = timePill.getBoundingClientRect();
+
+        // Check if locateBtn is overlapped by timeRect
+        const isOverlapped = !(
+          locateRect.right <= timeRect.left ||
+          locateRect.left >= timeRect.right ||
+          locateRect.bottom <= timeRect.top ||
+          locateRect.top >= timeRect.bottom
+        );
+
+        return {
+          locateWidth: locateRect.width,
+          locateVisible: locateRect.width > 20,
+          isOverlapped,
+          locateRight: locateRect.right,
+          timeLeft: timeRect.left
+        };
+      });
+
+      assert.ok(overlapCheck, `Overlap check elements must exist at ${testWidth}px`);
+      assert.ok(overlapCheck.locateVisible, `Locate button must be visible at ${testWidth}px (actual: ${overlapCheck.locateWidth}px)`);
+      assert.strictEqual(overlapCheck.isOverlapped, false, `Locate button must NOT be overlapped by time pill at ${testWidth}px (locateRight=${overlapCheck.locateRight}, timeLeft=${overlapCheck.timeLeft})`);
+    }
+
+    // 5. Restore default viewport
+    await page.setViewportSize({ width: 1366, height: 768 });
+  });
   });
 });
