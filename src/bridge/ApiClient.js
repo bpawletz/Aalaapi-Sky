@@ -4612,7 +4612,7 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
 
 
-  const primaryBtn = targetBtn || document.getElementById('diag-pull-rc2-btn') || document.getElementById('direct-rc2-pull-log-btn');
+  const primaryBtn = targetBtn || document.getElementById('diag-pull-rc2-btn') || document.getElementById('direct-rc2-pull-log-btn') || document.getElementById('android-rc2-pull-log-btn');
 
 
 
@@ -4624,7 +4624,11 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
 
 
-  const buttonsToUpdate = Array.from(new Set([primaryBtn, diagBtn, directBtn].filter(Boolean)));
+  const syncBarBtn = document.getElementById('android-rc2-pull-log-btn');
+
+
+
+  const buttonsToUpdate = Array.from(new Set([primaryBtn, diagBtn, directBtn, syncBarBtn].filter(Boolean)));
 
 
 

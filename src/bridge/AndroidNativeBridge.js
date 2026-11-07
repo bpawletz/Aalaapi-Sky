@@ -430,7 +430,11 @@
 
       if (pullLogBtn) {
         pullLogBtn.addEventListener('click', () => {
-          this.pullLatestLog();
+          if (typeof pullFlightLogFromRC2 === 'function') {
+            pullFlightLogFromRC2(pullLogBtn);
+          } else {
+            this.pullLatestLog();
+          }
         });
       }
     },
@@ -981,6 +985,20 @@
 
           if (typeof showToast === 'function') {
             showToast(`📥 Flight log pulled from DJI RC 2 (${logFilename})`, 'success');
+          }
+
+          try {
+            if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+              const telemetryPayload = (typeof DigitalTwin !== 'undefined' && DigitalTwin.telemetryData) ? {
+                flightId: logFilename,
+                telemetry: DigitalTwin.telemetryData,
+                comparison: DigitalTwin.comparisonData,
+                isActualFlown: true
+              } : logFilename;
+              await FlightDiagnostics.open('3d', telemetryPayload);
+            }
+          } catch (e) {
+            console.warn('FlightDiagnostics open error:', e);
           }
         } else if (typeof WebUsbMtp !== 'undefined') {
           if (typeof pullLogViaWebUsb === 'function') {
