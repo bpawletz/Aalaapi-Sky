@@ -126,6 +126,11 @@ class AndroidMtpBridge(private val context: Context, private val webView: WebVie
 
     private fun openMtpDevice(device: UsbDevice) {
         try {
+            if (mtpDevice != null && connectedDevice?.deviceName == device.deviceName) {
+                Log.i("AalaapiMtp", "MtpDevice already open for ${device.deviceName}, re-notifying connection")
+                notifyConnected(device.productName ?: "DJI RC 2")
+                return
+            }
             connectedDevice = device
             cachedCandidates = null
             cachedCandidatesTimeMs = 0L

@@ -1,3 +1,31 @@
+## [1.235.1] - 2026-11-07
+
+Fixed Android app restarts on DJI RC 2 USB-C connection via `singleTask` launchMode and streamlined hardware connection state to the Top Nav Pill and Left Nav Actions area.
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Prevent Android App Restarts on RC 2 Connection (Closes #264)**:
+  - Fixed an issue where plugging in the DJI RC 2 over USB-C while Aalaapi Sky was already open in the Android companion app caused the app to restart and reload the map from scratch.
+  - Hot-plugging the controller now seamlessly updates existing running mission sessions without interrupting flight planning or resetting entered waypoints.
+- **Streamlined RC 2 Connection State & Clean Map View (Closes #264)**:
+  - Suppressed the floating `#android-rc2-sync-bar` on the main flight screen, eliminating the intrusive "📥 Pull Latest Log" and slot dropdown overlays across the map.
+  - Connection status now displays cleanly and contextually inside the **Top Nav Pill** (`Android: RC 2 OK` / `RC 2: OK`) and **Left Nav Actions & Sync area** (`Android: RC 2 Linked` / `RC 2: OK` / quick action buttons `Send to RC 2` and `Pull KMZ`).
+  - Flight telemetry log extraction remains easily accessible within the Bridge Monitor popover and Flight Diagnostics modal.
+
+#### Under the Hood & Technical Details
+- **`android/app/src/main/AndroidManifest.xml`**:
+  - Configured `android:launchMode="singleTask"` on `MainActivity` so `android.hardware.usb.action.USB_DEVICE_ATTACHED` intents are routed to the running instance instead of spawning a new Activity.
+  - Expanded `android:configChanges` to include `smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density` to prevent Activity recreations from hardware reconfiguration events.
+- **`android/app/src/main/java/com/aalaapi/sky/MainActivity.kt`**:
+  - Overrode `onNewIntent(intent: Intent)` to handle `USB_DEVICE_ATTACHED` intents and route them directly to `mtpBridge.onDeviceAttached()` without touching the WebView.
+- **`android/app/src/main/java/com/aalaapi/sky/AndroidMtpBridge.kt`**:
+  - Added idempotency check in `openMtpDevice()` to avoid duplicate MTP connection handshakes when both `onNewIntent` and `usbReceiver` fire for the same physical connection.
+- **`src/bridge/AndroidNativeBridge.js`**:
+  - Updated `handleRc2Connected()` to suppress the floating bar and notify the Top Nav and Left Nav via `setNativeRc2Connection(true, deviceData)`.
+  - Added initial `getMtpStatus()` hydration in `init()` for pre-connected USB controllers upon app launch.
+  - Fixed disconnect scoping so `setNativeRc2Connection(false, null)` executes reliably.
+
 ## [1.235.0] - 2026-11-07
 
 Cross-platform Common Base + OS Override Adapter Framework for Client (`src/platform/`) and Companion Server (`tools/companion/drivers/`), full `IosPlatformAdapter` (Web Share API + `WKWebView` hooks), and `?platform=` runtime test switching.

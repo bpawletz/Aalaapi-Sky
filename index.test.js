@@ -40679,7 +40679,7 @@ describe('Native Android App, Tri-Link Field Bridge & USB-C RC 2 Auto-Sync (v1.2
     const devName = dom.window.document.getElementById('android-rc2-device-name');
     const select = dom.window.document.getElementById('android-rc2-slot-select');
 
-    assert.ok(!bar.classList.contains('hidden'), 'Sync bar must be revealed');
+    assert.ok(bar.classList.contains('hidden'), 'Sync bar must remain suppressed on main screen (Issue #264)');
     assert.strictEqual(devName.textContent, 'DJI RC 2 Enterprise');
     assert.strictEqual(select.children.length, 2);
     assert.strictEqual(select.value, 'SLOT-AAA-111');
@@ -40704,6 +40704,20 @@ describe('Native Android App, Tri-Link Field Bridge & USB-C RC 2 Auto-Sync (v1.2
     // 4. Disconnect RC 2 -> should hide bar and modal
     AndroidNativeBridge.handleRc2Disconnected();
     assert.ok(bar.classList.contains('hidden'), 'Sync bar must be hidden on disconnect');
+  });
+
+  test('AndroidManifest.xml configures launchMode singleTask and MainActivity overrides onNewIntent to prevent USB restarts (Closes #264)', () => {
+    const manifestPath = path.join(__dirname, 'android', 'app', 'src', 'main', 'AndroidManifest.xml');
+    assert.ok(fs.existsSync(manifestPath), 'AndroidManifest.xml must exist');
+    const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+    assert.ok(manifestContent.includes('android:launchMode="singleTask"'), 'MainActivity must have launchMode="singleTask"');
+    assert.ok(manifestContent.includes('smallestScreenSize'), 'MainActivity must handle smallestScreenSize config change');
+
+    const mainActivityPath = path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'MainActivity.kt');
+    assert.ok(fs.existsSync(mainActivityPath), 'MainActivity.kt must exist');
+    const activityContent = fs.readFileSync(mainActivityPath, 'utf8');
+    assert.ok(activityContent.includes('override fun onNewIntent(intent: Intent)'), 'MainActivity must override onNewIntent');
+    assert.ok(activityContent.includes('mtpBridge.onDeviceAttached'), 'onNewIntent must route USB attachment to mtpBridge');
   });
 
   test('Android project files and PWA manifest are present and valid', () => {
@@ -42275,6 +42289,7 @@ describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time 
       const origAndroid = global.window ? global.window.AalaapiAndroid : undefined;
       const dt = vm.runInThisContext('DigitalTwin');
       const origLoad = dt ? dt.loadFlightLogData : null;
+      const origTelemetry = dt ? dt.telemetryData : null;
 
       try {
         let loadedFilename = null;
@@ -42283,6 +42298,7 @@ describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time 
           dt.loadFlightLogData = async (filename, base64) => {
             loadedFilename = filename;
             loadedBase64 = base64;
+            dt.telemetryData = [{ lat: 41.3215, lon: -88.9950, alt: 25.0 }];
             return true;
           };
         }
@@ -42319,6 +42335,7 @@ describe('Issue #250 & v1.226.0: Configurable Alert Reference Anchor, Real-Time 
         if (origAndroid !== undefined) global.window.AalaapiAndroid = origAndroid;
         else if (global.window) delete global.window.AalaapiAndroid;
         if (dt && origLoad) dt.loadFlightLogData = origLoad;
+        if (dt) dt.telemetryData = origTelemetry;
       }
     });
 
@@ -43004,12 +43021,12 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(changelog.includes('Closes #262'), 'CHANGELOG must reference issue #262');
 
       const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-      assert.ok(template.includes('Version 1.235.0') || template.includes('Version 1.234.0'), 'Template must have version tag');
-      assert.ok(template.includes('v1.235.0') || template.includes('v1.234.0'), 'Template must have header badge');
+      assert.ok(template.includes(`Version ${pkg.version}`) || template.includes('Version 1.235.0') || template.includes('Version 1.234.0'), 'Template must have version tag');
+      assert.ok(template.includes(`v${pkg.version}`) || template.includes('v1.235.0') || template.includes('v1.234.0'), 'Template must have header badge');
 
       const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-      assert.ok(gradle.includes('versionName = "1.235.0"') || gradle.includes('versionName = "1.234.0"'), 'Gradle must have versionName >= 1.234.0');
-      assert.ok(gradle.includes('versionCode = 12350') || gradle.includes('versionCode = 12340'), 'Gradle must have versionCode >= 12340');
+      assert.ok(gradle.includes(`versionName = "${pkg.version}"`) || gradle.includes('versionName = "1.235.0"') || gradle.includes('versionName = "1.234.0"'), 'Gradle must have versionName >= 1.234.0');
+      assert.ok(gradle.includes('versionCode = 12351') || gradle.includes('versionCode = 12350') || gradle.includes('versionCode = 12340'), 'Gradle must have versionCode >= 12340');
     });
 
     test('Zero-default fallback: DigitalTwin.loadFlightLogData rejects invalid/binary data without simulation', async () => {
@@ -43064,20 +43081,21 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
 
     describe('v1.235.0 Client & Companion Platform Abstraction Framework (Issue #263)', () => {
-      test('Version 1.235.0 consistency across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts', () => {
+      test('Version consistency across package.json, CHANGELOG.md, index_template.html, and build.gradle.kts (Issue #263, #264)', () => {
         const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-        assert.strictEqual(pkg.version, '1.235.0');
+        assert.ok(semverGte(pkg.version, '1.235.0'));
 
         const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
         assert.ok(changelog.includes('## [1.235.0]'), 'CHANGELOG.md must include 1.235.0');
+        assert.ok(changelog.includes('## [1.235.1]'), 'CHANGELOG.md must include 1.235.1');
 
         const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-        assert.ok(template.includes('Version 1.235.0'), 'index_template.html must include Version 1.235.0');
-        assert.ok(template.includes('v1.235.0'), 'index_template.html must include v1.235.0 badge');
+        assert.ok(template.includes(`Version ${pkg.version}`), `index_template.html must include Version ${pkg.version}`);
+        assert.ok(template.includes(`v${pkg.version}`), `index_template.html must include v${pkg.version} badge`);
 
         const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-        assert.ok(gradle.includes('versionName = "1.235.0"'));
-        assert.ok(gradle.includes('versionCode = 12350'));
+        assert.ok(gradle.includes(`versionName = "${pkg.version}"`));
+        assert.ok(gradle.includes('versionCode = 12351') || gradle.includes('versionCode = 12350'));
       });
 
       test('PlatformManager auto-detects Windows/Desktop, Android Native, iOS Native, and URL ?platform= overrides', () => {

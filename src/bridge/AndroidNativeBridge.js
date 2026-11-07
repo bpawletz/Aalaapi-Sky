@@ -360,6 +360,15 @@
       if (typeof window !== 'undefined' && window.AalaapiAndroid) {
         this.isNativeAndroid = true;
         console.log('🤖 Aalaapi Sky Native Android Bridge: Active');
+        try {
+          if (typeof window.AalaapiAndroid.getMtpStatus === 'function') {
+            const rawStatus = window.AalaapiAndroid.getMtpStatus();
+            const status = typeof rawStatus === 'string' ? JSON.parse(rawStatus) : rawStatus;
+            if (status && status.connected) {
+              this.handleRc2Connected(status);
+            }
+          }
+        } catch (_) {}
       }
 
       this.bindUiElements();
@@ -816,9 +825,11 @@
         this.selectedSlotUuid = slots[0].uuid;
       }
 
+      // Suppress floating sync bar on the main screen (Issue #264)
+      // Connection status and sync actions are cleanly integrated into the Top Nav Pill and Left Nav Actions area.
       if (bar) {
-        bar.classList.remove('hidden');
-        bar.style.display = 'flex';
+        bar.classList.add('hidden');
+        bar.style.display = 'none';
       }
 
       if (typeof showToast === 'function') {
@@ -845,12 +856,11 @@
 
       if (typeof showToast === 'function') {
         showToast('DJI RC 2 Disconnected', 'neutral');
-      
+      }
       if (typeof setNativeRc2Connection === 'function') {
         setNativeRc2Connection(false, null);
       } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.setNativeRc2Connection === 'function') {
         ApiClient.setNativeRc2Connection(false, null);
-      }
       }
     },
 
@@ -1022,6 +1032,7 @@
   // Expose global bridge functions for Android WebView JavaScript Interface
   if (typeof window !== 'undefined') {
     window.AalaapiAndroidBridge = AndroidNativeBridge;
+    window.AndroidNativeBridge = AndroidNativeBridge;
     window.ingestRemoteIdFrame = (payload, rssi, transport) => AndroidNativeBridge.ingestRemoteIdFrame(payload, rssi, transport);
     window.ingestAdsbSbsLine = (line) => AndroidNativeBridge.ingestAdsbSbsLine(line);
     window.ingestAdsbJson = (jsonPayload) => AndroidNativeBridge.ingestAdsbJson(jsonPayload);
