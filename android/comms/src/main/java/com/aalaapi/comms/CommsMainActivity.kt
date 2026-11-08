@@ -42,6 +42,7 @@ class CommsMainActivity : AppCompatActivity() {
     private lateinit var squelchText: TextView
     private lateinit var squelchBar: SeekBar
     private lateinit var meterText: TextView
+    private lateinit var meterBar: android.widget.ProgressBar
     private lateinit var clientsText: TextView
     private lateinit var logView: TextView
     private lateinit var logScroll: ScrollView
@@ -262,6 +263,16 @@ class CommsMainActivity : AppCompatActivity() {
         telemRow.addView(clientsText)
         root.addView(telemRow)
 
+        // Visual RF RSSI Signal Meter Bar (-90 dBFS to -20 dBFS)
+        meterBar = android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100
+            progress = 0
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 8).apply {
+                setMargins(0, 0, 0, 8)
+            }
+        }
+        root.addView(meterBar)
+
         // Live Log Output
         logScroll = ScrollView(this).apply {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
@@ -354,7 +365,22 @@ class CommsMainActivity : AppCompatActivity() {
         }
         eng.onAudioLevel = { dbfs, open ->
             runOnUiThread {
-                meterText.text = "Signal: ${dbfs.toInt()} dBFS ${if (open) "🔊" else "🔇"}"
+                val srv = service
+                val msgRate = srv?.msgRate ?: 0.0
+                meterText.text = "${if (open) "🔊" else "🔇"} ${dbfs.toInt()} dBFS | ${String.format(Locale.US, "%.1f", msgRate)} msg/s"
+                val pct = (((dbfs + 90f) / 70f) * 100f).toInt().coerceIn(0, 100)
+                meterBar.progress = pct
+            }
+        }
+        eng.onRfSignalLevel = { dbfs, preamblesTotal ->
+            runOnUiThread {
+                val srv = service
+                val msgRate = srv?.msgRate ?: 0.0
+                val pSec = srv?.preamblesPerSec ?: 0L
+                val rxDot = if (System.currentTimeMillis() % 600 < 300) "🟢" else "⚪"
+                meterText.text = "$rxDot ${dbfs.toInt()} dBFS | ${String.format(Locale.US, "%.1f", msgRate)} msg/s ($pSec p/s)"
+                val pct = (((dbfs + 90f) / 70f) * 100f).toInt().coerceIn(0, 100)
+                meterBar.progress = pct
             }
         }
     }

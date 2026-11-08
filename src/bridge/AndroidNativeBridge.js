@@ -696,6 +696,60 @@
       }
     },
 
+    updateRfSignalMetrics(metrics) {
+      if (typeof document === 'undefined' || !metrics) return;
+      const rfVal = document.getElementById('comms-rf-meter-val');
+      const rfBar = document.getElementById('comms-rf-meter-bar');
+      const rxDot = document.getElementById('comms-rx-dot');
+      const rateBadge = document.getElementById('comms-msg-rate-badge');
+
+      const dbfs = typeof metrics.rssiDbfs === 'number' ? metrics.rssiDbfs : -90;
+      const msgRate = typeof metrics.msgRate === 'number' ? metrics.msgRate : 0;
+      const preambles = typeof metrics.preamblesPerSec === 'number' ? metrics.preamblesPerSec : 0;
+
+      if (rfVal) {
+        rfVal.textContent = dbfs > -89 ? `${dbfs.toFixed(0)} dBFS` : '- dBFS';
+        rfVal.style.color = dbfs > -40 ? '#10b981' : dbfs > -60 ? '#38bdf8' : '#94a3b8';
+      }
+
+      if (rfBar) {
+        // Map -90 dBFS to -20 dBFS into 0..100%
+        const pct = Math.max(0, Math.min(100, Math.round(((dbfs + 90) / 70) * 100)));
+        rfBar.style.width = `${pct}%`;
+        rfBar.style.background = dbfs > -35
+          ? 'linear-gradient(90deg, #10b981, #f59e0b)'
+          : 'linear-gradient(90deg, #0284c7, #10b981)';
+      }
+
+      if (rateBadge) {
+        if (msgRate > 0) {
+          rateBadge.textContent = `${msgRate.toFixed(1)} msg/s`;
+          rateBadge.style.color = '#10b981';
+          rateBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+        } else if (preambles > 0) {
+          rateBadge.textContent = `${preambles} p/s`;
+          rateBadge.style.color = '#38bdf8';
+          rateBadge.style.background = 'rgba(56, 189, 248, 0.1)';
+        } else {
+          rateBadge.textContent = '0 msg/s';
+          rateBadge.style.color = '#94a3b8';
+          rateBadge.style.background = 'rgba(255, 255, 255, 0.05)';
+        }
+      }
+
+      if (rxDot) {
+        rxDot.style.background = '#10b981';
+        rxDot.style.boxShadow = '0 0 6px #10b981';
+        setTimeout(() => {
+          const d = document.getElementById('comms-rx-dot');
+          if (d) {
+            d.style.background = '#64748b';
+            d.style.boxShadow = 'none';
+          }
+        }, 180);
+      }
+    },
+
     // ─── Remote ID Ingestion (BLE / Wi-Fi) ───────────────────────────────────
     ingestRemoteIdFrame(rawPayload, rssi = -65, transport = 'ble', mac = null) {
       const decoded = ClientRemoteIdDecoder.decode(rawPayload, rssi, transport);
@@ -1430,6 +1484,7 @@
     window.onAdsbStatusChanged = (status, host, port, error) => AndroidNativeBridge.onAdsbStatusChanged(status, host, port, error);
     window.onAdsbHardwareChanged = (hwData) => AndroidNativeBridge.handleAdsbHardwareChanged(hwData);
     window.ingestAcarsMessage = (payload) => AndroidNativeBridge.ingestAcarsMessage(payload);
+    window.updateRfSignalMetrics = (metrics) => AndroidNativeBridge.updateRfSignalMetrics(metrics);
     window.onNativeTtsError = (message) => {
       if (typeof showToast === 'function') showToast('🔇 ' + (message || 'Voice advisory unavailable'), 'error');
     };

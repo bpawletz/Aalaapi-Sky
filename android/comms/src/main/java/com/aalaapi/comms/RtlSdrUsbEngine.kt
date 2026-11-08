@@ -45,6 +45,7 @@ class RtlSdrUsbEngine(
     var onAdsbAvrFrame: ((String) -> Unit)? = null
     var onAcarsMessage: ((JSONObject) -> Unit)? = null
     var onAudioLevel: ((Float, Boolean) -> Unit)? = null
+    var onRfSignalLevel: ((Float, Long) -> Unit)? = null
     var onStatusChanged: ((String, String) -> Unit)? = null
 
     var currentMode: SdrMode = SdrMode.ADSB_1090
@@ -54,6 +55,10 @@ class RtlSdrUsbEngine(
     var currentSquelchDbfs: Int = -45
         private set
     var isStreaming = false
+        private set
+    var preamblesTotal: Long = 0L
+        private set
+    var currentRssiDbfs: Float = -90f
         private set
 
     // Reference position for Local CPR single-frame decoding
@@ -275,10 +280,26 @@ class RtlSdrUsbEngine(
 
             val numSamples = bytesRead / 2
             // Compute magnitude from 8-bit unsigned I/Q pairs
+            var sumPwr = 0.0
+            val pwrStep = 32
+            var pwrCount = 0
             for (i in 0 until numSamples) {
                 val iByte = buffer[i * 2].toInt() and 0xFF
                 val qByte = buffer[i * 2 + 1].toInt() and 0xFF
-                magBuf[i] = magLut[(iByte shl 8) or qByte]
+                val mag = magLut[(iByte shl 8) or qByte]
+                magBuf[i] = mag
+                if (i % pwrStep == 0) {
+                    val m = mag.toDouble()
+                    sumPwr += m * m
+                    pwrCount++
+                }
+            }
+
+            if (pwrCount > 0) {
+                val rms = sqrt(sumPwr / pwrCount)
+                val dbfs = if (rms > 1.0) (20.0 * kotlin.math.log10(rms / 46340.0)).toFloat().coerceIn(-90f, 0f) else -90f
+                currentRssiDbfs = dbfs
+                onRfSignalLevel?.invoke(dbfs, preamblesTotal)
             }
 
             // Preamble scan: 16 samples = 8.0 microseconds at 2.0 MSPS
@@ -300,6 +321,7 @@ class RtlSdrUsbEngine(
                     val low8 = magBuf[idx + 8]
 
                     if (m0 > low1 && m2 > low3 && m7 > low6 && m9 > low8 && (m0 + m2 + m7 + m9) > (low1 + low3 + low4 + low5 + low6 + low8) * 2) {
+                        preamblesTotal++
                         // Candidate Mode S preamble found! Slice 112 bits (224 samples)
                         val msgBytes = ByteArray(14)
                         var bitOffset = idx + 16
@@ -503,7 +525,9 @@ class RtlSdrUsbEngine(
             }
 
             val curDbfs = (20.0 * Math.log10((maxMag / 32768.0).coerceAtLeast(0.0001))).toFloat()
+            currentRssiDbfs = curDbfs
             onAudioLevel?.invoke(curDbfs, curDbfs >= currentSquelchDbfs)
+            onRfSignalLevel?.invoke(curDbfs, preamblesTotal)
             audioTrack?.write(audioBuf, 0, numAudio)
         }
     }
@@ -519,10 +543,15 @@ class RtlSdrUsbEngine(
 
             // AM envelope detection and MSK tone discrimination
             val numSamples = bytesRead / 2
+            var sumPwr = 0.0
+            var pwrCount = 0
             for (i in 0 until numSamples step 100) {
                 val iByte = inBuf[i * 2].toInt() and 0xFF
                 val qByte = inBuf[i * 2 + 1].toInt() and 0xFF
                 val mag = magLut[(iByte shl 8) or qByte]
+                val m = mag.toDouble()
+                sumPwr += m * m
+                pwrCount++
 
                 // Discriminate ASCII chars from sliced bitstream
                 if (mag > 4000) {
@@ -544,6 +573,12 @@ class RtlSdrUsbEngine(
                         }
                     }
                 }
+            }
+            if (pwrCount > 0) {
+                val rms = sqrt(sumPwr / pwrCount)
+                val dbfs = if (rms > 1.0) (20.0 * kotlin.math.log10(rms / 46340.0)).toFloat().coerceIn(-90f, 0f) else -90f
+                currentRssiDbfs = dbfs
+                onRfSignalLevel?.invoke(dbfs, preamblesTotal)
             }
         }
     }

@@ -9411,7 +9411,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.243.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.243.1</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -14069,6 +14069,24 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <span id="comms-status-badge" class="badge" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">Daemon Standby</span>
               </div>
 
+              <!-- Real-Time RF Signal (RSSI) & Activity Meter Strip -->
+              <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 6px 8px; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-size: 0.68rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
+                    <span id="comms-rx-dot" style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #64748b; transition: all 0.15s ease;"></span>
+                    <span>RF Signal (RSSI)</span>
+                  </span>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span id="comms-msg-rate-badge" style="font-size: 0.62rem; font-family: monospace; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 1px 4px; border-radius: 3px;">0 msg/s</span>
+                    <span id="comms-rf-meter-val" style="font-size: 0.68rem; font-family: monospace; font-weight: 700; color: #94a3b8;">- dBFS</span>
+                  </div>
+                </div>
+                <!-- Progress Bar -->
+                <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; position: relative;">
+                  <div id="comms-rf-meter-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #0284c7, #10b981); border-radius: 3px; transition: width 0.2s ease, background 0.2s ease;"></div>
+                </div>
+              </div>
+
               <!-- Mode Selector Pills -->
               <div class="adsb-card-row" style="margin-bottom: 8px; display: flex; gap: 4px;">
                 <button type="button" id="comms-mode-adsb" class="btn-sm is-active" style="flex: 1; font-size: 0.68rem; padding: 4px 6px; background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; border-radius: 5px; cursor: pointer;">✈️ ADS-B (1090)</button>
@@ -17133,7 +17151,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.243.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.243.1</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17296,6 +17314,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.243.1):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Real-Time RF Signal Strength (dBFS) &amp; Noise Floor Readout (Closes #286):</strong> Added continuous raw I/Q RF power calculation across all radio modes (1090 MHz ADS-B, VHF Airband AM, ACARS), giving pilots a real-time signal level bar and numeric dBFS meter to verify antenna/hardware reception even in quiet airspace.</li>
+                  <li><strong>Candidate Preamble Activity &amp; Rolling Message Rate (Closes #286):</strong> Added real-time tracking of candidate Mode S preambles (preambles/sec), rolling message rate (msg/sec), and a blinking emerald green RX pulse LED indicator in both the standalone scanner and in-drawer SDR card.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.243.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -77727,6 +77752,23 @@ const AdsbAirspaceManager = {
         commsBadge.style.color = '#38bdf8';
         commsBadge.style.background = 'rgba(56, 189, 248, 0.15)';
       }
+
+      // Fetch live RF signal metrics from Aalaapi Comms daemon (v1.243.1 - Issue #286)
+      if (typeof AndroidNativeBridge !== 'undefined' && typeof AndroidNativeBridge.updateRfSignalMetrics === 'function') {
+        const adsbDrawer = document.getElementById('adsb-drawer');
+        if (adsbDrawer && !adsbDrawer.classList.contains('hidden')) {
+          const host = (this.serverHost || '127.0.0.1').split(':')[0] || '127.0.0.1';
+          const port = (targetPort === 8080 || targetPort === 18080) ? targetPort : 8080;
+          fetch(`http://${host}:${port}/api/comms/status`, { signal: AbortSignal.timeout(1200) })
+            .then(res => res.json())
+            .then(data => {
+              if (data && typeof data === 'object') {
+                AndroidNativeBridge.updateRfSignalMetrics(data);
+              }
+            })
+            .catch(() => {});
+        }
+      }
     }
 
     this.updateStreamTransportUI();
@@ -88963,6 +89005,60 @@ if (typeof module !== 'undefined' && module.exports) {
       }
     },
 
+    updateRfSignalMetrics(metrics) {
+      if (typeof document === 'undefined' || !metrics) return;
+      const rfVal = document.getElementById('comms-rf-meter-val');
+      const rfBar = document.getElementById('comms-rf-meter-bar');
+      const rxDot = document.getElementById('comms-rx-dot');
+      const rateBadge = document.getElementById('comms-msg-rate-badge');
+
+      const dbfs = typeof metrics.rssiDbfs === 'number' ? metrics.rssiDbfs : -90;
+      const msgRate = typeof metrics.msgRate === 'number' ? metrics.msgRate : 0;
+      const preambles = typeof metrics.preamblesPerSec === 'number' ? metrics.preamblesPerSec : 0;
+
+      if (rfVal) {
+        rfVal.textContent = dbfs > -89 ? `${dbfs.toFixed(0)} dBFS` : '- dBFS';
+        rfVal.style.color = dbfs > -40 ? '#10b981' : dbfs > -60 ? '#38bdf8' : '#94a3b8';
+      }
+
+      if (rfBar) {
+        // Map -90 dBFS to -20 dBFS into 0..100%
+        const pct = Math.max(0, Math.min(100, Math.round(((dbfs + 90) / 70) * 100)));
+        rfBar.style.width = `${pct}%`;
+        rfBar.style.background = dbfs > -35
+          ? 'linear-gradient(90deg, #10b981, #f59e0b)'
+          : 'linear-gradient(90deg, #0284c7, #10b981)';
+      }
+
+      if (rateBadge) {
+        if (msgRate > 0) {
+          rateBadge.textContent = `${msgRate.toFixed(1)} msg/s`;
+          rateBadge.style.color = '#10b981';
+          rateBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+        } else if (preambles > 0) {
+          rateBadge.textContent = `${preambles} p/s`;
+          rateBadge.style.color = '#38bdf8';
+          rateBadge.style.background = 'rgba(56, 189, 248, 0.1)';
+        } else {
+          rateBadge.textContent = '0 msg/s';
+          rateBadge.style.color = '#94a3b8';
+          rateBadge.style.background = 'rgba(255, 255, 255, 0.05)';
+        }
+      }
+
+      if (rxDot) {
+        rxDot.style.background = '#10b981';
+        rxDot.style.boxShadow = '0 0 6px #10b981';
+        setTimeout(() => {
+          const d = document.getElementById('comms-rx-dot');
+          if (d) {
+            d.style.background = '#64748b';
+            d.style.boxShadow = 'none';
+          }
+        }, 180);
+      }
+    },
+
     // ─── Remote ID Ingestion (BLE / Wi-Fi) ───────────────────────────────────
     ingestRemoteIdFrame(rawPayload, rssi = -65, transport = 'ble', mac = null) {
       const decoded = ClientRemoteIdDecoder.decode(rawPayload, rssi, transport);
@@ -89697,6 +89793,7 @@ if (typeof module !== 'undefined' && module.exports) {
     window.onAdsbStatusChanged = (status, host, port, error) => AndroidNativeBridge.onAdsbStatusChanged(status, host, port, error);
     window.onAdsbHardwareChanged = (hwData) => AndroidNativeBridge.handleAdsbHardwareChanged(hwData);
     window.ingestAcarsMessage = (payload) => AndroidNativeBridge.ingestAcarsMessage(payload);
+    window.updateRfSignalMetrics = (metrics) => AndroidNativeBridge.updateRfSignalMetrics(metrics);
     window.onNativeTtsError = (message) => {
       if (typeof showToast === 'function') showToast('🔇 ' + (message || 'Voice advisory unavailable'), 'error');
     };

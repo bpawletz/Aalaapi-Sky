@@ -1,3 +1,27 @@
+## [1.243.1] - 2026-11-07
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Real-Time RF Signal Strength (dBFS) Meter & Noise Floor Readout (Closes #286)**:
+  - Added continuous raw I/Q RF power calculation across all operating modes (1090 MHz Mode S ADS-B, VHF Airband AM, and ACARS), giving pilots an immediate real-time visual signal level bar and dBFS readout (e.g. `-55 dBFS` noise floor up to `-20 dBFS` for nearby transmissions).
+- **Candidate Preamble & Pulse Activity Counter (Closes #286)**:
+  - Added real-time tracking of candidate Mode S preambles (`preambles/sec`), providing immediate confirmation that the RTL-SDR dongle and antenna are actively picking up RF pulses even when no aircraft are within decoding range.
+- **Rolling Message Rate (`msg/s`) & Visual RX Activity LED (Closes #286)**:
+  - Added rolling 1-second message rate telemetry (`msg/s`) and a flashing emerald green RX pulse indicator in both the standalone `Aalaapi Comms` scanner and `Aalaapi Sky`'s in-drawer SDR card (`#adsb-sdr-tuner-card`).
+
+#### Under the Hood & Technical Details
+- **`android/comms/src/main/java/com/aalaapi/comms/RtlSdrUsbEngine.kt`**:
+  - Implemented continuous RMS power computation in `runAdsbDemodLoop`, `runAirbandAmLoop`, and `runAcarsLoop` mapping to standard logarithmic full-scale dBFS.
+  - Added candidate preamble detection counter and `onRfMetrics` callback.
+- **`android/comms/src/main/java/com/aalaapi/comms/SdrForegroundService.kt`**:
+  - Added 1-second windowed rate trackers for `msgRate` and `preamblesPerSec`; exposed in `getStatusJson()` (`/api/comms/status`).
+- **`android/comms/src/main/java/com/aalaapi/comms/CommsMainActivity.kt`**:
+  - Added visual Signal Level Bar, blinking RX pulse dot, and formatted status metrics (`Signal: -44 dBFS | 16 msg/s | 320 preambles/s`).
+- **`index_template.html` & `src/bridge/`**:
+  - Added `#comms-rf-meter-bar`, `#comms-rf-meter-val`, `#comms-rx-dot`, and `#comms-msg-rate-badge` to `#adsb-sdr-tuner-card`.
+  - Wired live polling/event ingestion in `AndroidNativeBridge.js` and `ApiClient.js`.
+
 ## [1.243.0] - 2026-11-07
 
 Introduces the standalone Aalaapi Comms native Android USB OTG RTL-SDR radio daemon and multi-mode aviation scanner alongside Aalaapi Sky UAS flight planning.
