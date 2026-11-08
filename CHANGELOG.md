@@ -1,3 +1,22 @@
+## [1.243.4] - 2026-11-08
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **24/7 Continuous Test Channel Presets & Speaker BIST (Closes #289)**:
+  - Added dedicated one-tap presets in both Aalaapi Comms and Aalaapi Sky for guaranteed continuous RF sources:
+    - `116.700 VOR Tone`: Continuous 1020 Hz Morse code navigation beacon audio tone for instant RF and speaker verification.
+    - `162.550 NOAA WX`: 24/7 automated continuous weather broadcast.
+    - `121.150 ATIS`: Continuous automated airport terminal information service loop.
+    - `97.100 FM Radio`: High-power commercial broadcast carrier for instant tuner sensitivity confirmation.
+  - Added a dedicated "🔊 Test Beep" (Speaker BIST) button generating a local 500ms 1000 Hz sine wave via Android `AudioTrack`, allowing pilots to verify device media volume and speaker operation independently of RF propagation.
+
+#### Under the Hood & Technical Details
+- **Android 14+ FGS `connectedDevice` Compliance & Resilience (Closes #289)**:
+  - Declared `CHANGE_NETWORK_STATE`, `CHANGE_WIFI_STATE`, and `MODIFY_AUDIO_SETTINGS` in `android/comms/src/main/AndroidManifest.xml`, satisfying Android 14/15 (API 34/35) foreground service security checks before USB device permissions are resolved.
+  - Guarded `startForeground()` with try/catch exception handling in `SdrForegroundService.kt` to prevent boot or reinstallation crashes when USB permission prompts are pending.
+  - Added `onResume()` USB re-attachment in `CommsMainActivity.kt` so the engine immediately begins streaming upon returning from system permission prompts.
+
 ## [1.243.3] - 2026-11-08
 
 ### 🐛 Fixed

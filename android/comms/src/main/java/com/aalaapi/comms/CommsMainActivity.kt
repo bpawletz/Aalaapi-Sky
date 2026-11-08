@@ -193,13 +193,26 @@ class CommsMainActivity : AppCompatActivity() {
         val presetRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 16)
+            setPadding(0, 0, 0, 8)
         }
         presetRow.addView(createSmallPreset("122.800 CTAF") { tuneToPreset(122.800) })
         presetRow.addView(createSmallPreset("121.500 Guard") { tuneToPreset(121.500) })
         presetRow.addView(createSmallPreset("122.750 Air-Air") { tuneToPreset(122.750) })
         presetRow.addView(createSmallPreset("118.000 Tower") { tuneToPreset(118.000) })
         root.addView(presetRow)
+
+        // 24/7 Continuous Test Channels (VOR Tone / NOAA WX / ATIS / FM & Speaker BIST)
+        val testRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 16)
+        }
+        testRow.addView(createSmallPreset("116.700 VOR Tone") { tuneToPreset(116.700) })
+        testRow.addView(createSmallPreset("162.550 NOAA WX") { tuneToPreset(162.550) })
+        testRow.addView(createSmallPreset("121.150 ATIS") { tuneToPreset(121.150) })
+        testRow.addView(createSmallPreset("97.100 FM") { tuneToPreset(97.100) })
+        testRow.addView(createSmallPreset("🔊 Test Beep") { playSpeakerTestTone() })
+        root.addView(testRow)
 
         // Squelch Slider
         val squelchRow = LinearLayout(this).apply {
@@ -312,10 +325,53 @@ class CommsMainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (isBound) {
+            scanAndAttachUsb()
+        }
+    }
+
     private fun tuneToPreset(freqMhz: Double) {
         freqInput.setText(String.format(Locale.US, "%.3f", freqMhz))
-        service?.tuneSdr(RtlSdrUsbEngine.SdrMode.AIRBAND_AM, (freqMhz * 1e6).toLong(), squelchBar.progress - 80)
-        updateModeDisplay("Airband AM ($freqMhz MHz)")
+        val mode = when {
+            freqMhz >= 1000.0 -> RtlSdrUsbEngine.SdrMode.ADSB_1090
+            freqMhz in 131.0..132.0 && modeText.text.contains("ACARS") -> RtlSdrUsbEngine.SdrMode.ACARS_VHF
+            else -> RtlSdrUsbEngine.SdrMode.AIRBAND_AM
+        }
+        service?.tuneSdr(mode, (freqMhz * 1e6).toLong(), squelchBar.progress - 80)
+        updateModeDisplay("${mode.name} ($freqMhz MHz)")
+    }
+
+    private fun playSpeakerTestTone() {
+        Thread {
+            try {
+                val sampleRate = 44100
+                val durationMs = 500
+                val numSamples = (durationMs * sampleRate) / 1000
+                val buffer = ShortArray(numSamples)
+                val freqHz = 1000.0
+                for (i in 0 until numSamples) {
+                    val angle = 2.0 * Math.PI * i / (sampleRate / freqHz)
+                    buffer[i] = (Math.sin(angle) * 16000.0).toInt().toShort()
+                }
+                val audioTrack = android.media.AudioTrack(
+                    android.media.AudioManager.STREAM_MUSIC,
+                    sampleRate,
+                    android.media.AudioFormat.CHANNEL_OUT_MONO,
+                    android.media.AudioFormat.ENCODING_PCM_16BIT,
+                    buffer.size * 2,
+                    android.media.AudioTrack.MODE_STATIC
+                )
+                audioTrack.write(buffer, 0, buffer.size)
+                audioTrack.play()
+                runOnUiThread { appendLog("🔊 Speaker Test: Playing 1000 Hz test tone (500 ms)...") }
+                Thread.sleep(600)
+                audioTrack.release()
+            } catch (e: Exception) {
+                runOnUiThread { appendLog("❌ Speaker Test failed: ${e.message}") }
+            }
+        }.start()
     }
 
     private fun updateModeDisplay(name: String) {

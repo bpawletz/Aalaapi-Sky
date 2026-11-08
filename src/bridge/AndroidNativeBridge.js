@@ -593,7 +593,11 @@
         { id: 'comms-preset-ctaf', freq: 122.800 },
         { id: 'comms-preset-guard', freq: 121.500 },
         { id: 'comms-preset-airair', freq: 122.750 },
-        { id: 'comms-preset-tower', freq: 118.000 }
+        { id: 'comms-preset-tower', freq: 118.000 },
+        { id: 'comms-preset-vortone', freq: 116.700 },
+        { id: 'comms-preset-noaa', freq: 162.550 },
+        { id: 'comms-preset-atis', freq: 121.150 },
+        { id: 'comms-preset-fm', freq: 97.100 }
       ];
       presets.forEach(p => {
         const btn = document.getElementById(p.id);
