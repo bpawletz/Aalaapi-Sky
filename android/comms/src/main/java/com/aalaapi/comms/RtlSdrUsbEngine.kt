@@ -183,58 +183,71 @@ class RtlSdrUsbEngine(
                 }
             }
 
-            // Wait briefly for serverReady or attempt connecting
-            serverReady.await(1500, TimeUnit.MILLISECONDS)
-
-            // Connect loopback socket with retry
-            var sock: Socket? = null
-            for (attempt in 1..25) {
-                try {
-                    sock = Socket("127.0.0.1", port).apply {
-                        tcpNoDelay = true
-                        receiveBufferSize = 65536
-                        soTimeout = 3000
-                    }
-                    break
-                } catch (_: Exception) {
-                    Thread.sleep(100)
-                }
-            }
-
-            if (sock == null) {
-                onStatusChanged?.invoke("error", "Failed to connect to embedded rtl_tcp server on port $port")
-                stop()
-                return false
-            }
-            tcpSocket = sock
-            val inStream = sock.getInputStream()
-            val outStream = sock.getOutputStream()
-            socketOut = outStream
-
-            // Read 12-byte header: 4 bytes magic 'RTL0', 4 bytes tuner type, 4 bytes gain count
-            val header = ByteArray(12)
-            var hRead = 0
-            while (hRead < 12) {
-                val r = inStream.read(header, hRead, 12 - hRead)
-                if (r < 0) throw IOException("End of stream reading rtl_tcp header")
-                hRead += r
-            }
-            val magic = String(header, 0, 4, Charsets.US_ASCII)
-            val tunerType = ((header[4].toInt() and 0xFF) shl 24) or ((header[5].toInt() and 0xFF) shl 16) or ((header[6].toInt() and 0xFF) shl 8) or (header[7].toInt() and 0xFF)
-            Log.i("AalaapiComms", "Embedded rtl_tcp connected! Magic: $magic, TunerType: $tunerType")
-
-            // Send initial tuner setup commands
-            sendRtlTcpCommand(outStream, 0x03, 0) // Auto AGC
-            sendRtlTcpCommand(outStream, 0x08, 1) // Tuner AGC enabled
-            sendRtlTcpCommand(outStream, 0x01, freqHz.toInt()) // Center frequency
-            sendRtlTcpCommand(outStream, 0x02, sampleRate.toInt()) // Sample rate
-
-            isStreaming = true
-            onStatusChanged?.invoke("connected", "RTL-SDR (Tuner $tunerType) active in $currentMode at ${currentFreqHz / 1e6} MHz")
-
-            // Launch streaming coroutine loop
+            // Launch socket connection and I/Q streaming on background IO thread to prevent NetworkOnMainThreadException
             streamJob = scope.launch(Dispatchers.IO) {
-                runStreamingLoop(sock, inStream)
+                try {
+                    // Wait for native server to signal ready or timeout after 2 seconds
+                    serverReady.await(2000, TimeUnit.MILLISECONDS)
+
+                    // Connect loopback IPv4 socket with retry (30 attempts, 100ms interval)
+                    val loopback = java.net.InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1))
+                    var sock: Socket? = null
+                    for (attempt in 1..30) {
+                        if (!isActive) break
+                        try {
+                            val s = Socket()
+                            s.tcpNoDelay = true
+                            s.receiveBufferSize = 65536
+                            s.soTimeout = 5000
+                            s.connect(java.net.InetSocketAddress(loopback, port), 500)
+                            sock = s
+                            Log.i("AalaapiComms", "Connected to embedded rtl_tcp server on port $port (attempt $attempt)")
+                            break
+                        } catch (e: Exception) {
+                            Log.d("AalaapiComms", "Loopback connect attempt $attempt to $loopback:$port failed: ${e.message}")
+                            Thread.sleep(100)
+                        }
+                    }
+
+                    if (sock == null || !isActive) {
+                        Log.e("AalaapiComms", "Failed to connect to embedded rtl_tcp server on port $port after 30 attempts")
+                        onStatusChanged?.invoke("error", "Failed to connect to embedded rtl_tcp server on port $port")
+                        stop()
+                        return@launch
+                    }
+
+                    tcpSocket = sock
+                    val inStream = sock.getInputStream()
+                    val outStream = sock.getOutputStream()
+                    socketOut = outStream
+
+                    // Read 12-byte header: 4 bytes magic 'RTL0', 4 bytes tuner type, 4 bytes gain count
+                    val header = ByteArray(12)
+                    var hRead = 0
+                    while (hRead < 12 && isActive) {
+                        val r = inStream.read(header, hRead, 12 - hRead)
+                        if (r < 0) throw IOException("End of stream reading rtl_tcp header")
+                        hRead += r
+                    }
+                    val magic = String(header, 0, 4, Charsets.US_ASCII)
+                    val tunerType = ((header[4].toInt() and 0xFF) shl 24) or ((header[5].toInt() and 0xFF) shl 16) or ((header[6].toInt() and 0xFF) shl 8) or (header[7].toInt() and 0xFF)
+                    Log.i("AalaapiComms", "Embedded rtl_tcp connected! Magic: $magic, TunerType: $tunerType")
+
+                    // Send initial tuner setup commands
+                    sendRtlTcpCommand(outStream, 0x03, 0) // Auto AGC
+                    sendRtlTcpCommand(outStream, 0x08, 1) // Tuner AGC enabled
+                    sendRtlTcpCommand(outStream, 0x01, freqHz.toInt()) // Center frequency
+                    sendRtlTcpCommand(outStream, 0x02, sampleRate.toInt()) // Sample rate
+
+                    isStreaming = true
+                    onStatusChanged?.invoke("connected", "RTL-SDR (Tuner $tunerType) active in $currentMode at ${currentFreqHz / 1e6} MHz")
+
+                    runStreamingLoop(sock, inStream)
+                } catch (e: Exception) {
+                    Log.e("AalaapiComms", "Error in SDR connection/streaming: ${e.message}", e)
+                    onStatusChanged?.invoke("error", "SDR streaming error: ${e.message}")
+                    stop()
+                }
             }
             return true
         } catch (e: Exception) {
@@ -296,19 +309,20 @@ class RtlSdrUsbEngine(
         val out = socketOut
         if (out == null || !isStreaming) return false
 
-        try {
-            val targetRate = if (mode == SdrMode.ADSB_1090) 2000000L else 960000L
-            if (targetRate != currentSampleRate) {
-                sendRtlTcpCommand(out, 0x02, targetRate.toInt())
-                currentSampleRate = targetRate
+        scope.launch(Dispatchers.IO) {
+            try {
+                val targetRate = if (mode == SdrMode.ADSB_1090) 2000000L else 960000L
+                if (targetRate != currentSampleRate) {
+                    sendRtlTcpCommand(out, 0x02, targetRate.toInt())
+                    currentSampleRate = targetRate
+                }
+                sendRtlTcpCommand(out, 0x01, freqHz.toInt())
+                onStatusChanged?.invoke("tuned", "Tuned to $currentMode at ${freqHz / 1e6} MHz")
+            } catch (e: Exception) {
+                Log.e("AalaapiComms", "Error tuning SDR: ${e.message}", e)
             }
-            sendRtlTcpCommand(out, 0x01, freqHz.toInt())
-            onStatusChanged?.invoke("tuned", "Tuned to $currentMode at ${freqHz / 1e6} MHz")
-            return true
-        } catch (e: Exception) {
-            Log.e("AalaapiComms", "Error tuning SDR: ${e.message}", e)
-            return false
         }
+        return true
     }
 
     private fun writeReg(conn: UsbDeviceConnection, block: Int, addr: Int, value: Int, len: Int = 1) {
@@ -318,9 +332,13 @@ class RtlSdrUsbEngine(
     }
 
     private fun initRtl2832U(conn: UsbDeviceConnection) {
-        // Reset EPA USB streaming FIFO (EPA_CTL = 0x0214)
-        writeReg(conn, 0x02, 0x14, 0x0210, 2)
-        writeReg(conn, 0x02, 0x14, 0x0000, 2)
+        try {
+            // Reset EPA USB streaming FIFO (EPA_CTL = 0x0214)
+            writeReg(conn, 0x02, 0x14, 0x0210, 2)
+            writeReg(conn, 0x02, 0x14, 0x0000, 2)
+        } catch (e: Exception) {
+            Log.w("AalaapiComms", "RTL2832U EPA reset non-fatal notice: ${e.message}")
+        }
     }
 
     fun runAirbandAmLoop(buffer: ByteArray, numSamples: Int, audioBuf: ShortArray) = processAirbandChunk(buffer, numSamples, audioBuf)
