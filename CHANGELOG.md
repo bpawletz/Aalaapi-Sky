@@ -1,3 +1,21 @@
+## [1.243.3] - 2026-11-08
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **RTL-SDR USB Live Signal Flow & EPA FIFO Streaming (Closes #288)**:
+  - Fixed an issue where the live RF signal meter displayed `- dBFS` on some tablets by strobing the RTL2832U hardware endpoint FIFO reset (`0x0214`) on tuner start and right-sizing bulk USB transfer buffers to 16KB for Android Linux kernel compatibility.
+- **Shared Debug Keystore Across Sky & Comms (Closes #288)**:
+  - Configured `:comms` to sign with the repository's deterministic `debug.keystore`, eliminating `INSTALL_FAILED_UPDATE_INCOMPATIBLE` signature mismatch errors during APK updates.
+
+#### Under the Hood & Technical Details
+- **`android/comms/src/main/java/com/aalaapi/comms/RtlSdrUsbEngine.kt`**:
+  - Implemented `EPA_CTL` (0x0214) FIFO reset sequence in `initRtl2832U`.
+  - Configured 16KB bulk buffers (`ByteArray(16384)`) in `runAdsbDemodLoop`.
+  - Added `rfSignalListeners` multi-listener list and `dispatchRfSignal` to prevent UI callbacks from disabling the service rate calculator.
+- **`tools/android/push_apk.js`**:
+  - Prioritized `Downloads` directory ahead of `scratch/unpacked-apk` cache to ensure newly downloaded APK artifacts are always extracted and installed.
+
 ## [1.243.2] - 2026-11-08
 
 ### 🚀 Added

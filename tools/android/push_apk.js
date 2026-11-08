@@ -122,11 +122,11 @@ function findApkForApp(appKey, customPath) {
 
     const searchDirs = [
         path.join(rootDir, config.buildDir),
-        path.join(rootDir, 'scratch', 'unpacked-apk'),
-        path.join(rootDir, 'scratch'),
-        path.join(rootDir, 'dist'),
         downloadsDir,
-        path.join(downloadsDir, `${config.name.replace(/\s+/g, '')}-debug-apk`)
+        path.join(downloadsDir, `${config.name.replace(/\s+/g, '')}-debug-apk`),
+        path.join(rootDir, 'dist'),
+        path.join(rootDir, 'scratch'),
+        path.join(rootDir, 'scratch', 'unpacked-apk')
     ];
 
     const apkCandidates = [];

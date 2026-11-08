@@ -46,6 +46,7 @@ class CommsMainActivity : AppCompatActivity() {
     private lateinit var clientsText: TextView
     private lateinit var logView: TextView
     private lateinit var logScroll: ScrollView
+    private var lastMeterUiUpdate: Long = 0L
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
@@ -373,14 +374,18 @@ class CommsMainActivity : AppCompatActivity() {
             }
         }
         eng.onRfSignalLevel = { dbfs, preamblesTotal ->
-            runOnUiThread {
-                val srv = service
-                val msgRate = srv?.msgRate ?: 0.0
-                val pSec = srv?.preamblesPerSec ?: 0L
-                val rxDot = if (System.currentTimeMillis() % 600 < 300) "🟢" else "⚪"
-                meterText.text = "$rxDot ${dbfs.toInt()} dBFS | ${String.format(Locale.US, "%.1f", msgRate)} msg/s ($pSec p/s)"
-                val pct = (((dbfs + 90f) / 70f) * 100f).toInt().coerceIn(0, 100)
-                meterBar.progress = pct
+            val now = System.currentTimeMillis()
+            if (now - lastMeterUiUpdate >= 100) {
+                lastMeterUiUpdate = now
+                runOnUiThread {
+                    val srv = service
+                    val msgRate = srv?.msgRate ?: 0.0
+                    val pSec = srv?.preamblesPerSec ?: 0L
+                    val rxDot = if (now % 600 < 300) "🟢" else "⚪"
+                    meterText.text = "$rxDot ${dbfs.toInt()} dBFS | ${String.format(Locale.US, "%.1f", msgRate)} msg/s ($pSec p/s)"
+                    val pct = (((dbfs + 90f) / 70f) * 100f).toInt().coerceIn(0, 100)
+                    meterBar.progress = pct
+                }
             }
         }
     }
