@@ -1,3 +1,13 @@
+## [1.243.6] - 2026-11-08
+
+### 🐛 Fixed
+
+#### Under the Hood & Technical Details
+- **`librtlSdrAndroid.so` JNI_OnLoad Resolution & Native Log Forwarding**:
+  - Implemented `com.sdrtouch.tools.Log` and `com.sdrtouch.core.exceptions.SdrException` in `:comms`, resolving a fatal `NewGlobalRef(NULL)` JNI abort during native library loading (`JNI_OnLoad`).
+  - Native Osmocom and libusb driver logs are now forwarded cleanly into Android logcat under tag `AalaapiCommsNative`.
+  - Prioritized `scratch/unpacked-apk/` before `scratch/` in `tools/android/push_apk.js` to prevent installing stale APK artifacts.
+
 ## [1.243.5] - 2026-11-08
 
 ### 🚀 Added
