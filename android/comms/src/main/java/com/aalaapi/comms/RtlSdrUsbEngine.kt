@@ -46,7 +46,15 @@ class RtlSdrUsbEngine(
     var onAcarsMessage: ((JSONObject) -> Unit)? = null
     var onAudioLevel: ((Float, Boolean) -> Unit)? = null
     var onRfSignalLevel: ((Float, Long) -> Unit)? = null
+    val rfSignalListeners = java.util.concurrent.CopyOnWriteArrayList<(Float, Long) -> Unit>()
     var onStatusChanged: ((String, String) -> Unit)? = null
+
+    fun dispatchRfSignal(dbfs: Float, preambles: Long) {
+        onRfSignalLevel?.invoke(dbfs, preambles)
+        for (l in rfSignalListeners) {
+            try { l(dbfs, preambles) } catch (_: Exception) {}
+        }
+    }
 
     var currentMode: SdrMode = SdrMode.ADSB_1090
         private set
@@ -242,7 +250,9 @@ class RtlSdrUsbEngine(
 
         // Reset FIFO and enable zero-IF
         demodWriteReg(conn, 0, 0x19, 0x05)
-        writeReg(conn, 0x02, 0x06, 0x00) // Endpoint reset
+        // Reset EPA USB streaming FIFO (EPA_CTL = 0x0214)
+        writeReg(conn, 0x02, 0x14, 0x0210, 2)
+        writeReg(conn, 0x02, 0x14, 0x0000, 2)
     }
 
     private fun initR820T(conn: UsbDeviceConnection, freqHz: Long) {
@@ -271,12 +281,20 @@ class RtlSdrUsbEngine(
 
     // ─── Mode 1: ADS-B 1090 MHz Demodulator Loop ─────────────────────────────
     private fun runAdsbDemodLoop(conn: UsbDeviceConnection, inEp: UsbEndpoint) {
-        val buffer = ByteArray(65536)
-        val magBuf = IntArray(32768)
+        val buffer = ByteArray(16384)
+        val magBuf = IntArray(8192)
+        var lastQuietTick = System.currentTimeMillis()
 
         while (isStreaming) {
             val bytesRead = conn.bulkTransfer(inEp, buffer, buffer.size, 1000)
-            if (bytesRead <= 0) continue
+            if (bytesRead <= 0) {
+                val now = System.currentTimeMillis()
+                if (now - lastQuietTick >= 500) {
+                    dispatchRfSignal(-90f, preamblesTotal)
+                    lastQuietTick = now
+                }
+                continue
+            }
 
             val numSamples = bytesRead / 2
             // Compute magnitude from 8-bit unsigned I/Q pairs
@@ -299,7 +317,7 @@ class RtlSdrUsbEngine(
                 val rms = sqrt(sumPwr / pwrCount)
                 val dbfs = if (rms > 1.0) (20.0 * kotlin.math.log10(rms / 46340.0)).toFloat().coerceIn(-90f, 0f) else -90f
                 currentRssiDbfs = dbfs
-                onRfSignalLevel?.invoke(dbfs, preamblesTotal)
+                dispatchRfSignal(dbfs, preamblesTotal)
             }
 
             // Preamble scan: 16 samples = 8.0 microseconds at 2.0 MSPS
@@ -527,7 +545,7 @@ class RtlSdrUsbEngine(
             val curDbfs = (20.0 * Math.log10((maxMag / 32768.0).coerceAtLeast(0.0001))).toFloat()
             currentRssiDbfs = curDbfs
             onAudioLevel?.invoke(curDbfs, curDbfs >= currentSquelchDbfs)
-            onRfSignalLevel?.invoke(curDbfs, preamblesTotal)
+            dispatchRfSignal(curDbfs, preamblesTotal)
             audioTrack?.write(audioBuf, 0, numAudio)
         }
     }
@@ -578,7 +596,7 @@ class RtlSdrUsbEngine(
                 val rms = sqrt(sumPwr / pwrCount)
                 val dbfs = if (rms > 1.0) (20.0 * kotlin.math.log10(rms / 46340.0)).toFloat().coerceIn(-90f, 0f) else -90f
                 currentRssiDbfs = dbfs
-                onRfSignalLevel?.invoke(dbfs, preamblesTotal)
+                dispatchRfSignal(dbfs, preamblesTotal)
             }
         }
     }

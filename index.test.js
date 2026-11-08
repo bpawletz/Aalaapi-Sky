@@ -45124,5 +45124,43 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+
+  describe('Issue #288: RTL2832U EPA FIFO Streaming Reset, 16KB Bulk Buffer & Keystore Alignment (v1.243.3)', () => {
+    test('Version consistency: v1.243.3 across package.json, changelog, templates, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.243.3');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('Closes #288'), 'CHANGELOG.md must reference issue #288');
+
+      const appGradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+      const m = appGradle.match(/versionCode = (\d+)/);
+      assert.ok(m && parseInt(m[1]) >= 124330, 'android/app/build.gradle.kts versionCode must be >= 124330');
+      assert.ok(appGradle.match(/versionName = "\d+\.\d+\.\d+"/), 'android/app/build.gradle.kts versionName must be valid');
+    });
+
+    test('android/comms/build.gradle.kts configures deterministic shared debug.keystore', () => {
+      const commsGradle = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'build.gradle.kts'), 'utf8');
+      assert.ok(commsGradle.includes('storeFile = file("../app/debug.keystore")'), 'comms must reference shared debug.keystore');
+      assert.ok(commsGradle.includes('signingConfig = signingConfigs.getByName("debug")'), 'comms debug buildType must use signingConfig');
+    });
+
+    test('RtlSdrUsbEngine implements EPA FIFO streaming reset, 16KB buffer and multi-listeners', () => {
+      const engineKt = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'RtlSdrUsbEngine.kt'), 'utf8');
+      assert.ok(engineKt.includes('writeReg(conn, 0x02, 0x14, 0x0210, 2)'), 'Must reset EPA FIFO (0x0214)');
+      assert.ok(engineKt.includes('writeReg(conn, 0x02, 0x14, 0x0000, 2)'), 'Must enable EPA FIFO streaming (0x0000)');
+      assert.ok(engineKt.includes('ByteArray(16384)'), 'Must use 16KB bulk buffer in runAdsbDemodLoop');
+      assert.ok(engineKt.includes('val rfSignalListeners ='), 'Must maintain rfSignalListeners list');
+      assert.ok(engineKt.includes('fun dispatchRfSignal('), 'Must define dispatchRfSignal helper');
+    });
+
+    test('tools/android/push_apk.js prioritizes Downloads directory over temporary extraction cache', () => {
+      const pushSrc = fs.readFileSync(path.join(__dirname, 'tools', 'android', 'push_apk.js'), 'utf8');
+      const searchDirsSub = pushSrc.slice(pushSrc.indexOf('const searchDirs = ['));
+      const downloadsIdx = searchDirsSub.indexOf('downloadsDir');
+      const cacheIdx = searchDirsSub.indexOf("'unpacked-apk'");
+      assert.ok(downloadsIdx !== -1 && cacheIdx !== -1, 'Both search paths must exist in searchDirs');
+      assert.ok(downloadsIdx < cacheIdx, 'downloadsDir must be prioritized before scratch/unpacked-apk');
+    });
+  });
+
 });
 });

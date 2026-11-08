@@ -84,7 +84,7 @@ class SdrForegroundService : Service() {
             if (recentAcarsMessages.size > 50) recentAcarsMessages.removeAt(recentAcarsMessages.size - 1)
         }
 
-        sdrEngine.onRfSignalLevel = { dbfs, preamblesTotal ->
+        sdrEngine.rfSignalListeners.add { dbfs, preamblesTotal ->
             currentRssiDbfs = dbfs
             val now = System.currentTimeMillis()
             val dt = now - lastRateCalcTime
