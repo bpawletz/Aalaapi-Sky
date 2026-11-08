@@ -1,3 +1,18 @@
+## [1.243.7] - 2026-11-08
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Loopback Socket Connection & Driver Concurrency Fix**:
+  - Resolved `android.os.NetworkOnMainThreadException` and UI freezing during SDR startup by offloading loopback TCP socket connection, stream negotiation, and tuning commands onto background `Dispatchers.IO` coroutines.
+  - Hardened loopback address binding to explicit IPv4 loopback (`127.0.0.1`) with up to 30 retries (3 seconds) to ensure reliable handshake with the native Osmocom `sdrtcp` server.
+
+#### Under the Hood & Technical Details
+- **`RtlSdrUsbEngine.kt` Coroutine & Socket Dispatching**:
+  - Replaced synchronous `Socket("127.0.0.1", port)` on the caller thread with `scope.launch(Dispatchers.IO)` connecting via `InetSocketAddress(InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1)), port)`.
+  - Wrapped `sendRtlTcpCommand` in `tune()` inside `scope.launch(Dispatchers.IO)` to prevent main thread blocking when switching presets or frequencies from the UI.
+  - Wrapped `initRtl2832U` USB control transfers in exception guards to prevent non-fatal USB pipe resets from interrupting initialization.
+
 ## [1.243.6] - 2026-11-08
 
 ### 🐛 Fixed

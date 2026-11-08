@@ -45254,7 +45254,7 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       const engineKt = fs.readFileSync(enginePath, 'utf8');
       assert.ok(engineKt.includes('val rtl = RtlSdrDevice()'), 'Must instantiate native RtlSdrDevice');
       assert.ok(engineKt.includes('rtl.openAsync('), 'Must invoke native openAsync with file descriptor');
-      assert.ok(engineKt.includes('Socket("127.0.0.1", port)'), 'Must connect to loopback rtl_tcp socket');
+      assert.ok(engineKt.includes('127.0.0.1') && (engineKt.includes('Socket("127.0.0.1", port)') || engineKt.includes('connect(java.net.InetSocketAddress')), 'Must connect to loopback rtl_tcp socket');
       assert.ok(engineKt.includes('sendRtlTcpCommand'), 'Must implement sendRtlTcpCommand');
       assert.ok(engineKt.includes('setSampleRate(48000)'), 'AudioTrack must be configured at 48000 Hz');
       assert.ok(engineKt.includes('val isFm = (currentFreqHz in 162000000L..163000000L)'), 'Must support FM discriminator for NOAA Weather');
