@@ -45162,5 +45162,47 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('Issue #289: Continuous Test Channel Presets, Speaker BIST Tone & Android 14+ FGS Permissions (v1.243.4)', () => {
+    test('Version consistency: v1.243.4 across package.json, changelog, templates, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.243.4');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('Closes #289'), 'CHANGELOG.md must reference issue #289');
+
+      const appGradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+      const m = appGradle.match(/versionCode = (\d+)/);
+      assert.ok(m && parseInt(m[1]) >= 124340, 'android/app/build.gradle.kts versionCode must be >= 124340');
+      assert.ok(appGradle.match(/versionName = "\d+\.\d+\.\d+"/), 'android/app/build.gradle.kts versionName must be valid');
+    });
+
+    test('index_template.html and AndroidNativeBridge.js contain continuous test channel presets', () => {
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('id="comms-preset-vortone"'), 'index_template must contain comms-preset-vortone');
+      assert.ok(template.includes('id="comms-preset-noaa"'), 'index_template must contain comms-preset-noaa');
+      assert.ok(template.includes('id="comms-preset-atis"'), 'index_template must contain comms-preset-atis');
+      assert.ok(template.includes('id="comms-preset-fm"'), 'index_template must contain comms-preset-fm');
+
+      const bridge = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'AndroidNativeBridge.js'), 'utf8');
+      assert.ok(bridge.includes("id: 'comms-preset-vortone', freq: 116.700"), 'Bridge must map vortone preset');
+      assert.ok(bridge.includes("id: 'comms-preset-noaa', freq: 162.550"), 'Bridge must map noaa preset');
+      assert.ok(bridge.includes("id: 'comms-preset-atis', freq: 121.150"), 'Bridge must map atis preset');
+      assert.ok(bridge.includes("id: 'comms-preset-fm', freq: 97.100"), 'Bridge must map fm preset');
+    });
+
+    test('android/comms includes Android 14+ permissions, FGS exception safety, test tones and onResume re-attach', () => {
+      const manifest = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'AndroidManifest.xml'), 'utf8');
+      assert.ok(manifest.includes('android.permission.CHANGE_NETWORK_STATE'), 'Manifest must have CHANGE_NETWORK_STATE');
+      assert.ok(manifest.includes('android.permission.MODIFY_AUDIO_SETTINGS'), 'Manifest must have MODIFY_AUDIO_SETTINGS');
+
+      const serviceKt = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'SdrForegroundService.kt'), 'utf8');
+      assert.ok(serviceKt.includes('catch (e: Exception)'), 'startForeground must be guarded with try/catch');
+
+      const activityKt = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'CommsMainActivity.kt'), 'utf8');
+      assert.ok(activityKt.includes('playSpeakerTestTone()'), 'Activity must implement playSpeakerTestTone');
+      assert.ok(activityKt.includes('override fun onResume()'), 'Activity must re-attach USB onResume');
+      assert.ok(activityKt.includes('116.700 VOR Tone'), 'Activity must render VOR Tone preset');
+      assert.ok(activityKt.includes('162.550 NOAA WX'), 'Activity must render NOAA WX preset');
+    });
+  });
+
 });
 });

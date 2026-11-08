@@ -189,7 +189,11 @@ class SdrForegroundService : Service() {
             .setOngoing(true)
             .build()
 
-        startForeground(1090, notification)
+        try {
+            startForeground(1090, notification)
+        } catch (e: Exception) {
+            Log.w("AalaapiComms", "startForeground deferred: ${e.message}")
+        }
     }
 
     // ─── Local TCP SBS-1 Server (Port 30003) ──────────────────────────────────
