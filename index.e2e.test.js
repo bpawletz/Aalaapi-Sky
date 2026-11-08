@@ -13445,7 +13445,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       // Click to expand
       await toggle.click({ force: true });
-      await page.waitForTimeout(150);
+      await page.waitForFunction(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c && c.classList.contains('leaflet-control-layers-expanded');
+      }, null, { timeout: 5000 });
       const isExpandedClick = await page.evaluate(() => {
         const c = document.querySelector('.leaflet-control-layers');
         return c ? c.classList.contains('leaflet-control-layers-expanded') : false;
@@ -13454,13 +13457,57 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       // Click close button inside header
       const closeBtn = page.locator('.leaflet-control-layers-close-btn');
-      await closeBtn.click({ force: true });
-      await page.waitForTimeout(150);
+      await closeBtn.click();
+      await page.waitForFunction(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c && !c.classList.contains('leaflet-control-layers-expanded');
+      }, null, { timeout: 5000 });
       const isExpandedClose = await page.evaluate(() => {
         const c = document.querySelector('.leaflet-control-layers');
         return c ? c.classList.contains('leaflet-control-layers-expanded') : false;
       });
       assert.strictEqual(isExpandedClose, false, 'Layers menu MUST collapse when close button is clicked');
+
+      // Reopen and test bottom footer done/close button
+      await toggle.click({ force: true });
+      await page.waitForFunction(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c && c.classList.contains('leaflet-control-layers-expanded');
+      }, null, { timeout: 5000 });
+      const isExpandedReopen = await page.evaluate(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c ? c.classList.contains('leaflet-control-layers-expanded') : false;
+      });
+      assert.strictEqual(isExpandedReopen, true, 'Layers menu must reopen on toggle click');
+
+      const doneBtn = page.locator('.leaflet-control-layers-done-btn');
+      await doneBtn.click();
+      await page.waitForFunction(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c && !c.classList.contains('leaflet-control-layers-expanded');
+      }, null, { timeout: 5000 });
+      const isExpandedDoneClose = await page.evaluate(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c ? c.classList.contains('leaflet-control-layers-expanded') : false;
+      });
+      assert.strictEqual(isExpandedDoneClose, false, 'Layers menu MUST collapse when footer done button is clicked');
+
+      // Reopen and test Escape key collapse
+      await toggle.click({ force: true });
+      await page.waitForFunction(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c && c.classList.contains('leaflet-control-layers-expanded');
+      }, null, { timeout: 5000 });
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c && !c.classList.contains('leaflet-control-layers-expanded');
+      }, null, { timeout: 5000 });
+      const isExpandedEscape = await page.evaluate(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c ? c.classList.contains('leaflet-control-layers-expanded') : false;
+      });
+      assert.strictEqual(isExpandedEscape, false, 'Layers menu MUST collapse when Escape key is pressed');
     });
 
     test('E2E Desktop: Active ADS-B alert banner and Remote-ID HUD never overlap Zoom Presets (Plan & Airspace)', async () => {
@@ -13527,6 +13574,19 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       });
       assert.strictEqual(isMobileExpanded, true, 'Layers menu MUST expand on mobile touch tap');
 
+      // Test mobile done/close button tap
+      const mobileDoneBtn = mobilePage.locator('.leaflet-control-layers-done-btn');
+      await mobileDoneBtn.tap();
+      await mobilePage.waitForFunction(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c && !c.classList.contains('leaflet-control-layers-expanded');
+      }, null, { timeout: 5000 });
+      const isMobileClosed = await mobilePage.evaluate(() => {
+        const c = document.querySelector('.leaflet-control-layers');
+        return c ? c.classList.contains('leaflet-control-layers-expanded') : false;
+      });
+      assert.strictEqual(isMobileClosed, false, 'Layers menu MUST collapse when footer done button is tapped on mobile');
+
       // Check mobile overlap
       const mobileOverlapCheck = await mobilePage.evaluate(() => {
         const zoomPresets = document.getElementById('map-zoom-presets-control');
@@ -13550,6 +13610,75 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(mobileOverlapCheck.bannerOverlapsPresets, false, 'ADS-B alert banner must not overlap zoom presets on mobile');
       assert.strictEqual(mobileOverlapCheck.ridOverlapsPresets, false, 'Remote ID HUD must not overlap zoom presets on mobile');
       await mobileContext.close();
+    });
+  });
+
+  describe('Issue #285: Aalaapi Comms Standalone USB OTG RTL-SDR Radio Daemon (:comms) & Aalaapi Sky UAS Integration (v1.243.0)', () => {
+    test('E2E: Aalaapi Comms Remote Tuner card renders mode buttons, updates frequency on preset click, and displays ACARS datalink messages', async () => {
+      const result = await page.evaluate(async () => {
+        // Ensure ADS-B / Comms drawer is visible
+        const drawer = document.getElementById('adsb-drawer');
+        if (drawer) drawer.classList.remove('hidden');
+
+        const tunerCard = document.getElementById('adsb-sdr-tuner-card');
+        const modeAdsb = document.getElementById('comms-mode-adsb');
+        const modeAm = document.getElementById('comms-mode-am');
+        const modeAcars = document.getElementById('comms-mode-acars');
+        const tunerControls = document.getElementById('comms-tuner-controls');
+        const acarsContainer = document.getElementById('comms-acars-container');
+        const freqInput = document.getElementById('comms-freq-input');
+        const presetCtaf = document.getElementById('comms-preset-ctaf');
+        const acarsLog = document.getElementById('adsb-acars-log');
+
+        if (!tunerCard || !modeAdsb || !modeAm || !modeAcars || !tunerControls || !acarsContainer || !freqInput) {
+          return { success: false, reason: 'Tuner card elements missing', tunerCard: !!tunerCard, modeAdsb: !!modeAdsb, modeAm: !!modeAm, modeAcars: !!modeAcars, tunerControls: !!tunerControls, acarsContainer: !!acarsContainer, freqInput: !!freqInput };
+        }
+
+        // Test switching to AM mode
+        modeAm.click();
+        const isAmActive = modeAm.classList.contains('is-active') && !modeAdsb.classList.contains('is-active');
+        const isAmVisible = tunerControls.style.display !== 'none';
+
+        // Test clicking preset CTAF (122.800)
+        if (presetCtaf) presetCtaf.click();
+        const freqMatchesPreset = freqInput.value === '122.800';
+
+        // Test switching to ACARS mode
+        modeAcars.click();
+        const isAcarsActive = modeAcars.classList.contains('is-active') && !modeAm.classList.contains('is-active');
+        const isAcarsVisible = acarsContainer.style.display !== 'none';
+
+        // Ingest test ACARS message
+        if (typeof window.ingestAcarsMessage === 'function') {
+          window.ingestAcarsMessage({
+            callsign: 'UAL123',
+            tail: 'N12345',
+            text: 'METAR KORD 080051Z 24012KT 10SM CLR'
+          });
+        }
+        const acarsHasContent = acarsLog && acarsLog.textContent.includes('UAL123') && acarsLog.textContent.includes('KORD');
+
+        // Switch back to ADS-B
+        modeAdsb.click();
+        const isAdsbActive = modeAdsb.classList.contains('is-active');
+        const amHiddenAfterAdsb = tunerControls.style.display === 'none';
+        const acarsHiddenAfterAdsb = acarsContainer.style.display === 'none';
+
+        return {
+          success: isAmActive && isAmVisible && freqMatchesPreset && isAcarsActive && isAcarsVisible && acarsHasContent && isAdsbActive && amHiddenAfterAdsb && acarsHiddenAfterAdsb,
+          isAmActive,
+          isAmVisible,
+          freqMatchesPreset,
+          isAcarsActive,
+          isAcarsVisible,
+          acarsHasContent,
+          isAdsbActive,
+          amHiddenAfterAdsb,
+          acarsHiddenAfterAdsb
+        };
+      });
+
+      assert.strictEqual(result.success, true, `Aalaapi Comms remote tuner E2E verification failed: ${JSON.stringify(result)}`);
     });
   });
 });

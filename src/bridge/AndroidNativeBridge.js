@@ -524,6 +524,176 @@
           }
         });
       }
+
+      this.bindCommsUi();
+    },
+
+    bindCommsUi() {
+      if (typeof document === 'undefined') return;
+
+      const modeAdsbBtn = document.getElementById('comms-mode-adsb');
+      const modeAmBtn = document.getElementById('comms-mode-am');
+      const modeAcarsBtn = document.getElementById('comms-mode-acars');
+      const tunerControls = document.getElementById('comms-tuner-controls');
+      const acarsContainer = document.getElementById('comms-acars-container');
+      const freqInput = document.getElementById('comms-freq-input');
+      const tuneBtn = document.getElementById('comms-tune-btn');
+      const squelchSlider = document.getElementById('comms-squelch-slider');
+      const squelchVal = document.getElementById('comms-squelch-val');
+      const launchBtn = document.getElementById('comms-launch-btn');
+      const acarsClearBtn = document.getElementById('comms-acars-clear-btn');
+
+      const setModeActive = (activeBtn) => {
+        [modeAdsbBtn, modeAmBtn, modeAcarsBtn].forEach(b => {
+          if (!b) return;
+          b.classList.remove('is-active');
+          b.style.background = 'rgba(255, 255, 255, 0.05)';
+          b.style.borderColor = 'var(--border-color)';
+          b.style.color = 'var(--text-muted)';
+        });
+        if (activeBtn) {
+          activeBtn.classList.add('is-active');
+          activeBtn.style.background = 'rgba(16, 185, 129, 0.2)';
+          activeBtn.style.borderColor = '#10b981';
+          activeBtn.style.color = '#10b981';
+        }
+      };
+
+      if (modeAdsbBtn) {
+        modeAdsbBtn.addEventListener('click', () => {
+          setModeActive(modeAdsbBtn);
+          if (tunerControls) tunerControls.style.display = 'none';
+          if (acarsContainer) acarsContainer.style.display = 'none';
+          this.tuneCommsDaemon('ADSB_1090', 1090000000, -45);
+        });
+      }
+
+      if (modeAmBtn) {
+        modeAmBtn.addEventListener('click', () => {
+          setModeActive(modeAmBtn);
+          if (tunerControls) tunerControls.style.display = 'flex';
+          if (acarsContainer) acarsContainer.style.display = 'none';
+          const freqMhz = freqInput ? (parseFloat(freqInput.value) || 122.8) : 122.8;
+          const squelch = squelchSlider ? parseInt(squelchSlider.value, 10) : -45;
+          this.tuneCommsDaemon('AIRBAND_AM', Math.round(freqMhz * 1e6), squelch);
+        });
+      }
+
+      if (modeAcarsBtn) {
+        modeAcarsBtn.addEventListener('click', () => {
+          setModeActive(modeAcarsBtn);
+          if (tunerControls) tunerControls.style.display = 'none';
+          if (acarsContainer) acarsContainer.style.display = 'flex';
+          this.tuneCommsDaemon('ACARS_VHF', 131550000, -45);
+        });
+      }
+
+      // Presets
+      const presets = [
+        { id: 'comms-preset-ctaf', freq: 122.800 },
+        { id: 'comms-preset-guard', freq: 121.500 },
+        { id: 'comms-preset-airair', freq: 122.750 },
+        { id: 'comms-preset-tower', freq: 118.000 }
+      ];
+      presets.forEach(p => {
+        const btn = document.getElementById(p.id);
+        if (btn) {
+          btn.addEventListener('click', () => {
+            if (freqInput) freqInput.value = p.freq.toFixed(3);
+            const squelch = squelchSlider ? parseInt(squelchSlider.value, 10) : -45;
+            this.tuneCommsDaemon('AIRBAND_AM', Math.round(p.freq * 1e6), squelch);
+          });
+        }
+      });
+
+      if (tuneBtn && freqInput) {
+        tuneBtn.addEventListener('click', () => {
+          const freqMhz = parseFloat(freqInput.value) || 122.8;
+          const squelch = squelchSlider ? parseInt(squelchSlider.value, 10) : -45;
+          this.tuneCommsDaemon('AIRBAND_AM', Math.round(freqMhz * 1e6), squelch);
+        });
+      }
+
+      if (squelchSlider && squelchVal) {
+        squelchSlider.addEventListener('input', () => {
+          squelchVal.textContent = `${squelchSlider.value} dB`;
+        });
+        squelchSlider.addEventListener('change', () => {
+          const freqMhz = freqInput ? (parseFloat(freqInput.value) || 122.8) : 122.8;
+          const squelch = parseInt(squelchSlider.value, 10);
+          this.tuneCommsDaemon('AIRBAND_AM', Math.round(freqMhz * 1e6), squelch);
+        });
+      }
+
+      if (acarsClearBtn) {
+        acarsClearBtn.addEventListener('click', () => {
+          this.acarsMessages = [];
+          const log = document.getElementById('adsb-acars-log');
+          if (log) log.innerHTML = '<em>No ACARS datalink frames received yet.</em>';
+        });
+      }
+
+      if (launchBtn) {
+        launchBtn.addEventListener('click', () => {
+          this.launchCommsApp();
+        });
+      }
+    },
+
+    tuneCommsDaemon(mode, freqHz, squelch = -45) {
+      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.tuneCommsDaemon === 'function') {
+        try {
+          window.AalaapiAndroid.tuneCommsDaemon(mode, freqHz, squelch);
+        } catch (_) {}
+      }
+      try {
+        if (typeof fetch === 'function') {
+          fetch(`http://127.0.0.1:8080/api/comms/tune?mode=${encodeURIComponent(mode)}&freqHz=${freqHz}&squelch=${squelch}`, { mode: 'no-cors' }).catch(() => {});
+        }
+      } catch (_) {}
+      if (typeof showToast === 'function') {
+        const modeLabel = mode === 'ADSB_1090' ? 'ADS-B 1090 MHz' : (mode === 'ACARS_VHF' ? 'ACARS 131.550 MHz' : `Airband AM ${(freqHz / 1e6).toFixed(3)} MHz`);
+        showToast(`📡 Aalaapi Comms: Tuned to ${modeLabel}`, 'info');
+      }
+    },
+
+    launchCommsApp() {
+      let launched = false;
+      if (typeof window !== 'undefined' && window.AalaapiAndroid && typeof window.AalaapiAndroid.launchCommsApp === 'function') {
+        try {
+          launched = window.AalaapiAndroid.launchCommsApp();
+        } catch (_) {}
+      }
+      if (typeof showToast === 'function') {
+        if (launched) {
+          showToast('🚀 Opening Aalaapi Comms...', 'info');
+        } else {
+          showToast('💡 Launch Aalaapi Comms from your Android app drawer', 'info');
+        }
+      }
+    },
+
+    ingestAcarsMessage(payload) {
+      if (!this.acarsMessages) this.acarsMessages = [];
+      const msgObj = typeof payload === 'string' ? { text: payload, timestamp: Date.now() } : payload;
+      this.acarsMessages.unshift(msgObj);
+      if (this.acarsMessages.length > 50) this.acarsMessages.pop();
+
+      if (typeof document !== 'undefined') {
+        const log = document.getElementById('adsb-acars-log');
+        if (log) {
+          const timeStr = new Date(msgObj.timestamp || Date.now()).toLocaleTimeString();
+          const cleanText = (msgObj.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          const csStr = msgObj.callsign ? `<span style="color: #10b981; font-weight: 600;">${msgObj.callsign}</span> ` : '';
+          const tailStr = msgObj.tail ? `<span style="color: #94a3b8;">(${msgObj.tail})</span> ` : '';
+          const lineHtml = `<div style="margin-bottom: 3px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px;"><span style="color: #64748b;">[${timeStr}]</span> ${csStr}${tailStr}<span style="color: #38bdf8;">${cleanText}</span></div>`;
+          if (log.innerHTML.includes('No ACARS datalink frames')) {
+            log.innerHTML = lineHtml;
+          } else {
+            log.innerHTML = lineHtml + log.innerHTML;
+          }
+        }
+      }
     },
 
     // ─── Remote ID Ingestion (BLE / Wi-Fi) ───────────────────────────────────
@@ -1259,6 +1429,7 @@
     window.ingestAdsbJson = (jsonPayload) => AndroidNativeBridge.ingestAdsbJson(jsonPayload);
     window.onAdsbStatusChanged = (status, host, port, error) => AndroidNativeBridge.onAdsbStatusChanged(status, host, port, error);
     window.onAdsbHardwareChanged = (hwData) => AndroidNativeBridge.handleAdsbHardwareChanged(hwData);
+    window.ingestAcarsMessage = (payload) => AndroidNativeBridge.ingestAcarsMessage(payload);
     window.onNativeTtsError = (message) => {
       if (typeof showToast === 'function') showToast('🔇 ' + (message || 'Voice advisory unavailable'), 'error');
     };

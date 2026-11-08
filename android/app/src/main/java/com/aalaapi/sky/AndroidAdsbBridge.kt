@@ -281,4 +281,43 @@ class AndroidAdsbBridge(private val context: Context, private val webView: WebVi
             )
         }
     }
+
+    fun tuneCommsDaemon(mode: String, freqHz: Long, squelch: Int): String {
+        return try {
+            val intent = Intent("com.aalaapi.comms.ACTION_TUNE").apply {
+                setPackage("com.aalaapi.comms")
+                putExtra("mode", mode)
+                putExtra("freqHz", freqHz)
+                putExtra("squelch", squelch)
+            }
+            context.sendBroadcast(intent)
+            JSONObject().apply {
+                put("success", true)
+                put("mode", mode)
+                put("freqHz", freqHz)
+                put("squelch", squelch)
+            }.toString()
+        } catch (e: Exception) {
+            JSONObject().apply {
+                put("success", false)
+                put("error", e.message)
+            }.toString()
+        }
+    }
+
+    fun launchCommsApp(): Boolean {
+        return try {
+            val pm = context.packageManager
+            val intent = pm.getLaunchIntentForPackage("com.aalaapi.comms")
+            if (intent != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                true
+            } else {
+                false
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
 }

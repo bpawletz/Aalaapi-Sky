@@ -16339,19 +16339,24 @@ const AdsbAirspaceManager = {
             tipEl.innerHTML = '⚠️ <strong>USB Permission Required:</strong> Please allow USB access on your Android device for the RTL-SDR dongle.';
           }
         } else if (st.hardware.platform === 'android' || (typeof window !== 'undefined' && window.AalaapiAndroid)) {
-          hwEl.textContent = `${st.hardware.deviceName || 'RTL-SDR'} (USB OTG Ready)`;
-          hwEl.style.color = '#10b981';
-          if (tipEl && !st.connected) {
-            tipEl.style.display = 'block';
-            tipEl.innerHTML = '🔌 <strong>RTL-SDR Detected via USB OTG:</strong> To stream local 1090 MHz frames into Aalaapi Sky, run an ADS-B decoder app (e.g. <em>RTL-SDR Driver</em> or <em>dump1090</em>) on port <code>30003</code>, or tap <strong>Start Watching</strong> above to stream live cloud radar from <strong>adsb.lol</strong>.';
+          if (st.connected || isAndroidConnected) {
+            hwEl.textContent = 'Aalaapi Comms SDR Daemon (Active)';
+            hwEl.style.color = '#10b981';
+          } else {
+            hwEl.textContent = `${st.hardware.deviceName || 'RTL-SDR'} (USB OTG Ready)`;
+            hwEl.style.color = '#10b981';
+            if (tipEl) {
+              tipEl.style.display = 'block';
+              tipEl.innerHTML = '💡 <strong>RTL-SDR Aviation Receiver:</strong> Launch <strong>Aalaapi Comms</strong> to start streaming 1090 MHz Mode S radar and VHF aviation radio over USB OTG.';
+            }
           }
         } else {
           hwEl.textContent = 'Ready (WinUSB Active)';
           hwEl.style.color = '#10b981';
         }
       } else if (isAndroidConnected || (st && st.driverType === 'Android Native Socket')) {
-        hwEl.textContent = 'Android Native / RTL-SDR Socket';
-        hwEl.style.color = '#38bdf8';
+        hwEl.textContent = 'Aalaapi Comms SDR Daemon (Active)';
+        hwEl.style.color = '#10b981';
       } else if (isCloudActive) {
         hwEl.textContent = 'Online Cloud Feed (adsb.lol)';
         hwEl.style.color = '#38bdf8';
@@ -16477,6 +16482,19 @@ const AdsbAirspaceManager = {
     }
 
 
+
+    const commsBadge = document.getElementById('comms-status-badge');
+    if (commsBadge) {
+      if (isAndroidConnected || (st && st.connected && (targetPort === 30003 || targetPort === 8080))) {
+        commsBadge.textContent = 'Daemon Active';
+        commsBadge.style.color = '#10b981';
+        commsBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+      } else {
+        commsBadge.textContent = 'Daemon Standby';
+        commsBadge.style.color = '#38bdf8';
+        commsBadge.style.background = 'rgba(56, 189, 248, 0.15)';
+      }
+    }
 
     this.updateStreamTransportUI();
 
