@@ -15,6 +15,7 @@
 - **Android 14+ FGS `connectedDevice` Compliance & Resilience (Closes #289)**:
   - Declared `CHANGE_NETWORK_STATE`, `CHANGE_WIFI_STATE`, and `MODIFY_AUDIO_SETTINGS` in `android/comms/src/main/AndroidManifest.xml`, satisfying Android 14/15 (API 34/35) foreground service security checks before USB device permissions are resolved.
   - Guarded `startForeground()` with try/catch exception handling in `SdrForegroundService.kt` to prevent boot or reinstallation crashes when USB permission prompts are pending.
+  - Configured explicit package targeting on the USB permission `PendingIntent` (`setPackage(packageName)`), preventing `IllegalArgumentException` on Android 14+ when using `FLAG_MUTABLE`.
   - Added `onResume()` USB re-attachment in `CommsMainActivity.kt` so the engine immediately begins streaming upon returning from system permission prompts.
 
 ## [1.243.3] - 2026-11-08

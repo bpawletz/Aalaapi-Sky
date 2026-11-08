@@ -454,13 +454,21 @@ class CommsMainActivity : AppCompatActivity() {
             val isRtl = vid == 3034 || vid == 0x0BDA || device.productName?.contains("SDR", ignoreCase = true) == true
             if (isRtl) {
                 if (!usbManager.hasPermission(device)) {
-                    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                    } else {
-                        PendingIntent.FLAG_UPDATE_CURRENT
+                    try {
+                        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                        } else {
+                            PendingIntent.FLAG_UPDATE_CURRENT
+                        }
+                        val broadcastIntent = Intent(ACTION_USB_PERMISSION).apply {
+                            setPackage(packageName)
+                        }
+                        val permissionIntent = PendingIntent.getBroadcast(this, 0, broadcastIntent, flags)
+                        appendLog("Requesting USB permission for ${device.productName ?: "RTL-SDR"}...")
+                        usbManager.requestPermission(device, permissionIntent)
+                    } catch (e: Exception) {
+                        appendLog("⚠️ Failed to request USB permission: ${e.message}")
                     }
-                    val intent = PendingIntent.getBroadcast(this, 0, Intent(ACTION_USB_PERMISSION), flags)
-                    usbManager.requestPermission(device, intent)
                 } else {
                     service?.startSdr(device)
                     appendLog("Connected to ${device.productName ?: "RTL-SDR"}. Streaming started.")

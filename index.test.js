@@ -45199,6 +45199,7 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       const activityKt = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'CommsMainActivity.kt'), 'utf8');
       assert.ok(activityKt.includes('playSpeakerTestTone()'), 'Activity must implement playSpeakerTestTone');
       assert.ok(activityKt.includes('override fun onResume()'), 'Activity must re-attach USB onResume');
+      assert.ok(activityKt.includes('setPackage(packageName)'), 'PendingIntent must use explicit package for Android 14+');
       assert.ok(activityKt.includes('116.700 VOR Tone'), 'Activity must render VOR Tone preset');
       assert.ok(activityKt.includes('162.550 NOAA WX'), 'Activity must render NOAA WX preset');
     });
