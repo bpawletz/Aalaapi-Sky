@@ -1,3 +1,21 @@
+## [1.243.5] - 2026-11-08
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Embedded Native `librtlsdr` & Rafael Micro R820T/R820T2 Tuner Engine (Closes #290)**:
+  - Embedded native Osmocom `liblibrtlsdr.so`, `liblibusb.so`, and `librtlSdrAndroid.so` multi-arch libraries (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) directly into Aalaapi Comms, making the app 100% self-contained with no external driver or third-party app required.
+  - Implemented Rafael Micro R820T/R820T2 analog RF tuner PLL calibration, VCO tracking, and automatic gain control (AGC) via native C execution, locking carriers across the entire 24–1766 MHz spectrum with hardware sensitivity.
+  - Added dual AM/FM demodulation: VHF Airband (118–137 MHz) and VOR beacons (108–118 MHz) are demodulated via AM envelope detection with IIR DC blocker, while NOAA Weather Radio (162.550 MHz) and FM broadcast are demodulated via a low-latency FM phase discriminator.
+  - Output audio streams to Android `AudioTrack` at native 48,000 Hz 16-bit PCM mono with volume boost and adjustable squelch gating.
+
+#### Under the Hood & Technical Details
+- **Loopback `rtl_tcp` Bridge & JNI Device Binding (`RtlSdrUsbEngine.kt`, `RtlSdrDevice.kt`) (Closes #290)**:
+  - Added `com.sdrtouch.rtlsdr.driver.RtlSdrDevice` JNI bridge with `initialize()`, `close()`, `deInit()`, `openAsync()`, `announceOnOpen()`, and `announceOnClosed()`.
+  - Refactored `RtlSdrUsbEngine.kt` to pass the open Android USB file descriptor (`connection.fileDescriptor`) to native `openAsync` and connect via in-process loopback TCP socket (`127.0.0.1:1234`).
+  - Added real-time binary `rtl_tcp` command dispatching (`0x01` frequency, `0x02` sample rate, `0x03` AGC mode, `0x08` tuner AGC) for instantaneous retuning without USB re-enumeration.
+  - Updated `CREDITS.md` and `#about-credits-section` in `index_template.html` and `index.html` with full open-source licensing and attribution for `librtlsdr` (GPL-2.0), `libusb` (LGPL-2.1), and `rtl_tcp_andro` (GPL-2.0).
+
 ## [1.243.4] - 2026-11-08
 
 ### 🚀 Added

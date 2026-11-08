@@ -9411,7 +9411,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.243.4</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.243.5</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -17158,7 +17158,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.243.4</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.243.5</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17297,6 +17297,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
               <strong style="color: var(--text-main); display: block;">dji-log-parser (v0.5.7)</strong>
               <span style="color: var(--text-muted);">MIT License &copy; Louis Vauvillier (lvauvillier). Native DJI v13/v14 flight record parser &amp; keychain decryptor.</span>
             </div>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 6px 8px; grid-column: span 2;">
+              <strong style="color: var(--text-main); display: block;">librtlsdr, libusb &amp; rtl_tcp_andro</strong>
+              <span style="color: var(--text-muted);">GPL-2.0 / LGPL-2.1 &copy; Osmocom, libusb &amp; Martin Marinov. Embedded native C drivers for RTL2832U &amp; R820T2 RF tuner PLL calibration &amp; loopback streaming.</span>
+            </div>
           </div>
         </div>
 
@@ -17321,6 +17325,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                               <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.243.5):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Embedded Native librtlsdr &amp; Rafael Micro R820T/R820T2 Tuner Engine (Closes #290):</strong> Embedded native <code>liblibrtlsdr.so</code>, <code>liblibusb.so</code>, and <code>librtlSdrAndroid.so</code> multi-arch libraries into Aalaapi Comms for self-contained, native C execution with complete R820T2 PLL calibration, VCO tracking, and automatic gain control.</li>
+                  <li><strong>Dual AM/FM Demodulation &amp; 48 kHz PCM AudioTrack (Closes #290):</strong> Added AM envelope demodulation for VHF Airband &amp; VOR beacons alongside low-latency FM phase discrimination for NOAA Weather Radio (162.550 MHz) and FM broadcast, outputting to Android <code>AudioTrack</code> with volume boost and adjustable squelch gating.</li>
+                  <li><strong>Loopback rtl_tcp Socket Bridge:</strong> Implemented real-time binary <code>rtl_tcp</code> socket streaming over <code>127.0.0.1:1234</code> with dynamic retuning commands (<code>0x01</code>, <code>0x02</code>, <code>0x03</code>, <code>0x08</code>) without re-enumerating USB.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.243.4):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
