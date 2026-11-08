@@ -288,4 +288,4 @@ if (require.main === module) {
     main();
 }
 
-module.exports = { findAdb, getConnectedDevices, findApkForApp, APP_CONFIGS };
+module.exports = { findAdb, getConnectedDevices, findApk: (explicitPath) => findApkForApp('sky', explicitPath), findApkForApp, APP_CONFIGS };

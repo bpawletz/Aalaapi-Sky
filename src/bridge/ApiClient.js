@@ -16494,6 +16494,23 @@ const AdsbAirspaceManager = {
         commsBadge.style.color = '#38bdf8';
         commsBadge.style.background = 'rgba(56, 189, 248, 0.15)';
       }
+
+      // Fetch live RF signal metrics from Aalaapi Comms daemon (v1.243.1 - Issue #286)
+      if (typeof AndroidNativeBridge !== 'undefined' && typeof AndroidNativeBridge.updateRfSignalMetrics === 'function') {
+        const adsbDrawer = document.getElementById('adsb-drawer');
+        if (adsbDrawer && !adsbDrawer.classList.contains('hidden')) {
+          const host = (this.serverHost || '127.0.0.1').split(':')[0] || '127.0.0.1';
+          const port = (targetPort === 8080 || targetPort === 18080) ? targetPort : 8080;
+          fetch(`http://${host}:${port}/api/comms/status`, { signal: AbortSignal.timeout(1200) })
+            .then(res => res.json())
+            .then(data => {
+              if (data && typeof data === 'object') {
+                AndroidNativeBridge.updateRfSignalMetrics(data);
+              }
+            })
+            .catch(() => {});
+        }
+      }
     }
 
     this.updateStreamTransportUI();

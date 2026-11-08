@@ -13680,5 +13680,67 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       assert.strictEqual(result.success, true, `Aalaapi Comms remote tuner E2E verification failed: ${JSON.stringify(result)}`);
     });
+
+    test('Issue #286: Real-time RF signal strength (dBFS), RX pulse indicator, and msg rate meter', async () => {
+      const result = await page.evaluate(() => {
+        const drawer = document.getElementById('adsb-drawer');
+        if (drawer) drawer.classList.remove('hidden');
+
+        const meterBar = document.getElementById('comms-rf-meter-bar');
+        const meterVal = document.getElementById('comms-rf-meter-val');
+        const rxDot = document.getElementById('comms-rx-dot');
+        const msgRateBadge = document.getElementById('comms-msg-rate-badge');
+
+        if (!meterBar || !meterVal || !rxDot || !msgRateBadge) {
+          return {
+            success: false,
+            reason: 'RF signal meter elements missing from DOM',
+            meterBar: !!meterBar,
+            meterVal: !!meterVal,
+            rxDot: !!rxDot,
+            msgRateBadge: !!msgRateBadge
+          };
+        }
+
+        if (typeof window.updateRfSignalMetrics !== 'function') {
+          return { success: false, reason: 'window.updateRfSignalMetrics is not defined' };
+        }
+
+        // Test with moderate signal
+        window.updateRfSignalMetrics({
+          rssiDbfs: -45.0,
+          msgRate: 14.2,
+          preamblesPerSec: 320
+        });
+
+        const valText = meterVal.textContent;
+        const barWidth = meterBar.style.width;
+        const rateText = msgRateBadge.textContent;
+        const dotBg = rxDot.style.background;
+
+        // Test with clipped floor signal
+        window.updateRfSignalMetrics({
+          rssiDbfs: -95.0,
+          msgRate: 0.0,
+          preamblesPerSec: 0
+        });
+        const floorWidth = meterBar.style.width;
+
+        return {
+          success: valText.includes('-45 dBFS') &&
+                   parseFloat(barWidth) > 40 && parseFloat(barWidth) <= 100 &&
+                   rateText.includes('14.2 msg/s') &&
+                   dotBg.includes('185') &&
+                   parseFloat(floorWidth) === 0,
+          valText,
+          barWidth,
+          rateText,
+          dotBg,
+          floorWidth
+        };
+      });
+
+      assert.strictEqual(result.success, true, `Issue #286 RF signal meter E2E verification failed: ${JSON.stringify(result)}`);
+    });
   });
 });

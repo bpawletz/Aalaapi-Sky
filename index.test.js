@@ -44899,8 +44899,9 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(changelog.includes('Closes #285'), 'CHANGELOG.md must reference issue #285');
 
       const appGradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-      assert.ok(appGradle.includes('versionCode = 124300'), 'android/app/build.gradle.kts versionCode must be 124300');
-      assert.ok(appGradle.includes('versionName = "1.243.0"'), 'android/app/build.gradle.kts versionName must be 1.243.0');
+      const m = appGradle.match(/versionCode = (\d+)/);
+      assert.ok(m && parseInt(m[1]) >= 124300, 'android/app/build.gradle.kts versionCode must be >= 124300');
+      assert.ok(appGradle.match(/versionName = "\d+\.\d+\.\d+"/), 'android/app/build.gradle.kts versionName must be valid');
     });
 
     test('android/settings.gradle.kts configures multi-module architecture including :app and :comms', () => {
@@ -44981,6 +44982,91 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       const mainKt = fs.readFileSync(path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'MainActivity.kt'), 'utf8');
       assert.ok(mainKt.includes('fun tuneCommsDaemon'), 'MainActivity must expose tuneCommsDaemon to webview');
       assert.ok(mainKt.includes('fun launchCommsApp'), 'MainActivity must expose launchCommsApp to webview');
+    });
+  });
+
+  describe('Issue #286: RF Signal Strength (dBFS), Candidate Pulse Counter, Msg/s Rate & Visual RX Activity Indicators (v1.243.1)', () => {
+    test('Version consistency: v1.243.1 across package.json, changelog, templates, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.243.1');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('Closes #286'), 'CHANGELOG.md must reference issue #286');
+
+      const appGradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+      assert.ok(appGradle.includes('versionCode = 124310'), 'android/app/build.gradle.kts versionCode must be 124310');
+      assert.ok(appGradle.includes('versionName = "1.243.1"'), 'android/app/build.gradle.kts versionName must be 1.243.1');
+    });
+
+    test('RtlSdrUsbEngine computes continuous raw I/Q signal power in dBFS and tracks candidate preambles', () => {
+      const engineKt = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'RtlSdrUsbEngine.kt'), 'utf8');
+      assert.ok(engineKt.includes('var onRfSignalLevel: ((Float, Long) -> Unit)?'), 'RtlSdrUsbEngine must declare onRfSignalLevel callback');
+      assert.ok(engineKt.includes('var preamblesTotal: Long = 0L'), 'RtlSdrUsbEngine must track preamblesTotal');
+      assert.ok(engineKt.includes('var currentRssiDbfs: Float = -90f'), 'RtlSdrUsbEngine must track currentRssiDbfs');
+      assert.ok(engineKt.includes('preamblesTotal++'), 'RtlSdrUsbEngine must increment preamblesTotal on candidate preamble detection');
+      assert.ok(engineKt.includes('currentRssiDbfs = dbfs'), 'RtlSdrUsbEngine must record RMS dBFS in ADS-B demod loop');
+    });
+
+    test('SdrForegroundService tracks rolling msgRate and preamblesPerSec and exposes them in getStatusJson', () => {
+      const serviceKt = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'SdrForegroundService.kt'), 'utf8');
+      assert.ok(serviceKt.includes('var msgRate: Double = 0.0'), 'SdrForegroundService must track msgRate');
+      assert.ok(serviceKt.includes('var preamblesPerSec: Long = 0L'), 'SdrForegroundService must track preamblesPerSec');
+      assert.ok(serviceKt.includes('put("rssiDbfs"'), 'getStatusJson must include rssiDbfs');
+      assert.ok(serviceKt.includes('put("msgRate"'), 'getStatusJson must include msgRate');
+      assert.ok(serviceKt.includes('put("preamblesPerSec"'), 'getStatusJson must include preamblesPerSec');
+      assert.ok(serviceKt.includes('put("preamblesTotal"'), 'getStatusJson must include preamblesTotal');
+    });
+
+    test('CommsMainActivity renders meterBar and updates telemetry strip with pulse rate and RX indicator', () => {
+      const activityKt = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'CommsMainActivity.kt'), 'utf8');
+      assert.ok(activityKt.includes('private lateinit var meterBar: android.widget.ProgressBar'), 'CommsMainActivity must declare meterBar');
+      assert.ok(activityKt.includes('meterBar = android.widget.ProgressBar'), 'CommsMainActivity must instantiate meterBar in layout');
+      assert.ok(activityKt.includes('eng.onRfSignalLevel = {'), 'CommsMainActivity must listen to onRfSignalLevel callback');
+      assert.ok(activityKt.includes('meterBar.progress = pct'), 'CommsMainActivity must update meterBar progress');
+    });
+
+    test('index_template.html defines RF signal meter bar, dBFS readout, RX dot, and message rate badge', () => {
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('id="comms-rf-meter-bar"'), 'index_template.html must include #comms-rf-meter-bar');
+      assert.ok(template.includes('id="comms-rf-meter-val"'), 'index_template.html must include #comms-rf-meter-val');
+      assert.ok(template.includes('id="comms-rx-dot"'), 'index_template.html must include #comms-rx-dot');
+      assert.ok(template.includes('id="comms-msg-rate-badge"'), 'index_template.html must include #comms-msg-rate-badge');
+    });
+
+    test('AndroidNativeBridge implements updateRfSignalMetrics and updates DOM elements accurately', () => {
+      const bridgeSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'AndroidNativeBridge.js'), 'utf8');
+      assert.ok(bridgeSrc.includes('updateRfSignalMetrics(metrics)'), 'AndroidNativeBridge must implement updateRfSignalMetrics');
+      assert.ok(bridgeSrc.includes('window.updateRfSignalMetrics = (metrics) =>'), 'Must expose window.updateRfSignalMetrics');
+
+      const { JSDOM } = require('jsdom');
+      const dom = new JSDOM(`<!DOCTYPE html>
+        <html><body>
+          <span id="comms-rf-meter-val">- dBFS</span>
+          <div id="comms-rf-meter-bar" style="width: 0%;"></div>
+          <span id="comms-rx-dot"></span>
+          <span id="comms-msg-rate-badge">0 msg/s</span>
+        </body></html>`);
+
+      const prevDoc = global.document;
+      global.document = dom.window.document;
+
+      try {
+        const { AndroidNativeBridge } = require('./src/bridge/AndroidNativeBridge.js');
+        AndroidNativeBridge.updateRfSignalMetrics({
+          rssiDbfs: -46.2,
+          msgRate: 14.5,
+          preamblesPerSec: 320
+        });
+
+        const valEl = dom.window.document.getElementById('comms-rf-meter-val');
+        const barEl = dom.window.document.getElementById('comms-rf-meter-bar');
+        const badgeEl = dom.window.document.getElementById('comms-msg-rate-badge');
+
+        assert.strictEqual(valEl.textContent, '-46 dBFS');
+        // -46.2 dBFS -> ((-46.2 + 90) / 70) * 100 = 62.5% -> 63%
+        assert.ok(barEl.style.width.includes('63%') || barEl.style.width.includes('62%'), 'Bar width must reflect -46 dBFS mapping');
+        assert.strictEqual(badgeEl.textContent, '14.5 msg/s');
+      } finally {
+        global.document = prevDoc;
+      }
     });
   });
 

@@ -55,6 +55,16 @@ class SdrForegroundService : Service() {
         private set
     var packetsReceived = 0L
         private set
+    var currentRssiDbfs: Float = -90f
+        private set
+    var msgRate: Double = 0.0
+        private set
+    var preamblesPerSec: Long = 0L
+        private set
+
+    private var windowMsgCount = 0L
+    private var lastRateCalcTime = System.currentTimeMillis()
+    private var lastPreambleSnapshot = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -63,13 +73,29 @@ class SdrForegroundService : Service() {
 
         sdrEngine.onAdsbSbsLine = { line ->
             packetsReceived++
+            windowMsgCount++
             broadcastSbsLine(line)
             parseAndUpdateAircraft(line)
         }
 
         sdrEngine.onAcarsMessage = { acarsJson ->
+            windowMsgCount++
             recentAcarsMessages.add(0, acarsJson)
             if (recentAcarsMessages.size > 50) recentAcarsMessages.removeAt(recentAcarsMessages.size - 1)
+        }
+
+        sdrEngine.onRfSignalLevel = { dbfs, preamblesTotal ->
+            currentRssiDbfs = dbfs
+            val now = System.currentTimeMillis()
+            val dt = now - lastRateCalcTime
+            if (dt >= 1000) {
+                val dP = (preamblesTotal - lastPreambleSnapshot).coerceAtLeast(0L)
+                preamblesPerSec = (dP * 1000L) / dt
+                msgRate = (windowMsgCount * 1000.0) / dt
+                lastPreambleSnapshot = preamblesTotal
+                windowMsgCount = 0L
+                lastRateCalcTime = now
+            }
         }
 
         startForegroundNotification()
@@ -124,6 +150,10 @@ class SdrForegroundService : Service() {
             put("freqHz", sdrEngine.currentFreqHz)
             put("freqMhz", sdrEngine.currentFreqHz / 1e6)
             put("squelchDbfs", sdrEngine.currentSquelchDbfs)
+            put("rssiDbfs", ((currentRssiDbfs * 10).toInt()) / 10.0)
+            put("msgRate", ((msgRate * 10).toInt()) / 10.0)
+            put("preamblesPerSec", preamblesPerSec)
+            put("preamblesTotal", sdrEngine.preamblesTotal)
             put("packetsReceived", packetsReceived)
             put("activeTcpClients", tcpClients.size)
             put("aircraftCount", trackedAircraft.size)
