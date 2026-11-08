@@ -51,12 +51,44 @@ class RtlSdrUsbEngine(
     }
 
     var onAdsbSbsLine: ((String) -> Unit)? = null
+    val adsbListeners = CopyOnWriteArrayList<(String) -> Unit>()
     var onAdsbAvrFrame: ((String) -> Unit)? = null
+    val avrFrameListeners = CopyOnWriteArrayList<(String) -> Unit>()
     var onAcarsMessage: ((JSONObject) -> Unit)? = null
+    val acarsListeners = CopyOnWriteArrayList<(JSONObject) -> Unit>()
     var onAudioLevel: ((Float, Boolean) -> Unit)? = null
     var onRfSignalLevel: ((Float, Long) -> Unit)? = null
     val rfSignalListeners = CopyOnWriteArrayList<(Float, Long) -> Unit>()
     var onStatusChanged: ((String, String) -> Unit)? = null
+    val statusListeners = CopyOnWriteArrayList<(String, String) -> Unit>()
+
+    fun dispatchAdsbSbs(line: String) {
+        onAdsbSbsLine?.invoke(line)
+        for (l in adsbListeners) {
+            try { l(line) } catch (_: Exception) {}
+        }
+    }
+
+    fun dispatchAdsbAvr(avr: String) {
+        onAdsbAvrFrame?.invoke(avr)
+        for (l in avrFrameListeners) {
+            try { l(avr) } catch (_: Exception) {}
+        }
+    }
+
+    fun dispatchAcars(json: JSONObject) {
+        onAcarsMessage?.invoke(json)
+        for (l in acarsListeners) {
+            try { l(json) } catch (_: Exception) {}
+        }
+    }
+
+    fun dispatchStatus(status: String, details: String) {
+        onStatusChanged?.invoke(status, details)
+        for (l in statusListeners) {
+            try { l(status, details) } catch (_: Exception) {}
+        }
+    }
 
     fun dispatchRfSignal(dbfs: Float, preambles: Long) {
         onRfSignalLevel?.invoke(dbfs, preambles)
@@ -234,13 +266,19 @@ class RtlSdrUsbEngine(
                     Log.i("AalaapiComms", "Embedded rtl_tcp connected! Magic: $magic, TunerType: $tunerType")
 
                     // Send initial tuner setup commands
-                    sendRtlTcpCommand(outStream, 0x03, 0) // Auto AGC
-                    sendRtlTcpCommand(outStream, 0x08, 1) // Tuner AGC enabled
+                    if (mode == SdrMode.ADSB_1090) {
+                        sendRtlTcpCommand(outStream, 0x03, 1) // Manual gain mode
+                        sendRtlTcpCommand(outStream, 0x04, 496) // Max RF gain 49.6 dB for 1090 MHz ADS-B
+                        sendRtlTcpCommand(outStream, 0x08, 1) // Tuner AGC enabled
+                    } else {
+                        sendRtlTcpCommand(outStream, 0x03, 0) // Auto AGC
+                        sendRtlTcpCommand(outStream, 0x08, 1) // Tuner AGC enabled
+                    }
                     sendRtlTcpCommand(outStream, 0x01, freqHz.toInt()) // Center frequency
                     sendRtlTcpCommand(outStream, 0x02, sampleRate.toInt()) // Sample rate
 
                     isStreaming = true
-                    onStatusChanged?.invoke("connected", "RTL-SDR (Tuner $tunerType) active in $currentMode at ${currentFreqHz / 1e6} MHz")
+                    dispatchStatus("connected", "RTL-SDR (Tuner $tunerType) active in $currentMode at ${currentFreqHz / 1e6} MHz")
 
                     runStreamingLoop(sock, inStream)
                 } catch (e: Exception) {
@@ -298,7 +336,7 @@ class RtlSdrUsbEngine(
         connection = null
 
         cprCache.clear()
-        onStatusChanged?.invoke("disconnected", "RTL-SDR receiver stopped")
+        dispatchStatus("disconnected", "RTL-SDR receiver stopped")
     }
 
     fun tune(mode: SdrMode, freqHz: Long, squelchDbfs: Int = currentSquelchDbfs): Boolean {
@@ -316,8 +354,16 @@ class RtlSdrUsbEngine(
                     sendRtlTcpCommand(out, 0x02, targetRate.toInt())
                     currentSampleRate = targetRate
                 }
+                if (mode == SdrMode.ADSB_1090) {
+                    sendRtlTcpCommand(out, 0x03, 1) // Manual gain
+                    sendRtlTcpCommand(out, 0x04, 496) // Max 49.6 dB for ADS-B
+                    sendRtlTcpCommand(out, 0x08, 1)
+                } else {
+                    sendRtlTcpCommand(out, 0x03, 0) // Auto AGC for voice
+                    sendRtlTcpCommand(out, 0x08, 1)
+                }
                 sendRtlTcpCommand(out, 0x01, freqHz.toInt())
-                onStatusChanged?.invoke("tuned", "Tuned to $currentMode at ${freqHz / 1e6} MHz")
+                dispatchStatus("tuned", "Tuned to $currentMode at ${freqHz / 1e6} MHz")
             } catch (e: Exception) {
                 Log.e("AalaapiComms", "Error tuning SDR: ${e.message}", e)
             }
@@ -540,7 +586,7 @@ class RtlSdrUsbEngine(
             val m7 = magBuf[idx + 7]
             val m9 = magBuf[idx + 9]
 
-            if (m0 > 6000 && m2 > 6000 && m7 > 6000 && m9 > 6000) {
+            if (m0 >= 250 && m2 >= 250 && m7 >= 250 && m9 >= 250) {
                 val low1 = magBuf[idx + 1]
                 val low3 = magBuf[idx + 3]
                 val low4 = magBuf[idx + 4]
@@ -548,7 +594,10 @@ class RtlSdrUsbEngine(
                 val low6 = magBuf[idx + 6]
                 val low8 = magBuf[idx + 8]
 
-                if (m0 > low1 && m2 > low3 && m7 > low6 && m9 > low8 && (m0 + m2 + m7 + m9) > (low1 + low3 + low4 + low5 + low6 + low8) * 2) {
+                val highSum = m0 + m2 + m7 + m9
+                val lowSum = low1 + low3 + low4 + low5 + low6 + low8
+
+                if (m0 > low1 && m2 > low3 && m7 > low6 && m9 > low8 && (highSum * 6) > (lowSum * 5)) {
                     preamblesTotal++
                     val msgBytes = ByteArray(14)
                     var bitOffset = idx + 16
@@ -590,7 +639,7 @@ class RtlSdrUsbEngine(
 
         val hex = String.format("%02X%02X%02X", bytes[1], bytes[2], bytes[3])
         val avr = "*" + bytes.joinToString("") { String.format("%02X", it) } + ";"
-        onAdsbAvrFrame?.invoke(avr)
+        dispatchAdsbAvr(avr)
 
         val tc = (bytes[4].toInt() ushr 3) and 0x1F
 
@@ -611,7 +660,7 @@ class RtlSdrUsbEngine(
             val callsign = String(chars).replace("?", "").trim()
             if (callsign.isNotEmpty()) {
                 val sbs1 = "MSG,1,1,1,$hex,1,2026/11/07,00:00:00.000,2026/11/07,00:00:00.000,$callsign,,,,,,,,,,,"
-                onAdsbSbsLine?.invoke(sbs1)
+                dispatchAdsbSbs(sbs1)
             }
         }
 
@@ -628,13 +677,42 @@ class RtlSdrUsbEngine(
             val cprLat = (((bytes[6].toInt() and 0x03) shl 15) or ((bytes[7].toInt() and 0xFF) shl 7) or ((bytes[8].toInt() and 0xFE) ushr 1))
             val cprLon = (((bytes[8].toInt() and 0x01) shl 16) or ((bytes[9].toInt() and 0xFF) shl 8) or (bytes[10].toInt() and 0xFF))
 
-            // Attempt Local CPR decode first (anchored to reference coordinates)
-            val coords = decodeLocalCpr(cprLat, cprLon, cprOdd, refLatitude, refLongitude)
+            // 1. Try Global CPR decode using even/odd pair (worldwide, no reference position required)
+            val now = System.currentTimeMillis()
+            val state = cprCache.getOrPut(hex) { CprState() }
+            if (cprOdd) {
+                state.oddLat = cprLat
+                state.oddLon = cprLon
+                state.oddTime = now
+            } else {
+                state.evenLat = cprLat
+                state.evenLon = cprLon
+                state.evenTime = now
+            }
+
+            var coords: Pair<Double, Double>? = null
+            if (state.evenLat != null && state.oddLat != null && abs(state.evenTime - state.oddTime) < 15000L) {
+                coords = decodeGlobalCpr(state.evenLat!!, state.evenLon!!, state.oddLat!!, state.oddLon!!)
+                if (coords != null) {
+                    refLatitude = coords.first
+                    refLongitude = coords.second
+                }
+            }
+
+            // 2. Fall back to Local CPR decode using reference position
+            if (coords == null) {
+                coords = decodeLocalCpr(cprLat, cprLon, cprOdd, refLatitude, refLongitude)
+            }
+
             if (coords != null) {
                 val (lat, lon) = coords
                 val altStr = altFt?.toString() ?: ""
-                val sbs3 = "MSG,3,1,1,$hex,1,2026/11/07,00:00:00.000,2026/11/07,00:00:00.000,,$altStr,,,${String.format("%.5f", lat)},${String.format("%.5f", lon)},,,,,,0"
-                onAdsbSbsLine?.invoke(sbs3)
+                val sbs3 = "MSG,3,1,1,$hex,1,2026/11/07,00:00:00.000,2026/11/07,00:00:00.000,,$altStr,,,${String.format(java.util.Locale.US, "%.5f", lat)},${String.format(java.util.Locale.US, "%.5f", lon)},,,,,,0"
+                dispatchAdsbSbs(sbs3)
+            } else if (altFt != null) {
+                // Emit altitude-only MSG 5 even if CPR position is not yet locked
+                val sbs5 = "MSG,5,1,1,$hex,1,2026/11/07,00:00:00.000,2026/11/07,00:00:00.000,,$altFt,,,,,,,,,0"
+                dispatchAdsbSbs(sbs5)
             }
         }
 
@@ -657,9 +735,30 @@ class RtlSdrUsbEngine(
                 val verticalRate = if (vRateSign == 1) -vRateVal else vRateVal
 
                 val sbs4 = "MSG,4,1,1,$hex,1,2026/11/07,00:00:00.000,2026/11/07,00:00:00.000,,,$speedKts,${trackDeg.toInt()},,$verticalRate,,,,,"
-                onAdsbSbsLine?.invoke(sbs4)
+                dispatchAdsbSbs(sbs4)
             }
         }
+    }
+
+    private fun decodeGlobalCpr(evenLat: Int, evenLon: Int, oddLat: Int, oddLon: Int): Pair<Double, Double>? {
+        val dLat0 = 360.0 / 60.0
+        val dLat1 = 360.0 / 59.0
+        val j = floor(((59.0 * evenLat - 60.0 * oddLat) / 131072.0) + 0.5)
+        var lat0 = dLat0 * ((j % 60.0) + (evenLat.toDouble() / 131072.0))
+        var lat1 = dLat1 * ((j % 59.0) + (oddLat.toDouble() / 131072.0))
+        if (lat0 >= 270.0) lat0 -= 360.0
+        if (lat1 >= 270.0) lat1 -= 360.0
+        if (lat0 < -90.0 || lat0 > 90.0) return null
+
+        val nl0 = cprNl(lat0)
+        val nl1 = cprNl(lat1)
+        if (nl0 != nl1 || nl0 <= 0) return null
+
+        val dLon0 = 360.0 / nl0
+        val m = floor(((evenLon.toDouble() * (nl0 - 1) - oddLon.toDouble() * nl0) / 131072.0) + 0.5)
+        var lon0 = dLon0 * ((m % nl0) + (evenLon.toDouble() / 131072.0))
+        if (lon0 >= 180.0) lon0 -= 360.0
+        return Pair(lat0, lon0)
     }
 
     private fun decodeLocalCpr(cprLat: Int, cprLon: Int, isOdd: Boolean, refLat: Double, refLon: Double): Pair<Double, Double>? {

@@ -1,3 +1,22 @@
+## [1.243.8] - 2026-11-08
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **Continuous Background RF Streaming & Screen Keep-Awake**:
+  - Added `FLAG_KEEP_SCREEN_ON` to `CommsMainActivity` to prevent the tablet display from timing out and sleeping while viewing live spectrum, telemetry, or audio.
+  - Implemented CPU `PARTIAL_WAKE_LOCK` and dual `connectedDevice|mediaPlayback` foreground service types in `SdrForegroundService`, keeping background SDR streaming, loopback bridging, and audio playback fully alive when switching between Aalaapi Sky and other apps.
+- **Calibrated ADS-B Sensitivity & Worldwide Global CPR Decoding**:
+  - Lowered ADS-B preamble pulse threshold to standard dump1090 calibration (`>= 250`), allowing faint high-altitude aircraft 50–100+ miles away to be reliably detected.
+  - Automatically commands maximum 49.6 dB RF tuner gain (`0x04, 496`) on Rafael Micro R820T when in ADS-B mode.
+  - Implemented dual-frame Global CPR decoding (pairing even/odd Mode S frames within 15 seconds) to unambiguously resolve aircraft latitude/longitude anywhere in the world without requiring local reference GPS coordinates.
+  - Formatted human-readable aircraft telemetry directly into the Comms log (`Callsign`, `Alt`, `Speed`, `Track`, `Lat`, `Lon`) alongside raw SBS-1 feed output.
+
+#### Under the Hood & Technical Details
+- **Multi-Listener Dispatching & Foreground Service Stability**:
+  - Converted `onAdsbSbsLine`, `onAcarsMessage`, and `onStatusChanged` to thread-safe `CopyOnWriteArrayList` listeners (`adsbListeners`, `acarsListeners`, `statusListeners`) so UI callbacks do not overwrite background service TCP broadcasting.
+  - Declared `android.permission.WAKE_LOCK` and `FOREGROUND_SERVICE_MEDIA_PLAYBACK` in `android/comms/src/main/AndroidManifest.xml`.
+
 ## [1.243.7] - 2026-11-08
 
 ### 🐛 Fixed

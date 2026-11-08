@@ -16,6 +16,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.view.Gravity
 import android.view.View
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -94,6 +95,7 @@ class CommsMainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
 
         // Build UI programmatically for maximum portability without XML layout overhead
@@ -402,19 +404,41 @@ class CommsMainActivity : AppCompatActivity() {
 
     private fun setupEngineCallbacks() {
         val eng = service?.getEngine() ?: return
-        eng.onStatusChanged = { status, details ->
+        eng.statusListeners.add { status, details ->
             runOnUiThread {
                 statusText.text = "Status: $status • $details"
                 appendLog("[$status] $details")
             }
         }
-        eng.onAdsbSbsLine = { line ->
+        eng.adsbListeners.add { line ->
             runOnUiThread {
+                val parts = line.split(",")
+                if (parts.size >= 11) {
+                    val msgType = parts.getOrNull(1)
+                    val hex = parts.getOrNull(4) ?: ""
+                    when (msgType) {
+                        "1" -> {
+                            val cs = parts.getOrNull(10)?.trim()
+                            if (!cs.isNullOrEmpty()) appendLog("✈️ Callsign: $cs ($hex)")
+                        }
+                        "3" -> {
+                            val alt = parts.getOrNull(11)
+                            val lat = parts.getOrNull(14)
+                            val lon = parts.getOrNull(15)
+                            appendLog("📍 $hex: ${alt}ft • $lat, $lon")
+                        }
+                        "4" -> {
+                            val spd = parts.getOrNull(12)
+                            val hdg = parts.getOrNull(13)
+                            appendLog("💨 $hex: ${spd}kts • ${hdg}°")
+                        }
+                    }
+                }
                 appendLog(line)
                 clientsText.text = "TCP Clients: ${service?.getStatusJson()?.optInt("activeTcpClients") ?: 0}"
             }
         }
-        eng.onAcarsMessage = { json ->
+        eng.acarsListeners.add { json ->
             runOnUiThread {
                 val txt = json.optString("text")
                 appendLog("[ACARS] $txt")

@@ -45270,6 +45270,29 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
       assert.ok(template.includes('librtlsdr, libusb &amp; rtl_tcp_andro'), 'index_template.html must include about card for librtlsdr');
     });
+
+    test('v1.243.8: Comms WakeLock, Keep-Awake, and Global CPR ADS-B Demodulation', () => {
+      const manifestPath = path.join(__dirname, 'android', 'comms', 'src', 'main', 'AndroidManifest.xml');
+      const manifest = fs.readFileSync(manifestPath, 'utf8');
+      assert.ok(manifest.includes('android.permission.WAKE_LOCK'), 'Manifest must declare WAKE_LOCK');
+      assert.ok(manifest.includes('FOREGROUND_SERVICE_MEDIA_PLAYBACK'), 'Manifest must declare FOREGROUND_SERVICE_MEDIA_PLAYBACK');
+      assert.ok(manifest.includes('connectedDevice|mediaPlayback'), 'Foreground service type must be connectedDevice|mediaPlayback');
+
+      const servicePath = path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'SdrForegroundService.kt');
+      const serviceKt = fs.readFileSync(servicePath, 'utf8');
+      assert.ok(serviceKt.includes('PARTIAL_WAKE_LOCK'), 'Service must acquire PARTIAL_WAKE_LOCK');
+      assert.ok(serviceKt.includes('FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK'), 'startForeground must include MEDIA_PLAYBACK type');
+
+      const activityPath = path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'CommsMainActivity.kt');
+      const activityKt = fs.readFileSync(activityPath, 'utf8');
+      assert.ok(activityKt.includes('FLAG_KEEP_SCREEN_ON'), 'CommsMainActivity must set FLAG_KEEP_SCREEN_ON');
+
+      const enginePath = path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'RtlSdrUsbEngine.kt');
+      const engineKt = fs.readFileSync(enginePath, 'utf8');
+      assert.ok(engineKt.includes('decodeGlobalCpr'), 'Must implement decodeGlobalCpr');
+      assert.ok(engineKt.includes('adsbListeners'), 'Must implement adsbListeners list');
+      assert.ok(engineKt.includes('496'), 'Must set 49.6 dB gain for ADS-B');
+    });
   });
 
 });
