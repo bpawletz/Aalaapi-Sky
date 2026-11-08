@@ -45206,14 +45206,14 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
   });
 
   describe('Issue #290: Embedded Native librtlsdr & Rafael Micro R820T Tuner Driver (v1.243.5)', () => {
-    test('Version consistency: v1.243.5 across package.json, changelog, templates, and android/app/build.gradle.kts', () => {
-      assertVersionConsistency('1.243.5');
+    test('Version consistency: v1.243.6 across package.json, changelog, templates, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.243.6');
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('Closes #290'), 'CHANGELOG.md must reference issue #290');
 
       const appGradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
       const m = appGradle.match(/versionCode = (\d+)/);
-      assert.ok(m && parseInt(m[1]) >= 124350, 'android/app/build.gradle.kts versionCode must be >= 124350');
+      assert.ok(m && parseInt(m[1]) >= 124360, 'android/app/build.gradle.kts versionCode must be >= 124360');
       assert.ok(appGradle.match(/versionName = "\d+\.\d+\.\d+"/), 'android/app/build.gradle.kts versionName must be valid');
     });
 
@@ -45241,6 +45241,11 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(deviceKt.includes('external fun openAsync('), 'Must declare native openAsync');
       assert.ok(deviceKt.includes('fun announceOnOpen()'), 'Must declare announceOnOpen callback');
       assert.ok(deviceKt.includes('fun announceOnClosed('), 'Must declare announceOnClosed callback');
+
+      const logKtPath = path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'sdrtouch', 'tools', 'Log.kt');
+      assert.ok(fs.existsSync(logKtPath), 'Log.kt must exist for librtlSdrAndroid JNI_OnLoad');
+      const exceptionKtPath = path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'sdrtouch', 'core', 'exceptions', 'SdrException.kt');
+      assert.ok(fs.existsSync(exceptionKtPath), 'SdrException.kt must exist for librtlSdrAndroid JNI_OnLoad');
     });
 
     test('RtlSdrUsbEngine.kt connects to loopback rtl_tcp, controls R820T PLL, and streams audio', () => {
