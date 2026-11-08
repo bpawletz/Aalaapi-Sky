@@ -7,11 +7,13 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
@@ -50,6 +52,7 @@ class SdrForegroundService : Service() {
     private val tcpClients = CopyOnWriteArrayList<Socket>()
     private val trackedAircraft = ConcurrentHashMap<String, JSONObject>()
     private val recentAcarsMessages = CopyOnWriteArrayList<JSONObject>()
+    private var wakeLock: PowerManager.WakeLock? = null
 
     var activeDevice: UsbDevice? = null
         private set
@@ -68,17 +71,28 @@ class SdrForegroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        try {
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AalaapiComms::SdrWakeLock").apply {
+                setReferenceCounted(false)
+                acquire()
+                Log.i("AalaapiComms", "Acquired PARTIAL_WAKE_LOCK for background SDR streaming")
+            }
+        } catch (e: Exception) {
+            Log.w("AalaapiComms", "Failed to acquire wake lock: ${e.message}")
+        }
+
         usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
         sdrEngine = RtlSdrUsbEngine(usbManager, scope)
 
-        sdrEngine.onAdsbSbsLine = { line ->
+        sdrEngine.adsbListeners.add { line ->
             packetsReceived++
             windowMsgCount++
             broadcastSbsLine(line)
             parseAndUpdateAircraft(line)
         }
 
-        sdrEngine.onAcarsMessage = { acarsJson ->
+        sdrEngine.acarsListeners.add { acarsJson ->
             windowMsgCount++
             recentAcarsMessages.add(0, acarsJson)
             if (recentAcarsMessages.size > 50) recentAcarsMessages.removeAt(recentAcarsMessages.size - 1)
@@ -190,7 +204,20 @@ class SdrForegroundService : Service() {
             .build()
 
         try {
-            startForeground(1090, notification)
+            val serviceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+            } else {
+                0
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(1090, notification, serviceType)
+            } else {
+                startForeground(1090, notification)
+            }
+            Log.i("AalaapiComms", "startForeground registered with types: $serviceType")
         } catch (e: Exception) {
             Log.w("AalaapiComms", "startForeground deferred: ${e.message}")
         }
@@ -357,6 +384,14 @@ class SdrForegroundService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                Log.i("AalaapiComms", "Released PARTIAL_WAKE_LOCK")
+            }
+        } catch (_: Exception) {}
+        wakeLock = null
+
         sdrEngine.stop()
         try { tcpServerSocket?.close() } catch (_: Exception) {}
         try { httpServerSocket?.close() } catch (_: Exception) {}
