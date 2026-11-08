@@ -45205,5 +45205,67 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('Issue #290: Embedded Native librtlsdr & Rafael Micro R820T Tuner Driver (v1.243.5)', () => {
+    test('Version consistency: v1.243.5 across package.json, changelog, templates, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.243.5');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('Closes #290'), 'CHANGELOG.md must reference issue #290');
+
+      const appGradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+      const m = appGradle.match(/versionCode = (\d+)/);
+      assert.ok(m && parseInt(m[1]) >= 124350, 'android/app/build.gradle.kts versionCode must be >= 124350');
+      assert.ok(appGradle.match(/versionName = "\d+\.\d+\.\d+"/), 'android/app/build.gradle.kts versionName must be valid');
+    });
+
+    test('android/comms includes embedded native libraries across all 4 ABIs', () => {
+      const abis = ['arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'];
+      const libs = ['liblibrtlsdr.so', 'liblibusb.so', 'librtlSdrAndroid.so'];
+      for (const abi of abis) {
+        for (const lib of libs) {
+          const libPath = path.join(__dirname, 'android', 'comms', 'src', 'main', 'jniLibs', abi, lib);
+          assert.ok(fs.existsSync(libPath), `Native library ${lib} must exist for ABI ${abi} at ${libPath}`);
+          const stats = fs.statSync(libPath);
+          assert.ok(stats.size > 10000, `Native library ${lib} for ABI ${abi} must be non-empty`);
+        }
+      }
+    });
+
+    test('RtlSdrDevice.kt JNI bridge declares initialize, openAsync, close, and deInit', () => {
+      const deviceKtPath = path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'sdrtouch', 'rtlsdr', 'driver', 'RtlSdrDevice.kt');
+      assert.ok(fs.existsSync(deviceKtPath), 'RtlSdrDevice.kt must exist');
+      const deviceKt = fs.readFileSync(deviceKtPath, 'utf8');
+      assert.ok(deviceKt.includes('package com.sdrtouch.rtlsdr.driver'), 'Package must be com.sdrtouch.rtlsdr.driver for JNI binding');
+      assert.ok(deviceKt.includes('System.loadLibrary("libusb")'), 'Must load libusb');
+      assert.ok(deviceKt.includes('System.loadLibrary("librtlsdr")'), 'Must load librtlsdr');
+      assert.ok(deviceKt.includes('System.loadLibrary("rtlSdrAndroid")'), 'Must load rtlSdrAndroid');
+      assert.ok(deviceKt.includes('external fun openAsync('), 'Must declare native openAsync');
+      assert.ok(deviceKt.includes('fun announceOnOpen()'), 'Must declare announceOnOpen callback');
+      assert.ok(deviceKt.includes('fun announceOnClosed('), 'Must declare announceOnClosed callback');
+    });
+
+    test('RtlSdrUsbEngine.kt connects to loopback rtl_tcp, controls R820T PLL, and streams audio', () => {
+      const enginePath = path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'RtlSdrUsbEngine.kt');
+      assert.ok(fs.existsSync(enginePath), 'RtlSdrUsbEngine.kt must exist');
+      const engineKt = fs.readFileSync(enginePath, 'utf8');
+      assert.ok(engineKt.includes('val rtl = RtlSdrDevice()'), 'Must instantiate native RtlSdrDevice');
+      assert.ok(engineKt.includes('rtl.openAsync('), 'Must invoke native openAsync with file descriptor');
+      assert.ok(engineKt.includes('Socket("127.0.0.1", port)'), 'Must connect to loopback rtl_tcp socket');
+      assert.ok(engineKt.includes('sendRtlTcpCommand'), 'Must implement sendRtlTcpCommand');
+      assert.ok(engineKt.includes('setSampleRate(48000)'), 'AudioTrack must be configured at 48000 Hz');
+      assert.ok(engineKt.includes('val isFm = (currentFreqHz in 162000000L..163000000L)'), 'Must support FM discriminator for NOAA Weather');
+      assert.ok(engineKt.includes('ByteArray(16384)'), 'Must use 16KB stream buffer');
+    });
+
+    test('CREDITS.md and index_template.html credit librtlsdr, libusb, and rtl_tcp_andro', () => {
+      const credits = fs.readFileSync(path.join(__dirname, 'CREDITS.md'), 'utf8');
+      assert.ok(credits.includes('librtlsdr & Rafael Micro R820T/R820T2 RF Tuner Driver'), 'CREDITS.md must credit librtlsdr');
+      assert.ok(credits.includes('libusb'), 'CREDITS.md must credit libusb');
+      assert.ok(credits.includes('rtl_tcp_andro'), 'CREDITS.md must credit rtl_tcp_andro');
+
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('librtlsdr, libusb &amp; rtl_tcp_andro'), 'index_template.html must include about card for librtlsdr');
+    });
+  });
+
 });
 });

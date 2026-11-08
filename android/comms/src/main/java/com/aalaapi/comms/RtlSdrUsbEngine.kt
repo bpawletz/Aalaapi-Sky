@@ -1,21 +1,27 @@
 package com.aalaapi.comms
 
-import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbDeviceConnection
-import android.hardware.usb.UsbEndpoint
-import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.util.Log
+import com.sdrtouch.rtlsdr.driver.RtlSdrDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.Socket
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -24,10 +30,13 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * Pure Kotlin USB OTG Driver & Multi-Mode DSP Demodulator for Realtek RTL2832U & R820T2/R860 Tuners.
+ * Embedded Native RTL-SDR & R820T Tuner Engine with Loopback rtl_tcp Bridge.
+ * Binds directly to embedded liblibrtlsdr.so, liblibusb.so, and librtlSdrAndroid.so
+ * to control RTL2832U hardware, synthesize R820T2 PLL frequencies, and stream raw I/Q.
+ *
  * Supports:
  * 1. Mode S ADS-B 1090 MHz (2.0 MSPS IQ streaming, 16-bit mag LUT, preamble detector, 112-bit PPM slicer, CRC-24, CPR & Velocity)
- * 2. VHF Aviation Voice AM (118.000 - 136.975 MHz, 240 kSPS -> 12 kHz AudioTrack PCM streaming with DC blocker & squelch)
+ * 2. VHF Aviation Voice AM & NOAA Weather FM (960 kSPS -> 48 kHz AudioTrack PCM streaming with DC blocker, FM discriminator & squelch)
  * 3. VHF ACARS Datalink (131.550 MHz, 2400-baud AM-MSK demodulation and SOH/STX/ETX frame parsing)
  */
 class RtlSdrUsbEngine(
@@ -46,7 +55,7 @@ class RtlSdrUsbEngine(
     var onAcarsMessage: ((JSONObject) -> Unit)? = null
     var onAudioLevel: ((Float, Boolean) -> Unit)? = null
     var onRfSignalLevel: ((Float, Long) -> Unit)? = null
-    val rfSignalListeners = java.util.concurrent.CopyOnWriteArrayList<(Float, Long) -> Unit>()
+    val rfSignalListeners = CopyOnWriteArrayList<(Float, Long) -> Unit>()
     var onStatusChanged: ((String, String) -> Unit)? = null
 
     fun dispatchRfSignal(dbfs: Float, preambles: Long) {
@@ -68,16 +77,26 @@ class RtlSdrUsbEngine(
         private set
     var currentRssiDbfs: Float = -90f
         private set
+    var currentSampleRate: Long = 2000000L
+        private set
 
     // Reference position for Local CPR single-frame decoding
     var refLatitude: Double = 41.3215
     var refLongitude: Double = -88.9950
 
     private var connection: UsbDeviceConnection? = null
-    private var usbInterface: UsbInterface? = null
-    private var bulkEndpoint: UsbEndpoint? = null
+    private var rtlDevice: RtlSdrDevice? = null
+    private var nativeDriverThread: Thread? = null
+    private var tcpSocket: Socket? = null
+    private var socketOut: OutputStream? = null
     private var streamJob: Job? = null
     private var audioTrack: AudioTrack? = null
+
+    // FM discriminator states
+    private var lastI = 0
+    private var lastQ = 0
+    // AM DC blocker state
+    private var dcMean = 0.0
 
     // ─── 16-bit Magnitude Lookup Table (65536 entries) ──────────────────────────
     private val magLut = IntArray(65536) { idx ->
@@ -122,50 +141,104 @@ class RtlSdrUsbEngine(
                 return false
             }
             connection = conn
+            val fd = conn.fileDescriptor
 
-            val iface = device.getInterface(0)
-            if (!conn.claimInterface(iface, true)) {
-                onStatusChanged?.invoke("error", "Failed to claim USB interface 0")
-                conn.close()
-                return false
+            // Reset EPA USB streaming FIFO on RTL2832U hardware before passing descriptor
+            initRtl2832U(conn)
+
+            val sampleRate = if (mode == SdrMode.ADSB_1090) 2000000L else 960000L
+            currentSampleRate = sampleRate
+
+            val rtl = RtlSdrDevice()
+            rtlDevice = rtl
+
+            val port = 1234
+            val serverReady = CountDownLatch(1)
+            var openSuccess = false
+
+            rtl.onOpenCallback = {
+                Log.i("AalaapiComms", "Embedded rtl_tcp server signaled ready on port $port")
+                serverReady.countDown()
             }
-            usbInterface = iface
 
-            // Find bulk in endpoint
-            var inEp: UsbEndpoint? = null
-            for (i in 0 until iface.endpointCount) {
-                val ep = iface.getEndpoint(i)
-                if (ep.direction == UsbConstants.USB_DIR_IN && ep.type == UsbConstants.USB_ENDPOINT_XFER_BULK) {
-                    inEp = ep
-                    break
+            nativeDriverThread = thread(name = "RtlSdrNativeServer", isDaemon = true) {
+                try {
+                    Log.i("AalaapiComms", "Starting native RtlSdrDevice.openAsync(fd=$fd, rate=$sampleRate, freq=$freqHz, port=$port)...")
+                    openSuccess = rtl.openAsync(
+                        fd = fd,
+                        gainTenthDb = 0,
+                        samplingRateHz = sampleRate,
+                        frequencyHz = freqHz,
+                        port = port,
+                        ppm = 0,
+                        biasT = 0,
+                        address = "127.0.0.1",
+                        devicePath = device.deviceName ?: ""
+                    )
+                    Log.i("AalaapiComms", "Native RtlSdrDevice.openAsync returned: $openSuccess")
+                } catch (e: Throwable) {
+                    Log.e("AalaapiComms", "Native openAsync exception: ${e.message}", e)
+                } finally {
+                    serverReady.countDown()
                 }
             }
-            if (inEp == null) {
-                onStatusChanged?.invoke("error", "No bulk IN endpoint found")
-                conn.releaseInterface(iface)
-                conn.close()
+
+            // Wait briefly for serverReady or attempt connecting
+            serverReady.await(1500, TimeUnit.MILLISECONDS)
+
+            // Connect loopback socket with retry
+            var sock: Socket? = null
+            for (attempt in 1..25) {
+                try {
+                    sock = Socket("127.0.0.1", port).apply {
+                        tcpNoDelay = true
+                        receiveBufferSize = 65536
+                        soTimeout = 3000
+                    }
+                    break
+                } catch (_: Exception) {
+                    Thread.sleep(100)
+                }
+            }
+
+            if (sock == null) {
+                onStatusChanged?.invoke("error", "Failed to connect to embedded rtl_tcp server on port $port")
+                stop()
                 return false
             }
-            bulkEndpoint = inEp
+            tcpSocket = sock
+            val inStream = sock.getInputStream()
+            val outStream = sock.getOutputStream()
+            socketOut = outStream
 
-            // Initialize hardware registers
-            initRtl2832U(conn)
-            initR820T(conn, currentFreqHz)
+            // Read 12-byte header: 4 bytes magic 'RTL0', 4 bytes tuner type, 4 bytes gain count
+            val header = ByteArray(12)
+            var hRead = 0
+            while (hRead < 12) {
+                val r = inStream.read(header, hRead, 12 - hRead)
+                if (r < 0) throw IOException("End of stream reading rtl_tcp header")
+                hRead += r
+            }
+            val magic = String(header, 0, 4, Charsets.US_ASCII)
+            val tunerType = ((header[4].toInt() and 0xFF) shl 24) or ((header[5].toInt() and 0xFF) shl 16) or ((header[6].toInt() and 0xFF) shl 8) or (header[7].toInt() and 0xFF)
+            Log.i("AalaapiComms", "Embedded rtl_tcp connected! Magic: $magic, TunerType: $tunerType")
+
+            // Send initial tuner setup commands
+            sendRtlTcpCommand(outStream, 0x03, 0) // Auto AGC
+            sendRtlTcpCommand(outStream, 0x08, 1) // Tuner AGC enabled
+            sendRtlTcpCommand(outStream, 0x01, freqHz.toInt()) // Center frequency
+            sendRtlTcpCommand(outStream, 0x02, sampleRate.toInt()) // Sample rate
 
             isStreaming = true
-            onStatusChanged?.invoke("connected", "RTL-SDR streaming in $currentMode at ${currentFreqHz / 1e6} MHz")
+            onStatusChanged?.invoke("connected", "RTL-SDR (Tuner $tunerType) active in $currentMode at ${currentFreqHz / 1e6} MHz")
 
-            // Start processing coroutine based on mode
-            streamJob = scope.launch(Dispatchers.Default) {
-                when (currentMode) {
-                    SdrMode.ADSB_1090 -> runAdsbDemodLoop(conn, inEp)
-                    SdrMode.AIRBAND_AM -> runAirbandAmLoop(conn, inEp)
-                    SdrMode.ACARS_VHF -> runAcarsLoop(conn, inEp)
-                }
+            // Launch streaming coroutine loop
+            streamJob = scope.launch(Dispatchers.IO) {
+                runStreamingLoop(sock, inStream)
             }
             return true
         } catch (e: Exception) {
-            Log.e("AalaapiComms", "Error starting RTL-SDR: ${e.message}", e)
+            Log.e("AalaapiComms", "Error starting RTL-SDR engine: ${e.message}", e)
             onStatusChanged?.invoke("error", "Error initializing SDR: ${e.message}")
             stop()
             return false
@@ -177,6 +250,12 @@ class RtlSdrUsbEngine(
         streamJob?.cancel()
         streamJob = null
 
+        try {
+            tcpSocket?.close()
+        } catch (_: Exception) {}
+        tcpSocket = null
+        socketOut = null
+
         audioTrack?.let {
             try {
                 it.stop()
@@ -185,15 +264,26 @@ class RtlSdrUsbEngine(
         }
         audioTrack = null
 
+        rtlDevice?.let { rtl ->
+            try {
+                rtl.close()
+                rtl.dispose()
+            } catch (_: Exception) {}
+        }
+        rtlDevice = null
+
+        try {
+            nativeDriverThread?.join(500)
+        } catch (_: Exception) {}
+        nativeDriverThread = null
+
         connection?.let { conn ->
-            usbInterface?.let { iface ->
-                try { conn.releaseInterface(iface) } catch (_: Exception) {}
-            }
-            try { conn.close() } catch (_: Exception) {}
+            try {
+                conn.close()
+            } catch (_: Exception) {}
         }
         connection = null
-        usbInterface = null
-        bulkEndpoint = null
+
         cprCache.clear()
         onStatusChanged?.invoke("disconnected", "RTL-SDR receiver stopped")
     }
@@ -203,90 +293,69 @@ class RtlSdrUsbEngine(
         currentFreqHz = freqHz
         currentSquelchDbfs = squelchDbfs
 
-        val conn = connection
-        val inEp = bulkEndpoint
-        if (conn == null || inEp == null || !isStreaming) return false
+        val out = socketOut
+        if (out == null || !isStreaming) return false
 
-        // Restart worker loop with new frequency
-        streamJob?.cancel()
-        initR820T(conn, freqHz)
-
-        streamJob = scope.launch(Dispatchers.Default) {
-            when (currentMode) {
-                SdrMode.ADSB_1090 -> runAdsbDemodLoop(conn, inEp)
-                SdrMode.AIRBAND_AM -> runAirbandAmLoop(conn, inEp)
-                SdrMode.ACARS_VHF -> runAcarsLoop(conn, inEp)
+        try {
+            val targetRate = if (mode == SdrMode.ADSB_1090) 2000000L else 960000L
+            if (targetRate != currentSampleRate) {
+                sendRtlTcpCommand(out, 0x02, targetRate.toInt())
+                currentSampleRate = targetRate
             }
+            sendRtlTcpCommand(out, 0x01, freqHz.toInt())
+            onStatusChanged?.invoke("tuned", "Tuned to $currentMode at ${freqHz / 1e6} MHz")
+            return true
+        } catch (e: Exception) {
+            Log.e("AalaapiComms", "Error tuning SDR: ${e.message}", e)
+            return false
         }
-        onStatusChanged?.invoke("tuned", "Tuned to $currentMode at ${freqHz / 1e6} MHz")
-        return true
     }
 
-    // ─── RTL2832U & R820T Tuner USB Control Protocols ─────────────────────────
     private fun writeReg(conn: UsbDeviceConnection, block: Int, addr: Int, value: Int, len: Int = 1) {
         val index = (block shl 8) or 0x10
         val data = ByteArray(len) { idx -> ((value ushr (idx * 8)) and 0xFF).toByte() }
         conn.controlTransfer(0x40, 0, addr, index, data, len, 1000)
     }
 
-    private fun demodWriteReg(conn: UsbDeviceConnection, page: Int, addr: Int, value: Int, len: Int = 1) {
-        val index = 0x20 or page
-        val data = ByteArray(len) { idx -> ((value ushr (idx * 8)) and 0xFF).toByte() }
-        conn.controlTransfer(0x40, 0, addr, index, data, len, 1000)
-    }
-
     private fun initRtl2832U(conn: UsbDeviceConnection) {
-        // Reset baseband and configure crystal
-        writeReg(conn, 0x02, 0x01, 0x14) // USB_SYSCTL reset
-        writeReg(conn, 0x02, 0x01, 0x10) // Normal mode
-        demodWriteReg(conn, 1, 0x01, 0x14) // Demod reset
-        demodWriteReg(conn, 1, 0x01, 0x10)
-
-        // Resampler ratio for 2.0 MSPS (Mode S) or 240 kSPS (AM)
-        val sampleRate = if (currentMode == SdrMode.ADSB_1090) 2000000L else 240000L
-        val rsampRatio = ((28800000L * (1L shl 22)) / sampleRate).toInt()
-        demodWriteReg(conn, 1, 0x9F, rsampRatio and 0xFFFF, 2)
-        demodWriteReg(conn, 1, 0xA1, (rsampRatio ushr 16) and 0xFFFF, 2)
-
-        // Reset FIFO and enable zero-IF
-        demodWriteReg(conn, 0, 0x19, 0x05)
         // Reset EPA USB streaming FIFO (EPA_CTL = 0x0214)
         writeReg(conn, 0x02, 0x14, 0x0210, 2)
         writeReg(conn, 0x02, 0x14, 0x0000, 2)
     }
 
-    private fun initR820T(conn: UsbDeviceConnection, freqHz: Long) {
-        // Open I2C repeater gate to talk to tuner chip
-        demodWriteReg(conn, 1, 0x01, 0x18)
+    fun runAirbandAmLoop(buffer: ByteArray, numSamples: Int, audioBuf: ShortArray) = processAirbandChunk(buffer, numSamples, audioBuf)
+    fun runAcarsLoop(buffer: ByteArray, numSamples: Int) = processAcarsChunk(buffer, numSamples)
+    fun runAdsbDemodLoop(buffer: ByteArray, numSamples: Int, magBuf: IntArray) = processAdsbChunk(buffer, numSamples, magBuf)
 
-        // Synthesize tuner PLL frequency
-        val loFreq = freqHz + 3570000L // 3.57 MHz IF
-        val pllRef = 28800000L / 2L
-        val div = loFreq / pllRef
-        val frac = ((loFreq % pllRef) * 65536L / pllRef).toInt()
-
-        // Write R820T tuning registers via I2C control transfer
-        val tunerBuf = byteArrayOf(
-            0x00.toByte(), 0x10.toByte(), 0x02.toByte(),
-            (div and 0x3F).toByte(),
-            (frac and 0xFF).toByte(),
-            ((frac ushr 8) and 0xFF).toByte(),
-            0x80.toByte() // High gain
+    private fun sendRtlTcpCommand(out: OutputStream, cmd: Int, param: Int) {
+        val cmdBuf = byteArrayOf(
+            (cmd and 0xFF).toByte(),
+            ((param ushr 24) and 0xFF).toByte(),
+            ((param ushr 16) and 0xFF).toByte(),
+            ((param ushr 8) and 0xFF).toByte(),
+            (param and 0xFF).toByte()
         )
-        conn.controlTransfer(0x40, 0, 0x34, 0x00, tunerBuf, tunerBuf.size, 1000)
-
-        // Close I2C repeater gate
-        demodWriteReg(conn, 1, 0x01, 0x10)
+        synchronized(out) {
+            out.write(cmdBuf)
+            out.flush()
+        }
     }
 
-    // ─── Mode 1: ADS-B 1090 MHz Demodulator Loop ─────────────────────────────
-    private fun runAdsbDemodLoop(conn: UsbDeviceConnection, inEp: UsbEndpoint) {
+    private fun runStreamingLoop(sock: Socket, inStream: InputStream) {
         val buffer = ByteArray(16384)
         val magBuf = IntArray(8192)
+        val audioBuf = ShortArray(1024)
         var lastQuietTick = System.currentTimeMillis()
 
-        while (isStreaming) {
-            val bytesRead = conn.bulkTransfer(inEp, buffer, buffer.size, 1000)
+        while (isStreaming && !sock.isClosed) {
+            val bytesRead = try {
+                inStream.read(buffer, 0, buffer.size)
+            } catch (e: IOException) {
+                if (!isStreaming) break
+                Log.w("AalaapiComms", "Socket read error: ${e.message}")
+                break
+            }
+
             if (bytesRead <= 0) {
                 val now = System.currentTimeMillis()
                 if (now - lastQuietTick >= 500) {
@@ -297,73 +366,193 @@ class RtlSdrUsbEngine(
             }
 
             val numSamples = bytesRead / 2
-            // Compute magnitude from 8-bit unsigned I/Q pairs
-            var sumPwr = 0.0
-            val pwrStep = 32
-            var pwrCount = 0
-            for (i in 0 until numSamples) {
-                val iByte = buffer[i * 2].toInt() and 0xFF
-                val qByte = buffer[i * 2 + 1].toInt() and 0xFF
-                val mag = magLut[(iByte shl 8) or qByte]
-                magBuf[i] = mag
-                if (i % pwrStep == 0) {
-                    val m = mag.toDouble()
-                    sumPwr += m * m
-                    pwrCount++
+
+            when (currentMode) {
+                SdrMode.ADSB_1090 -> {
+                    processAdsbChunk(buffer, numSamples, magBuf)
+                }
+                SdrMode.AIRBAND_AM -> {
+                    processAirbandChunk(buffer, numSamples, audioBuf)
+                }
+                SdrMode.ACARS_VHF -> {
+                    processAcarsChunk(buffer, numSamples)
                 }
             }
+        }
+    }
 
-            if (pwrCount > 0) {
-                val rms = sqrt(sumPwr / pwrCount)
-                val dbfs = if (rms > 1.0) (20.0 * kotlin.math.log10(rms / 46340.0)).toFloat().coerceIn(-90f, 0f) else -90f
-                currentRssiDbfs = dbfs
-                dispatchRfSignal(dbfs, preamblesTotal)
+    private fun initAudioTrackIfNeeded() {
+        if (audioTrack == null) {
+            try {
+                val minBuf = AudioTrack.getMinBufferSize(
+                    48000,
+                    AudioFormat.CHANNEL_OUT_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT
+                )
+                audioTrack = AudioTrack.Builder()
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+                    )
+                    .setAudioFormat(
+                        AudioFormat.Builder()
+                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                            .setSampleRate(48000)
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                            .build()
+                    )
+                    .setBufferSizeInBytes(minBuf * 4)
+                    .setTransferMode(AudioTrack.MODE_STREAM)
+                    .build()
+                audioTrack?.play()
+            } catch (e: Exception) {
+                Log.e("AalaapiComms", "Failed to initialize AudioTrack: ${e.message}")
             }
+        }
+    }
 
-            // Preamble scan: 16 samples = 8.0 microseconds at 2.0 MSPS
-            // High pulses: 0, 2, 7, 9. Quiet: 1, 3, 4, 5, 6, 8, 11..15.
-            var idx = 0
-            val endIdx = numSamples - 240
-            while (idx < endIdx) {
-                val m0 = magBuf[idx]
-                val m2 = magBuf[idx + 2]
-                val m7 = magBuf[idx + 7]
-                val m9 = magBuf[idx + 9]
+    private fun processAirbandChunk(buffer: ByteArray, numSamples: Int, audioBuf: ShortArray) {
+        initAudioTrackIfNeeded()
 
-                if (m0 > 6000 && m2 > 6000 && m7 > 6000 && m9 > 6000) {
-                    val low1 = magBuf[idx + 1]
-                    val low3 = magBuf[idx + 3]
-                    val low4 = magBuf[idx + 4]
-                    val low5 = magBuf[idx + 5]
-                    val low6 = magBuf[idx + 6]
-                    val low8 = magBuf[idx + 8]
+        val isFm = (currentFreqHz in 162000000L..163000000L) || (currentFreqHz in 87000000L..108000000L)
+        val decimation = 20 // 960 kSPS / 20 = 48 kHz
+        val numAudio = numSamples / decimation
+        if (numAudio == 0) return
 
-                    if (m0 > low1 && m2 > low3 && m7 > low6 && m9 > low8 && (m0 + m2 + m7 + m9) > (low1 + low3 + low4 + low5 + low6 + low8) * 2) {
-                        preamblesTotal++
-                        // Candidate Mode S preamble found! Slice 112 bits (224 samples)
-                        val msgBytes = ByteArray(14)
-                        var bitOffset = idx + 16
-                        var valid = true
+        var maxMag = 0.0
+        var sumPwr = 0.0
 
-                        for (b in 0 until 112) {
-                            val p1 = magBuf[bitOffset]
-                            val p2 = magBuf[bitOffset + 1]
-                            val bitVal = if (p1 > p2) 1 else 0
-                            val byteIdx = b / 8
-                            val bitShift = 7 - (b % 8)
-                            msgBytes[byteIdx] = (msgBytes[byteIdx].toInt() or (bitVal shl bitShift)).toByte()
-                            bitOffset += 2
-                        }
+        for (a in 0 until numAudio) {
+            val baseSample = a * decimation
+            if (isFm) {
+                // FM discriminator: phase differentiation between consecutive samples
+                var accumDev = 0.0
+                for (s in 0 until decimation) {
+                    val idx = (baseSample + s) * 2
+                    val iVal = (buffer[idx].toInt() and 0xFF) - 127
+                    val qVal = (buffer[idx + 1].toInt() and 0xFF) - 127
+                    val mag = magLut[((iVal + 127) shl 8) or (qVal + 127)].toDouble()
+                    if (mag > maxMag) maxMag = mag
+                    sumPwr += mag * mag
 
-                        if (valid && verifyCrc(msgBytes)) {
-                            processModeSFrame(msgBytes)
-                            idx = bitOffset // Skip past message
-                            continue
-                        }
+                    val dPhase = atan2(
+                        (qVal * lastI - iVal * lastQ).toDouble(),
+                        (iVal * lastI + qVal * lastQ).toDouble()
+                    )
+                    lastI = iVal
+                    lastQ = qVal
+                    accumDev += dPhase
+                }
+                val avgDev = accumDev / decimation
+                val dbfs = (20.0 * Math.log10((maxMag / 32768.0).coerceAtLeast(0.0001))).toFloat()
+                val squelchOpen = dbfs >= currentSquelchDbfs
+                audioBuf[a] = if (squelchOpen) {
+                    (avgDev * 15000.0).toInt().coerceIn(-32767, 32767).toShort()
+                } else {
+                    0.toShort()
+                }
+            } else {
+                // AM envelope detection with IIR DC blocker
+                var sumMag = 0.0
+                for (s in 0 until decimation) {
+                    val idx = (baseSample + s) * 2
+                    val iByte = buffer[idx].toInt() and 0xFF
+                    val qByte = buffer[idx + 1].toInt() and 0xFF
+                    val mag = magLut[(iByte shl 8) or qByte]
+                    sumMag += mag
+                    if (mag > maxMag) maxMag = mag.toDouble()
+                    sumPwr += mag.toDouble() * mag.toDouble()
+                }
+                val mag = sumMag / decimation
+                dcMean = (0.995 * dcMean) + (0.005 * mag)
+                val ac = mag - dcMean
+
+                val dbfs = (20.0 * Math.log10((maxMag / 32768.0).coerceAtLeast(0.0001))).toFloat()
+                val squelchOpen = dbfs >= currentSquelchDbfs
+                audioBuf[a] = if (squelchOpen) {
+                    (ac * 10.0).toInt().coerceIn(-32767, 32767).toShort()
+                } else {
+                    0.toShort()
+                }
+            }
+        }
+
+        val rms = sqrt(sumPwr / numSamples)
+        val curDbfs = if (rms > 1.0) (20.0 * kotlin.math.log10(rms / 46340.0)).toFloat().coerceIn(-90f, 0f) else -90f
+        currentRssiDbfs = curDbfs
+        val squelchOpen = curDbfs >= currentSquelchDbfs
+        onAudioLevel?.invoke(curDbfs, squelchOpen)
+        dispatchRfSignal(curDbfs, preamblesTotal)
+
+        audioTrack?.write(audioBuf, 0, numAudio)
+    }
+
+    private fun processAdsbChunk(buffer: ByteArray, numSamples: Int, magBuf: IntArray) {
+        var sumPwr = 0.0
+        val pwrStep = 32
+        var pwrCount = 0
+        for (i in 0 until numSamples) {
+            val iByte = buffer[i * 2].toInt() and 0xFF
+            val qByte = buffer[i * 2 + 1].toInt() and 0xFF
+            val mag = magLut[(iByte shl 8) or qByte]
+            magBuf[i] = mag
+            if (i % pwrStep == 0) {
+                val m = mag.toDouble()
+                sumPwr += m * m
+                pwrCount++
+            }
+        }
+
+        if (pwrCount > 0) {
+            val rms = sqrt(sumPwr / pwrCount)
+            val dbfs = if (rms > 1.0) (20.0 * kotlin.math.log10(rms / 46340.0)).toFloat().coerceIn(-90f, 0f) else -90f
+            currentRssiDbfs = dbfs
+            dispatchRfSignal(dbfs, preamblesTotal)
+        }
+
+        // Preamble scan: 16 samples = 8.0 microseconds at 2.0 MSPS
+        // High pulses: 0, 2, 7, 9. Quiet: 1, 3, 4, 5, 6, 8, 11..15.
+        var idx = 0
+        val endIdx = numSamples - 240
+        while (idx < endIdx) {
+            val m0 = magBuf[idx]
+            val m2 = magBuf[idx + 2]
+            val m7 = magBuf[idx + 7]
+            val m9 = magBuf[idx + 9]
+
+            if (m0 > 6000 && m2 > 6000 && m7 > 6000 && m9 > 6000) {
+                val low1 = magBuf[idx + 1]
+                val low3 = magBuf[idx + 3]
+                val low4 = magBuf[idx + 4]
+                val low5 = magBuf[idx + 5]
+                val low6 = magBuf[idx + 6]
+                val low8 = magBuf[idx + 8]
+
+                if (m0 > low1 && m2 > low3 && m7 > low6 && m9 > low8 && (m0 + m2 + m7 + m9) > (low1 + low3 + low4 + low5 + low6 + low8) * 2) {
+                    preamblesTotal++
+                    val msgBytes = ByteArray(14)
+                    var bitOffset = idx + 16
+
+                    for (b in 0 until 112) {
+                        val p1 = magBuf[bitOffset]
+                        val p2 = magBuf[bitOffset + 1]
+                        val bitVal = if (p1 > p2) 1 else 0
+                        val byteIdx = b / 8
+                        val bitShift = 7 - (b % 8)
+                        msgBytes[byteIdx] = (msgBytes[byteIdx].toInt() or (bitVal shl bitShift)).toByte()
+                        bitOffset += 2
+                    }
+
+                    if (verifyCrc(msgBytes)) {
+                        processModeSFrame(msgBytes)
+                        idx = bitOffset // Skip past message
+                        continue
                     }
                 }
-                idx++
             }
+            idx++
         }
     }
 
@@ -443,7 +632,7 @@ class RtlSdrUsbEngine(
                 val vx = if (ewDir == 1) -ewVel else ewVel
                 val vy = if (nsDir == 1) -nsVel else nsVel
                 val speedKts = sqrt((vx * vx + vy * vy).toDouble()).toInt()
-                var trackDeg = (Math.toDegrees(atan2(vx.toDouble(), vy.toDouble())) + 360.0) % 360.0
+                val trackDeg = (Math.toDegrees(atan2(vx.toDouble(), vy.toDouble())) + 360.0) % 360.0
 
                 val vRateSign = (bytes[8].toInt() and 0x08) ushr 3
                 val vRateVal = ((((bytes[8].toInt() and 0x07) shl 6) or ((bytes[9].toInt() and 0xFC) ushr 2)) - 1) * 64
@@ -481,123 +670,44 @@ class RtlSdrUsbEngine(
         return floor(2.0 * Math.PI / Math.acos(a)).toInt().coerceIn(1, 59)
     }
 
-    // ─── Mode 2: VHF Airband AM Demodulator Loop ─────────────────────────────
-    private fun runAirbandAmLoop(conn: UsbDeviceConnection, inEp: UsbEndpoint) {
-        val inBuf = ByteArray(32768)
-        val audioBuf = ShortArray(819) // 240kSPS / 20 = 12 kHz sample rate
-        var dcMean = 0.0
-
-        val minTrackBuf = AudioTrack.getMinBufferSize(
-            12000,
-            AudioFormat.CHANNEL_OUT_MONO,
-            AudioFormat.ENCODING_PCM_16BIT
-        )
-        audioTrack = AudioTrack.Builder()
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build()
-            )
-            .setAudioFormat(
-                AudioFormat.Builder()
-                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                    .setSampleRate(12000)
-                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                    .build()
-            )
-            .setBufferSizeInBytes(minTrackBuf * 2)
-            .setTransferMode(AudioTrack.MODE_STREAM)
-            .build()
-        audioTrack?.play()
-
-        while (isStreaming) {
-            val bytesRead = conn.bulkTransfer(inEp, inBuf, inBuf.size, 1000)
-            if (bytesRead <= 0) continue
-
-            val numIq = bytesRead / 2
-            val numAudio = numIq / 20 // 20x decimation to 12 kHz
-            var maxMag = 0.0
-
-            for (i in 0 until numAudio) {
-                // Compute envelope magnitude at decimated sample
-                val sampleIdx = i * 20
-                val iByte = inBuf[sampleIdx * 2].toInt() and 0xFF
-                val qByte = inBuf[sampleIdx * 2 + 1].toInt() and 0xFF
-                val mag = magLut[(iByte shl 8) or qByte].toDouble()
-                if (mag > maxMag) maxMag = mag
-
-                // Single pole IIR DC blocker
-                dcMean = (0.995 * dcMean) + (0.005 * mag)
-                val ac = mag - dcMean
-
-                // Squelch gating
-                val dbfs = (20.0 * Math.log10((mag / 32768.0).coerceAtLeast(0.0001))).toFloat()
-                val squelchOpen = dbfs >= currentSquelchDbfs
-
-                audioBuf[i] = if (squelchOpen) {
-                    (ac * 4.0).toInt().coerceIn(-32767, 32767).toShort()
-                } else {
-                    0
-                }
-            }
-
-            val curDbfs = (20.0 * Math.log10((maxMag / 32768.0).coerceAtLeast(0.0001))).toFloat()
-            currentRssiDbfs = curDbfs
-            onAudioLevel?.invoke(curDbfs, curDbfs >= currentSquelchDbfs)
-            dispatchRfSignal(curDbfs, preamblesTotal)
-            audioTrack?.write(audioBuf, 0, numAudio)
-        }
-    }
-
-    // ─── Mode 3: VHF ACARS 2400-baud Datalink Decoder Loop ───────────────────
-    private fun runAcarsLoop(conn: UsbDeviceConnection, inEp: UsbEndpoint) {
-        val inBuf = ByteArray(32768)
+    private fun processAcarsChunk(buffer: ByteArray, numSamples: Int) {
         val charBuffer = StringBuilder()
+        var sumPwr = 0.0
+        var pwrCount = 0
+        for (i in 0 until numSamples step 100) {
+            val iByte = buffer[i * 2].toInt() and 0xFF
+            val qByte = buffer[i * 2 + 1].toInt() and 0xFF
+            val mag = magLut[(iByte shl 8) or qByte]
+            val m = mag.toDouble()
+            sumPwr += m * m
+            pwrCount++
 
-        while (isStreaming) {
-            val bytesRead = conn.bulkTransfer(inEp, inBuf, inBuf.size, 1000)
-            if (bytesRead <= 0) continue
-
-            // AM envelope detection and MSK tone discrimination
-            val numSamples = bytesRead / 2
-            var sumPwr = 0.0
-            var pwrCount = 0
-            for (i in 0 until numSamples step 100) {
-                val iByte = inBuf[i * 2].toInt() and 0xFF
-                val qByte = inBuf[i * 2 + 1].toInt() and 0xFF
-                val mag = magLut[(iByte shl 8) or qByte]
-                val m = mag.toDouble()
-                sumPwr += m * m
-                pwrCount++
-
-                // Discriminate ASCII chars from sliced bitstream
-                if (mag > 4000) {
-                    val c = ((mag ushr 6) and 0x7F).toChar()
-                    if (c in ' '..'~' || c == '\n') {
-                        charBuffer.append(c)
-                        if (charBuffer.length > 200 || c == '\n') {
-                            val line = charBuffer.toString().trim()
-                            if (line.length >= 8) {
-                                val json = JSONObject().apply {
-                                    put("mode", "acars")
-                                    put("freqHz", currentFreqHz)
-                                    put("text", line)
-                                    put("timestamp", System.currentTimeMillis())
-                                }
-                                onAcarsMessage?.invoke(json)
+            // Discriminate ASCII chars from sliced bitstream
+            if (mag > 4000) {
+                val c = ((mag ushr 6) and 0x7F).toChar()
+                if (c in ' '..'~' || c == '\n') {
+                    charBuffer.append(c)
+                    if (charBuffer.length > 200 || c == '\n') {
+                        val line = charBuffer.toString().trim()
+                        if (line.length >= 8) {
+                            val json = JSONObject().apply {
+                                put("mode", "acars")
+                                put("freqHz", currentFreqHz)
+                                put("text", line)
+                                put("timestamp", System.currentTimeMillis())
                             }
-                            charBuffer.clear()
+                            onAcarsMessage?.invoke(json)
                         }
+                        charBuffer.clear()
                     }
                 }
             }
-            if (pwrCount > 0) {
-                val rms = sqrt(sumPwr / pwrCount)
-                val dbfs = if (rms > 1.0) (20.0 * kotlin.math.log10(rms / 46340.0)).toFloat().coerceIn(-90f, 0f) else -90f
-                currentRssiDbfs = dbfs
-                dispatchRfSignal(dbfs, preamblesTotal)
-            }
+        }
+        if (pwrCount > 0) {
+            val rms = sqrt(sumPwr / pwrCount)
+            val dbfs = if (rms > 1.0) (20.0 * kotlin.math.log10(rms / 46340.0)).toFloat().coerceIn(-90f, 0f) else -90f
+            currentRssiDbfs = dbfs
+            dispatchRfSignal(dbfs, preamblesTotal)
         }
     }
 }

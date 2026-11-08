@@ -150,6 +150,36 @@ The following third-party software libraries and components are utilized in Aala
   copies or substantial portions of the Software.
   ```
 
+### librtlsdr & Rafael Micro R820T/R820T2 RF Tuner Driver
+* **Project**: [librtlsdr (Osmocom)](https://github.com/osmocom/rtl-sdr)
+* **Authors**: Steve Markgraf, Dimitri Stolnikov, Hoernchen, Kyle Keen, and the Osmocom community
+* **License**: GNU General Public License Version 2 (`GPL-2.0-or-later`)
+* **Usage**: Native C driver (`liblibrtlsdr.so`) embedded in Aalaapi Comms for Realtek RTL2832U USB controller and Rafael Micro R820T/R820T2 RF tuner PLL calibration, VCO tracking, and I/Q sample streaming.
+* **Notice**:
+  ```text
+  Copyright (C) 2012 by Steve Markgraf <steve@steve-m.de>
+  Copyright (C) 2012-2014 by Dimitri Stolnikov <horiz0n@gmx.net>
+  Licensed under the GNU General Public License as published by the Free Software Foundation; version 2.
+  ```
+
+### libusb
+* **Project**: [libusb](https://libusb.info/)
+* **Authors**: Nathan Hjelm, Peter Stuge, Ludovic Rousseau, and the libusb team
+* **License**: GNU Lesser General Public License Version 2.1 (`LGPL-2.1-or-later`)
+* **Usage**: Native cross-platform user-mode USB communication library (`liblibusb.so`) interfacing with Android Linux USB sysfs device file descriptors (`/dev/bus/usb/*`) without root privileges.
+* **Notice**:
+  ```text
+  Copyright (c) 2007-2008 Daniel Drake <dsd@gentoo.org>
+  Copyright (c) 2001 Johannes Erdfelt <johannes@erdfelt.com>
+  Licensed under the GNU Lesser General Public License Version 2.1.
+  ```
+
+### rtl_tcp_andro
+* **Project**: [rtl_tcp_andro-multiarch](https://github.com/martinmarinov/rtl_tcp_andro-multiarch)
+* **Authors**: Martin Marinov and contributors
+* **License**: GNU General Public License Version 2 (`GPL-2.0-or-later`)
+* **Usage**: Multi-architecture Android JNI bridge (`librtlSdrAndroid.so`) providing loopback `rtl_tcp` socket streaming directly from wrapped Android USB file descriptors.
+
 ### Web Fonts: Outfit & Plus Jakarta Sans
 * **Outfit**: Designed by On caps and Rodrigo Fuenzalida. Licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/).
 * **Plus Jakarta Sans**: Designed by Tokotype and Gumpita Rahayu. Licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/).
