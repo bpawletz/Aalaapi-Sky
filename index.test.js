@@ -44992,8 +44992,9 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(changelog.includes('Closes #286'), 'CHANGELOG.md must reference issue #286');
 
       const appGradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-      assert.ok(appGradle.includes('versionCode = 124310'), 'android/app/build.gradle.kts versionCode must be 124310');
-      assert.ok(appGradle.includes('versionName = "1.243.1"'), 'android/app/build.gradle.kts versionName must be 1.243.1');
+      const m = appGradle.match(/versionCode = (\d+)/);
+      assert.ok(m && parseInt(m[1]) >= 124310, 'android/app/build.gradle.kts versionCode must be >= 124310');
+      assert.ok(appGradle.match(/versionName = "\d+\.\d+\.\d+"/), 'android/app/build.gradle.kts versionName must be valid');
     });
 
     test('RtlSdrUsbEngine computes continuous raw I/Q signal power in dBFS and tracks candidate preambles', () => {
@@ -45067,6 +45068,59 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       } finally {
         global.document = prevDoc;
       }
+    });
+  });
+
+
+  describe('Issue #287: Distinct Brand-Cohesive App Launcher Icon for Aalaapi Comms (:comms) (v1.243.2)', () => {
+    test('Version consistency: v1.243.2 across package.json, changelog, templates, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.243.2');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('Closes #287'), 'CHANGELOG.md must reference issue #287');
+
+      const appGradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+      const m = appGradle.match(/versionCode = (\d+)/);
+      assert.ok(m && parseInt(m[1]) >= 124320, 'android/app/build.gradle.kts versionCode must be >= 124320');
+      assert.ok(appGradle.match(/versionName = "\d+\.\d+\.\d+"/), 'android/app/build.gradle.kts versionName must be valid');
+    });
+
+    test('Aalaapi Comms launcher icon is distinct from Aalaapi Sky icon', () => {
+      const skyIconPath = path.join(__dirname, 'android', 'app', 'src', 'main', 'res', 'drawable', 'ic_launcher_foreground.png');
+      const commsIconPath = path.join(__dirname, 'android', 'comms', 'src', 'main', 'res', 'drawable', 'ic_launcher_foreground.png');
+
+      assert.ok(fs.existsSync(skyIconPath), 'Aalaapi Sky icon must exist');
+      assert.ok(fs.existsSync(commsIconPath), 'Aalaapi Comms icon must exist');
+
+      const skyBuf = fs.readFileSync(skyIconPath);
+      const commsBuf = fs.readFileSync(commsIconPath);
+
+      assert.notDeepStrictEqual(skyBuf, commsBuf, 'Aalaapi Comms icon must not be identical to Aalaapi Sky icon');
+      assert.ok(commsBuf.length > 10000, 'Aalaapi Comms icon must be a valid non-empty PNG');
+    });
+
+    test('Aalaapi Comms defines multi-density mipmaps and adaptive launcher XMLs', () => {
+      const commsRes = path.join(__dirname, 'android', 'comms', 'src', 'main', 'res');
+      const densities = ['mipmap-mdpi', 'mipmap-hdpi', 'mipmap-xhdpi', 'mipmap-xxhdpi', 'mipmap-xxxhdpi'];
+      const fileNames = ['ic_launcher.png', 'ic_launcher_round.png', 'ic_launcher_foreground.png'];
+
+      densities.forEach((d) => {
+        fileNames.forEach((f) => {
+          const filePath = path.join(commsRes, d, f);
+          assert.ok(fs.existsSync(filePath), d + '/' + f + ' must exist in comms res');
+          const stat = fs.statSync(filePath);
+          assert.ok(stat.size > 500, d + '/' + f + ' must be a valid PNG image (> 500 bytes)');
+        });
+      });
+
+      const anydpiXml = path.join(commsRes, 'mipmap-anydpi-v26', 'ic_launcher.xml');
+      const roundXml = path.join(commsRes, 'mipmap-anydpi-v26', 'ic_launcher_round.xml');
+      assert.ok(fs.existsSync(anydpiXml), 'ic_launcher.xml must exist in mipmap-anydpi-v26');
+      assert.ok(fs.existsSync(roundXml), 'ic_launcher_round.xml must exist in mipmap-anydpi-v26');
+
+      const xmlContent = fs.readFileSync(anydpiXml, 'utf8');
+      assert.ok(xmlContent.includes('adaptive-icon'), 'ic_launcher.xml must declare adaptive-icon');
+      assert.ok(xmlContent.includes('@color/bg_dark'), 'ic_launcher.xml must reference bg_dark');
+      assert.ok(xmlContent.includes('@mipmap/ic_launcher_foreground'), 'ic_launcher.xml must reference ic_launcher_foreground');
     });
   });
 

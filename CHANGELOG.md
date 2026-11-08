@@ -1,3 +1,17 @@
+## [1.243.2] - 2026-11-08
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Distinct Brand-Cohesive App Launcher Icon for Aalaapi Comms (Closes #287)**:
+  - Replaced the placeholder quadcopter icon with a dedicated indigenous geometric radio transmission tower emitting active directional radar sweep beams and concentric RF wave arcs on a dark navy background (`#090D16`).
+  - Preserves the central stepped star beacon motif from the Aalaapi design language, providing immediate visual brand family harmony while making Aalaapi Comms instantly distinguishable from Aalaapi Sky on the Android launcher and home screen.
+
+#### Under the Hood & Technical Details
+- **`android/comms/src/main/res/`**:
+  - Generated full multi-density mipmap sets for `mdpi` (48x48), `hdpi` (72x72), `xhdpi` (96x96), `xxhdpi` (144x144), and `xxxhdpi` (192x192) alongside the 1024x1024 master `drawable/ic_launcher_foreground.png`.
+  - Configured Android API 26+ adaptive icon definitions (`ic_launcher.xml` and `ic_launcher_round.xml`) with dark navy background `@color/bg_dark`.
+
 ## [1.243.1] - 2026-11-07
 
 ### 🚀 Added
