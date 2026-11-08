@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Realtek RTL2832U / Nooelec RTL-SDR v5 / NESDR -->
+    <usb-device vendor-id="3034" product-id="10296" />
+    <usb-device vendor-id="3034" product-id="10290" />
+    <usb-device vendor-id="3034" product-id="10292" />
+    <usb-device vendor-id="3034" product-id="10300" />
+    <!-- Catch-all Realtek SDR Vendor ID -->
+    <usb-device vendor-id="3034" />
+</resources>

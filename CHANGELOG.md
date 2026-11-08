@@ -1,3 +1,59 @@
+## [1.243.0] - 2026-11-07
+
+Introduces the standalone Aalaapi Comms native Android USB OTG RTL-SDR radio daemon and multi-mode aviation scanner alongside Aalaapi Sky UAS flight planning.
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Aalaapi Comms Standalone RTL-SDR Radio Daemon & Aviation Scanner (Closes #285)**:
+  - Added a dedicated native Android application module (`:comms` / `com.aalaapi.comms`) that exclusively claims connected Nooelec RTL-SDR v5 and compatible Realtek RTL2832U USB dongles.
+  - Runs a persistent Android Foreground Service (`SdrForegroundService`) that streams live Mode S ADS-B transponder frames over local TCP port 30003 and HTTP port 8080 (`/data/aircraft.json`), keeping radio streams active when switching apps or locking the screen.
+  - Implements multi-mode software-defined radio capabilities:
+    - **1090 MHz ADS-B Radar**: Demodulates 112-bit Extended Squitters with 24-bit ICAO parity check, single-bit error repair, callsign identification, barometric altitude, local/global CPR coordinates, and groundspeed/vertical rate.
+    - **VHF Airband AM Audio Scanner (118.000–136.975 MHz)**: Real-time envelope demodulation, DC blocker, adjustable squelch threshold, and live Android `AudioTrack` speaker/headset playback for CTAF, UNICOM, Tower, ATIS/AWOS, and 121.5 MHz Guard.
+    - **VHF ACARS Datalink Decoder (131.550 MHz)**: 2400-baud AM-MSK coherent bit slicer, SOH/STX/ETX frame parser, and message extraction.
+  - Native dark-theme scanner UI (`CommsMainActivity`) with mode selector chips, frequency input with quick presets (`122.800 CTAF`, `121.500 Guard`, `122.750 Air-Air`, `118.000 Tower`), squelch slider, signal dBFS meter, active client counter, and scrolling frame monitor.
+- **Aalaapi Sky Comms Remote Tuner & ACARS Datalink Log (Closes #285)**:
+  - Scoped Aalaapi Sky's auto-launch USB filter exclusively to DJI RC 2 controllers (`vendor-id="11427"`), completely isolating USB claims when a USB hub is used with both an RC 2 and an RTL-SDR.
+  - Integrated an in-drawer **Aalaapi Comms Link & Remote Tuner Card** (`#adsb-sdr-tuner-card`) inside the `Feed & Hardware` tab, allowing pilots to switch radio modes (`ADS-B 1090`, `Airband AM`, `ACARS`), tune VHF frequencies, and view live incoming ACARS datalink messages directly inside Aalaapi Sky.
+  - Added a 1-tap **"Launch Aalaapi Comms"** button (`#comms-launch-btn`) to start the background SDR daemon on demand.
+
+#### Under the Hood & Technical Details
+- **`android/settings.gradle.kts`**:
+  - Registered `:comms` application module alongside `:app` in multi-project build.
+- **`android/comms/`**:
+  - Created standalone Android app module `com.aalaapi.comms` with `build.gradle.kts`, `AndroidManifest.xml`, USB device filter for `vendor-id="3034"`, `RtlSdrUsbEngine.kt`, `SdrForegroundService.kt`, and `CommsMainActivity.kt`.
+- **`android/app/src/main/res/xml/usb_device_filter.xml`**:
+  - Scoped Aalaapi Sky USB filter to DJI controllers (`vendor-id="11427"` / MTP class 6/1/1), preventing USB conflict with RTL-SDR dongles.
+- **`android/app/src/main/java/com/aalaapi/sky/AndroidAdsbBridge.kt` & `MainActivity.kt`**:
+  - Added `tuneCommsDaemon(mode, freqHz, squelch)` and `launchCommsApp()` bridging native intents and HTTP control API to the WebView.
+- **`src/bridge/AndroidNativeBridge.js` & `ApiClient.js`**:
+  - Added `bindCommsUi()`, `tuneCommsDaemon()`, `launchCommsApp()`, and `ingestAcarsMessage()`.
+  - Updated `updateDiagnosticsUI` to display `Aalaapi Comms SDR Daemon (Active)` with green styling when connected on port 30003/8080.
+- **`.github/workflows/android-build.yml`**:
+  - Updated CI build to assemble and upload both `AalaapiSky-debug-apk` and `AalaapiComms-debug-apk`.
+
+## [1.242.10] - 2026-11-07
+
+### 🚀 Added
+
+#### Pilot & Operational Features
+- **Map Layers Menu Sticky Header, Footer & Dedicated Close Buttons (Closes #283)**:
+  - Enhanced the Leaflet Map Layers & Overlays control (`.leaflet-control-layers`) with a high-contrast, tactile header close button (`✕`) featuring a dedicated touch target and subtle red active state.
+  - Pinned the header (`.leaflet-control-layers-header`) to the top (`position: sticky; top: -8px; z-index: 10`) with glassmorphic backdrop blur, keeping the title and top close button in view regardless of how far the pilot scrolls down.
+  - Added a dedicated sticky bottom footer (`.leaflet-control-layers-footer`) containing a full-width **"✕ Close Menu"** button (`.leaflet-control-layers-done-btn`), allowing pilots to immediately dismiss the menu after selecting lower overlays (e.g. Elevation DEM Grid, Photo Coverage Footprints, Celestial Shadow Casting) without scrolling back to the top.
+  - Added keyboard `Escape` key support to immediately collapse the layer menu whenever it is open.
+
+#### Under the Hood & Technical Details
+- **`src/map/MapEngine.js`**:
+  - Bound touch-first `pointerdown` and `touchstart` event propagation handlers on the header close button and footer done button to guarantee immediate dismissal without map interaction interference.
+  - Injected `.leaflet-control-layers-footer` and `.leaflet-control-layers-done-btn` into `.leaflet-control-layers-list`.
+  - Added global `Escape` key event listener guarded by `.leaflet-control-layers-expanded`.
+- **`index.css`**:
+  - Added sticky positioning, glassmorphic blur, and border styles for `.leaflet-control-layers-header` and `.leaflet-control-layers-footer`.
+  - Enhanced `.leaflet-control-layers-close-btn` with 26x26px touch target sizing, border, and red hover highlight.
+  - Styled `.leaflet-control-layers-done-btn` with full-width layout, rounded corners, and cyan hover glow.
+
 ## [1.242.9] - 2026-11-07
 
 ### 🐛 Fixed

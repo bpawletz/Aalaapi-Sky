@@ -778,12 +778,42 @@ function initMap() {
       `;
       const closeBtn = headerEl.querySelector('.leaflet-control-layers-close-btn');
       if (closeBtn) {
-        closeBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
+        const handleClose = (e) => {
+          if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
           layerControl.collapse();
-        });
+        };
+        closeBtn.addEventListener('click', handleClose);
+        closeBtn.addEventListener('touchend', handleClose);
       }
       listSection.insertBefore(headerEl, listSection.firstChild);
+    }
+
+    // 5. Inject Sticky Footer & Full-Width Done/Close Button at bottom of layers list (v1.242.10 - Issue #283)
+    if (listSection && !listSection.querySelector('.leaflet-control-layers-footer')) {
+      const footerEl = document.createElement('div');
+      footerEl.className = 'leaflet-control-layers-footer';
+      footerEl.innerHTML = `
+        <button type="button" class="leaflet-control-layers-done-btn" aria-label="Close Map Layers Menu" title="Close Map Layers">✕ Close Menu</button>
+      `;
+      const doneBtn = footerEl.querySelector('.leaflet-control-layers-done-btn');
+      if (doneBtn) {
+        const handleClose = (e) => {
+          if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+          layerControl.collapse();
+        };
+        doneBtn.addEventListener('click', handleClose);
+        doneBtn.addEventListener('touchend', handleClose);
+      }
+      listSection.appendChild(footerEl);
+    }
+
+    // 6. Keyboard Escape support to collapse layers menu when expanded (v1.242.10 - Issue #283)
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && layerContainer.classList.contains('leaflet-control-layers-expanded')) {
+          layerControl.collapse();
+        }
+      });
     }
   }
 

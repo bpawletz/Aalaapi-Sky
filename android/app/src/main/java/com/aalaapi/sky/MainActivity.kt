@@ -677,6 +677,16 @@ class MainActivity : AppCompatActivity() {
             }
 
             @JavascriptInterface
+            fun tuneCommsDaemon(mode: String, freqHz: Long, squelch: Int): String {
+                return adsbBridge.tuneCommsDaemon(mode, freqHz, squelch)
+            }
+
+            @JavascriptInterface
+            fun launchCommsApp(): Boolean {
+                return adsbBridge.launchCommsApp()
+            }
+
+            @JavascriptInterface
             fun startRemoteIdScan(): Boolean {
                 return if (remoteIdScanner.hasPermission()) {
                     remoteIdScanner.startScan()

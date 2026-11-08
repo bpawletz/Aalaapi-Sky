@@ -20,4 +20,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Aalaapi-Sky"
-include(":app")
+include(":app", ":comms")

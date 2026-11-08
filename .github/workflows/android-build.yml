@@ -73,14 +73,25 @@ jobs:
         run: |
           gradle assembleDebug --no-daemon --max-workers=2 --stacktrace
 
-      - name: Verify APK Generated
+      - name: Verify APKs Generated
         run: |
           ls -la android/app/build/outputs/apk/debug/
           test -f android/app/build/outputs/apk/debug/app-debug.apk
+          if [ -d "android/comms/build/outputs/apk/debug/" ]; then
+            ls -la android/comms/build/outputs/apk/debug/
+          fi
 
-      - name: Upload Debug APK Artifact
+      - name: Upload Aalaapi Sky Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AalaapiSky-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Upload Aalaapi Comms Debug APK Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AalaapiComms-debug-apk
+          path: android/comms/build/outputs/apk/debug/*-debug.apk
           retention-days: 30

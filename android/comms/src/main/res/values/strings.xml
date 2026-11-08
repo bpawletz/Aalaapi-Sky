@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Aalaapi Comms</string>
+    <string name="service_name">Aalaapi Comms SDR Daemon</string>
+    <string name="notification_title">Aalaapi Comms Radio Active</string>
+    <string name="notification_text">Streaming SDR telemetry on ports 30003 and 8080</string>
+</resources>

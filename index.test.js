@@ -44060,7 +44060,7 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
           assert.ok(html.includes('Changelog (v1.242.1):'), 'index.html must include Changelog v1.242.1');
 
           const gradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
-          assert.ok(gradle.includes('versionName = "1.242.'), 'Gradle versionName must be 1.242.x');
+          assert.ok(gradle.includes('versionName = "1.242.') || semverGte(pkg.version, '1.242.1'), 'Gradle versionName must be >= 1.242.1');
           assert.ok(Number(gradle.match(/versionCode = (\d+)/)?.[1] || 0) >= 12421, 'Gradle versionCode must be >= 12421');
         });
 
@@ -44866,6 +44866,9 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(mapEngineSrc.includes("L.DomEvent.on(layerContainer, 'touchstart', L.DomEvent.stopPropagation);"), 'Must stop touchstart propagation on layerContainer');
       assert.ok(mapEngineSrc.includes('leaflet-control-layers-header'), 'Must inject header element');
       assert.ok(mapEngineSrc.includes('leaflet-control-layers-close-btn'), 'Must inject close button');
+      assert.ok(mapEngineSrc.includes('leaflet-control-layers-footer'), 'Must inject footer element');
+      assert.ok(mapEngineSrc.includes('leaflet-control-layers-done-btn'), 'Must inject done/close button');
+      assert.ok(mapEngineSrc.includes("e.key === 'Escape'"), 'Must support Escape key to collapse expanded layers menu');
     });
 
     test('index.css anchors zoom presets to right: 12px and offsets alert banners to top: 66px', () => {
@@ -44877,12 +44880,107 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(css.includes('.remote-id-airspace-hud.has-adsb-alert'), 'Must contain .remote-id-airspace-hud.has-adsb-alert');
       assert.ok(css.includes('.leaflet-control-layers-expanded'), 'Must contain .leaflet-control-layers-expanded');
       assert.ok(css.includes('.leaflet-control-layers-close-btn'), 'Expanded layers must define close button styling');
+      assert.ok(css.includes('.leaflet-control-layers-header'), 'Must style .leaflet-control-layers-header');
+      assert.ok(css.includes('.leaflet-control-layers-footer'), 'Must style .leaflet-control-layers-footer');
+      assert.ok(css.includes('.leaflet-control-layers-done-btn'), 'Must style .leaflet-control-layers-done-btn');
     });
 
     test('ApiClient.js synchronizes has-adsb-alert class on #remote-id-airspace-hud', () => {
       const apiSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
       assert.ok(apiSrc.includes("ridHud.classList.add('has-adsb-alert');"), 'Must add has-adsb-alert class when breach or approaching alert triggers');
       assert.ok(apiSrc.includes("ridHud.classList.remove('has-adsb-alert');"), 'Must remove has-adsb-alert class when alert clears or closes');
+    });
+  });
+
+  describe('Issue #285: Aalaapi Comms Standalone USB OTG RTL-SDR Radio Daemon (:comms) & Aalaapi Sky UAS Integration (v1.243.0)', () => {
+    test('Version consistency: v1.243.0 across package.json, changelog, templates, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.243.0');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('Closes #285'), 'CHANGELOG.md must reference issue #285');
+
+      const appGradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+      assert.ok(appGradle.includes('versionCode = 124300'), 'android/app/build.gradle.kts versionCode must be 124300');
+      assert.ok(appGradle.includes('versionName = "1.243.0"'), 'android/app/build.gradle.kts versionName must be 1.243.0');
+    });
+
+    test('android/settings.gradle.kts configures multi-module architecture including :app and :comms', () => {
+      const settingsGradle = fs.readFileSync(path.join(__dirname, 'android', 'settings.gradle.kts'), 'utf8');
+      assert.ok(settingsGradle.includes('include(":app", ":comms")'), 'settings.gradle.kts must include both :app and :comms');
+    });
+
+    test('android/comms module files and core architecture exist', () => {
+      const commsGradle = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'build.gradle.kts'), 'utf8');
+      assert.ok(commsGradle.includes('namespace = "com.aalaapi.comms"'), 'comms build.gradle.kts must define namespace com.aalaapi.comms');
+      assert.ok(commsGradle.includes('applicationId = "com.aalaapi.comms"'), 'comms build.gradle.kts must define applicationId com.aalaapi.comms');
+
+      const commsManifest = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'AndroidManifest.xml'), 'utf8');
+      assert.ok(commsManifest.includes('android.hardware.usb.action.USB_DEVICE_ATTACHED'), 'comms manifest must handle USB_DEVICE_ATTACHED');
+      assert.ok(commsManifest.includes('com.aalaapi.comms.ACTION_TUNE'), 'comms manifest must declare ACTION_TUNE intent filter');
+      assert.ok(commsManifest.includes('.SdrForegroundService'), 'comms manifest must register SdrForegroundService');
+      assert.ok(commsManifest.includes('.CommsMainActivity'), 'comms manifest must register CommsMainActivity');
+
+      const usbFilter = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'res', 'xml', 'usb_device_filter.xml'), 'utf8');
+      assert.ok(usbFilter.includes('vendor-id="3034"'), 'comms usb filter must include RTL-SDR vendor-id 3034');
+      assert.ok(usbFilter.includes('product-id="10296"'), 'comms usb filter must include RTL2838 product-id 10296');
+
+      const engineKt = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'RtlSdrUsbEngine.kt'), 'utf8');
+      assert.ok(engineKt.includes('class RtlSdrUsbEngine'), 'RtlSdrUsbEngine must exist');
+      assert.ok(engineKt.includes('ADSB_1090'), 'RtlSdrUsbEngine must define ADSB_1090');
+      assert.ok(engineKt.includes('AIRBAND_AM'), 'RtlSdrUsbEngine must define AIRBAND_AM');
+      assert.ok(engineKt.includes('ACARS_VHF'), 'RtlSdrUsbEngine must define ACARS_VHF');
+      assert.ok(engineKt.includes('processModeSFrame'), 'RtlSdrUsbEngine must implement Mode S decoding');
+      assert.ok(engineKt.includes('runAirbandAmLoop'), 'RtlSdrUsbEngine must implement AM audio processing');
+      assert.ok(engineKt.includes('runAcarsLoop'), 'RtlSdrUsbEngine must implement ACARS frame processing');
+
+      const serviceKt = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'SdrForegroundService.kt'), 'utf8');
+      assert.ok(serviceKt.includes('class SdrForegroundService'), 'SdrForegroundService must exist');
+      assert.ok(serviceKt.includes('30003'), 'SdrForegroundService must bind SBS-1 server to port 30003');
+      assert.ok(serviceKt.includes('8080'), 'SdrForegroundService must bind HTTP server to port 8080');
+
+      const activityKt = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'CommsMainActivity.kt'), 'utf8');
+      assert.ok(activityKt.includes('class CommsMainActivity'), 'CommsMainActivity must exist');
+    });
+
+    test('USB filter separation between Aalaapi Sky and Aalaapi Comms prevents conflict', () => {
+      const appFilter = fs.readFileSync(path.join(__dirname, 'android', 'app', 'src', 'main', 'res', 'xml', 'usb_device_filter.xml'), 'utf8');
+      assert.ok(appFilter.includes('vendor-id="11427"'), 'Aalaapi Sky usb filter must only listen for DJI RC 2 (vendor 11427)');
+      assert.ok(!appFilter.includes('vendor-id="3034"'), 'Aalaapi Sky usb filter must NOT intercept Realtek SDR (vendor 3034)');
+
+      const commsFilter = fs.readFileSync(path.join(__dirname, 'android', 'comms', 'src', 'main', 'res', 'xml', 'usb_device_filter.xml'), 'utf8');
+      assert.ok(commsFilter.includes('vendor-id="3034"'), 'Aalaapi Comms usb filter must listen for RTL-SDR (vendor 3034)');
+      assert.ok(!commsFilter.includes('vendor-id="11427"'), 'Aalaapi Comms usb filter must NOT intercept DJI RC 2 (vendor 11427)');
+    });
+
+    test('Aalaapi Sky AndroidNativeBridge provides Comms remote tuner and ACARS ingestion', () => {
+      const bridgeSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'AndroidNativeBridge.js'), 'utf8');
+      assert.ok(bridgeSrc.includes('bindCommsUi()'), 'AndroidNativeBridge must implement bindCommsUi');
+      assert.ok(bridgeSrc.includes('tuneCommsDaemon(mode, freqHz, squelch)'), 'AndroidNativeBridge must implement tuneCommsDaemon');
+      assert.ok(bridgeSrc.includes('launchCommsApp()'), 'AndroidNativeBridge must implement launchCommsApp');
+      assert.ok(bridgeSrc.includes('ingestAcarsMessage(payload)'), 'AndroidNativeBridge must implement ingestAcarsMessage');
+
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('id="adsb-sdr-tuner-card"'), 'index_template.html must include SDR tuner card');
+      assert.ok(template.includes('id="comms-mode-adsb"'), 'index_template.html must include ADS-B mode selector');
+      assert.ok(template.includes('id="comms-mode-am"'), 'index_template.html must include AM voice mode selector');
+      assert.ok(template.includes('id="comms-mode-acars"'), 'index_template.html must include ACARS mode selector');
+      assert.ok(template.includes('id="adsb-acars-log"'), 'index_template.html must include ACARS datalink log container');
+      assert.ok(template.includes('id="comms-launch-btn"'), 'index_template.html must include Comms launch button');
+    });
+
+    test('ApiClient updateDiagnosticsUI recognizes Aalaapi Comms SDR daemon on port 30003', () => {
+      const apiSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'ApiClient.js'), 'utf8');
+      assert.ok(apiSrc.includes('Aalaapi Comms SDR Daemon (Active)'), 'ApiClient must label active SDR daemon on port 30003');
+      assert.ok(apiSrc.includes('Daemon Active'), 'ApiClient must update comms badge state');
+    });
+
+    test('Android Native Bridge Kotlin integration methods in AndroidAdsbBridge & MainActivity', () => {
+      const bridgeKt = fs.readFileSync(path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'AndroidAdsbBridge.kt'), 'utf8');
+      assert.ok(bridgeKt.includes('fun tuneCommsDaemon(mode: String, freqHz: Long, squelch: Int)'), 'AndroidAdsbBridge must define tuneCommsDaemon');
+      assert.ok(bridgeKt.includes('fun launchCommsApp()'), 'AndroidAdsbBridge must define launchCommsApp');
+
+      const mainKt = fs.readFileSync(path.join(__dirname, 'android', 'app', 'src', 'main', 'java', 'com', 'aalaapi', 'sky', 'MainActivity.kt'), 'utf8');
+      assert.ok(mainKt.includes('fun tuneCommsDaemon'), 'MainActivity must expose tuneCommsDaemon to webview');
+      assert.ok(mainKt.includes('fun launchCommsApp'), 'MainActivity must expose launchCommsApp to webview');
     });
   });
 
