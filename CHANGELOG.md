@@ -1,3 +1,19 @@
+## [1.243.9] - 2026-11-10
+
+### ✅ Changed
+
+#### Pilot & Operational Features
+- **Vertical Facade IRL Field Verification**: The Vertical Facade (Planar Infrastructure) pattern is now formally `VERIFIED` across all 6 phases of the IRL Field Flight Test Plan using actual flight telemetry (`FlightRecord_2026-11-09_[17-09-30].txt`) on DJI Mini 4 Pro / RC 2.
+  - 6 horizontal raster rows (30m down to 12m, 3.6m row spacing) at 15m standoff, 24 stop-and-shoot waypoints, -45° gimbal pitch, fixed 0° heading.
+  - 24/24 waypoints reached, 0.74m RMS XTE (max 1.22m at WP 16), 0.2m RMS altitude variance (max 0.6m at WP 4), 0.0° gimbal pitch error, 0.1° mean yaw error (max 0.8°), 35/24 photos (146%), 71% battery at landing.
+  - Field note: largest XTE/altitude deviations occur at the row-change waypoints (WP 3/4, 7/8, 11/12, 15/16, 19/20) during the vertical step-down; all remain well inside tolerance.
+  - Reminder: `IRL Verified` is a historical reference check only and does NOT guarantee safe flight under varying wind, GNSS, geomagnetic, terrain, obstacle, or firmware conditions. The RPIC retains sole responsibility for VLOS and flight safety.
+
+#### Under the Hood & Technical Details
+- **`docs/irl_test_status.json` & `docs/IRL_TEST_PLAN.md`**:
+  - Upgraded `vertical-facade` status to `VERIFIED` (6/6 phases, `verifiedCodeHash` `d8232774e98a`) with full `lastTelemetryMetrics` and history entry; summary progress now 8 / 26 patterns verified.
+  - Recorded test-parameter deviations from the recommended reference profile (-45° pitch vs 0°, 12–30m band vs 15–40m, 3.4 m/s vs 2.5 m/s).
+
 ## [1.243.8] - 2026-11-08
 
 ### 🐛 Fixed

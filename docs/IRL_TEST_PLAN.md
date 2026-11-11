@@ -3,9 +3,9 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.243.8` | **WPML Compiler Hash:** `eb2417f42275` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.243.9` | **WPML Compiler Hash:** `eb2417f42275` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
-**Summary Progress:** **7 / 26** Patterns Verified | **0** Needs Re-Test | **19** Untested | **0** Failed
+**Summary Progress:** **8 / 26** Patterns Verified | **0** Needs Re-Test | **18** Untested | **0** Failed
 
 ---
 
@@ -85,7 +85,7 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 | 4 | `orbit` | **3D Object (Circular Orbit)** | Orbit & Structure | ✅ `VERIFIED` | `64011bf49858` | v1.215.0 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 5 | `multi-orbit` | **3D Object (Multi-Tiered Orbit)** | Orbit & Structure | ✅ `VERIFIED` | `0d54cef3c772` | v1.220.0 | DJI Mini 4 Pro (68) (RC 2 / DJI Fly) | `6/6` |
 | 6 | `tower` | **3D Structure (Tower Audit)** | Orbit & Structure | ✅ `VERIFIED` | `691c76eb56a7` | v1.219.2 | DJI Mini 4 Pro (RC 2 / DJI Fly v1.21.18) | `6/6` |
-| 7 | `vertical-facade` | **Vertical Facade (Planar Infrastructure)** | Orbit & Structure | ⬜ `UNTESTED` | `d8232774e98a` | — | — | `0/6` |
+| 7 | `vertical-facade` | **Vertical Facade (Planar Infrastructure)** | Orbit & Structure | ✅ `VERIFIED` | `d8232774e98a` | v1.243.2 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 8 | `continuous-helix` | **Continuous Helix (Corkscrew Orbit)** | Orbit & Structure | ⬜ `UNTESTED` | `29e3be3b2fcb` | — | — | `0/6` |
 | 9 | `star-pass` | **Star Pass (Cross-Hatch POI Inspection)** | Orbit & Structure | ⬜ `UNTESTED` | `2a4cf7306d93` | — | — | `0/6` |
 | 10 | `photo-sphere` | **360° Pano (Photo Sphere)** | Creative & Pano | ⬜ `UNTESTED` | `e0584da7f38d` | — | — | `0/6` |
@@ -223,15 +223,15 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 - **Edge-Case & Safety Watchout:** CRITICAL: Never fly near real guyed towers without physically verifying guy-wire anchor radii and setting Guy-Wire Buffer >= 10m.
 
 #### `vertical-facade` — Vertical Facade (Planar Infrastructure)
-- **Current Status:** ⬜ `UNTESTED` | **Generator Hash:** `d8232774e98a` (`src/patterns/PatternGenerators.js` -> `generateVerticalFacadeCoordinates`)
+- **Current Status:** ✅ `VERIFIED` | **Generator Hash:** `d8232774e98a` (`src/patterns/PatternGenerators.js` -> `generateVerticalFacadeCoordinates`)
 - **Recommended Safe Field Parameters:** Origin `[41.3215, -88.9950]`, `facadeWidthM: 40`, `minAltM: 15`, `maxAltM: 40`, `standoffM: 15`, `rotationDeg: 0`, `rasterOrder: horizontal`, `speedMps: 2.5`, `gimbalPitchDeg: 0`, `captureMode: stopAndShoot`, `headingMode: fixed`, `pathMode: straight`
 - **6-Phase Field Verification Checklist:**
-  - [ ] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export Vertical Facade KMZ and confirm vertical 2D planar wall grid loads in DJI Fly.
-  - [ ] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Verify entry at 15m perpendicular standoff distance and initial tier altitude (40m or 15m).
-  - [ ] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Confirm aircraft translates laterally and vertically within a flat plane parallel to the target wall (zero standoff drift).
-  - [ ] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify aircraft heading stays locked perpendicular to the facade plane and gimbal pitch holds 0° horizontal.
-  - [ ] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Confirm `stopAndShoot` pause and shutter firing at each facade grid node.
-  - [ ] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Verify safe lateral pull-back / climb to RTH altitude upon completing final facade pass.
+  - [x] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export Vertical Facade KMZ and confirm vertical 2D planar wall grid loads in DJI Fly.
+  - [x] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Verify entry at 15m perpendicular standoff distance and initial tier altitude (40m or 15m).
+  - [x] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Confirm aircraft translates laterally and vertically within a flat plane parallel to the target wall (zero standoff drift).
+  - [x] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Verify aircraft heading stays locked perpendicular to the facade plane and gimbal pitch holds 0° horizontal.
+  - [x] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Confirm `stopAndShoot` pause and shutter firing at each facade grid node.
+  - [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Verify safe lateral pull-back / climb to RTH altitude upon completing final facade pass.
 - **Edge-Case & Safety Watchout:** Verify that rotating `grid-rotation` rotates both the vertical flight plane and the perpendicular camera normal vector identically.
 
 #### `continuous-helix` — Continuous Helix (Corkscrew Orbit)
