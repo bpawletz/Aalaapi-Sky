@@ -209,6 +209,12 @@ Whenever introducing, updating, or referencing any third-party library, CDN scri
    - Ensure Leaflet tile layers (`L.tileLayer`, `L.tileLayer.wms`, `L.esri.featureLayer`) in `src/map/MapEngine.js` configure an accurate, compliant `attribution` property citing the upstream provider.
 6. **Mandatory Test Verification**:
    - Maintain and run the attribution & trademark test suite in `index.test.js` asserting that `CREDITS.md`, `#about-modal`, and trademark legal notices remain intact.
+7. **Third-Party Service Terms of Service & Anti-Abuse Mandates**:
+   - **No Automated Bulk Tile Scraping / Pre-seeding**: Never implement parallel bulk tile downloaders or cache scrapers targeting public community tile servers (e.g. `tile.openstreetmap.org`, `tile.opentopomap.org`) at zoom 13+ or in violation of upstream Tile Usage Policies. Offline packs must use permissible satellite imagery or local companion proxy caches.
+   - **Zero Public Proxying of Private Credentials or API Keys**: Strictly prohibit routing requests containing vendor API keys, OAuth tokens, or secret credentials through third-party public CORS proxies (e.g. `corsproxy.io`, `cors-anywhere`). All CORS workarounds must utilize local Companion Bridge (`/api/proxy`) or native app platform bridges (`Platform.postHttpNative`).
+   - **Operational Integrity of Aviation Data Feeds**: Require official real-world public-domain or authorized feeds (FAA/NOAA `aviationweather.gov`, `api.weather.gov`) for flight planning; never query virtual flight simulation network APIs (such as VATSIM) for actual UAS drone operations.
+8. **Corresponding Source Provenance for Precompiled Native Binaries**:
+   - When committing or embedding precompiled native binaries (`.so`, `.dll`, `.exe`), agents must document the exact upstream repository URL, release tag/commit, license text, and build/compilation instructions in `CREDITS.md` to ensure strict GPL/LGPL/Apache compliance. Standalone Android sub-apps (such as `Aalaapi Comms`) must expose an in-app Open Source Credits dialog displaying component licenses and source availability.
 
 
 ## 13. SSE-First Architecture Policy for Real-Time APIs & Zero-Polling Mandate

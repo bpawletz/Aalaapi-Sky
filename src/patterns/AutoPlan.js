@@ -1771,9 +1771,9 @@ async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
       });
     }
 
-    // 3. Fetch latest observations from NWS and real-time live METARs in parallel
+    // 3. Fetch latest observations from NWS and real-time live METARs from FAA/NOAA Aviation Weather Center in parallel
     const stationIds = topStations.map(st => st.id).filter(Boolean);
-    const [obsResults, vatsimResult] = await Promise.all([
+    const [obsResults, awcMetarResult] = await Promise.all([
       Promise.allSettled(
         topStations.map(st =>
           fetch(`https://api.weather.gov/stations/${st.id}/observations/latest`, { headers })
@@ -1782,7 +1782,7 @@ async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
         )
       ),
       stationIds.length > 0
-        ? fetch(`https://metar.vatsim.net/metar.php?id=${stationIds.join(',')}`)
+        ? fetch(`https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(stationIds.join(','))}&format=raw`, { headers })
             .then(res => res.ok ? res.text() : null)
             .catch(() => null)
         : Promise.resolve(null)
@@ -1790,8 +1790,8 @@ async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
 
     // Parse real-time live METAR lines into map by ICAO
     const liveMetarMap = new Map();
-    if (vatsimResult && typeof vatsimResult === 'string') {
-      const lines = vatsimResult.split('\n');
+    if (awcMetarResult && typeof awcMetarResult === 'string') {
+      const lines = awcMetarResult.split('\n');
       for (const line of lines) {
         const parsed = parseMetar(line);
         if (parsed && parsed.icao) {

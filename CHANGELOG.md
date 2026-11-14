@@ -1,6 +1,24 @@
 ## [1.243.10] - 2026-11-13
 
-### 🐛 Fixed
+Comprehensive third-party tool, library, and data attribution across repository documentation and in-app interfaces, accompanied by credential security hardening, Terms of Service compliance protections, and seamless ADS-B local receiver and cloud feed merging.
+
+### Added
+
+#### Pilot & Operational Features
+- **In-App Open-Source Credits & Compliance Dialog (Closes #292)**:
+  - Added a dedicated `ℹ️ Credits` button to the `Aalaapi Comms` Android interface displaying full open-source license notices and source code availability for embedded native libraries (`librtlsdr`, `libusb`, `rtl_tcp_andro`) and DSP decoding algorithms.
+  - Expanded the in-app `#about-credits-section` card deck with clean, responsive cards for USGS 3DEP, Google Identity & Workspace APIs, dump1090/adsb.lol, AprilTag/ArUco fiducials, OpenCV/NumPy/COLMAP/Nerfstudio, and AndroidX/Kotlin/Playwright.
+
+#### Under the Hood & Technical Details
+- **`CREDITS.md` & `README.md` Comprehensive Expansion**:
+  - Documented upstream source code repositories, release tags/commits, and NDK build instructions for all precompiled Android native shared libraries (`liblibrtlsdr.so`, `liblibusb.so`, `librtlSdrAndroid.so`) pursuant to GNU GPLv2 Section 3, GNU GPLv3 Section 6, and GNU LGPLv2.1 Section 4.
+  - Credited mode S decoding algorithms (`dump1090`, `readsb`), visual fiducials (`AprilTag`, `ArUco`), computer vision frameworks (`OpenCV`, `NumPy`), and 3D Gaussian Splatting priors (`COLMAP`, `Nerfstudio`).
+  - Added public-domain and open data provider attributions for `adsb.lol`, FAA Aviation Weather Center (`aviationweather.gov`), `CARTO`, and `RainViewer`.
+  - Added vendor trademark notices for Realtek, Rafael Micro, Nooelec, JetBrains, Microsoft, CARTO, and Khronos Group.
+- **`AGENTS.md` (Section 12 Expansion)**:
+  - Codified permanent repository rules against automated bulk tile scraping of community tile servers (OSM/OpenTopoMap), forbidding public proxying of private API keys, requiring real-world operational aviation feeds, and mandating native binary source provenance upfront.
+
+### Fixed
 
 #### Pilot & Operational Features
 - **ADS-B Local Receiver & Cloud Feed Seamless Merging**: Fixed an issue where cloud-sourced aircraft icons would intermittently flicker or disappear when both a local ADS-B receiver (RTL-SDR USB dongle, Comms daemon, or Companion bridge) and an external cloud feed were concurrently active (Closes #291).
@@ -9,6 +27,10 @@
   - If a local Mode S frame lacks CPR positional coordinates, cloud coordinates seamlessly populate the aircraft position on the map and HUD.
   - If local receiver reception drops or goes stale for 45 seconds or longer, cloud coordinates smoothly resume positioning until local contact is re-established.
   - Cloud-only aircraft are granted a 90-second retention window matching real-world cloud polling cadences, preventing premature pruning.
+- **Official FAA/NOAA Aviation Weather Center Integration (Closes #292)**:
+  - Replaced simulator flight network queries (`metar.vatsim.net`) in AutoPlan with the official U.S. Public Domain FAA/NOAA Aviation Weather Center REST API (`aviationweather.gov/api/data/metar?ids=...&format=raw`) for real-world drone flight safety.
+- **Accurate In-App 3D Engine Attribution (Closes #292)**:
+  - Corrected stale "Cesium 3D cockpit preview" text on line 7878 of `index_template.html` to accurately state Three.js.
 
 #### Under the Hood & Technical Details
 - **`src/bridge/ApiClient.js` (AdsbAirspaceManager)**:
@@ -22,6 +44,11 @@
   - Added `LOCAL_ADSB_SOURCES` and `LOCAL_RECENT_MS = 45000` constants.
   - Extended stale aircraft pruning for cloud-only records to `externalStaleTimeoutMs` (90s).
   - Preserved `lastLocalSeen` timestamp and resolved `positionSource` ('local' vs 'external') dynamically during dump1090/readsb JSON ingestion.
+- **Private API Key Proxying Elimination (`src/bridge/DjiLogDecryptor.js`)**:
+  - Removed `corsproxy.io` public proxy fallback when requesting DJI Cloud Keychain decryption keys, eliminating the risk of transmitting secret developer API keys across unauthenticated public third-party web proxies.
+- **OpenStreetMap Tile Usage Policy Enforcement (`src/map/OfflineFieldPackager.js`)**:
+  - Prevented automated bulk tile downloading/scraping from `tile.openstreetmap.org` and `opentopomap.org`, falling back to permissible satellite imagery or local companion proxy cache.
+  - Filtered out non-base map layers (e.g. NASA VIIRS or NOAA GOES overlays) from being mistakenly selected as offline base tiles.
 
 ## [1.243.9] - 2026-11-10
 
