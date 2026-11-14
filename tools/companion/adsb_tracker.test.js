@@ -865,4 +865,62 @@ describe('AdsbAirspaceTracker Tests', () => {
     assert.strictEqual(targetAc.verticalRateFpm, -950);
     tracker.destroy();
   });
+
+  // Issue #291: Cloud feed aircraft bounce when combined with local receiver
+  test('parseDump1090Json fills cloud coordinates into position-less local Mode S records (Issue #291)', () => {
+    const tracker = new AdsbAirspaceTracker({ silent: true });
+    // Local Mode S altitude-only frame (no CPR position)
+    tracker.parseSbsMessage('MSG,5,111,11111,ABC123,111111,2026/11/13,10:00:00.000,2026/11/13,10:00:00.000,,1500,,,,,,,0,0,0,0');
+    const before = tracker.aircraft.get('ABC123');
+    assert.strictEqual(before.latitude, null);
+    tracker.parseDump1090Json({ ac: [{ hex: 'abc123', lat: 37.7749, lon: -122.4194, alt_baro: 1500, t: 'C172' }] }, 'adsb.lol');
+    const after = tracker.aircraft.get('ABC123');
+    assert.strictEqual(after.latitude, 37.7749, 'Cloud position must fill a local record lacking a decoded position');
+    assert.strictEqual(after.longitude, -122.4194);
+    assert.strictEqual(after.positionSource, 'external');
+    assert.strictEqual(after.aircraftType, 'C172');
+    // Next cloud poll keeps updating the cloud-sourced position
+    tracker.parseDump1090Json({ ac: [{ hex: 'abc123', lat: 37.7800, lon: -122.4100, alt_baro: 1500 }] }, 'adsb.lol');
+    assert.strictEqual(tracker.aircraft.get('ABC123').latitude, 37.78);
+    tracker.destroy();
+  });
+
+  test('Local position wins for an airframe first seen by the cloud feed and later heard locally (Issue #291)', () => {
+    const tracker = new AdsbAirspaceTracker({ silent: true });
+    tracker.parseDump1090Json({ ac: [{ hex: 'def456', lat: 37.0, lon: -122.0, alt_baro: 2000 }] }, 'adsb.lol');
+    assert.strictEqual(tracker.aircraft.get('DEF456').dataSource, 'adsb.lol');
+    // Local receiver now decodes a position for the same airframe
+    tracker.parseSbsMessage('MSG,3,111,11111,DEF456,111111,2026/11/13,10:00:00.000,2026/11/13,10:00:00.000,,2000,,,37.5,-122.5,,,0,0,0,0');
+    assert.ok(tracker.aircraft.get('DEF456').lastLocalSeen > 0);
+    // Stale cloud snapshot must not overwrite the fresh local coordinate
+    tracker.parseDump1090Json({ ac: [{ hex: 'def456', lat: 37.0, lon: -122.0, alt_baro: 2000 }] }, 'adsb.lol');
+    const rec = tracker.aircraft.get('DEF456');
+    assert.strictEqual(rec.latitude, 37.5);
+    assert.strictEqual(rec.longitude, -122.5);
+    const bounds = tracker.getAirspaceBounds({ homeLat: 37.5, homeLon: -122.5 });
+    assert.strictEqual(bounds.aircraft.length, 1, 'Same airframe must yield exactly one record');
+    assert.ok(bounds.aircraft[0].lastLocalSeen > 0, 'Bounds payload must expose lastLocalSeen');
+    tracker.destroy();
+  });
+
+  test('Cloud-only records survive past the 60s local stale timeout until 90s (Issue #291)', () => {
+    const tracker = new AdsbAirspaceTracker({ silent: true });
+    tracker.parseDump1090Json({ ac: [{ hex: 'aaa111', lat: 37.0, lon: -122.0, alt_baro: 3000 }] }, 'adsb.lol');
+    tracker.parseSbsMessage('MSG,3,111,11111,BBB222,111111,2026/11/13,10:00:00.000,2026/11/13,10:00:00.000,,3000,,,37.1,-122.1,,,0,0,0,0');
+    const now = Date.now();
+    tracker.aircraft.get('AAA111').lastSeen = now - 70000;
+    tracker.aircraft.get('BBB222').lastSeen = now - 70000;
+    tracker.aircraft.get('BBB222').lastLocalSeen = now - 70000;
+    const bounds = tracker.getAirspaceBounds({ homeLat: 37.0, homeLon: -122.0 });
+    const hexes = bounds.aircraft.map(a => a.hex);
+    assert.ok(hexes.includes('AAA111'), 'Cloud record at 70s must still be active');
+    assert.ok(!hexes.includes('BBB222'), 'Local record at 70s must be stale');
+    tracker.pruneStaleAircraft();
+    assert.ok(tracker.aircraft.has('AAA111'));
+    assert.ok(!tracker.aircraft.has('BBB222'));
+    tracker.aircraft.get('AAA111').lastSeen = now - 95000;
+    tracker.pruneStaleAircraft();
+    assert.ok(!tracker.aircraft.has('AAA111'), 'Cloud record must be pruned after 90s');
+    tracker.destroy();
+  });
 });

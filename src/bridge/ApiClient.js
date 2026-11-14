@@ -11638,6 +11638,10 @@ const AdsbAirspaceManager = {
 
   lastExternalQueryTime: 0,
 
+  externalAircraftMap: new Map(), // hex -> last cloud-feed record (persists across local receiver updates, Issue #291)
+
+  externalStaleTimeoutMs: 90000, // 3x the 30s cloud poll interval
+
 
 
   isDrawerOpen: false,
@@ -17091,9 +17095,11 @@ const AdsbAirspaceManager = {
 
     if (!data || !data.success) return;
 
-
-
-    this.aircraft = Array.isArray(data.aircraft) ? data.aircraft : [];
+    // Merge local receiver payload with the persistent cloud-feed snapshot so that
+    // local updates no longer wipe out cloud-only aircraft between 30s polls (Issue #291).
+    this._lastLocalSource = data.source || null;
+    const localList = Array.isArray(data.aircraft) ? data.aircraft : [];
+    this.aircraft = this.mergeExternalAircraft(localList);
 
 
 
@@ -17149,7 +17155,7 @@ const AdsbAirspaceManager = {
         if (ac.status === 'approaching') ac.status = 'safe';
       }
 
-      const isClientAircraft = isClientSource || (ac.isConeWarning === undefined && !ac.isBreached);
+      const isClientAircraft = isClientSource || ac._clientEvaluate === true || (ac.isConeWarning === undefined && !ac.isBreached);
 
       if (isClientAircraft && ac.latitude !== null && ac.longitude !== null && ac.latitude !== undefined && ac.longitude !== undefined) {
         // Calculate distance from alert origin
@@ -19452,6 +19458,8 @@ const AdsbAirspaceManager = {
 
     this.aircraft = [];
 
+    if (this.externalAircraftMap instanceof Map) this.externalAircraftMap.clear();
+
 
 
     this.breachedAircraft = [];
@@ -20704,6 +20712,8 @@ const AdsbAirspaceManager = {
 
     this.updateExternalWatchUI(reason);
 
+    this.clearExternalAircraft();
+
 
 
   },
@@ -21028,11 +21038,18 @@ const AdsbAirspaceManager = {
 
 
 
+    const isLocalBridgeHost = !apiBase || apiBase.includes('127.0.0.1') || apiBase.includes('localhost');
+    if (typeof Platform !== 'undefined' && typeof Platform.isNativeAndroid === 'function' && Platform.isNativeAndroid() && isLocalBridgeHost) {
+      // Native Android has no local Node companion bridge; query the cloud provider directly.
+      this.fetchExternalDirectFallback(homeLat, homeLon);
+      return;
+    }
+
     try {
 
-
-
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
+      });
 
 
 
@@ -21201,172 +21218,138 @@ const AdsbAirspaceManager = {
 
 
   processExternalAircraftData(externalList, provider) {
-
-
-
     if (!Array.isArray(externalList)) return;
 
-
-
     const now = Date.now();
-
-
-
     const effectiveProvider = provider || this.externalProvider || 'adsb.lol';
 
-
-
-    const existingMap = new Map();
-
-
-
-    for (const a of this.aircraft) {
-
-
-
-      existingMap.set(a.hex, a);
-
-
-
-    }
-
-
-
-
-
-
-
+    // Each cloud response is a complete snapshot of traffic within the query radius,
+    // so it replaces the previous snapshot. The snapshot persists across local receiver
+    // updates until the next poll or until it ages out (Issue #291).
+    if (!(this.externalAircraftMap instanceof Map)) this.externalAircraftMap = new Map();
+    this.externalAircraftMap.clear();
     for (const extAc of externalList) {
-
-
-
-      if (!extAc.hex) continue;
-
-
-
-      const hex = extAc.hex.toUpperCase();
-
-
-
-      const existing = existingMap.get(hex);
-
-
-
-      const isLocal = existing && (existing.source === 'local' || existing.source === 'sbs-tcp' || existing.source === 'dump1090-tcp' || existing.source === 'avr-tcp' || existing.dataSource === 'local' || existing.dataSource === 'sbs-tcp' || existing.dataSource === 'sbs-1' || existing.dataSource === 'avr-tcp' || existing.dataSource === 'mode-s-avr' || existing.dataSource === 'dump1090-tcp' || existing.dataSource === 'dump1090-json');
-
-
-
-      const lastSeenTime = existing ? (existing.lastSeenMs || existing.lastSeen || 0) : 0;
-
-
-
-      const isLocalRecent = isLocal && (now - lastSeenTime < 45000);
-
-
-
-
-
-
-
-      if (isLocalRecent) {
-
-
-
-        // Keep local high-frequency coordinates; enrich metadata from external feed
-
-
-
-        if (extAc.aircraftType) existing.aircraftType = extAc.aircraftType;
-
-
-
-        if (extAc.registration) existing.registration = extAc.registration;
-
-
-
-        if (extAc.category && !existing.category) existing.category = extAc.category;
-
-
-
-        if (extAc.callsign && (!existing.callsign || existing.callsign.startsWith('HEX:'))) {
-
-
-
-          existing.callsign = extAc.callsign;
-
-
-
-        }
-
-
-
-      } else {
-
-
-
-        extAc.source = extAc.source || effectiveProvider;
-
-
-
-        existingMap.set(hex, extAc);
-
-
-
-      }
-
-
-
+      if (!extAc || !extAc.hex) continue;
+      const hex = String(extAc.hex).toUpperCase();
+      this.externalAircraftMap.set(hex, Object.assign({}, extAc, {
+        hex,
+        source: extAc.source || effectiveProvider,
+        dataSource: extAc.dataSource || extAc.source || effectiveProvider,
+        _externalSeenAt: now
+      }));
     }
 
-
-
-
-
-
-
-    this.aircraft = Array.from(existingMap.values());
-
-
-
-    this.breachedAircraft = this.aircraft.filter(a => a.isBreached);
-
-
-
-
-
-
-
-    this.updateVisualBanner();
-
-
-
-    this.updateTopbarAndHud();
-
-
-
-    this.updateMapMarkers();
-
-
-
-    if (this.isDrawerOpen) {
-
-
-
-      this.updateDrawerAircraftList();
-
-
-
-    }
-
-
-
+    // Re-run the unified pipeline using the current local aircraft (cloud-only entries excluded)
+    const localBase = (Array.isArray(this.aircraft) ? this.aircraft : []).filter(a => a && !a._cloudOnly);
+    this.processAirspaceData({
+      success: true,
+      source: this._lastLocalSource || 'external-merge',
+      aircraft: localBase
+    });
   },
 
+  isLocalSourceRecord(ac) {
+    if (!ac) return false;
+    const LOCAL_SOURCES = ['local', 'sbs-tcp', 'sbs-1', 'avr-tcp', 'mode-s-avr', 'dump1090-tcp', 'dump1090-json', 'simulated'];
+    const src = String(ac.source || '');
+    const ds = String(ac.dataSource || '');
+    if (LOCAL_SOURCES.includes(src) || LOCAL_SOURCES.includes(ds)) return true;
+    if (src.startsWith('android-') || ds.startsWith('android-')) return true;
+    // Companion bridge stamps lastLocalSeen whenever the local receiver hears the airframe,
+    // even if the record was first created by the cloud feed.
+    if (typeof ac.lastLocalSeen === 'number' && ac.lastLocalSeen > 0) return true;
+    return false;
+  },
 
+  mergeExternalAircraft(localList) {
+    const base = Array.isArray(localList) ? localList : [];
+    const map = this.externalAircraftMap;
+    if (!(map instanceof Map) || map.size === 0) return base;
 
+    const now = Date.now();
+    const staleMs = this.externalStaleTimeoutMs || 90000;
+    const LOCAL_RECENT_MS = 45000;
+    const hasPos = (a) => a && typeof a.latitude === 'number' && typeof a.longitude === 'number' && !isNaN(a.latitude) && !isNaN(a.longitude);
+    const stripFlags = (a) => {
+      delete a.isBreached;
+      delete a.isConeWarning;
+      delete a.isWithinRadius;
+      delete a.status;
+      delete a.etaSeconds;
+      delete a.entryDistanceMeters;
+      delete a.closingSpeedKts;
+      delete a.breachReason;
+      return a;
+    };
 
+    // Age out cloud records if polling stopped or failed
+    for (const [hex, ext] of map.entries()) {
+      if (now - (ext._externalSeenAt || 0) > staleMs) map.delete(hex);
+    }
+    if (map.size === 0) return base;
 
+    const merged = [];
+    const seen = new Set();
 
+    for (const ac of base) {
+      if (!ac || !ac.hex) continue;
+      const hex = String(ac.hex).toUpperCase();
+      seen.add(hex);
+      const ext = map.get(hex);
+      if (!ext) {
+        merged.push(ac);
+        continue;
+      }
+
+      // Same airframe in both feeds -> single merged record
+      const out = Object.assign({}, ac);
+      if (ext.aircraftType && !out.aircraftType) out.aircraftType = ext.aircraftType;
+      if (ext.registration && !out.registration) out.registration = ext.registration;
+      if (ext.category && !out.category) out.category = ext.category;
+      if (ext.callsign && (!out.callsign || String(out.callsign).startsWith('HEX:'))) out.callsign = ext.callsign;
+
+      const lastSeenMs = (typeof ac.lastLocalSeen === 'number' && ac.lastLocalSeen > 0)
+        ? ac.lastLocalSeen
+        : (ac.lastSeenMs || ac.lastSeen || 0);
+      const isLocal = this.isLocalSourceRecord(ac);
+      const localStale = isLocal && (now - lastSeenMs >= LOCAL_RECENT_MS) && ((ext._externalSeenAt || 0) > lastSeenMs);
+
+      if (hasPos(ext) && (!hasPos(out) || localStale)) {
+        // Local receiver has no decoded position (Mode S only) or has lost the airframe:
+        // fill kinematics from the cloud feed and force client-side threat evaluation.
+        out.latitude = ext.latitude;
+        out.longitude = ext.longitude;
+        if (ext.altitude !== null && ext.altitude !== undefined) out.altitude = ext.altitude;
+        if (typeof ext.speed === 'number') out.speed = ext.speed;
+        if (typeof ext.track === 'number') out.track = ext.track;
+        if (typeof ext.verticalRate === 'number') out.verticalRate = ext.verticalRate;
+        out.positionSource = 'external';
+        out._clientEvaluate = true;
+        stripFlags(out);
+      }
+      merged.push(out);
+    }
+
+    for (const [hex, ext] of map.entries()) {
+      if (seen.has(hex)) continue;
+      const out = stripFlags(Object.assign({}, ext));
+      out._cloudOnly = true;
+      out._clientEvaluate = true;
+      merged.push(out);
+    }
+
+    return merged;
+  },
+
+  clearExternalAircraft() {
+    if (this.externalAircraftMap instanceof Map) this.externalAircraftMap.clear();
+    const remaining = (Array.isArray(this.aircraft) ? this.aircraft : []).filter(a => a && !a._cloudOnly);
+    this.processAirspaceData({
+      success: true,
+      source: this._lastLocalSource || 'external-clear',
+      aircraft: remaining
+    });
+  },
 
   processExternalRawAircraftList(rawList, provider, homeLat, homeLon) {
 

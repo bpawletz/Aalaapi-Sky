@@ -1,3 +1,28 @@
+## [1.243.10] - 2026-11-13
+
+### 🐛 Fixed
+
+#### Pilot & Operational Features
+- **ADS-B Local Receiver & Cloud Feed Seamless Merging**: Fixed an issue where cloud-sourced aircraft icons would intermittently flicker or disappear when both a local ADS-B receiver (RTL-SDR USB dongle, Comms daemon, or Companion bridge) and an external cloud feed were concurrently active (Closes #291).
+  - Cloud targets now remain stably rendered on the map across local packet updates rather than bouncing between 30-second poll cycles.
+  - When the same airframe is sighted by both local and cloud feeds, the system intelligently merges them into a single target, keeping high-frequency local GPS coordinates while enriching missing flight metadata (aircraft type, registration, category, and callsign) from the cloud.
+  - If a local Mode S frame lacks CPR positional coordinates, cloud coordinates seamlessly populate the aircraft position on the map and HUD.
+  - If local receiver reception drops or goes stale for 45 seconds or longer, cloud coordinates smoothly resume positioning until local contact is re-established.
+  - Cloud-only aircraft are granted a 90-second retention window matching real-world cloud polling cadences, preventing premature pruning.
+
+#### Under the Hood & Technical Details
+- **`src/bridge/ApiClient.js` (AdsbAirspaceManager)**:
+  - Replaced overwriting `this.aircraft` in `processAirspaceData` with non-destructive `mergeExternalAircraft`, maintaining active cloud airframes in `externalAircraftMap` across high-rate local receiver hits (`android-sbs`, `android-http-json`, `sbs-tcp`, `local`).
+  - Implemented `isLocalSourceRecord`, `mergeExternalAircraft`, and `clearExternalAircraft`.
+  - Added native Android localhost bypass directly to `fetchExternalDirectFallback` in `queryExternalFeed` and attached `getCompanionAuthHeaders()`.
+  - Stripped bridge-assigned alert flags from cloud aircraft upon ingest and set `_clientEvaluate = true` to ensure local proximity and ceiling thresholds trigger proper HUD alerts.
+- **`src/bridge/AndroidNativeBridge.js`**:
+  - Tagged `ingestAdsbSbsLine` with `source = 'android-sbs'` and `ingestAdsbJson` with `source = 'android-http-json'`.
+- **`tools/companion/adsb_tracker.js`**:
+  - Added `LOCAL_ADSB_SOURCES` and `LOCAL_RECENT_MS = 45000` constants.
+  - Extended stale aircraft pruning for cloud-only records to `externalStaleTimeoutMs` (90s).
+  - Preserved `lastLocalSeen` timestamp and resolved `positionSource` ('local' vs 'external') dynamically during dump1090/readsb JSON ingestion.
+
 ## [1.243.9] - 2026-11-10
 
 ### ✅ Changed
