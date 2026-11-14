@@ -214,6 +214,7 @@ class CommsMainActivity : AppCompatActivity() {
         testRow.addView(createSmallPreset("121.150 ATIS") { tuneToPreset(121.150) })
         testRow.addView(createSmallPreset("97.100 FM") { tuneToPreset(97.100) })
         testRow.addView(createSmallPreset("🔊 Test Beep") { playSpeakerTestTone() })
+        testRow.addView(createSmallPreset("ℹ️ Credits") { showOpenSourceCreditsDialog() })
         root.addView(testRow)
 
         // Squelch Slider
@@ -374,6 +375,37 @@ class CommsMainActivity : AppCompatActivity() {
                 runOnUiThread { appendLog("❌ Speaker Test failed: ${e.message}") }
             }
         }.start()
+    }
+
+    private fun showOpenSourceCreditsDialog() {
+        val creditsMessage = """
+            Aalaapi Comms is an open-source SDR background daemon for Aalaapi Sky (GNU AGPLv3).
+
+            Embedded Native Drivers & Libraries:
+            • librtlsdr (Osmocom rtl-sdr)
+              GPL-2.0-or-later © Steve Markgraf, Dimitri Stolnikov, et al.
+            • libusb (libusb-1.0)
+              LGPL-2.1-or-later © Daniel Drake, Johannes Erdfelt, et al.
+            • rtl_tcp_andro-multiarch
+              GPL-2.0-or-later © Martin Marinov and contributors
+            • Mode S & ADS-B Decoding Algorithms (dump1090 / readsb)
+              BSD-2-Clause / GPL-2.0 © Salvatore Sanfilippo, MalcolmRobb, FlightAware, Matthias Wirth
+            • AndroidX & Material Components
+              Apache-2.0 © Google LLC / AOSP
+            • Kotlin & kotlinx.coroutines
+              Apache-2.0 © JetBrains s.r.o.
+
+            Source Code & Compliance:
+            Source code for Aalaapi Sky, Comms, and upstream native C drivers is freely available at:
+            https://github.com/bpawletz/Aalaapi-Sky
+            See CREDITS.md for full license texts and build instructions.
+        """.trimIndent()
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Third-Party Open-Source Credits & Licenses")
+            .setMessage(creditsMessage)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun updateModeDisplay(name: String) {

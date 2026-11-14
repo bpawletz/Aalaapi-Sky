@@ -8,7 +8,6 @@
 class DjiLogDecryptorEngine {
   constructor() {
     this.apiKey = null;
-    this.corsProxyUrl = 'https://corsproxy.io/?';
   }
 
   setApiKey(key) {
@@ -139,13 +138,20 @@ class DjiLogDecryptorEngine {
         body: requestBody
       });
     } catch (corsErr) {
-      // Direct call blocked by CORS; route via CORS proxy or Bridge proxy
-      const proxiedUrl = `${this.corsProxyUrl}${encodeURIComponent(endpoint)}`;
-      response = await fetch(proxiedUrl, {
-        method: 'POST',
-        headers,
-        body: requestBody
-      });
+      // Direct call blocked by CORS; route securely via local Companion Bridge proxy if online
+      if (typeof getBridgeProxyUrl === 'function') {
+        const proxiedUrl = getBridgeProxyUrl(endpoint);
+        if (proxiedUrl !== endpoint) {
+          response = await fetch(proxiedUrl, {
+            method: 'POST',
+            headers,
+            body: requestBody
+          });
+        }
+      }
+      if (!response) {
+        throw new Error('DJI Cloud Keychain API direct connection was blocked by browser CORS. Connect the local Aalaapi Companion Bridge or run inside the native Android app to route API requests securely without exposing secret credentials to third-party public proxies.');
+      }
     }
 
     if (!response.ok) {

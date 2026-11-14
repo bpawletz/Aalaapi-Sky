@@ -989,7 +989,7 @@ test('NWS Weather fetching bounds and parsing', async () => {
     if (url.includes('/observations/latest')) {
       return { ok: true, json: async () => ({ properties: { flightCategory: 'VFR', rawMessage: 'METAR MOCK TEST 123' } }) };
     }
-    if (url.includes('vatsim.net')) {
+    if (url.includes('aviationweather.gov') || url.includes('vatsim.net')) {
       return { ok: true, text: async () => 'KMOCK 111150Z 00000KT 10SM CLR 15/10 A3000\n' };
     }
     return { ok: false };
@@ -14676,8 +14676,8 @@ describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () =>
           })
         };
       }
-      // 4. Real-time VATSIM METAR: 11:50Z Clear VFR
-      if (url.includes('vatsim.net')) {
+      // 4. Real-time aviationweather.gov / METAR: 11:50Z Clear VFR
+      if (url.includes('aviationweather.gov') || url.includes('vatsim.net')) {
         return {
           ok: true,
           text: async () => 'KTZR 111150Z 01004KT 10SM CLR 17/17 A3004\n'
@@ -45537,6 +45537,137 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
       const merged = AdsbAirspaceManager.mergeExternalAircraft([]);
       assert.strictEqual(merged.length, 0, 'Stale cloud aircraft (>90s) must be pruned');
+    });
+  });
+
+  describe('Comprehensive Third-Party Tool Attribution, License Compliance & AGENTS.md Governance (v1.243.10 - Issue #292)', () => {
+    test('Version consistency: v1.243.10 across package.json, changelog, templates, and android gradle', () => {
+      assertVersionConsistency('1.243.10');
+      const gradlePath = path.join(__dirname, 'android', 'app', 'build.gradle.kts');
+      const gradle = fs.readFileSync(gradlePath, 'utf8');
+      assert.ok(gradle.includes('versionName = "1.243.10"'), 'build.gradle.kts versionName must be 1.243.10');
+      assert.ok(gradle.includes('versionCode = 1243100'), 'build.gradle.kts versionCode must be 1243100');
+    });
+
+    test('AGENTS.md Section 12 codifies ToS anti-abuse rules, zero public proxying, and native binary provenance', () => {
+      const agentsMd = fs.readFileSync(path.join(__dirname, 'AGENTS.md'), 'utf8');
+      assert.ok(agentsMd.includes('Third-Party Service Terms of Service & Anti-Abuse Mandates'), 'Must include ToS anti-abuse section');
+      assert.ok(agentsMd.includes('No Automated Bulk Tile Scraping'), 'Must prohibit automated bulk tile scraping');
+      assert.ok(agentsMd.includes('Zero Public Proxying of Private Credentials or API Keys'), 'Must prohibit public proxying of API keys');
+      assert.ok(agentsMd.includes('Operational Integrity of Aviation Data Feeds'), 'Must require official real-world aviation feeds');
+      assert.ok(agentsMd.includes('Corresponding Source Provenance for Precompiled Native Binaries'), 'Must require native binary source provenance');
+    });
+
+    test('CREDITS.md contains complete library entries, native binary source provenance, and data providers', () => {
+      const credits = fs.readFileSync(path.join(__dirname, 'CREDITS.md'), 'utf8');
+
+      // Libraries
+      assert.ok(credits.includes('dump1090 & readsb'), 'Must credit dump1090 & readsb');
+      assert.ok(credits.includes('AprilTag Visual Fiducial System'), 'Must credit AprilTag');
+      assert.ok(credits.includes('ArUco Marker Library'), 'Must credit ArUco');
+      assert.ok(credits.includes('OpenCV (`opencv-python`) & FFmpeg'), 'Must credit OpenCV & FFmpeg');
+      assert.ok(credits.includes('NumPy (`numpy`)'), 'Must credit NumPy');
+      assert.ok(credits.includes('COLMAP & Nerfstudio (`splatfacto`)'), 'Must credit COLMAP & Nerfstudio');
+      assert.ok(credits.includes('Android Jetpack (AndroidX), Material Components & Kotlin Coroutines'), 'Must credit AndroidX & Kotlin');
+      assert.ok(credits.includes('Development, Testing & Schema Validation Toolchain'), 'Must credit toolchain');
+      assert.ok(credits.includes('Playwright'), 'Must credit Playwright');
+      assert.ok(credits.includes('xmlschema'), 'Must credit xmlschema');
+
+      // Native Binary Source Provenance
+      assert.ok(credits.includes('Corresponding Source Code & Build Instructions for Android Native Binaries'), 'Must document native source provenance');
+      assert.ok(credits.includes('https://github.com/osmocom/rtl-sdr'), 'Must link upstream rtl-sdr repo');
+      assert.ok(credits.includes('https://github.com/libusb/libusb'), 'Must link upstream libusb repo');
+      assert.ok(credits.includes('https://github.com/martinmarinov/rtl_tcp_andro-multiarch'), 'Must link upstream rtl_tcp_andro repo');
+
+      // Data Providers
+      assert.ok(credits.includes('adsb.lol (Open Community ADS-B & MLAT API)'), 'Must credit adsb.lol');
+      assert.ok(credits.includes('FAA Aviation Weather Center (AWC) & NOAA Weather Services'), 'Must credit FAA Aviation Weather Center');
+      assert.ok(credits.includes('CARTO (CartoDB)'), 'Must credit CARTO basemaps');
+      assert.ok(credits.includes('RainViewer'), 'Must credit RainViewer');
+
+      // Trademarks
+      assert.ok(credits.includes('Realtek Semiconductor Corp.'), 'Must name Realtek legal entity');
+      assert.ok(credits.includes('Rafael Microelectronics, Inc.'), 'Must name Rafael Micro legal entity');
+      assert.ok(credits.includes('Nooelec Inc.'), 'Must name Nooelec legal entity');
+      assert.ok(credits.includes('JetBrains s.r.o.'), 'Must name JetBrains legal entity');
+      assert.ok(credits.includes('Microsoft Corporation'), 'Must name Microsoft legal entity');
+      assert.ok(credits.includes('CARTO®'), 'Must attribute CARTO trademark');
+      assert.ok(credits.includes('glTF™'), 'Must attribute glTF trademark');
+      assert.ok(credits.includes('3D Photogrammetry, NeRF & Gaussian Splatting Ecosystem'), 'Must attribute photogrammetry marks');
+    });
+
+    test('In-app #about-credits-section and #about-trademarks-section in index_template.html and index.html', () => {
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+      for (const [name, html] of [['index_template.html', template], ['index.html', indexHtml]]) {
+        assert.ok(html.includes('USGS 3DEP &amp; European LiDAR'), `${name} must include USGS 3DEP card`);
+        assert.ok(html.includes('Google Identity, Drive &amp; Sheets'), `${name} must include Google Identity card`);
+        assert.ok(html.includes('dump1090, readsb &amp; adsb.lol'), `${name} must include dump1090/adsb.lol card`);
+        assert.ok(html.includes('AprilTag &amp; ArUco Fiducials'), `${name} must include AprilTag/ArUco card`);
+        assert.ok(html.includes('OpenCV, NumPy &amp; Nerfstudio'), `${name} must include OpenCV/Nerfstudio card`);
+        assert.ok(html.includes('AndroidX, Kotlin &amp; Playwright'), `${name} must include AndroidX/Kotlin card`);
+
+        // Trademarks
+        assert.ok(html.includes('Realtek, RTL2832U'), `${name} must include Realtek in trademarks`);
+        assert.ok(html.includes('Rafael Micro, R820T/R820T2'), `${name} must include Rafael Micro in trademarks`);
+        assert.ok(html.includes('Nooelec'), `${name} must include Nooelec in trademarks`);
+        assert.ok(html.includes('JetBrains, Kotlin'), `${name} must include JetBrains in trademarks`);
+        assert.ok(html.includes('Microsoft, Windows, PowerShell, Playwright'), `${name} must include Microsoft in trademarks`);
+        assert.ok(html.includes('WebGL, glTF'), `${name} must include glTF in trademarks`);
+        assert.ok(html.includes('CARTO'), `${name} must include CARTO in trademarks`);
+
+        // Accuracy check: no stale Cesium reference
+        assert.ok(!html.includes('Cesium 3D cockpit preview'), `${name} must NOT contain stale Cesium reference`);
+        assert.ok(html.includes('Three.js 3D cockpit preview'), `${name} must credit Three.js 3D cockpit preview`);
+      }
+    });
+
+    test('DjiLogDecryptor.js does not contain corsproxy.io and routes securely', () => {
+      const decryptorSrc = fs.readFileSync(path.join(__dirname, 'src', 'bridge', 'DjiLogDecryptor.js'), 'utf8');
+      assert.ok(!decryptorSrc.includes('corsproxy.io'), 'DjiLogDecryptor.js must not contain corsproxy.io');
+      assert.ok(decryptorSrc.includes('getBridgeProxyUrl'), 'DjiLogDecryptor.js must check getBridgeProxyUrl');
+
+      const bundleJs = fs.readFileSync(path.join(__dirname, 'dist', 'index.bundle.js'), 'utf8');
+      assert.ok(!bundleJs.includes('corsproxy.io'), 'Compiled dist/index.bundle.js must not contain corsproxy.io');
+
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      const scriptMatch = indexHtml.match(/<script>([\s\S]*?)<\/script>/);
+      const scriptContent = scriptMatch ? scriptMatch[1] : '';
+      assert.ok(!scriptContent.includes('corsproxy.io'), 'Embedded script in index.html must not contain corsproxy.io');
+    });
+
+    test('AutoPlan.js uses official aviationweather.gov and does not query metar.vatsim.net', () => {
+      const autoPlanSrc = fs.readFileSync(path.join(__dirname, 'src', 'patterns', 'AutoPlan.js'), 'utf8');
+      assert.ok(!autoPlanSrc.includes('metar.vatsim.net'), 'AutoPlan.js must not contain metar.vatsim.net');
+      assert.ok(autoPlanSrc.includes('aviationweather.gov/api/data/metar'), 'AutoPlan.js must query aviationweather.gov REST API');
+
+      const bundleJs = fs.readFileSync(path.join(__dirname, 'dist', 'index.bundle.js'), 'utf8');
+      assert.ok(!bundleJs.includes('metar.vatsim.net'), 'Compiled dist/index.bundle.js must not contain metar.vatsim.net');
+      assert.ok(bundleJs.includes('aviationweather.gov/api/data/metar'), 'Compiled bundle must query aviationweather.gov');
+
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      const scriptMatch = indexHtml.match(/<script>([\s\S]*?)<\/script>/);
+      const scriptContent = scriptMatch ? scriptMatch[1] : '';
+      assert.ok(!scriptContent.includes('metar.vatsim.net'), 'Embedded script in index.html must not contain metar.vatsim.net');
+      assert.ok(scriptContent.includes('aviationweather.gov/api/data/metar'), 'Embedded script in index.html must query aviationweather.gov');
+    });
+
+    test('OfflineFieldPackager guards against automated bulk scraping of OpenStreetMap and OpenTopoMap', () => {
+      const packagerSrc = fs.readFileSync(path.join(__dirname, 'src', 'map', 'OfflineFieldPackager.js'), 'utf8');
+      assert.ok(packagerSrc.includes('openstreetmap.org') && packagerSrc.includes('opentopomap.org'), 'OfflineFieldPackager must detect OSM/OTM URLs');
+      assert.ok(packagerSrc.includes('Tile Usage Policy'), 'OfflineFieldPackager must reference Tile Usage Policy');
+    });
+
+    test('CommsMainActivity.kt provides in-app open-source credits dialog', () => {
+      const commsPath = path.join(__dirname, 'android', 'comms', 'src', 'main', 'java', 'com', 'aalaapi', 'comms', 'CommsMainActivity.kt');
+      const commsKt = fs.readFileSync(commsPath, 'utf8');
+      assert.ok(commsKt.includes('showOpenSourceCreditsDialog'), 'CommsMainActivity must have showOpenSourceCreditsDialog');
+      assert.ok(commsKt.includes('librtlsdr'), 'Credits dialog must mention librtlsdr');
+      assert.ok(commsKt.includes('libusb'), 'Credits dialog must mention libusb');
+      assert.ok(commsKt.includes('rtl_tcp_andro'), 'Credits dialog must mention rtl_tcp_andro');
+      assert.ok(commsKt.includes('dump1090'), 'Credits dialog must mention dump1090');
+      assert.ok(commsKt.includes('AndroidX'), 'Credits dialog must mention AndroidX');
     });
   });
 

@@ -158,14 +158,28 @@ class OfflineFieldPackagerEngine {
     let downloaded = 0;
     let failed = 0;
 
-    // Use current tile template URL or standard Esri World Imagery fallback
+    // Use permissible satellite imagery fallback by default (Esri World Imagery)
     let tileUrlTemplate = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
     if (typeof map !== 'undefined' && map) {
       map.eachLayer(layer => {
-        if (layer && layer._url && !layer._url.includes('proxy')) {
+        if (layer && layer._url && !layer._url.includes('proxy') &&
+            !layer._url.includes('VIIRS_Black_Marble') &&
+            !layer._url.includes('goes_east_conus') &&
+            !layer._url.includes('geoserver')) {
           tileUrlTemplate = layer._url;
         }
       });
+    }
+
+    // Enforce OpenStreetMap Foundation & OpenTopoMap Tile Usage Policies:
+    // Automated bulk pre-seeding / tile scraping of public community tile servers is strictly prohibited.
+    if (tileUrlTemplate.includes('openstreetmap.org') || tileUrlTemplate.includes('opentopomap.org')) {
+      if (typeof Logger !== 'undefined' && Logger.warn) {
+        Logger.warn('Bulk downloading from OpenStreetMap / OpenTopoMap community servers is prohibited by their Tile Usage Policy. Falling back to permissible satellite imagery for offline mission packaging.');
+      }
+      tileUrlTemplate = (typeof satelliteLayer !== 'undefined' && satelliteLayer && satelliteLayer._url)
+        ? satelliteLayer._url
+        : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
     }
 
     const concurrency = 4;

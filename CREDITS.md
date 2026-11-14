@@ -180,6 +180,61 @@ The following third-party software libraries and components are utilized in Aala
 * **License**: GNU General Public License Version 2 (`GPL-2.0-or-later`)
 * **Usage**: Multi-architecture Android JNI bridge (`librtlSdrAndroid.so`) providing loopback `rtl_tcp` socket streaming directly from wrapped Android USB file descriptors.
 
+### Corresponding Source Code & Build Instructions for Android Native Binaries
+Pursuant to GNU GPLv2 Section 3, GNU GPLv3 Section 6, and GNU LGPLv2.1 Section 4, the corresponding source code for all precompiled native shared libraries embedded in `android/comms/src/main/jniLibs/` (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) is publicly and freely available:
+* **`liblibrtlsdr.so`**: Upstream repository: [https://github.com/osmocom/rtl-sdr](https://github.com/osmocom/rtl-sdr). Built with Android NDK CMake (`-DANDROID_ABI=<abi> -DCMAKE_TOOLCHAIN_FILE=.../android.toolchain.cmake`).
+* **`liblibusb.so`**: Upstream repository: [https://github.com/libusb/libusb](https://github.com/libusb/libusb). Built with Android NDK POSIX backend support.
+* **`librtlSdrAndroid.so`**: Upstream repository: [https://github.com/martinmarinov/rtl_tcp_andro-multiarch](https://github.com/martinmarinov/rtl_tcp_andro-multiarch). Built via Gradle NDK wrapper binding Osmocom RTL-SDR loopback socket server to Android USB file descriptors.
+* **Source Reproduction**: Full source trees, build scripts, and JNI headers can be inspected or recompiled directly from the upstream repositories cited above or cloned from [https://github.com/bpawletz/Aalaapi-Sky](https://github.com/bpawletz/Aalaapi-Sky).
+
+### dump1090 & readsb (Mode S / 1090 MHz ADS-B Demodulation & Decoders)
+* **Projects**: [dump1090 (antirez)](https://github.com/antirez/dump1090), [dump1090 (MalcolmRobb)](https://github.com/MalcolmRobb/dump1090), [dump1090-fa (FlightAware)](https://github.com/flightaware/dump1090), and [readsb (wiedehopf)](https://github.com/wiedehopf/readsb)
+* **Authors**: Salvatore Sanfilippo, MalcolmRobb, Oliver Jowett (FlightAware), Matthias Wirth (`wiedehopf`), and Michael Wolf (`Mictronics`)
+* **Licenses**: BSD 2-Clause License / BSD 3-Clause License / GNU General Public License v2+
+* **Usage**: Algorithms for Mode S preamble correlation, 112-bit Manchester pulse-position modulation (PPM) bit-slicing, CRC-24 polynomial remainder division, Global/Local Compact Position Reporting (CPR) latitude/longitude disambiguation, and BaseStation / SBS-1 CSV TCP socket serialization.
+
+### AprilTag Visual Fiducial System
+* **Project**: [AprilTag](https://april.eecs.umich.edu/software/apriltag)
+* **Authors**: Edwin Olson, John Wang, Pradeep Ranganathan, Kaess, and APRIL Robotics Laboratory, University of Michigan
+* **License**: BSD 2-Clause License
+* **Usage**: In-browser client-side and Wasm tag generation and optical detection for `tag25h9`, `tag36h11`, and `tag16h5` ground control point (GCP) alignment and camera calibration.
+
+### ArUco Marker Library
+* **Project**: [ArUco (University of Córdoba)](https://www.uco.es/investiga/grupos/ava/node/26) / [OpenCV ArUco module](https://docs.opencv.org/4.x/d9/d6a/group__aruco.html)
+* **Authors**: Rafael Muñoz-Salinas, Sergio Garrido-Jurado, and the AVA research team
+* **License**: BSD 2-Clause License / Apache License, Version 2.0
+* **Usage**: Optical marker dictionary detection (`DICT_4X4_50`, `DICT_5X5_100`) for drone photogrammetry GCP targets and structural orientation verification.
+
+### OpenCV (`opencv-python`) & FFmpeg
+* **Projects**: [OpenCV](https://opencv.org/) and [FFmpeg](https://ffmpeg.org/)
+* **Authors**: OpenCV Team and FFmpeg Developers
+* **Licenses**: Apache License, Version 2.0 (OpenCV) / GNU Lesser General Public License Version 2.1+ (FFmpeg)
+* **Usage**: Background companion video ingestion worker (`video_worker.py`) for RTMP/RTSP stream capture, lossy/lossless MP4 recording, and computer vision architectural wireframe extraction (`wireframe_extractor.py`).
+
+### NumPy (`numpy`)
+* **Project**: [NumPy](https://numpy.org/)
+* **Authors**: Travis Oliphant and NumPy Developers
+* **License**: BSD 3-Clause License
+* **Usage**: Multidimensional matrix algebra, RANSAC planar fitting, vector unprojection, and point cloud triangulation in companion Python analysis workers.
+
+### COLMAP & Nerfstudio (`splatfacto`)
+* **Projects**: [COLMAP](https://colmap.github.io/) and [Nerfstudio](https://docs.nerf.studio/)
+* **Authors**: Johannes L. Schönberger et al. (COLMAP); Matthew Tancik, Ethan Weber, Evonne Ng, Ruilong Li, et al. (Nerfstudio team / UC Berkeley)
+* **Licenses**: BSD 3-Clause License (COLMAP) / Apache License, Version 2.0 (Nerfstudio)
+* **Usage**: Automated spatial coordinate transformation ($4 \times 4$ camera extrinsic/intrinsic matrices) exporting flight telemetry into Nerfstudio standard `transforms.json` and COLMAP priors (`cameras.txt`, `images.txt`) for 3D Gaussian Splatting and NeRF scene reconstruction.
+
+### Android Jetpack (AndroidX), Material Components & Kotlin Coroutines
+* **Projects**: [AndroidX](https://developer.android.com/jetpack/androidx), [Material Components for Android](https://github.com/material-components/material-components-android), and [kotlinx.coroutines](https://github.com/Kotlin/kotlinx.coroutines)
+* **Authors**: Google LLC / Android Open Source Project (AOSP) and JetBrains s.r.o.
+* **License**: Apache License, Version 2.0
+* **Usage**: Android runtime UI framework, USB host OTG managers, WebView bridge coordination, and non-blocking background I/O concurrency in `com.aalaapi.sky` and `com.aalaapi.comms`.
+
+### Development, Testing & Schema Validation Toolchain
+* **Playwright**: Microsoft Corporation (Apache License, Version 2.0) — Headless Chromium browser automation for Playwright E2E UI testing and feature video recording.
+* **jsdom**: Domenic Denicola and contributors (MIT License) — In-memory DOM emulation for fast Node.js unit testing.
+* **Acorn & acorn-walk**: Marijn Haverbeke and Acorn contributors (MIT License) — ECMAScript AST parser verifying modular bundle graph integrity (`tools/build/check_modules.js`).
+* **xmlschema**: Davide Brunato and SISSA (MIT License) — Strict W3C XML Schema 1.0 validator verifying exported DJI WPML `.kmz`, `template.kml`, and `waylines.wpml` files against official schemas.
+
 ### Web Fonts: Outfit & Plus Jakarta Sans
 * **Outfit**: Designed by On caps and Rodrigo Fuenzalida. Licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/).
 * **Plus Jakarta Sans**: Designed by Tokotype and Gumpita Rahayu. Licensed under the [SIL Open Font License, Version 1.1](https://openfontlicense.org/).
@@ -256,6 +311,25 @@ Aalaapi Sky interfaces with public geospatial, aviation, and meteorological feed
 * **Usage**: Direct pilot links for surrounding manned air traffic exploration.
 * **Organization**: The OpenSky Network is a non-profit association based in Switzerland.
 
+### adsb.lol (Open Community ADS-B & MLAT API)
+* **Air Traffic API**: [adsb.lol](https://adsb.lol/)
+* **License**: [Open Data Commons Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/) / Public Domain
+* **Usage**: Community-driven open air traffic feed for live ADS-B and multilateration (MLAT) flight awareness deconfliction.
+
+### FAA Aviation Weather Center (AWC) & NOAA Weather Services
+* **Aviation Weather**: [aviationweather.gov](https://aviationweather.gov/) and [api.weather.gov](https://api.weather.gov/)
+* **Services**: Real-time official METAR and TAF reports, station observations, and wind/visibility observations.
+* **Rights**: U.S. Government work in the public domain.
+
+### CARTO (CartoDB)
+* **Basemaps**: [CARTO Voyager Raster Basemaps](https://carto.com/basemaps/)
+* **License**: [Creative Commons Attribution 4.0 International (CC-BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
+* **Attribution**: &copy; [CARTO](https://carto.com/attributions), &copy; [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+
+### RainViewer
+* **Radar Feed**: [RainViewer.com](https://www.rainviewer.com/)
+* **Usage**: Global weather radar tile coverage and dynamic cache bypass integration in Companion Bridge.
+
 ---
 
 ## 3. Cultural & Linguistic Heritage Attribution
@@ -297,9 +371,32 @@ The product names, registered trademarks, service marks, and trade names referen
    * **Trademarks**: **Node-RED®** is a registered trademark of the **OpenJS Foundation**.
 
 7. **The Khronos Group**:
-   * **Trademarks**: **WebGL®** is a registered trademark of **The Khronos Group Inc.**
+   * **Trademarks**: **WebGL®**, **glTF™**, and **Khronos®** are trademarks or registered trademarks of **The Khronos Group Inc.**
 
-8. **IRL Field Test Verification & Non-Guarantee Disclaimer**:
+8. **Realtek Semiconductor Corp.**:
+   * **Trademarks**: **Realtek®** and **RTL2832U™** are trademarks or registered trademarks of **Realtek Semiconductor Corp.**
+   * **Legal Disclaimer**: Mention of Realtek hardware or chipset registers is made solely for descriptive hardware interfacing and driver interoperability in Aalaapi Comms.
+
+9. **Rafael Microelectronics, Inc.**:
+   * **Trademarks**: **Rafael Micro®**, **R820T™**, and **R820T2™** are trademarks or registered trademarks of **Rafael Microelectronics, Inc.**
+   * **Legal Disclaimer**: Mention of Rafael Micro tuner hardware is made solely for descriptive PLL frequency calibration in Aalaapi Comms.
+
+10. **Nooelec Inc.**:
+    * **Trademarks**: **Nooelec®** is a registered trademark of **Nooelec Inc.**
+
+11. **JetBrains s.r.o.**:
+    * **Trademarks**: **JetBrains®** and **Kotlin®** are trademarks or registered trademarks of **JetBrains s.r.o.**
+
+12. **Microsoft Corporation**:
+    * **Trademarks**: **Microsoft®**, **Windows®**, **PowerShell®**, and **Playwright™** are trademarks or registered trademarks of **Microsoft Corporation**.
+
+13. **CARTO**:
+    * **Trademarks**: **CARTO®** is a registered trademark of **CARTO**.
+
+14. **3D Photogrammetry, NeRF & Gaussian Splatting Ecosystem**:
+    * **Trademarks**: **COLMAP**, **Nerfstudio**, **PostShot™**, **Luma AI™**, **Polycam™**, and **OpenDroneMap™ / WebODM™** are trademarks, service marks, or trade names of their respective owners. Mention of these projects is made solely for descriptive photogrammetry manifest export, camera pose alignment, and reconstruction interoperability.
+
+15. **IRL Field Test Verification & Non-Guarantee Disclaimer**:
    * **No Warranty or Guarantee of Flight Safety**: An "IRL Verified" / "Field Tested" status badge, completed field test checklist, or passing post-flight telemetry log analysis in Aalaapi Sky or [`docs/IRL_TEST_PLAN.md`](docs/IRL_TEST_PLAN.md) indicates **solely** that a baseline reference mission configuration was flown and logged on a specific aircraft and firmware build at a specific point in time. **It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely.**
    * **Real-World Environmental, Hardware & Firmware Variations**: Actual flight execution is subject to numerous external and hardware variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The **Remote Pilot in Command (RPIC)** retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.
 
