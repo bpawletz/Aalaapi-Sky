@@ -24,6 +24,11 @@ const EARTH_RADIUS_METERS = 6371000;
 const METERS_PER_STATUTE_MILE = 1609.344;
 const METERS_PER_NAUTICAL_MILE = 1852.0;
 
+// Data sources produced by the pilot's own local receiver (dump1090 / RTL-SDR / SBS-1 / AVR)
+const LOCAL_ADSB_SOURCES = ['sbs-tcp', 'sbs-1', 'avr-tcp', 'mode-s-avr', 'dump1090-tcp', 'dump1090-json', 'local'];
+// Local receiver data is considered authoritative for this long after its last frame
+const LOCAL_RECENT_MS = 45000;
+
 const CARDINAL_POINTS = [
   'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
   'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'
@@ -356,6 +361,9 @@ class AdsbAirspaceTracker extends EventEmitter {
   constructor(options = {}) {
     super();
     this.staleTimeoutMs = options.staleTimeoutMs || 60000;
+    // Cloud feeds (adsb.lol etc.) poll every 30s, so their records need a longer
+    // grace period than high-rate local frames to avoid flickering out between polls (Issue #291).
+    this.externalStaleTimeoutMs = options.externalStaleTimeoutMs || Math.max(this.staleTimeoutMs, 90000);
     this.tcpPort = options.tcpPort || 30003;
     this.tcpHost = options.tcpHost || '127.0.0.1';
     
@@ -483,6 +491,7 @@ class AdsbAirspaceTracker extends EventEmitter {
     }
 
     record.lastSeen = Date.now();
+    record.lastLocalSeen = record.lastSeen;
     record.packetCount++;
 
     // Callsign (MSG type 1)
@@ -501,6 +510,7 @@ class AdsbAirspaceTracker extends EventEmitter {
         if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 && (lat !== 0 || lon !== 0)) {
           record.latitude = lat;
           record.longitude = lon;
+          record.positionSource = 'local';
           if (!record.history) record.history = [];
           const lastPt = record.history[record.history.length - 1];
           if (!lastPt || Math.abs(lastPt[0] - lat) > 0.0001 || Math.abs(lastPt[1] - lon) > 0.0001) {
@@ -623,6 +633,7 @@ class AdsbAirspaceTracker extends EventEmitter {
     }
 
     record.lastSeen = Date.now();
+    record.lastLocalSeen = record.lastSeen;
     record.packetCount++;
 
     // For DF17 / DF18 (112-bit = 28 hex chars), decode ME field (bytes 4..10)
@@ -703,8 +714,16 @@ class AdsbAirspaceTracker extends EventEmitter {
       this.lastPacketTimestamp = now;
 
       let record = this.aircraft.get(hex);
-      const isLocal = record && (record.dataSource === 'sbs-tcp' || record.dataSource === 'sbs-1' || record.dataSource === 'avr-tcp' || record.dataSource === 'mode-s-avr' || record.dataSource === 'dump1090-tcp' || record.dataSource === 'dump1090-json' || record.dataSource === 'local');
-      const isLocalRecent = isLocal && (now - record.lastSeen < 45000);
+      const isLocalIngest = LOCAL_ADSB_SOURCES.includes(source);
+      // lastLocalSeen is stamped whenever the local receiver hears the airframe, even if the
+      // record was first created by a cloud feed (whose dataSource would otherwise mask it).
+      const localSeen = record
+        ? (record.lastLocalSeen || (LOCAL_ADSB_SOURCES.includes(record.dataSource) ? record.lastSeen : 0))
+        : 0;
+      const isLocalRecent = localSeen > 0 && (now - localSeen < LOCAL_RECENT_MS);
+      // Only defer to local coordinates if the local receiver actually decoded a position
+      // (Mode S-only / AVR records without CPR position must be filled from the cloud feed).
+      const hasLocalPosition = Boolean(record && record.latitude !== null && record.longitude !== null && record.positionSource !== 'external');
 
       if (!record) {
         record = {
@@ -741,19 +760,21 @@ class AdsbAirspaceTracker extends EventEmitter {
         record.callsign = callsignRaw.trim();
       }
 
-      // If record is locally driven and recently active, keep local high-frequency coordinates
-      if (isLocalRecent && source !== 'sbs-tcp' && source !== 'sbs-1' && source !== 'avr-tcp' && source !== 'mode-s-avr' && source !== 'dump1090-tcp' && source !== 'dump1090-json' && source !== 'local') {
+      // If record is locally driven, recently active and has a local position, keep local high-frequency coordinates
+      if (isLocalRecent && hasLocalPosition && !isLocalIngest) {
         count++;
         continue;
       }
 
       record.lastSeen = now;
+      if (isLocalIngest) record.lastLocalSeen = now;
       record.packetCount++;
       record.dataSource = source;
 
       if (typeof ac.lat === 'number' && typeof ac.lon === 'number') {
         record.latitude = ac.lat;
         record.longitude = ac.lon;
+        record.positionSource = isLocalIngest ? 'local' : 'external';
         if (!record.history) record.history = [];
         const lastPt = record.history[record.history.length - 1];
         if (!lastPt || Math.abs(lastPt[0] - ac.lat) > 0.0001 || Math.abs(lastPt[1] - ac.lon) > 0.0001) {
@@ -848,7 +869,7 @@ class AdsbAirspaceTracker extends EventEmitter {
 
     for (const [hex, ac] of this.aircraft.entries()) {
       // Discard stale records
-      if (now - ac.lastSeen > this.staleTimeoutMs) continue;
+      if (now - ac.lastSeen > this.getStaleTimeoutFor(ac)) continue;
 
       let distanceMeters = null;
       let distanceMiles = null;
@@ -954,6 +975,8 @@ class AdsbAirspaceTracker extends EventEmitter {
           isOnGround: ac.isOnGround,
           firstSeen: ac.firstSeen,
           lastSeen: ac.lastSeen,
+          lastLocalSeen: ac.lastLocalSeen || null,
+          positionSource: ac.positionSource || null,
           ageSeconds: Math.round((now - ac.lastSeen) / 1000),
           packetCount: ac.packetCount,
           dataSource: ac.dataSource,
@@ -1076,11 +1099,25 @@ class AdsbAirspaceTracker extends EventEmitter {
   /**
    * Prunes aircraft not updated within staleTimeoutMs.
    */
+  /**
+   * Returns the stale timeout for a record: cloud-feed records get a longer grace
+   * period than local receiver / simulated records (Issue #291).
+   * @param {object} ac
+   * @returns {number}
+   */
+  getStaleTimeoutFor(ac) {
+    if (!ac) return this.staleTimeoutMs;
+    const isExternal = ac.dataSource && !LOCAL_ADSB_SOURCES.includes(ac.dataSource) && ac.dataSource !== 'simulated';
+    const localSeen = ac.lastLocalSeen || 0;
+    const isLocallyHeard = localSeen > 0 && localSeen >= (ac.lastSeen || 0);
+    return (isExternal && !isLocallyHeard) ? this.externalStaleTimeoutMs : this.staleTimeoutMs;
+  }
+
   pruneStaleAircraft() {
     const now = Date.now();
     let pruned = 0;
     for (const [hex, ac] of this.aircraft.entries()) {
-      if (now - ac.lastSeen > this.staleTimeoutMs) {
+      if (now - ac.lastSeen > this.getStaleTimeoutFor(ac)) {
         this.aircraft.delete(hex);
         pruned++;
       }
@@ -1402,5 +1439,6 @@ module.exports = {
   checkAirportAirspace,
   EARTH_RADIUS_METERS,
   METERS_PER_STATUTE_MILE,
-  METERS_PER_NAUTICAL_MILE
+  METERS_PER_NAUTICAL_MILE,
+  LOCAL_ADSB_SOURCES
 };

@@ -45295,5 +45295,250 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('Issue #291: ADS-B Local Receiver & Cloud Feed Merge (v1.243.10)', () => {
+    test('Version consistency: v1.243.10 across package.json, changelog, templates, and android/app/build.gradle.kts', () => {
+      assertVersionConsistency('1.243.10');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('Closes #291') || changelog.includes('closes #291'), 'CHANGELOG.md must reference issue #291');
+
+      const appGradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
+      const m = appGradle.match(/versionCode = (\d+)/);
+      assert.ok(m && parseInt(m[1]) >= 124391, 'android/app/build.gradle.kts versionCode must be >= 124391');
+      assert.ok(appGradle.includes('versionName = "1.243.10"'), 'android/app/build.gradle.kts versionName must be 1.243.10');
+    });
+
+    test('processAirspaceData preserves cloud aircraft when receiving local SDR / Android telemetry', () => {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      AdsbAirspaceManager.aircraft = [];
+      AdsbAirspaceManager.externalAircraftMap.clear();
+
+      // Simulate cloud feed query returning a cloud-only airframe
+      AdsbAirspaceManager.processExternalAircraftData([
+        {
+          hex: 'A00001',
+          callsign: 'CLOUD1',
+          aircraftType: 'B738',
+          latitude: 41.3300,
+          longitude: -88.9800,
+          altitude: 3500,
+          speed: 250,
+          track: 90
+        }
+      ], 'adsb.lol');
+
+      assert.strictEqual(AdsbAirspaceManager.aircraft.length, 1);
+      assert.strictEqual(AdsbAirspaceManager.aircraft[0].hex, 'A00001');
+      assert.strictEqual(AdsbAirspaceManager.aircraft[0]._cloudOnly, true);
+
+      // Now local SDR / Android receiver ingests a local aircraft
+      AdsbAirspaceManager.processAirspaceData({
+        success: true,
+        source: 'android-sbs',
+        aircraft: [
+          {
+            hex: 'B00002',
+            callsign: 'LOCAL2',
+            latitude: 41.3200,
+            longitude: -88.9900,
+            altitude: 1200,
+            speed: 110,
+            track: 180,
+            source: 'android-sbs',
+            lastSeenMs: Date.now()
+          }
+        ]
+      });
+
+      // Both must coexist! Cloud aircraft must NOT bounce or disappear!
+      assert.strictEqual(AdsbAirspaceManager.aircraft.length, 2, 'Cloud and local aircraft must coexist without bouncing');
+      const cloudAc = AdsbAirspaceManager.aircraft.find(a => a.hex === 'A00001');
+      const localAc = AdsbAirspaceManager.aircraft.find(a => a.hex === 'B00002');
+      assert.ok(cloudAc, 'Cloud aircraft must remain present');
+      assert.ok(localAc, 'Local aircraft must be present');
+      assert.strictEqual(cloudAc.callsign, 'CLOUD1');
+      assert.strictEqual(localAc.callsign, 'LOCAL2');
+    });
+
+    test('Same-airframe merge: preserves fresh local position while enriching cloud metadata', () => {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      AdsbAirspaceManager.aircraft = [];
+      AdsbAirspaceManager.externalAircraftMap.clear();
+
+      // Cloud feed has metadata and coordinates
+      AdsbAirspaceManager.processExternalAircraftData([
+        {
+          hex: 'C12345',
+          callsign: 'DAL123',
+          aircraftType: 'A321',
+          registration: 'N123DL',
+          category: 'A3',
+          latitude: 41.3100,
+          longitude: -88.9700,
+          altitude: 4000,
+          speed: 220,
+          track: 120
+        }
+      ], 'adsb.lol');
+
+      // Local SDR detects same hex with recent high-rate position but missing metadata
+      AdsbAirspaceManager.processAirspaceData({
+        success: true,
+        source: 'local',
+        aircraft: [
+          {
+            hex: 'C12345',
+            callsign: null,
+            aircraftType: null,
+            registration: null,
+            category: null,
+            latitude: 41.3215,
+            longitude: -88.9950,
+            altitude: 4100,
+            speed: 225,
+            track: 122,
+            source: 'local',
+            lastSeenMs: Date.now() - 500
+          }
+        ]
+      });
+
+      assert.strictEqual(AdsbAirspaceManager.aircraft.length, 1, 'Same airframe must merge into a single target');
+      const merged = AdsbAirspaceManager.aircraft[0];
+      assert.strictEqual(merged.latitude, 41.3215, 'Recent local latitude must win');
+      assert.strictEqual(merged.longitude, -88.9950, 'Recent local longitude must win');
+      assert.strictEqual(merged.aircraftType, 'A321', 'Aircraft type must be enriched from cloud');
+      assert.strictEqual(merged.registration, 'N123DL', 'Registration must be enriched from cloud');
+      assert.strictEqual(merged.callsign, 'DAL123', 'Callsign must be enriched from cloud');
+    });
+
+    test('Same-airframe merge: fills position from cloud when local Mode S record has no coordinates', () => {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      AdsbAirspaceManager.aircraft = [];
+      AdsbAirspaceManager.externalAircraftMap.clear();
+
+      AdsbAirspaceManager.processExternalAircraftData([
+        {
+          hex: 'D55555',
+          callsign: 'N555XX',
+          aircraftType: 'C172',
+          latitude: 41.3250,
+          longitude: -88.9920,
+          altitude: 2000,
+          speed: 105,
+          track: 45
+        }
+      ], 'adsb.lol');
+
+      // Local receiver received Mode S ping without CPR position
+      AdsbAirspaceManager.processAirspaceData({
+        success: true,
+        source: 'sbs-tcp',
+        aircraft: [
+          {
+            hex: 'D55555',
+            callsign: null,
+            latitude: null,
+            longitude: null,
+            altitude: null,
+            source: 'sbs-tcp',
+            lastSeenMs: Date.now() - 1000
+          }
+        ]
+      });
+
+      assert.strictEqual(AdsbAirspaceManager.aircraft.length, 1);
+      const merged = AdsbAirspaceManager.aircraft[0];
+      assert.strictEqual(merged.latitude, 41.3250, 'Cloud latitude must fill in missing local position');
+      assert.strictEqual(merged.longitude, -88.9920, 'Cloud longitude must fill in missing local position');
+      assert.strictEqual(merged.positionSource, 'external');
+    });
+
+    test('Same-airframe merge: cloud position takes over if local position becomes stale (>= 45s)', () => {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      AdsbAirspaceManager.aircraft = [];
+      AdsbAirspaceManager.externalAircraftMap.clear();
+
+      AdsbAirspaceManager.processExternalAircraftData([
+        {
+          hex: 'E77777',
+          callsign: 'UAL999',
+          latitude: 41.3400,
+          longitude: -88.9600,
+          altitude: 5000,
+          speed: 280,
+          track: 270
+        }
+      ], 'adsb.lol');
+
+      // Local sighting has coordinates but hasn't received local updates in 50s
+      AdsbAirspaceManager.processAirspaceData({
+        success: true,
+        source: 'local',
+        aircraft: [
+          {
+            hex: 'E77777',
+            callsign: 'UAL999',
+            latitude: 41.3000,
+            longitude: -88.9000,
+            altitude: 4800,
+            source: 'local',
+            lastSeenMs: Date.now() - 50000
+          }
+        ]
+      });
+
+      assert.strictEqual(AdsbAirspaceManager.aircraft.length, 1);
+      const merged = AdsbAirspaceManager.aircraft[0];
+      assert.strictEqual(merged.latitude, 41.3400, 'Cloud latitude must take over stale local position');
+      assert.strictEqual(merged.longitude, -88.9600, 'Cloud longitude must take over stale local position');
+    });
+
+    test('stopExternalWatch clears cloud aircraft while keeping local aircraft', () => {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      AdsbAirspaceManager.aircraft = [];
+      AdsbAirspaceManager.externalAircraftMap.clear();
+
+      AdsbAirspaceManager.processExternalAircraftData([
+        { hex: 'F11111', callsign: 'CLOUD_LEAVE', latitude: 41.3, longitude: -88.9 }
+      ], 'adsb.lol');
+
+      AdsbAirspaceManager.processAirspaceData({
+        success: true,
+        source: 'android-sbs',
+        aircraft: [
+          { hex: 'F22222', callsign: 'LOCAL_STAY', latitude: 41.32, longitude: -88.99, source: 'android-sbs', lastSeenMs: Date.now() }
+        ]
+      });
+
+      assert.strictEqual(AdsbAirspaceManager.aircraft.length, 2);
+
+      // Disable external watch
+      AdsbAirspaceManager.stopExternalWatch('test');
+
+      assert.strictEqual(AdsbAirspaceManager.aircraft.length, 1, 'Only local aircraft should remain');
+      assert.strictEqual(AdsbAirspaceManager.aircraft[0].hex, 'F22222');
+      assert.strictEqual(AdsbAirspaceManager.externalAircraftMap.size, 0, 'externalAircraftMap must be cleared');
+    });
+
+    test('Cloud-only aircraft age out after 90 seconds', () => {
+      const { AdsbAirspaceManager } = require('./src/bridge/ApiClient.js');
+      AdsbAirspaceManager.aircraft = [];
+      AdsbAirspaceManager.externalAircraftMap.clear();
+
+      AdsbAirspaceManager.externalAircraftMap.set('OLD001', {
+        hex: 'OLD001',
+        callsign: 'OLD_CLOUD',
+        latitude: 41.3,
+        longitude: -88.9,
+        source: 'adsb.lol',
+        dataSource: 'adsb.lol',
+        _externalSeenAt: Date.now() - 95000 // 95s old (>90s timeout)
+      });
+
+      const merged = AdsbAirspaceManager.mergeExternalAircraft([]);
+      assert.strictEqual(merged.length, 0, 'Stale cloud aircraft (>90s) must be pruned');
+    });
+  });
+
 });
 });

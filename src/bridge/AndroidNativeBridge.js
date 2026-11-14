@@ -967,6 +967,9 @@
       if (update.verticalRate !== undefined) ac.verticalRate = update.verticalRate;
       if (update.onGround !== undefined) ac.onGround = update.onGround;
       ac.lastSeen = now;
+      ac.lastSeenMs = now;
+      ac.source = 'android-sbs';
+      ac.dataSource = 'android-sbs';
 
       // Compute relative distance & bearing from alert origin
       let refLat = 41.3215;
@@ -1080,6 +1083,9 @@
         const vert = item.baro_rate !== undefined ? item.baro_rate : (item.geom_rate !== undefined ? item.geom_rate : item.vert_rate);
         if (vert !== undefined && !isNaN(vert)) ac.verticalRate = vert;
         ac.lastSeen = now;
+        ac.lastSeenMs = now;
+        ac.source = 'android-http-json';
+        ac.dataSource = 'android-http-json';
 
         if (ac.latitude !== null && ac.longitude !== null) {
           const distM = ClientAdsbProcessor.calculateHaversineDistance(refLat, refLon, ac.latitude, ac.longitude);
