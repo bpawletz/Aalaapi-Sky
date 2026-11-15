@@ -232,6 +232,10 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
     }
   }
 
+  const wireframeReadiness = evaluateFlightPlanWireframeReadiness(waypoints, photoLocations, {
+    captureMode: captureMode
+  });
+
   return {
     waypointsCount: waypoints.length,
     photoCount: photoCount,
@@ -246,8 +250,407 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
     userDistanceToTakeoff: userDistanceToTakeoff,
     intersectingTfrs: intersectingTfrs,
     intersectingActiveTfrs: intersectingActiveTfrs,
-    intersectingUpcomingTfrs: intersectingUpcomingTfrs
+    intersectingUpcomingTfrs: intersectingUpcomingTfrs,
+    wireframeReadiness: wireframeReadiness
   };
+}
+
+/**
+ * Precalculates whether a planned flight mission (or correlated photo set) satisfies
+ * OpenCV 5 Multi-View Stereo (MVS) 3D wireframe triangulation requirements.
+ */
+function evaluateFlightPlanWireframeReadiness(waypoints, photoLocations = null, options = {}) {
+  const wfLatLonToWorld = (lat, lon, origLat, origLon) => {
+    const zoom = 18;
+    const tileW = 40075016.686 * Math.cos(origLat * Math.PI / 180) / Math.pow(2, zoom);
+    const sinLat0 = Math.sin(origLat * Math.PI / 180);
+    const xTile0 = ((origLon + 180) / 360) * Math.pow(2, zoom);
+    const yTile0 = (0.5 - Math.log((1 + sinLat0) / (1 - sinLat0)) / (4 * Math.PI)) * Math.pow(2, zoom);
+    const sinLat = Math.sin(lat * Math.PI / 180);
+    const xTile = ((lon + 180) / 360) * Math.pow(2, zoom);
+    const yTile = (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * Math.pow(2, zoom);
+    return { x: (xTile - xTile0) * tileW, z: (yTile - yTile0) * tileW };
+  };
+
+  const wfPointInPolyXZ = (x, z, poly) => {
+    if (!poly || poly.length < 3) return true;
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i][0], zi = poly[i][1];
+      const xj = poly[j][0], zj = poly[j][1];
+      const intersect = ((zi > z) !== (zj > z)) && (x < (xj - xi) * (z - zi) / ((zj - zi) || 1e-12) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  };
+
+  const wfComputeBearingDeg = (lat1, lon1, lat2, lon2) => {
+    const p1 = lat1 * Math.PI / 180;
+    const p2 = lat2 * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const y = Math.sin(dLon) * Math.cos(p2);
+    const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dLon);
+    return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
+  };
+
+  const globalCapture = options.captureMode
+    || (typeof document !== 'undefined' && document.getElementById('capture-mode')?.value)
+    || 'stopAndShoot';
+  const globalAlt = (options.altitude !== undefined && !isNaN(options.altitude))
+    ? Number(options.altitude)
+    : ((typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 50);
+  const globalPitch = (options.gimbalPitch !== undefined && !isNaN(options.gimbalPitch))
+    ? Number(options.gimbalPitch)
+    : ((typeof document !== 'undefined' && typeof parseGimbalPitch === 'function')
+      ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60)
+      : ((typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) ?? -60));
+
+  const activeLayer = options.layer || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  const layersArr = options.flightLayers || ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []);
+
+  const hasExplicitPhotos = Array.isArray(photoLocations) && photoLocations.length > 0;
+  const sourceItems = hasExplicitPhotos ? photoLocations : (Array.isArray(waypoints) ? waypoints : []);
+
+  if (sourceItems.length === 0) {
+    return {
+      status: 'insufficient',
+      badgeText: 'No Waypoints',
+      totalPlannedPhotos: 0,
+      validPitchPhotos: 0,
+      rejectedShallowPhotos: 0,
+      marginalPitchPhotos: 0,
+      stereoPairsCount: 0,
+      avgBaselineMeters: 0,
+      insideBoundaryCount: 0,
+      hasBoundaryPolygon: false,
+      canAutoOptimize: false,
+      reasons: ['No waypoints or photo poses are defined in the active mission.'],
+      recommendations: ['Draw or generate a flight pattern with at least 4 photo waypoints.']
+    };
+  }
+
+  let originLat = options.origin?.lat ?? null;
+  let originLon = options.origin?.lon ?? null;
+  for (const item of sourceItems) {
+    const act = item?.actual || {};
+    const lat = item?.lat ?? act.lat;
+    const lon = item?.lon ?? item?.lng ?? act.lon;
+    if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
+      if (originLat === null) {
+        originLat = lat;
+        originLon = lon;
+        break;
+      }
+    }
+  }
+  if (originLat === null) originLat = 41.3215;
+  if (originLon === null) originLon = -88.9950;
+
+  let boundaryPolyXZ = null;
+  const rawPoly = options.boundaryPolygon || (activeLayer && Array.isArray(activeLayer.boundaryPolygon) ? activeLayer.boundaryPolygon : null);
+  if (Array.isArray(rawPoly) && rawPoly.length >= 3) {
+    boundaryPolyXZ = rawPoly.map(bp => {
+      if (Array.isArray(bp) && bp.length >= 2) return [Number(bp[0]), Number(bp[1])];
+      if (bp && typeof bp.x === 'number' && typeof bp.z === 'number') return [bp.x, bp.z];
+      const lat = bp?.lat ?? bp?.latitude;
+      const lon = bp?.lon ?? bp?.longitude ?? bp?.lng;
+      if (typeof lat === 'number' && typeof lon === 'number') {
+        const w = wfLatLonToWorld(lat, lon, originLat, originLon);
+        return [w.x, w.z];
+      }
+      return null;
+    }).filter(Boolean);
+    if (boundaryPolyXZ.length < 3) boundaryPolyXZ = null;
+  }
+
+  let totalPlannedPhotos = 0;
+  let rejectedShallowPhotos = 0;
+  let marginalPitchPhotos = 0;
+  let noGroundInterceptCount = 0;
+  let videoOnlyCount = 0;
+  let hoverNoPhotoCount = 0;
+  const validPoses = [];
+
+  for (let i = 0; i < sourceItems.length; i++) {
+    const item = sourceItems[i];
+    if (!item || item.skipPhoto || item.isDetour || item.isTransition) continue;
+
+    const act = item.actual || {};
+    const wpLayer = (item.layerId && layersArr.length > 0)
+      ? layersArr.find(l => l.id === item.layerId)
+      : activeLayer;
+
+    let effCapture = globalCapture;
+    if (wpLayer && wpLayer.captureMode && wpLayer.captureMode !== 'inherit') effCapture = wpLayer.captureMode;
+    if (item.layerCaptureMode && item.layerCaptureMode !== 'inherit') effCapture = item.layerCaptureMode;
+    if (item.captureMode && item.captureMode !== 'inherit') effCapture = item.captureMode;
+
+    const isPhotoPose = hasExplicitPhotos || item.isPhoto || item.isPhotoSphere || item.isPhotoSpherePoint ||
+      (Array.isArray(item.photoSphereActions) && item.photoSphereActions.length > 0) ||
+      (effCapture !== 'video' && effCapture !== 'hover');
+
+    if (!isPhotoPose) {
+      if (effCapture === 'video') videoOnlyCount++;
+      else hoverNoPhotoCount++;
+      continue;
+    }
+
+    totalPlannedPhotos++;
+
+    let effPitch = globalPitch;
+    if (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit' && !isNaN(parseFloat(wpLayer.gimbalPitch))) {
+      effPitch = parseFloat(wpLayer.gimbalPitch);
+    }
+    const itemPitch = item.pitch ?? item.gimbalPitch ?? act.gimbalPitch;
+    if (itemPitch !== undefined && itemPitch !== null && itemPitch !== 'inherit' && !isNaN(parseFloat(itemPitch))) {
+      effPitch = parseFloat(itemPitch);
+    }
+
+    if (effPitch > -20.0) {
+      rejectedShallowPhotos++;
+      continue;
+    }
+    if (effPitch > -35.0) {
+      marginalPitchPhotos++;
+    }
+
+    const lat = item.lat ?? act.lat ?? originLat;
+    const lon = item.lon ?? item.lng ?? act.lon ?? originLon;
+    const altAgl = Math.max(5.0, Number(item.altAgl ?? item.altitude ?? item.alt ?? act.altAgl ?? act.alt ?? wpLayer?.altitude ?? globalAlt ?? 30));
+
+    let wx = item.worldX;
+    let wz = item.worldZ;
+    if (wx === undefined || wz === undefined) {
+      const w = wfLatLonToWorld(lat, lon, originLat, originLon);
+      wx = w.x;
+      wz = w.z;
+    }
+
+    let effYaw = item.yaw ?? item.heading ?? act.heading;
+    if (effYaw === undefined || effYaw === null || isNaN(Number(effYaw))) {
+      const next = sourceItems[i + 1];
+      const prev = sourceItems[i - 1];
+      if (next && typeof next.lat === 'number' && typeof (next.lon ?? next.lng) === 'number') {
+        effYaw = wfComputeBearingDeg(lat, lon, next.lat, next.lon ?? next.lng);
+      } else if (prev && typeof prev.lat === 'number' && typeof (prev.lon ?? prev.lng) === 'number') {
+        effYaw = wfComputeBearingDeg(prev.lat, prev.lon ?? prev.lng, lat, lon);
+      } else {
+        effYaw = 0;
+      }
+    } else {
+      effYaw = Number(effYaw);
+    }
+
+    const psi = effYaw * Math.PI / 180;
+    const theta = effPitch * Math.PI / 180;
+    const cosT = Math.cos(theta), sinT = Math.sin(theta);
+    const fwdX = cosT * Math.sin(psi);
+    const fwdY = sinT;
+    const fwdZ = -cosT * Math.cos(psi);
+
+    let gx = wx, gz = wz;
+    if (Math.abs(fwdY) > 1e-4) {
+      const tc = (0 - altAgl) / fwdY;
+      if (tc > 0 && tc < 350) {
+        gx = wx + fwdX * tc;
+        gz = wz + fwdZ * tc;
+      } else {
+        noGroundInterceptCount++;
+        continue;
+      }
+    } else {
+      noGroundInterceptCount++;
+      continue;
+    }
+
+    validPoses.push({ wx, wy: altAgl, wz, gx, gz, fwdX, fwdY, fwdZ, pitch: effPitch, yaw: effYaw });
+  }
+
+  let stereoPairsCount = 0;
+  let baselineSum = 0;
+  let tooCloseCount = 0;
+  let tooFarCount = 0;
+  let poorOverlapCount = 0;
+  let wideAngleCount = 0;
+
+  for (let i = 0; i < validPoses.length; i++) {
+    const a = validPoses[i];
+    for (let j = i + 1; j < validPoses.length; j++) {
+      const b = validPoses[j];
+      const avgAlt = Math.max(5.0, (a.wy + b.wy) / 2.0);
+      const baseline = Math.hypot(a.wx - b.wx, a.wy - b.wy, a.wz - b.wz);
+      const minB = Math.max(1.0, avgAlt * 0.03);
+      const maxB = Math.max(20.0, avgAlt * 1.25);
+
+      if (baseline < minB) { tooCloseCount++; continue; }
+      if (baseline > maxB) { tooFarCount++; continue; }
+
+      const gDist = Math.hypot(a.gx - b.gx, a.gz - b.gz);
+      if (gDist > Math.max(35.0, avgAlt * 1.4)) { poorOverlapCount++; continue; }
+
+      const cosAng = Math.max(-1.0, Math.min(1.0, a.fwdX * b.fwdX + a.fwdY * b.fwdY + a.fwdZ * b.fwdZ));
+      const angDeg = Math.acos(cosAng) * 180 / Math.PI;
+      if (angDeg > 80.0) { wideAngleCount++; continue; }
+
+      stereoPairsCount++;
+      baselineSum += baseline;
+    }
+  }
+
+  const avgBaselineMeters = stereoPairsCount > 0 ? Math.round((baselineSum / stereoPairsCount) * 10) / 10 : 0;
+  let insideBoundaryCount = validPoses.length;
+  if (boundaryPolyXZ) {
+    insideBoundaryCount = validPoses.filter(p => wfPointInPolyXZ(p.gx, p.gz, boundaryPolyXZ)).length;
+  }
+
+  const reasons = [];
+  const recommendations = [];
+  let canAutoOptimize = false;
+
+  if (totalPlannedPhotos === 0) {
+    if (videoOnlyCount > 0) {
+      reasons.push(`Capture mode is set to Video (${videoOnlyCount} waypoints, 0 still photos).`);
+      recommendations.push('Switch Capture Mode to "Stop & Shoot" or interval photos.');
+      canAutoOptimize = true;
+    } else if (hoverNoPhotoCount > 0) {
+      reasons.push(`Capture mode is set to Hover Only (${hoverNoPhotoCount} waypoints, 0 still photos).`);
+      recommendations.push('Switch Capture Mode to "Stop & Shoot" so photos are triggered.');
+      canAutoOptimize = true;
+    } else {
+      reasons.push('No photo-capture waypoints detected in this flight plan.');
+      recommendations.push('Ensure at least 4 waypoints trigger still photos.');
+    }
+  } else if (totalPlannedPhotos < 2) {
+    reasons.push(`Only ${totalPlannedPhotos} photo planned (MVS requires >= 2 overlapping photos from distinct positions).`);
+    recommendations.push('Add more waypoints or use a Grid / Target Splat / Orbit pattern.');
+  }
+
+  if (rejectedShallowPhotos > 0) {
+    reasons.push(`${rejectedShallowPhotos} of ${totalPlannedPhotos} photos have shallow gimbal pitch (> -20°) and will be ignored by OpenCV 5 MVS.`);
+    recommendations.push('Tilt gimbal pitch to -45° to -60° (oblique) or -90° (nadir).');
+    canAutoOptimize = true;
+  } else if (marginalPitchPhotos > 0 && validPoses.length > 0 && marginalPitchPhotos === validPoses.length) {
+    reasons.push(`Gimbal pitch (-20° to -34°) is marginal for JS fallback; -45° to -60° is recommended.`);
+    recommendations.push('Set gimbal pitch to -55° for reliable roof & wall triangulation.');
+    canAutoOptimize = true;
+  }
+
+  if (noGroundInterceptCount > 0) {
+    reasons.push(`${noGroundInterceptCount} camera rays exceed 350m slant range to ground.`);
+    recommendations.push('Lower altitude or steepen gimbal pitch downward.');
+    canAutoOptimize = true;
+  }
+
+  if (validPoses.length >= 2 && stereoPairsCount === 0) {
+    if (tooCloseCount > 0 && tooFarCount === 0 && poorOverlapCount === 0) {
+      reasons.push('All valid photos are stationary at the same coordinate (0m stereo baseline).');
+      recommendations.push('Add spatial translation between shots (e.g. Grid, Double Grid, or Orbit).');
+    } else if (tooFarCount > 0 && poorOverlapCount === 0) {
+      reasons.push('Waypoints are spaced too far apart for stereo baseline pairing at this altitude.');
+      recommendations.push('Increase photo overlap (75–80%) or raise flight altitude.');
+      canAutoOptimize = true;
+    } else if (poorOverlapCount > 0) {
+      reasons.push('Camera ground footprints do not overlap enough (< 35m / 1.4x alt) between consecutive shots.');
+      recommendations.push('Increase front/side overlap or point cameras toward a shared target.');
+      canAutoOptimize = true;
+    } else if (wideAngleCount > 0) {
+      reasons.push('Camera viewing angles diverge > 80° between adjacent photos.');
+      recommendations.push('Add intermediate waypoints/orbit steps so adjacent views stay within 80°.');
+    } else {
+      reasons.push('0 valid stereo baseline pairs formed from planned camera poses.');
+    }
+  }
+
+  if (boundaryPolyXZ && validPoses.length > 0 && insideBoundaryCount === 0) {
+    reasons.push('0 planned camera ground footprints intersect the active Layer Boundary Hull.');
+    recommendations.push('Move the pattern over the Layer Boundary or uncheck "Boundary Hull" in the 3D Wireframe Toolkit.');
+  }
+
+  let status = 'insufficient';
+  if (validPoses.length >= 4 && stereoPairsCount >= 2 && (!boundaryPolyXZ || insideBoundaryCount > 0)) {
+    status = 'ready';
+  } else if (validPoses.length >= 2 && stereoPairsCount >= 1 && (!boundaryPolyXZ || insideBoundaryCount > 0)) {
+    status = 'marginal';
+    if (reasons.length === 0) {
+      reasons.push(`Only ${stereoPairsCount} stereo baseline pair detected (recommend >= 2 baselines & >= 4 photos).`);
+      recommendations.push('Increase overlap or add another pass for stronger 3D plane fitting.');
+    }
+  }
+
+  const badgeText = status === 'ready'
+    ? `✅ Ready (${stereoPairsCount} Baselines)`
+    : (status === 'marginal'
+      ? `⚠️ Marginal (${stereoPairsCount} Baseline${stereoPairsCount === 1 ? '' : 's'})`
+      : `❌ Insufficient (${stereoPairsCount} Baselines)`);
+
+  return {
+    status,
+    badgeText,
+    totalPlannedPhotos,
+    validPitchPhotos: validPoses.length,
+    rejectedShallowPhotos,
+    marginalPitchPhotos,
+    stereoPairsCount,
+    avgBaselineMeters,
+    insideBoundaryCount,
+    hasBoundaryPolygon: Boolean(boundaryPolyXZ),
+    canAutoOptimize,
+    reasons,
+    recommendations
+  };
+}
+
+/**
+ * One-click optimizer that adjusts the active layer's capture mode, gimbal pitch,
+ * and grid overlap so the flight plan satisfies OpenCV 5 MVS 3D wireframe requirements.
+ */
+function optimizeLayerForWireframe() {
+  if (typeof isRestoringUndoState === 'undefined' || !isRestoringUndoState) {
+    if (typeof pushUndoSnapshot === 'function') {
+      pushUndoSnapshot('Optimize Layer for 3D Wireframe');
+    }
+  }
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const captureEl = (typeof document !== 'undefined') ? document.getElementById('capture-mode') : null;
+  const pitchEl = (typeof document !== 'undefined') ? document.getElementById('gimbal-pitch') : null;
+  const pitchValEl = (typeof document !== 'undefined') ? document.getElementById('gimbal-pitch-val') : null;
+  const frontOvEl = (typeof document !== 'undefined') ? document.getElementById('front-overlap') : null;
+  const sideOvEl = (typeof document !== 'undefined') ? document.getElementById('side-overlap') : null;
+
+  const currentCapture = (activeLayer && activeLayer.captureMode && activeLayer.captureMode !== 'inherit')
+    ? activeLayer.captureMode
+    : (captureEl ? captureEl.value : 'stopAndShoot');
+  if (currentCapture === 'video' || currentCapture === 'hover') {
+    if (activeLayer) activeLayer.captureMode = 'stopAndShoot';
+    if (captureEl) captureEl.value = 'stopAndShoot';
+  }
+
+  const currentPitch = (activeLayer && activeLayer.gimbalPitch !== undefined && activeLayer.gimbalPitch !== 'inherit')
+    ? parseFloat(activeLayer.gimbalPitch)
+    : (pitchEl ? parseFloat(pitchEl.value) : -60);
+  if (isNaN(currentPitch) || currentPitch > -35) {
+    if (activeLayer) activeLayer.gimbalPitch = -55;
+    if (pitchEl) pitchEl.value = '-55';
+    if (pitchValEl) pitchValEl.textContent = '-55°';
+  }
+
+  const pat = activeLayer ? activeLayer.pattern : (typeof document !== 'undefined' ? document.getElementById('grid-type')?.value : '');
+  if (pat === 'single' || pat === 'double' || pat === 'smart-oblique') {
+    if (activeLayer) {
+      if ((activeLayer.frontOverlap || 0) < 75) activeLayer.frontOverlap = 80;
+      if ((activeLayer.sideOverlap || 0) < 70) activeLayer.sideOverlap = 75;
+    }
+    if (frontOvEl && parseFloat(frontOvEl.value) < 75) frontOvEl.value = '80';
+    if (sideOvEl && parseFloat(sideOvEl.value) < 70) sideOvEl.value = '75';
+  }
+
+  if (typeof saveActiveLayerFromUi === 'function') saveActiveLayerFromUi();
+  if (typeof updateGrid === 'function') updateGrid();
+
+  if (typeof showToast === 'function') {
+    showToast('🏗️ Layer optimized for 3D Wireframe (Stop & Shoot, -55° oblique pitch)', 'success');
+  }
 }
 
 // Update stats panel UI elements
@@ -275,6 +678,7 @@ function updateStatsPanel(stats) {
   const statPhotoInterval = document.getElementById('stat-photo-interval');
   const statDistance = document.getElementById('stat-distance');
   const statFlightTime = document.getElementById('stat-flight-time');
+  const statWireframeReadiness = document.getElementById('stat-wireframe-readiness');
   const dockLayerSummary = document.getElementById('dock-layer-summary');
   const dockWaypointSummary = document.getElementById('dock-waypoint-summary');
 
@@ -285,6 +689,10 @@ function updateStatsPanel(stats) {
     if (statPhotoInterval) statPhotoInterval.textContent = "-";
     if (statDistance) statDistance.textContent = "-";
     if (statFlightTime) statFlightTime.textContent = "-";
+    if (statWireframeReadiness) {
+      statWireframeReadiness.textContent = "-";
+      statWireframeReadiness.style.color = '';
+    }
     if (headerSummaryEl) headerSummaryEl.textContent = "0 WPs • 0.0 km • 0m 0s";
     if (sidebarSummaryText) {
       const weatherSnippet = document.getElementById('header-weather-summary')?.textContent || '☀️ Weather';
@@ -360,6 +768,17 @@ function updateStatsPanel(stats) {
   }
   if (statDistance) statDistance.textContent = distStr;
   if (statFlightTime) statFlightTime.textContent = stats.timeStr;
+  if (statWireframeReadiness) {
+    const wf = stats.wireframeReadiness;
+    if (wf) {
+      statWireframeReadiness.textContent = wf.badgeText;
+      statWireframeReadiness.style.color = wf.status === 'ready' ? '#34d399' : (wf.status === 'marginal' ? '#fbbf24' : '#f87171');
+      statWireframeReadiness.title = wf.reasons && wf.reasons.length > 0 ? wf.reasons.join(' ') : 'OpenCV 5 MVS 3D Wireframe stereo baseline readiness';
+    } else {
+      statWireframeReadiness.textContent = '-';
+      statWireframeReadiness.style.color = '';
+    }
+  }
 
   // Sync Header & Popover Telemetry
   const clipInfoStr = isHyperlapseActive ? ` (${(stats.photoCount / 30).toFixed(1)}s clip)` : '';
@@ -454,6 +873,35 @@ function updateStatsPanel(stats) {
       div.appendChild(strong);
       const names = stats.intersectingTfrs.map(t => `${t.notamId}`).slice(0, 3).join(', ');
       div.appendChild(document.createTextNode(` Flight path intersects active FAA Temporary Flight Restriction (${names})!`));
+      warningsEl.appendChild(div);
+      hasWarnings = true;
+    }
+
+    // Check 3D Wireframe / MVS Stereo Readiness
+    if (stats.wireframeReadiness && stats.wireframeReadiness.status !== 'ready') {
+      const wf = stats.wireframeReadiness;
+      const div = document.createElement('div');
+      div.id = 'stats-wireframe-warning';
+      div.style.marginTop = '4px';
+      const strong = document.createElement('strong');
+      strong.textContent = '3D Wireframe Readiness:';
+      div.appendChild(document.createTextNode(wf.status === 'marginal' ? '⚠️ ' : '🏗️ '));
+      div.appendChild(strong);
+      const reasonText = (wf.reasons && wf.reasons.length > 0) ? wf.reasons[0] : 'Insufficient stereo baselines for 3D wireframe.';
+      div.appendChild(document.createTextNode(` ${reasonText}`));
+
+      if (wf.canAutoOptimize && typeof document.createElement === 'function') {
+        const optBtn = document.createElement('button');
+        optBtn.id = 'btn-optimize-wireframe-plan';
+        optBtn.type = 'button';
+        optBtn.textContent = '✨ Optimize for 3D Wireframe';
+        optBtn.style.cssText = 'display: inline-block; margin-top: 4px; margin-left: 6px; padding: 2px 7px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; background: rgba(56, 189, 248, 0.16); border: 1px solid rgba(56, 189, 248, 0.45); color: #38bdf8; cursor: pointer;';
+        optBtn.addEventListener('click', () => {
+          if (typeof optimizeLayerForWireframe === 'function') optimizeLayerForWireframe();
+        });
+        div.appendChild(optBtn);
+      }
+
       warningsEl.appendChild(div);
       hasWarnings = true;
     }

@@ -303,16 +303,24 @@ function extractWireframeJsFallback(payload = {}) {
 
   // Build per-photo metadata (camera world pos + center-ray ground hit)
   const photoMeta = [];
+  let rejectedPitchCount = 0;
+  let zeroLinesCount = 0;
   photos.forEach(photo => {
     const telem = photo.telemetry || photo || {};
     const actual = telem.actual || {};
     const pitch = telem.pitch !== undefined ? telem.pitch
                 : (telem.gimbalPitch !== undefined ? telem.gimbalPitch
                 : (actual.gimbalPitch !== undefined ? actual.gimbalPitch : -60));
-    if (pitch > -35) return;
+    if (pitch > -20) {
+      rejectedPitchCount++;
+      return;
+    }
     const pid = photo.photoId || photo.filename;
     const lines2d = ppl[pid] || photo.lines2D || photo.detectedLines || [];
-    if (lines2d.length === 0) return;
+    if (lines2d.length === 0) {
+      zeroLinesCount++;
+      return;
+    }
 
     const lat = telem.lat !== undefined ? telem.lat : actual.lat;
     const lon = telem.lon !== undefined ? telem.lon : actual.lon;
@@ -615,28 +623,58 @@ function extractWireframeJsFallback(payload = {}) {
       }
     }
 
+    let specificErr = 'Insufficient authentic architectural lines detected in downward survey imagery';
+    if (stereoPairs.length === 0) {
+      specificErr = `Processed ${photoMeta.length} downward photos, but 0 overlapping stereo baseline pairs were found (check waypoint spacing and overlap).`;
+    } else if (unprojectedRaw.length === 0) {
+      specificErr = `Evaluated ${stereoPairs.length} stereo baseline pairs across ${photoMeta.length} photos, but no matching 3D architectural edges converged.`;
+    }
+
     return {
       success: false,
-      error: 'Insufficient authentic architectural lines detected in downward survey imagery',
+      error: specificErr,
       lines: [],
       planes: [],
       linePlanes: [],
       count: 0,
       stereoPairsCount: stereoPairs.length,
       engine: 'javascript_mvs_triangulation',
+      diagnostics: {
+        totalInputPhotos: photos.length,
+        validPitchPhotos: photoMeta.length,
+        rejectedPitchCount,
+        zeroLinesCount,
+        stereoPairsCount: stereoPairs.length
+      },
       timestamp: new Date().toISOString()
     };
   }
 
+  let noMetaErr = 'Insufficient authentic architectural lines detected in downward survey imagery';
+  if (photos.length === 0) {
+    noMetaErr = 'No photos were supplied for 3D wireframe extraction (run on a flown mission with ingested photos).';
+  } else if (rejectedPitchCount > 0 && zeroLinesCount === 0) {
+    noMetaErr = `0 of ${photos.length} photos met downward gimbal pitch requirement (<= -20°; ${rejectedPitchCount} were too shallow).`;
+  } else if (zeroLinesCount > 0) {
+    noMetaErr = `Insufficient authentic architectural lines detected in downward survey imagery (0 2D edges found in ${zeroLinesCount} downward photo(s)).`;
+  }
+
   return {
     success: false,
-    error: 'Insufficient authentic architectural lines detected in downward survey imagery',
+    error: noMetaErr,
     lines: [],
     planes: [],
     linePlanes: [],
     count: 0,
     stereoPairsCount: 0,
     engine: 'javascript_mvs_triangulation',
+    diagnostics: {
+      totalInputPhotos: photos.length,
+      validPitchPhotos: 0,
+      rejectedPitchCount,
+      zeroLinesCount,
+      stereoPairsCount: 0
+    },
     timestamp: new Date().toISOString()
   };
 }
@@ -711,6 +749,7 @@ function extractWireframe(payload = {}) {
 
     try { fs.unlinkSync(tmpFile); } catch (_) {}
 
+    let pythonDiagnostic = null;
     if (proc && proc.status === 0 && proc.stdout) {
       try {
         const parsed = JSON.parse(proc.stdout.trim());
@@ -719,6 +758,7 @@ function extractWireframe(payload = {}) {
           parsed.engine = 'opencv_python';
           return parsed;
         }
+        pythonDiagnostic = parsed;
       } catch (jsonErr) {
         // Fall through to JS fallback
       }
@@ -726,6 +766,11 @@ function extractWireframe(payload = {}) {
 
     // Fall back to JS engine if python fails or returned error
     const fallbackRes = extractWireframeJsFallback(payload);
+    if (!fallbackRes.success && pythonDiagnostic && pythonDiagnostic.error) {
+      fallbackRes.error = pythonDiagnostic.error;
+      if (pythonDiagnostic.diagnostics) fallbackRes.diagnostics = pythonDiagnostic.diagnostics;
+      if (pythonDiagnostic.opencvVersion) fallbackRes.opencvVersion = pythonDiagnostic.opencvVersion;
+    }
     fallbackRes.executionTimeMs = Date.now() - startTime;
     return fallbackRes;
   } catch (err) {

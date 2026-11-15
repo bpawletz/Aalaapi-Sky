@@ -723,6 +723,8 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
 
     # Phase 1: Build per-photo metadata
     photo_meta = []
+    rejected_pitch_count = 0
+    zero_lines_2d_count = 0
     for p in photos:
         telem = p.get("telemetry", p)
         act = telem.get("actual", {}) if isinstance(telem.get("actual"), dict) else {}
@@ -730,10 +732,12 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
                       else (telem.get("gimbalPitch") if telem.get("gimbalPitch") is not None
                             else act.get("gimbalPitch", -60.0)))
         if pitch > -20.0:
+            rejected_pitch_count += 1
             continue
         pid = p.get("photoId") or p.get("filename")
         lines2d = per_photo_lines.get(pid, [])
         if len(lines2d) == 0:
+            zero_lines_2d_count += 1
             continue
 
         lat = telem.get("lat") or act.get("lat")
@@ -773,7 +777,21 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
         })
 
     if not photo_meta:
-        return {"lines": [], "planes": [], "linePlanes": [], "stereoPairsCount": 0}
+        diag = {
+            "totalInputPhotos": len(photos),
+            "validPitchPhotos": 0,
+            "rejectedPitchCount": rejected_pitch_count,
+            "zeroLines2dCount": zero_lines_2d_count,
+            "stereoPairsCount": 0,
+            "clippedByBoundaryCount": 0
+        }
+        if rejected_pitch_count > 0 and zero_lines_2d_count == 0:
+            err_msg = f"0 of {len(photos)} photos met downward gimbal pitch requirement (<= -20 deg; {rejected_pitch_count} were too shallow)."
+        elif zero_lines_2d_count > 0:
+            err_msg = f"No architectural 2D edges detected in {zero_lines_2d_count} downward photos (missing files or low contrast)."
+        else:
+            err_msg = "No valid downward/oblique survey photos found for 3D wireframe triangulation."
+        return {"lines": [], "planes": [], "linePlanes": [], "stereoPairsCount": 0, "error": err_msg, "diagnostics": diag}
 
     # Phase 2: Build stereo pair graph
     stereo_pairs = build_stereo_pair_graph(photo_meta, options)
@@ -781,6 +799,7 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
     raw_3d = []
     line_planes_raw = []
     triangulated_pts = []
+    clipped_by_boundary_count = 0
 
     # Phase 3: True Multi-View Stereo Epipolar Line Triangulation
     # Iterate across valid baseline pairs and triangulate 3D line endpoints
@@ -843,6 +862,7 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
 
                 # Boundary polygon spatial clipping
                 if boundary_poly and not point_in_polygon_xz(mid_x, mid_z, boundary_poly):
+                    clipped_by_boundary_count += 1
                     continue
 
                 # Suppress isolated scattered vertical vegetation/foliage noise
@@ -930,12 +950,30 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
             deduped.append(l)
             deduped_planes.append(list(assigned_pids))
 
+    err_msg = None
+    if not deduped:
+        if len(stereo_pairs) == 0:
+            err_msg = f"Processed {len(photo_meta)} downward photos, but 0 overlapping stereo baseline pairs were found (check waypoint spacing, overlap, and viewing angle <= 80 deg)."
+        elif clipped_by_boundary_count > 0:
+            err_msg = f"Triangulated {clipped_by_boundary_count} 3D segments across {len(stereo_pairs)} stereo pairs, but all fell outside the active Boundary Hull."
+        else:
+            err_msg = f"Evaluated {len(stereo_pairs)} stereo pairs across {len(photo_meta)} photos, but no matching 3D architectural edges converged within {sensitivity}m."
+
     return {
         "lines": deduped,
         "planes": all_extracted_planes,
         "linePlanes": deduped_planes,
         "stereoPairsCount": len(stereo_pairs),
-        "opencvVersion": cv2.__version__ if HAS_OPENCV else None
+        "opencvVersion": cv2.__version__ if HAS_OPENCV else None,
+        "error": err_msg,
+        "diagnostics": {
+            "totalInputPhotos": len(photos),
+            "validPitchPhotos": len(photo_meta),
+            "rejectedPitchCount": rejected_pitch_count,
+            "zeroLines2dCount": zero_lines_2d_count,
+            "stereoPairsCount": len(stereo_pairs),
+            "clippedByBoundaryCount": clipped_by_boundary_count
+        }
     }
 
 
@@ -1029,12 +1067,16 @@ def main():
         line_planes_out = []
         stereo_pairs_count = 0
         opencv_ver = cv2.__version__ if HAS_OPENCV else None
+        err_out = None
+        diag_out = None
         if isinstance(authentic_res, dict):
             authentic_lines = authentic_res.get("lines", [])
             planes_out = authentic_res.get("planes", [])
             line_planes_out = authentic_res.get("linePlanes", [])
             stereo_pairs_count = authentic_res.get("stereoPairsCount", 0)
             opencv_ver = authentic_res.get("opencvVersion", opencv_ver)
+            err_out = authentic_res.get("error")
+            diag_out = authentic_res.get("diagnostics")
         elif isinstance(authentic_res, list):
             authentic_lines = authentic_res
         else:
@@ -1057,7 +1099,9 @@ def main():
             "stereoPairsCount": stereo_pairs_count,
             "opencvVersion": opencv_ver,
             "totalRawLines": total_raw,
-            "totalPhotosProcessed": len(photos)
+            "totalPhotosProcessed": len(photos),
+            "error": None if is_success else (err_out or "Insufficient authentic architectural lines detected in downward survey imagery"),
+            "diagnostics": diag_out
         }
     else:
         out_data = extract_wireframe_from_image(image_path, telemetry=telemetry, options=options, origin=origin, image_data=image_data)

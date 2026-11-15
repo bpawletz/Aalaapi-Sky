@@ -171,13 +171,14 @@ class TileCacheManager {
       return false;
     }
 
-    // NOAA / NWS NEXRAD Radar composites & Active Hazards (WMS layers)
+    // NOAA / NWS NEXRAD Radar composites, Aviation Weather Center live METARs & Active Hazards
     if (lower.includes('opengeo.ncep.noaa.gov') ||
         lower.includes('conus_bref_qcd') ||
         lower.includes('wwa:hazards') ||
         lower.includes('radar.weather.gov') ||
         lower.includes('mesonet.agron.iastate.edu') ||
-        lower.includes('rainviewer.com')) {
+        lower.includes('rainviewer.com') ||
+        lower.includes('aviationweather.gov')) {
       return true;
     }
 

@@ -229,7 +229,7 @@ const CompanionAuth = {
           }
         }
       } catch (_) {}
-      return originalFetch.apply(this, arguments);
+      return init !== undefined ? originalFetch.call(this, input, init) : originalFetch.apply(this, arguments);
     };
   },
 

@@ -874,9 +874,15 @@ const FlightDiagnostics = {
       if (this.wireframeData && typeof this.wireframeData.stereoPairsCount === 'number' && this.wireframeData.stereoPairsCount > 0) {
         pairsBadge.textContent = `${this.wireframeData.stereoPairsCount} Baselines`;
         pairsBadge.style.display = 'inline-block';
+        pairsBadge.style.color = '#38bdf8';
+        pairsBadge.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+        pairsBadge.style.background = 'rgba(56, 189, 248, 0.15)';
       } else {
         pairsBadge.style.display = 'none';
       }
+    }
+    if (typeof this.updateWireframeButtonState === 'function') {
+      this.updateWireframeButtonState();
     }
 
     if (filtered.length === 0) {
@@ -2451,40 +2457,46 @@ const FlightDiagnostics = {
       const flightTagMatch = (flightId || '').match(/(\d{4}-\d{2}-\d{2}_\[\d{2}-\d{2}-\d{2}\])/);
       const flightTag = flightTagMatch ? flightTagMatch[1] : '';
       const flightBase = (flightId || '').replace(/\.txt$/i, '').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const mUuid = flightTag ? `mission_${flightTag}` : (this.currentLoadedMission?.uuid || (flightBase ? `mission_${flightBase}` : ((typeof activeLayerId !== 'undefined' && activeLayerId) || 'layer-1')));
+      const mUuid = flightTag ? `mission_${flightTag}` : (this.currentLoadedMission?.uuid || (flightBase && flightId !== 'active-mission' ? `mission_${flightBase}` : null));
 
-      let manifestUrl = `${apiBase}/api/media/manifest?flight=${encodeURIComponent(flightId || '')}&uuid=${encodeURIComponent(mUuid)}`;
-      if (tStart) {
-        manifestUrl += `&start=${encodeURIComponent(tStart)}&end=${encodeURIComponent(tEnd || tStart)}`;
-      }
-
-      const mRes = await fetch(manifestUrl, {
-        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(2000) : undefined
-      });
-      if (mRes.ok) {
-        const mData = await mRes.json();
-        if (mData && Array.isArray(mData.photos)) {
-          const filtered = this.filterPhotosForCurrentFlight(mData.photos);
-          this.flightPhotos = filtered;
-          this.flightPhotosFlightId = flightId;
-          this.flightManifest = { ...mData, photos: filtered, totalPhotos: filtered.length };
-          activeInspectionManifest = this.flightManifest;
-          if (mData.wireframe && mData.wireframe.success && Array.isArray(mData.wireframe.lines) && mData.wireframe.lines.length > 0 && mData.wireframe.engine !== 'javascript_fallback') {
-            this.wireframeData = mData.wireframe;
-          }
+      // Skip remote archive lookups for active-mission without a persistent UUID
+      if (mUuid) {
+        let manifestUrl = `${apiBase}/api/media/manifest?flight=${encodeURIComponent(flightId || '')}&uuid=${encodeURIComponent(mUuid)}`;
+        if (tStart) {
+          manifestUrl += `&start=${encodeURIComponent(tStart)}&end=${encodeURIComponent(tEnd || tStart)}`;
         }
-      }
-      try {
-        const wfRes = await fetch(`${apiBase}/api/process/wireframe?missionUuid=${encodeURIComponent(mUuid)}`, {
-          signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(1500) : undefined
+
+        let mData = null;
+        const mRes = await fetch(manifestUrl, {
+          signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(2000) : undefined
         });
-        if (wfRes.ok) {
-          const wfData = await wfRes.json();
-          if (wfData && wfData.success && Array.isArray(wfData.lines) && wfData.lines.length > 0 && wfData.engine !== 'javascript_fallback') {
-            this.wireframeData = wfData;
+        if (mRes.ok) {
+          mData = await mRes.json();
+          if (mData && mData.found !== false && Array.isArray(mData.photos)) {
+            const filtered = this.filterPhotosForCurrentFlight(mData.photos);
+            this.flightPhotos = filtered;
+            this.flightPhotosFlightId = flightId;
+            this.flightManifest = { ...mData, photos: filtered, totalPhotos: filtered.length };
+            activeInspectionManifest = this.flightManifest;
+            if (mData.wireframe && mData.wireframe.success && Array.isArray(mData.wireframe.lines) && mData.wireframe.lines.length > 0 && mData.wireframe.engine !== 'javascript_fallback') {
+              this.wireframeData = mData.wireframe;
+            }
           }
         }
-      } catch (_) {}
+        if (!this.wireframeData && (!mData || mData.found !== false)) {
+          try {
+            const wfRes = await fetch(`${apiBase}/api/process/wireframe?missionUuid=${encodeURIComponent(mUuid)}`, {
+              signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(1500) : undefined
+            });
+            if (wfRes.ok) {
+              const wfData = await wfRes.json();
+              if (wfData && wfData.success && Array.isArray(wfData.lines) && wfData.lines.length > 0 && wfData.engine !== 'javascript_fallback') {
+                this.wireframeData = wfData;
+              }
+            }
+          } catch (_) {}
+        }
+      }
     } catch (e) {}
 
     this.updateStatsUI();
@@ -5528,8 +5540,100 @@ const FlightDiagnostics = {
     }, '<span>✅ Saved!</span>', 1500);
   },
 
+  hasPhysicalWireframePhotos() {
+    const manifestPhotos = (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest && Array.isArray(activeInspectionManifest.photos))
+      ? activeInspectionManifest.photos
+      : [];
+    const list = (Array.isArray(this.flightPhotos) && this.flightPhotos.length > 0) ? this.flightPhotos : manifestPhotos;
+    return Array.isArray(list) && list.some(p => p && (p.filePath || p.rawPath || p.previewUrl || p.url || (Array.isArray(p.lines2D) && p.lines2D.length > 0)));
+  },
+
+  getWireframeReadinessReport() {
+    if (typeof evaluateFlightPlanWireframeReadiness !== 'function') return null;
+    const hasPhys = this.hasPhysicalWireframePhotos();
+    if (hasPhys) {
+      const manifestPhotos = (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest && Array.isArray(activeInspectionManifest.photos))
+        ? activeInspectionManifest.photos
+        : [];
+      const list = (Array.isArray(this.flightPhotos) && this.flightPhotos.length > 0) ? this.flightPhotos : manifestPhotos;
+      return evaluateFlightPlanWireframeReadiness(null, list, this.getAssisted3dOptions());
+    }
+    const wps = (Array.isArray(this.plannedWaypoints) && this.plannedWaypoints.length > 0)
+      ? this.plannedWaypoints
+      : ((typeof getActiveMissionWaypoints === 'function') ? getActiveMissionWaypoints() : []);
+    const telemPhotoPts = (this.telemetryData && Array.isArray(this.telemetryData.points))
+      ? this.telemetryData.points.filter(p => p && p.isPhoto)
+      : [];
+    const sourceWps = (wps && wps.length > 0) ? wps : telemPhotoPts;
+    return evaluateFlightPlanWireframeReadiness(sourceWps, null, this.getAssisted3dOptions());
+  },
+
+  updateWireframeButtonState() {
+    if (typeof document === 'undefined') return;
+    const btn = document.getElementById('diag-btn-extract-wireframe');
+    const pairsBadge = document.getElementById('diag-stereo-pairs-badge');
+    const hasPhys = this.hasPhysicalWireframePhotos();
+    const readiness = this.getWireframeReadinessReport();
+
+    if (btn) {
+      if (hasPhys) {
+        btn.innerHTML = '<span>🏗️</span> Project 3D Wireframe';
+        btn.title = 'Run OpenCV 5 edge extraction and project 3D wireframe';
+      } else {
+        btn.innerHTML = '<span>📐</span> Analyze 3D Wireframe Readiness';
+        btn.title = 'Precalculate whether this flight plan produces valid photos & stereo baselines for OpenCV 5 3D wireframe';
+      }
+    }
+
+    if (pairsBadge && (!this.wireframeData || !this.wireframeData.stereoPairsCount) && readiness) {
+      pairsBadge.style.display = 'inline-block';
+      pairsBadge.textContent = `Predicted: ${readiness.stereoPairsCount} Baselines`;
+      if (readiness.status === 'ready') {
+        pairsBadge.style.color = '#34d399';
+        pairsBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+        pairsBadge.style.background = 'rgba(16, 185, 129, 0.14)';
+      } else if (readiness.status === 'marginal') {
+        pairsBadge.style.color = '#fbbf24';
+        pairsBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+        pairsBadge.style.background = 'rgba(245, 158, 11, 0.14)';
+      } else {
+        pairsBadge.style.color = '#f87171';
+        pairsBadge.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+        pairsBadge.style.background = 'rgba(239, 68, 68, 0.14)';
+      }
+      if (readiness.reasons && readiness.reasons.length > 0) {
+        pairsBadge.title = readiness.reasons.join(' ');
+      }
+    }
+  },
+
   async extractWireframeFromCurrentPhotos() {
     const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-extract-wireframe') : null;
+    const hasPhys = this.hasPhysicalWireframePhotos();
+    const readiness = this.getWireframeReadinessReport();
+
+    if (!hasPhys) {
+      if (readiness) {
+        const msg = readiness.status === 'ready'
+          ? `✅ Flight Plan Ready for 3D Wireframe: ${readiness.validPitchPhotos} downward/oblique photos & ${readiness.stereoPairsCount} stereo baselines (avg ${readiness.avgBaselineMeters}m). Fly mission & ingest photos to run OpenCV 5 extraction.`
+          : `⚠️ Flight Plan Not Ready for 3D Wireframe (${readiness.stereoPairsCount} baselines): ${readiness.reasons.join(' ')} ${readiness.recommendations.join(' ')}`;
+        if (typeof showToast === 'function') {
+          showToast(msg, readiness.status === 'ready' ? 'success' : 'warning');
+        } else {
+          alert(msg);
+        }
+        const info = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-selected-info') : null;
+        if (info) {
+          info.textContent = msg;
+        }
+      } else {
+        const noPhotoMsg = 'No physical drone photos ingested yet. Fly mission and ingest photos from SD card / RC 2 to run OpenCV 5 3D wireframe extraction.';
+        if (typeof showToast === 'function') showToast(noPhotoMsg, 'warning');
+        else alert(noPhotoMsg);
+      }
+      return;
+    }
+
     if (btn) {
       btn.disabled = true;
       btn.setAttribute('aria-busy', 'true');
@@ -5547,6 +5651,10 @@ const FlightDiagnostics = {
         || 'default-mission';
 
       const assistedOpts = this.getAssisted3dOptions();
+      const photosToProcess = (this.flightPhotos && this.flightPhotos.length > 0)
+        ? this.flightPhotos
+        : ((typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest && Array.isArray(activeInspectionManifest.photos)) ? activeInspectionManifest.photos : []);
+
       const res = await fetch(`${apiBase}/api/process/wireframe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -5554,7 +5662,7 @@ const FlightDiagnostics = {
           missionUuid,
           flightId: this.selectedFlightId,
           options: assistedOpts,
-          photos: (this.flightPhotos && this.flightPhotos.length > 0) ? this.flightPhotos : []
+          photos: photosToProcess
         })
       });
 
@@ -5581,7 +5689,7 @@ const FlightDiagnostics = {
         btn.disabled = false;
         btn.removeAttribute('aria-busy');
         btn.classList.remove('diag-btn-working');
-        btn.innerHTML = '<span>🏗️</span> Project 3D Wireframe';
+        this.updateWireframeButtonState();
       }
     }
   },
