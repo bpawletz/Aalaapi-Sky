@@ -470,13 +470,23 @@ export function initUniversalModalWindowControls() {
       grip.title = 'Drag to move window';
       grip.setAttribute('aria-hidden', 'true');
       grip.innerHTML = '&#x22EE;&#x22EE;';
-      header.insertBefore(grip, header.firstChild);
+      const diagTitle = header.querySelector('.diag-title');
+      if (diagTitle) {
+        diagTitle.insertBefore(grip, diagTitle.firstChild);
+      } else {
+        header.insertBefore(grip, header.firstChild);
+      }
     }
 
     // 2. Ensure Consistent Right Window Control Cluster (.modal-window-controls)
     if (!header.querySelector('.modal-window-controls')) {
       const controls = document.createElement('div');
       controls.className = 'modal-window-controls';
+      if (header.classList.contains('diag-modal-header')) {
+        controls.style.gridArea = 'close';
+        controls.style.justifySelf = 'end';
+        controls.style.alignSelf = 'center';
+      }
 
       // Find existing close button in header if present
       let closeBtn = header.querySelector('.close-btn, .diag-close-btn, button[aria-label^="Close"], button[aria-label^="close"], #close-3d-btn');

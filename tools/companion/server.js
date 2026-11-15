@@ -4723,11 +4723,27 @@ const handleHttpRequest = async (req, res) => {
           const stats = fs.statSync(path.join(LATEST_DIR, f));
           const match = f.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
           const dateStr = match ? `${match[1]} ${match[2].replace(/-/g, ':')}` : 'Flight';
+          let photoCount = 0;
+          if (diagDb && diagDb.db) {
+            try {
+              const row = diagDb.db.prepare(`
+                SELECT
+                  COALESCE(NULLIF((SELECT COUNT(*) FROM photo_records pr WHERE pr.mission_uuid = md.uuid), 0), md.photo_count, 0) AS count
+                FROM mission_diagnostics md
+                WHERE md.actual_flight_file = ?
+                ORDER BY md.id DESC LIMIT 1
+              `).get(f);
+              if (row && typeof row.count === 'number') {
+                photoCount = row.count;
+              }
+            } catch (_) {}
+          }
           return {
             filename: f,
             label: `Flight ${files.length - idx} — ${dateStr} (${Math.round(stats.size / 1024)} KB)`,
             date: dateStr,
-            size: stats.size
+            size: stats.size,
+            photoCount
           };
         });
         logInfo('[FLIGHTS API]', `Served ${flightList.length} flight record(s) to client`);

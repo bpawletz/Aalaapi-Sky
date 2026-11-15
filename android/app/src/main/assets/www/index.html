@@ -5260,9 +5260,10 @@ body.modal-drag-active {
    ========================================================================== */
 
 .diag-modal-card {
-  max-width: 1280px;
-  width: 95vw;
-  height: 90dvh;
+  max-width: 96vw;
+  width: 96vw;
+  height: 94dvh;
+  max-height: 94dvh;
   display: flex;
   flex-direction: column;
   padding: 0 !important;
@@ -5461,6 +5462,16 @@ body.modal-drag-active {
   border-color: #34d399 !important;
 }
 
+.diag-modal-header .modal-window-controls {
+  grid-area: close;
+  justify-self: end;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 5;
+}
+
 .diag-close-btn {
   grid-area: close;
   background: none;
@@ -5477,7 +5488,6 @@ body.modal-drag-active {
 .diag-modal-header .modal-collapse-btn {
   grid-area: close;
   justify-self: end;
-  margin-right: 28px;
   align-self: center;
 }
 
@@ -8811,13 +8821,20 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 }
 
 .modal.modal-maximized,
-.diag-modal-card.modal-maximized,
 .action-flow-card.modal-maximized,
 .photo-inspector-card.modal-maximized {
   width: 96vw !important;
   max-width: 96vw !important;
   height: 94vh !important;
   max-height: 94vh !important;
+  transform: translate(0px, 0px) !important;
+}
+
+.diag-modal-card.modal-maximized {
+  width: 99vw !important;
+  max-width: 99vw !important;
+  height: 98dvh !important;
+  max-height: 98dvh !important;
   transform: translate(0px, 0px) !important;
 }
 
@@ -9411,7 +9428,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.244.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.245.0</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -17167,7 +17184,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.244.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.245.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17358,6 +17375,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                                 <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.245.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Top-Right Close Button &amp; Expanded Flight Diagnostics (Closes #296):</strong> Fixed the Flight Diagnostics modal header layout so window controls and the close (<code>&times;</code>) button sit cleanly at the top-right corner, and expanded default modal dimensions to <code>96vw &times; 94dvh</code> (<code>99vw &times; 98dvh</code> maximized) for fuller screen coverage.</li>
+                  <li><strong>DB Photo Counts in Flight Lists (Closes #296):</strong> Flight entries in both the Flight Diagnostics selector and Section 0 Historical Flight DB now display the number of correlated/recorded photos stored in SQLite.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.244.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -22198,6 +22222,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           </div>
           <div class="diag-header-titles">
             <h3 class="diag-title">
+              <span class="modal-drag-grip" title="Drag to move window" aria-hidden="true">&#x22EE;&#x22EE;</span>
               Flight Diagnostics &amp; Telemetry Center
             </h3>
             <div id="diag-flight-meta" class="diag-flight-meta">
@@ -31550,13 +31575,23 @@ function initUniversalModalWindowControls() {
       grip.title = 'Drag to move window';
       grip.setAttribute('aria-hidden', 'true');
       grip.innerHTML = '&#x22EE;&#x22EE;';
-      header.insertBefore(grip, header.firstChild);
+      const diagTitle = header.querySelector('.diag-title');
+      if (diagTitle) {
+        diagTitle.insertBefore(grip, diagTitle.firstChild);
+      } else {
+        header.insertBefore(grip, header.firstChild);
+      }
     }
 
     // 2. Ensure Consistent Right Window Control Cluster (.modal-window-controls)
     if (!header.querySelector('.modal-window-controls')) {
       const controls = document.createElement('div');
       controls.className = 'modal-window-controls';
+      if (header.classList.contains('diag-modal-header')) {
+        controls.style.gridArea = 'close';
+        controls.style.justifySelf = 'end';
+        controls.style.alignSelf = 'center';
+      }
 
       // Find existing close button in header if present
       let closeBtn = header.querySelector('.close-btn, .diag-close-btn, button[aria-label^="Close"], button[aria-label^="close"], #close-3d-btn');
@@ -46083,6 +46118,8 @@ async function refreshMissionDbList() {
           const data = await res.json();
           if (data.success && Array.isArray(data.flights)) {
             data.flights.forEach(f => {
+              const photoCount = typeof f.photoCount === 'number' ? f.photoCount : 0;
+              const photoText = photoCount > 0 ? ` • 📸 ${photoCount} Photos` : '';
               items.push({
                 id: f.filename,
                 type: 'rc2-recorded',
@@ -46093,7 +46130,8 @@ async function refreshMissionDbList() {
                 statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
                 badgeColor: '#34d399',
                 badgeBg: 'rgba(16, 185, 129, 0.15)',
-                wpsText: f.isDecrypted ? 'Telemetry Ready' : 'Raw Record'
+                photoCount,
+                wpsText: `${f.isDecrypted ? 'Telemetry Ready' : 'Raw Record'}${photoText}`
               });
             });
           }
@@ -46114,6 +46152,7 @@ async function refreshMissionDbList() {
             dataDiag.missions.forEach(m => {
               const ident = m.archive_id || m.id || m.uuid;
               const isBad = (m.is_valid === 0 || m.execution_status === 'suspended' || m.execution_status === 'failed');
+              const photoCount = typeof m.photo_count === 'number' ? m.photo_count : 0;
               items.push({
                 id: `diag:${ident}`,
                 type: 'sqlite-diagnostic',
@@ -46123,7 +46162,8 @@ async function refreshMissionDbList() {
                 statusText: isBad ? 'Audit Alert ⚠️' : 'Diagnostic Archive',
                 badgeColor: isBad ? '#f87171' : '#38bdf8',
                 badgeBg: isBad ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-                wpsText: `${m.waypoint_count || 0} Waypoints`
+                photoCount,
+                wpsText: `${m.waypoint_count || 0} Waypoints • 📸 ${photoCount} Photos`
               });
             });
           }
@@ -93504,7 +93544,9 @@ const FlightDiagnostics = {
           opt.value = `diag:${identifier}`;
           const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
           const errCount = m.validation_errors ? m.validation_errors.length : (m.validation_errors_count || 0);
-          opt.textContent = `❌ [FAIL: ${errCount} Issues] ${m.filename || m.uuid} (${m.waypoint_count || 0} wps • ${dateClean})`;
+          const photoCount = typeof m.photo_count === 'number' ? m.photo_count : 0;
+          const photoText = ` • 📸 ${photoCount} photos`;
+          opt.textContent = `❌ [FAIL: ${errCount} Issues] ${m.filename || m.uuid} (${m.waypoint_count || 0} wps${photoText} • ${dateClean})`;
           groupBad.appendChild(opt);
         });
         flightSel.appendChild(groupBad);
@@ -93519,7 +93561,9 @@ const FlightDiagnostics = {
           const identifier = m.archive_id || m.id || m.uuid;
           opt.value = `diag:${identifier}`;
           const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
-          opt.textContent = `💾 ${m.filename || m.uuid} (${m.waypoint_count || 0} wps • ${dateClean})`;
+          const photoCount = typeof m.photo_count === 'number' ? m.photo_count : 0;
+          const photoText = ` • 📸 ${photoCount} photos`;
+          opt.textContent = `💾 ${m.filename || m.uuid} (${m.waypoint_count || 0} wps${photoText} • ${dateClean})`;
           groupSaved.appendChild(opt);
         });
         flightSel.appendChild(groupSaved);
@@ -93532,7 +93576,8 @@ const FlightDiagnostics = {
         rc2Flights.forEach(f => {
           const opt = document.createElement('option');
           opt.value = f.filename;
-          opt.textContent = `🛰️ ${f.label}`;
+          const photoSuffix = (typeof f.photoCount === 'number' && f.photoCount > 0) ? ` • 📸 ${f.photoCount} photos` : '';
+          opt.textContent = `🛰️ ${f.label}${photoSuffix}`;
           groupRc2.appendChild(opt);
         });
         flightSel.appendChild(groupRc2);

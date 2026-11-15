@@ -2129,7 +2129,9 @@ const FlightDiagnostics = {
           opt.value = `diag:${identifier}`;
           const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
           const errCount = m.validation_errors ? m.validation_errors.length : (m.validation_errors_count || 0);
-          opt.textContent = `❌ [FAIL: ${errCount} Issues] ${m.filename || m.uuid} (${m.waypoint_count || 0} wps • ${dateClean})`;
+          const photoCount = typeof m.photo_count === 'number' ? m.photo_count : 0;
+          const photoText = ` • 📸 ${photoCount} photos`;
+          opt.textContent = `❌ [FAIL: ${errCount} Issues] ${m.filename || m.uuid} (${m.waypoint_count || 0} wps${photoText} • ${dateClean})`;
           groupBad.appendChild(opt);
         });
         flightSel.appendChild(groupBad);
@@ -2144,7 +2146,9 @@ const FlightDiagnostics = {
           const identifier = m.archive_id || m.id || m.uuid;
           opt.value = `diag:${identifier}`;
           const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
-          opt.textContent = `💾 ${m.filename || m.uuid} (${m.waypoint_count || 0} wps • ${dateClean})`;
+          const photoCount = typeof m.photo_count === 'number' ? m.photo_count : 0;
+          const photoText = ` • 📸 ${photoCount} photos`;
+          opt.textContent = `💾 ${m.filename || m.uuid} (${m.waypoint_count || 0} wps${photoText} • ${dateClean})`;
           groupSaved.appendChild(opt);
         });
         flightSel.appendChild(groupSaved);
@@ -2157,7 +2161,8 @@ const FlightDiagnostics = {
         rc2Flights.forEach(f => {
           const opt = document.createElement('option');
           opt.value = f.filename;
-          opt.textContent = `🛰️ ${f.label}`;
+          const photoSuffix = (typeof f.photoCount === 'number' && f.photoCount > 0) ? ` • 📸 ${f.photoCount} photos` : '';
+          opt.textContent = `🛰️ ${f.label}${photoSuffix}`;
           groupRc2.appendChild(opt);
         });
         flightSel.appendChild(groupRc2);

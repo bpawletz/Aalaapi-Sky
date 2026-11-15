@@ -2800,6 +2800,8 @@ async function refreshMissionDbList() {
           const data = await res.json();
           if (data.success && Array.isArray(data.flights)) {
             data.flights.forEach(f => {
+              const photoCount = typeof f.photoCount === 'number' ? f.photoCount : 0;
+              const photoText = photoCount > 0 ? ` • 📸 ${photoCount} Photos` : '';
               items.push({
                 id: f.filename,
                 type: 'rc2-recorded',
@@ -2810,7 +2812,8 @@ async function refreshMissionDbList() {
                 statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
                 badgeColor: '#34d399',
                 badgeBg: 'rgba(16, 185, 129, 0.15)',
-                wpsText: f.isDecrypted ? 'Telemetry Ready' : 'Raw Record'
+                photoCount,
+                wpsText: `${f.isDecrypted ? 'Telemetry Ready' : 'Raw Record'}${photoText}`
               });
             });
           }
@@ -2831,6 +2834,7 @@ async function refreshMissionDbList() {
             dataDiag.missions.forEach(m => {
               const ident = m.archive_id || m.id || m.uuid;
               const isBad = (m.is_valid === 0 || m.execution_status === 'suspended' || m.execution_status === 'failed');
+              const photoCount = typeof m.photo_count === 'number' ? m.photo_count : 0;
               items.push({
                 id: `diag:${ident}`,
                 type: 'sqlite-diagnostic',
@@ -2840,7 +2844,8 @@ async function refreshMissionDbList() {
                 statusText: isBad ? 'Audit Alert ⚠️' : 'Diagnostic Archive',
                 badgeColor: isBad ? '#f87171' : '#38bdf8',
                 badgeBg: isBad ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-                wpsText: `${m.waypoint_count || 0} Waypoints`
+                photoCount,
+                wpsText: `${m.waypoint_count || 0} Waypoints • 📸 ${photoCount} Photos`
               });
             });
           }

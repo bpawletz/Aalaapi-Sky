@@ -5243,9 +5243,10 @@ body.modal-drag-active {
    ========================================================================== */
 
 .diag-modal-card {
-  max-width: 1280px;
-  width: 95vw;
-  height: 90dvh;
+  max-width: 96vw;
+  width: 96vw;
+  height: 94dvh;
+  max-height: 94dvh;
   display: flex;
   flex-direction: column;
   padding: 0 !important;
@@ -5444,6 +5445,16 @@ body.modal-drag-active {
   border-color: #34d399 !important;
 }
 
+.diag-modal-header .modal-window-controls {
+  grid-area: close;
+  justify-self: end;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 5;
+}
+
 .diag-close-btn {
   grid-area: close;
   background: none;
@@ -5460,7 +5471,6 @@ body.modal-drag-active {
 .diag-modal-header .modal-collapse-btn {
   grid-area: close;
   justify-self: end;
-  margin-right: 28px;
   align-self: center;
 }
 
@@ -8794,13 +8804,20 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 }
 
 .modal.modal-maximized,
-.diag-modal-card.modal-maximized,
 .action-flow-card.modal-maximized,
 .photo-inspector-card.modal-maximized {
   width: 96vw !important;
   max-width: 96vw !important;
   height: 94vh !important;
   max-height: 94vh !important;
+  transform: translate(0px, 0px) !important;
+}
+
+.diag-modal-card.modal-maximized {
+  width: 99vw !important;
+  max-width: 99vw !important;
+  height: 98dvh !important;
+  max-height: 98dvh !important;
   transform: translate(0px, 0px) !important;
 }
 
