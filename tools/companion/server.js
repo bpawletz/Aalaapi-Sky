@@ -4972,6 +4972,7 @@ const handleHttpRequest = async (req, res) => {
 
           // 1. Check if flightId matches a saved mission in SQLite by date or filename
           let matchedMissionPayload = null;
+          let matchedRow = null;
           if (flightId && diagDb && diagDb.db) {
             const dateMatch = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})/);
             if (dateMatch) {
@@ -4982,7 +4983,6 @@ const handleHttpRequest = async (req, res) => {
                 );
                 const candidates = stmt.all(dateStr + '%');
                 if (candidates && candidates.length > 0) {
-                  let matchedRow = null;
                   let bestScore = Infinity;
                   const explicitRow = candidates.find(c => c.actual_flight_file === flightId);
 
@@ -5217,8 +5217,7 @@ const handleHttpRequest = async (req, res) => {
             }
           }
 
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
+          const responseBody = JSON.stringify({
             success: true,
             telemetry,
             environmentalReplay: environmentalReplay || telemetry?.environmentalReplay || null,
@@ -5229,11 +5228,17 @@ const handleHttpRequest = async (req, res) => {
             djiDecryptError,
             matchedMissionPattern: matchedMissionPayload?.flight_pattern || matchedRow?.flight_pattern || null,
             mission: matchedMissionPayload
-          }));
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(responseBody);
         } catch (e) {
           logError('[TELEMETRY ERROR]', e.message);
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: e.message }));
+          if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: e.message }));
+          } else if (!res.writableEnded) {
+            res.end();
+          }
         }
       });
       return;

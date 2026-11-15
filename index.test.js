@@ -45303,8 +45303,9 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
       const appGradle = fs.readFileSync(path.join(__dirname, 'android', 'app', 'build.gradle.kts'), 'utf8');
       const m = appGradle.match(/versionCode = (\d+)/);
-      assert.ok(m && parseInt(m[1]) >= 124391, 'android/app/build.gradle.kts versionCode must be >= 124391');
-      assert.ok(appGradle.includes('versionName = "1.243.10"'), 'android/app/build.gradle.kts versionName must be 1.243.10');
+      assert.ok(m && parseInt(m[1], 10) >= 124391, 'android/app/build.gradle.kts versionCode must be >= 124391');
+      const verMatch = appGradle.match(/versionName = "([^"]+)"/);
+      assert.ok(verMatch && semverGte(verMatch[1], '1.243.10'), 'android/app/build.gradle.kts versionName must be >= 1.243.10');
     });
 
     test('processAirspaceData preserves cloud aircraft when receiving local SDR / Android telemetry', () => {
@@ -45545,8 +45546,10 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assertVersionConsistency('1.243.10');
       const gradlePath = path.join(__dirname, 'android', 'app', 'build.gradle.kts');
       const gradle = fs.readFileSync(gradlePath, 'utf8');
-      assert.ok(gradle.includes('versionName = "1.243.10"'), 'build.gradle.kts versionName must be 1.243.10');
-      assert.ok(gradle.includes('versionCode = 1243100'), 'build.gradle.kts versionCode must be 1243100');
+      const verMatch = gradle.match(/versionName = "([^"]+)"/);
+      assert.ok(verMatch && semverGte(verMatch[1], '1.243.10'), 'build.gradle.kts versionName must be >= 1.243.10');
+      const codeMatch = gradle.match(/versionCode = (\d+)/);
+      assert.ok(codeMatch && parseInt(codeMatch[1], 10) >= 1243100, 'build.gradle.kts versionCode must be >= 1243100');
     });
 
     test('AGENTS.md Section 12 codifies ToS anti-abuse rules, zero public proxying, and native binary provenance', () => {

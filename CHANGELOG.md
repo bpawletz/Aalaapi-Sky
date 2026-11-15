@@ -1,3 +1,25 @@
+## [1.245.1] - 2026-11-15
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Companion Server Telemetry Crash Fix (Closes #295)**:
+  - Fixed a Companion server crash (`ERR_HTTP_HEADERS_SENT`) in `POST /api/flight-telemetry` when resolving synthetic flight trajectories or flight records without a matching archived mission in SQLite.
+- **3D Wireframe Single-Photo Fallback & HTTPS Certificate Reliability (Closes #297)**:
+  - Restored authentic single-photo nadir-distance unprojection fallback in `wireframe_engine.js` when zero stereo pairs are available, while keeping Multi-View Stereo (MVS) triangulation as the primary path for overlapping photo sets.
+  - Eliminated intermittent `ERR_OSSL_ASN1_ILLEGAL_PADDING` failures when generating self-signed HTTPS certificates on Node.js 24 / OpenSSL 3.x.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/server.js` & `tools/companion/server_telemetry.test.js`**:
+  - Hoisted `let matchedRow = null;` to the `/api/flight-telemetry` handler scope alongside `matchedMissionPayload`, serialized the JSON response body before calling `res.writeHead(200, ...)`, and guarded the `catch (e)` error handler with `if (!res.headersSent)`.
+  - Added HTTP regression tests covering `/api/flight-telemetry` with omitted `flightId`, non-matching `flightId`, and malformed JSON payloads.
+- **`tools/companion/wireframe_engine.js`**:
+  - Added single-photo `javascript_authentic_unprojection` fallback with `planes` and index-aligned `linePlanes` generation inside `extractWireframeJsFallback` when `stereoPairs.length === 0` and `>= 15` authentic 2D lines are unprojected.
+- **`tools/companion/tls_cert.js` & `tools/companion/tls_cert.test.js`**:
+  - Enforced non-zero leading byte (`(serialBytes[0] & 0x7f) | 0x01`) for ASN.1 DER `INTEGER` certificate serial numbers and added a 50-certificate `tls.createSecureContext` stress test.
+- **`index.test.js`**:
+  - Updated Issue #291 and #292 Gradle version checks to use `semverGte(..., '1.243.10')` and `versionCode >= 1243100` instead of hardcoded `1.243.10` string literals.
+
 ## [1.245.0] - 2026-11-15
 
 Restored the top-right close button in the Flight Diagnostics modal, expanded default modal dimensions to fill more of the screen, and added database photo counts across flight selection lists.
