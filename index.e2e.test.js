@@ -13750,5 +13750,95 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       assert.strictEqual(result.success, true, `Issue #286 RF signal meter E2E verification failed: ${JSON.stringify(result)}`);
     });
+
+    test('E2E: Flight Diagnostics top-right close button, expanded viewport coverage, and DB photo counts in flight selector (v1.245.0, Issue #296)', async () => {
+      try {
+        for (const vp of [{ width: 1280, height: 800 }, { width: 768, height: 800 }, { width: 390, height: 800 }]) {
+          await page.setViewportSize(vp);
+          await page.evaluate(() => {
+            if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+              FlightDiagnostics.open();
+            }
+          });
+          await page.waitForTimeout(500);
+
+          const metrics = await page.evaluate(() => {
+            const card = document.getElementById('flight-diagnostics-card');
+            const closeBtn = document.getElementById('diag-close-btn');
+            const cardRect = card.getBoundingClientRect();
+            const closeRect = closeBtn.getBoundingClientRect();
+            return {
+              width: window.innerWidth,
+              height: window.innerHeight,
+              cardW: card.offsetWidth,
+              cardH: card.offsetHeight,
+              closeTop: closeRect.top,
+              closeRight: closeRect.right,
+              closeW: closeRect.width,
+              closeH: closeRect.height,
+              cardTop: cardRect.top,
+              cardRight: cardRect.right
+            };
+          });
+
+          assert.ok(metrics.closeW > 0 && metrics.closeH > 0, `Close button must have non-zero size at ${vp.width}px`);
+          assert.ok(metrics.closeRight >= metrics.cardRight - 60, `Close button must be at top-right of card at ${vp.width}px (closeRight=${metrics.closeRight}, cardRight=${metrics.cardRight})`);
+          assert.ok(metrics.closeTop <= metrics.cardTop + 60, `Close button must be at top of card at ${vp.width}px (closeTop=${metrics.closeTop}, cardTop=${metrics.cardTop})`);
+
+          if (vp.width === 1280) {
+            assert.ok(metrics.cardW >= vp.width * 0.94, `Card width (${metrics.cardW}) must fill >= 94% of viewport (${vp.width})`);
+            assert.ok(metrics.cardH >= vp.height * 0.90, `Card height (${metrics.cardH}) must fill >= 90% of viewport (${vp.height})`);
+          }
+
+          await page.click('#diag-close-btn');
+          await page.waitForTimeout(200);
+          const isClosed = await page.evaluate(() => document.getElementById('flight-diagnostics-modal').classList.contains('hidden'));
+          assert.strictEqual(isClosed, true, `Clicking #diag-close-btn must close modal at ${vp.width}px`);
+        }
+
+        // Verify #diag-flight-selector displays DB photo counts when populated
+        await page.setViewportSize({ width: 1280, height: 800 });
+        const photoCountRendered = await page.evaluate(async () => {
+          const origFetch = window.fetch;
+          window.fetch = async (url) => {
+            if (String(url).includes('/api/flights')) {
+              return {
+                ok: true,
+                json: async () => ({
+                  success: true,
+                  flights: [{ filename: 'FlightRecord_2026-11-15_[10-00-00].txt', label: 'Flight 1 — 2026-11-15 10:00:00 (120 KB)', photoCount: 19 }]
+                })
+              };
+            }
+            if (String(url).includes('/api/diagnostics/history')) {
+              return {
+                ok: true,
+                json: async () => ({
+                  success: true,
+                  missions: [{ archive_id: 'a1', uuid: 'u1', filename: 'survey_test.kmz', waypoint_count: 24, photo_count: 24, created_at: '2026-11-15T10:00:00Z', is_valid: 1 }]
+                })
+              };
+            }
+            return origFetch.apply(window, arguments);
+          };
+          try {
+            await FlightDiagnostics.refreshFlightList();
+            const sel = document.getElementById('diag-flight-selector');
+            const texts = Array.from(sel.options).map(o => o.textContent);
+            return {
+              hasMissionPhotos: texts.some(t => t.includes('survey_test.kmz') && t.includes('24 photos')),
+              hasRc2Photos: texts.some(t => t.includes('Flight 1') && t.includes('19 photos'))
+            };
+          } finally {
+            window.fetch = origFetch;
+          }
+        });
+
+        assert.strictEqual(photoCountRendered.hasMissionPhotos, true, 'SQLite mission option must display DB photo count');
+        assert.strictEqual(photoCountRendered.hasRc2Photos, true, 'RC 2 flight option must display correlated DB photo count');
+      } finally {
+        await page.setViewportSize({ width: 1280, height: 720 });
+      }
+    });
   });
 });

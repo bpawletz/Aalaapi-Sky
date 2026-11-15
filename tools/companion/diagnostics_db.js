@@ -459,13 +459,16 @@ class DiagnosticsDatabase {
     try {
       const stmt = this.db.prepare(`
         SELECT
-          id, archive_id, uuid, filename, created_at, flight_pattern, altitude, speed, gimbal_pitch,
-          waypoint_count, photo_count, total_distance, estimated_duration,
-          user_agent_raw, user_agent_platform, has_actual_flight, actual_flight_file,
-          is_valid, validation_rules_passed, validation_errors_count,
-          validation_errors_json, execution_status, execution_error
-        FROM mission_diagnostics
-        ORDER BY id DESC
+          md.id, md.archive_id, md.uuid, md.filename, md.created_at, md.flight_pattern, md.altitude, md.speed, md.gimbal_pitch,
+          md.waypoint_count,
+          COALESCE(NULLIF((SELECT COUNT(*) FROM photo_records pr WHERE pr.mission_uuid = md.uuid), 0), md.photo_count, 0) AS photo_count,
+          (SELECT COUNT(*) FROM photo_records pr WHERE pr.mission_uuid = md.uuid) AS db_photo_count,
+          md.total_distance, md.estimated_duration,
+          md.user_agent_raw, md.user_agent_platform, md.has_actual_flight, md.actual_flight_file,
+          md.is_valid, md.validation_rules_passed, md.validation_errors_count,
+          md.validation_errors_json, md.execution_status, md.execution_error
+        FROM mission_diagnostics md
+        ORDER BY md.id DESC
         LIMIT ? OFFSET ?
       `);
       return stmt.all(limit, offset).map(r => ({
@@ -484,13 +487,16 @@ class DiagnosticsDatabase {
     try {
       const stmt = this.db.prepare(`
         SELECT
-          id, archive_id, uuid, filename, created_at, flight_pattern, altitude, speed, gimbal_pitch,
-          waypoint_count, photo_count, total_distance, estimated_duration,
-          is_valid, validation_rules_passed, validation_errors_count,
-          validation_errors_json, execution_status, execution_error
-        FROM mission_diagnostics
-        WHERE is_valid = 0 OR execution_status = 'suspended' OR execution_status = 'failed'
-        ORDER BY id DESC
+          md.id, md.archive_id, md.uuid, md.filename, md.created_at, md.flight_pattern, md.altitude, md.speed, md.gimbal_pitch,
+          md.waypoint_count,
+          COALESCE(NULLIF((SELECT COUNT(*) FROM photo_records pr WHERE pr.mission_uuid = md.uuid), 0), md.photo_count, 0) AS photo_count,
+          (SELECT COUNT(*) FROM photo_records pr WHERE pr.mission_uuid = md.uuid) AS db_photo_count,
+          md.total_distance, md.estimated_duration,
+          md.is_valid, md.validation_rules_passed, md.validation_errors_count,
+          md.validation_errors_json, md.execution_status, md.execution_error
+        FROM mission_diagnostics md
+        WHERE md.is_valid = 0 OR md.execution_status = 'suspended' OR md.execution_status = 'failed'
+        ORDER BY md.id DESC
         LIMIT ? OFFSET ?
       `);
       return stmt.all(limit, offset).map(r => ({

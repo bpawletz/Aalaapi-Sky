@@ -45798,6 +45798,100 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('Flight Diagnostics Close Button, Screen Expansion & DB Photo Counts (v1.245.0, Issue #296)', () => {
+    test('DiagnosticsDatabase getHistory and getBadMissions compute photo_count from photo_records with mission_diagnostics fallback', () => {
+      const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db');
+      const os = require('os');
+      const tmpDb = path.join(os.tmpdir(), `aalaapi_test_diag_photos_${Date.now()}.db`);
+      const db = new DiagnosticsDatabase(tmpDb);
+
+      try {
+        // Save a valid mission with planned photo_count = 12 and 0 ingested photo_records
+        db.saveDiagnostic({
+          archiveId: 'arch-planned-only',
+          uuid: 'uuid-planned-only',
+          filename: 'planned_only.kmz',
+          waypointCount: 12,
+          photoCount: 12,
+          isValid: true
+        });
+
+        // Save a mission with planned photo_count = 5, then ingest 3 actual photo_records
+        db.saveDiagnostic({
+          archiveId: 'arch-with-photos',
+          uuid: 'uuid-with-photos',
+          filename: 'with_photos.kmz',
+          waypointCount: 5,
+          photoCount: 5,
+          isValid: true
+        });
+        db.savePhotoRecords('uuid-with-photos', [
+          { photoId: 'p1', filename: 'DJI_0001.JPG', waypointIndex: 0 },
+          { photoId: 'p2', filename: 'DJI_0002.JPG', waypointIndex: 1 },
+          { photoId: 'p3', filename: 'DJI_0003.JPG', waypointIndex: 2 }
+        ]);
+
+        // Save a bad mission with 2 ingested photo_records
+        db.saveDiagnostic({
+          archiveId: 'arch-bad-photos',
+          uuid: 'uuid-bad-photos',
+          filename: 'bad_with_photos.kmz',
+          waypointCount: 4,
+          photoCount: 4,
+          isValid: false,
+          validationErrors: ['Test error']
+        });
+        db.savePhotoRecords('uuid-bad-photos', [
+          { photoId: 'bp1', filename: 'DJI_0010.JPG', waypointIndex: 0 },
+          { photoId: 'bp2', filename: 'DJI_0011.JPG', waypointIndex: 1 }
+        ]);
+
+        const history = db.getHistory(10, 0);
+        const plannedRow = history.find(m => m.uuid === 'uuid-planned-only');
+        const withPhotosRow = history.find(m => m.uuid === 'uuid-with-photos');
+        assert.ok(plannedRow, 'Planned mission must be in history');
+        assert.strictEqual(plannedRow.photo_count, 12, 'Should fall back to mission_diagnostics.photo_count when photo_records is empty');
+        assert.strictEqual(plannedRow.db_photo_count, 0, 'db_photo_count should be 0');
+
+        assert.ok(withPhotosRow, 'Mission with ingested photos must be in history');
+        assert.strictEqual(withPhotosRow.photo_count, 3, 'Should prefer actual photo_records count (3) over planned count');
+        assert.strictEqual(withPhotosRow.db_photo_count, 3, 'db_photo_count should be 3');
+
+        const bad = db.getBadMissions(10, 0);
+        const badRow = bad.find(m => m.uuid === 'uuid-bad-photos');
+        assert.ok(badRow, 'Bad mission must be in getBadMissions');
+        assert.strictEqual(badRow.photo_count, 2, 'Bad mission should reflect ingested photo_records count (2)');
+      } finally {
+        if (db.db) {
+          try { db.db.close(); } catch (_) {}
+        }
+        try { fs.unlinkSync(tmpDb); } catch (_) {}
+      }
+    });
+
+    test('CSS, HTML template, and ModalDragManager pin Flight Diagnostics controls to top-right and expand modal dimensions', () => {
+      const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+      assert.ok(css.includes('width: 96vw;') && css.includes('height: 94dvh;'), 'index.css .diag-modal-card must expand to 96vw x 94dvh');
+      assert.ok(css.includes('.diag-modal-header .modal-window-controls'), 'index.css must style .diag-modal-header .modal-window-controls with grid-area: close');
+
+      const tpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const titleMatch = tpl.match(/<h3 class="diag-title">[\s\S]*?<\/h3>/);
+      assert.ok(titleMatch && titleMatch[0].includes('modal-drag-grip'), 'index_template.html must nest .modal-drag-grip inside .diag-title');
+
+      const dragMgr = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'ModalDragManager.js'), 'utf8');
+      assert.ok(dragMgr.includes("header.classList.contains('diag-modal-header')"), 'ModalDragManager must assign gridArea: close for diag-modal-header');
+    });
+
+    test('DigitalTwin.js and SidebarManager.js include photo counts in flight list formatting', () => {
+      const dt = fs.readFileSync(path.join(__dirname, 'src', '3d', 'DigitalTwin.js'), 'utf8');
+      assert.ok(dt.includes('photo_count') && dt.includes('photos'), 'DigitalTwin.js refreshFlightList must format photo counts');
+
+      const sm = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'SidebarManager.js'), 'utf8');
+      assert.ok(sm.includes('photoCount') && sm.includes('Photos'), 'SidebarManager.js refreshMissionDbList must format photo counts');
+    });
+  });
+
 });
 });
+
 

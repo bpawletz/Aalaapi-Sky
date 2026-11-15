@@ -1,3 +1,19 @@
+## [1.245.0] - 2026-11-15
+
+Restored the top-right close button in the Flight Diagnostics modal, expanded default modal dimensions to fill more of the screen, and added database photo counts across flight selection lists.
+
+### Added | Changed | Fixed
+
+#### Pilot & Operational Features
+- **Top-Right Close Button & Window Controls Alignment (Closes #296)**: Fixed the Flight Diagnostics modal header layout so the close (`✕`), minimize, and maximize buttons sit cleanly in the top-right corner across desktop, tablet, and mobile viewports.
+- **Expanded Flight Diagnostics Screen Coverage (Closes #296)**: Increased default modal size from `1280px / 90dvh` to `96vw × 94dvh` (`99vw × 98dvh` when maximized) to give 3D telemetry replay and inspection photo galleries substantially more screen space.
+- **Database Photo Counts in Flight Lists (Closes #296)**: Flight entries in both the Flight Diagnostics selector (`#diag-flight-selector`) and Section 0 Historical Flight DB now display the number of correlated/recorded photos stored in the SQLite database.
+
+#### Under the Hood & Technical Details
+- **`index.css` & `src/ui/ModalDragManager.js`**: Nested `.modal-drag-grip` inside `.diag-title` and assigned `.diag-modal-header .modal-window-controls` to `grid-area: close` so injected window controls do not spill into an implicit grid row.
+- **`tools/companion/diagnostics_db.js` & `tools/companion/server.js`**: Updated `getHistory()`, `getBadMissions()`, and `GET /api/flights` to compute photo counts from `photo_records` with fallback to `mission_diagnostics.photo_count`.
+- **`src/3d/DigitalTwin.js` & `src/ui/SidebarManager.js`**: Formatted `#diag-flight-selector` options and Section 0 flight cards with database photo counts.
+
 ## [1.244.0] - 2026-11-15
 
 Upgraded 3D model extraction pipeline to authentic OpenCV 5.0 Multi-View Stereo (MVS) epipolar triangulation across overlapping aerial survey photos, eliminating synthetic dummy boxes and adding interactive Assisted 3D Modeling tools in the 3D viewport.
