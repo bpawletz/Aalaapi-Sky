@@ -371,7 +371,9 @@ function buildAuthenticatedCompanionUrl(endpointPath) {
 
   const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
 
-  const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token) ? CompanionAuth.token : '';
+  const token = (typeof CompanionAuth !== 'undefined' && CompanionAuth.token)
+    ? CompanionAuth.token
+    : ((typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_companion_auth_token') : '') || '';
 
   if (!token) return `${apiBase}${endpointPath}`;
 
@@ -410,6 +412,24 @@ function reconnectAllCompanionStreams() {
     if (typeof RemoteIdRadar.connectStream === 'function') {
 
       RemoteIdRadar.connectStream();
+
+    }
+
+  }
+
+  if (typeof AdsbAirspaceManager !== 'undefined') {
+
+    if (AdsbAirspaceManager.eventSource) {
+
+      try { AdsbAirspaceManager.eventSource.close(); } catch (_) {}
+
+      AdsbAirspaceManager.eventSource = null;
+
+    }
+
+    if (typeof AdsbAirspaceManager.connectStream === 'function') {
+
+      AdsbAirspaceManager.connectStream();
 
     }
 
@@ -3752,15 +3772,12 @@ async function pollCompanionStatus() {
 
       applyCompanionStatusUI(data);
 
-
-
-      if (typeof AmbientBufferManager !== 'undefined' && typeof AmbientBufferManager.fetchBufferMetrics === 'function') {
-
-
+      if (data && data.bufferMetrics && typeof AmbientBufferManager !== 'undefined' && typeof AmbientBufferManager.updateBufferHud === 'function') {
+        AmbientBufferManager.lastMetrics = data.bufferMetrics;
+        AmbientBufferManager.updateBufferHud(data.bufferMetrics);
+      } else if (typeof AmbientBufferManager !== 'undefined' && typeof AmbientBufferManager.fetchBufferMetrics === 'function') {
 
         AmbientBufferManager.fetchBufferMetrics().catch(() => {});
-
-
 
       }
 
@@ -3789,6 +3806,14 @@ async function pollCompanionStatus() {
         RemoteIdRadar.connectStream();
 
 
+
+      }
+
+
+
+      if (typeof AdsbAirspaceManager !== 'undefined' && !AdsbAirspaceManager.streamConnected && typeof AdsbAirspaceManager.connectStream === 'function') {
+
+        AdsbAirspaceManager.connectStream();
 
       }
 
@@ -7265,6 +7290,14 @@ function wakeCompanionPolling(resetBackoff = true) {
 
 
 
+  if (typeof AdsbAirspaceManager !== 'undefined' && !AdsbAirspaceManager.streamConnected && typeof AdsbAirspaceManager.connectStream === 'function') {
+
+    AdsbAirspaceManager.connectStream();
+
+  }
+
+
+
 
 
 
@@ -7701,7 +7734,9 @@ const AmbientBufferManager = {
 
 
 
-      const res = await fetch(`${COMPANION_API_BASE}/api/buffer/metrics`);
+      const res = await fetch(`${COMPANION_API_BASE}/api/buffer/metrics`, {
+        headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
+      });
 
 
 
@@ -7757,7 +7792,10 @@ const AmbientBufferManager = {
 
 
 
-      const res = await fetch(`${COMPANION_API_BASE}/api/buffer/flush`, { method: 'POST' });
+      const res = await fetch(`${COMPANION_API_BASE}/api/buffer/flush`, {
+        method: 'POST',
+        headers: (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {}
+      });
 
 
 
@@ -7853,7 +7891,10 @@ const AmbientBufferManager = {
 
 
 
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...((typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {})
+        },
 
 
 
@@ -16844,6 +16885,11 @@ const AdsbAirspaceManager = {
         if (this.streamMode === 'android-tcp' || this.streamMode === 'android-http') return;
 
 
+
+        if (this.eventSource) {
+          try { this.eventSource.close(); } catch (_) {}
+          this.eventSource = null;
+        }
 
         this.streamConnected = false;
 

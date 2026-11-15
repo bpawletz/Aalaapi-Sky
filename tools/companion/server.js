@@ -205,9 +205,10 @@ function isPublicAuthEndpoint(pathname, method) {
   if (pathname.startsWith('/api/tfr/') && method === 'GET') return true;
   if (pathname.startsWith('/api/weather/') && (method === 'GET' || method === 'POST')) return true;
   if ((pathname === '/api/cache/tiles/stats' || pathname === '/api/proxy/stats' || pathname === '/api/cache/stats') && method === 'GET') return true;
+  if ((pathname === '/api/buffer/metrics' || pathname === '/api/telemetry/buffer') && method === 'GET') return true;
 
   // Static web app assets, models, documentation, and cached data
-  if (pathname === '/' || pathname === '/app' || pathname === '/index.html' || pathname.startsWith('/dist/') || pathname.startsWith('/data/') || pathname.startsWith('/scratch/')) return true;
+  if (pathname === '/' || pathname === '/app' || pathname === '/index.html' || pathname === '/manifest.json' || pathname === '/icon.png' || pathname === '/index.css' || pathname.startsWith('/dist/') || pathname.startsWith('/data/') || pathname.startsWith('/scratch/')) return true;
 
   return false;
 }
@@ -653,7 +654,7 @@ function broadcastCompanionStatus(status) {
     httpsPort: mdnsService.httpsPort,
     rtmpPort: mdnsService.rtmpPort,
     adsbPort: mdnsService.adsbPort,
-    services: mdnsService.getAdvertisedRecords().filter(r => r.type === 12).map(r => r.name)
+    services: Array.from(new Set(mdnsService.getAdvertisedRecords().filter(r => r.type === 12 && r.name !== '_services._dns-sd._udp.local').map(r => r.name)))
   } : { enabled: false };
   const httpsInfo = {
     enabled: Boolean(tlsCredentials),
@@ -662,7 +663,8 @@ function broadcastCompanionStatus(status) {
     fingerprint: tlsCredentials?.fingerprint || ''
   };
   const lanAddresses = typeof getLanAddresses === 'function' ? getLanAddresses() : [];
-  const payloadStr = JSON.stringify({ ...st, tileCache: tileCacheStats, droneCount, mcp: mcpMetrics, videoDevices, rtmp: rtmpStatus, auth: authSummary, mdns: mdnsInfo, https: httpsInfo, lanAddresses, version: VERSION });
+  const bufferMetrics = (typeof telemetryBuffer !== 'undefined' && telemetryBuffer.getMetrics) ? telemetryBuffer.getMetrics() : null;
+  const payloadStr = JSON.stringify({ ...st, tileCache: tileCacheStats, droneCount, mcp: mcpMetrics, videoDevices, rtmp: rtmpStatus, auth: authSummary, bufferMetrics, mdns: mdnsInfo, https: httpsInfo, lanAddresses, version: VERSION });
   for (const client of sseStatusClients) {
     try {
       client.res.write(`data: ${payloadStr}\n\n`);
@@ -3654,7 +3656,7 @@ const handleHttpRequest = async (req, res) => {
             httpsPort: mdnsService.httpsPort,
             rtmpPort: mdnsService.rtmpPort,
             adsbPort: mdnsService.adsbPort,
-            services: mdnsService.getAdvertisedRecords().filter(r => r.type === 12).map(r => r.name)
+            services: Array.from(new Set(mdnsService.getAdvertisedRecords().filter(r => r.type === 12 && r.name !== '_services._dns-sd._udp.local').map(r => r.name)))
           } : { enabled: false },
           lanAddresses: getLanAddresses()
         };
@@ -3672,10 +3674,12 @@ const handleHttpRequest = async (req, res) => {
         : 0;
       const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
       const tileCacheStats = (typeof tileCache !== 'undefined' && tileCache.getStats) ? tileCache.getStats() : null;
+      const bufferMetrics = (typeof telemetryBuffer !== 'undefined' && telemetryBuffer.getMetrics) ? telemetryBuffer.getMetrics() : null;
       const statusPayload = {
         ...cachedRc2Status,
         droneCount,
         tileCache: tileCacheStats,
+        bufferMetrics,
         auth: authSummary,
         authRequired,
         authenticated: true,
@@ -3695,7 +3699,7 @@ const handleHttpRequest = async (req, res) => {
           httpsPort: mdnsService.httpsPort,
           rtmpPort: mdnsService.rtmpPort,
           adsbPort: mdnsService.adsbPort,
-          services: mdnsService.getAdvertisedRecords().filter(r => r.type === 12).map(r => r.name)
+          services: Array.from(new Set(mdnsService.getAdvertisedRecords().filter(r => r.type === 12 && r.name !== '_services._dns-sd._udp.local').map(r => r.name)))
         } : { enabled: false },
         lanAddresses: getLanAddresses(),
         version: VERSION
@@ -5582,8 +5586,8 @@ const handleHttpRequest = async (req, res) => {
           } catch (_) {}
         }
       }
-      res.writeHead(404, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify({ success: false, error: 'Wireframe not found', lines: [] }));
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ success: false, found: false, error: 'Wireframe not found', lines: [] }));
       return;
     }
 
@@ -5951,6 +5955,15 @@ const handleHttpRequest = async (req, res) => {
             }
           }
 
+          if (!mObj.wireframe && mPath) {
+            const wfPath = path.join(path.dirname(mPath), 'wireframe.json');
+            if (fs.existsSync(wfPath)) {
+              try {
+                mObj.wireframe = JSON.parse(fs.readFileSync(wfPath, 'utf8'));
+              } catch (_) {}
+            }
+          }
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(mObj));
         } catch (e) {
@@ -5958,8 +5971,8 @@ const handleHttpRequest = async (req, res) => {
           fs.createReadStream(mPath).pipe(res);
         }
       } else {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: 'Manifest not found' }));
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, found: false, error: 'Manifest not found', photos: [], totalPhotos: 0 }));
       }
       return;
     }

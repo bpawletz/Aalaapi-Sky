@@ -1,3 +1,49 @@
+## [1.246.0] - 2026-11-15
+
+Added pre-flight 3D Wireframe & OpenCV 5 MVS Stereo Readiness analysis directly into Mission Planning and Flight Diagnostics, along with a one-click layer optimizer and specific CV failure diagnostics.
+
+### Added
+
+#### Pilot & Operational Features
+- **Pre-Flight 3D Wireframe Readiness & Stereo Pair Predictor (Closes #298)**:
+  - Added a live `3D Wireframe` readiness badge (`#stat-wireframe-readiness`) to the Floating Mission Details / Stats Panel (`#stats-panel`) and an actionable warning card (`#stats-wireframe-warning`) when a flight plan will not produce suitable photos for OpenCV 5 MVS 3D wireframe extraction (e.g., video-only mode, gimbal pitch shallower than `-20°`, or insufficient stereo baseline pairs).
+  - Added a one-click **Optimize for 3D Wireframe** (`#btn-optimize-wireframe-plan`) button inside the warning card that snapshots undo history and configures the active layer to `stopAndShoot` with `-50°` oblique gimbal pitch.
+  - Updated Flight Diagnostics (`#diag-btn-extract-wireframe`) to display `📐 Analyze 3D Wireframe Readiness` upfront when no physical photos are ingested yet (e.g., unflown mission simulation), running the local stereo baseline readiness analyzer instead of sending an empty photo list to the backend.
+- **Specific 3D Wireframe Diagnostic Errors (Closes #298)**:
+  - Replaced generic CV failure messages with explicit diagnostic counts when extraction fails (e.g., reporting how many photos were skipped for shallow gimbal pitch `> -20°`, zero 2D lines detected, or boundary polygon clipping).
+
+#### Under the Hood & Technical Details
+- **`src/ui/TelemetryHud.js`**:
+  - Added `evaluateFlightPlanWireframeReadiness()` and `optimizeLayerForWireframe()`, wired `wireframeReadiness` into `calculateStats()`, and updated `updateStatsPanel()` to populate `#stat-wireframe-readiness` and `#stats-warnings`.
+- **`src/3d/DigitalTwin.js`**:
+  - Added `hasPhysicalWireframePhotos()`, `getWireframeReadinessReport()`, and `updateWireframeButtonState()`, updating `renderInspectionPhotosUI()` and `extractWireframeFromCurrentPhotos()`.
+- **`tools/companion/wireframe_extractor.py` & `tools/companion/wireframe_engine.js`**:
+  - Aligned JS fallback gimbal pitch threshold from `-35°` to `-20°` to match Python MVS, added `rejected_pitch_count`, `zero_lines_2d_count`, and `clipped_by_boundary_count` diagnostic counters, and preserved Python `error` / `diagnostics` metadata in `extractWireframe()`.
+- **`index.test.js` & `index.e2e.test.js`**:
+  - Added unit tests for `evaluateFlightPlanWireframeReadiness` and `extractWireframeJsFallback` diagnostics, plus Playwright E2E tests for `#stat-wireframe-readiness`, `#btn-optimize-wireframe-plan`, and `#diag-btn-extract-wireframe` mode switching.
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Companion Bridge & Network HAR Optimization (Closes #299)**:
+  - Whitelisted `/manifest.json`, `/icon.png`, `/index.css`, `/api/buffer/metrics`, and `/api/telemetry/buffer` on Companion Bridge, eliminating 401 Unauthorized errors during web app startup and status checks.
+  - Routed live METAR aviation weather queries through Companion Bridge `/api/proxy` to prevent browser CORS preflight blocks from `aviationweather.gov`.
+  - Eliminated high-frequency fallback REST polling storm (`/api/airspace/bounds` every 2s) by ensuring continuous SSE authentication and stream persistence.
+  - Softened missing wireframes and flight media manifests from 404 Not Found to structured 200 JSON responses with empty payloads for unflown missions.
+  - Deduplicated mDNS Bonjour service advertisement arrays.
+
+#### Under the Hood & Technical Details
+- **`src/bridge/CompanionAuth.js`**:
+  - Fixed `companionFetch` interceptor argument spreading so custom request headers and authentication tokens are properly forwarded when single-argument `fetch(input)` is invoked.
+- **`src/bridge/ApiClient.js`**:
+  - Added token fallback to `localStorage.getItem('aalaapi_companion_auth_token')` in `buildAuthenticatedCompanionUrl()`.
+  - Added token headers to `fetchBufferMetrics()`, `flushBuffer()`, and `commitBufferSession()`.
+  - Fixed variable reference in `reconnectAllCompanionStreams()`.
+- **`tools/companion/server.js`**:
+  - Whitelisted public endpoints in `isPublicAuthEndpoint()`.
+  - Bundled `bufferMetrics` in `broadcastCompanionStatus()`.
+  - Filtered duplicate `_services._dns-sd._udp.local` entries in mDNS status payload.
+
 ## [1.245.1] - 2026-11-15
 
 ### Fixed

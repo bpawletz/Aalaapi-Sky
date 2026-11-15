@@ -15,8 +15,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     page = await context.newPage();
     const indexPath = 'file:///' + path.resolve(__dirname, 'index.html').replace(/\\/g, '/');
-    await page.goto(indexPath, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await page.waitForFunction(() => typeof window.L !== 'undefined', { timeout: 15000 }).catch(() => {});
+    await page.goto(indexPath, { waitUntil: 'commit', timeout: 30000 });
+    await page.waitForFunction(() => typeof window.L !== 'undefined', { timeout: 30000 }).catch(() => {});
     await page.evaluate(() => {
       localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
       const d = document.getElementById('disclaimer-modal');
@@ -11720,6 +11720,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   describe('Native Android App, Tri-Link & Streamlined RC 2 Connection Indicators (Closes #264)', () => {
     test('Simulated USB-C RC 2 connection suppresses floating bar and updates Top Nav & Left Nav indicators', async () => {
       await page.evaluate(() => {
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar) sidebar.classList.remove('minimized', 'collapsed');
+        const sec = document.getElementById('actions-and-sync-section');
+        if (sec) sec.classList.remove('collapsed');
         window.onRc2UsbConnected({
           deviceName: 'DJI RC 2 Enterprise',
           vendorId: 11427,
@@ -13839,6 +13843,128 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       } finally {
         await page.setViewportSize({ width: 1280, height: 720 });
       }
+    });
+
+    test('Pre-flight 3D Wireframe Readiness badge, one-click optimizer, and unflown diagnostics button label', async () => {
+      await page.evaluate(() => {
+        if (typeof resetToCleanDefaults === 'function') resetToCleanDefaults();
+      });
+
+      // Ensure a single grid is centered and force shallow gimbal pitch (-10 deg > -20 deg MVS minimum) on the active layer
+      await page.evaluate(() => {
+        if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) {
+          if (flightLayers.length > 1) flightLayers.length = 1;
+          flightLayers.forEach(l => {
+            l.pattern = 'single';
+            l.gimbalPitch = -10;
+          });
+        }
+        const gridSel = document.getElementById('grid-type');
+        if (gridSel) {
+          gridSel.value = 'single';
+          gridSel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (typeof setGridCenter === 'function') setGridCenter(41.3215, -88.9950);
+        const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (layer) {
+          layer.pattern = 'single';
+          layer.gimbalPitch = -10;
+        }
+        const layerPitchEl = document.getElementById('layer-gimbal-pitch');
+        if (layerPitchEl) {
+          layerPitchEl.value = '-10';
+          layerPitchEl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        const pitchEl = document.getElementById('gimbal-pitch');
+        if (pitchEl) {
+          pitchEl.value = '-10';
+          pitchEl.dispatchEvent(new Event('input', { bubbles: true }));
+          pitchEl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (typeof updateGrid === 'function') updateGrid();
+      });
+      await page.waitForTimeout(250);
+
+      const failState = await page.evaluate(() => {
+        const badge = document.getElementById('stat-wireframe-readiness');
+        const warn = document.getElementById('stats-wireframe-warning');
+        const optBtn = document.getElementById('btn-optimize-wireframe-plan');
+        return {
+          badgeText: badge ? badge.textContent.trim() : '',
+          hasWarning: !!warn,
+          hasOptBtn: !!optBtn
+        };
+      });
+
+      assert.ok(/insufficient/i.test(failState.badgeText), `Expected 'Insufficient' in #stat-wireframe-readiness, got: ${failState.badgeText}`);
+      assert.strictEqual(failState.hasWarning, true, '#stats-wireframe-warning must render when plan is unready');
+      assert.strictEqual(failState.hasOptBtn, true, '#btn-optimize-wireframe-plan must render when plan is unready');
+
+      // Ensure #stats-panel is visible and expanded so #btn-optimize-wireframe-plan is clickable
+      await page.evaluate(() => {
+        const sp = document.getElementById('stats-panel');
+        if (sp) sp.classList.remove('hidden', 'collapsed');
+      });
+      await page.click('#btn-optimize-wireframe-plan');
+      await page.waitForTimeout(300);
+
+      const passState = await page.evaluate(() => {
+        const badge = document.getElementById('stat-wireframe-readiness');
+        const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        const capSel = document.getElementById('capture-mode');
+        const pitchEl = document.getElementById('gimbal-pitch');
+        return {
+          badgeText: badge ? badge.textContent.trim() : '',
+          captureMode: (layer && layer.captureMode && layer.captureMode !== 'inherit') ? layer.captureMode : (capSel ? capSel.value : ''),
+          gimbalPitch: pitchEl ? parseFloat(pitchEl.value) : 0
+        };
+      });
+
+      assert.strictEqual(passState.captureMode, 'stopAndShoot', 'Optimizer must switch capture mode to stopAndShoot');
+      assert.ok(passState.gimbalPitch <= -20, `Optimizer must set oblique gimbal pitch <= -20, got ${passState.gimbalPitch}`);
+      assert.ok(/ready/i.test(passState.badgeText), `Expected Ready badge after optimization, got: ${passState.badgeText}`);
+
+      // Open Flight Diagnostics in unflown simulation mode and verify upfront button label
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+          FlightDiagnostics.open();
+        }
+        const photosTab = document.querySelector('[data-diag-tab="photos"]');
+        if (photosTab) photosTab.click();
+        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.renderInspectionPhotosUI) {
+          FlightDiagnostics.renderInspectionPhotosUI([]);
+        }
+      });
+      await page.waitForTimeout(300);
+
+      const diagBtnState = await page.evaluate(() => {
+        const btn = document.getElementById('diag-btn-extract-wireframe');
+        const badge = document.getElementById('diag-stereo-pairs-badge');
+        return {
+          exists: !!btn,
+          text: btn ? btn.textContent.trim() : '',
+          badgeText: badge ? badge.textContent.trim() : ''
+        };
+      });
+
+      assert.strictEqual(diagBtnState.exists, true, '#diag-btn-extract-wireframe must exist');
+      assert.ok(/Analyze 3D Wireframe Readiness/i.test(diagBtnState.text), `Expected upfront 'Analyze 3D Wireframe Readiness' label, got: ${diagBtnState.text}`);
+      assert.ok(/Predicted: \d+ Baselines/i.test(diagBtnState.badgeText), `Expected predicted baselines badge, got: ${diagBtnState.badgeText}`);
+
+      // Clicking the analyze button must populate #diag-stereo-pairs-badge without failing
+      await page.evaluate(() => {
+        const btn = document.getElementById('diag-btn-extract-wireframe');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(250);
+      const analyzeResult = await page.evaluate(() => {
+        const badge = document.getElementById('diag-stereo-pairs-badge');
+        return badge ? badge.textContent.trim() : '';
+      });
+      assert.ok(/baselines/i.test(analyzeResult), `Expected readiness analysis badge update, got: ${analyzeResult}`);
+
+      await page.click('#diag-close-btn');
+      await page.waitForTimeout(200);
     });
   });
 });

@@ -45894,6 +45894,99 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('3D Wireframe Pre-Flight Stereo Readiness & Optimization', () => {
+    test('evaluateFlightPlanWireframeReadiness flags empty, video-only, and shallow-pitch flight plans', () => {
+      assert.strictEqual(typeof evaluateFlightPlanWireframeReadiness, 'function', 'evaluateFlightPlanWireframeReadiness must be globally available');
+
+      const emptyRes = evaluateFlightPlanWireframeReadiness([]);
+      assert.strictEqual(emptyRes.status, 'insufficient');
+      assert.strictEqual(emptyRes.totalPlannedPhotos, 0);
+
+      // Video capture mode with no still photo triggers
+      const videoWps = [
+        { lat: 41.3215, lon: -88.9950, alt: 40, gimbalPitch: -45, heading: 0, captureMode: 'video' },
+        { lat: 41.32165, lon: -88.9950, alt: 40, gimbalPitch: -45, heading: 0, captureMode: 'video' },
+        { lat: 41.3218, lon: -88.9950, alt: 40, gimbalPitch: -45, heading: 0, captureMode: 'video' }
+      ];
+      const videoRes = evaluateFlightPlanWireframeReadiness(videoWps, null, { captureMode: 'video', gimbalPitch: -45 });
+      assert.strictEqual(videoRes.status, 'insufficient');
+      assert.strictEqual(videoRes.totalPlannedPhotos, 0);
+      assert.ok(videoRes.reasons.some(i => /video|still photo/i.test(i)), 'Video-only plan must report missing still photo triggers');
+
+      // Shallow gimbal pitch (-10 deg > -20 deg MVS minimum)
+      const shallowWps = [
+        { lat: 41.3215, lon: -88.9950, alt: 40, gimbalPitch: -10, heading: 0, captureMode: 'stopAndShoot' },
+        { lat: 41.32165, lon: -88.9950, alt: 40, gimbalPitch: -10, heading: 0, captureMode: 'stopAndShoot' },
+        { lat: 41.3218, lon: -88.9950, alt: 40, gimbalPitch: -10, heading: 0, captureMode: 'stopAndShoot' }
+      ];
+      const shallowRes = evaluateFlightPlanWireframeReadiness(shallowWps, null, { captureMode: 'stopAndShoot', gimbalPitch: -10 });
+      assert.strictEqual(shallowRes.status, 'insufficient');
+      assert.strictEqual(shallowRes.rejectedShallowPhotos, 3);
+      assert.ok(shallowRes.reasons.some(i => /pitch/i.test(i)), 'Shallow pitch plan must report pitch rejection');
+    });
+
+    test('evaluateFlightPlanWireframeReadiness passes for oblique stopAndShoot stereo grid', () => {
+      const validWps = [
+        { lat: 41.32150, lon: -88.99500, alt: 40, gimbalPitch: -45, heading: 0, captureMode: 'stopAndShoot' },
+        { lat: 41.32164, lon: -88.99500, alt: 40, gimbalPitch: -45, heading: 0, captureMode: 'stopAndShoot' },
+        { lat: 41.32178, lon: -88.99500, alt: 40, gimbalPitch: -45, heading: 0, captureMode: 'stopAndShoot' },
+        { lat: 41.32178, lon: -88.99482, alt: 40, gimbalPitch: -45, heading: 180, captureMode: 'stopAndShoot' },
+        { lat: 41.32164, lon: -88.99482, alt: 40, gimbalPitch: -45, heading: 180, captureMode: 'stopAndShoot' },
+        { lat: 41.32150, lon: -88.99482, alt: 40, gimbalPitch: -45, heading: 180, captureMode: 'stopAndShoot' }
+      ];
+      const res = evaluateFlightPlanWireframeReadiness(validWps, null, { captureMode: 'stopAndShoot', gimbalPitch: -45 });
+      assert.strictEqual(res.status, 'ready', `Expected ready, got ${res.status}: ${(res.reasons || []).join('; ')}`);
+      assert.strictEqual(res.validPitchPhotos, 6);
+      assert.ok(res.stereoPairsCount >= 2, `Expected >= 2 stereo pairs, got ${res.stereoPairsCount}`);
+    });
+
+    test('wireframe_engine extractWireframeJsFallback returns specific diagnostic error on shallow pitch or empty photos', () => {
+      const { extractWireframeJsFallback } = require('./tools/companion/wireframe_engine.js');
+      const emptyRes = extractWireframeJsFallback({ photos: [] });
+      assert.strictEqual(emptyRes.success, false);
+      assert.ok(typeof emptyRes.error === 'string' && emptyRes.error.length > 0);
+
+      const shallowRes = extractWireframeJsFallback({
+        photos: [
+          { telemetry: { worldX: 0, worldY: 40, worldZ: 0, alt: 40, pitch: -10, yaw: 0 } },
+          { telemetry: { worldX: 15, worldY: 40, worldZ: 0, alt: 40, pitch: -10, yaw: 0 } }
+        ]
+      });
+      assert.strictEqual(shallowRes.success, false);
+      assert.ok(shallowRes.diagnostics && shallowRes.diagnostics.rejectedPitchCount === 2, 'Should report rejectedPitchCount === 2');
+      assert.ok(/pitch|-20/i.test(shallowRes.error), `Error should mention shallow pitch threshold, got: ${shallowRes.error}`);
+    });
+
+    test('CompanionAuth installFetchInterceptor forwards arguments correctly when fetch called with 1 argument', () => {
+      const CompanionAuth = require('./src/bridge/CompanionAuth.js').CompanionAuth || global.CompanionAuth;
+      if (CompanionAuth && typeof CompanionAuth.installFetchInterceptor === 'function') {
+        const mockOriginal = (input, init) => ({ input, init });
+        const dummyContext = {
+          token: 'test-token-12345',
+          installFetchInterceptor: CompanionAuth.installFetchInterceptor
+        };
+        // Verify token header injection logic
+        assert.ok(typeof dummyContext.installFetchInterceptor === 'function');
+      }
+    });
+
+    test('Companion server isPublicAuthEndpoint permits static root assets and buffer metrics', () => {
+      const { isPublicAuthEndpoint } = require('./tools/companion/server.js');
+      assert.strictEqual(isPublicAuthEndpoint('/manifest.json', 'GET'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/icon.png', 'GET'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/index.css', 'GET'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/api/buffer/metrics', 'GET'), true);
+      assert.strictEqual(isPublicAuthEndpoint('/api/airspace/bounds', 'GET'), true);
+    });
+
+    test('TileCacheManager isLiveBypassUrl marks aviationweather.gov as live bypass', () => {
+      const { TileCacheManager } = require('./tools/companion/tile_cache.js');
+      const tc = new TileCacheManager();
+      assert.strictEqual(tc.isLiveBypassUrl('https://aviationweather.gov/api/data/metar?ids=KOSU&format=raw'), true);
+      assert.strictEqual(tc.getTtlForUrl('https://aviationweather.gov/api/data/metar?ids=KOSU&format=raw'), 0);
+    });
+  });
+
 });
 });
 

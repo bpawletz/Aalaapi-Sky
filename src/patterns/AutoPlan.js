@@ -1773,6 +1773,15 @@ async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
 
     // 3. Fetch latest observations from NWS and real-time live METARs from FAA/NOAA Aviation Weather Center in parallel
     const stationIds = topStations.map(st => st.id).filter(Boolean);
+    const awcTargetUrl = stationIds.length > 0
+      ? `https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(stationIds.join(','))}&format=raw`
+      : null;
+    const effectiveAwcUrl = awcTargetUrl
+      ? (((typeof isCompanionOnline !== 'undefined' && isCompanionOnline) || (typeof window !== 'undefined' && window.location && (window.location.port === '8765' || window.location.port === '8766')))
+          ? `${(typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : ''))}/api/proxy?url=${encodeURIComponent(awcTargetUrl)}`
+          : awcTargetUrl)
+      : null;
+
     const [obsResults, awcMetarResult] = await Promise.all([
       Promise.allSettled(
         topStations.map(st =>
@@ -1781,8 +1790,8 @@ async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
             .catch(() => null)
         )
       ),
-      stationIds.length > 0
-        ? fetch(`https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(stationIds.join(','))}&format=raw`, { headers })
+      effectiveAwcUrl
+        ? fetch(effectiveAwcUrl, effectiveAwcUrl.includes('/api/proxy') ? {} : { headers })
             .then(res => res.ok ? res.text() : null)
             .catch(() => null)
         : Promise.resolve(null)
