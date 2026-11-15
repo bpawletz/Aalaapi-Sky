@@ -100,3 +100,13 @@ test('tls_cert: https.createServer successfully conducts TLS handshake and serve
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test('tls_cert: generates 50 self-signed certificates with valid DER serials accepted by OpenSSL', () => {
+  const tls = require('node:tls');
+  for (let i = 0; i < 50; i++) {
+    const { cert, key } = createSelfSignedCertificate({ altNames: ['localhost', '127.0.0.1'] });
+    assert.doesNotThrow(() => {
+      tls.createSecureContext({ cert, key });
+    }, `Certificate #${i} should be accepted by tls.createSecureContext without ERR_OSSL_ASN1_ILLEGAL_PADDING`);
+  }
+});

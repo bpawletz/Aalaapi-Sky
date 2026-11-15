@@ -86,9 +86,9 @@ function createSelfSignedCertificate(options = {}) {
   // Version 3: [0] EXPLICIT INTEGER 2
   const version = tag(0xa0, tag(0x02, Buffer.from([0x02])));
 
-  // Serial Number: 64-bit positive integer
+  // Serial Number: 64-bit positive integer with non-zero leading byte (valid ASN.1 DER INTEGER)
   const serialBytes = crypto.randomBytes(8);
-  serialBytes[0] = serialBytes[0] & 0x7f; // Ensure positive sign bit
+  serialBytes[0] = (serialBytes[0] & 0x7f) | 0x01; // Ensure positive sign bit and non-zero leading byte
   const serial = tag(0x02, serialBytes);
 
   // Signature Algorithm: sha256WithRSAEncryption (1.2.840.113549.1.1.11)
