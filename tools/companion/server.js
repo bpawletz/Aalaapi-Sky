@@ -5348,56 +5348,61 @@ const handleHttpRequest = async (req, res) => {
         try {
           const payload = body ? JSON.parse(body) : {};
 
-          // If missionUuid is provided, resolve photos and telemetry from archive if not passed in
-          if (payload.missionUuid && (!payload.photos || payload.photos.length === 0)) {
-            const rec = loadOrRecoverManifest(path.join(ARCHIVE_DIR, payload.missionUuid));
-            if (rec && rec.manifest) {
-              try {
-                const manifest = rec.manifest;
-                const originLat = manifest.homePoint?.lat || manifest.photos?.[0]?.actual?.lat || manifest.photos?.[0]?.lat || 40.013195;
-                const originLon = manifest.homePoint?.lon || manifest.photos?.[0]?.actual?.lon || manifest.photos?.[0]?.lon || -83.177193;
-                payload.origin = { lat: originLat, lon: originLon };
+          // If missionUuid is provided, resolve photos and telemetry from archive
+          if (payload.missionUuid) {
+            const mDir = path.join(ARCHIVE_DIR, payload.missionUuid);
+            const rec = loadOrRecoverManifest(mDir);
+            const manifest = (rec && rec.manifest) ? rec.manifest : null;
+            const originLat = payload.origin?.lat || manifest?.homePoint?.lat || manifest?.photos?.[0]?.actual?.lat || manifest?.photos?.[0]?.lat || 41.3215;
+            const originLon = payload.origin?.lon || manifest?.homePoint?.lon || manifest?.photos?.[0]?.actual?.lon || manifest?.photos?.[0]?.lon || -88.9950;
+            if (!payload.origin) payload.origin = { lat: originLat, lon: originLon };
 
-                if (Array.isArray(manifest.photos)) {
-                  payload.photos = manifest.photos.map(p => {
-                    const rawP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'raw', p.filename || p.id);
-                    const prevP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'previews', p.filename || p.id);
-                    const photoPath = fs.existsSync(rawP) ? rawP : (fs.existsSync(prevP) ? prevP : (p.rawPath || p.filePath));
+            const sourcePhotos = (Array.isArray(payload.photos) && payload.photos.length > 0)
+              ? payload.photos
+              : (Array.isArray(manifest?.photos) ? manifest.photos : []);
 
-                    const lat = p.actual?.lat ?? p.lat ?? originLat;
-                    const lon = p.actual?.lon ?? p.lon ?? originLon;
-                    const altAgl = p.actual?.altAgl ?? p.altAgl ?? p.actual?.alt ?? p.alt ?? 25;
-                    const yaw = p.actual?.heading ?? p.heading ?? p.yaw ?? 0;
-                    const pitch = p.actual?.gimbalPitch ?? p.gimbalPitch ?? p.pitch ?? -60;
+            payload.photos = sourcePhotos
+              .filter(p => p && p.includedIn3d !== false)
+              .map((p, idx) => {
+                const fname = p.filename || p.photoId || p.id || `photo_${idx}.jpg`;
+                const rawP = path.join(mDir, 'photos', 'raw', fname);
+                const prevP = path.join(mDir, 'photos', 'previews', fname);
+                const resolvedPath = (p.filePath && fs.existsSync(p.filePath))
+                  ? p.filePath
+                  : (fs.existsSync(rawP) ? rawP : (fs.existsSync(prevP) ? prevP : (p.rawPath && fs.existsSync(p.rawPath) ? p.rawPath : null)));
 
-                    let worldPos = { x: 0, z: 0 };
-                    if (typeof wireframeEngine.latlonToWorld === 'function') {
-                      worldPos = wireframeEngine.latlonToWorld(lat, lon, originLat, originLon);
-                    }
-
-                    return {
-                      filePath: photoPath,
-                      filename: p.filename || p.id,
-                      photoId: p.photoId || p.id,
-                      lat,
-                      lon,
-                      telemetry: {
-                        lat,
-                        lon,
-                        worldX: p.worldX !== undefined ? p.worldX : worldPos.x,
-                        worldY: p.worldY !== undefined ? p.worldY : altAgl,
-                        worldZ: p.worldZ !== undefined ? p.worldZ : worldPos.z,
-                        yaw,
-                        pitch,
-                        roll: p.roll || 0,
-                        hfov: p.hfov || 73.7,
-                        vfov: p.vfov || 53.1
-                      }
-                    };
-                  }).filter(p => p.filePath && fs.existsSync(p.filePath));
+                const telem = p.telemetry || p;
+                const lat = telem.lat ?? telem.actual?.lat ?? p.lat ?? originLat;
+                const lon = telem.lon ?? telem.actual?.lon ?? p.lon ?? originLon;
+                const altAgl = telem.worldY ?? telem.altAgl ?? telem.alt ?? telem.actual?.altAgl ?? telem.actual?.alt ?? p.alt ?? 25;
+                const yaw = telem.yaw ?? telem.heading ?? telem.actual?.heading ?? p.yaw ?? p.heading ?? 0;
+                const pitch = telem.pitch ?? telem.gimbalPitch ?? telem.actual?.gimbalPitch ?? p.pitch ?? p.gimbalPitch ?? -60;
+                let worldPos = { x: 0, z: 0 };
+                if (typeof wireframeEngine.latlonToWorld === 'function') {
+                  worldPos = wireframeEngine.latlonToWorld(lat, lon, originLat, originLon);
                 }
-              } catch (_) {}
-            }
+
+                return {
+                  ...p,
+                  filePath: resolvedPath,
+                  filename: fname,
+                  photoId: p.photoId || p.id || fname,
+                  lat,
+                  lon,
+                  telemetry: {
+                    lat,
+                    lon,
+                    worldX: telem.worldX !== undefined ? telem.worldX : worldPos.x,
+                    worldY: altAgl,
+                    worldZ: telem.worldZ !== undefined ? telem.worldZ : worldPos.z,
+                    yaw,
+                    pitch,
+                    roll: telem.roll || p.roll || 0,
+                    hfov: telem.hfov || p.hfov || 73.7,
+                    vfov: telem.vfov || p.vfov || 53.1
+                  }
+                };
+              });
           }
 
           if (!payload.imagePath && payload.missionUuid && (payload.filename || payload.photoId)) {
@@ -5571,21 +5576,41 @@ const handleHttpRequest = async (req, res) => {
           const host = req.headers.host || `127.0.0.1:${PORT}`;
           payload.hostBase = `http://${host}`;
 
-          // If photos not supplied directly, attempt resolving from mission archive manifest
-          if ((!payload.photos || payload.photos.length === 0) && payload.missionUuid) {
-            const rec = loadOrRecoverManifest(path.join(ARCHIVE_DIR, payload.missionUuid));
-            if (rec && rec.manifest && Array.isArray(rec.manifest.photos)) {
-              payload.photos = rec.manifest.photos.map(p => {
-                const rawP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'raw', p.filename || p.id);
-                const prevP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'previews', p.filename || p.id);
-                const photoPath = fs.existsSync(rawP) ? rawP : (fs.existsSync(prevP) ? prevP : (p.rawPath || p.filePath));
+          // If missionUuid is provided, resolve photos and telemetry from archive
+          if (payload.missionUuid) {
+            const mDir = path.join(ARCHIVE_DIR, payload.missionUuid);
+            const rec = loadOrRecoverManifest(mDir);
+            const manifest = (rec && rec.manifest) ? rec.manifest : null;
+            if (!payload.origin && manifest?.homePoint) {
+              payload.origin = manifest.homePoint;
+            }
+
+            const sourcePhotos = (Array.isArray(payload.photos) && payload.photos.length > 0)
+              ? payload.photos
+              : (Array.isArray(manifest?.photos) ? manifest.photos : []);
+
+            payload.photos = sourcePhotos
+              .filter(p => p && p.includedIn3d !== false)
+              .map((p, idx) => {
+                const fname = p.filename || p.photoId || p.id || `photo_${idx}.jpg`;
+                const rawP = path.join(mDir, 'photos', 'raw', fname);
+                const prevP = path.join(mDir, 'photos', 'previews', fname);
+                const resolvedPath = (p.filePath && fs.existsSync(p.filePath))
+                  ? p.filePath
+                  : (fs.existsSync(rawP) ? rawP : (fs.existsSync(prevP) ? prevP : (p.rawPath && fs.existsSync(p.rawPath) ? p.rawPath : null)));
                 return {
                   ...p,
-                  filePath: photoPath
+                  filePath: resolvedPath,
+                  filename: fname,
+                  photoId: p.photoId || p.id || fname
                 };
               });
-              if (!payload.origin && rec.manifest.homePoint) {
-                payload.origin = rec.manifest.homePoint;
+
+            // If wireframe not explicitly attached, check for existing wireframe.json in mission archive
+            if (!payload.wireframe) {
+              const wfPath = path.join(mDir, 'wireframe.json');
+              if (fs.existsSync(wfPath)) {
+                try { payload.wireframe = JSON.parse(fs.readFileSync(wfPath, 'utf8')); } catch (_) {}
               }
             }
           }

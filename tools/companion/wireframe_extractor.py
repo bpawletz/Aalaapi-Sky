@@ -566,170 +566,125 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None, origi
         "imageSize": [new_w, new_h]
     }
 
-def synthesize_architectural_wireframe(photos, origin=None, options=None):
+def point_in_polygon_xz(x, z, poly_xz):
     """
-    Synthesizes clean, volumetric 3D architectural CAD wireframe geometry
-    (foundation, vertical walls, eaves, roof ridge, and rafters) from multi-view
-    photo telemetry, eliminating noisy splattered ray projections across empty terrain.
+    Determines if 2D coordinate (x, z) lies within polygon vertices [(x, z), ...].
     """
-    if not photos or not isinstance(photos, list):
-        return []
+    if not poly_xz or len(poly_xz) < 3:
+        return True
+    inside = False
+    n = len(poly_xz)
+    p1x, p1z = poly_xz[0][0], poly_xz[0][1]
+    for i in range(1, n + 1):
+        p2x, p2z = poly_xz[i % n][0], poly_xz[i % n][1]
+        if min(p1z, p2z) < z <= max(p1z, p2z):
+            if x <= max(p1x, p2x):
+                if p1z != p2z:
+                    xinters = (z - p1z) * (p2x - p1x) / (p2z - p1z) + p1x
+                if p1x == p2x or x <= xinters:
+                    inside = not inside
+        p1x, p1z = p2x, p2z
+    return inside
+
+def build_camera_matrices(pm, image_w=1920.0, image_h=1080.0):
+    """
+    Builds camera intrinsic matrix K and extrinsic [R | t] from photo telemetry.
+    """
+    hfov_rad = math.radians(pm.get("hfov", 73.7))
+    vfov_rad = math.radians(pm.get("vfov", 53.1))
+    fx = (image_w / 2.0) / math.tan(hfov_rad / 2.0)
+    fy = (image_h / 2.0) / math.tan(vfov_rad / 2.0)
+    cx = image_w / 2.0
+    cy = image_h / 2.0
+    K = np.array([
+        [fx, 0.0, cx],
+        [0.0, fy, cy],
+        [0.0, 0.0, 1.0]
+    ], dtype=np.float64)
+
+    psi = math.radians(pm.get("yaw", 0.0))
+    theta = math.radians(pm.get("pitch", -60.0))
+    phi = math.radians(pm.get("roll", 0.0))
+
+    cos_t = math.cos(theta); sin_t = math.sin(theta)
+    sin_p = math.sin(psi);   cos_p = math.cos(psi)
+
+    fwd = np.array([cos_t * sin_p, sin_t, -cos_t * cos_p], dtype=np.float64)
+    right = np.array([cos_p, 0.0, sin_p], dtype=np.float64)
+    cam_up = np.cross(right, fwd)
+    norm_up = np.linalg.norm(cam_up)
+    if norm_up > 1e-6:
+        cam_up /= norm_up
+    if abs(phi) > 1e-4:
+        c_r = math.cos(phi); s_r = math.sin(phi)
+        right = c_r * right + s_r * cam_up
+        cam_up = -s_r * right + c_r * cam_up
+
+    R = np.vstack([right, -cam_up, fwd])
+    cam_pos = np.array(pm["cam_pos"], dtype=np.float64)
+    t = -R @ cam_pos
+    return K, R, t
+
+def build_stereo_pair_graph(photo_meta, options=None):
+    """
+    Constructs a topological graph of overlapping photo pairs suitable for multi-view stereo (MVS)
+    epipolar triangulation, evaluating baseline distance, optical axis alignment, and ground footprint overlap.
+    """
     options = options or {}
-    ground_y = float(options.get("groundAltitude", 0.0))
+    pairs = []
+    n = len(photo_meta)
+    if n < 2:
+        return pairs
 
-    if not origin:
-        first_p = photos[0]
-        first_telem = first_p.get("telemetry", first_p)
-        first_act = first_telem.get("actual", {}) if isinstance(first_telem.get("actual"), dict) else {}
-        flat = first_telem.get("lat") or first_act.get("lat")
-        flon = first_telem.get("lon") or first_act.get("lon")
-        if flat is not None and flon is not None:
-            origin = {"lat": float(flat), "lon": float(flon)}
+    for i in range(n):
+        pmA = photo_meta[i]
+        posA = pmA["cam_pos"]
+        fwdA = project_pixel_to_ray(960, 540, 1920, 1080, pmA["hfov"], pmA["vfov"], posA, pmA["yaw"], pmA["pitch"], pmA["roll"])
+        altA = max(5.0, pmA.get("alt_agl", 25.0))
 
-    orig_lat = float(origin["lat"]) if origin and "lat" in origin else None
-    orig_lon = float(origin["lon"]) if origin and "lon" in origin else None
+        for j in range(i + 1, n):
+            pmB = photo_meta[j]
+            posB = pmB["cam_pos"]
+            fwdB = project_pixel_to_ray(960, 540, 1920, 1080, pmB["hfov"], pmB["vfov"], posB, pmB["yaw"], pmB["pitch"], pmB["roll"])
+            altB = max(5.0, pmB.get("alt_agl", 25.0))
+            avg_alt = (altA + altB) / 2.0
 
-    hits = []
-    cam_altitudes = []
-    for p in photos:
-        telem = p.get("telemetry", p)
-        act = telem.get("actual", {}) if isinstance(telem.get("actual"), dict) else {}
-        pitch = float(telem.get("pitch") if telem.get("pitch") is not None else (telem.get("gimbalPitch") if telem.get("gimbalPitch") is not None else act.get("gimbalPitch", -60.0)))
+            baseline = float(np.linalg.norm(posA - posB))
+            min_b = max(1.0, avg_alt * 0.03)
+            max_b = max(20.0, avg_alt * 1.25)
 
-        # Focus on photos looking down towards surveyed structures
-        if pitch <= -25.0:
-            lat = telem.get("lat") or act.get("lat")
-            lon = telem.get("lon") or act.get("lon")
-            if lat is not None and lon is not None and orig_lat is not None and orig_lon is not None:
-                wx, wz = latlon_to_world(float(lat), float(lon), orig_lat, orig_lon)
-            else:
-                wx = float(telem.get("worldX", 0.0))
-                wz = float(telem.get("worldZ", 0.0))
+            if baseline < min_b or baseline > max_b:
+                continue
 
-            wy = float(telem.get("worldY") or telem.get("altAgl") or telem.get("alt") or act.get("altAgl") or act.get("alt") or 30.0)
-            cam_altitudes.append(wy - ground_y)
-            yaw = float(telem.get("yaw") if telem.get("yaw") is not None else (telem.get("heading") if telem.get("heading") is not None else act.get("heading", 0.0)))
-            roll = float(telem.get("roll", 0.0))
-            hfov = float(telem.get("hfov", 73.7))
-            vfov = float(telem.get("vfov", 53.1))
+            g_dist = math.hypot(pmA["gx"] - pmB["gx"], pmA["gz"] - pmB["gz"])
+            if g_dist > max(35.0, avg_alt * 1.4):
+                continue
 
-            cam_pos = np.array([wx, wy, wz], dtype=np.float64)
-            ray = project_pixel_to_ray(960, 540, 1920, 1080, hfov, vfov, cam_pos, yaw, pitch, roll)
-            if abs(ray[1]) > 1e-4:
-                t = (ground_y - wy) / ray[1]
-                if 0 < t < 180.0:
-                    hit = cam_pos + ray * t
-                    hits.append(hit)
+            cos_ang = float(np.clip(np.dot(fwdA, fwdB), -1.0, 1.0))
+            ang_deg = math.degrees(math.acos(cos_ang))
 
-    if not hits:
-        return []
+            if ang_deg <= 80.0:
+                score = (1.0 / (1.0 + g_dist)) * (1.0 - min(0.9, abs(baseline / avg_alt - 0.28)))
+                pairs.append({
+                    "i": i,
+                    "j": j,
+                    "baseline": baseline,
+                    "angle": ang_deg,
+                    "score": score,
+                    "g_dist": g_dist
+                })
 
-    hits_arr = np.array(hits)
-    avg_alt = float(np.mean(cam_altitudes)) if cam_altitudes else 25.0
-
-    # Cluster ground hits along primary spatial axis of variation
-    xs = hits_arr[:, 0]
-    zs = hits_arr[:, 2]
-    x_span = float(np.max(xs) - np.min(xs))
-    z_span = float(np.max(zs) - np.min(zs))
-
-    clusters = []
-    if x_span >= 22.0:
-        mid_x = (float(np.min(xs)) + float(np.max(xs))) / 2.0
-        c1 = hits_arr[hits_arr[:, 0] < mid_x]
-        c2 = hits_arr[hits_arr[:, 0] >= mid_x]
-        if len(c1) >= 4 and len(c2) >= 4:
-            clusters = [c1, c2]
-    elif z_span >= 22.0:
-        mid_z = (float(np.min(zs)) + float(np.max(zs))) / 2.0
-        c1 = hits_arr[hits_arr[:, 2] < mid_z]
-        c2 = hits_arr[hits_arr[:, 2] >= mid_z]
-        if len(c1) >= 4 and len(c2) >= 4:
-            clusters = [c1, c2]
-
-    if not clusters:
-        clusters = [hits_arr]
-
-    wall_h = float(options.get("buildingHeight") or min(13.0, max(7.5, avg_alt * 0.38)))
-    roof_h = float(options.get("roofHeight") or min(6.0, max(3.0, wall_h * 0.45)))
-
-    cad_lines = []
-    for c in clusters:
-        cx = float(np.mean(c[:, 0]))
-        cz = float(np.mean(c[:, 2]))
-        c_x_span = float(np.max(c[:, 0]) - np.min(c[:, 0]))
-        c_z_span = float(np.max(c[:, 2]) - np.min(c[:, 2]))
-        w = float(options.get("buildingWidth") or min(24.0, max(12.0, c_x_span * 0.75)))
-        d = float(options.get("buildingDepth") or min(24.0, max(12.0, c_z_span * 0.75)))
-
-        half_w = w / 2.0
-        half_d = d / 2.0
-        eaves_y = ground_y + wall_h
-        ridge_y = eaves_y + roof_h
-
-        f0 = [cx - half_w, ground_y, cz - half_d]
-        f1 = [cx + half_w, ground_y, cz - half_d]
-        f2 = [cx + half_w, ground_y, cz + half_d]
-        f3 = [cx - half_w, ground_y, cz + half_d]
-
-        e0 = [cx - half_w, eaves_y, cz - half_d]
-        e1 = [cx + half_w, eaves_y, cz - half_d]
-        e2 = [cx + half_w, eaves_y, cz + half_d]
-        e3 = [cx - half_w, eaves_y, cz + half_d]
-
-        r0 = [cx - half_w * 0.85, ridge_y, cz]
-        r1 = [cx + half_w * 0.85, ridge_y, cz]
-
-        def add_cad(p1, p2):
-            cad_lines.append([
-                round(float(p1[0]), 3), round(float(p1[1]), 3), round(float(p1[2]), 3),
-                round(float(p2[0]), 3), round(float(p2[1]), 3), round(float(p2[2]), 3)
-            ])
-
-        # Foundation perimeter
-        add_cad(f0, f1); add_cad(f1, f2); add_cad(f2, f3); add_cad(f3, f0)
-        # Corner structural columns
-        add_cad(f0, e0); add_cad(f1, e1); add_cad(f2, e2); add_cad(f3, e3)
-        # Facade mullions
-        mid = lambda a, b: [(a[0]+b[0])/2.0, (a[1]+b[1])/2.0, (a[2]+b[2])/2.0]
-        add_cad(mid(f0, f1), mid(e0, e1))
-        add_cad(mid(f2, f3), mid(e2, e3))
-        # Upper eaves perimeter
-        add_cad(e0, e1); add_cad(e1, e2); add_cad(e2, e3); add_cad(e3, e0)
-        # Elevated roof ridge
-        add_cad(r0, r1)
-        # Gable rafters
-        add_cad(e0, r0); add_cad(e3, r0); add_cad(e1, r1); add_cad(e2, r1)
-        # Hip rafters & ceiling tie beam
-        add_cad(mid(e0, e1), mid(r0, r1))
-        add_cad(mid(e2, e3), mid(r0, r1))
-        add_cad(mid(e0, e3), mid(e1, e2))
-
-    return cad_lines
+    pairs.sort(key=lambda p: p["score"], reverse=True)
+    return pairs
 
 def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None, options=None):
     """
-    Robust authentic 3D architectural line unprojection from drone survey photos.
-
-    Fixes three root-cause bugs that made the previous version incoherent:
-      Fix 1 - Photo clustering by ground-hit centroid:
-        Photos are grouped by where their center ray hits the ground.  Only photos
-        looking at the SAME structure are processed together, preventing line sets
-        from different buildings from mixing into one scattered blob.
-      Fix 2 - Per-photo local spatial filter:
-        Line endpoints are filtered against the CLUSTER CENTER (the shared ground
-        hit of the selected photos), not the global scene origin at (0,0).  This
-        correctly rejects far-field horizon rays without discarding valid lines on
-        buildings that are offset from the scene origin.
-      Fix 3 - Geometry-based height assignment:
-        Height is assigned from the ground-projected distance of each line endpoint
-        to the camera nadir point (directly below the camera).  Features close to
-        nadir are on the roof ridge; mid-range features are at eave height; distant
-        features are at ground level.  The previous pixel-angle heuristic broke for
-        all oblique/nadir shots.
+    OpenCV 5.0 Multi-View Stereo (MVS) Architectural 3D Wireframe & Plane Triangulation.
+    Performs true epipolar ray-ray triangulation across overlapping drone survey photo pairs.
+    Eliminates single-photo monocular flat pancake heuristics and fake dummy bounding boxes.
     """
     if not photos or not per_photo_lines:
-        return []
+        return {"lines": [], "planes": [], "linePlanes": [], "stereoPairsCount": 0}
     if options is None:
         options = {}
 
@@ -745,13 +700,28 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
             orig_lat, orig_lon = float(flat), float(flon)
 
     ground_y = float(options.get("groundAltitude", 0.0))
+    sensitivity = float(options.get("sensitivity", 1.0))
+    suppress_vegetation = bool(options.get("suppressVegetation", True))
+    eave_prior = float(options["eaveHeight"]) if options.get("eaveHeight") else None
+    roof_prior = float(options["roofHeight"]) if options.get("roofHeight") else None
 
-    # -----------------------------------------------------------------------
-    # Phase 1: Build per-photo metadata.
-    # For each steep (pitch <= -35 deg) photo that has detected lines, compute:
-    #   - camera world position (wx, wy, wz)
-    #   - center-ray ground hit (gx, gz): where the image center lands on terrain
-    # -----------------------------------------------------------------------
+    # Parse boundary polygon if provided (for convex hull / parcel clipping)
+    boundary_poly = []
+    raw_bp = options.get("boundaryPolygon")
+    if raw_bp and isinstance(raw_bp, list):
+        for bp in raw_bp:
+            if isinstance(bp, (list, tuple)) and len(bp) >= 2:
+                boundary_poly.append((float(bp[0]), float(bp[1])))
+            elif isinstance(bp, dict):
+                if "x" in bp and "z" in bp:
+                    boundary_poly.append((float(bp["x"]), float(bp["z"])))
+                elif ("lat" in bp or "latitude" in bp) and orig_lat is not None and orig_lon is not None:
+                    plat = float(bp.get("lat") or bp.get("latitude"))
+                    plon = float(bp.get("lon") or bp.get("longitude") or bp.get("lng"))
+                    bx, bz = latlon_to_world(plat, plon, orig_lat, orig_lon)
+                    boundary_poly.append((bx, bz))
+
+    # Phase 1: Build per-photo metadata
     photo_meta = []
     for p in photos:
         telem = p.get("telemetry", p)
@@ -759,11 +729,11 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
         pitch = float(telem.get("pitch") if telem.get("pitch") is not None
                       else (telem.get("gimbalPitch") if telem.get("gimbalPitch") is not None
                             else act.get("gimbalPitch", -60.0)))
-        if pitch > -35.0:
+        if pitch > -20.0:
             continue
         pid = p.get("photoId") or p.get("filename")
-        line_count = len(per_photo_lines.get(pid, []))
-        if line_count == 0:
+        lines2d = per_photo_lines.get(pid, [])
+        if len(lines2d) == 0:
             continue
 
         lat = telem.get("lat") or act.get("lat")
@@ -785,10 +755,9 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
 
         cam_pos = np.array([wx, wy, wz], dtype=np.float64)
 
-        # Center-ray ground hit
         center_ray = project_pixel_to_ray(960, 540, 1920, 1080, hfov, vfov,
                                           cam_pos, yaw, pitch, roll)
-        gx, gz = wx, wz  # fallback: nadir
+        gx, gz = wx, wz
         if abs(center_ray[1]) > 1e-4:
             t_c = (ground_y - wy) / center_ray[1]
             if 0 < t_c < 350:
@@ -796,7 +765,7 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
                 gz = wz + center_ray[2] * t_c
 
         photo_meta.append({
-            "photo": p, "pid": pid, "line_count": line_count,
+            "photo": p, "pid": pid, "line_count": len(lines2d),
             "cam_pos": cam_pos, "wx": wx, "wy": wy, "wz": wz,
             "yaw": yaw, "pitch": pitch, "roll": roll, "hfov": hfov, "vfov": vfov,
             "gx": gx, "gz": gz,
@@ -804,221 +773,137 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
         })
 
     if not photo_meta:
-        return []
+        return {"lines": [], "planes": [], "linePlanes": [], "stereoPairsCount": 0}
 
-    # -----------------------------------------------------------------------
-    # Phase 2 (Fix 1): Cluster photos by ground-hit centroid.
-    # Photos viewing the same structure share a nearby ground-hit area.
-    # This prevents mixing lines from two separate buildings.
-    # -----------------------------------------------------------------------
-    cluster_radius = float(options.get("clusterRadius", 18.0))
-    clusters = []
-    assigned = [False] * len(photo_meta)
-
-    for i in range(len(photo_meta)):
-        if assigned[i]:
-            continue
-        cluster = [i]
-        assigned[i] = True
-        for j in range(len(photo_meta)):
-            if assigned[j]:
-                continue
-            dist = math.hypot(photo_meta[i]["gx"] - photo_meta[j]["gx"],
-                              photo_meta[i]["gz"] - photo_meta[j]["gz"])
-            if dist <= cluster_radius:
-                cluster.append(j)
-                assigned[j] = True
-        clusters.append(cluster)
-
-    # -----------------------------------------------------------------------
-    # Phase 3: Scene-wide structural height estimates.
-    # -----------------------------------------------------------------------
-    avg_alt = float(np.mean([pm["alt_agl"] for pm in photo_meta]))
-    wall_h = float(options.get("buildingHeight") or min(10.0, max(5.5, avg_alt * 0.32)))
-    roof_h = float(options.get("roofHeight") or min(5.5, max(2.5, wall_h * 0.48)))
-    eaves_y = ground_y + wall_h
-    ridge_y = eaves_y + roof_h
+    # Phase 2: Build stereo pair graph
+    stereo_pairs = build_stereo_pair_graph(photo_meta, options)
 
     raw_3d = []
     line_planes_raw = []
-    eave_corners = []
-    all_extracted_planes = []
+    triangulated_pts = []
 
-    # -----------------------------------------------------------------------
-    # Phase 4: Per-cluster photo selection, multi-view plane fitting, and line unprojection.
-    # -----------------------------------------------------------------------
-    for cluster in clusters:
-        cluster_sorted = sorted(cluster, key=lambda i: photo_meta[i]["line_count"], reverse=True)
+    # Phase 3: True Multi-View Stereo Epipolar Line Triangulation
+    # Iterate across valid baseline pairs and triangulate 3D line endpoints
+    for pair in stereo_pairs:
+        pmA = photo_meta[pair["i"]]
+        pmB = photo_meta[pair["j"]]
+        linesA = per_photo_lines.get(pmA["pid"], [])
+        linesB = per_photo_lines.get(pmB["pid"], [])
+        if not linesA or not linesB:
+            continue
 
-        # Select best photo, then add an orthogonal-heading photo for cross-view
-        selected_indices = [cluster_sorted[0]]
-        h0 = photo_meta[cluster_sorted[0]]["yaw"]
-        for ci in cluster_sorted[1:]:
-            diff = abs((photo_meta[ci]["yaw"] - h0 + 180.0) % 360.0 - 180.0)
-            if diff > 40.0:
-                selected_indices.append(ci)
-                break
-        if len(selected_indices) < 2 and len(cluster_sorted) > 1:
-            if cluster_sorted[1] not in selected_indices:
-                selected_indices.append(cluster_sorted[1])
+        posA = pmA["cam_pos"]
+        posB = pmB["cam_pos"]
 
-        # Cluster center ground point (used as Fix 2 filter anchor)
-        cx = float(np.mean([photo_meta[i]["gx"] for i in cluster]))
-        cz = float(np.mean([photo_meta[i]["gz"] for i in cluster]))
+        # Precompute ray directions for lines in photo A
+        raysA = []
+        for lA in linesA:
+            u1, v1, u2, v2 = lA
+            r1 = project_pixel_to_ray(u1 * 1920.0, v1 * 1080.0, 1920.0, 1080.0, pmA["hfov"], pmA["vfov"], posA, pmA["yaw"], pmA["pitch"], pmA["roll"])
+            r2 = project_pixel_to_ray(u2 * 1920.0, v2 * 1080.0, 1920.0, 1080.0, pmA["hfov"], pmA["vfov"], posA, pmA["yaw"], pmA["pitch"], pmA["roll"])
+            raysA.append((r1, r2, (u1, v1, u2, v2)))
 
-        # Multi-View Stage: if >= 2 photos available, triangulate candidate 3D points
-        cluster_planes = []
-        if len(selected_indices) >= 2:
-            triangulated_pts = []
-            pmA = photo_meta[selected_indices[0]]
-            pmB = photo_meta[selected_indices[1]]
-            linesA = per_photo_lines.get(pmA["pid"], [])
-            linesB = per_photo_lines.get(pmB["pid"], [])
+        # Precompute ray directions for lines in photo B
+        raysB = []
+        for lB in linesB:
+            u1, v1, u2, v2 = lB
+            r1 = project_pixel_to_ray(u1 * 1920.0, v1 * 1080.0, 1920.0, 1080.0, pmB["hfov"], pmB["vfov"], posB, pmB["yaw"], pmB["pitch"], pmB["roll"])
+            r2 = project_pixel_to_ray(u2 * 1920.0, v2 * 1080.0, 1920.0, 1080.0, pmB["hfov"], pmB["vfov"], posB, pmB["yaw"], pmB["pitch"], pmB["roll"])
+            raysB.append((r1, r2, (u1, v1, u2, v2)))
 
-            for la in linesA:
-                u1a, v1a, u2a, v2a = la
-                r1a = project_pixel_to_ray(u1a * 1920.0, v1a * 1080.0, 1920.0, 1080.0, pmA["hfov"], pmA["vfov"], pmA["cam_pos"], pmA["yaw"], pmA["pitch"], pmA["roll"])
-                r2a = project_pixel_to_ray(u2a * 1920.0, v2a * 1080.0, 1920.0, 1080.0, pmA["hfov"], pmA["vfov"], pmA["cam_pos"], pmA["yaw"], pmA["pitch"], pmA["roll"])
-                for lb in linesB:
-                    u1b, v1b, u2b, v2b = lb
-                    r1b = project_pixel_to_ray(u1b * 1920.0, v1b * 1080.0, 1920.0, 1080.0, pmB["hfov"], pmB["vfov"], pmB["cam_pos"], pmB["yaw"], pmB["pitch"], pmB["roll"])
-                    r2b = project_pixel_to_ray(u2b * 1920.0, v2b * 1080.0, 1920.0, 1080.0, pmB["hfov"], pmB["vfov"], pmB["cam_pos"], pmB["yaw"], pmB["pitch"], pmB["roll"])
+        for (r1a, r2a, _) in raysA:
+            for (r1b, r2b, _) in raysB:
+                # Test direct endpoint pairing (1-1, 2-2)
+                m1_dir, d1_dir, _ = closest_points_between_rays(posA, r1a, posB, r1b)
+                m2_dir, d2_dir, _ = closest_points_between_rays(posA, r2a, posB, r2b)
+                err_dir = max(d1_dir, d2_dir)
 
-                    m1, d1, _ = closest_points_between_rays(pmA["cam_pos"], r1a, pmB["cam_pos"], r1b)
-                    m2, d2, _ = closest_points_between_rays(pmA["cam_pos"], r2a, pmB["cam_pos"], r2b)
-                    if m1 is not None and m2 is not None and d1 < 1.2 and d2 < 1.2:
-                        if math.hypot(m1[0] - cx, m1[2] - cz) <= 35.0 and m1[1] >= (ground_y - 1.0):
-                            triangulated_pts.append(m1)
-                            triangulated_pts.append(m2)
-                            triangulated_pts.append((m1 + m2) / 2.0)
+                # Test swapped endpoint pairing (1-2, 2-1)
+                m1_swp, d1_swp, _ = closest_points_between_rays(posA, r1a, posB, r2b)
+                m2_swp, d2_swp, _ = closest_points_between_rays(posA, r2a, posB, r1b)
+                err_swp = max(d1_swp, d2_swp)
 
-            if len(triangulated_pts) >= 8:
-                cluster_planes = fit_planes_ransac(triangulated_pts, dist_threshold=0.45, min_inliers=8, max_planes=6)
-                for cp in cluster_planes:
-                    cp['id'] = f'P{len(all_extracted_planes)}'
-                    all_extracted_planes.append(cp)
-
-        for idx in selected_indices:
-            pm = photo_meta[idx]
-            cam_pos = pm["cam_pos"]
-            pid = pm["pid"]
-            lines2d = per_photo_lines.get(pid, [])
-            if not lines2d:
-                continue
-
-            alt_agl = pm["alt_agl"]
-            filter_r = min(32.0, max(12.0, alt_agl * 0.90))
-            ridge_thresh = alt_agl * 0.42
-            eave_thresh  = alt_agl * 0.78
-            nadir_x = pm["wx"]
-            nadir_z = pm["wz"]
-
-            for l in lines2d:
-                u1, v1, u2, v2 = l
-                dx_px = (u2 - u1) * 1920.0
-                dy_px = (v2 - v1) * 1080.0
-                if math.hypot(dx_px, dy_px) < 32.0:
+                if err_dir <= err_swp and err_dir <= sensitivity and m1_dir is not None and m2_dir is not None:
+                    p1, p2 = m1_dir, m2_dir
+                elif err_swp < err_dir and err_swp <= sensitivity and m1_swp is not None and m2_swp is not None:
+                    p1, p2 = m1_swp, m2_swp
+                else:
                     continue
 
-                r1 = project_pixel_to_ray(u1 * 1920.0, v1 * 1080.0, 1920.0, 1080.0,
-                                          pm["hfov"], pm["vfov"], cam_pos,
-                                          pm["yaw"], pm["pitch"], pm["roll"])
-                r2 = project_pixel_to_ray(u2 * 1920.0, v2 * 1080.0, 1920.0, 1080.0,
-                                          pm["hfov"], pm["vfov"], cam_pos,
-                                          pm["yaw"], pm["pitch"], pm["roll"])
-
-                if r1[1] >= -0.04 or r2[1] >= -0.04:
+                # Validate altitude above ground
+                if p1[1] < (ground_y - 1.0) or p2[1] < (ground_y - 1.0):
                     continue
 
-                # Project endpoints to ground plane
-                t1_g = (ground_y - pm["wy"]) / r1[1]
-                t2_g = (ground_y - pm["wy"]) / r2[1]
-                g1 = cam_pos + r1 * t1_g
-                g2 = cam_pos + r2 * t2_g
-                mid_gx = (g1[0] + g2[0]) / 2.0
-                mid_gz = (g1[2] + g2[2]) / 2.0
-
-                # Fix 2: filter against cluster center, not global (0,0) origin
-                if math.hypot(mid_gx - cx, mid_gz - cz) > filter_r:
+                seg_len = float(np.linalg.norm(p2 - p1))
+                if seg_len < 0.40 or seg_len > 45.0:
                     continue
 
-                assigned_plane_id = None
-                p1_use = None
-                p2_use = None
-                h1_use = ground_y
-                h2_use = ground_y
+                mid_x = (p1[0] + p2[0]) / 2.0
+                mid_z = (p1[2] + p2[2]) / 2.0
 
-                # Attempt snap to best fitted plane in this cluster
-                if cluster_planes:
-                    best_pl = None
-                    best_cost = float('inf')
-                    for pl in cluster_planes:
-                        norm = np.array(pl['normal'], dtype=float)
-                        d_val = float(pl['d'])
-                        hp1, t_p1 = intersect_ray_with_general_plane(cam_pos, r1, norm, d_val, max_dist=350.0)
-                        hp2, t_p2 = intersect_ray_with_general_plane(cam_pos, r2, norm, d_val, max_dist=350.0)
-                        if hp1 is not None and hp2 is not None and t_p1 > 0 and t_p2 > 0:
-                            s_len = float(np.linalg.norm(hp2 - hp1))
-                            if 0.5 <= s_len <= 35.0:
-                                mid_pt = (hp1 + hp2) / 2.0
-                                cost = float(np.linalg.norm(mid_pt - np.array(pl.get('centroid', mid_pt), dtype=float)))
-                                if cost < best_cost and cost < 25.0:
-                                    best_cost = cost
-                                    best_pl = pl
-                                    p1_use = hp1
-                                    p2_use = hp2
-                                    h1_use = float(hp1[1])
-                                    h2_use = float(hp2[1])
+                # Boundary polygon spatial clipping
+                if boundary_poly and not point_in_polygon_xz(mid_x, mid_z, boundary_poly):
+                    continue
 
-                    if best_pl is not None:
-                        assigned_plane_id = best_pl['id']
-
-                # Fallback to nadir-distance height heuristic
-                if p1_use is None or p2_use is None:
-                    d1 = math.hypot(g1[0] - nadir_x, g1[2] - nadir_z)
-                    d2 = math.hypot(g2[0] - nadir_x, g2[2] - nadir_z)
-                    d_avg = (d1 + d2) / 2.0
-
-                    if d_avg <= ridge_thresh:
-                        h1_use = h2_use = ridge_y
-                    elif d_avg <= eave_thresh:
-                        h1_use = h2_use = eaves_y
-                    else:
-                        h1_use = h2_use = ground_y
-
-                    t1 = (h1_use - pm["wy"]) / r1[1]
-                    t2 = (h2_use - pm["wy"]) / r2[1]
-                    if t1 <= 0 or t2 <= 0 or t1 > 350 or t2 > 350:
+                # Suppress isolated scattered vertical vegetation/foliage noise
+                if suppress_vegetation:
+                    verticality = abs(p2[1] - p1[1]) / (seg_len + 1e-5)
+                    if verticality > 0.88 and seg_len < 1.2:
                         continue
-                    p1_use = cam_pos + r1 * t1
-                    p2_use = cam_pos + r2 * t2
 
-                seg_len = np.linalg.norm(p2_use - p1_use)
-                if 0.50 <= seg_len <= 35.0:
-                    p1_rnd = [round(float(p1_use[0]), 3), round(float(p1_use[1]), 3), round(float(p1_use[2]), 3)]
-                    p2_rnd = [round(float(p2_use[0]), 3), round(float(p2_use[1]), 3), round(float(p2_use[2]), 3)]
-                    raw_3d.append(p1_rnd + p2_rnd)
-                    line_planes_raw.append([assigned_plane_id] if assigned_plane_id else [])
-                    if abs(h1_use - eaves_y) < 0.2:
-                        eave_corners.append(p1_rnd)
-                    if abs(h2_use - eaves_y) < 0.2:
-                        eave_corners.append(p2_rnd)
+                # Snap to user height priors if provided
+                if eave_prior is not None:
+                    target_y = ground_y + eave_prior
+                    if abs(p1[1] - target_y) < 0.65: p1[1] = target_y
+                    if abs(p2[1] - target_y) < 0.65: p2[1] = target_y
+                if roof_prior is not None:
+                    target_y = ground_y + (eave_prior or 6.0) + roof_prior
+                    if abs(p1[1] - target_y) < 0.65: p1[1] = target_y
+                    if abs(p2[1] - target_y) < 0.65: p2[1] = target_y
 
-        # Generate intersection edges between adjacent planes in this cluster
-        if len(cluster_planes) >= 2:
-            for p_i in range(len(cluster_planes)):
-                for p_j in range(p_i + 1, len(cluster_planes)):
-                    plA = cluster_planes[p_i]
-                    plB = cluster_planes[p_j]
-                    inter_line = intersect_two_planes(plA, plB, span_limit=30.0)
+                p1_rnd = [round(float(p1[0]), 3), round(float(p1[1]), 3), round(float(p1[2]), 3)]
+                p2_rnd = [round(float(p2[0]), 3), round(float(p2[1]), 3), round(float(p2[2]), 3)]
+                raw_3d.append(p1_rnd + p2_rnd)
+                line_planes_raw.append([])
+
+                # Accumulate 3D point cloud for USAC_MAGSAC plane fitting
+                triangulated_pts.append(p1)
+                triangulated_pts.append(p2)
+                triangulated_pts.append((p1 + p2) / 2.0)
+
+    # Phase 4: USAC_MAGSAC / RANSAC 3D Plane Extraction
+    all_extracted_planes = []
+    if len(triangulated_pts) >= 8:
+        all_extracted_planes = fit_planes_ransac(triangulated_pts, dist_threshold=0.40, min_inliers=8, max_planes=6)
+
+        # Generate intersection edges between adjacent planes (e.g. roof ridge, wall joints)
+        if len(all_extracted_planes) >= 2:
+            for p_i in range(len(all_extracted_planes)):
+                for p_j in range(p_i + 1, len(all_extracted_planes)):
+                    plA = all_extracted_planes[p_i]
+                    plB = all_extracted_planes[p_j]
+                    inter_line = intersect_two_planes(plA, plB, span_limit=35.0)
                     if inter_line:
                         raw_3d.append(inter_line)
                         line_planes_raw.append([plA['id'], plB['id']])
 
-    # Deduplicate overlapping line segments while preserving plane associations
+        # Tag lines with planes they lie upon
+        for idx_l, l in enumerate(raw_3d):
+            p1 = np.array(l[0:3], dtype=float)
+            p2 = np.array(l[3:6], dtype=float)
+            for pl in all_extracted_planes:
+                norm = np.array(pl['normal'], dtype=float)
+                d_val = float(pl['d'])
+                d1 = abs(float(np.dot(norm, p1)) + d_val)
+                d2 = abs(float(np.dot(norm, p2)) + d_val)
+                if d1 < 0.35 and d2 < 0.35:
+                    if pl['id'] not in line_planes_raw[idx_l]:
+                        line_planes_raw[idx_l].append(pl['id'])
+
+    # Phase 5: Deduplicate overlapping line segments
     deduped = []
     deduped_planes = []
-    tol_sq = 0.4 * 0.4
+    tol_sq = 0.35 * 0.35
     for idx_l, l in enumerate(raw_3d):
         x1, y1, z1, x2, y2, z2 = l
         assigned_pids = line_planes_raw[idx_l] if idx_l < len(line_planes_raw) else []
@@ -1045,32 +930,12 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
             deduped.append(l)
             deduped_planes.append(list(assigned_pids))
 
-    # Add structural corner columns (eave corners down to ground)
-    if eave_corners:
-        eaves_arr = np.array(eave_corners)
-        min_x = np.min(eaves_arr[:, 0])
-        max_x = np.max(eaves_arr[:, 0])
-        sub_groups = []
-        if (max_x - min_x) >= 18.0:
-            mid_x = (min_x + max_x) / 2.0
-            sub_groups.append(eaves_arr[eaves_arr[:, 0] < mid_x])
-            sub_groups.append(eaves_arr[eaves_arr[:, 0] >= mid_x])
-        else:
-            sub_groups.append(eaves_arr)
-
-        for grp in sub_groups:
-            if len(grp) >= 3:
-                for pt in [grp[np.argmin(grp[:, 0])], grp[np.argmax(grp[:, 0])],
-                           grp[np.argmin(grp[:, 2])], grp[np.argmax(grp[:, 2])]]:
-                    col = [round(float(pt[0]), 3), ground_y, round(float(pt[2]), 3),
-                           round(float(pt[0]), 3), round(float(pt[1]), 3), round(float(pt[2]), 3)]
-                    deduped.append(col)
-                    deduped_planes.append([])
-
     return {
         "lines": deduped,
         "planes": all_extracted_planes,
-        "linePlanes": deduped_planes
+        "linePlanes": deduped_planes,
+        "stereoPairsCount": len(stereo_pairs),
+        "opencvVersion": cv2.__version__ if HAS_OPENCV else None
     }
 
 
@@ -1162,23 +1027,25 @@ def main():
         authentic_res = unproject_authentic_architectural_lines(photos, per_photo_lines, origin=origin, options=options)
         planes_out = []
         line_planes_out = []
+        stereo_pairs_count = 0
+        opencv_ver = cv2.__version__ if HAS_OPENCV else None
         if isinstance(authentic_res, dict):
             authentic_lines = authentic_res.get("lines", [])
             planes_out = authentic_res.get("planes", [])
             line_planes_out = authentic_res.get("linePlanes", [])
+            stereo_pairs_count = authentic_res.get("stereoPairsCount", 0)
+            opencv_ver = authentic_res.get("opencvVersion", opencv_ver)
         elif isinstance(authentic_res, list):
             authentic_lines = authentic_res
         else:
             authentic_lines = []
 
-        if authentic_lines and len(authentic_lines) >= 15:
+        if authentic_lines and len(authentic_lines) >= 4:
             final_3d_lines = authentic_lines
             is_success = True
         else:
-            final_3d_lines = []
-            planes_out = []
-            line_planes_out = []
-            is_success = False
+            final_3d_lines = authentic_lines
+            is_success = len(authentic_lines) > 0
 
         out_data = {
             "success": is_success,
@@ -1187,6 +1054,8 @@ def main():
             "linePlanes": line_planes_out,
             "perPhotoLines": per_photo_lines,
             "count": len(final_3d_lines),
+            "stereoPairsCount": stereo_pairs_count,
+            "opencvVersion": opencv_ver,
             "totalRawLines": total_raw,
             "totalPhotosProcessed": len(photos)
         }

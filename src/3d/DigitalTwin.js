@@ -869,6 +869,15 @@ const FlightDiagnostics = {
     if (summaryText) {
       summaryText.textContent = `Showing ${filtered.length} of ${photos.length} Photos`;
     }
+    const pairsBadge = document.getElementById('diag-stereo-pairs-badge');
+    if (pairsBadge) {
+      if (this.wireframeData && typeof this.wireframeData.stereoPairsCount === 'number' && this.wireframeData.stereoPairsCount > 0) {
+        pairsBadge.textContent = `${this.wireframeData.stereoPairsCount} Baselines`;
+        pairsBadge.style.display = 'inline-block';
+      } else {
+        pairsBadge.style.display = 'none';
+      }
+    }
 
     if (filtered.length === 0) {
       const zeroState = document.createElement('div');
@@ -1308,6 +1317,29 @@ const FlightDiagnostics = {
         this.wireframeMinLengthFilter = val;
         if (diagWfFilterVal) diagWfFilterVal.textContent = `< ${val.toFixed(1)}m`;
         this.rebuildWireframeMesh();
+      });
+    }
+
+    const diagWfAddLineBtn = document.getElementById('diag-wireframe-add-line-btn');
+    if (diagWfAddLineBtn && typeof diagWfAddLineBtn.addEventListener === 'function') {
+      diagWfAddLineBtn.addEventListener('click', () => {
+        this.toggleBridgeEdgeMode();
+      });
+    }
+
+    const diagWfSensSlider = document.getElementById('diag-wf-sensitivity');
+    const diagWfSensVal = document.getElementById('diag-wf-sensitivity-val');
+    if (diagWfSensSlider && typeof diagWfSensSlider.addEventListener === 'function') {
+      diagWfSensSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 1.0;
+        if (diagWfSensVal) diagWfSensVal.textContent = `${val.toFixed(1)}m`;
+      });
+    }
+
+    const diagWfRerunBtn = document.getElementById('diag-wf-rerun-btn');
+    if (diagWfRerunBtn && typeof diagWfRerunBtn.addEventListener === 'function') {
+      diagWfRerunBtn.addEventListener('click', () => {
+        this.extractWireframeFromCurrentPhotos();
       });
     }
 
@@ -3116,6 +3148,37 @@ const FlightDiagnostics = {
           mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
           if (typeof raycaster.setFromCamera === 'function') {
             raycaster.setFromCamera(mouse, this.threeCamera);
+          }
+
+          // 0. Bridge Edge 3D interactive vertex connection
+          if (this.bridgeEdgeActive) {
+            let hitPt = null;
+            if (this.wireframeData && Array.isArray(this.wireframeData.lines)) {
+              let minVDist = 3.0;
+              const ray = raycaster.ray;
+              const elev = this.wireframeElevationOffset || 0;
+              this.wireframeData.lines.forEach(l => {
+                if (Array.isArray(l) && l.length >= 6) {
+                  const v1 = new THREE.Vector3(l[0], l[1] + elev, l[2]);
+                  const v2 = new THREE.Vector3(l[3], l[4] + elev, l[5]);
+                  const d1 = ray.distanceToPoint(v1);
+                  const d2 = ray.distanceToPoint(v2);
+                  if (d1 < minVDist) { minVDist = d1; hitPt = [v1.x, v1.y, v1.z]; }
+                  if (d2 < minVDist) { minVDist = d2; hitPt = [v2.x, v2.y, v2.z]; }
+                }
+              });
+            }
+            if (!hitPt) {
+              const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(this.groundAltitude || 0));
+              const target = new THREE.Vector3();
+              if (raycaster.ray && typeof raycaster.ray.intersectPlane === 'function' && raycaster.ray.intersectPlane(groundPlane, target)) {
+                hitPt = [target.x, target.y, target.z];
+              }
+            }
+            if (hitPt) {
+              this.handleBridgeEdgePoint(hitPt);
+              return;
+            }
           }
 
           // 1. Raycast on Wireframe line segments
@@ -5123,6 +5186,92 @@ const FlightDiagnostics = {
     }
   },
 
+  toggleBridgeEdgeMode() {
+    this.bridgeEdgeActive = !this.bridgeEdgeActive;
+    this.bridgeEdgePt1 = null;
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-add-line-btn') : null;
+    if (btn) {
+      if (this.bridgeEdgeActive) {
+        btn.classList.add('active');
+        btn.style.background = 'rgba(56, 189, 248, 0.25)';
+        btn.textContent = '✏️ Click 1st Pt...';
+        if (typeof showToast === 'function') showToast('Bridge Mode: Click 1st vertex or ground point', 'info');
+      } else {
+        btn.classList.remove('active');
+        btn.style.background = '';
+        btn.textContent = '✏️ Bridge Edge';
+      }
+    }
+  },
+
+  handleBridgeEdgePoint(pt) {
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-add-line-btn') : null;
+    if (!this.bridgeEdgePt1) {
+      this.bridgeEdgePt1 = pt;
+      if (btn) btn.textContent = '✏️ Click 2nd Pt...';
+      if (typeof showToast === 'function') showToast('Vertex 1 set. Click 2nd point to complete edge.', 'info');
+    } else {
+      const p1 = this.bridgeEdgePt1;
+      const p2 = pt;
+      const elev = this.wireframeElevationOffset || 0;
+      const newLine = [
+        Math.round(p1[0] * 1000) / 1000, Math.round((p1[1] - elev) * 1000) / 1000, Math.round(p1[2] * 1000) / 1000,
+        Math.round(p2[0] * 1000) / 1000, Math.round((p2[1] - elev) * 1000) / 1000, Math.round(p2[2] * 1000) / 1000
+      ];
+      if (!this.wireframeData) this.wireframeData = { success: true, lines: [], planes: [], linePlanes: [] };
+      if (!Array.isArray(this.wireframeData.lines)) this.wireframeData.lines = [];
+      this.wireframeData.lines.push(newLine);
+      if (Array.isArray(this.wireframeData.linePlanes)) this.wireframeData.linePlanes.push([]);
+      this.wireframeData.count = this.wireframeData.lines.length;
+
+      this.bridgeEdgeActive = false;
+      this.bridgeEdgePt1 = null;
+      if (btn) {
+        btn.classList.remove('active');
+        btn.style.background = '';
+        btn.textContent = '✏️ Bridge Edge';
+      }
+      this.rebuildWireframeMesh();
+      const segLen = Math.hypot(p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]);
+      if (typeof showToast === 'function') showToast(`✨ Bridged 3D Edge added (${segLen.toFixed(1)}m)`, 'success');
+    }
+  },
+
+  getAssisted3dOptions() {
+    const opts = {};
+    if (typeof document === 'undefined') return opts;
+
+    const useBoundary = document.getElementById('diag-wf-use-boundary');
+    if (!useBoundary || useBoundary.checked) {
+      if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) && flightLayers.length > 0) {
+        const activeIdx = (typeof currentLayerIndex !== 'undefined' && currentLayerIndex >= 0 && currentLayerIndex < flightLayers.length) ? currentLayerIndex : 0;
+        const targetLayer = flightLayers[activeIdx];
+        if (targetLayer && Array.isArray(targetLayer.boundaryPolygon) && targetLayer.boundaryPolygon.length >= 3) {
+          opts.boundaryPolygon = targetLayer.boundaryPolygon;
+        }
+      }
+    }
+    const suppVeg = document.getElementById('diag-wf-suppress-veg');
+    opts.suppressVegetation = suppVeg ? suppVeg.checked : true;
+
+    const eaveInput = document.getElementById('diag-wf-eave-height');
+    if (eaveInput && eaveInput.value) {
+      const v = parseFloat(eaveInput.value);
+      if (!isNaN(v) && v > 0) opts.eaveHeight = v;
+    }
+    const roofInput = document.getElementById('diag-wf-roof-height');
+    if (roofInput && roofInput.value) {
+      const v = parseFloat(roofInput.value);
+      if (!isNaN(v) && v > 0) opts.roofHeight = v;
+    }
+    const sensInput = document.getElementById('diag-wf-sensitivity');
+    if (sensInput) {
+      const v = parseFloat(sensInput.value);
+      if (!isNaN(v)) opts.sensitivity = v;
+    }
+    return opts;
+  },
+
   unprojectFromWorld(x, z) {
     const origin = this.getSceneOrigin();
     const tileZoom = 18;
@@ -5392,12 +5541,14 @@ const FlightDiagnostics = {
         || this.selectedFlightId
         || 'default-mission';
 
+      const assistedOpts = this.getAssisted3dOptions();
       const res = await fetch(`${apiBase}/api/process/wireframe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           missionUuid,
           flightId: this.selectedFlightId,
+          options: assistedOpts,
           photos: (this.flightPhotos && this.flightPhotos.length > 0) ? this.flightPhotos : []
         })
       });
@@ -5407,7 +5558,13 @@ const FlightDiagnostics = {
       if (data && data.success) {
         this.loadWireframeGeometry(data);
         this.switchTab('3d');
-        if (typeof showToast === 'function') showToast(`✨ 3D Architectural Wireframe extracted (${data.count || 0} lines)`, 'success');
+        const pairsBadge = document.getElementById('diag-stereo-pairs-badge');
+        if (pairsBadge && typeof data.stereoPairsCount === 'number') {
+          pairsBadge.textContent = `${data.stereoPairsCount} Baselines`;
+          pairsBadge.style.display = 'inline-block';
+        }
+        const cvTag = data.opencvVersion ? ` [OpenCV ${data.opencvVersion}]` : '';
+        if (typeof showToast === 'function') showToast(`✨ 3D MVS Wireframe extracted (${data.count || 0} lines)${cvTag}`, 'success');
       } else {
         throw new Error(data.error || 'Extraction failed');
       }
@@ -5574,12 +5731,15 @@ const FlightDiagnostics = {
     if (statusText) statusText.textContent = 'Analyzing photo telemetry...';
 
     try {
-      const apiBase = (typeof RC2_API_BASE !== 'undefined') ? RC2_API_BASE : 'http://127.0.0.1:8765';
+      const apiBase = (typeof getCompanionApiBase === 'function')
+        ? getCompanionApiBase()
+        : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
       const missionUuid = (typeof activeLayerId !== 'undefined' && activeLayerId)
         || (this.selectedFlightId && `mission_${this.selectedFlightId.replace(/[^a-zA-Z0-9_-]/g, '_')}`)
         || 'mission_latest';
 
       const engine = engineSelect ? engineSelect.value : 'auto';
+      const assistedOpts = this.getAssisted3dOptions();
 
       const res = await fetch(`${apiBase}/api/ai3d/generate`, {
         method: 'POST',
@@ -5587,6 +5747,8 @@ const FlightDiagnostics = {
         body: JSON.stringify({
           missionUuid,
           engine,
+          options: assistedOpts,
+          wireframe: this.wireframeData || null,
           elevationOffset: this.wireframeElevationOffset || 0,
           photos: (this.flightPhotos && this.flightPhotos.length > 0) ? this.flightPhotos : []
         })

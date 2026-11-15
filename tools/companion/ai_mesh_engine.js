@@ -297,11 +297,34 @@ function selectOrthogonalViews(photos = [], options = {}) {
  * Generate standard Wavefront OBJ format string for 3D building mesh.
  */
 function generateObjMesh(options = {}) {
+  const planes = options.planes || (options.wireframe && options.wireframe.planes) || [];
+  const elevOffset = typeof options.elevationOffset === 'number' ? options.elevationOffset : 0.0;
+
+  if (planes.length > 0 && planes.some(p => Array.isArray(p.polygon) && p.polygon.length >= 3)) {
+    let obj = `# Aalaapi Sky - Real-Time Multi-View Stereo 3D Reconstruction\n`;
+    obj += `# Model Type: Authentic Photogrammetric Planar Mesh\n\n`;
+
+    let vOffset = 1;
+    planes.forEach(pl => {
+      const poly = pl.polygon;
+      if (!Array.isArray(poly) || poly.length < 3) return;
+      const norm = pl.normal || [0, 1, 0];
+      obj += `vn ${norm[0].toFixed(4)} ${norm[1].toFixed(4)} ${norm[2].toFixed(4)}\n`;
+      poly.forEach(pt => {
+        obj += `v ${pt[0].toFixed(4)} ${(pt[1] + elevOffset).toFixed(4)} ${pt[2].toFixed(4)}\n`;
+      });
+      for (let k = 1; k < poly.length - 1; k++) {
+        obj += `f ${vOffset} ${vOffset + k} ${vOffset + k + 1}\n`;
+      }
+      vOffset += poly.length;
+    });
+    return obj;
+  }
+
   const width = options.width || 18.0;
   const depth = options.depth || 14.0;
   const wallHeight = options.wallHeight || 6.5;
   const roofHeight = options.roofHeight || 3.8;
-  const elevOffset = typeof options.elevationOffset === 'number' ? options.elevationOffset : 0.0;
 
   const w2 = width / 2;
   const d2 = depth / 2;
@@ -393,20 +416,36 @@ function generateObjMesh(options = {}) {
  * Generate standard Binary glTF 2.0 (.glb) buffer.
  */
 function generateGlbMesh(options = {}) {
-  const width = options.width || 18.0;
-  const depth = options.depth || 14.0;
-  const wallHeight = options.wallHeight || 6.5;
-  const roofHeight = options.roofHeight || 3.8;
+  const planes = options.planes || (options.wireframe && options.wireframe.planes) || [];
   const elevOffset = typeof options.elevationOffset === 'number' ? options.elevationOffset : 0.0;
 
-  const w2 = width / 2;
-  const d2 = depth / 2;
-  const yBase = elevOffset;
-  const yEaves = yBase + wallHeight;
-  const yRidge = yEaves + roofHeight;
+  let triData = [];
+  if (planes.length > 0 && planes.some(p => Array.isArray(p.polygon) && p.polygon.length >= 3)) {
+    planes.forEach(pl => {
+      const poly = pl.polygon;
+      const norm = pl.normal || [0, 1, 0];
+      if (Array.isArray(poly) && poly.length >= 3) {
+        for (let k = 1; k < poly.length - 1; k++) {
+          const p0 = poly[0], p1 = poly[k], p2 = poly[k + 1];
+          triData.push([p0[0], p0[1] + elevOffset, p0[2], norm[0], norm[1], norm[2]]);
+          triData.push([p1[0], p1[1] + elevOffset, p1[2], norm[0], norm[1], norm[2]]);
+          triData.push([p2[0], p2[1] + elevOffset, p2[2], norm[0], norm[1], norm[2]]);
+        }
+      }
+    });
+  }
 
-  // Triangulated vertices with positions and normals
-  const triData = [
+  if (triData.length === 0) {
+    const width = options.width || 18.0;
+    const depth = options.depth || 14.0;
+    const wallHeight = options.wallHeight || 6.5;
+    const roofHeight = options.roofHeight || 3.8;
+    const w2 = width / 2;
+    const d2 = depth / 2;
+    const yBase = elevOffset;
+    const yEaves = yBase + wallHeight;
+    const yRidge = yEaves + roofHeight;
+    triData = [
     // South Wall
     [-w2, yBase, -d2, 0, 0, -1], [ w2, yBase, -d2, 0, 0, -1], [ w2, yEaves, -d2, 0, 0, -1],
     [-w2, yBase, -d2, 0, 0, -1], [ w2, yEaves, -d2, 0, 0, -1], [-w2, yEaves, -d2, 0, 0, -1],
@@ -435,6 +474,7 @@ function generateGlbMesh(options = {}) {
     [-w2, yEaves,  d2, -0.6, 0.8, 0], [-w2, yEaves, -d2, -0.6, 0.8, 0], [ 0, yRidge, -d2, -0.6, 0.8, 0],
     [-w2, yEaves,  d2, -0.6, 0.8, 0], [ 0, yRidge, -d2, -0.6, 0.8, 0], [ 0, yRidge,  d2, -0.6, 0.8, 0]
   ];
+  }
 
   const vertexCount = triData.length;
   const posBuffer = Buffer.alloc(vertexCount * 3 * 4); // Float32Array 3 components
@@ -638,8 +678,10 @@ async function startReconstructionJob(payload = {}) {
       activeJob.updatedAt = Date.now();
 
       const elevOffset = typeof payload.elevationOffset === 'number' ? payload.elevationOffset : 0.0;
-      const objContent = generateObjMesh({ elevationOffset: elevOffset });
-      const glbBuffer = generateGlbMesh({ elevationOffset: elevOffset });
+      const wf = payload.wireframe || null;
+      const meshPlanes = (wf && Array.isArray(wf.planes)) ? wf.planes : (payload.planes || []);
+      const objContent = generateObjMesh({ elevationOffset: elevOffset, planes: meshPlanes });
+      const glbBuffer = generateGlbMesh({ elevationOffset: elevOffset, planes: meshPlanes });
 
       // Save to global scratch models directory
       const latestObjPath = path.join(MODELS_DIR, 'latest_building.obj');

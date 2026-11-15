@@ -343,188 +343,210 @@ function extractWireframeJsFallback(payload = {}) {
   });
 
   if (photoMeta.length > 0) {
-    // Fix 1: Cluster photos by ground-hit centroid (DBSCAN-style, radius=18m)
-    const CLUSTER_R = (typeof options.clusterRadius === 'number') ? options.clusterRadius : 18.0;
-    const clusters = [];
-    const assigned = new Array(photoMeta.length).fill(false);
-    for (let i = 0; i < photoMeta.length; i++) {
-      if (assigned[i]) continue;
-      const cluster = [i]; assigned[i] = true;
-      for (let j = 0; j < photoMeta.length; j++) {
-        if (assigned[j]) continue;
-        const d = Math.hypot(photoMeta[i].gx - photoMeta[j].gx, photoMeta[i].gz - photoMeta[j].gz);
-        if (d <= CLUSTER_R) { cluster.push(j); assigned[j] = true; }
-      }
-      clusters.push(cluster);
+    const sensitivity = (typeof options.sensitivity === 'number') ? options.sensitivity : 1.0;
+    const eavePrior = (typeof options.eaveHeight === 'number') ? options.eaveHeight : null;
+    const roofPrior = (typeof options.roofHeight === 'number') ? options.roofHeight : null;
+    const suppressVeg = options.suppressVegetation !== false;
+
+    // Parse boundary polygon if provided
+    let boundaryPoly = null;
+    if (Array.isArray(options.boundaryPolygon) && options.boundaryPolygon.length >= 3) {
+      boundaryPoly = options.boundaryPolygon.map(bp => {
+        if (Array.isArray(bp) && bp.length >= 2) return [Number(bp[0]), Number(bp[1])];
+        if (bp && typeof bp.x === 'number' && typeof bp.z === 'number') return [bp.x, bp.z];
+        if (bp && (typeof bp.lat === 'number' || typeof bp.latitude === 'number') && origin) {
+          const plat = bp.lat !== undefined ? bp.lat : bp.latitude;
+          const plon = bp.lon !== undefined ? bp.lon : (bp.longitude !== undefined ? bp.longitude : bp.lng);
+          const w = latlonToWorld(plat, plon, origin.lat, origin.lon);
+          return [w.x, w.z];
+        }
+        return null;
+      }).filter(Boolean);
+      if (boundaryPoly.length < 3) boundaryPoly = null;
     }
 
-    // Scene-wide height estimates
-    const avgCamAlt = Math.max(8.0,
-      photoMeta.reduce((s, pm) => s + pm.altAgl, 0) / photoMeta.length);
-    const wallH = (typeof options.buildingHeight === 'number') ? options.buildingHeight
-                : Math.max(5.5, Math.min(10.0, avgCamAlt * 0.32));
-    const roofH = (typeof options.roofHeight === 'number') ? options.roofHeight
-                : Math.max(2.5, Math.min(5.5, wallH * 0.48));
-    const eavesY = groundY + wallH;
-    const ridgeY = eavesY + roofH;
+    // Build stereo pairs graph
+    const stereoPairs = [];
+    for (let i = 0; i < photoMeta.length; i++) {
+      const pmA = photoMeta[i];
+      for (let j = i + 1; j < photoMeta.length; j++) {
+        const pmB = photoMeta[j];
+        const baseline = Math.hypot(pmA.wx - pmB.wx, pmA.wy - pmB.wy, pmA.wz - pmB.wz);
+        const gDist = Math.hypot(pmA.gx - pmB.gx, pmA.gz - pmB.gz);
+        const avgAlt = (pmA.altAgl + pmB.altAgl) / 2;
+        if (baseline >= Math.max(1.0, avgAlt * 0.03) && baseline <= Math.max(20.0, avgAlt * 1.25) && gDist <= Math.max(35.0, avgAlt * 1.4)) {
+          stereoPairs.push({ i, j, baseline, gDist });
+        }
+      }
+    }
 
     const unprojectedRaw = [];
+    const triangulatedPts = [];
 
-    clusters.forEach(cluster => {
-      // Sort cluster by line count, select best + one orthogonal
-      const sorted = [...cluster].sort((a, b) => photoMeta[b].lineCount - photoMeta[a].lineCount);
-      const selIdx = [sorted[0]];
-      const h0 = photoMeta[sorted[0]].yaw;
-      for (let k = 1; k < sorted.length; k++) {
-        const diff = Math.abs(((photoMeta[sorted[k]].yaw - h0 + 180) % 360) - 180);
-        if (diff > 40) { selIdx.push(sorted[k]); break; }
-      }
-      if (selIdx.length < 2 && sorted.length > 1 && !selIdx.includes(sorted[1])) {
-        selIdx.push(sorted[1]);
-      }
+    // Multi-View Stereo Epipolar Triangulation across baseline pairs
+    stereoPairs.forEach(pair => {
+      const pmA = photoMeta[pair.i];
+      const pmB = photoMeta[pair.j];
+      const linesA = pmA.lines2d || [];
+      const linesB = pmB.lines2d || [];
+      if (linesA.length === 0 || linesB.length === 0) return;
 
-      // Cluster center (Fix 2 filter anchor)
-      const cx = cluster.reduce((s, i) => s + photoMeta[i].gx, 0) / cluster.length;
-      const cz = cluster.reduce((s, i) => s + photoMeta[i].gz, 0) / cluster.length;
+      const raysA = linesA.map(l => {
+        const [u1, v1, u2, v2] = l;
+        const r1 = projectPixelToRay(u1 * 1920, v1 * 1080, 1920, 1080, pmA.hfov, pmA.vfov, pmA.camPos, pmA.yaw, pmA.pitch, pmA.roll);
+        const r2 = projectPixelToRay(u2 * 1920, v2 * 1080, 1920, 1080, pmA.hfov, pmA.vfov, pmA.camPos, pmA.yaw, pmA.pitch, pmA.roll);
+        return { r1, r2, line: l };
+      });
 
-      selIdx.forEach(idx => {
-        const pm = photoMeta[idx];
-        const { camPos, wy, yaw, pitch, roll, hfov, vfov, altAgl, wx, wz } = pm;
-        const filterR = Math.min(32.0, Math.max(12.0, altAgl * 0.90));
-        const ridgeThresh = altAgl * 0.42;
-        const eaveThresh  = altAgl * 0.78;
+      const raysB = linesB.map(l => {
+        const [u1, v1, u2, v2] = l;
+        const r1 = projectPixelToRay(u1 * 1920, v1 * 1080, 1920, 1080, pmB.hfov, pmB.vfov, pmB.camPos, pmB.yaw, pmB.pitch, pmB.roll);
+        const r2 = projectPixelToRay(u2 * 1920, v2 * 1080, 1920, 1080, pmB.hfov, pmB.vfov, pmB.camPos, pmB.yaw, pmB.pitch, pmB.roll);
+        return { r1, r2, line: l };
+      });
 
-        pm.lines2d.forEach(l => {
-          const [u1, v1, u2, v2] = l;
-          const dxPx = (u2 - u1) * 1920.0, dyPx = (v2 - v1) * 1080.0;
-          if (Math.hypot(dxPx, dyPx) < 32.0) return;
+      raysA.forEach(itemA => {
+        raysB.forEach(itemB => {
+          // Direct pairing
+          const cp1Dir = closestPointsBetweenRays(pmA.camPos, itemA.r1, pmB.camPos, itemB.r1);
+          const cp2Dir = closestPointsBetweenRays(pmA.camPos, itemA.r2, pmB.camPos, itemB.r2);
+          const errDir = Math.max(cp1Dir.dist, cp2Dir.dist);
 
-          const r1 = projectPixelToRay(u1 * 1920, v1 * 1080, 1920, 1080, hfov, vfov, camPos, yaw, pitch, roll);
-          const r2 = projectPixelToRay(u2 * 1920, v2 * 1080, 1920, 1080, hfov, vfov, camPos, yaw, pitch, roll);
-          if (r1[1] >= -0.04 || r2[1] >= -0.04) return;
+          // Swapped pairing
+          const cp1Swp = closestPointsBetweenRays(pmA.camPos, itemA.r1, pmB.camPos, itemB.r2);
+          const cp2Swp = closestPointsBetweenRays(pmA.camPos, itemA.r2, pmB.camPos, itemB.r1);
+          const errSwp = Math.max(cp1Swp.dist, cp2Swp.dist);
 
-          const t1g = (groundY - wy) / r1[1], t2g = (groundY - wy) / r2[1];
-          const g1x = camPos.x + r1[0] * t1g, g1z = camPos.z + r1[2] * t1g;
-          const g2x = camPos.x + r2[0] * t2g, g2z = camPos.z + r2[2] * t2g;
-          const midGx = (g1x + g2x) / 2.0, midGz = (g1z + g2z) / 2.0;
-
-          // Fix 2: filter against cluster center, not global (0,0)
-          if (Math.hypot(midGx - cx, midGz - cz) > filterR) return;
-
-          // Fix 3: height from nadir-distance, not pixel-angle heuristic
-          const d1 = Math.hypot(g1x - wx, g1z - wz);
-          const d2 = Math.hypot(g2x - wx, g2z - wz);
-          const dAvg = (d1 + d2) / 2.0;
-          const h = dAvg <= ridgeThresh ? ridgeY : (dAvg <= eaveThresh ? eavesY : groundY);
-
-          const t1 = (h - wy) / r1[1], t2 = (h - wy) / r2[1];
-          if (t1 <= 0 || t2 <= 0 || t1 > 350 || t2 > 350) return;
-
-          const p1 = [camPos.x + r1[0] * t1, h, camPos.z + r1[2] * t1];
-          const p2 = [camPos.x + r2[0] * t2, h, camPos.z + r2[2] * t2];
-          const segLen = Math.hypot(p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]);
-          if (segLen >= 0.5 && segLen <= 35.0) {
-            const pidTag = (h === ridgeY) ? 'P0' : ((h === eavesY) ? 'P1' : 'P2');
-            unprojectedRaw.push({
-              coords: [
-                Math.round(p1[0] * 1000) / 1000, Math.round(p1[1] * 1000) / 1000, Math.round(p1[2] * 1000) / 1000,
-                Math.round(p2[0] * 1000) / 1000, Math.round(p2[1] * 1000) / 1000, Math.round(p2[2] * 1000) / 1000
-              ],
-              planeId: pidTag
-            });
+          let p1 = null, p2 = null;
+          if (errDir <= errSwp && errDir <= sensitivity && cp1Dir.midpoint && cp2Dir.midpoint) {
+            p1 = cp1Dir.midpoint; p2 = cp2Dir.midpoint;
+          } else if (errSwp < errDir && errSwp <= sensitivity && cp1Swp.midpoint && cp2Swp.midpoint) {
+            p1 = cp1Swp.midpoint; p2 = cp2Swp.midpoint;
+          } else {
+            return;
           }
+
+          if (p1[1] < (groundY - 1.0) || p2[1] < (groundY - 1.0)) return;
+          const segLen = Math.hypot(p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]);
+          if (segLen < 0.40 || segLen > 45.0) return;
+
+          const midX = (p1[0] + p2[0]) / 2;
+          const midZ = (p1[2] + p2[2]) / 2;
+
+          if (boundaryPoly && !isPointInPolygonXZ(midX, midZ, boundaryPoly)) return;
+
+          if (suppressVeg) {
+            const verticality = Math.abs(p2[1] - p1[1]) / (segLen + 1e-5);
+            if (verticality > 0.88 && segLen < 1.2) return;
+          }
+
+          // Prior snapping
+          if (eavePrior !== null) {
+            const targetY = groundY + eavePrior;
+            if (Math.abs(p1[1] - targetY) < 0.65) p1[1] = targetY;
+            if (Math.abs(p2[1] - targetY) < 0.65) p2[1] = targetY;
+          }
+          if (roofPrior !== null) {
+            const targetY = groundY + (eavePrior || 6.0) + roofPrior;
+            if (Math.abs(p1[1] - targetY) < 0.65) p1[1] = targetY;
+            if (Math.abs(p2[1] - targetY) < 0.65) p2[1] = targetY;
+          }
+
+          unprojectedRaw.push([
+            Math.round(p1[0] * 1000) / 1000, Math.round(p1[1] * 1000) / 1000, Math.round(p1[2] * 1000) / 1000,
+            Math.round(p2[0] * 1000) / 1000, Math.round(p2[1] * 1000) / 1000, Math.round(p2[2] * 1000) / 1000
+          ]);
+          triangulatedPts.push(p1, p2, [(p1[0]+p2[0])/2, (p1[1]+p2[1])/2, (p1[2]+p2[2])/2]);
         });
       });
     });
 
-    if (unprojectedRaw.length >= 15) {
-      const rawCoords = unprojectedRaw.map(item => item.coords);
-      const deduped = deduplicateLines(rawCoords);
+    if (unprojectedRaw.length >= 1) {
+      const deduped = deduplicateLines(unprojectedRaw);
       const cxAll = photoMeta.reduce((s, pm) => s + pm.gx, 0) / photoMeta.length;
       const czAll = photoMeta.reduce((s, pm) => s + pm.gz, 0) / photoMeta.length;
-
-      // Build synthesized planes for ridge, eaves, and ground
-      const planes = [
-        {
-          id: 'P0',
-          type: 'roof',
-          normal: [0, 1, 0],
-          d: -Math.round(ridgeY * 1000) / 1000,
-          inlierCount: unprojectedRaw.filter(i => i.planeId === 'P0').length,
-          centroid: [Math.round(cxAll * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round(czAll * 100) / 100],
-          polygon: [
-            [Math.round((cxAll - 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((czAll - 8) * 100) / 100],
-            [Math.round((cxAll + 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((czAll - 8) * 100) / 100],
-            [Math.round((cxAll + 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((czAll + 8) * 100) / 100],
-            [Math.round((cxAll - 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((czAll + 8) * 100) / 100]
-          ]
-        },
-        {
-          id: 'P1',
-          type: 'roof_flat',
-          normal: [0, 1, 0],
-          d: -Math.round(eavesY * 1000) / 1000,
-          inlierCount: unprojectedRaw.filter(i => i.planeId === 'P1').length,
-          centroid: [Math.round(cxAll * 100) / 100, Math.round(eavesY * 100) / 100, Math.round(czAll * 100) / 100],
-          polygon: [
-            [Math.round((cxAll - 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((czAll - 10) * 100) / 100],
-            [Math.round((cxAll + 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((czAll - 10) * 100) / 100],
-            [Math.round((cxAll + 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((czAll + 10) * 100) / 100],
-            [Math.round((cxAll - 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((czAll + 10) * 100) / 100]
-          ]
-        },
-        {
-          id: 'P2',
-          type: 'ground',
-          normal: [0, 1, 0],
-          d: -Math.round(groundY * 1000) / 1000,
-          inlierCount: unprojectedRaw.filter(i => i.planeId === 'P2').length,
-          centroid: [Math.round(cxAll * 100) / 100, Math.round(groundY * 100) / 100, Math.round(czAll * 100) / 100],
-          polygon: [
-            [Math.round((cxAll - 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((czAll - 14) * 100) / 100],
-            [Math.round((cxAll + 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((czAll - 14) * 100) / 100],
-            [Math.round((cxAll + 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((czAll + 14) * 100) / 100],
-            [Math.round((cxAll - 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((czAll + 14) * 100) / 100]
-          ]
-        }
-      ];
-
-      // Assign linePlanes based on endpoint height proximity
-      const linePlanes = deduped.map(l => {
-        const avgY = (l[1] + l[4]) / 2;
-        if (Math.abs(avgY - ridgeY) < 0.6) return ['P0'];
-        if (Math.abs(avgY - eavesY) < 0.6) return ['P1'];
-        if (Math.abs(avgY - groundY) < 0.6) return ['P2'];
-        return [];
-      });
 
       return {
         success: true,
         lines: deduped,
-        planes,
-        linePlanes,
+        planes: [],
+        linePlanes: deduped.map(() => []),
         count: deduped.length,
-        engine: 'javascript_authentic_unprojection',
+        stereoPairsCount: stereoPairs.length,
+        engine: 'javascript_mvs_triangulation',
         assetCenter: [Math.round(cxAll * 100) / 100, Math.round(groundY * 100) / 100, Math.round(czAll * 100) / 100],
-        wallHeight: Math.round(wallH * 100) / 100,
-        roofHeight: Math.round(roofH * 100) / 100,
         timestamp: new Date().toISOString()
       };
     }
+
+    return {
+      success: false,
+      error: 'Insufficient authentic architectural lines detected in downward survey imagery',
+      lines: [],
+      planes: [],
+      linePlanes: [],
+      count: 0,
+      stereoPairsCount: stereoPairs.length,
+      engine: 'javascript_mvs_triangulation',
+      timestamp: new Date().toISOString()
+    };
   }
 
-  // Insufficient authentic architectural lines detected in downward survey imagery.
-  // Never synthesize fake / arbitrary box wireframes when real building geometry is absent.
   return {
     success: false,
-    error: 'Insufficient authentic architectural lines detected (requires downward-pitch survey photos with authentic edges)',
+    error: 'Insufficient authentic architectural lines detected in downward survey imagery',
     lines: [],
     planes: [],
     linePlanes: [],
     count: 0,
-    engine: 'javascript_authentic_unprojection',
+    stereoPairsCount: 0,
+    engine: 'javascript_mvs_triangulation',
     timestamp: new Date().toISOString()
   };
+}
+
+/**
+ * Calculates 3D closest approach point between two camera rays.
+ */
+function closestPointsBetweenRays(p1, r1, p2, r2) {
+  const w0 = [p1.x - p2.x, p1.y - p2.y, p1.z - p2.z];
+  const a = r1[0]*r1[0] + r1[1]*r1[1] + r1[2]*r1[2];
+  const b = r1[0]*r2[0] + r1[1]*r2[1] + r1[2]*r2[2];
+  const c = r2[0]*r2[0] + r2[1]*r2[1] + r2[2]*r2[2];
+  const d = r1[0]*w0[0] + r1[1]*w0[1] + r1[2]*w0[2];
+  const e = r2[0]*w0[0] + r2[1]*w0[1] + r2[2]*w0[2];
+  const denom = a * c - b * b;
+  if (Math.abs(denom) < 1e-4) return { midpoint: null, dist: Infinity };
+  const s = (b * e - c * d) / denom;
+  const t = (a * e - b * d) / denom;
+  if (s <= 0 || t <= 0 || s > 500 || t > 500) return { midpoint: null, dist: Infinity };
+  const pt1 = [p1.x + s * r1[0], p1.y + s * r1[1], p1.z + s * r1[2]];
+  const pt2 = [p2.x + t * r2[0], p2.y + t * r2[1], p2.z + t * r2[2]];
+  const dist = Math.hypot(pt1[0] - pt2[0], pt1[1] - pt2[1], pt1[2] - pt2[2]);
+  const midpoint = [(pt1[0] + pt2[0]) / 2, (pt1[1] + pt2[1]) / 2, (pt1[2] + pt2[2]) / 2];
+  return { midpoint, dist };
+}
+
+/**
+ * Determines whether 2D point (x, z) lies within polygon.
+ */
+function isPointInPolygonXZ(x, z, poly) {
+  if (!poly || poly.length < 3) return true;
+  let inside = false;
+  const n = poly.length;
+  let p1x = poly[0][0], p1z = poly[0][1];
+  for (let i = 1; i <= n; i++) {
+    const p2x = poly[i % n][0], p2z = poly[i % n][1];
+    if (Math.min(p1z, p2z) < z && z <= Math.max(p1z, p2z)) {
+      if (x <= Math.max(p1x, p2x)) {
+        let xinters = p1x;
+        if (p1z !== p2z) xinters = (z - p1z) * (p2x - p1x) / (p2z - p1z) + p1x;
+        if (p1x === p2x || x <= xinters) inside = !inside;
+      }
+    }
+    p1x = p2x; p1z = p2z;
+  }
+  return inside;
 }
 
 /**
@@ -537,16 +559,23 @@ function extractWireframe(payload = {}) {
   try {
     fs.writeFileSync(tmpFile, JSON.stringify(payload), 'utf8');
 
-    // Run python wireframe_extractor.py
-    const proc = spawnSync('python', [SCRIPT_PATH, '--input', tmpFile], {
-      timeout: 60000,
-      encoding: 'utf8',
-      windowsHide: true
-    });
+    // Run python wireframe_extractor.py with cross-platform binary resolution
+    const pythonBins = process.platform === 'win32' ? ['python', 'python3'] : ['python3', 'python'];
+    let proc = null;
+    for (const bin of pythonBins) {
+      try {
+        proc = spawnSync(bin, [SCRIPT_PATH, '--input', tmpFile], {
+          timeout: 60000,
+          encoding: 'utf8',
+          windowsHide: true
+        });
+        if (proc && proc.status === 0 && proc.stdout) break;
+      } catch (_) {}
+    }
 
     try { fs.unlinkSync(tmpFile); } catch (_) {}
 
-    if (proc.status === 0 && proc.stdout) {
+    if (proc && proc.status === 0 && proc.stdout) {
       try {
         const parsed = JSON.parse(proc.stdout.trim());
         if (parsed.success && Array.isArray(parsed.lines) && parsed.lines.length > 0) {
