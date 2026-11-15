@@ -45987,6 +45987,43 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('Target Splat (Frustum Grid) IRL Field Flight Verification (v1.246.1, Refs #202)', () => {
+    test('Version consistency: v1.246.1 across package.json, changelog, index_template.html, and index.html', () => {
+      assertVersionConsistency('1.246.1');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.246.1] - 2026-11-15'));
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('v1.246.1'));
+      assert.ok(template.includes('Changelog (v1.246.1):'));
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      assert.ok(indexHtml.includes('v1.246.1'));
+      assert.ok(indexHtml.includes('Changelog (v1.246.1):'));
+    });
+
+    test('IRL status tracker formally marks target-splat as VERIFIED with all 6 checklist phases passed', () => {
+      const statusData = JSON.parse(fs.readFileSync(path.join(__dirname, 'docs/irl_test_status.json'), 'utf8'));
+      assert.strictEqual(statusData.patterns['target-splat'].status, 'VERIFIED');
+      assert.strictEqual(statusData.patterns['target-splat'].codeHash, '0ec37c04a3ff');
+      assert.strictEqual(statusData.patterns['target-splat'].verifiedCodeHash, '0ec37c04a3ff');
+      assert.strictEqual(statusData.patterns['target-splat'].lastTestedVersion, '1.246.0');
+      const chk = statusData.patterns['target-splat'].checklist;
+      assert.ok(chk.kmz_import && chk.entry_altitude && chk.geometry_path && chk.heading_gimbal && chk.capture_trigger && chk.exit_rth);
+      assert.strictEqual(statusData.patterns['target-splat'].lastTelemetryMetrics.waypointCompletionPct, 100);
+      assert.strictEqual(statusData.patterns['target-splat'].lastTelemetryMetrics.waypointCount, 86);
+      assert.strictEqual(statusData.patterns['target-splat'].lastTelemetryMetrics.rmsXteM, 0.29);
+      assert.strictEqual(statusData.patterns['target-splat'].lastTelemetryMetrics.meanGimbalPitchErrorDeg, 0);
+      assert.strictEqual(statusData.patterns['target-splat'].lastTelemetryMetrics.flightLog, 'FlightRecord_2026-11-15_[14-56-56].txt');
+    });
+
+    test('IRL test plan markdown reflects 9/26 patterns verified and target-splat checked off', () => {
+      const planMd = fs.readFileSync(path.join(__dirname, 'docs/IRL_TEST_PLAN.md'), 'utf8');
+      assert.ok(planMd.includes('**9 / 26** Patterns Verified'), 'Summary progress must report 9 / 26 Patterns Verified');
+      assert.ok(planMd.includes('| 3 | `target-splat` | **Target Splat (Frustum Grid)** | Mapping & 3D | ✅ `VERIFIED` |'), 'Table row must mark target-splat as VERIFIED');
+      assert.ok(planMd.includes('- [x] **Phase 1: KMZ / WPML Export & RC 2 Import**'), 'Phase 1 checklist item must be checked');
+      assert.ok(planMd.includes('- [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**'), 'Phase 6 checklist item must be checked');
+    });
+  });
+
 });
 });
 

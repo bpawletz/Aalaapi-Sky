@@ -1,3 +1,18 @@
+## [1.246.1] - 2026-11-15
+
+### Changed
+
+#### Pilot & Operational Features
+- **Target Splat (Frustum Grid) IRL Field Verification (Refs #202)**: The Target Splat (Frustum Grid) pattern is now formally `VERIFIED` across all 6 phases of the IRL Field Flight Test Plan using actual flight telemetry (`FlightRecord_2026-11-15_[14-56-56].txt`) on DJI Mini 4 Pro / RC 2.
+  - Executed 86 waypoints at 33m AGL, 4.0 m/s cruise speed, and -60° oblique pitch targeting central POI `[41.3215955, -88.995004]`.
+  - 86/86 waypoints reached (100%), 0.29m RMS cross-track error (max 1.59m at WP 25 turn transition), 0.06m RMS altitude variance (max 0.1m at WP 3), 0.0° mean gimbal pitch error (0.0° max), 0.2° mean yaw tracking error (max 1.8° at WP 43), 171/76 photos captured (225%), exit ΔH 0.21m, and 38% battery reserve at landing.
+  - Reminder: `IRL Verified` is a historical reference check only and does NOT guarantee safe flight under varying wind, GNSS, geomagnetic, terrain, obstacle, or firmware conditions. The RPIC retains sole responsibility for VLOS and flight safety.
+
+#### Under the Hood & Technical Details
+- **`docs/irl_test_status.json` & `docs/IRL_TEST_PLAN.md`**:
+  - Upgraded `target-splat` status to `VERIFIED` (6/6 phases passed, `verifiedCodeHash` `0ec37c04a3ff`) with complete `lastTelemetryMetrics` and history logging; IRL test matrix progress advances to 9 / 26 patterns verified.
+  - Recorded test-parameter profile variations: flown at 33m AGL and -60° pitch (vs 45m / -45° reference); Phase 4 verified pitch hold at the planned -60° across all 86 placemarks.
+
 ## [1.246.0] - 2026-11-15
 
 Added pre-flight 3D Wireframe & OpenCV 5 MVS Stereo Readiness analysis directly into Mission Planning and Flight Diagnostics, along with a one-click layer optimizer and specific CV failure diagnostics.

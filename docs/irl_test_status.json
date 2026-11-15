@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-15T21:14:11.714Z",
-  "currentAppVersion": "1.246.0",
+  "lastUpdated": "2026-11-15T23:26:35.301Z",
+  "currentAppVersion": "1.246.1",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "eb2417f42275",
@@ -185,15 +185,15 @@
         "generateTargetSplatCoordinates"
       ],
       "codeHash": "0ec37c04a3ff",
-      "verifiedCodeHash": null,
-      "status": "UNTESTED",
+      "verifiedCodeHash": "0ec37c04a3ff",
+      "status": "VERIFIED",
       "lastModifiedVersion": "1.209.0",
-      "lastTestedVersion": null,
-      "lastTestedDate": null,
-      "testedBy": null,
-      "droneModel": null,
-      "firmware": null,
-      "notes": "",
+      "lastTestedVersion": "1.246.0",
+      "lastTestedDate": "2026-11-15T19:56:56Z",
+      "testedBy": "RPIC Field QA (Verified FlightRecord_2026-11-15_[14-56-56].txt)",
+      "droneModel": "DJI Mini 4 Pro (68)",
+      "firmware": "RC 2 / DJI Fly",
+      "notes": "Flown and verified via FlightRecord_2026-11-15_[14-56-56].txt. Executed 86 waypoints at 33m AGL, 4.0 m/s cruise speed, and -60° oblique pitch targeting central POI [41.3215955, -88.995004]. 100% WP completion (86/86), 0.29m RMS XTE (max 1.59m at WP 25 turn transition), 0.06m RMS altitude variance (max 0.1m at WP 3), 0.0° gimbal pitch error, 0.2° mean yaw error (max 1.8° at WP 43), 171/76 photos (225%), exit ΔH 0.21m, 38% battery at landing. Flown at 33m altitude / -60° pitch (vs 45m / -45° reference); Phase 4 verified pitch hold at the planned -60° across all 86 placemarks.",
       "testParams": {
         "centerCoords": [
           41.3215,
@@ -212,15 +212,69 @@
         "framingMode": "balanced"
       },
       "checklist": {
-        "kmz_import": false,
-        "entry_altitude": false,
-        "geometry_path": false,
-        "heading_gimbal": false,
-        "capture_trigger": false,
-        "exit_rth": false
+        "kmz_import": true,
+        "entry_altitude": true,
+        "geometry_path": true,
+        "heading_gimbal": true,
+        "capture_trigger": true,
+        "exit_rth": true
       },
-      "lastTelemetryMetrics": null,
-      "history": []
+      "lastTelemetryMetrics": {
+        "waypointCount": 86,
+        "visitedCount": 86,
+        "waypointCompletionPct": 100,
+        "rmsXteM": 0.29,
+        "maxXteM": 1.59,
+        "rmsAltitudeErrorM": 0.06,
+        "maxAltitudeErrorM": 0.1,
+        "meanGimbalPitchErrorDeg": 0,
+        "maxPitchErrorDeg": 0,
+        "meanYawErrorDeg": 0.2,
+        "maxYawErrorDeg": 1.8,
+        "photoCountPlanned": 76,
+        "photoCountActual": 171,
+        "photoCaptureRatioPct": 225,
+        "batteryEndPct": 38,
+        "flightLog": "FlightRecord_2026-11-15_[14-56-56].txt"
+      },
+      "history": [
+        {
+          "timestamp": "2026-11-15T19:56:56Z",
+          "version": "1.246.0",
+          "status": "VERIFIED",
+          "codeHash": "0ec37c04a3ff",
+          "testedBy": "RPIC Field QA (Verified FlightRecord_2026-11-15_[14-56-56].txt)",
+          "droneModel": "DJI Mini 4 Pro (68)",
+          "firmware": "RC 2 / DJI Fly",
+          "notes": "Flown and verified via FlightRecord_2026-11-15_[14-56-56].txt. Executed 86 waypoints at 33m AGL, 4.0 m/s cruise speed, and -60° oblique pitch targeting central POI [41.3215955, -88.995004]. 100% WP completion (86/86), 0.29m RMS XTE (max 1.59m at WP 25 turn transition), 0.06m RMS altitude variance (max 0.1m at WP 3), 0.0° gimbal pitch error, 0.2° mean yaw error (max 1.8° at WP 43), 171/76 photos (225%), exit ΔH 0.21m, 38% battery at landing. Flown at 33m altitude / -60° pitch (vs 45m / -45° reference); Phase 4 verified pitch hold at the planned -60° across all 86 placemarks.",
+          "checklist": {
+            "kmz_import": true,
+            "entry_altitude": true,
+            "geometry_path": true,
+            "heading_gimbal": true,
+            "capture_trigger": true,
+            "exit_rth": true
+          },
+          "telemetryMetrics": {
+            "waypointCount": 86,
+            "visitedCount": 86,
+            "waypointCompletionPct": 100,
+            "rmsXteM": 0.29,
+            "maxXteM": 1.59,
+            "rmsAltitudeErrorM": 0.06,
+            "maxAltitudeErrorM": 0.1,
+            "meanGimbalPitchErrorDeg": 0,
+            "maxPitchErrorDeg": 0,
+            "meanYawErrorDeg": 0.2,
+            "maxYawErrorDeg": 1.8,
+            "photoCountPlanned": 76,
+            "photoCountActual": 171,
+            "photoCaptureRatioPct": 225,
+            "batteryEndPct": 38,
+            "flightLog": "FlightRecord_2026-11-15_[14-56-56].txt"
+          }
+        }
+      ]
     },
     "orbit": {
       "id": "orbit",
