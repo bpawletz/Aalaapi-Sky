@@ -45671,5 +45671,133 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('Issue #95 - OpenCV 5 Multi-View Stereo 3D Extraction & Assisted Modeling Suite', () => {
+    const wireframeEngine = require('./tools/companion/wireframe_engine.js');
+    const aiMeshEngine = require('./tools/companion/ai_mesh_engine.js');
+
+    test('wireframe_engine exports required MVS functions', () => {
+      assert.strictEqual(typeof wireframeEngine.extractWireframe, 'function');
+      assert.strictEqual(typeof wireframeEngine.extractWireframeJsFallback, 'function');
+      assert.strictEqual(typeof wireframeEngine.wireframeToObj, 'function');
+      assert.strictEqual(typeof wireframeEngine.wireframeToThreeJson, 'function');
+      assert.strictEqual(typeof wireframeEngine.latlonToWorld, 'function');
+      assert.strictEqual(typeof wireframeEngine.projectPixelToRay, 'function');
+    });
+
+    test('Multi-View Stereo epipolar ray triangulation with overlapping photo pairs', () => {
+      // Create synthetic stereo pair looking at building corner
+      const photo1 = {
+        photoId: 'P001',
+        filename: 'DJI_0001.JPG',
+        telemetry: {
+          lat: 41.3215, lon: -88.9950, altAgl: 25.0,
+          yaw: 90, pitch: -50, roll: 0, hfov: 73.7, vfov: 53.1
+        },
+        lines2D: [
+          [0.45, 0.45, 0.55, 0.45],
+          [0.45, 0.45, 0.45, 0.55],
+          [0.55, 0.45, 0.55, 0.55],
+          [0.45, 0.55, 0.55, 0.55]
+        ]
+      };
+      const photo2 = {
+        photoId: 'P002',
+        filename: 'DJI_0002.JPG',
+        telemetry: {
+          lat: 41.32152, lon: -88.99498, altAgl: 25.0,
+          yaw: 95, pitch: -52, roll: 0, hfov: 73.7, vfov: 53.1
+        },
+        lines2D: [
+          [0.44, 0.46, 0.54, 0.46],
+          [0.44, 0.46, 0.44, 0.56],
+          [0.54, 0.46, 0.54, 0.56],
+          [0.44, 0.56, 0.54, 0.56]
+        ]
+      };
+
+      const result = wireframeEngine.extractWireframeJsFallback({
+        photos: [photo1, photo2],
+        origin: { lat: 41.3215, lon: -88.9950 },
+        options: { sensitivity: 2.0 }
+      });
+
+      assert.strictEqual(result.engine, 'javascript_mvs_triangulation');
+      assert.ok(result.stereoPairsCount >= 1, 'Should detect at least 1 stereo baseline pair');
+      assert.ok(Array.isArray(result.lines));
+    });
+
+    test('Boundary polygon clipping suppresses out-of-boundary artifacts', () => {
+      const photo1 = {
+        photoId: 'P1',
+        telemetry: { lat: 41.3215, lon: -88.9950, altAgl: 25.0, yaw: 90, pitch: -50, hfov: 73.7, vfov: 53.1 },
+        lines2D: [[0.45, 0.45, 0.55, 0.45]]
+      };
+      const photo2 = {
+        photoId: 'P2',
+        telemetry: { lat: 41.32151, lon: -88.99499, altAgl: 25.0, yaw: 90, pitch: -50, hfov: 73.7, vfov: 53.1 },
+        lines2D: [[0.45, 0.45, 0.55, 0.45]]
+      };
+
+      // Disjoint boundary polygon far from scene
+      const farBoundary = [
+        [500, 500], [520, 500], [520, 520], [500, 520]
+      ];
+
+      const res = wireframeEngine.extractWireframeJsFallback({
+        photos: [photo1, photo2],
+        origin: { lat: 41.3215, lon: -88.9950 },
+        options: { boundaryPolygon: farBoundary, sensitivity: 2.0 }
+      });
+
+      assert.strictEqual(res.lines.length, 0, 'Lines outside boundary polygon must be rejected');
+    });
+
+    test('aiMeshEngine generates data-driven OBJ and GLB from USAC_MAGSAC planes', () => {
+      const mockPlanes = [
+        {
+          id: 'P0',
+          normal: [0, 1, 0],
+          polygon: [[-5, 8, -5], [5, 8, -5], [5, 8, 5], [-5, 8, 5]]
+        },
+        {
+          id: 'P1',
+          normal: [0, 0, 1],
+          polygon: [[-5, 0, 5], [5, 0, 5], [5, 8, 5], [-5, 8, 5]]
+        }
+      ];
+
+      const obj = aiMeshEngine.generateObjMesh({ planes: mockPlanes, elevationOffset: 2.0 });
+      assert.ok(obj.includes('# Model Type: Authentic Photogrammetric Planar Mesh'), 'Should indicate authentic photogrammetric planar mesh');
+      assert.ok(obj.includes('vn 0.0000 1.0000 0.0000'), 'Should contain plane normals');
+      assert.ok(obj.includes('v -5.0000 10.0000 -5.0000'), 'Should include elevation-offset vertices');
+
+      const glb = aiMeshEngine.generateGlbMesh({ planes: mockPlanes, elevationOffset: 2.0 });
+      assert.ok(Buffer.isBuffer(glb));
+      assert.strictEqual(glb.toString('utf8', 0, 4), 'glTF', 'Should be valid glTF binary');
+    });
+
+    test('Assisted 3D Modeling GUI controls exist in index_template.html', () => {
+      const html = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(html.includes('id="diag-wireframe-add-line-btn"'), 'Must have Bridge Edge button');
+      assert.ok(html.includes('id="diag-wf-use-boundary"'), 'Must have Boundary Hull clipping checkbox');
+      assert.ok(html.includes('id="diag-wf-suppress-veg"'), 'Must have Suppress Veg checkbox');
+      assert.ok(html.includes('id="diag-wf-eave-height"'), 'Must have Eave Height input');
+      assert.ok(html.includes('id="diag-wf-roof-height"'), 'Must have Roof Height input');
+      assert.ok(html.includes('id="diag-wf-sensitivity"'), 'Must have Stereo Parallax Tol slider');
+      assert.ok(html.includes('id="diag-wf-rerun-btn"'), 'Must have Re-triangulate MVS button');
+      assert.ok(html.includes('id="diag-stereo-pairs-badge"'), 'Must have Stereo Baselines badge in photos toolbar');
+    });
+
+    test('DigitalTwin.js includes Assisted 3D options, Bridge Edge mode, and LAN getCompanionApiBase', () => {
+      const src = fs.readFileSync(path.join(__dirname, 'src', '3d', 'DigitalTwin.js'), 'utf8');
+      assert.ok(src.includes('getAssisted3dOptions'), 'Must define getAssisted3dOptions');
+      assert.ok(src.includes('toggleBridgeEdgeMode'), 'Must define toggleBridgeEdgeMode');
+      assert.ok(src.includes('handleBridgeEdgePoint'), 'Must define handleBridgeEdgePoint');
+      assert.ok(src.includes('bridgeEdgeActive'), 'Must support interactive bridgeEdgeActive state');
+      assert.ok(!src.includes("RC2_API_BASE || 'http://127.0.0.1:8765'"), 'Must not have hardcoded localhost RC2_API_BASE fallback in AI 3D');
+    });
+  });
+
 });
 });
+

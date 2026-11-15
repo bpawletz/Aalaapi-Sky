@@ -1,3 +1,40 @@
+## [1.244.0] - 2026-11-15
+
+Upgraded 3D model extraction pipeline to authentic OpenCV 5.0 Multi-View Stereo (MVS) epipolar triangulation across overlapping aerial survey photos, eliminating synthetic dummy boxes and adding interactive Assisted 3D Modeling tools in the 3D viewport.
+
+### Added
+
+#### Pilot & Operational Features
+- **OpenCV 5.0 Multi-View Stereo (MVS) 3D Model Extraction (Closes #95)**:
+  - Replaced monocular pancake unprojection and synthetic dummy boxes ($18\text{ m} \times 14\text{ m}$) with authentic Multi-View Stereo epipolar ray triangulation across overlapping survey photos.
+  - Automatically discovers overlapping stereo baseline pairs from camera positions, FOV frustums, and heading alignments, displaying the discovered stereo baseline pair count in the Photo Inspector toolbar badge.
+  - Boundary polygon spatial clipping restricts reconstructed 3D wireframe edges squarely within the designated flight survey zone, rejecting stray exterior lines.
+  - Vegetation verticality filtering removes high-frequency organic tree canopy and brush clutter by evaluating vertical edge orientation and clustering density.
+  - Eave and roof height priors snap detected horizontal ridge and perimeter lines to user-specified architectural dimensions.
+- **Interactive Assisted 3D Modeling in 3D Viewport (Closes #95)**:
+  - Added "Bridge Edge" manual drawing tool (`#diag-wireframe-add-line-btn`) allowing pilots to click two vertices or ground intersection points directly in the 3D canvas to bridge missing architectural edges.
+  - Interactive Assisted 3D options panel (`#diag-wireframe-panel`) with boundary clipping toggle, vegetation filter toggle, eave/roof height inputs, stereo sensitivity slider, and 1-click "Re-Extract Wireframe" button.
+- **Android & Windows Companion Cross-Platform Support (Closes #95)**:
+  - Replaced hardcoded localhost endpoints in `DigitalTwin.js` with dynamic `getCompanionApiBase()` supporting Android tablet to companion server LAN connections.
+  - Supported cross-platform Python binary resolution (`python` / `python3`) on both Windows and Linux/Android hosts.
+
+#### Under the Hood & Technical Details
+- **`tools/companion/wireframe_extractor.py`**:
+  - Eliminated `synthesize_architectural_wireframe` synthetic box generator.
+  - Implemented `point_in_polygon_xz` for 2D spatial clipping and `build_camera_matrices` for intrinsic/extrinsic camera modeling.
+  - Implemented `build_stereo_pair_graph` discovering baseline pairs matching orientation, distance, and frustum overlap constraints.
+  - Implemented `unproject_authentic_architectural_lines` computing closest approach ray-ray epipolar triangulation across baseline pairs, testing both direct and inverted edge endpoint pairings.
+  - Upgraded planar facet extraction to OpenCV 5 `USAC_MAGSAC` with RANSAC fallback.
+- **`tools/companion/wireframe_engine.js`**:
+  - Upgraded `extractWireframeJsFallback` with multi-view stereo ray-ray epipolar triangulation, boundary polygon clipping, and prior height snapping.
+  - Updated Python invocation to dynamically detect `python` or `python3` across Windows and POSIX systems.
+- **`tools/companion/ai_mesh_engine.js` & `tools/companion/ai_mesh_worker.py`**:
+  - Updated mesh reconstruction to generate data-driven photogrammetric OBJ and binary glTF 2.0 (`.glb`) meshes directly from MVS wireframe planar facets.
+- **`src/3d/DigitalTwin.js`**:
+  - Implemented `toggleBridgeEdgeMode`, `handleBridgeEdgePoint`, and `getAssisted3dOptions`.
+  - Bound 3D canvas click raycasting to wireframe vertex snapping and ground plane projection.
+  - Forwarded assisted modeling options and wireframe data through `POST /api/ai3d/generate` using `getCompanionApiBase()`.
+
 ## [1.243.10] - 2026-11-13
 
 Comprehensive third-party tool, library, and data attribution across repository documentation and in-app interfaces, accompanied by credential security hardening, Terms of Service compliance protections, and seamless ADS-B local receiver and cloud feed merging.
