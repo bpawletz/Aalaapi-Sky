@@ -77,6 +77,10 @@ test('Field Stitcher Engine SCANS and PANORAMA Execution', async () => {
   assert.strictEqual(scansRes.success, true);
   assert.strictEqual(scansRes.mode, 'scans');
   assert.ok(scansRes.bounds, 'Scans result must include geographic bounds');
+  assert.ok(scansRes.previewUrl, 'Scans result must include previewUrl');
+  assert.strictEqual(scansRes.previewUrl, scansRes.imageUrl, 'previewUrl must equal imageUrl');
+  assert.ok(scansRes.boundsObj, 'boundsObj normalized shape must be present');
+  assert.strictEqual(typeof scansRes.boundsObj.south, 'number');
   assert.ok(scansRes.coveragePercent >= 0, 'Coverage percent should be computed');
   assert.ok(fs.existsSync(scansRes.outputPath), 'Output orthomosaic file should exist');
 
@@ -98,6 +102,8 @@ test('Field Stitcher Engine SCANS and PANORAMA Execution', async () => {
   assert.strictEqual(panoRes.mode, 'panorama');
   assert.strictEqual(panoRes.projection, 'equirectangular');
   assert.strictEqual(panoRes.hasGpanoXmp, true);
+  assert.ok(panoRes.previewUrl, 'Panorama result must include previewUrl');
+  assert.strictEqual(panoRes.previewUrl, panoRes.imageUrl, 'previewUrl must equal imageUrl');
   assert.ok(fs.existsSync(panoRes.outputPath), 'Output photosphere file should exist');
 
   const panoBuf = fs.readFileSync(panoRes.outputPath);

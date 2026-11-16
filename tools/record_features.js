@@ -4258,8 +4258,8 @@ const scenarios = [
   {
     id: 'feature_field_stitcher',
     name: 'Instant OpenCV Field Preview Stitcher for 2D Maps and 360° Photo Spheres',
-    description: 'Demonstrates in-situ OpenCV orthomosaic generation with georeferenced Leaflet overlay and interactive 3D WebGL spherical panorama viewer for 360 photo spheres.',
-    issueRef: 'Issue #305 (v1.250.0)',
+    description: 'Demonstrates in-situ OpenCV orthomosaic generation with georeferenced Leaflet overlay, floating HUD control pill, gallery showcase banner, and interactive 3D WebGL spherical panorama viewer.',
+    issueRef: 'Issue #305 (v1.250.0), Issue #312 (v1.250.1)',
     run: async (page) => {
       await centerMapOnPoint(page);
       await page.waitForTimeout(600);
@@ -4268,33 +4268,78 @@ const scenarios = [
       await selectPattern(page, 'grid');
       await page.waitForTimeout(800);
 
-      // 2. Open Flight Diagnostics modal
+      // 2. Open Flight Diagnostics modal and navigate to Photos tab
       await page.evaluate(() => {
         const diagBtn = document.getElementById('diag-topbar-btn') || document.querySelector('[data-modal="flight-diagnostics-modal"]');
         if (diagBtn) diagBtn.click();
         else if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
-          FlightDiagnostics.open();
+          FlightDiagnostics.open('photos');
+        }
+        const navPhotosBtn = document.getElementById('diag-nav-photos-btn');
+        if (navPhotosBtn) navPhotosBtn.click();
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Populate Stitched Previews Showcase Banner in Photos Tab (Issue #312)
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined') {
+          FlightDiagnostics.stitchedResults = {
+            scans: {
+              success: true,
+              mode: 'scans',
+              method: 'OpenCV SCANS',
+              photoCount: 16,
+              dimensions: [1280, 960],
+              bounds: [[41.3200, -88.9980], [41.3230, -88.9920]],
+              coveragePercent: 96.4,
+              previewUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+            },
+            panorama: {
+              success: true,
+              mode: 'panorama',
+              method: 'OpenCV PANORAMA',
+              photoCount: 12,
+              dimensions: [2048, 1024],
+              aspectRatio: 2.0,
+              previewUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+            }
+          };
+          FlightDiagnostics.renderStitchedResultsBar();
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 4. Close Flight Diagnostics modal and render 2D Map Orthomosaic Overlay
+      await page.evaluate(() => {
+        const closeBtn = document.getElementById('diag-close-btn');
+        if (closeBtn) closeBtn.click();
+        const diagModal = document.getElementById('diag-flight-modal') || document.getElementById('flight-diagnostics-modal');
+        if (diagModal) diagModal.classList.add('hidden');
+
+        if (typeof renderStitchedOrthomosaicMapLayer === 'function') {
+          renderStitchedOrthomosaicMapLayer({
+            success: true,
+            mode: 'scans',
+            photoCount: 16,
+            bounds: [[41.3200, -88.9980], [41.3230, -88.9920]],
+            coveragePercent: 96.4,
+            previewUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+          }, { fitBounds: false, opacity: 0.85 });
         }
       });
       await page.waitForTimeout(1000);
 
-      // 3. Highlight Stitch Orthomosaic & Stitch Panorama action buttons
+      // 5. Adjust Opacity on the Floating Map Ortho HUD Pill
       await page.evaluate(() => {
-        const orthoBtn = document.getElementById('diag-btn-stitch-ortho');
-        if (orthoBtn) {
-          orthoBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const slider = document.getElementById('map-ortho-opacity-slider');
+        if (slider) {
+          slider.value = '70';
+          slider.dispatchEvent(new Event('input'));
         }
       });
       await page.waitForTimeout(800);
 
-      // 4. Close Flight Diagnostics modal
-      await page.evaluate(() => {
-        const closeBtn = document.getElementById('diag-close-btn');
-        if (closeBtn) closeBtn.click();
-      });
-      await page.waitForTimeout(600);
-
-      // 5. Open Photo Inspector with mock 360 photo sphere and toggle 360 viewer
+      // 6. Open Photo Inspector with mock 360 photo sphere and toggle 360 viewer
       await page.evaluate(() => {
         if (typeof PhotoInspector !== 'undefined' && PhotoInspector.open) {
           PhotoInspector.open({
@@ -4309,15 +4354,18 @@ const scenarios = [
       });
       await page.waitForTimeout(1500);
 
-      // 6. Capture preview screenshot
+      // 7. Capture preview screenshot
       await page.screenshot({ path: 'recordings/feature_field_stitcher_preview.png' });
       await page.waitForTimeout(1000);
 
-      // 7. Toggle back and close Photo Inspector
+      // 8. Toggle back and close Photo Inspector & clear overlay
       await page.evaluate(() => {
         if (typeof PhotoInspector !== 'undefined') {
           PhotoInspector.toggle360Viewer(false);
           PhotoInspector.close();
+        }
+        if (typeof clearStitchedOrthomosaicMapLayer === 'function') {
+          clearStitchedOrthomosaicMapLayer();
         }
       });
       await page.waitForTimeout(600);

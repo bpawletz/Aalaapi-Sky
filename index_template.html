@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.250.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.250.1</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -3546,6 +3546,21 @@
   </button>
   <span id="map-zoom-level-badge" class="map-zoom-level-badge" title="Current Map Zoom Level">Z17</span>
 </div>
+
+<!-- Floating Stitched Orthomosaic Map Control Pill (v1.250.1, Issue #312) -->
+<div id="map-ortho-overlay-pill" class="map-floating-ortho-pill hidden" style="position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(11, 16, 27, 0.94); border: 1px solid rgba(16, 185, 129, 0.5); border-radius: 999px; padding: 6px 14px; display: none; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.55); backdrop-filter: blur(8px); pointer-events: auto;">
+  <span style="font-size: 0.8rem; font-weight: 700; color: #34d399; display: flex; align-items: center; gap: 5px;">
+    <span>🗺️</span> <span>Orthomosaic</span>
+  </span>
+  <label style="font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin: 0;">
+    <span>Opacity:</span>
+    <input type="range" id="map-ortho-opacity-slider" min="0" max="100" value="85" style="width: 70px; height: 4px; accent-color: #34d399; cursor: pointer;" />
+    <span id="map-ortho-opacity-label" style="min-width: 28px; font-family: monospace; font-size: 0.72rem; color: #34d399;">85%</span>
+  </label>
+  <button id="map-ortho-inspect-btn" type="button" class="btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.70rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" title="Inspect in Photo Inspector">🔍 Inspect</button>
+  <button id="map-ortho-fit-btn" type="button" class="btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.70rem; border-color: rgba(16, 185, 129, 0.4); color: #34d399;" title="Zoom to Orthomosaic Bounds">🎯 Fit</button>
+  <button id="map-ortho-clear-btn" type="button" class="btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.70rem; border-color: rgba(239, 68, 68, 0.4); color: #f87171;" title="Dismiss Orthomosaic Overlay">✕ Clear</button>
+</div>
       <div id="undo-feedback-toast" class="undo-feedback-toast" style="display: none; position: absolute; top: 48px; left: 54px; z-index: 1001; pointer-events: none;"></div>
 
       <!-- 2D Elevation Profile Drawer (Issue #129, #158) -->
@@ -5118,6 +5133,17 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>✨</span>
+              Stitched 2D Orthomosaic &amp; 360° Sphere UI Previews (v1.250.1) (Closes #312)
+            </strong>
+            <ul style="margin: 6px 0 0 18px; padding: 0; font-size: 0.78rem; color: #cbd5e1; line-height: 1.45;">
+              <li><strong>Stitched Previews Showcase Banner (<code>#diag-stitched-results-bar</code>):</strong> Interactive gallery banner at the top of Flight Diagnostics Photos tab showcasing stitched 2D and 360° thumbnails, dimensions, photo counts, and 1-click action shortcuts.</li>
+              <li><strong>Interactive 2D Map Orthomosaic Overlay &amp; Floating HUD Pill (<code>#map-ortho-overlay-pill</code>):</strong> Georeferenced orthomosaic rendering with live opacity slider (0%–100%), 1-click fit to bounds, and direct Photo Inspector shortcut.</li>
+              <li><strong>3D Digital Twin Ground Projection &amp; Offline Canvas Fallback:</strong> Projects stitched orthomosaic texture directly onto the 3D ground plane with deterministic client-side HTML5 canvas fallback stitching when offline.</li>
+            </ul>
+          </div>
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>🗺️</span>
@@ -8064,7 +8090,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.250.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.250.1</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -8255,6 +8281,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                                 <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.250.1):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Stitched 2D Orthomosaic &amp; 360° Sphere UI Previews (Closes #312):</strong> Added an in-gallery Stitched Previews Showcase Banner (<code>#diag-stitched-results-bar</code>) to Flight Diagnostics Photos tab with preview thumbnails, metadata badges, and 1-click action shortcuts (<code>🗺️ View on Map</code>, <code>🌐 3D Floor</code>, <code>🌐 360° View</code>, <code>🔍 Inspect</code>). Added a floating 2D Map Orthomosaic HUD control pill (<code>#map-ortho-overlay-pill</code>) with live opacity slider, 1-click fit, and inspect shortcuts. Synchronized WebGL 360° texture reloading and added offline HTML5 canvas fallback stitching.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.250.0):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -13803,6 +13835,11 @@
           </div>
         </div>
 
+        <!-- Stitched Previews Showcase Banner (v1.250.1, Issue #312) -->
+        <div id="diag-stitched-results-bar" class="diag-stitched-results-bar hidden" style="padding: 10px 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(56, 189, 248, 0.08)); border-bottom: 1px solid rgba(56, 189, 248, 0.25); display: flex; flex-direction: column; gap: 8px;">
+          <!-- Dynamically populated by FlightDiagnostics.renderStitchedResultsBar() -->
+        </div>
+
         <!-- Photos Grid / Zero-State Container -->
         <div id="diag-photos-grid" class="diag-photos-grid">
           <!-- Populated dynamically by FlightDiagnostics.renderInspectionPhotosUI() -->
@@ -14064,6 +14101,7 @@
           <button id="photo-detect-tags-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" title="Run In-Browser Optical Tag Detector (AprilTag 25h9/36h11/16h5 &amp; ArUco 4x4/5x5) on current photo">🔍 Detect Tags</button>
           <button id="photo-toggle-hud-btn" class="btn-secondary btn-sm active" type="button" style="font-size: 0.72rem; padding: 3px 8px; border-color: rgba(251, 191, 36, 0.4); color: #fbbf24;" title="Toggle Celestial Position HUD Overlay (Sun in Daytime / Moon &amp; Lunar Phase at Night)">☀️/🌙 HUD</button>
           <button id="photo-360-view-btn" class="btn-secondary btn-sm" type="button" style="display: none; font-size: 0.72rem; padding: 3px 8px; color: #a855f7; border-color: rgba(168, 85, 247, 0.4);" title="Toggle 360° Interactive Photo Sphere Viewer">🌐 360° Sphere</button>
+          <button id="photo-ortho-map-btn" class="btn-secondary btn-sm" type="button" style="display: none; font-size: 0.72rem; padding: 3px 8px; color: #34d399; border-color: rgba(16, 185, 129, 0.4);" title="View georeferenced orthomosaic on 2D map">🗺️ View on Map</button>
           <button id="inspector-plane-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Measurement Plane Calibration (Slant Optical Plane for Roofs/Elevated Structures vs Flat Ground Plane)">🏠 Slant (Structure)</button>
           <button id="inspector-unit-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Metric / Imperial Dimension Display">📏 Metric</button>
           <button id="close-photo-inspector-btn" class="close-btn" type="button" aria-label="Close photo inspector">&times;</button>

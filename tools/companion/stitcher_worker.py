@@ -54,14 +54,25 @@ def compute_footprint_bounds(photos, default_gsd_cm=1.5):
     lons = []
     alt_max = 25.0
     for p in photos:
-        lat = p.get('lat')
-        lon = p.get('lon')
+        if isinstance(p, str):
+            continue
+        lat = p.get('lat') if isinstance(p, dict) else None
+        lon = p.get('lon') if isinstance(p, dict) else None
+        if (lat is None or lon is None) and isinstance(p, dict) and isinstance(p.get('actual'), dict):
+            lat = p['actual'].get('lat')
+            lon = p['actual'].get('lon')
         if lat is not None and lon is not None:
-            lats.append(float(lat))
-            lons.append(float(lon))
-        alt = p.get('altAgl') or p.get('alt') or (p.get('telemetry', {}).get('worldY'))
+            try:
+                lats.append(float(lat))
+                lons.append(float(lon))
+            except (ValueError, TypeError):
+                pass
+        alt = (p.get('altAgl') or p.get('alt') or (p.get('actual', {}).get('altAgl') if isinstance(p.get('actual'), dict) else None) or (p.get('telemetry', {}).get('worldY') if isinstance(p.get('telemetry'), dict) else None)) if isinstance(p, dict) else None
         if alt:
-            alt_max = max(alt_max, float(alt))
+            try:
+                alt_max = max(alt_max, float(alt))
+            except (ValueError, TypeError):
+                pass
 
     if not lats:
         return None
@@ -88,11 +99,16 @@ def load_image(photo_entry, max_dim=1280):
     """
     Loads an image from file path or base64 and downscales to max_dim.
     """
-    path = photo_entry.get('filePath') or photo_entry.get('rawPath') or photo_entry.get('previewUrl')
+    path = None
+    if isinstance(photo_entry, str):
+        path = photo_entry
+    elif isinstance(photo_entry, dict):
+        path = photo_entry.get('filePath') or photo_entry.get('rawPath') or photo_entry.get('previewUrl')
+
     img = None
     if path and os.path.exists(path):
         img = cv2.imread(path)
-    elif photo_entry.get('base64'):
+    elif isinstance(photo_entry, dict) and photo_entry.get('base64'):
         try:
             b64 = photo_entry['base64']
             if ',' in b64:
@@ -240,8 +256,11 @@ def build_synthetic_fallback_pano(photos, output_w=2048, output_h=1024):
 
     # Map each photo onto equirectangular coordinates
     for p in photos:
-        yaw = float(p.get('yaw') or p.get('heading') or 0.0) % 360.0
-        pitch = float(p.get('pitch') or p.get('gimbalPitch') or 0.0)
+        yaw = 0.0
+        pitch = 0.0
+        if isinstance(p, dict):
+            yaw = float(p.get('yaw') or p.get('heading') or (p.get('actual', {}).get('heading') if isinstance(p.get('actual'), dict) else 0.0) or 0.0) % 360.0
+            pitch = float(p.get('pitch') or p.get('gimbalPitch') or (p.get('actual', {}).get('gimbalPitch') if isinstance(p.get('actual'), dict) else 0.0) or 0.0)
 
         # X corresponds to yaw (0..360 -> 0..output_w)
         cx = int((yaw / 360.0) * output_w)
@@ -250,7 +269,16 @@ def build_synthetic_fallback_pano(photos, output_w=2048, output_h=1024):
 
         img = load_image(p, max_dim=480)
         if img is None:
-            continue
+            # Generate procedural labeled camera frame patch for virtual/simulated captures
+            pw, ph = 140, 100
+            patch = np.zeros((ph, pw, 3), dtype=np.uint8)
+            patch[:, :] = [45, 95, 60]
+            cv2.rectangle(patch, (2, 2), (pw - 2, ph - 2), (90, 180, 110), 2)
+            cv2.circle(patch, (pw // 2, ph // 2), 10, (56, 189, 248), 2)
+            fname = (p.get('filename') or p.get('id') or f"Y{int(yaw)}P{int(pitch)}") if isinstance(p, dict) else "FRAME"
+            cv2.putText(patch, str(fname)[:10], (8, ph // 2 - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (255, 255, 255), 1)
+            cv2.putText(patch, f"Y:{int(yaw)} P:{int(pitch)}", (8, ph // 2 + 16), cv2.FONT_HERSHEY_SIMPLEX, 0.34, (56, 189, 248), 1)
+            img = patch
 
         ih, iw = img.shape[:2]
         target_w = max(80, int(output_w * 0.16))

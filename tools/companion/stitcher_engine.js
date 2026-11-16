@@ -330,6 +330,15 @@ async function runStitchJob(payload = {}, onProgress = null) {
     const hostBase = payload.hostBase || 'http://127.0.0.1:8765';
     stitchResult.imageUrl = `${hostBase}/scratch/mission_archives/${encodeURIComponent(missionUuid)}/stitched/${outputImgName}?t=${Date.now()}`;
     stitchResult.relativeUrl = `/scratch/mission_archives/${encodeURIComponent(missionUuid)}/stitched/${outputImgName}`;
+    stitchResult.previewUrl = stitchResult.imageUrl;
+    if (Array.isArray(stitchResult.bounds) && stitchResult.bounds.length === 2 && Array.isArray(stitchResult.bounds[0])) {
+      stitchResult.boundsObj = {
+        south: stitchResult.bounds[0][0],
+        west: stitchResult.bounds[0][1],
+        north: stitchResult.bounds[1][0],
+        east: stitchResult.bounds[1][1]
+      };
+    }
     stitchResult.timestamp = new Date().toISOString();
 
     // Save manifest

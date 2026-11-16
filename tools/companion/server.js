@@ -5689,22 +5689,29 @@ const handleHttpRequest = async (req, res) => {
             }
           }
 
+          const hostBase = `${req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http')}://${req.headers.host || `127.0.0.1:${PORT}`}`;
           const rawDir = path.join(mDir, 'photos', 'raw');
           const prevDir = path.join(mDir, 'photos', 'previews');
           const resolvedPhotos = photos.map((p, idx) => {
             if (typeof p === 'string') {
-              if (fs.existsSync(p)) return p;
               const fn = path.basename(p);
-              if (fs.existsSync(path.join(rawDir, fn))) return path.join(rawDir, fn);
-              if (fs.existsSync(path.join(prevDir, fn))) return path.join(prevDir, fn);
-              return p;
+              let fp = p;
+              if (fs.existsSync(p)) fp = p;
+              else if (fs.existsSync(path.join(rawDir, fn))) fp = path.join(rawDir, fn);
+              else if (fs.existsSync(path.join(prevDir, fn))) fp = path.join(prevDir, fn);
+              return { filePath: fp, filename: fn, id: fn };
             }
             const fn = p.filename || p.photoId || p.id || `photo_${idx}.jpg`;
-            if (p.filePath && fs.existsSync(p.filePath)) return p.filePath;
-            if (p.rawPath && fs.existsSync(p.rawPath)) return p.rawPath;
-            if (fs.existsSync(path.join(rawDir, fn))) return path.join(rawDir, fn);
-            if (fs.existsSync(path.join(prevDir, fn))) return path.join(prevDir, fn);
-            return p.previewUrl || p.thumbnailUrl || fn;
+            let resolvedPath = p.previewUrl || p.thumbnailUrl || fn;
+            if (p.filePath && fs.existsSync(p.filePath)) resolvedPath = p.filePath;
+            else if (p.rawPath && fs.existsSync(p.rawPath)) resolvedPath = p.rawPath;
+            else if (fs.existsSync(path.join(rawDir, fn))) resolvedPath = path.join(rawDir, fn);
+            else if (fs.existsSync(path.join(prevDir, fn))) resolvedPath = path.join(prevDir, fn);
+            return {
+              ...p,
+              filePath: resolvedPath,
+              filename: fn
+            };
           });
 
           const mode = (payload.mode === 'panorama' || payload.mode === 'photosphere' || payload.mode === '360') ? 'panorama' : 'scans';
@@ -5719,7 +5726,8 @@ const handleHttpRequest = async (req, res) => {
             resolution: payload.resolution || 'preview',
             cropBlackBorders: payload.cropBlackBorders !== false,
             injectXmp: payload.injectXmp !== false,
-            homePoint: payload.homePoint || manifest?.homePoint || null
+            homePoint: payload.homePoint || manifest?.homePoint || null,
+            hostBase
           };
 
           broadcastStitchProgress({
@@ -6186,6 +6194,15 @@ const handleHttpRequest = async (req, res) => {
             if (fs.existsSync(wfPath)) {
               try {
                 mObj.wireframe = JSON.parse(fs.readFileSync(wfPath, 'utf8'));
+              } catch (_) {}
+            }
+          }
+
+          if (!mObj.stitched && mPath) {
+            const stitchedManifestPath = path.join(path.dirname(mPath), 'stitched', 'stitch_manifest.json');
+            if (fs.existsSync(stitchedManifestPath)) {
+              try {
+                mObj.stitched = JSON.parse(fs.readFileSync(stitchedManifestPath, 'utf8'));
               } catch (_) {}
             }
           }

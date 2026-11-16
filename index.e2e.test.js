@@ -14091,5 +14091,142 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         }
       });
     });
+
+    test('E2E UI: Stitched Images Showcase Banner, Map Ortho HUD Pill & Photo Inspector View (Issue #312)', async () => {
+      // 1. Verify existence of DOM elements
+      const domCheck = await page.evaluate(() => {
+        return {
+          hasBanner: !!document.getElementById('diag-stitched-results-bar'),
+          hasPill: !!document.getElementById('map-ortho-overlay-pill'),
+          hasSlider: !!document.getElementById('map-ortho-opacity-slider'),
+          hasFitBtn: !!document.getElementById('map-ortho-fit-btn'),
+          hasInspectBtn: !!document.getElementById('map-ortho-inspect-btn'),
+          hasOrthoMapBtn: !!document.getElementById('photo-ortho-map-btn')
+        };
+      });
+
+      assert.strictEqual(domCheck.hasBanner, true, '#diag-stitched-results-bar must exist in DOM');
+      assert.strictEqual(domCheck.hasPill, true, '#map-ortho-overlay-pill must exist in DOM');
+      assert.strictEqual(domCheck.hasSlider, true, '#map-ortho-opacity-slider must exist in DOM');
+      assert.strictEqual(domCheck.hasFitBtn, true, '#map-ortho-fit-btn must exist in DOM');
+      assert.strictEqual(domCheck.hasInspectBtn, true, '#map-ortho-inspect-btn must exist in DOM');
+      assert.strictEqual(domCheck.hasOrthoMapBtn, true, '#photo-ortho-map-btn must exist in DOM');
+
+      // 2. Test Stitched Previews Showcase Banner in FlightDiagnostics
+      const bannerState = await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined') {
+          FlightDiagnostics.stitchedResults = {
+            scans: {
+              success: true,
+              mode: 'scans',
+              method: 'OpenCV SCANS',
+              photoCount: 12,
+              dimensions: [1280, 960],
+              bounds: [[41.3200, -88.9980], [41.3230, -88.9920]],
+              coveragePercent: 95.5,
+              previewUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+            },
+            panorama: {
+              success: true,
+              mode: 'panorama',
+              method: 'OpenCV PANORAMA',
+              photoCount: 8,
+              dimensions: [2048, 1024],
+              aspectRatio: 2.0,
+              previewUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+            }
+          };
+          FlightDiagnostics.renderStitchedResultsBar();
+        }
+
+        const bar = document.getElementById('diag-stitched-results-bar');
+        const cards = bar ? bar.querySelectorAll('.diag-stitched-card') : [];
+        const isVisible = bar ? !bar.classList.contains('hidden') && bar.style.display !== 'none' : false;
+
+        return {
+          isVisible,
+          cardCount: cards.length
+        };
+      });
+
+      assert.strictEqual(bannerState.isVisible, true, '#diag-stitched-results-bar must be visible when results exist');
+      assert.strictEqual(bannerState.cardCount, 2, 'Showcase banner must display cards for both scans and panorama');
+
+      // 3. Test 2D Map Orthomosaic Overlay & Floating HUD Control Pill
+      const mapOrthoState = await page.evaluate(() => {
+        const dummyStitch = {
+          success: true,
+          mode: 'scans',
+          method: 'OpenCV SCANS',
+          photoCount: 16,
+          bounds: [[41.3200, -88.9980], [41.3230, -88.9920]],
+          coveragePercent: 96.0,
+          previewUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+        };
+
+        if (typeof renderStitchedOrthomosaicMapLayer === 'function') {
+          renderStitchedOrthomosaicMapLayer(dummyStitch, { fitBounds: false, opacity: 0.85 });
+        }
+
+        const pill = document.getElementById('map-ortho-overlay-pill');
+        const slider = document.getElementById('map-ortho-opacity-slider');
+        const label = document.getElementById('map-ortho-opacity-label');
+
+        const pillVisible = pill ? !pill.classList.contains('hidden') && pill.style.display !== 'none' : false;
+        const initialOpacity = slider ? slider.value : null;
+
+        // Change opacity via slider
+        if (slider) {
+          slider.value = '50';
+          slider.dispatchEvent(new Event('input'));
+        }
+
+        const updatedLabel = label ? label.textContent : null;
+
+        return {
+          pillVisible,
+          initialOpacity,
+          updatedLabel
+        };
+      });
+
+      assert.strictEqual(mapOrthoState.pillVisible, true, '#map-ortho-overlay-pill must be visible after rendering orthomosaic');
+      assert.strictEqual(mapOrthoState.initialOpacity, '85', 'Initial slider value should be 85%');
+      assert.strictEqual(mapOrthoState.updatedLabel, '50%', 'Label should update to 50% when slider changed');
+
+      // 4. Test PhotoInspector Orthomosaic header buttons
+      const inspectorOrthoState = await page.evaluate(() => {
+        if (typeof PhotoInspector !== 'undefined' && PhotoInspector.open) {
+          PhotoInspector.open({
+            photoId: 'ORTHO_001',
+            filename: 'orthomosaic_preview.png',
+            isOrthomosaic: true,
+            mode: 'scans',
+            actual: { lat: 41.3215, lon: -88.9950, altAgl: 35 }
+          });
+        }
+
+        const orthoBtn = document.getElementById('photo-ortho-map-btn');
+        const panoBtn = document.getElementById('photo-360-view-btn');
+
+        return {
+          orthoBtnVisible: orthoBtn ? orthoBtn.style.display !== 'none' : false,
+          panoBtnHidden: panoBtn ? panoBtn.style.display === 'none' : false
+        };
+      });
+
+      assert.strictEqual(inspectorOrthoState.orthoBtnVisible, true, '#photo-ortho-map-btn must be visible for orthomosaic image');
+      assert.strictEqual(inspectorOrthoState.panoBtnHidden, true, '#photo-360-view-btn must be hidden for orthomosaic image');
+
+      // Clean up
+      await page.evaluate(() => {
+        if (typeof PhotoInspector !== 'undefined' && PhotoInspector.close) {
+          PhotoInspector.close();
+        }
+        if (typeof clearStitchedOrthomosaicMapLayer === 'function') {
+          clearStitchedOrthomosaicMapLayer();
+        }
+      });
+    });
   });
 });

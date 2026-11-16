@@ -1823,9 +1823,104 @@ function setMapAirspaceZoom() {
 
 // Computes current state of modified settings across all 5 domains
 
-// Instant OpenCV Field Preview Stitcher (2D Orthomosaic Layer) (Issue #305)
+// Instant OpenCV Field Preview Stitcher (2D Orthomosaic Layer) (Issue #305, #312)
 let stitchedOrthomosaicGroup = null;
 let currentStitchedOverlay = null;
+let lastStitchedOrthomosaicResult = null;
+
+function normalizeBounds(b) {
+  if (!b) return null;
+  if (Array.isArray(b)) {
+    if (b.length === 2 && Array.isArray(b[0]) && Array.isArray(b[1])) {
+      return {
+        south: Number(b[0][0]),
+        west: Number(b[0][1]),
+        north: Number(b[1][0]),
+        east: Number(b[1][1])
+      };
+    }
+    if (b.length === 4) {
+      return {
+        south: Number(b[0]),
+        west: Number(b[1]),
+        north: Number(b[2]),
+        east: Number(b[3])
+      };
+    }
+  } else if (typeof b === 'object') {
+    const s = b.south !== undefined ? b.south : b.minLat;
+    const w = b.west !== undefined ? b.west : b.minLon;
+    const n = b.north !== undefined ? b.north : b.maxLat;
+    const e = b.east !== undefined ? b.east : b.maxLon;
+    if (s !== undefined && n !== undefined) {
+      return {
+        south: Number(s),
+        west: Number(w),
+        north: Number(n),
+        east: Number(e)
+      };
+    }
+  }
+  return null;
+}
+
+function updateStitchedOrthomosaicHudPill(stitchResult, normBounds, currentOpacity) {
+  if (typeof document === 'undefined') return;
+  const pill = document.getElementById('map-ortho-overlay-pill');
+  if (!pill) return;
+
+  pill.classList.remove('hidden');
+  pill.style.display = 'flex';
+
+  const slider = document.getElementById('map-ortho-opacity-slider');
+  const label = document.getElementById('map-ortho-opacity-label');
+  if (slider) {
+    slider.value = Math.round(currentOpacity * 100);
+    slider.oninput = (e) => {
+      const val = parseInt(e.target.value, 10);
+      setStitchedOrthomosaicOpacity(val / 100);
+      if (label) label.textContent = `${val}%`;
+    };
+  }
+  if (label) label.textContent = `${Math.round(currentOpacity * 100)}%`;
+
+  const fitBtn = document.getElementById('map-ortho-fit-btn');
+  if (fitBtn) {
+    fitBtn.onclick = () => {
+      const activeMap = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map);
+      if (activeMap && normBounds) {
+        activeMap.fitBounds([
+          [normBounds.south, normBounds.west],
+          [normBounds.north, normBounds.east]
+        ], { padding: [20, 20], maxZoom: 19 });
+      }
+    };
+  }
+
+  const inspectBtn = document.getElementById('map-ortho-inspect-btn');
+  if (inspectBtn) {
+    inspectBtn.onclick = () => {
+      if (typeof PhotoInspector !== 'undefined' && typeof PhotoInspector.open === 'function') {
+        PhotoInspector.open({
+          isOrthomosaic: true,
+          mode: 'scans',
+          filename: 'orthomosaic_preview.png',
+          previewUrl: stitchResult.previewUrl || stitchResult.imageUrl,
+          imageUrl: stitchResult.imageUrl || stitchResult.previewUrl,
+          dimensions: stitchResult.dimensions,
+          bounds: stitchResult.bounds
+        });
+      }
+    };
+  }
+
+  const clearBtn = document.getElementById('map-ortho-clear-btn');
+  if (clearBtn) {
+    clearBtn.onclick = () => {
+      clearStitchedOrthomosaicMapLayer();
+    };
+  }
+}
 
 function renderStitchedOrthomosaicMapLayer(stitchResult, options = {}) {
   const activeMap = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
@@ -1834,13 +1929,16 @@ function renderStitchedOrthomosaicMapLayer(stitchResult, options = {}) {
   stitchedOrthomosaicGroup.clearLayers();
 
   if (!stitchResult) return null;
-  const imageUrl = stitchResult.previewUrl || options.previewUrl;
-  const bounds = stitchResult.bounds || options.bounds;
+  lastStitchedOrthomosaicResult = stitchResult;
 
-  if (!imageUrl || !bounds || typeof bounds.south !== 'number' || typeof bounds.north !== 'number') return null;
+  const imageUrl = stitchResult.previewUrl || stitchResult.imageUrl || options.previewUrl || options.imageUrl;
+  const rawBounds = stitchResult.bounds || options.bounds;
+  const normBounds = normalizeBounds(rawBounds);
+
+  if (!imageUrl || !normBounds || isNaN(normBounds.south) || isNaN(normBounds.north)) return null;
   const imageBounds = [
-    [bounds.south, bounds.west],
-    [bounds.north, bounds.east]
+    [normBounds.south, normBounds.west],
+    [normBounds.north, normBounds.east]
   ];
 
   const opacity = (typeof options.opacity === 'number') ? options.opacity : 0.85;
@@ -1850,16 +1948,16 @@ function renderStitchedOrthomosaicMapLayer(stitchResult, options = {}) {
     alt: 'Field Stitched Orthomosaic'
   });
 
-  const photoCount = stitchResult.photosStitched || stitchResult.inputCount || 'N/A';
-  const engineName = stitchResult.engine || 'cv2.Stitcher_SCANS';
-  const areaHa = stitchResult.coverageSqMeters ? (stitchResult.coverageSqMeters / 10000).toFixed(2) + ' ha' : 'N/A';
+  const photoCount = stitchResult.photoCount || stitchResult.photosStitched || stitchResult.inputCount || 'N/A';
+  const engineName = stitchResult.method || stitchResult.engine || 'cv2.Stitcher_SCANS';
+  const cov = (typeof stitchResult.coveragePercent === 'number') ? `${stitchResult.coveragePercent}%` : (stitchResult.coverageSqMeters ? (stitchResult.coverageSqMeters / 10000).toFixed(2) + ' ha' : 'N/A');
 
   const popupContent = `
     <div style="font-family: inherit; font-size: 0.78rem; min-width: 180px;">
-      <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 4px;">🗺️ Stitched Orthomosaic Preview</div>
+      <div style="font-weight: 700; color: #34d399; margin-bottom: 4px;">🗺️ Stitched Orthomosaic Preview</div>
       <div style="color: var(--text-muted); font-size: 0.72rem;">Photos Stitched: <b>${photoCount}</b></div>
       <div style="color: var(--text-muted); font-size: 0.72rem;">Engine: <b>${engineName}</b></div>
-      <div style="color: var(--text-muted); font-size: 0.72rem;">Coverage: <b>${areaHa}</b></div>
+      <div style="color: var(--text-muted); font-size: 0.72rem;">Coverage: <b>${cov}</b></div>
     </div>
   `;
   overlay.bindPopup(popupContent);
@@ -1869,6 +1967,8 @@ function renderStitchedOrthomosaicMapLayer(stitchResult, options = {}) {
   if (options.fitBounds !== false && activeMap.fitBounds) {
     activeMap.fitBounds(imageBounds, { padding: [20, 20], maxZoom: 19 });
   }
+
+  updateStitchedOrthomosaicHudPill(stitchResult, normBounds, opacity);
 
   return overlay;
 }
@@ -1884,6 +1984,14 @@ function clearStitchedOrthomosaicMapLayer() {
     stitchedOrthomosaicGroup.clearLayers();
   }
   currentStitchedOverlay = null;
+  lastStitchedOrthomosaicResult = null;
+  if (typeof document !== 'undefined') {
+    const pill = document.getElementById('map-ortho-overlay-pill');
+    if (pill) {
+      pill.classList.add('hidden');
+      pill.style.display = 'none';
+    }
+  }
 }
 
 // Night Flight Map Layer & Cloud Cover Layer exports (v1.161.0 - Issue #143, v1.166.0)
@@ -1894,6 +2002,8 @@ if (typeof window !== 'undefined') {
   window.renderStitchedOrthomosaicMapLayer = renderStitchedOrthomosaicMapLayer;
   window.setStitchedOrthomosaicOpacity = setStitchedOrthomosaicOpacity;
   window.clearStitchedOrthomosaicMapLayer = clearStitchedOrthomosaicMapLayer;
+  window.normalizeBounds = normalizeBounds;
+  window.updateStitchedOrthomosaicHudPill = updateStitchedOrthomosaicHudPill;
   window.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
   window.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
   window.setMapPlanningZoom = setMapPlanningZoom;
@@ -1906,6 +2016,8 @@ if (typeof global !== 'undefined') {
   global.renderStitchedOrthomosaicMapLayer = renderStitchedOrthomosaicMapLayer;
   global.setStitchedOrthomosaicOpacity = setStitchedOrthomosaicOpacity;
   global.clearStitchedOrthomosaicMapLayer = clearStitchedOrthomosaicMapLayer;
+  global.normalizeBounds = normalizeBounds;
+  global.updateStitchedOrthomosaicHudPill = updateStitchedOrthomosaicHudPill;
   global.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
   global.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
   global.setMapPlanningZoom = setMapPlanningZoom;
@@ -1920,6 +2032,8 @@ if (typeof module !== 'undefined' && module.exports) {
     getReplayDroneMarkerHtml,
     renderStitchedOrthomosaicMapLayer,
     setStitchedOrthomosaicOpacity,
-    clearStitchedOrthomosaicMapLayer
+    clearStitchedOrthomosaicMapLayer,
+    normalizeBounds,
+    updateStitchedOrthomosaicHudPill
   };
 }

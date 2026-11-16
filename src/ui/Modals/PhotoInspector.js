@@ -288,7 +288,7 @@ const PhotoInspector = {
       || (typeof activeLayerId !== 'undefined' && activeLayerId)
       || 'layer-1';
 
-    let imgSrc = this.activePhoto.previewUrl || '';
+    let imgSrc = this.activePhoto.previewUrl || this.activePhoto.imageUrl || '';
     if (!imgSrc && this.activePhoto.rawPath && typeof this.activePhoto.rawPath === 'string' && !this.activePhoto.rawPath.includes(':') && !this.activePhoto.rawPath.startsWith('\\\\')) {
       imgSrc = this.activePhoto.rawPath;
     }
@@ -590,6 +590,23 @@ const PhotoInspector = {
         panoBtn.classList.remove('active');
         panoBtn.style.background = '';
       }
+    }
+
+    const orthoMapBtn = document.getElementById('photo-ortho-map-btn');
+    if (orthoMapBtn) {
+      const isOrtho = Boolean(p.isOrthomosaic || p.mode === 'scans' || (p.filename && (p.filename.includes('orthomosaic') || p.filename.includes('stitched'))));
+      orthoMapBtn.style.display = isOrtho ? 'inline-flex' : 'none';
+      orthoMapBtn.onclick = () => {
+        if (typeof renderStitchedOrthomosaicMapLayer === 'function') {
+          renderStitchedOrthomosaicMapLayer(p, { fitBounds: true });
+        }
+        this.close();
+        const diagModal = document.getElementById('diag-flight-modal') || document.getElementById('flight-diagnostics-modal');
+        if (diagModal) diagModal.classList.add('hidden');
+        if (typeof showToast === 'function') {
+          showToast('🗺️ Stitched Orthomosaic projected onto 2D Map', 'success');
+        }
+      };
     }
 
     const isComp = p.variance ? p.variance.isCompliant : true;
@@ -2894,6 +2911,21 @@ const PhotoInspector = {
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 600;
 
+    if (this.three360Mesh && this.three360Mesh.material) {
+      const imgEl = document.getElementById('photo-inspector-img');
+      if (imgEl) {
+        const texture = new THREE.Texture(imgEl);
+        texture.needsUpdate = true;
+        if (!imgEl.complete) {
+          imgEl.addEventListener('load', () => {
+            texture.needsUpdate = true;
+          }, { once: true });
+        }
+        this.three360Mesh.material.map = texture;
+        this.three360Mesh.material.needsUpdate = true;
+      }
+    }
+
     if (!this.three360Scene) {
       this.three360Scene = new THREE.Scene();
       this.three360Camera = new THREE.PerspectiveCamera(75, width / height, 1, 1100);
@@ -2909,6 +2941,11 @@ const PhotoInspector = {
       const imgEl = document.getElementById('photo-inspector-img');
       const texture = new THREE.Texture(imgEl);
       texture.needsUpdate = true;
+      if (imgEl && !imgEl.complete) {
+        imgEl.addEventListener('load', () => {
+          texture.needsUpdate = true;
+        }, { once: true });
+      }
 
       const material = new THREE.MeshBasicMaterial({ map: texture });
       this.three360Mesh = new THREE.Mesh(geometry, material);

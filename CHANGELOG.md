@@ -1,3 +1,26 @@
+## [1.250.1] - 2026-11-16
+
+### Added
+
+#### Pilot & Operational Features
+- **Stitched Images Showcase Banner in Flight Diagnostics (Closes #312)**:
+  - Added a dedicated Stitched Previews Showcase Banner (`#diag-stitched-results-bar`) at the top of Flight Diagnostics Photos tab, presenting high-visibility preview cards for stitched 2D orthomosaics and 360° photo spheres with thumbnail previews, resolution badges, photo counts, and direct action shortcuts.
+  - Added one-click action shortcuts on preview cards: `🗺️ View on Map` (centers and renders on 2D Leaflet map), `🌐 3D Floor` (projects orthomosaic onto the 3D Digital Twin ground floor), `🌐 360° View` (opens Photo Inspector in interactive 360° WebGL mode), and `🔍 Inspect` (opens deep-zoom Photo Inspector).
+- **2D Map Floating Orthomosaic HUD Control Pill (`#map-ortho-overlay-pill`)**:
+  - Added a floating glassmorphic control bar on the main 2D Leaflet map featuring real-time opacity slider control (`0%–100%`), `🎯 Fit` bounds shortcut, `🔍 Inspect` button, and `✕ Clear` dismissal.
+- **Photo Inspector Orthomosaic Navigation & WebGL 360° Texture Synchronization**:
+  - Added a `🗺️ View on Map` header button (`#photo-ortho-map-btn`) in Photo Inspector when viewing stitched orthomosaics, enabling seamless jump from inspection back to the georeferenced flight map.
+  - Resolved Three.js WebGL texture reload timing in `PhotoInspector.init360Viewer` by listening for image load completion and re-binding existing sphere mesh materials when inspecting newly stitched panoramas.
+- **Client-Side HTML5 Canvas Stitcher Fallback**:
+  - Implemented offline procedural canvas fallback stitching (`buildClientFallbackStitch`) generating deterministic 2D orthomosaic composites and equirectangular 360° panoramas when disconnected from the companion Python bridge.
+
+#### Under the Hood & Technical Details
+- **Backend-Frontend Payload & Bounds Normalization (`tools/companion/server.js`, `tools/companion/stitcher_engine.js`, `tools/companion/stitcher_worker.py`, `src/map/MapEngine.js`)**:
+  - Resolved property naming mismatches by ensuring both `previewUrl` and `imageUrl` are populated on all stitcher responses and Photo Inspector inputs.
+  - Implemented `normalizeBounds` in `MapEngine.js` supporting array-of-arrays `[[south, west], [north, east]]`, 4-element arrays `[s, w, n, e]`, and bounds objects `{ south, west, north, east }`.
+  - Preserved complete photo object metadata (lat, lon, alt, heading, yaw) in `tools/companion/server.js` `POST /api/process/stitch` instead of stripping to string paths, and attached existing stitched manifests in `GET /api/media/manifest`.
+  - Hardened `stitcher_worker.py` against string-or-dict photo structures and procedural patch generation for simulated multi-ring panorama captures.
+
 ## [1.250.0] - 2026-11-16
 
 Added an instant OpenCV 5 field preview stitcher in Companion Bridge and client UI, generating rapid 2D map orthomosaics and 360° photo spheres directly in the field with black-border trimming, affine georeferencing, embedded Google Photo Sphere (GPano) metadata, and interactive 3D WebGL viewing.
