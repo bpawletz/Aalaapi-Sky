@@ -171,6 +171,24 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv', options = 
 
   if (rawRows.length === 0) return null;
 
+  // Normalize millisecond timestamps to seconds if applicable
+  if (rawRows.length >= 2 && timeIdx !== -1) {
+    const isMilliHeader = header[timeIdx].includes('milli') || header[timeIdx].includes('[ms]') || header[timeIdx].includes('(ms)');
+    const firstT = rawRows[0].rowTime;
+    const lastT = rawRows[rawRows.length - 1].rowTime;
+    if (firstT !== null && lastT !== null) {
+      const span = Math.abs(lastT - firstT);
+      const avgStep = span / (rawRows.length - 1);
+      if (isMilliHeader || span > 100000) {
+        for (let i = 0; i < rawRows.length; i++) {
+          if (rawRows[i].rowTime !== null) {
+            rawRows[i].rowTime = rawRows[i].rowTime / 1000;
+          }
+        }
+      }
+    }
+  }
+
   let firstTime = rawRows[0].rowTime !== null ? rawRows[0].rowTime : 0;
   let lastTime = rawRows[rawRows.length - 1].rowTime !== null ? rawRows[rawRows.length - 1].rowTime : rawRows.length;
   let durationSec = Math.max(1, Math.round(lastTime - firstTime));
@@ -197,17 +215,29 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv', options = 
   let maxAlt = 0;
   let prevSec = -1;
   let photoCount = 0;
+  let prevRowIsPhoto = false;
+  let lastPhotoRowTime = null;
   let batteryRunning = rawRows[0].battery !== null ? rawRows[0].battery : 98.0;
 
   for (let i = 0; i < rawRows.length; i++) {
     const row = rawRows[i];
+    const isSubSecondHold = (
+      (row.rowTime !== null && lastPhotoRowTime !== null && Math.abs(row.rowTime - lastPhotoRowTime) < 0.8) ||
+      (row.rowTime === null && prevRowIsPhoto)
+    );
+    const isPhotoEdge = Boolean(row.isPhoto && !isSubSecondHold);
+    if (isPhotoEdge && row.rowTime !== null) {
+      lastPhotoRowTime = row.rowTime;
+    }
+    prevRowIsPhoto = Boolean(row.isPhoto);
+
     const sec = (row.rowTime !== null) ? Math.floor(row.rowTime - firstTime) : i;
-    const isSamplePoint = (sec !== prevSec) || row.isPhoto || (i === rawRows.length - 1);
+    const isSamplePoint = (sec !== prevSec) || isPhotoEdge || (i === rawRows.length - 1);
 
     if (isSamplePoint) {
       prevSec = sec;
       if (row.alt > maxAlt) maxAlt = row.alt;
-      if (row.isPhoto) photoCount++;
+      if (isPhotoEdge) photoCount++;
       if (row.battery !== null) batteryRunning = row.battery;
 
       if (points.length > 0) {
@@ -232,7 +262,7 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv', options = 
         yaw: Math.round(row.yaw * 10) / 10,
         battery: Math.round(batteryRunning * 10) / 10,
         satellites: row.satellites,
-        isPhoto: row.isPhoto,
+        isPhoto: isPhotoEdge,
         rc: row.rc,
         elevator: row.rc ? row.rc.elevator : 0,
         aileron: row.rc ? row.rc.aileron : 0,

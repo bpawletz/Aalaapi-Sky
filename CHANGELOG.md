@@ -1,3 +1,27 @@
+## [1.247.0] - 2026-11-15
+
+Resolved 3D reconstruction failures in Target Splat missions by implementing Footprint-Clamped Inward Aiming, a Nadir Roof Bridge, default Perimeter Orbit Pass, and accurate rising-edge 10Hz flight log photo counting.
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Target Splat Footprint-Clamped Inward Aiming (Closes #300)**:
+  - Eliminated the alternating 180° lawnmower flips that cut effective side overlap in half ($9.55\text{m} \to 19.1\text{m}$), ensuring all parallel passes face inward toward the target structure.
+  - Introduced Footprint-Clamped Aiming across building spans: flight lines across large buildings scan straight across the full width of wings without clipping outer walls, while standoff margin lines angle inward toward corners.
+  - Added an automated **Nadir Roof Bridge**: as flight lines pass directly over the building core, gimbal pitch smoothly transitions to `-85°` near-nadir, stitching North, South, East, and West views across the roof peak without mid-roof yaw spins.
+  - Enabled **Perimeter Orbit Pass** by default (`targetPerimeterPass = true`) on Target Splat layers, providing the critical 360° orbital facade ring at 65% altitude for guaranteed loop closure.
+  - Capped distant grazing lead-up photos in `balanced` and `tight` framing modes, shortening unnecessary lead-up lines by ~45% while keeping the target centered in the optical sweet spot.
+
+#### Under the Hood & Technical Details
+- **`src/3d/GeometryBuilder.js`**:
+  - In `generateTargetSplatCoordinates`, replaced alternating travel-heading assignments with footprint-clamped aim bounds (`coreMinX..coreMaxX`, `coreMinY..coreMaxY`), inward-axis heading resolution, boresight standoff lead-up capping, and distance-based pitch interpolation down to `-85°` over the roof core.
+- **`src/import/TelemetryParsers.js` & `tools/companion/log_decoder.js` (Closes #300)**:
+  - Fixed 10Hz telemetry photo counting in `parseCsvTelemetry`: suppressed sub-second continuation ticks (`dt < 0.8s` while `prevRowIsPhoto` is true), accurately reporting true physical shutter clicks (e.g. 76 photos instead of 171).
+- **`index_template.html`**:
+  - Updated `#target-perimeter-pass` checkbox to checked by default with expanded controls visible when Target Splat is selected.
+- **`index.test.js`**:
+  - Added unit regression tests for 10Hz rising-edge photo counting, Footprint-Clamped Inward Aiming, and the Nadir Roof Bridge.
+
 ## [1.246.1] - 2026-11-15
 
 ### Changed
