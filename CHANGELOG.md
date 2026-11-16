@@ -1,3 +1,20 @@
+## [1.248.1] - 2026-11-15
+
+### Changed
+
+#### Pilot & Operational Features
+- **E2E Browser Automation & Testing Reliability (Closes #293)**:
+  - Upgraded Playwright test automation framework to v1.65.0 with support for latest Chromium browser engine (r1255 / Chrome for Testing 159).
+  - Ensures robust headless browser execution and continuous UI regression testing across all flight planning and diagnostic workflows.
+
+#### Under the Hood & Technical Details
+- **Dependency Upgrades (`package.json`, `package-lock.json`) (Closes #293, Closes #294)**:
+  - Upgraded `playwright` from `^1.64.1` to `^1.65.0`.
+  - Upgraded `jsdom` from `^30.1.2` to `^31.0.0`, incorporating the integrated CSS parsing and selector matching implementation and updated script loading semantics.
+- **Test Suite Updates (`index.test.js`)**:
+  - Replaced hardcoded exact-version assertion on `playwright` with semver lower-bound check to ensure forward-compatible dependency bumps.
+  - Added test suite verifying `v1.248.1` version consistency across all six required locations and validating installed `playwright` (>= 1.65.0) and `jsdom` (>= 31.0.0) packages.
+
 ## [1.248.0] - 2026-11-15
 
 Brought full celestial parity to Flight Diagnostics with a physical 3D Moon/Sun sphere in the sky dome, dynamic nocturnal/solar lighting, and real-time Cockpit HUD celestial telemetry.

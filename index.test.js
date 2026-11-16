@@ -34328,7 +34328,7 @@ describe('Issue #144 & v1.182.1: Playwright 1.64.1 Dependency Upgrade & Version 
   test('package.json and node_modules specify Playwright >= 1.64.1', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
     assert.ok(pkg.dependencies.playwright, 'playwright must be declared in dependencies');
-    assert.strictEqual(pkg.dependencies.playwright, '^1.64.1');
+    assert.ok(semverGte(pkg.dependencies.playwright.replace(/^[\^~]/, ''), '1.64.1'), 'playwright dependency must be >= 1.64.1');
 
     const installedPkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'node_modules', 'playwright', 'package.json'), 'utf8'));
     assert.ok(semverGte(installedPkg.version, '1.64.1'), `installed playwright version (${installedPkg.version}) must be >= 1.64.1`);
@@ -46111,20 +46111,18 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
   describe('v1.248.0: 3D Moon & Sun Celestial Sphere and Cockpit HUD Telemetry in Flight Diagnostics (Issue #301)', () => {
     test('Version consistency: v1.248.0 entry preserved across package.json, CHANGELOG.md, and templates', () => {
-      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.248.0', 'package.json must be 1.248.0');
+      assertVersionConsistency('1.248.0');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.248.0] - 2026-11-15'), 'CHANGELOG.md must include v1.248.0 header');
       assert.ok(changelog.includes('Closes #301'), 'CHANGELOG.md must reference issue #301');
 
       const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-      assert.ok(template.includes('v1.248.0'), 'index_template.html must include v1.248.0');
-      assert.ok(template.includes('Version 1.248.0'), 'index_template.html must include Version 1.248.0');
       assert.ok(template.includes('Changelog (v1.248.0):'), 'index_template.html must include Changelog (v1.248.0)');
 
       const gradle = fs.readFileSync(path.join(__dirname, 'android/app/build.gradle.kts'), 'utf8');
-      assert.ok(gradle.includes('versionName = "1.248.0"'), 'build.gradle.kts must include versionName = "1.248.0"');
+      const gradleVersionMatch = gradle.match(/versionName\s*=\s*"([^"]+)"/);
+      assert.ok(gradleVersionMatch && semverGte(gradleVersionMatch[1], '1.248.0'), 'build.gradle.kts versionName must be >= 1.248.0');
     });
 
     test('DOM Architecture: #diag-hud-celestial-container and #diag-hud-celestial exist in templates and build', () => {
@@ -46236,6 +46234,42 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
       delete global.onDiagUpdated;
       assert.strictEqual(diagUpdated, true, 'update3DSunPosition must notify FlightDiagnostics.updateCelestialPosition when isOpen = true');
+    });
+  });
+
+  describe('PR #293, PR #294 & v1.248.1: Playwright 1.65.0 & jsdom 31.0.0 Dependency Upgrades', () => {
+    test('v1.248.1: version consistency across all 6 required locations', () => {
+      assertVersionConsistency('1.248.1');
+
+      const gradle = fs.readFileSync(path.join(__dirname, 'android/app/build.gradle.kts'), 'utf8');
+      assert.ok(gradle.includes('versionName = "1.248.1"'), 'build.gradle.kts must include versionName = "1.248.1"');
+      assert.ok(gradle.includes('versionCode = 1248001'), 'build.gradle.kts must include versionCode = 1248001');
+
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('v1.248.1'), 'index_template.html must include v1.248.1');
+      assert.ok(template.includes('Version 1.248.1'), 'index_template.html must include Version 1.248.1');
+      assert.ok(template.includes('Changelog (v1.248.1):'), 'index_template.html must include Changelog (v1.248.1)');
+    });
+
+    test('package.json and node_modules specify Playwright >= 1.65.0 and jsdom >= 31.0.0', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.ok(semverGte(pkg.dependencies.playwright.replace(/^[\^~]/, ''), '1.65.0'), 'playwright dependency must be >= 1.65.0');
+      assert.ok(semverGte(pkg.dependencies.jsdom.replace(/^[\^~]/, ''), '31.0.0'), 'jsdom dependency must be >= 31.0.0');
+
+      const installedPw = JSON.parse(fs.readFileSync(path.join(__dirname, 'node_modules', 'playwright', 'package.json'), 'utf8'));
+      assert.ok(semverGte(installedPw.version, '1.65.0'), `installed playwright (${installedPw.version}) must be >= 1.65.0`);
+
+      const installedJsdom = JSON.parse(fs.readFileSync(path.join(__dirname, 'node_modules', 'jsdom', 'package.json'), 'utf8'));
+      assert.ok(semverGte(installedJsdom.version, '31.0.0'), `installed jsdom (${installedJsdom.version}) must be >= 31.0.0`);
+    });
+
+    test('jsdom 31.0.0 DOMParser and JSDOM basic emulation behaves as expected', () => {
+      const { JSDOM } = require('jsdom');
+      const dom = new JSDOM('<!DOCTYPE html><html><body><div id="test-div" class="drone-box">Aalaapi Sky</div></body></html>');
+      const el = dom.window.document.getElementById('test-div');
+      assert.ok(el, '#test-div element must exist');
+      assert.strictEqual(el.textContent, 'Aalaapi Sky');
+      assert.ok(el.classList.contains('drone-box'), 'classList.contains must work');
     });
   });
 
