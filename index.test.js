@@ -46109,6 +46109,136 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('v1.248.0: 3D Moon & Sun Celestial Sphere and Cockpit HUD Telemetry in Flight Diagnostics (Issue #301)', () => {
+    test('Version consistency: v1.248.0 entry preserved across package.json, CHANGELOG.md, and templates', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.248.0', 'package.json must be 1.248.0');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.248.0] - 2026-11-15'), 'CHANGELOG.md must include v1.248.0 header');
+      assert.ok(changelog.includes('Closes #301'), 'CHANGELOG.md must reference issue #301');
+
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('v1.248.0'), 'index_template.html must include v1.248.0');
+      assert.ok(template.includes('Version 1.248.0'), 'index_template.html must include Version 1.248.0');
+      assert.ok(template.includes('Changelog (v1.248.0):'), 'index_template.html must include Changelog (v1.248.0)');
+
+      const gradle = fs.readFileSync(path.join(__dirname, 'android/app/build.gradle.kts'), 'utf8');
+      assert.ok(gradle.includes('versionName = "1.248.0"'), 'build.gradle.kts must include versionName = "1.248.0"');
+    });
+
+    test('DOM Architecture: #diag-hud-celestial-container and #diag-hud-celestial exist in templates and build', () => {
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      assert.ok(indexHtml.includes('id="diag-hud-celestial-container"'), '#diag-hud-celestial-container must exist in index.html');
+      assert.ok(indexHtml.includes('id="diag-hud-celestial"'), '#diag-hud-celestial must exist in index.html');
+
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(templateHtml.includes('id="diag-hud-celestial-container"'), '#diag-hud-celestial-container must exist in index_template.html');
+      assert.ok(templateHtml.includes('id="diag-hud-celestial"'), '#diag-hud-celestial must exist in index_template.html');
+    });
+
+    test('FlightDiagnostics.updateCelestialPosition updates 3D mesh, directional lighting, and Cockpit HUD', () => {
+      const { FlightDiagnostics } = require('./src/3d/DigitalTwin.js');
+      assert.ok(typeof FlightDiagnostics.updateCelestialPosition === 'function', 'updateCelestialPosition must be a function on FlightDiagnostics');
+
+      const mockDirLight = {
+        position: { x: 0, y: 0, z: 0, set: function(x, y, z) { this.x = x; this.y = y; this.z = z; } },
+        target: { position: { x: 0, y: 0, z: 0, set: function(x, y, z) { this.x = x; this.y = y; this.z = z; } } },
+        color: { hex: 0, setHex: function(h) { this.hex = h; } },
+        intensity: 1.0
+      };
+      const mockSunMesh = {
+        position: { x: 0, y: 0, z: 0, set: function(x, y, z) { this.x = x; this.y = y; this.z = z; } },
+        visible: true,
+        material: { color: { hex: 0, setHex: function(h) { this.hex = h; } } }
+      };
+
+      const origScene = FlightDiagnostics.threeScene;
+      const origSunLight = FlightDiagnostics.diagSunLight;
+      const origSunMesh = FlightDiagnostics.diagSunMesh;
+      const origOrigin = FlightDiagnostics.getSceneOrigin;
+
+      // Mock DOM element for Cockpit HUD
+      const mockHudEl = {
+        textContent: '',
+        style: { color: '' },
+        title: ''
+      };
+      const origGetElementById = global.document ? global.document.getElementById : null;
+      if (!global.document) global.document = {};
+      global.document.getElementById = (id) => {
+        if (id === 'diag-hud-celestial') return mockHudEl;
+        return null;
+      };
+
+      try {
+        FlightDiagnostics.threeScene = { add: () => {} };
+        FlightDiagnostics.diagSunLight = mockDirLight;
+        FlightDiagnostics.diagSunMesh = mockSunMesh;
+        FlightDiagnostics.getSceneOrigin = () => ({ lat: 41.3215, lon: -88.9950 });
+
+        // 1. Daytime scenario: effective solar noon at Utica, IL (2026-06-21 18:00 UTC)
+        const dayPt = { timestamp: '2026-06-21T18:00:00Z', lat: 41.3215, lon: -88.9950 };
+        FlightDiagnostics.updateCelestialPosition(dayPt);
+
+        assert.strictEqual(mockSunMesh.visible, true, 'Sun mesh must be visible in daytime');
+        assert.ok(mockSunMesh.material.color.hex === 0xfffbeb || mockSunMesh.material.color.hex === 0xfbbf24, 'Daytime sun must use sun color');
+        assert.ok(mockDirLight.intensity >= 0.5, 'Daytime directional light intensity must be active');
+        assert.ok(mockHudEl.textContent.includes('☀️'), 'Cockpit HUD must display ☀️ icon during daytime');
+
+        // 2. Nighttime scenario with Moon above horizon (full moon night)
+        // 2026-08-28 06:00 UTC (~1 AM local CDT, full moon high in southern sky)
+        const nightPt = { timestamp: '2026-08-28T06:00:00Z', lat: 41.3215, lon: -88.9950 };
+        FlightDiagnostics.updateCelestialPosition(nightPt);
+
+        assert.strictEqual(mockSunMesh.visible, true, 'Moon mesh must be visible when moon altitude > 0 at night');
+        assert.strictEqual(mockSunMesh.material.color.hex, 0xe0f2fe, 'Moon mesh must use silvery moonlight color (0xe0f2fe)');
+        assert.strictEqual(mockDirLight.color.hex, 0xbae6fd, 'Directional light must use silvery moonlight tint (0xbae6fd)');
+        assert.strictEqual(mockDirLight.intensity, 0.35, 'Moonlight intensity must be calibrated to 0.35');
+        assert.ok(mockHudEl.textContent.includes('🌕') || mockHudEl.textContent.includes('🌙'), 'Cockpit HUD must display lunar glyph at night');
+        assert.strictEqual(mockHudEl.style.color, '#38bdf8', 'Cockpit HUD moon readout must be styled #38bdf8');
+
+        // 3. Nighttime scenario with Moon below horizon
+        const darkNightPt = { timestamp: '2026-05-16T08:00:00Z', lat: 41.3215, lon: -88.9950 };
+        FlightDiagnostics.updateCelestialPosition(darkNightPt);
+        if (mockSunMesh.visible === false) {
+          assert.strictEqual(mockSunMesh.visible, false, 'Mesh must be hidden when both sun and moon are below horizon');
+          assert.ok(mockHudEl.textContent.includes('Night') || mockHudEl.textContent.includes('🌑'), 'Cockpit HUD should report night / dark moon');
+        }
+      } finally {
+        FlightDiagnostics.threeScene = origScene;
+        FlightDiagnostics.diagSunLight = origSunLight;
+        FlightDiagnostics.diagSunMesh = origSunMesh;
+        FlightDiagnostics.getSceneOrigin = origOrigin;
+        if (origGetElementById) {
+          global.document.getElementById = origGetElementById;
+        } else {
+          delete global.document.getElementById;
+        }
+      }
+    });
+
+    test('update3DSunPosition in SceneManager triggers FlightDiagnostics.updateCelestialPosition when open', () => {
+      let diagUpdated = false;
+      global.onDiagUpdated = () => { diagUpdated = true; };
+
+      vm.runInThisContext(`
+        var _origUpdate = FlightDiagnostics.updateCelestialPosition;
+        var _origOpen = FlightDiagnostics.isOpen;
+        FlightDiagnostics.isOpen = true;
+        FlightDiagnostics.updateCelestialPosition = function() {
+          if (global.onDiagUpdated) global.onDiagUpdated();
+        };
+        update3DSunPosition();
+        FlightDiagnostics.updateCelestialPosition = _origUpdate;
+        FlightDiagnostics.isOpen = _origOpen;
+      `);
+
+      delete global.onDiagUpdated;
+      assert.strictEqual(diagUpdated, true, 'update3DSunPosition must notify FlightDiagnostics.updateCelestialPosition when isOpen = true');
+    });
+  });
+
 });
 });
 

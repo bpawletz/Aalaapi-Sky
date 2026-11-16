@@ -3126,6 +3126,8 @@ const FlightDiagnostics = {
         this.groundMesh = null;
         this.groundTexture = null;
         this.droneMesh = null;
+        this.diagSunLight = null;
+        this.diagSunMesh = null;
         this.init3DScene();
       }, false);
     } else {
@@ -3235,6 +3237,21 @@ const FlightDiagnostics = {
       const dir = new THREE.DirectionalLight(0xffffff, 1.0);
       dir.position.set(100, 300, 100);
       this.threeScene.add(dir);
+      this.diagSunLight = dir;
+
+      // Luminous physical 3D Sun / Moon celestial sphere representation in the sky dome
+      try {
+        const sunGeo = new THREE.SphereGeometry(14, 16, 16);
+        const sunMat = new THREE.MeshBasicMaterial({
+          color: 0xfff5cc,
+          wireframe: false
+        });
+        this.diagSunMesh = new THREE.Mesh(sunGeo, sunMat);
+        this.diagSunMesh.position.copy(dir.position);
+        this.threeScene.add(this.diagSunMesh);
+      } catch (err) {
+        console.warn('Could not initialize Flight Diagnostics 3D Celestial Mesh:', err);
+      }
 
       // Ground Grid
       const grid = new THREE.GridHelper(400, 40, 0x06b6d4, 0x1e293b);
@@ -3273,7 +3290,163 @@ const FlightDiagnostics = {
     // Auto-frame camera to encompass trajectory meshes, drone avatar, and home point
     this.frameCameraToScene('3d');
 
+    // Align celestial sphere & lighting with solar/lunar ephemeris
+    this.updateCelestialPosition();
+
     this.animate();
+  },
+
+  /**
+   * Updates Three.js directional sunlight, physical 3D Moon/Sun sphere, and Cockpit HUD
+   * in Flight Diagnostics based on topocentric solar & lunar ephemeris.
+   * In Three.js coordinates:
+   * - X is East
+   * - Y is Altitude / Up
+   * - Z is South (North is -Z)
+   */
+  updateCelestialPosition(pt = null) {
+    if (!this.threeScene || typeof SolarEphemeris === 'undefined') return;
+
+    const origin = this.getSceneOrigin();
+    const lat = (pt && typeof pt.lat === 'number') ? pt.lat : (origin.lat || 41.3215);
+    const lon = (pt && typeof pt.lon === 'number') ? pt.lon : (origin.lon || -88.9950);
+
+    let effectiveTime = null;
+    if (pt) {
+      if (pt.timestamp) {
+        effectiveTime = new Date(pt.timestamp);
+      } else if (this.telemetryData && this.telemetryData.flightDate) {
+        const base = new Date(this.telemetryData.flightDate).getTime();
+        const offsetSec = (typeof pt.time === 'number' && !isNaN(pt.time)) ? pt.time : 0;
+        effectiveTime = new Date(base + offsetSec * 1000);
+      }
+    }
+    if (!effectiveTime || isNaN(effectiveTime.getTime())) {
+      if (this.selectedFlightId === 'active-mission' && typeof MissionClock !== 'undefined' && typeof MissionClock.getEffectiveTime === 'function') {
+        effectiveTime = MissionClock.getEffectiveTime();
+      } else if (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris && currentSolarEphemeris.now) {
+        effectiveTime = currentSolarEphemeris.now;
+      } else if (typeof MissionClock !== 'undefined' && typeof MissionClock.getEffectiveTime === 'function') {
+        effectiveTime = MissionClock.getEffectiveTime();
+      } else {
+        effectiveTime = new Date();
+      }
+    }
+
+    const sunPos = SolarEphemeris.getSunPosition(effectiveTime, lat, lon);
+    if (!sunPos) return;
+
+    const isNight = sunPos.altitudeDeg <= 0;
+    let targetAzDeg = sunPos.azimuthDeg || 180;
+    let targetAltDeg = sunPos.altitudeDeg || 45;
+    let isMoonMode = false;
+    let moonPos = null;
+    let moonIllum = null;
+
+    const isNightAllowed = (typeof isNightCelestialHudEnabled === 'function') ? isNightCelestialHudEnabled() : true;
+
+    if (isNight && isNightAllowed && typeof SolarEphemeris.getMoonPosition === 'function') {
+      moonPos = SolarEphemeris.getMoonPosition(effectiveTime, lat, lon);
+      if (typeof SolarEphemeris.getMoonIllumination === 'function') {
+        moonIllum = SolarEphemeris.getMoonIllumination(effectiveTime);
+      }
+      if (moonPos && moonPos.altitudeDeg > 0) {
+        targetAzDeg = moonPos.azimuthDeg;
+        targetAltDeg = moonPos.altitudeDeg;
+        isMoonMode = true;
+      }
+    }
+
+    const azRad = targetAzDeg * (Math.PI / 180);
+    const altRad = Math.max(0.02, targetAltDeg) * (Math.PI / 180);
+
+    const radius = 600;
+    const celX = radius * Math.cos(altRad) * Math.sin(azRad);
+    const celY = Math.max(20, radius * Math.sin(altRad));
+    const celZ = -radius * Math.cos(altRad) * Math.cos(azRad);
+
+    if (this.diagSunLight) {
+      this.diagSunLight.position.set(celX, celY, celZ);
+      if (this.diagSunLight.target && this.threeScene) {
+        this.diagSunLight.target.position.set(0, 0, 0);
+      }
+    }
+
+    if (this.diagSunMesh) {
+      this.diagSunMesh.position.set(celX, celY, celZ);
+      if (isMoonMode) {
+        this.diagSunMesh.visible = true;
+        if (this.diagSunMesh.material) {
+          this.diagSunMesh.material.color.setHex(0xe0f2fe); // Soft silvery moonlight glow
+        }
+      } else if (sunPos.altitudeDeg <= 0) {
+        this.diagSunMesh.visible = false;
+      } else {
+        this.diagSunMesh.visible = true;
+        if (this.diagSunMesh.material) {
+          if (sunPos.altitudeDeg < 8) {
+            this.diagSunMesh.material.color.setHex(0xf97316);
+          } else if (sunPos.altitudeDeg < 25) {
+            this.diagSunMesh.material.color.setHex(0xfbbf24);
+          } else {
+            this.diagSunMesh.material.color.setHex(0xfffbeb);
+          }
+        }
+      }
+    }
+
+    const sky = (typeof SolarEphemeris !== 'undefined' && typeof SolarEphemeris.getEffectiveSkyCover === 'function')
+      ? SolarEphemeris.getEffectiveSkyCover()
+      : { directLightFactor: 1.0, isOvercast: false };
+
+    if (this.diagSunLight) {
+      if (isMoonMode) {
+        this.diagSunLight.intensity = 0.35;
+        if (this.diagSunLight.color && typeof this.diagSunLight.color.setHex === 'function') {
+          this.diagSunLight.color.setHex(0xbae6fd); // Silvery moonlight tint
+        }
+      } else if (sunPos.altitudeDeg <= 0) {
+        this.diagSunLight.intensity = 0.15;
+        if (this.diagSunLight.color && typeof this.diagSunLight.color.setHex === 'function') {
+          this.diagSunLight.color.setHex(0xffffff);
+        }
+      } else if (sunPos.altitudeDeg < 15) {
+        const baseIntensity = 0.5 + (sunPos.altitudeDeg / 15) * 0.5;
+        this.diagSunLight.intensity = baseIntensity * Math.max(0.25, sky.directLightFactor);
+        if (this.diagSunLight.color && typeof this.diagSunLight.color.setHex === 'function') {
+          this.diagSunLight.color.setHex(0xffffff);
+        }
+      } else {
+        const baseIntensity = 1.2;
+        this.diagSunLight.intensity = baseIntensity * Math.max(0.25, sky.directLightFactor);
+        if (this.diagSunLight.color && typeof this.diagSunLight.color.setHex === 'function') {
+          this.diagSunLight.color.setHex(sky.isOvercast ? 0xe2e8f0 : 0xffffff);
+        }
+      }
+    }
+
+    // Update Cockpit HUD Celestial readout
+    const celEl = (typeof document !== 'undefined') ? document.getElementById('diag-hud-celestial') : null;
+    if (celEl) {
+      if (isMoonMode) {
+        const glyph = (moonIllum && moonIllum.icon) ? moonIllum.icon : '🌙';
+        const phase = (moonIllum && moonIllum.phaseName) ? moonIllum.phaseName : 'Moon';
+        const pct = (moonIllum && typeof moonIllum.fraction === 'number') ? ` ${(moonIllum.fraction * 100).toFixed(0)}%` : '';
+        const dir = moonPos?.compassDirection || '';
+        celEl.textContent = `${glyph} ${targetAltDeg.toFixed(1)}°${dir ? ' ' + dir : ''}`;
+        celEl.style.color = '#38bdf8';
+        celEl.title = `Moon: ${phase}${pct} • Elev: ${targetAltDeg.toFixed(1)}° • Azimuth: ${targetAzDeg.toFixed(1)}° (${dir})`;
+      } else if (sunPos.altitudeDeg > 0) {
+        const dir = sunPos.compassDirection || '';
+        celEl.textContent = `☀️ ${sunPos.altitudeDeg.toFixed(1)}°${dir ? ' ' + dir : ''}`;
+        celEl.style.color = '#fbbf24';
+        celEl.title = `Sun: Elev ${sunPos.altitudeDeg.toFixed(1)}° • Azimuth ${sunPos.azimuthDeg.toFixed(1)}° (${dir})`;
+      } else {
+        celEl.textContent = '🌑 Night';
+        celEl.style.color = '#94a3b8';
+        celEl.title = 'Night: Sun and Moon are below horizon';
+      }
+    }
   },
 
   addSatelliteFloor() {
@@ -4270,6 +4443,9 @@ const FlightDiagnostics = {
     if (this.diagFpvMode) {
       this._updateFPVCamera();
     }
+
+    // Update live celestial Moon / Sun position in sky dome and cockpit HUD
+    this.updateCelestialPosition(pt);
 
     const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     const altNum = (pt.alt !== undefined && pt.alt !== null) ? pt.alt : 0;
@@ -6542,6 +6718,10 @@ const DigitalTwin = FlightDiagnostics;
 if (typeof window !== 'undefined') {
   window.FlightDiagnostics = FlightDiagnostics;
   window.DigitalTwin = FlightDiagnostics;
+}
+if (typeof global !== 'undefined') {
+  global.FlightDiagnostics = FlightDiagnostics;
+  global.DigitalTwin = FlightDiagnostics;
 }
 
 if (typeof module !== 'undefined' && module.exports) {

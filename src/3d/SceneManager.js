@@ -392,6 +392,12 @@ function reset3DCamera() {
  * - Z is South (so North is -Z)
  */
 function update3DSunPosition() {
+  // Also synchronize Flight Diagnostics 3D celestial sphere if open
+  const diag = (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics) ? FlightDiagnostics : ((typeof window !== 'undefined' && window.FlightDiagnostics) ? window.FlightDiagnostics : ((typeof global !== 'undefined' && global.FlightDiagnostics) ? global.FlightDiagnostics : null));
+  if (diag && typeof diag.updateCelestialPosition === 'function' && diag.isOpen) {
+    diag.updateCelestialPosition();
+  }
+
   if (!threeSunLight || typeof SolarEphemeris === 'undefined') return;
 
   let pos = null;

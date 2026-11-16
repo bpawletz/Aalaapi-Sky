@@ -1,3 +1,31 @@
+## [1.248.0] - 2026-11-15
+
+Brought full celestial parity to Flight Diagnostics with a physical 3D Moon/Sun sphere in the sky dome, dynamic nocturnal/solar lighting, and real-time Cockpit HUD celestial telemetry.
+
+### Added
+
+#### Pilot & Operational Features
+- **3D Moon & Sun Celestial Sphere in Flight Diagnostics (Closes #301)**:
+  - Added physical 3D Moon and Sun sphere in the Flight Diagnostics 3D sky dome, providing nocturnal situational awareness during night mission review and preflight simulation.
+  - Dynamically calculates real-time Jean Meeus lunar position, phase cycle glyphs, illumination percentage, and topocentric elevation/azimuth based on flight GPS origin and effective flight timestamp.
+  - At night, renders a silvery 3D Moon sphere with soft moonlight illumination (`#bae6fd`), switching to golden/daylight solar lighting when the sun rises.
+- **Cockpit Telemetry HUD Celestial Readout (Closes #301)**:
+  - Added a dedicated `CELESTIAL` metric cell to the Flight Diagnostics Cockpit Telemetry HUD overlay (`#diag-hud-celestial`) displaying live lunar phase glyphs (`🌑` to `🌕`) or solar indicator, elevation angles, and compass bearings.
+  - Synchronized in real time to timeline scrubbing (`seekTo`), playback, and Mission Clock adjustments.
+
+#### Under the Hood & Technical Details
+- **`src/3d/DigitalTwin.js`**:
+  - In `FlightDiagnostics.init3DScene()`, stored primary `DirectionalLight` reference on `this.diagSunLight` and created `this.diagSunMesh` (`THREE.SphereGeometry(14, 16, 16)` with `MeshBasicMaterial`).
+  - Added `FlightDiagnostics.updateCelestialPosition(pt)` calculating topocentric solar & lunar ephemeris from `SolarEphemeris` and positioning `this.diagSunMesh` and `this.diagSunLight` in Three.js coordinates (`radius = 600`).
+  - Hooked `seekTo(safeIdx)` to invoke `updateCelestialPosition(pt)` on each frame / scrub tick.
+- **`src/3d/SceneManager.js`**:
+  - In `update3DSunPosition()`, added synchronization call to `FlightDiagnostics.updateCelestialPosition()` when Flight Diagnostics is open.
+- **`index_template.html`**:
+  - Added `#diag-hud-celestial-container` and `#diag-hud-celestial` to `#diag-hud-overlay-body`.
+  - Added What's New feature highlight card to `#intro-pane-features`.
+- **`index.test.js`**:
+  - Added unit regression tests asserting `FlightDiagnostics` celestial mesh creation, nighttime Moon mode transitions, and Cockpit HUD text rendering.
+
 ## [1.247.0] - 2026-11-15
 
 Resolved 3D reconstruction failures in Target Splat missions by implementing Footprint-Clamped Inward Aiming, a Nadir Roof Bridge, default Perimeter Orbit Pass, and accurate rising-edge 10Hz flight log photo counting.
