@@ -340,6 +340,23 @@ class BasePlatformAdapter {
     const res = await fetch(`${apiBase}/api/airspace/discover?timeout=${encodeURIComponent(timeoutMs)}`);
     return await res.json();
   }
+
+  // ─── 9. Instant OpenCV Field Preview Stitcher (Issue #305) ─────────────────
+  async runFieldStitch(payload, apiBase = 'http://127.0.0.1:8765') {
+    const res = await fetch(`${apiBase}/api/process/stitch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    return await res.json();
+  }
+
+  async getFieldStitchStatus(missionUuid, mode = 'scans', apiBase = 'http://127.0.0.1:8765') {
+    const res = await fetch(`${apiBase}/api/process/stitch?missionUuid=${encodeURIComponent(missionUuid)}&mode=${encodeURIComponent(mode)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    return await res.json();
+  }
 }
 
 if (typeof window !== 'undefined') {

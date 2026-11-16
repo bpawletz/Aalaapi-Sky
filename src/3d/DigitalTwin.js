@@ -1423,6 +1423,20 @@ const FlightDiagnostics = {
       });
     }
 
+    const diagBtnStitchOrtho = document.getElementById('diag-btn-stitch-ortho');
+    if (diagBtnStitchOrtho && typeof diagBtnStitchOrtho.addEventListener === 'function') {
+      diagBtnStitchOrtho.addEventListener('click', () => {
+        this.triggerFieldStitch('scans');
+      });
+    }
+
+    const diagBtnStitchPano = document.getElementById('diag-btn-stitch-pano');
+    if (diagBtnStitchPano && typeof diagBtnStitchPano.addEventListener === 'function') {
+      diagBtnStitchPano.addEventListener('click', () => {
+        this.triggerFieldStitch('panorama');
+      });
+    }
+
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
       window.addEventListener('keydown', (e) => {
         if ((e.key === 'Delete' || e.key === 'Backspace') && this.wireframeSelectedLineIndex !== null && this.isOpen) {
@@ -6104,6 +6118,142 @@ const FlightDiagnostics = {
       resetMeshBtns();
       if (typeof showToast === 'function') showToast(`AI 3D Assist: ${err.message}`, 'error');
     }
+  },
+
+  async triggerFieldStitch(mode = 'scans') {
+    const isPano = mode === 'panorama';
+    const btn = document.getElementById(isPano ? 'diag-btn-stitch-pano' : 'diag-btn-stitch-ortho');
+    const origHtml = btn ? btn.innerHTML : '';
+
+    if (btn) {
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      btn.classList.add('diag-btn-working');
+      btn.innerHTML = isPano ? '<span>⏳</span> Stitching 360° Sphere...' : '<span>⏳</span> Stitching Orthomosaic...';
+    }
+    this.setWorkingState(true, isPano ? 'Stitching 360° Photo Sphere...' : 'Stitching 2D Field Orthomosaic...', 'Extracting features with OpenCV 5');
+
+    const resetBtn = () => {
+      if (btn) {
+        btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+        btn.classList.remove('diag-btn-working');
+        btn.innerHTML = origHtml || (isPano ? '<span>🌐</span> 360° Sphere' : '<span>🗺️</span> 2D Orthomosaic');
+      }
+      this.setWorkingState(false);
+    };
+
+    try {
+      const apiBase = (typeof getCompanionApiBase === 'function')
+        ? getCompanionApiBase()
+        : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+
+      const missionUuid = this.activeInspectionManifest?.missionUuid
+        || this.flightManifest?.missionUuid
+        || (this.selectedFlightId ? `mission_${this.selectedFlightId.replace(/\.txt$/i, '').replace(/[^a-zA-Z0-9_-]/g, '_')}` : null)
+        || (typeof activeLayerId !== 'undefined' && activeLayerId)
+        || 'mission_' + Date.now();
+
+      const photos = (Array.isArray(this.flightPhotos) && this.flightPhotos.length > 0)
+        ? this.flightPhotos
+        : ((this.activeInspectionManifest && Array.isArray(this.activeInspectionManifest.photos)) ? this.activeInspectionManifest.photos : []);
+
+      let homePoint = null;
+      if (typeof getMissionFailsafes === 'function') {
+        const failsafes = getMissionFailsafes();
+        if (failsafes && failsafes.homePoint) homePoint = failsafes.homePoint;
+      }
+      if (!homePoint && this.activeInspectionManifest?.homePoint) {
+        homePoint = this.activeInspectionManifest.homePoint;
+      }
+
+      const payload = {
+        missionUuid,
+        mode,
+        photos,
+        homePoint,
+        resolution: 'preview',
+        cropBlackBorders: true,
+        injectXmp: true
+      };
+
+      let result = null;
+      if (typeof Platform !== 'undefined' && typeof Platform.runFieldStitch === 'function') {
+        result = await Platform.runFieldStitch(payload, apiBase);
+      } else {
+        const res = await fetch(`${apiBase}/api/process/stitch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        result = await res.json();
+      }
+
+      resetBtn();
+
+      if (result && result.success && result.result) {
+        const stitchRes = result.result;
+        if (mode === 'scans') {
+          if (typeof renderStitchedOrthomosaicMapLayer === 'function') {
+            renderStitchedOrthomosaicMapLayer(stitchRes, { fitBounds: true });
+          }
+          if (typeof showToast === 'function') {
+            showToast(`🗺️ 2D Orthomosaic Stitched! (${stitchRes.photosStitched || stitchRes.inputCount || 0} photos, ${stitchRes.engine || 'cv2.Stitcher_SCANS'})`, 'success');
+          }
+        } else {
+          if (typeof PhotoInspector !== 'undefined' && typeof PhotoInspector.open === 'function') {
+            PhotoInspector.open({
+              isPanorama: true,
+              mode: 'panorama',
+              filename: 'photosphere_360.jpg',
+              previewUrl: stitchRes.previewUrl,
+              gpano: stitchRes.gpano || { projectionType: 'equirectangular', usePanoramaViewer: true }
+            });
+            setTimeout(() => {
+              if (typeof PhotoInspector.toggle360Viewer === 'function') {
+                PhotoInspector.toggle360Viewer(true);
+              }
+            }, 100);
+          }
+          if (typeof showToast === 'function') {
+            showToast('🌐 360° Photo Sphere Stitched! Opened in interactive viewer.', 'success');
+          }
+        }
+      } else {
+        throw new Error(result?.error || 'Stitching operation failed');
+      }
+    } catch (err) {
+      resetBtn();
+      console.warn('[DigitalTwin] Stitching error:', err);
+      if (typeof showToast === 'function') {
+        showToast(`Stitcher: ${err.message}`, 'error');
+      }
+    }
+  },
+
+  onStitchProgress(data) {
+    if (!data) return;
+    const stage = data.stage || 'Stitching...';
+    const pct = typeof data.progressPct === 'number' ? data.progressPct : null;
+    const isPano = data.mode === 'panorama';
+    const btn = document.getElementById(isPano ? 'diag-btn-stitch-pano' : 'diag-btn-stitch-ortho');
+    if (btn && pct !== null) {
+      btn.innerHTML = `<span>⏳</span> ${pct}% (${stage})`;
+    }
+  },
+
+  onStitchComplete(data) {
+    if (!data) return;
+    const isPano = data.mode === 'panorama';
+    const btn = document.getElementById(isPano ? 'diag-btn-stitch-pano' : 'diag-btn-stitch-ortho');
+    if (btn) {
+      btn.disabled = false;
+      btn.removeAttribute('aria-busy');
+      btn.classList.remove('diag-btn-working');
+      btn.innerHTML = isPano ? '<span>🌐</span> 360° Sphere' : '<span>🗺️</span> 2D Orthomosaic';
+    }
+    this.setWorkingState(false);
   }
 };
 

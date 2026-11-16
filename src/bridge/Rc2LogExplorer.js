@@ -695,6 +695,8 @@ async function executeMediaPull() {
     const scanTags = Boolean(scanTagsCheck ? scanTagsCheck.checked : true);
     const extractWireframeCheck = document.getElementById('ingest-extract-wireframe');
     const extractWireframe = Boolean(extractWireframeCheck ? extractWireframeCheck.checked : true);
+    const quickStitchCheck = document.getElementById('ingest-quick-stitch');
+    const quickStitch = Boolean(quickStitchCheck ? quickStitchCheck.checked : true);
 
     const cleanWps = activeWps.map((w, idx) => ({
       idx: typeof w.idx === 'number' ? w.idx : idx,
@@ -755,6 +757,7 @@ async function executeMediaPull() {
         deleteFromDrone: shouldDeleteFromDrone,
         scanTags: scanTags,
         extractWireframe: extractWireframe,
+        quickStitch: quickStitch,
         timeWindow,
         bounds,
         telemetry: cleanTelem || { points: [] }

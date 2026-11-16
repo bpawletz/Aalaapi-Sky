@@ -13967,4 +13967,129 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       await page.waitForTimeout(200);
     });
   });
+
+  describe('Photography & Post-Processing Tool Matrix & One-Click Presets (v1.249.0 - Issue #302)', () => {
+    test('Help Hub tool matrix filters by category, applies preset to active layer, and supports Undo', async () => {
+      await page.evaluate(() => {
+        if (typeof openIntroModal === 'function') openIntroModal('matrix');
+      });
+      await page.waitForTimeout(250);
+
+      // Filter by 3D Splat & NeRF
+      await page.click('.tool-matrix-filter-btn[data-tool-category="splat"]');
+      await page.waitForTimeout(150);
+
+      const visibleCount = await page.evaluate(() => {
+        const rows = Array.from(document.querySelectorAll('#photography-tool-matrix-body tr'));
+        return rows.filter(r => r.style.display !== 'none').length;
+      });
+      assert.strictEqual(visibleCount, 2, 'Splat filter should show exactly 2 workflows (splat-object and splat-scene)');
+
+      // Apply Postshot / Luma / Polycam 3DGS Object preset (dome-shell)
+      await page.click('.apply-tool-preset-btn[data-tool-preset="splat-object"]');
+      await page.waitForTimeout(250);
+
+      const appliedState = await page.evaluate(() => {
+        const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        return {
+          modalHidden: document.getElementById('quickstart-modal')?.classList.contains('hidden'),
+          pattern: layer ? layer.pattern : document.getElementById('grid-type')?.value,
+          pitch: layer ? layer.gimbalPitch : null,
+          presetSelect: document.getElementById('photography-tool-preset-select')?.value
+        };
+      });
+
+      assert.strictEqual(appliedState.modalHidden, true, 'Applying preset should close Help Hub modal');
+      assert.strictEqual(appliedState.pattern, 'dome-shell', 'Active layer pattern should update to dome-shell');
+      assert.strictEqual(appliedState.pitch, -45, 'Active layer gimbalPitch should update to -45');
+      assert.strictEqual(appliedState.presetSelect, 'splat-object', 'Sidebar preset dropdown should sync to splat-object');
+
+      // Undo should restore previous pattern
+      await page.evaluate(() => {
+        if (typeof undoLastAction === 'function') undoLastAction();
+      });
+      await page.waitForTimeout(200);
+
+      const revertedPattern = await page.evaluate(() => {
+        const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        return layer ? layer.pattern : null;
+      });
+      assert.notStrictEqual(revertedPattern, 'dome-shell', 'Undo must revert the applied photography tool preset');
+    });
+  });
+
+  describe('Issue #305: Instant OpenCV Field Preview Stitcher for 2D Maps and 360° Photo Spheres (v1.250.0)', () => {
+    test('Flight Diagnostics & Photo Inspector expose instant stitcher and 360 viewer controls', async () => {
+      // Verify DOM presence of stitcher buttons in Flight Diagnostics
+      const diagButtonsState = await page.evaluate(() => {
+        const orthoBtn = document.getElementById('diag-btn-stitch-ortho');
+        const panoBtn = document.getElementById('diag-btn-stitch-pano');
+        const ingestCheckbox = document.getElementById('ingest-quick-stitch');
+        return {
+          hasOrthoBtn: !!orthoBtn,
+          hasPanoBtn: !!panoBtn,
+          hasIngestCheckbox: !!ingestCheckbox,
+          ingestChecked: ingestCheckbox ? ingestCheckbox.checked : false
+        };
+      });
+
+      assert.strictEqual(diagButtonsState.hasOrthoBtn, true, 'Flight Diagnostics must contain #diag-btn-stitch-ortho');
+      assert.strictEqual(diagButtonsState.hasPanoBtn, true, 'Flight Diagnostics must contain #diag-btn-stitch-pano');
+      assert.strictEqual(diagButtonsState.hasIngestCheckbox, true, 'Media Ingest modal must contain #ingest-quick-stitch');
+      assert.strictEqual(diagButtonsState.ingestChecked, true, 'Quick stitch checkbox must be checked by default');
+
+      // Verify Photo Inspector 360 viewer controls
+      const inspectorState = await page.evaluate(() => {
+        const btn360 = document.getElementById('photo-360-view-btn');
+        const container360 = document.getElementById('photo-360-container');
+        const canvas360 = document.getElementById('photo-360-canvas');
+        return {
+          hasBtn360: !!btn360,
+          hasContainer360: !!container360,
+          hasCanvas360: !!canvas360,
+          containerHidden: container360 ? container360.classList.contains('hidden') : false
+        };
+      });
+
+      assert.strictEqual(inspectorState.hasBtn360, true, 'Photo Inspector must contain #photo-360-view-btn');
+      assert.strictEqual(inspectorState.hasContainer360, true, 'Photo Inspector must contain #photo-360-container');
+      assert.strictEqual(inspectorState.hasCanvas360, true, 'Photo Inspector must contain #photo-360-canvas');
+      assert.strictEqual(inspectorState.containerHidden, true, '360 container must start hidden');
+
+      // Open PhotoInspector with a mock 360 photo sphere and toggle 360 viewer
+      const toggleState = await page.evaluate(() => {
+        if (typeof PhotoInspector !== 'undefined' && PhotoInspector.open) {
+          PhotoInspector.open({
+            photoId: 'PHOTO_PANO_0001',
+            filename: 'photosphere_360.jpg',
+            isPanorama: true,
+            mode: 'panorama',
+            actual: { lat: 41.3215, lon: -88.9950, altAgl: 30, gimbalPitch: 0, heading: 0 }
+          });
+          PhotoInspector.toggle360Viewer(true);
+        }
+        const container360 = document.getElementById('photo-360-container');
+        const transformLayer = document.getElementById('photo-transform-layer');
+        const btn360 = document.getElementById('photo-360-view-btn');
+        return {
+          is360Mode: PhotoInspector.is360Mode,
+          containerVisible: container360 ? !container360.classList.contains('hidden') : false,
+          transformLayerHidden: transformLayer ? transformLayer.style.display === 'none' : false,
+          btnActive: btn360 ? btn360.classList.contains('active') : false
+        };
+      });
+
+      assert.strictEqual(toggleState.is360Mode, true, 'PhotoInspector.is360Mode must be true when toggled on');
+      assert.strictEqual(toggleState.containerVisible, true, '#photo-360-container must be visible when toggled on');
+      assert.strictEqual(toggleState.transformLayerHidden, true, '#photo-transform-layer must be hidden during 360 mode');
+      assert.strictEqual(toggleState.btnActive, true, '#photo-360-view-btn must have active class');
+
+      // Close PhotoInspector
+      await page.evaluate(() => {
+        if (typeof PhotoInspector !== 'undefined' && PhotoInspector.close) {
+          PhotoInspector.close();
+        }
+      });
+    });
+  });
 });

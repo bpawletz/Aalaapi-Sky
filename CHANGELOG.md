@@ -1,3 +1,48 @@
+## [1.250.0] - 2026-11-16
+
+Added an instant OpenCV 5 field preview stitcher in Companion Bridge and client UI, generating rapid 2D map orthomosaics and 360° photo spheres directly in the field with black-border trimming, affine georeferencing, embedded Google Photo Sphere (GPano) metadata, and interactive 3D WebGL viewing.
+
+### Added
+
+#### Pilot & Operational Features
+- **Instant OpenCV Field Preview Stitcher for 2D Maps & 360° Photo Spheres (Closes #305)**:
+  - Added one-click **2D Orthomosaic** (`#diag-btn-stitch-ortho`) and **360° Sphere** (`#diag-btn-stitch-pano`) buttons to the Flight Diagnostics inspection gallery toolbar, allowing pilots to generate rapid field composites directly on a laptop or tablet without waiting for heavy desktop photogrammetry pipelines.
+  - Generates 2D orthomosaic previews using `cv2.Stitcher_SCANS` (mode 1) with black-border trimming, auto-crops, and automatic overlay on the 2D Leaflet map (`L.imageOverlay`) with estimated ground coverage area (in hectares) and photo counts.
+  - Generates 360° photo spheres using `cv2.Stitcher_PANORAMA` (mode 0) for multi-tier `360 Pano` flight pattern captures into 2:1 equirectangular projections with embedded Google Photo Sphere (`GPano`) XMP metadata tags.
+  - Added interactive 3D WebGL Spherical Panorama Viewer (`#photo-360-container`, `#photo-360-view-btn`) to Photo Inspector with mouse/touch drag navigation and scroll zoom for immersive 360° inspection.
+  - Added an **Instant OpenCV Field Stitch** opt-in checkbox (`#ingest-quick-stitch`) in the Media Ingest modal (`#media-ingest-modal`) to automatically stitch downloaded flight photos immediately upon MTP/USB pull.
+
+#### Under the Hood & Technical Details
+- **Python OpenCV Worker & Node Engine (`tools/companion/stitcher_worker.py`, `tools/companion/stitcher_engine.js`)**:
+  - Implemented `stitcher_worker.py` utilizing Python 3 `cv2.Stitcher_create(cv2.Stitcher_SCANS)` (value 1) and `cv2.Stitcher_create(cv2.Stitcher_PANORAMA)` (value 0) with contour-based black-border mask trimming and fallback to affine/yaw-pitch composite stitching.
+  - Implemented `stitcher_engine.js` managing child process lifecycles, computing geographic bounding boxes from flight photo coordinates/altitudes, injecting Google Photo Sphere (`GPano`) XMP APP1 JPEG markers, and providing a deterministic pure JS fallback stitcher for headless/CI environments.
+- **Companion Bridge REST & SSE Endpoints (`tools/companion/server.js`)**:
+  - Added `POST /api/process/stitch` (alias `/api/stitch/generate`) and `GET /api/process/stitch` (alias `/api/stitch/status`) endpoints.
+  - Added `GET /api/stitch/preview` streaming `orthomosaic_preview.png` or `photosphere_360.jpg` with proper content type headers.
+  - Dispatches real-time SSE progress events (`stitch-progress`, `stitch-complete`) to `sseUnifiedClients` and `sseMediaProgressClients` per the SSE-First Architecture Policy (Section 13).
+- **Platform & Map Engine Integration (`src/platform/BasePlatformAdapter.js`, `src/platform/AndroidPlatformAdapter.js`, `src/map/MapEngine.js`)**:
+  - Added `runFieldStitch` and `getFieldStitchStatus` to `BasePlatformAdapter` and `AndroidPlatformAdapter` for full desktop and Android native parity.
+  - Added `stitchedOrthomosaicGroup`, `renderStitchedOrthomosaicMapLayer`, `setStitchedOrthomosaicOpacity`, and `clearStitchedOrthomosaicMapLayer` to `MapEngine.js` for Leaflet 2D map overlay management.
+
+## [1.249.0] - 2026-11-15
+
+Added a 14-profile Photography & Post-Processing Tool Compatibility Matrix and one-click preset engine linking Aalaapi Sky flight patterns directly to WebODM, 3D Gaussian Splatting, Dense MVS, 360° panorama, and cinematic post-processing workflows.
+
+### Added
+
+#### Pilot & Operational Features
+- **Photography & Post-Processing Tool Mapping Matrix (Closes #302)**:
+  - Added an interactive 14-workflow compatibility table (`#photography-tool-matrix-table`) inside the Help Hub (`#intro-pane-matrix`) with category filter pills (`Photogrammetry & GIS`, `3D Splat & NeRF`, `3D Mesh & Inspection`, `360° Pano & Video`, `GCP & Thermal/SAR`) and one-click `Apply Preset ⚡` buttons.
+  - Added a Sidebar quick-preset selector (`#photography-tool-preset-select`) in Layer Settings to configure the active layer's pattern, gimbal pitch, overlap, capture mode, heading mode, turn mode, and speed for open-source toolchains and workflow types including WebODM/OpenDroneMap, QGIS, Meshroom (AliceVision), OpenMVG/OpenMVS, gsplat/Brush/SuperSplat, Nerfstudio (`splatfacto`), COLMAP/GLOMAP, CloudCompare, Hugin/Pannellum, FFmpeg/Kdenlive/Blender VSE, Darktable/GIMP, OpenCV ArUco/AprilTag GCPs, and Thermal/IAMSAR SAR.
+  - Expanded [`docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md`](docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md) with a Software-to-Flight-Plan Mermaid decision tree, 14-profile compatibility table, and toolchain-specific recipes.
+
+#### Under the Hood & Technical Details
+- **Preset Registry & Undo Integration (`src/ui/ResetManager.js`, `src/ui/EventBindings.js`)**:
+  - Exported `PHOTOGRAPHY_TOOL_PRESETS` and `applyPhotographyToolPreset(presetId)` with `pushUndoSnapshot()` recording so any applied tool preset is cleanly reversible via Undo/Redo.
+  - Wired `.tool-matrix-filter-btn`, `.apply-tool-preset-btn`, and `#photography-tool-preset-select` listeners in `src/ui/EventBindings.js`.
+- **Trademark & Legal Attribution (`CREDITS.md`, `index_template.html`)**:
+  - Updated third-party trademark notices in `CREDITS.md` (Section 4.14) and `#about-trademarks-section` for all referenced photogrammetry, 3DGS, panoramic, and video editing tools.
+
 ## [1.248.1] - 2026-11-15
 
 ### Changed

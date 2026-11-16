@@ -670,6 +670,12 @@ function initMap() {
   overlays["Photo Coverage Footprints (2D)"] = photoFootprintsGroup;
   overlays["Photo Inspection Pins (2D)"] = photoInspectionGroup;
 
+  // Stitched Orthomosaic Field Preview Overlay (2D) (Issue #305)
+  if (!stitchedOrthomosaicGroup) {
+    stitchedOrthomosaicGroup = L.layerGroup().addTo(map);
+  }
+  overlays["🗺️ Field Stitched Orthomosaic (2D)"] = stitchedOrthomosaicGroup;
+
   // Solar & Lunar Ephemeris & Shadow Vector Overlay (2D) (v1.157.0 - Issue #141, v1.161.0 - Issue #143)
   if (!solarOverlaysGroup) {
     solarOverlaysGroup = L.layerGroup().addTo(map);
@@ -1030,6 +1036,7 @@ function initMap() {
   if (!photoInspectionGroup) photoInspectionGroup = L.layerGroup().addTo(map);
   if (!photoFootprintsGroup) photoFootprintsGroup = L.layerGroup();
   if (!singlePhotoFootprintGroup) singlePhotoFootprintGroup = L.layerGroup().addTo(map);
+  if (!stitchedOrthomosaicGroup) stitchedOrthomosaicGroup = L.layerGroup().addTo(map);
 
   // Issue #123: Initialize 2D Flight Replay Engine
   if (typeof init2dReplayEngine === 'function') {
@@ -1816,10 +1823,77 @@ function setMapAirspaceZoom() {
 
 // Computes current state of modified settings across all 5 domains
 
+// Instant OpenCV Field Preview Stitcher (2D Orthomosaic Layer) (Issue #305)
+let stitchedOrthomosaicGroup = null;
+let currentStitchedOverlay = null;
+
+function renderStitchedOrthomosaicMapLayer(stitchResult, options = {}) {
+  const activeMap = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
+  if (!activeMap || typeof L === 'undefined') return null;
+  if (!stitchedOrthomosaicGroup) stitchedOrthomosaicGroup = L.layerGroup().addTo(activeMap);
+  stitchedOrthomosaicGroup.clearLayers();
+
+  if (!stitchResult) return null;
+  const imageUrl = stitchResult.previewUrl || options.previewUrl;
+  const bounds = stitchResult.bounds || options.bounds;
+
+  if (!imageUrl || !bounds || typeof bounds.south !== 'number' || typeof bounds.north !== 'number') return null;
+  const imageBounds = [
+    [bounds.south, bounds.west],
+    [bounds.north, bounds.east]
+  ];
+
+  const opacity = (typeof options.opacity === 'number') ? options.opacity : 0.85;
+  const overlay = L.imageOverlay(imageUrl, imageBounds, {
+    opacity,
+    interactive: true,
+    alt: 'Field Stitched Orthomosaic'
+  });
+
+  const photoCount = stitchResult.photosStitched || stitchResult.inputCount || 'N/A';
+  const engineName = stitchResult.engine || 'cv2.Stitcher_SCANS';
+  const areaHa = stitchResult.coverageSqMeters ? (stitchResult.coverageSqMeters / 10000).toFixed(2) + ' ha' : 'N/A';
+
+  const popupContent = `
+    <div style="font-family: inherit; font-size: 0.78rem; min-width: 180px;">
+      <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 4px;">🗺️ Stitched Orthomosaic Preview</div>
+      <div style="color: var(--text-muted); font-size: 0.72rem;">Photos Stitched: <b>${photoCount}</b></div>
+      <div style="color: var(--text-muted); font-size: 0.72rem;">Engine: <b>${engineName}</b></div>
+      <div style="color: var(--text-muted); font-size: 0.72rem;">Coverage: <b>${areaHa}</b></div>
+    </div>
+  `;
+  overlay.bindPopup(popupContent);
+  overlay.addTo(stitchedOrthomosaicGroup);
+  currentStitchedOverlay = overlay;
+
+  if (options.fitBounds !== false && activeMap.fitBounds) {
+    activeMap.fitBounds(imageBounds, { padding: [20, 20], maxZoom: 19 });
+  }
+
+  return overlay;
+}
+
+function setStitchedOrthomosaicOpacity(opacity) {
+  if (currentStitchedOverlay && typeof currentStitchedOverlay.setOpacity === 'function') {
+    currentStitchedOverlay.setOpacity(opacity);
+  }
+}
+
+function clearStitchedOrthomosaicMapLayer() {
+  if (stitchedOrthomosaicGroup) {
+    stitchedOrthomosaicGroup.clearLayers();
+  }
+  currentStitchedOverlay = null;
+}
+
 // Night Flight Map Layer & Cloud Cover Layer exports (v1.161.0 - Issue #143, v1.166.0)
 if (typeof window !== 'undefined') {
   window.nasaNightLightsLayer = nasaNightLightsLayer;
   window.cloudCoverLayer = cloudCoverLayer;
+  window.stitchedOrthomosaicGroup = stitchedOrthomosaicGroup;
+  window.renderStitchedOrthomosaicMapLayer = renderStitchedOrthomosaicMapLayer;
+  window.setStitchedOrthomosaicOpacity = setStitchedOrthomosaicOpacity;
+  window.clearStitchedOrthomosaicMapLayer = clearStitchedOrthomosaicMapLayer;
   window.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
   window.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
   window.setMapPlanningZoom = setMapPlanningZoom;
@@ -1828,6 +1902,10 @@ if (typeof window !== 'undefined') {
 if (typeof global !== 'undefined') {
   global.nasaNightLightsLayer = nasaNightLightsLayer;
   global.cloudCoverLayer = cloudCoverLayer;
+  global.stitchedOrthomosaicGroup = stitchedOrthomosaicGroup;
+  global.renderStitchedOrthomosaicMapLayer = renderStitchedOrthomosaicMapLayer;
+  global.setStitchedOrthomosaicOpacity = setStitchedOrthomosaicOpacity;
+  global.clearStitchedOrthomosaicMapLayer = clearStitchedOrthomosaicMapLayer;
   global.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
   global.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
   global.setMapPlanningZoom = setMapPlanningZoom;
@@ -1839,6 +1917,9 @@ if (typeof module !== 'undefined' && module.exports) {
     setMapPlanningZoom,
     setMapAirspaceZoom,
     getReplayAircraftMarkerHtml,
-    getReplayDroneMarkerHtml
+    getReplayDroneMarkerHtml,
+    renderStitchedOrthomosaicMapLayer,
+    setStitchedOrthomosaicOpacity,
+    clearStitchedOrthomosaicMapLayer
   };
 }

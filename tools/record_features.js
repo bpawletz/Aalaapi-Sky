@@ -4254,6 +4254,74 @@ const scenarios = [
       });
       await page.waitForTimeout(600);
     }
+  },
+  {
+    id: 'feature_field_stitcher',
+    name: 'Instant OpenCV Field Preview Stitcher for 2D Maps and 360° Photo Spheres',
+    description: 'Demonstrates in-situ OpenCV orthomosaic generation with georeferenced Leaflet overlay and interactive 3D WebGL spherical panorama viewer for 360 photo spheres.',
+    issueRef: 'Issue #305 (v1.250.0)',
+    run: async (page) => {
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 1. Select Photogrammetry Grid
+      await selectPattern(page, 'grid');
+      await page.waitForTimeout(800);
+
+      // 2. Open Flight Diagnostics modal
+      await page.evaluate(() => {
+        const diagBtn = document.getElementById('diag-topbar-btn') || document.querySelector('[data-modal="flight-diagnostics-modal"]');
+        if (diagBtn) diagBtn.click();
+        else if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+          FlightDiagnostics.open();
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Highlight Stitch Orthomosaic & Stitch Panorama action buttons
+      await page.evaluate(() => {
+        const orthoBtn = document.getElementById('diag-btn-stitch-ortho');
+        if (orthoBtn) {
+          orthoBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // 4. Close Flight Diagnostics modal
+      await page.evaluate(() => {
+        const closeBtn = document.getElementById('diag-close-btn');
+        if (closeBtn) closeBtn.click();
+      });
+      await page.waitForTimeout(600);
+
+      // 5. Open Photo Inspector with mock 360 photo sphere and toggle 360 viewer
+      await page.evaluate(() => {
+        if (typeof PhotoInspector !== 'undefined' && PhotoInspector.open) {
+          PhotoInspector.open({
+            photoId: 'PHOTO_PANO_0001',
+            filename: 'photosphere_360.jpg',
+            isPanorama: true,
+            mode: 'panorama',
+            actual: { lat: 41.3215, lon: -88.9950, altAgl: 30, gimbalPitch: 0, heading: 0 }
+          });
+          PhotoInspector.toggle360Viewer(true);
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 6. Capture preview screenshot
+      await page.screenshot({ path: 'recordings/feature_field_stitcher_preview.png' });
+      await page.waitForTimeout(1000);
+
+      // 7. Toggle back and close Photo Inspector
+      await page.evaluate(() => {
+        if (typeof PhotoInspector !== 'undefined') {
+          PhotoInspector.toggle360Viewer(false);
+          PhotoInspector.close();
+        }
+      });
+      await page.waitForTimeout(600);
+    }
   }
 ];
 

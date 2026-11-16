@@ -346,6 +346,25 @@ class AndroidPlatformAdapter extends BasePlatformAdapter {
     }
     return super.discoverMdnsServers(timeoutMs, apiBase);
   }
+
+  // ─── 9. Instant OpenCV Field Preview Stitcher (Issue #305) ─────────────────
+  async runFieldStitch(payload, apiBase = 'http://127.0.0.1:8765') {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.runFieldStitch === 'function') {
+      const raw = bridge.runFieldStitch(JSON.stringify(payload));
+      return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    }
+    return super.runFieldStitch(payload, apiBase);
+  }
+
+  async getFieldStitchStatus(missionUuid, mode = 'scans', apiBase = 'http://127.0.0.1:8765') {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.getFieldStitchStatus === 'function') {
+      const raw = bridge.getFieldStitchStatus(missionUuid, mode);
+      return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    }
+    return super.getFieldStitchStatus(missionUuid, mode, apiBase);
+  }
 }
 
 if (typeof window !== 'undefined') {

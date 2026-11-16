@@ -840,4 +840,335 @@ function exitInteractiveUITour() {
   if (overlay) overlay.classList.add('hidden');
 }
 
+const PHOTOGRAPHY_TOOL_PRESETS = {
+  'webodm-ortho': {
+    id: 'webodm-ortho',
+    name: 'WebODM / OpenDroneMap 2D Ortho',
+    category: 'photogrammetry',
+    tools: 'WebODM / OpenDroneMap, QGIS',
+    deliverable: '2D Orthomosaic, GeoTIFF DSM/DTM, NDVI',
+    primaryPattern: 'single',
+    comboPatterns: 'Add fiducial-markers (AprilTag/ArUco GCPs)',
+    altitude: 70,
+    gimbalPitch: -90,
+    frontOverlap: 75,
+    sideOverlap: 70,
+    captureMode: 'continuous',
+    headingMode: 'followWayline',
+    pathMode: 'straight',
+    speed: 8.0,
+    tips: 'Enable Terrain Following on hills; use 15m turnaround overshoot and WebODM dsm/dtm flags.'
+  },
+  'webodm-3d': {
+    id: 'webodm-3d',
+    name: 'WebODM / OpenMVS 3D Mesh',
+    category: 'photogrammetry',
+    tools: 'WebODM 3D, OpenMVS, Meshroom',
+    deliverable: 'Textured 3D Site Mesh & Stockpiles',
+    primaryPattern: 'double',
+    comboPatterns: 'single (-90 deg) + double (-60 deg) or grid-orbit-combo',
+    altitude: 50,
+    gimbalPitch: -60,
+    frontOverlap: 75,
+    sideOverlap: 75,
+    captureMode: 'continuous',
+    headingMode: 'followWayline',
+    pathMode: 'curved',
+    speed: 6.0,
+    tips: 'Crosshatch oblique passes eliminate occluded vertical walls and stockpile undercuts.'
+  },
+  'splat-object': {
+    id: 'splat-object',
+    name: 'gsplat / Brush / SuperSplat 3DGS Object',
+    category: 'splat',
+    tools: 'gsplat, Brush, SuperSplat (3DGS Object Tools)',
+    deliverable: 'Object-Centric 3D Gaussian Splat / NeRF',
+    primaryPattern: 'dome-shell',
+    comboPatterns: 'dome-shell (3-5 rings + Zenith Cap) or multi-orbit',
+    altitude: 35,
+    gimbalPitch: -45,
+    frontOverlap: 80,
+    sideOverlap: 75,
+    captureMode: 'continuous',
+    headingMode: 'towardCenter',
+    pathMode: 'curved',
+    speed: 4.0,
+    tips: 'Avoid pure -90 deg nadir grids for 3DGS; hemispherical parallax prevents sky floaters.'
+  },
+  'splat-scene': {
+    id: 'splat-scene',
+    name: 'Nerfstudio / COLMAP / GLOMAP Scene Splat',
+    category: 'splat',
+    tools: 'Nerfstudio (splatfacto), COLMAP / GLOMAP',
+    deliverable: 'Compound / Campus Scale 3D Gaussian Splat',
+    primaryPattern: 'target-splat',
+    comboPatterns: 'target-splat (balanced, -50 deg) + low orbit (-25 deg)',
+    altitude: 45,
+    gimbalPitch: -50,
+    frontOverlap: 80,
+    sideOverlap: 75,
+    captureMode: 'continuous',
+    headingMode: 'towardCenter',
+    pathMode: 'curved',
+    speed: 5.0,
+    tips: 'Export companion transforms.json via Node-RED aalaapi-splat-prep to seed camera extrinsics.'
+  },
+  'rc-structure': {
+    id: 'rc-structure',
+    name: 'Meshroom / OpenMVG Multi-Tier Structure',
+    category: 'inspection',
+    tools: 'Meshroom (AliceVision), OpenMVG / OpenMVS',
+    deliverable: 'High-Poly Architecture & Heritage BIM Mesh',
+    primaryPattern: 'grid-multi-orbit-combo',
+    comboPatterns: 'Nadir top grid + 3-tier descending orbits (-60, -45, -25 deg)',
+    altitude: 40,
+    gimbalPitch: -55,
+    frontOverlap: 80,
+    sideOverlap: 80,
+    captureMode: 'stopAndShoot',
+    headingMode: 'towardCenter',
+    pathMode: 'curved',
+    speed: 3.5,
+    tips: 'Keep angular transitions < 15 deg between rings to tie roofs to facades without component splits.'
+  },
+  'facade-wall': {
+    id: 'facade-wall',
+    name: 'CloudCompare / MeshLab Vertical Facade',
+    category: 'inspection',
+    tools: 'CloudCompare, OpenMVS, MeshLab (Facade Tools)',
+    deliverable: 'Vertical Orthophoto, Crack Audit & M3C2 Diff',
+    primaryPattern: 'vertical-facade',
+    comboPatterns: 'Pair with fiducial-markers on wall face for scale constraint',
+    altitude: 25,
+    gimbalPitch: 0,
+    frontOverlap: 80,
+    sideOverlap: 75,
+    captureMode: 'stopAndShoot',
+    headingMode: 'fixed',
+    pathMode: 'straight',
+    speed: 2.5,
+    tips: 'Maintain 5m-15m standoff; Stop & Shoot eliminates rolling shutter blur on hairline cracks.'
+  },
+  'tower-audit': {
+    id: 'tower-audit',
+    name: 'Vertical Inspection / Tower Digital Twin',
+    category: 'inspection',
+    tools: 'OpenDroneMap, CloudCompare (Tower Audit)',
+    deliverable: 'Lattice Cell Tower, Turbine & Pylon Audit',
+    primaryPattern: 'tower',
+    comboPatterns: 'Add exclusion-box over guy-wire anchors; 10m buffer',
+    altitude: 45,
+    gimbalPitch: -15,
+    frontOverlap: 80,
+    sideOverlap: 75,
+    captureMode: 'stopAndShoot',
+    headingMode: 'towardCenter',
+    pathMode: 'straight',
+    speed: 2.5,
+    tips: 'Locked POI yaw captures antenna mounts and bolts sharply from 360 deg azimuths.'
+  },
+  'corridor-gis': {
+    id: 'corridor-gis',
+    name: 'WebODM / QGIS Linear Corridor',
+    category: 'photogrammetry',
+    tools: 'WebODM / OpenDroneMap, QGIS (Corridor GIS)',
+    deliverable: 'Highway, Pipeline, Rail & Utility Corridor Map',
+    primaryPattern: 'corridor',
+    comboPatterns: '2-3 parallel passes (-75 deg) or road-following',
+    altitude: 60,
+    gimbalPitch: -75,
+    frontOverlap: 75,
+    sideOverlap: 70,
+    captureMode: 'continuous',
+    headingMode: 'followWayline',
+    pathMode: 'straight',
+    speed: 7.0,
+    tips: 'Multi-pass -75 deg pitch prevents single-line SfM dome/bowl focal distortion.'
+  },
+  'pano-360': {
+    id: 'pano-360',
+    name: 'Hugin / Pannellum 360 Photo Sphere',
+    category: 'media',
+    tools: 'Hugin, Pannellum, Marzipano (360 Pano Tools)',
+    deliverable: '360x180 Equirectangular Virtual Tour Sphere',
+    primaryPattern: 'photo-sphere',
+    comboPatterns: 'Stack multiple photo-sphere nodes for linked tours',
+    altitude: 45,
+    gimbalPitch: 0,
+    frontOverlap: 70,
+    sideOverlap: 70,
+    captureMode: 'stopAndShoot',
+    headingMode: 'followWayline',
+    pathMode: 'straight',
+    speed: 3.0,
+    tips: 'Exports Google GPano XMP metadata sidecars for instant interactive 360 viewers.'
+  },
+  'hyperlapse-video': {
+    id: 'hyperlapse-video',
+    name: 'FFmpeg / Darktable Hyperlapse',
+    category: 'media',
+    tools: 'FFmpeg, Darktable, Kdenlive (Time-Lapse Tools)',
+    deliverable: 'Smooth Motion Time-Lapse & Keyframed Hyperlapse',
+    primaryPattern: 'hyperlapse',
+    comboPatterns: 'Spline mode (native) or Dense mode (RAW intervals)',
+    altitude: 35,
+    gimbalPitch: -25,
+    frontOverlap: 70,
+    sideOverlap: 70,
+    captureMode: 'continuous',
+    headingMode: 'smoothTransition',
+    pathMode: 'curved',
+    speed: 2.0,
+    tips: 'Catmull-Rom yaw/pitch interpolation minimizes jitter before optical-flow stabilization.'
+  },
+  'cinematic-media': {
+    id: 'cinematic-media',
+    name: 'Kdenlive / Blender VSE Cinematic Reveal',
+    category: 'media',
+    tools: 'Kdenlive, Blender VSE, Shotcut, FFmpeg',
+    deliverable: '4K/60fps Dronie, Rocket Crane & Boomerang Reels',
+    primaryPattern: 'cinematic-reveal',
+    comboPatterns: 'Combine Dronie, Rocket, and Boomerang layers',
+    altitude: 30,
+    gimbalPitch: -30,
+    frontOverlap: 70,
+    sideOverlap: 70,
+    captureMode: 'video',
+    headingMode: 'towardCenter',
+    pathMode: 'curved',
+    speed: 3.5,
+    tips: 'Trigonometric POI gimbal tracking keeps the subject dead-center without stick jitter.'
+  },
+  'light-painting': {
+    id: 'light-painting',
+    name: 'Darktable / GIMP Night Light Art',
+    category: 'media',
+    tools: 'Darktable, GIMP, ImageMagick (Long-Exposure Stack)',
+    deliverable: 'Nighttime Drone LED Sky Vector Art',
+    primaryPattern: 'light-art',
+    comboPatterns: 'Pair with ground tripod camera (Bulb / 8s-30s)',
+    altitude: 40,
+    gimbalPitch: -90,
+    frontOverlap: 70,
+    sideOverlap: 70,
+    captureMode: 'continuous',
+    headingMode: 'followWayline',
+    pathMode: 'curved',
+    speed: 3.0,
+    tips: 'Shutter auto-sizing and bottom LED strobes draw clean geometric sky vectors.'
+  },
+  'gcp-survey': {
+    id: 'gcp-survey',
+    name: 'OpenCV / WebODM GCP Survey',
+    category: 'spatial',
+    tools: 'OpenCV ArUco/AprilTag, WebODM GCP',
+    deliverable: 'Sub-Centimeter Survey Ground Control & Scale Bars',
+    primaryPattern: 'fiducial-markers',
+    comboPatterns: '5-9 fiducial-markers + single (-90 deg) + star-pass (-65 deg)',
+    altitude: 55,
+    gimbalPitch: -90,
+    frontOverlap: 80,
+    sideOverlap: 75,
+    captureMode: 'stopAndShoot',
+    headingMode: 'followWayline',
+    pathMode: 'straight',
+    speed: 5.0,
+    tips: 'Adding a diagonal star-pass (-65 deg) over GCPs cures focal-length/altitude correlation.'
+  },
+  'thermal-sar': {
+    id: 'thermal-sar',
+    name: 'Thermal / IAMSAR / ATAK Search',
+    category: 'spatial',
+    tools: 'Thermal Imagery, IAMSAR Command, ATAK / Open CoT',
+    deliverable: 'Wilderness SAR, Thermal Hotspot & Perimeter Patrol',
+    primaryPattern: 'sar-search',
+    comboPatterns: 'sar-search (ESS / Sector) or perimeter-patrol',
+    altitude: 50,
+    gimbalPitch: -50,
+    frontOverlap: 70,
+    sideOverlap: 65,
+    captureMode: 'continuous',
+    headingMode: 'followWayline',
+    pathMode: 'straight',
+    speed: 6.0,
+    tips: '-45 to -60 deg oblique thermal pitch increases silhouette cross-section under canopy.'
+  }
+};
+
+function applyPhotographyToolPreset(presetId) {
+  const preset = PHOTOGRAPHY_TOOL_PRESETS[presetId];
+  if (!preset) return false;
+
+  if (typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot(`Apply Tool Preset: ${preset.name}`);
+  }
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayer) {
+    activeLayer.pattern = preset.primaryPattern;
+    activeLayer.altitude = preset.altitude;
+    activeLayer.gimbalPitch = preset.gimbalPitch;
+    activeLayer.frontOverlap = preset.frontOverlap;
+    activeLayer.overlapFront = preset.frontOverlap;
+    activeLayer.sideOverlap = preset.sideOverlap;
+    activeLayer.overlapSide = preset.sideOverlap;
+    activeLayer.captureMode = preset.captureMode;
+    activeLayer.headingMode = preset.headingMode;
+    activeLayer.pathMode = preset.pathMode;
+    activeLayer.speed = preset.speed;
+  }
+
+  if (typeof document !== 'undefined') {
+    const setElVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val !== undefined && val !== null) {
+        el.value = String(val);
+      }
+    };
+
+    setElVal('grid-type', preset.primaryPattern);
+    setElVal('altitude', preset.altitude);
+    setElVal('gimbal-pitch', preset.gimbalPitch);
+    setElVal('front-overlap', preset.frontOverlap);
+    setElVal('side-overlap', preset.sideOverlap);
+    setElVal('layer-capture-mode', preset.captureMode);
+    setElVal('layer-heading-mode', preset.headingMode);
+    setElVal('layer-path-mode', preset.pathMode);
+    setElVal('speed', preset.speed);
+    setElVal('photography-tool-preset-select', preset.id);
+
+    if (typeof document.querySelectorAll === 'function') {
+      const cards = document.querySelectorAll('.pattern-card');
+      cards.forEach(card => {
+        const cardVal = card.getAttribute('data-value');
+        if (cardVal === preset.primaryPattern) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  if (typeof togglePatternParameters === 'function') togglePatternParameters();
+  if (typeof syncDisplayValues === 'function') syncDisplayValues();
+  if (typeof updateGrid === 'function') updateGrid();
+  if (typeof renderLayersList === 'function') renderLayersList();
+  if (typeof updateMatrixActiveLayerTelemetry === 'function') updateMatrixActiveLayerTelemetry();
+  if (typeof showToast === 'function') {
+    showToast(`Applied ${preset.name}: ${preset.primaryPattern} (${preset.gimbalPitch}°, ${preset.frontOverlap}%/${preset.sideOverlap}%)`, 'success');
+  }
+
+  return true;
+}
+
+if (typeof window !== 'undefined') {
+  window.PHOTOGRAPHY_TOOL_PRESETS = PHOTOGRAPHY_TOOL_PRESETS;
+  window.applyPhotographyToolPreset = applyPhotographyToolPreset;
+}
+if (typeof global !== 'undefined') {
+  global.PHOTOGRAPHY_TOOL_PRESETS = PHOTOGRAPHY_TOOL_PRESETS;
+  global.applyPhotographyToolPreset = applyPhotographyToolPreset;
+}
+
 // Setup Event Listeners for UI controls

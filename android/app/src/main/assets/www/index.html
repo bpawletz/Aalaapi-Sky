@@ -9428,7 +9428,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.248.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.250.0</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -9684,6 +9684,29 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <div id="layers-list-container" class="layers-list-container" style="display: flex; flex-direction: column; gap: 6px;">
               <!-- Dynamic layer items rendered here -->
             </div>
+          </div>
+
+          <div class="control-group" style="margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label for="photography-tool-preset-select" style="margin: 0; font-size: 0.76rem; color: #a78bfa;">⚡ Photography / Processing Tool Preset</label>
+            </div>
+            <select id="photography-tool-preset-select" class="form-select" style="font-size: 0.78rem; padding: 5px 8px;">
+              <option value="">-- Select Target Software Workflow --</option>
+              <option value="webodm-ortho">WebODM / OpenDroneMap / QGIS — 2D Ortho &amp; DSM</option>
+              <option value="webodm-3d">WebODM / OpenMVS / Meshroom — 3D Site Mesh</option>
+              <option value="splat-object">gsplat / Brush / SuperSplat — 3DGS Object (Dome)</option>
+              <option value="splat-scene">Nerfstudio / COLMAP / GLOMAP — Scene Splat</option>
+              <option value="rc-structure">Meshroom / OpenMVG — Multi-Tier Structure</option>
+              <option value="facade-wall">CloudCompare / MeshLab — Vertical Facade</option>
+              <option value="tower-audit">Vertical Inspection / Tower Digital Twin — Tower Audit</option>
+              <option value="corridor-gis">WebODM / OpenDroneMap / QGIS — Linear Corridor</option>
+              <option value="pano-360">Hugin / Pannellum / Marzipano — 360° Photo Sphere</option>
+              <option value="hyperlapse-video">FFmpeg / Darktable / Kdenlive — Hyperlapse</option>
+              <option value="cinematic-media">Kdenlive / Blender VSE / Shotcut — Cinematic Reveal</option>
+              <option value="light-painting">Darktable / GIMP / ImageMagick — Night Light Art</option>
+              <option value="gcp-survey">OpenCV / WebODM — Fiducial GCP Survey</option>
+              <option value="thermal-sar">Thermal / IAMSAR / ATAK — Thermal SAR</option>
+            </select>
           </div>
 
           <div class="control-group" style="margin-bottom: 12px;">
@@ -14433,6 +14456,27 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>🗺️</span>
+              Instant OpenCV Field Preview Stitcher for 2D Maps &amp; 360° Photo Spheres (v1.250.0) (Closes #305)
+            </strong>
+            <ul style="margin: 6px 0 0 18px; padding: 0; font-size: 0.78rem; color: #cbd5e1; line-height: 1.45;">
+              <li><strong>cv2.Stitcher_SCANS (Mode 1) 2D Orthomosaics:</strong> Rapidly stitches aerial grid, polygon, corridor, and single-shot flight photos directly in the field with black-border trimming, affine georeferencing fallback, and <code>L.imageOverlay</code> map layer with ground coverage metrics.</li>
+              <li><strong>cv2.Stitcher_PANORAMA (Mode 0) 360° Photo Spheres:</strong> Assembles multi-tier <code>360 Pano</code> captures into 2:1 equirectangular projections with embedded Google Photo Sphere (<code>GPano</code>) XMP metadata and interactive 3D WebGL spherical panorama viewer.</li>
+              <li><strong>SSE-First Live Progress:</strong> Stream real-time stitching progress (<code>stitch-progress</code> / <code>stitch-complete</code>) with seamless dual-platform parity across Desktop and Android.</li>
+            </ul>
+          </div>
+          <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #c084fc; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>📷</span>
+              Photography &amp; Post-Processing Tool Mapping Matrix + One-Click Presets (v1.249.0) (Closes #302)
+            </strong>
+            <ul style="margin: 6px 0 0 18px; padding: 0; font-size: 0.78rem; color: #cbd5e1; line-height: 1.45;">
+              <li><strong>14 Open-Source Toolchain &amp; Workflow Profiles:</strong> Direct pattern, pitch, overlap, and capture mappings for <strong>WebODM / OpenDroneMap</strong>, <strong>QGIS</strong>, <strong>Meshroom (AliceVision)</strong>, <strong>OpenMVG / OpenMVS</strong>, <strong>gsplat / Brush / SuperSplat / Nerfstudio / COLMAP / GLOMAP</strong>, <strong>CloudCompare</strong>, <strong>Hugin / Pannellum</strong>, <strong>FFmpeg / Kdenlive / Blender VSE</strong>, <strong>Darktable / GIMP</strong>, <strong>OpenCV GCPs</strong>, and <strong>Thermal / SAR</strong>.</li>
+              <li><strong>One-Click Presets &amp; Undo Support:</strong> Apply recommended settings directly from the <em>Settings Matrix &amp; Decision Trees</em> tab or the Sidebar <code>Photography / Processing Tool Preset</code> dropdown with full <code>Ctrl+Z</code> Undo support.</li>
+            </ul>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               <span>🌙</span>
@@ -16315,6 +16359,167 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             </table>
           </div>
 
+          <!-- Photography & Post-Processing Tool Compatibility Matrix -->
+          <div id="photography-tool-matrix-section" style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+              <strong style="font-size: 0.85rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                <span>📷</span> Photography &amp; Post-Processing Tool Mapping (14 Workflows)
+              </strong>
+              <div id="tool-matrix-category-filters" style="display: flex; gap: 4px; flex-wrap: wrap;">
+                <button type="button" class="tool-matrix-filter-btn matrix-filter-btn active" data-tool-category="all">All (14)</button>
+                <button type="button" class="tool-matrix-filter-btn matrix-filter-btn" data-tool-category="photogrammetry">Photogrammetry &amp; GIS</button>
+                <button type="button" class="tool-matrix-filter-btn matrix-filter-btn" data-tool-category="splat">3D Splat &amp; NeRF</button>
+                <button type="button" class="tool-matrix-filter-btn matrix-filter-btn" data-tool-category="inspection">3D Mesh &amp; Inspection</button>
+                <button type="button" class="tool-matrix-filter-btn matrix-filter-btn" data-tool-category="media">360° Pano &amp; Video</button>
+                <button type="button" class="tool-matrix-filter-btn matrix-filter-btn" data-tool-category="spatial">GCP &amp; Thermal/SAR</button>
+              </div>
+            </div>
+
+            <div style="border: 1px solid rgba(168, 85, 247, 0.28); border-radius: 8px; overflow-x: auto; background: rgba(15, 23, 42, 0.55); max-height: 360px;">
+              <table class="matrix-table" id="photography-tool-matrix-table">
+                <thead>
+                  <tr>
+                    <th style="min-width: 170px;">Target Software / Tools</th>
+                    <th>Deliverable</th>
+                    <th>Primary Pattern (+ Combo)</th>
+                    <th>Pitch</th>
+                    <th>Overlap (F/S)</th>
+                    <th>Capture / Turn</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="photography-tool-matrix-body">
+                  <tr data-tool-preset="webodm-ortho" data-tool-category="photogrammetry">
+                    <td><strong>WebODM / OpenDroneMap, QGIS (2D Ortho GIS)</strong></td>
+                    <td>2D Ortho, GeoTIFF DSM/DTM, NDVI</td>
+                    <td><code>single</code> (+ <code>fiducial-markers</code>)</td>
+                    <td>-90°</td>
+                    <td>75% / 70%</td>
+                    <td>Continuous / Straight</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="webodm-ortho">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="webodm-3d" data-tool-category="photogrammetry">
+                    <td><strong>WebODM 3D, OpenMVS, Meshroom (3D Mesh)</strong></td>
+                    <td>Textured 3D Site Mesh &amp; Stockpiles</td>
+                    <td><code>double</code> (+ <code>single</code> or <code>grid-orbit-combo</code>)</td>
+                    <td>-60°</td>
+                    <td>75% / 75%</td>
+                    <td>Continuous / Curved</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="webodm-3d">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="splat-object" data-tool-category="splat">
+                    <td><strong>gsplat, Brush, SuperSplat (3DGS Object Tools)</strong></td>
+                    <td>Object 3D Gaussian Splat / NeRF</td>
+                    <td><code>dome-shell</code> (or <code>multi-orbit</code>)</td>
+                    <td>-45° / Auto</td>
+                    <td>80% / 75%</td>
+                    <td>Continuous / Curved</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="splat-object">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="splat-scene" data-tool-category="splat">
+                    <td><strong>Nerfstudio (splatfacto), COLMAP / GLOMAP</strong></td>
+                    <td>Campus / Compound Scene 3DGS</td>
+                    <td><code>target-splat</code> (+ low <code>orbit</code>)</td>
+                    <td>-50°</td>
+                    <td>80% / 75%</td>
+                    <td>Continuous / Curved</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="splat-scene">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="rc-structure" data-tool-category="inspection">
+                    <td><strong>Meshroom (AliceVision), OpenMVG / OpenMVS</strong></td>
+                    <td>High-Poly Architecture &amp; BIM Mesh</td>
+                    <td><code>grid-multi-orbit-combo</code></td>
+                    <td>-55°</td>
+                    <td>80% / 80%</td>
+                    <td>Stop&amp;Shoot / Curved</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="rc-structure">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="facade-wall" data-tool-category="inspection">
+                    <td><strong>CloudCompare, OpenMVS, MeshLab (Facade Tools)</strong></td>
+                    <td>Vertical Ortho, Crack Audit &amp; M3C2</td>
+                    <td><code>vertical-facade</code> (+ <code>fiducial-markers</code>)</td>
+                    <td>0°</td>
+                    <td>80% / 75%</td>
+                    <td>Stop&amp;Shoot / Straight</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="facade-wall">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="tower-audit" data-tool-category="inspection">
+                    <td><strong>OpenDroneMap, CloudCompare (Tower Audit)</strong></td>
+                    <td>Cell Tower, Wind Turbine &amp; Pylon</td>
+                    <td><code>tower</code> (+ <code>exclusion-box</code>)</td>
+                    <td>-15°</td>
+                    <td>80% / 75%</td>
+                    <td>Stop&amp;Shoot / Straight</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="tower-audit">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="corridor-gis" data-tool-category="photogrammetry">
+                    <td><strong>WebODM / OpenDroneMap, QGIS (Corridor GIS)</strong></td>
+                    <td>Highway, Pipeline &amp; Rail Corridor</td>
+                    <td><code>corridor</code> (or <code>road-following</code>)</td>
+                    <td>-75°</td>
+                    <td>75% / 70%</td>
+                    <td>Continuous / Straight</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="corridor-gis">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="pano-360" data-tool-category="media">
+                    <td><strong>Hugin, Pannellum, Marzipano (360° Pano Tools)</strong></td>
+                    <td>360×180 Equirectangular Virtual Tour</td>
+                    <td><code>photo-sphere</code></td>
+                    <td>Multi-Ring</td>
+                    <td>Pano Rings</td>
+                    <td>Stop&amp;Shoot / Straight</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="pano-360">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="hyperlapse-video" data-tool-category="media">
+                    <td><strong>FFmpeg, Darktable, Kdenlive (Time-Lapse)</strong></td>
+                    <td>Smooth Keyframed Hyperlapse</td>
+                    <td><code>hyperlapse</code></td>
+                    <td>-25° Spline</td>
+                    <td>Interval</td>
+                    <td>Continuous / Curved</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="hyperlapse-video">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="cinematic-media" data-tool-category="media">
+                    <td><strong>Kdenlive, Blender VSE, Shotcut, FFmpeg</strong></td>
+                    <td>4K/60fps Dronie, Rocket &amp; Boomerang</td>
+                    <td><code>cinematic-reveal</code></td>
+                    <td>Dynamic POI</td>
+                    <td>Video</td>
+                    <td>Video / Curved</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="cinematic-media">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="light-painting" data-tool-category="media">
+                    <td><strong>Darktable, GIMP, ImageMagick (Light Stack)</strong></td>
+                    <td>Nighttime LED Sky Vector Art</td>
+                    <td><code>light-art</code></td>
+                    <td>-90°</td>
+                    <td>LED Spline</td>
+                    <td>Continuous / Curved</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="light-painting">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="gcp-survey" data-tool-category="spatial">
+                    <td><strong>OpenCV ArUco/AprilTag, WebODM GCP</strong></td>
+                    <td>Sub-cm Ground Control &amp; Scale Bars</td>
+                    <td><code>fiducial-markers</code> (+ <code>star-pass</code>)</td>
+                    <td>-90° / -65°</td>
+                    <td>80% / 75%</td>
+                    <td>Stop&amp;Shoot / Straight</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="gcp-survey">Apply Preset ⚡</button></td>
+                  </tr>
+                  <tr data-tool-preset="thermal-sar" data-tool-category="spatial">
+                    <td><strong>Thermal Imagery, IAMSAR, ATAK (Open CoT)</strong></td>
+                    <td>SAR Search, Thermal &amp; Fence Patrol</td>
+                    <td><code>sar-search</code> (or <code>perimeter-patrol</code>)</td>
+                    <td>-50°</td>
+                    <td>70% / 65%</td>
+                    <td>Continuous / Straight</td>
+                    <td><button type="button" class="apply-tool-preset-btn jump-setting-btn" data-tool-preset="thermal-sar">Apply Preset ⚡</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Documentation Reference Footer -->
           <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -17197,7 +17402,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.248.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.250.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17379,7 +17584,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <strong>DJI:</strong> <em>DJI, DJI Fly, DJI Pilot, DJI RC, DJI RC 2, DJI RC Pro, Mini 4 Pro, Air 3, Mavic, Inspire, Matrice, and WPML (Waypoint Markup Language)</em> are trademarks or registered trademarks of <strong>SZ DJI Technology Co., Ltd.</strong> Aalaapi Sky is an independent third-party flight planning tool and is <strong>NOT affiliated with, authorized by, sponsored by, or endorsed by SZ DJI Technology Co., Ltd.</strong>
           </p>
           <p style="margin: 0 0 6px 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-muted);">
-            <strong>Other Marks:</strong> <em>Google, Google Earth, Google Maps, KML, GPano, Android</em> (Google LLC); <em>Esri, ArcGIS, ArcGIS Online</em> (Environmental Systems Research Institute, Inc.); <em>OpenStreetMap</em> (OpenStreetMap Foundation); <em>Apple, iPad, iPhone, macOS</em> (Apple Inc.); <em>Realtek, RTL2832U</em> (Realtek Semiconductor Corp.); <em>Rafael Micro, R820T/R820T2</em> (Rafael Microelectronics, Inc.); <em>Nooelec</em> (Nooelec Inc.); <em>JetBrains, Kotlin</em> (JetBrains s.r.o.); <em>Microsoft, Windows, PowerShell, Playwright</em> (Microsoft Corporation); <em>WebGL, glTF</em> (Khronos Group Inc.); <em>Node-RED</em> (OpenJS Foundation); <em>CARTO</em> (CARTO). All other trademarks belong to their respective holders and are used strictly for compatibility identification.
+            <strong>Other Marks:</strong> <em>Google, Google Earth, Google Maps, KML, GPano, Android</em> (Google LLC); <em>Esri, ArcGIS, ArcGIS Online</em> (Environmental Systems Research Institute, Inc.); <em>OpenStreetMap</em> (OpenStreetMap Foundation); <em>Apple, iPad, iPhone, macOS</em> (Apple Inc.); <em>Realtek, RTL2832U</em> (Realtek Semiconductor Corp.); <em>Rafael Micro, R820T/R820T2</em> (Rafael Microelectronics, Inc.); <em>Nooelec</em> (Nooelec Inc.); <em>JetBrains, Kotlin</em> (JetBrains s.r.o.); <em>Microsoft, Windows, PowerShell, Playwright</em> (Microsoft Corporation); <em>WebGL, glTF</em> (Khronos Group Inc.); <em>Node-RED</em> (OpenJS Foundation); <em>CARTO</em> (CARTO); <em>OpenDroneMap / WebODM, QGIS, Meshroom (AliceVision), OpenMVG, OpenMVS, Nerfstudio, COLMAP, GLOMAP, gsplat, SuperSplat, CloudCompare, MeshLab, Hugin, Pannellum, Marzipano, FFmpeg, Darktable, Kdenlive, Blender, Shotcut, GIMP, ImageMagick</em>. All other trademarks belong to their respective holders and are used strictly for descriptive compatibility identification.
           </p>
           <p style="margin: 0; font-size: 0.72rem; line-height: 1.4; color: #fcd34d; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); padding: 6px 8px; border-radius: 6px;">
             <strong>IRL Field Verification Non-Guarantee &amp; Variations Disclaimer:</strong> An <code>IRL Verified</code> badge, field test matrix status, or automated post-flight log analysis PASS represents a single historical baseline observation under specific conditions only and <strong>DOES NOT constitute a guarantee, certification, or warranty of safe flight</strong>. Real-world autonomous flight is subject to atmospheric variations (wind gusts, density altitude, precipitation), RF/GNSS multipath and KP geomagnetic interference, barometric/DEM elevation errors, physical obstacles, aircraft mechanical state, and unannounced OEM firmware or SDK behavioral changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, obstacle clearance, and immediate manual override.
@@ -17388,6 +17593,18 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                                 <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.250.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Instant OpenCV Field Preview Stitcher for 2D Maps &amp; 360° Photo Spheres (Closes #305):</strong> Added rapid field stitch capabilities directly in Companion Bridge and Flight Diagnostics gallery. Integrates <code>cv2.Stitcher_SCANS</code> (mode 1) for rapid 2D orthomosaic previews overlaid on Leaflet maps with ground coverage metrics, and <code>cv2.Stitcher_PANORAMA</code> (mode 0) for 360° equirectangular photo spheres with embedded Google Photo Sphere (<code>GPano</code>) metadata and interactive 3D WebGL viewing. Includes automatic stitch option upon photo ingestion and real-time SSE progress streaming.</li>
+                </ul>
+              </li>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.249.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Photography &amp; Post-Processing Tool Mapping Matrix + One-Click Presets (Closes #302):</strong> Added a 14-profile interactive compatibility matrix inside the Help Hub (<code>#intro-pane-matrix</code>), a Sidebar quick-preset selector (<code>#photography-tool-preset-select</code>), and <code>applyPhotographyToolPreset()</code> with full Three-Tier Hierarchy &amp; Undo/Redo support for WebODM/OpenDroneMap, QGIS, Meshroom, OpenMVG/OpenMVS, gsplat/SuperSplat/Nerfstudio/COLMAP/GLOMAP, CloudCompare, Hugin/Pannellum, FFmpeg/Kdenlive/Blender VSE, Darktable/GIMP, and OpenCV GCPs.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.248.1):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -22912,6 +23129,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <button id="diag-btn-extract-wireframe" type="button" class="btn-secondary diag-photos-btn" style="padding: 5px 10px; font-size: 0.75rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; background: rgba(56, 189, 248, 0.1);" title="Run OpenCV edge extraction and project 3D wireframe">
               <span>🏗️</span> Project 3D Wireframe
             </button>
+            <button id="diag-btn-stitch-ortho" type="button" class="btn-secondary diag-photos-btn" style="padding: 5px 10px; font-size: 0.75rem; border-color: rgba(16, 185, 129, 0.4); color: #34d399; background: rgba(16, 185, 129, 0.1);" title="Stitch 2D Field Orthomosaic (cv2.Stitcher_SCANS)">
+              <span>🗺️</span> 2D Orthomosaic
+            </button>
+            <button id="diag-btn-stitch-pano" type="button" class="btn-secondary diag-photos-btn" style="padding: 5px 10px; font-size: 0.75rem; border-color: rgba(168, 85, 247, 0.4); color: #a855f7; background: rgba(168, 85, 247, 0.1);" title="Stitch 360° Photo Sphere (cv2.Stitcher_PANORAMA)">
+              <span>🌐</span> 360° Sphere
+            </button>
             <button id="diag-gallery-pull-photos-btn" type="button" class="btn-secondary diag-photos-btn" style="padding: 5px 12px; font-size: 0.75rem;">
               <span>📸</span> Import Photos...
             </button>
@@ -23178,6 +23401,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <span id="photo-detect-status-pill" style="display: none; align-items: center; gap: 4px; font-size: 0.70rem; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.15); color: #4ade80;">🏷️ 0 Tags</span>
           <button id="photo-detect-tags-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" title="Run In-Browser Optical Tag Detector (AprilTag 25h9/36h11/16h5 &amp; ArUco 4x4/5x5) on current photo">🔍 Detect Tags</button>
           <button id="photo-toggle-hud-btn" class="btn-secondary btn-sm active" type="button" style="font-size: 0.72rem; padding: 3px 8px; border-color: rgba(251, 191, 36, 0.4); color: #fbbf24;" title="Toggle Celestial Position HUD Overlay (Sun in Daytime / Moon &amp; Lunar Phase at Night)">☀️/🌙 HUD</button>
+          <button id="photo-360-view-btn" class="btn-secondary btn-sm" type="button" style="display: none; font-size: 0.72rem; padding: 3px 8px; color: #a855f7; border-color: rgba(168, 85, 247, 0.4);" title="Toggle 360° Interactive Photo Sphere Viewer">🌐 360° Sphere</button>
           <button id="inspector-plane-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Measurement Plane Calibration (Slant Optical Plane for Roofs/Elevated Structures vs Flat Ground Plane)">🏠 Slant (Structure)</button>
           <button id="inspector-unit-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Metric / Imperial Dimension Display">📏 Metric</button>
           <button id="close-photo-inspector-btn" class="close-btn" type="button" aria-label="Close photo inspector">&times;</button>
@@ -23222,6 +23446,14 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div id="photo-transform-layer" style="position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform;">
             <img id="photo-inspector-img" src="" alt="Drone Photo" crossorigin="anonymous" style="display: block; max-width: none; user-select: none; pointer-events: none;" />
             <canvas id="photo-annotation-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto;"></canvas>
+          </div>
+
+          <!-- 360° Equirectangular Sphere Viewer Viewport (Issue #305) -->
+          <div id="photo-360-container" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 4;">
+            <canvas id="photo-360-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
+            <div style="position: absolute; top: 12px; left: 16px; background: rgba(0,0,0,0.65); padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; color: #a855f7; pointer-events: none; border: 1px solid rgba(168,85,247,0.3);">
+              🌐 Interactive 360° Photo Sphere (Click &amp; Drag to Look Around • Scroll to Zoom)
+            </div>
           </div>
 
           <!-- Stamped Telemetry HUD Lower-Third Preview Banner -->
@@ -23407,6 +23639,10 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
             <input type="checkbox" id="ingest-extract-wireframe" checked />
             <span>🏗️ Extract 3D Architectural Wireframe (OpenCV + Telemetry Extrusion)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="ingest-quick-stitch" checked />
+            <span>🗺️ Instant OpenCV Field Stitch (2D Orthomosaic &amp; 360° Photo Spheres)</span>
           </label>
           <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; padding: 6px 8px; border-radius: 6px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); margin-top: 4px;">
             <input type="checkbox" id="ingest-delete-from-drone" style="margin-top: 2px;" />
@@ -27901,6 +28137,23 @@ class BasePlatformAdapter {
     const res = await fetch(`${apiBase}/api/airspace/discover?timeout=${encodeURIComponent(timeoutMs)}`);
     return await res.json();
   }
+
+  // ─── 9. Instant OpenCV Field Preview Stitcher (Issue #305) ─────────────────
+  async runFieldStitch(payload, apiBase = 'http://127.0.0.1:8765') {
+    const res = await fetch(`${apiBase}/api/process/stitch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    return await res.json();
+  }
+
+  async getFieldStitchStatus(missionUuid, mode = 'scans', apiBase = 'http://127.0.0.1:8765') {
+    const res = await fetch(`${apiBase}/api/process/stitch?missionUuid=${encodeURIComponent(missionUuid)}&mode=${encodeURIComponent(mode)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    return await res.json();
+  }
 }
 
 if (typeof window !== 'undefined') {
@@ -28299,6 +28552,25 @@ class AndroidPlatformAdapter extends BasePlatformAdapter {
       return typeof raw === 'string' ? JSON.parse(raw) : raw;
     }
     return super.discoverMdnsServers(timeoutMs, apiBase);
+  }
+
+  // ─── 9. Instant OpenCV Field Preview Stitcher (Issue #305) ─────────────────
+  async runFieldStitch(payload, apiBase = 'http://127.0.0.1:8765') {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.runFieldStitch === 'function') {
+      const raw = bridge.runFieldStitch(JSON.stringify(payload));
+      return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    }
+    return super.runFieldStitch(payload, apiBase);
+  }
+
+  async getFieldStitchStatus(missionUuid, mode = 'scans', apiBase = 'http://127.0.0.1:8765') {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.getFieldStitchStatus === 'function') {
+      const raw = bridge.getFieldStitchStatus(missionUuid, mode);
+      return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    }
+    return super.getFieldStitchStatus(missionUuid, mode, apiBase);
   }
 }
 
@@ -36639,6 +36911,12 @@ function initMap() {
   overlays["Photo Coverage Footprints (2D)"] = photoFootprintsGroup;
   overlays["Photo Inspection Pins (2D)"] = photoInspectionGroup;
 
+  // Stitched Orthomosaic Field Preview Overlay (2D) (Issue #305)
+  if (!stitchedOrthomosaicGroup) {
+    stitchedOrthomosaicGroup = L.layerGroup().addTo(map);
+  }
+  overlays["🗺️ Field Stitched Orthomosaic (2D)"] = stitchedOrthomosaicGroup;
+
   // Solar & Lunar Ephemeris & Shadow Vector Overlay (2D) (v1.157.0 - Issue #141, v1.161.0 - Issue #143)
   if (!solarOverlaysGroup) {
     solarOverlaysGroup = L.layerGroup().addTo(map);
@@ -36999,6 +37277,7 @@ function initMap() {
   if (!photoInspectionGroup) photoInspectionGroup = L.layerGroup().addTo(map);
   if (!photoFootprintsGroup) photoFootprintsGroup = L.layerGroup();
   if (!singlePhotoFootprintGroup) singlePhotoFootprintGroup = L.layerGroup().addTo(map);
+  if (!stitchedOrthomosaicGroup) stitchedOrthomosaicGroup = L.layerGroup().addTo(map);
 
   // Issue #123: Initialize 2D Flight Replay Engine
   if (typeof init2dReplayEngine === 'function') {
@@ -37785,10 +38064,77 @@ function setMapAirspaceZoom() {
 
 // Computes current state of modified settings across all 5 domains
 
+// Instant OpenCV Field Preview Stitcher (2D Orthomosaic Layer) (Issue #305)
+let stitchedOrthomosaicGroup = null;
+let currentStitchedOverlay = null;
+
+function renderStitchedOrthomosaicMapLayer(stitchResult, options = {}) {
+  const activeMap = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
+  if (!activeMap || typeof L === 'undefined') return null;
+  if (!stitchedOrthomosaicGroup) stitchedOrthomosaicGroup = L.layerGroup().addTo(activeMap);
+  stitchedOrthomosaicGroup.clearLayers();
+
+  if (!stitchResult) return null;
+  const imageUrl = stitchResult.previewUrl || options.previewUrl;
+  const bounds = stitchResult.bounds || options.bounds;
+
+  if (!imageUrl || !bounds || typeof bounds.south !== 'number' || typeof bounds.north !== 'number') return null;
+  const imageBounds = [
+    [bounds.south, bounds.west],
+    [bounds.north, bounds.east]
+  ];
+
+  const opacity = (typeof options.opacity === 'number') ? options.opacity : 0.85;
+  const overlay = L.imageOverlay(imageUrl, imageBounds, {
+    opacity,
+    interactive: true,
+    alt: 'Field Stitched Orthomosaic'
+  });
+
+  const photoCount = stitchResult.photosStitched || stitchResult.inputCount || 'N/A';
+  const engineName = stitchResult.engine || 'cv2.Stitcher_SCANS';
+  const areaHa = stitchResult.coverageSqMeters ? (stitchResult.coverageSqMeters / 10000).toFixed(2) + ' ha' : 'N/A';
+
+  const popupContent = `
+    <div style="font-family: inherit; font-size: 0.78rem; min-width: 180px;">
+      <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 4px;">🗺️ Stitched Orthomosaic Preview</div>
+      <div style="color: var(--text-muted); font-size: 0.72rem;">Photos Stitched: <b>${photoCount}</b></div>
+      <div style="color: var(--text-muted); font-size: 0.72rem;">Engine: <b>${engineName}</b></div>
+      <div style="color: var(--text-muted); font-size: 0.72rem;">Coverage: <b>${areaHa}</b></div>
+    </div>
+  `;
+  overlay.bindPopup(popupContent);
+  overlay.addTo(stitchedOrthomosaicGroup);
+  currentStitchedOverlay = overlay;
+
+  if (options.fitBounds !== false && activeMap.fitBounds) {
+    activeMap.fitBounds(imageBounds, { padding: [20, 20], maxZoom: 19 });
+  }
+
+  return overlay;
+}
+
+function setStitchedOrthomosaicOpacity(opacity) {
+  if (currentStitchedOverlay && typeof currentStitchedOverlay.setOpacity === 'function') {
+    currentStitchedOverlay.setOpacity(opacity);
+  }
+}
+
+function clearStitchedOrthomosaicMapLayer() {
+  if (stitchedOrthomosaicGroup) {
+    stitchedOrthomosaicGroup.clearLayers();
+  }
+  currentStitchedOverlay = null;
+}
+
 // Night Flight Map Layer & Cloud Cover Layer exports (v1.161.0 - Issue #143, v1.166.0)
 if (typeof window !== 'undefined') {
   window.nasaNightLightsLayer = nasaNightLightsLayer;
   window.cloudCoverLayer = cloudCoverLayer;
+  window.stitchedOrthomosaicGroup = stitchedOrthomosaicGroup;
+  window.renderStitchedOrthomosaicMapLayer = renderStitchedOrthomosaicMapLayer;
+  window.setStitchedOrthomosaicOpacity = setStitchedOrthomosaicOpacity;
+  window.clearStitchedOrthomosaicMapLayer = clearStitchedOrthomosaicMapLayer;
   window.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
   window.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
   window.setMapPlanningZoom = setMapPlanningZoom;
@@ -37797,6 +38143,10 @@ if (typeof window !== 'undefined') {
 if (typeof global !== 'undefined') {
   global.nasaNightLightsLayer = nasaNightLightsLayer;
   global.cloudCoverLayer = cloudCoverLayer;
+  global.stitchedOrthomosaicGroup = stitchedOrthomosaicGroup;
+  global.renderStitchedOrthomosaicMapLayer = renderStitchedOrthomosaicMapLayer;
+  global.setStitchedOrthomosaicOpacity = setStitchedOrthomosaicOpacity;
+  global.clearStitchedOrthomosaicMapLayer = clearStitchedOrthomosaicMapLayer;
   global.getReplayAircraftMarkerHtml = getReplayAircraftMarkerHtml;
   global.getReplayDroneMarkerHtml = getReplayDroneMarkerHtml;
   global.setMapPlanningZoom = setMapPlanningZoom;
@@ -37808,7 +38158,10 @@ if (typeof module !== 'undefined' && module.exports) {
     setMapPlanningZoom,
     setMapAirspaceZoom,
     getReplayAircraftMarkerHtml,
-    getReplayDroneMarkerHtml
+    getReplayDroneMarkerHtml,
+    renderStitchedOrthomosaicMapLayer,
+    setStitchedOrthomosaicOpacity,
+    clearStitchedOrthomosaicMapLayer
   };
 }
 // -------------------- src/ui/ResetManager.js --------------------
@@ -38652,6 +39005,337 @@ function exitInteractiveUITour() {
   if (typeof document === 'undefined') return;
   const overlay = document.getElementById('tour-overlay-container');
   if (overlay) overlay.classList.add('hidden');
+}
+
+const PHOTOGRAPHY_TOOL_PRESETS = {
+  'webodm-ortho': {
+    id: 'webodm-ortho',
+    name: 'WebODM / OpenDroneMap 2D Ortho',
+    category: 'photogrammetry',
+    tools: 'WebODM / OpenDroneMap, QGIS',
+    deliverable: '2D Orthomosaic, GeoTIFF DSM/DTM, NDVI',
+    primaryPattern: 'single',
+    comboPatterns: 'Add fiducial-markers (AprilTag/ArUco GCPs)',
+    altitude: 70,
+    gimbalPitch: -90,
+    frontOverlap: 75,
+    sideOverlap: 70,
+    captureMode: 'continuous',
+    headingMode: 'followWayline',
+    pathMode: 'straight',
+    speed: 8.0,
+    tips: 'Enable Terrain Following on hills; use 15m turnaround overshoot and WebODM dsm/dtm flags.'
+  },
+  'webodm-3d': {
+    id: 'webodm-3d',
+    name: 'WebODM / OpenMVS 3D Mesh',
+    category: 'photogrammetry',
+    tools: 'WebODM 3D, OpenMVS, Meshroom',
+    deliverable: 'Textured 3D Site Mesh & Stockpiles',
+    primaryPattern: 'double',
+    comboPatterns: 'single (-90 deg) + double (-60 deg) or grid-orbit-combo',
+    altitude: 50,
+    gimbalPitch: -60,
+    frontOverlap: 75,
+    sideOverlap: 75,
+    captureMode: 'continuous',
+    headingMode: 'followWayline',
+    pathMode: 'curved',
+    speed: 6.0,
+    tips: 'Crosshatch oblique passes eliminate occluded vertical walls and stockpile undercuts.'
+  },
+  'splat-object': {
+    id: 'splat-object',
+    name: 'gsplat / Brush / SuperSplat 3DGS Object',
+    category: 'splat',
+    tools: 'gsplat, Brush, SuperSplat (3DGS Object Tools)',
+    deliverable: 'Object-Centric 3D Gaussian Splat / NeRF',
+    primaryPattern: 'dome-shell',
+    comboPatterns: 'dome-shell (3-5 rings + Zenith Cap) or multi-orbit',
+    altitude: 35,
+    gimbalPitch: -45,
+    frontOverlap: 80,
+    sideOverlap: 75,
+    captureMode: 'continuous',
+    headingMode: 'towardCenter',
+    pathMode: 'curved',
+    speed: 4.0,
+    tips: 'Avoid pure -90 deg nadir grids for 3DGS; hemispherical parallax prevents sky floaters.'
+  },
+  'splat-scene': {
+    id: 'splat-scene',
+    name: 'Nerfstudio / COLMAP / GLOMAP Scene Splat',
+    category: 'splat',
+    tools: 'Nerfstudio (splatfacto), COLMAP / GLOMAP',
+    deliverable: 'Compound / Campus Scale 3D Gaussian Splat',
+    primaryPattern: 'target-splat',
+    comboPatterns: 'target-splat (balanced, -50 deg) + low orbit (-25 deg)',
+    altitude: 45,
+    gimbalPitch: -50,
+    frontOverlap: 80,
+    sideOverlap: 75,
+    captureMode: 'continuous',
+    headingMode: 'towardCenter',
+    pathMode: 'curved',
+    speed: 5.0,
+    tips: 'Export companion transforms.json via Node-RED aalaapi-splat-prep to seed camera extrinsics.'
+  },
+  'rc-structure': {
+    id: 'rc-structure',
+    name: 'Meshroom / OpenMVG Multi-Tier Structure',
+    category: 'inspection',
+    tools: 'Meshroom (AliceVision), OpenMVG / OpenMVS',
+    deliverable: 'High-Poly Architecture & Heritage BIM Mesh',
+    primaryPattern: 'grid-multi-orbit-combo',
+    comboPatterns: 'Nadir top grid + 3-tier descending orbits (-60, -45, -25 deg)',
+    altitude: 40,
+    gimbalPitch: -55,
+    frontOverlap: 80,
+    sideOverlap: 80,
+    captureMode: 'stopAndShoot',
+    headingMode: 'towardCenter',
+    pathMode: 'curved',
+    speed: 3.5,
+    tips: 'Keep angular transitions < 15 deg between rings to tie roofs to facades without component splits.'
+  },
+  'facade-wall': {
+    id: 'facade-wall',
+    name: 'CloudCompare / MeshLab Vertical Facade',
+    category: 'inspection',
+    tools: 'CloudCompare, OpenMVS, MeshLab (Facade Tools)',
+    deliverable: 'Vertical Orthophoto, Crack Audit & M3C2 Diff',
+    primaryPattern: 'vertical-facade',
+    comboPatterns: 'Pair with fiducial-markers on wall face for scale constraint',
+    altitude: 25,
+    gimbalPitch: 0,
+    frontOverlap: 80,
+    sideOverlap: 75,
+    captureMode: 'stopAndShoot',
+    headingMode: 'fixed',
+    pathMode: 'straight',
+    speed: 2.5,
+    tips: 'Maintain 5m-15m standoff; Stop & Shoot eliminates rolling shutter blur on hairline cracks.'
+  },
+  'tower-audit': {
+    id: 'tower-audit',
+    name: 'Vertical Inspection / Tower Digital Twin',
+    category: 'inspection',
+    tools: 'OpenDroneMap, CloudCompare (Tower Audit)',
+    deliverable: 'Lattice Cell Tower, Turbine & Pylon Audit',
+    primaryPattern: 'tower',
+    comboPatterns: 'Add exclusion-box over guy-wire anchors; 10m buffer',
+    altitude: 45,
+    gimbalPitch: -15,
+    frontOverlap: 80,
+    sideOverlap: 75,
+    captureMode: 'stopAndShoot',
+    headingMode: 'towardCenter',
+    pathMode: 'straight',
+    speed: 2.5,
+    tips: 'Locked POI yaw captures antenna mounts and bolts sharply from 360 deg azimuths.'
+  },
+  'corridor-gis': {
+    id: 'corridor-gis',
+    name: 'WebODM / QGIS Linear Corridor',
+    category: 'photogrammetry',
+    tools: 'WebODM / OpenDroneMap, QGIS (Corridor GIS)',
+    deliverable: 'Highway, Pipeline, Rail & Utility Corridor Map',
+    primaryPattern: 'corridor',
+    comboPatterns: '2-3 parallel passes (-75 deg) or road-following',
+    altitude: 60,
+    gimbalPitch: -75,
+    frontOverlap: 75,
+    sideOverlap: 70,
+    captureMode: 'continuous',
+    headingMode: 'followWayline',
+    pathMode: 'straight',
+    speed: 7.0,
+    tips: 'Multi-pass -75 deg pitch prevents single-line SfM dome/bowl focal distortion.'
+  },
+  'pano-360': {
+    id: 'pano-360',
+    name: 'Hugin / Pannellum 360 Photo Sphere',
+    category: 'media',
+    tools: 'Hugin, Pannellum, Marzipano (360 Pano Tools)',
+    deliverable: '360x180 Equirectangular Virtual Tour Sphere',
+    primaryPattern: 'photo-sphere',
+    comboPatterns: 'Stack multiple photo-sphere nodes for linked tours',
+    altitude: 45,
+    gimbalPitch: 0,
+    frontOverlap: 70,
+    sideOverlap: 70,
+    captureMode: 'stopAndShoot',
+    headingMode: 'followWayline',
+    pathMode: 'straight',
+    speed: 3.0,
+    tips: 'Exports Google GPano XMP metadata sidecars for instant interactive 360 viewers.'
+  },
+  'hyperlapse-video': {
+    id: 'hyperlapse-video',
+    name: 'FFmpeg / Darktable Hyperlapse',
+    category: 'media',
+    tools: 'FFmpeg, Darktable, Kdenlive (Time-Lapse Tools)',
+    deliverable: 'Smooth Motion Time-Lapse & Keyframed Hyperlapse',
+    primaryPattern: 'hyperlapse',
+    comboPatterns: 'Spline mode (native) or Dense mode (RAW intervals)',
+    altitude: 35,
+    gimbalPitch: -25,
+    frontOverlap: 70,
+    sideOverlap: 70,
+    captureMode: 'continuous',
+    headingMode: 'smoothTransition',
+    pathMode: 'curved',
+    speed: 2.0,
+    tips: 'Catmull-Rom yaw/pitch interpolation minimizes jitter before optical-flow stabilization.'
+  },
+  'cinematic-media': {
+    id: 'cinematic-media',
+    name: 'Kdenlive / Blender VSE Cinematic Reveal',
+    category: 'media',
+    tools: 'Kdenlive, Blender VSE, Shotcut, FFmpeg',
+    deliverable: '4K/60fps Dronie, Rocket Crane & Boomerang Reels',
+    primaryPattern: 'cinematic-reveal',
+    comboPatterns: 'Combine Dronie, Rocket, and Boomerang layers',
+    altitude: 30,
+    gimbalPitch: -30,
+    frontOverlap: 70,
+    sideOverlap: 70,
+    captureMode: 'video',
+    headingMode: 'towardCenter',
+    pathMode: 'curved',
+    speed: 3.5,
+    tips: 'Trigonometric POI gimbal tracking keeps the subject dead-center without stick jitter.'
+  },
+  'light-painting': {
+    id: 'light-painting',
+    name: 'Darktable / GIMP Night Light Art',
+    category: 'media',
+    tools: 'Darktable, GIMP, ImageMagick (Long-Exposure Stack)',
+    deliverable: 'Nighttime Drone LED Sky Vector Art',
+    primaryPattern: 'light-art',
+    comboPatterns: 'Pair with ground tripod camera (Bulb / 8s-30s)',
+    altitude: 40,
+    gimbalPitch: -90,
+    frontOverlap: 70,
+    sideOverlap: 70,
+    captureMode: 'continuous',
+    headingMode: 'followWayline',
+    pathMode: 'curved',
+    speed: 3.0,
+    tips: 'Shutter auto-sizing and bottom LED strobes draw clean geometric sky vectors.'
+  },
+  'gcp-survey': {
+    id: 'gcp-survey',
+    name: 'OpenCV / WebODM GCP Survey',
+    category: 'spatial',
+    tools: 'OpenCV ArUco/AprilTag, WebODM GCP',
+    deliverable: 'Sub-Centimeter Survey Ground Control & Scale Bars',
+    primaryPattern: 'fiducial-markers',
+    comboPatterns: '5-9 fiducial-markers + single (-90 deg) + star-pass (-65 deg)',
+    altitude: 55,
+    gimbalPitch: -90,
+    frontOverlap: 80,
+    sideOverlap: 75,
+    captureMode: 'stopAndShoot',
+    headingMode: 'followWayline',
+    pathMode: 'straight',
+    speed: 5.0,
+    tips: 'Adding a diagonal star-pass (-65 deg) over GCPs cures focal-length/altitude correlation.'
+  },
+  'thermal-sar': {
+    id: 'thermal-sar',
+    name: 'Thermal / IAMSAR / ATAK Search',
+    category: 'spatial',
+    tools: 'Thermal Imagery, IAMSAR Command, ATAK / Open CoT',
+    deliverable: 'Wilderness SAR, Thermal Hotspot & Perimeter Patrol',
+    primaryPattern: 'sar-search',
+    comboPatterns: 'sar-search (ESS / Sector) or perimeter-patrol',
+    altitude: 50,
+    gimbalPitch: -50,
+    frontOverlap: 70,
+    sideOverlap: 65,
+    captureMode: 'continuous',
+    headingMode: 'followWayline',
+    pathMode: 'straight',
+    speed: 6.0,
+    tips: '-45 to -60 deg oblique thermal pitch increases silhouette cross-section under canopy.'
+  }
+};
+
+function applyPhotographyToolPreset(presetId) {
+  const preset = PHOTOGRAPHY_TOOL_PRESETS[presetId];
+  if (!preset) return false;
+
+  if (typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot(`Apply Tool Preset: ${preset.name}`);
+  }
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayer) {
+    activeLayer.pattern = preset.primaryPattern;
+    activeLayer.altitude = preset.altitude;
+    activeLayer.gimbalPitch = preset.gimbalPitch;
+    activeLayer.frontOverlap = preset.frontOverlap;
+    activeLayer.overlapFront = preset.frontOverlap;
+    activeLayer.sideOverlap = preset.sideOverlap;
+    activeLayer.overlapSide = preset.sideOverlap;
+    activeLayer.captureMode = preset.captureMode;
+    activeLayer.headingMode = preset.headingMode;
+    activeLayer.pathMode = preset.pathMode;
+    activeLayer.speed = preset.speed;
+  }
+
+  if (typeof document !== 'undefined') {
+    const setElVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val !== undefined && val !== null) {
+        el.value = String(val);
+      }
+    };
+
+    setElVal('grid-type', preset.primaryPattern);
+    setElVal('altitude', preset.altitude);
+    setElVal('gimbal-pitch', preset.gimbalPitch);
+    setElVal('front-overlap', preset.frontOverlap);
+    setElVal('side-overlap', preset.sideOverlap);
+    setElVal('layer-capture-mode', preset.captureMode);
+    setElVal('layer-heading-mode', preset.headingMode);
+    setElVal('layer-path-mode', preset.pathMode);
+    setElVal('speed', preset.speed);
+    setElVal('photography-tool-preset-select', preset.id);
+
+    if (typeof document.querySelectorAll === 'function') {
+      const cards = document.querySelectorAll('.pattern-card');
+      cards.forEach(card => {
+        const cardVal = card.getAttribute('data-value');
+        if (cardVal === preset.primaryPattern) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  if (typeof togglePatternParameters === 'function') togglePatternParameters();
+  if (typeof syncDisplayValues === 'function') syncDisplayValues();
+  if (typeof updateGrid === 'function') updateGrid();
+  if (typeof renderLayersList === 'function') renderLayersList();
+  if (typeof updateMatrixActiveLayerTelemetry === 'function') updateMatrixActiveLayerTelemetry();
+  if (typeof showToast === 'function') {
+    showToast(`Applied ${preset.name}: ${preset.primaryPattern} (${preset.gimbalPitch}°, ${preset.frontOverlap}%/${preset.sideOverlap}%)`, 'success');
+  }
+
+  return true;
+}
+
+if (typeof window !== 'undefined') {
+  window.PHOTOGRAPHY_TOOL_PRESETS = PHOTOGRAPHY_TOOL_PRESETS;
+  window.applyPhotographyToolPreset = applyPhotographyToolPreset;
+}
+if (typeof global !== 'undefined') {
+  global.PHOTOGRAPHY_TOOL_PRESETS = PHOTOGRAPHY_TOOL_PRESETS;
+  global.applyPhotographyToolPreset = applyPhotographyToolPreset;
 }
 
 // Setup Event Listeners for UI controls
@@ -42022,6 +42706,53 @@ function initUIEventListeners() {
       });
     });
   });
+
+  // Wire up Photography & Post-Processing Tool Matrix filter buttons
+  const toolMatrixFilterBtns = document.querySelectorAll('.tool-matrix-filter-btn');
+  toolMatrixFilterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      toolMatrixFilterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cat = btn.getAttribute('data-tool-category');
+      const rows = document.querySelectorAll('#photography-tool-matrix-body tr');
+      rows.forEach(r => {
+        if (cat === 'all' || r.getAttribute('data-tool-category') === cat) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  // Wire up One-Click Photography Tool Preset buttons in Help Hub Matrix
+  document.addEventListener('click', (e) => {
+    const presetBtn = e.target.closest('.apply-tool-preset-btn');
+    if (!presetBtn) return;
+    const presetId = presetBtn.getAttribute('data-tool-preset');
+    if (!presetId || typeof applyPhotographyToolPreset !== 'function') return;
+
+    const applied = applyPhotographyToolPreset(presetId);
+    if (applied) {
+      if (typeof closeIntroModal === 'function') {
+        closeIntroModal();
+      } else {
+        const modal = document.getElementById('quickstart-modal');
+        if (modal) modal.classList.add('hidden');
+      }
+    }
+  });
+
+  // Wire up Sidebar Photography Tool Preset selector
+  const toolPresetSelect = document.getElementById('photography-tool-preset-select');
+  if (toolPresetSelect) {
+    toolPresetSelect.addEventListener('change', (e) => {
+      const presetId = e.target.value;
+      if (presetId && typeof applyPhotographyToolPreset === 'function') {
+        applyPhotographyToolPreset(presetId);
+      }
+    });
+  }
 
   // Wire up Spotlight Tour controls
   const tourNextBtn = document.getElementById('tour-next-btn');
@@ -65548,6 +66279,24 @@ function connectCompanionStatusStream() {
 
       }
 
+    });
+
+    companionStatusEventSource.addEventListener('stitch-progress', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.onStitchProgress === 'function') {
+          FlightDiagnostics.onStitchProgress(data);
+        }
+      } catch (_) {}
+    });
+
+    companionStatusEventSource.addEventListener('stitch-complete', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.onStitchComplete === 'function') {
+          FlightDiagnostics.onStitchComplete(data);
+        }
+      } catch (_) {}
     });
 
 
@@ -93455,6 +94204,20 @@ const FlightDiagnostics = {
       });
     }
 
+    const diagBtnStitchOrtho = document.getElementById('diag-btn-stitch-ortho');
+    if (diagBtnStitchOrtho && typeof diagBtnStitchOrtho.addEventListener === 'function') {
+      diagBtnStitchOrtho.addEventListener('click', () => {
+        this.triggerFieldStitch('scans');
+      });
+    }
+
+    const diagBtnStitchPano = document.getElementById('diag-btn-stitch-pano');
+    if (diagBtnStitchPano && typeof diagBtnStitchPano.addEventListener === 'function') {
+      diagBtnStitchPano.addEventListener('click', () => {
+        this.triggerFieldStitch('panorama');
+      });
+    }
+
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
       window.addEventListener('keydown', (e) => {
         if ((e.key === 'Delete' || e.key === 'Backspace') && this.wireframeSelectedLineIndex !== null && this.isOpen) {
@@ -98136,6 +98899,142 @@ const FlightDiagnostics = {
       resetMeshBtns();
       if (typeof showToast === 'function') showToast(`AI 3D Assist: ${err.message}`, 'error');
     }
+  },
+
+  async triggerFieldStitch(mode = 'scans') {
+    const isPano = mode === 'panorama';
+    const btn = document.getElementById(isPano ? 'diag-btn-stitch-pano' : 'diag-btn-stitch-ortho');
+    const origHtml = btn ? btn.innerHTML : '';
+
+    if (btn) {
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      btn.classList.add('diag-btn-working');
+      btn.innerHTML = isPano ? '<span>⏳</span> Stitching 360° Sphere...' : '<span>⏳</span> Stitching Orthomosaic...';
+    }
+    this.setWorkingState(true, isPano ? 'Stitching 360° Photo Sphere...' : 'Stitching 2D Field Orthomosaic...', 'Extracting features with OpenCV 5');
+
+    const resetBtn = () => {
+      if (btn) {
+        btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+        btn.classList.remove('diag-btn-working');
+        btn.innerHTML = origHtml || (isPano ? '<span>🌐</span> 360° Sphere' : '<span>🗺️</span> 2D Orthomosaic');
+      }
+      this.setWorkingState(false);
+    };
+
+    try {
+      const apiBase = (typeof getCompanionApiBase === 'function')
+        ? getCompanionApiBase()
+        : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+
+      const missionUuid = this.activeInspectionManifest?.missionUuid
+        || this.flightManifest?.missionUuid
+        || (this.selectedFlightId ? `mission_${this.selectedFlightId.replace(/\.txt$/i, '').replace(/[^a-zA-Z0-9_-]/g, '_')}` : null)
+        || (typeof activeLayerId !== 'undefined' && activeLayerId)
+        || 'mission_' + Date.now();
+
+      const photos = (Array.isArray(this.flightPhotos) && this.flightPhotos.length > 0)
+        ? this.flightPhotos
+        : ((this.activeInspectionManifest && Array.isArray(this.activeInspectionManifest.photos)) ? this.activeInspectionManifest.photos : []);
+
+      let homePoint = null;
+      if (typeof getMissionFailsafes === 'function') {
+        const failsafes = getMissionFailsafes();
+        if (failsafes && failsafes.homePoint) homePoint = failsafes.homePoint;
+      }
+      if (!homePoint && this.activeInspectionManifest?.homePoint) {
+        homePoint = this.activeInspectionManifest.homePoint;
+      }
+
+      const payload = {
+        missionUuid,
+        mode,
+        photos,
+        homePoint,
+        resolution: 'preview',
+        cropBlackBorders: true,
+        injectXmp: true
+      };
+
+      let result = null;
+      if (typeof Platform !== 'undefined' && typeof Platform.runFieldStitch === 'function') {
+        result = await Platform.runFieldStitch(payload, apiBase);
+      } else {
+        const res = await fetch(`${apiBase}/api/process/stitch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        result = await res.json();
+      }
+
+      resetBtn();
+
+      if (result && result.success && result.result) {
+        const stitchRes = result.result;
+        if (mode === 'scans') {
+          if (typeof renderStitchedOrthomosaicMapLayer === 'function') {
+            renderStitchedOrthomosaicMapLayer(stitchRes, { fitBounds: true });
+          }
+          if (typeof showToast === 'function') {
+            showToast(`🗺️ 2D Orthomosaic Stitched! (${stitchRes.photosStitched || stitchRes.inputCount || 0} photos, ${stitchRes.engine || 'cv2.Stitcher_SCANS'})`, 'success');
+          }
+        } else {
+          if (typeof PhotoInspector !== 'undefined' && typeof PhotoInspector.open === 'function') {
+            PhotoInspector.open({
+              isPanorama: true,
+              mode: 'panorama',
+              filename: 'photosphere_360.jpg',
+              previewUrl: stitchRes.previewUrl,
+              gpano: stitchRes.gpano || { projectionType: 'equirectangular', usePanoramaViewer: true }
+            });
+            setTimeout(() => {
+              if (typeof PhotoInspector.toggle360Viewer === 'function') {
+                PhotoInspector.toggle360Viewer(true);
+              }
+            }, 100);
+          }
+          if (typeof showToast === 'function') {
+            showToast('🌐 360° Photo Sphere Stitched! Opened in interactive viewer.', 'success');
+          }
+        }
+      } else {
+        throw new Error(result?.error || 'Stitching operation failed');
+      }
+    } catch (err) {
+      resetBtn();
+      console.warn('[DigitalTwin] Stitching error:', err);
+      if (typeof showToast === 'function') {
+        showToast(`Stitcher: ${err.message}`, 'error');
+      }
+    }
+  },
+
+  onStitchProgress(data) {
+    if (!data) return;
+    const stage = data.stage || 'Stitching...';
+    const pct = typeof data.progressPct === 'number' ? data.progressPct : null;
+    const isPano = data.mode === 'panorama';
+    const btn = document.getElementById(isPano ? 'diag-btn-stitch-pano' : 'diag-btn-stitch-ortho');
+    if (btn && pct !== null) {
+      btn.innerHTML = `<span>⏳</span> ${pct}% (${stage})`;
+    }
+  },
+
+  onStitchComplete(data) {
+    if (!data) return;
+    const isPano = data.mode === 'panorama';
+    const btn = document.getElementById(isPano ? 'diag-btn-stitch-pano' : 'diag-btn-stitch-ortho');
+    if (btn) {
+      btn.disabled = false;
+      btn.removeAttribute('aria-busy');
+      btn.classList.remove('diag-btn-working');
+      btn.innerHTML = isPano ? '<span>🌐</span> 360° Sphere' : '<span>🗺️</span> 2D Orthomosaic';
+    }
+    this.setWorkingState(false);
   }
 };
 
@@ -110521,6 +111420,44 @@ function extractDjiXmpMetadata(data) {
   return Object.keys(result).length > 0 ? result : null;
 }
 
+/**
+ * Extracts Google Photo Sphere (GPano) metadata from an ArrayBuffer, Buffer, or text string.
+ * @param {ArrayBuffer|Uint8Array|Buffer|string} data
+ * @returns {object|null}
+ */
+function extractGpanoXmpMetadata(data) {
+  if (!data) return null;
+  let str = '';
+  if (typeof data === 'string') {
+    str = data;
+  } else if (typeof Buffer !== 'undefined' && Buffer.isBuffer(data)) {
+    str = data.toString('latin1');
+  } else if (data instanceof Uint8Array || data instanceof ArrayBuffer) {
+    const u8 = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+    const searchLimit = Math.min(u8.length, 524288);
+    str = new TextDecoder('latin1', { fatal: false }).decode(u8.subarray(0, searchLimit));
+  }
+
+  const projMatch = str.match(/GPano:ProjectionType="([^"]+)"/i) || str.match(/<GPano:ProjectionType>([^<]+)<\/GPano:ProjectionType>/i);
+  const usePanoMatch = str.match(/GPano:UsePanoramaViewer="([^"]+)"/i) || str.match(/<GPano:UsePanoramaViewer>([^<]+)<\/GPano:UsePanoramaViewer>/i);
+  const croppedWidthMatch = str.match(/GPano:CroppedAreaImageWidthPixels="([^"]+)"/i) || str.match(/<GPano:CroppedAreaImageWidthPixels>([^<]+)<\/GPano:CroppedAreaImageWidthPixels>/i);
+  const croppedHeightMatch = str.match(/GPano:CroppedAreaImageHeightPixels="([^"]+)"/i) || str.match(/<GPano:CroppedAreaImageHeightPixels>([^<]+)<\/GPano:CroppedAreaImageHeightPixels>/i);
+  const fullWidthMatch = str.match(/GPano:FullPanoWidthPixels="([^"]+)"/i) || str.match(/<GPano:FullPanoWidthPixels>([^<]+)<\/GPano:FullPanoWidthPixels>/i);
+  const fullHeightMatch = str.match(/GPano:FullPanoHeightPixels="([^"]+)"/i) || str.match(/<GPano:FullPanoHeightPixels>([^<]+)<\/GPano:FullPanoHeightPixels>/i);
+
+  if (projMatch || usePanoMatch) {
+    return {
+      projectionType: projMatch ? projMatch[1].trim() : 'equirectangular',
+      usePanoramaViewer: usePanoMatch ? (usePanoMatch[1].trim().toLowerCase() === 'true') : true,
+      croppedWidth: croppedWidthMatch ? parseInt(croppedWidthMatch[1], 10) : null,
+      croppedHeight: croppedHeightMatch ? parseInt(croppedHeightMatch[1], 10) : null,
+      fullWidth: fullWidthMatch ? parseInt(fullWidthMatch[1], 10) : null,
+      fullHeight: fullHeightMatch ? parseInt(fullHeightMatch[1], 10) : null
+    };
+  }
+  return null;
+}
+
 // =============================================================================
 // Optical Tag Detector (AprilTag & ArUco) WebAssembly/JS Engine (v1.114.0)
 // =============================================================================
@@ -112002,6 +112939,12 @@ const PhotoInspector = {
   activeMeasurePoints: [],
   activeArrowStart: null,
   activeBoxStart: null,
+  is360Mode: false,
+  three360Scene: null,
+  three360Camera: null,
+  three360Renderer: null,
+  three360Mesh: null,
+  three360AnimId: null,
   _layers: {
     hud: true,
     boundary: true,
@@ -112033,6 +112976,7 @@ const PhotoInspector = {
   getLayerBoundaryGeoPolygon,
   computeConvexHullGeo,
   extractDjiXmpMetadata,
+  extractGpanoXmpMetadata,
 
   getPhotoList() {
     if (Array.isArray(this.photoList) && this.photoList.length > 0) {
@@ -112346,6 +113290,15 @@ const PhotoInspector = {
         this.fitToViewport();
         this.renderCanvas();
 
+        // Check for 360 Photo Sphere GPano metadata or 2:1 equirectangular aspect ratio (Issue #305)
+        if (imgEl.naturalWidth > 0 && imgEl.naturalHeight > 0) {
+          const aspect = imgEl.naturalWidth / imgEl.naturalHeight;
+          if (Math.abs(aspect - 2.0) < 0.08 || this.activePhoto.isPanorama || this.activePhoto.mode === 'panorama') {
+            this.activePhoto.isPanorama = true;
+            this.updateHeaderUI();
+          }
+        }
+
         // If coordinates are 0, dynamically fetch JPEG header to extract embedded DJI XMP metadata
         if (this.activePhoto && (!this.activePhoto.actual?.lat && !this.activePhoto.actual?.lon) && imgSrc && !imgSrc.startsWith('data:') && typeof fetch !== 'undefined') {
           fetch(imgSrc)
@@ -112365,6 +113318,24 @@ const PhotoInspector = {
                 if (xmp.date && !this.activePhoto.date) this.activePhoto.date = xmp.date;
                 this.updateHeaderUI();
                 this.renderCanvas();
+              }
+              const gpano = extractGpanoXmpMetadata(ab);
+              if (gpano) {
+                this.activePhoto.gpano = gpano;
+                this.activePhoto.isPanorama = true;
+                this.updateHeaderUI();
+              }
+            })
+            .catch(() => {});
+        } else if (imgSrc && !imgSrc.startsWith('data:') && typeof fetch !== 'undefined') {
+          fetch(imgSrc, { method: 'GET', headers: { Range: 'bytes=0-131072' } })
+            .then(res => res.arrayBuffer())
+            .then(ab => {
+              const gpano = extractGpanoXmpMetadata(ab);
+              if (gpano) {
+                this.activePhoto.gpano = gpano;
+                this.activePhoto.isPanorama = true;
+                this.updateHeaderUI();
               }
             })
             .catch(() => {});
@@ -112397,6 +113368,9 @@ const PhotoInspector = {
 
   close() {
     if (typeof document === 'undefined') return;
+    if (this.is360Mode) {
+      this.toggle360Viewer(false);
+    }
     const modal = document.getElementById('photo-inspector-modal');
     if (modal) modal.classList.add('hidden');
     if (typeof clearSinglePhotoFootprint === 'function') {
@@ -112525,6 +113499,19 @@ const PhotoInspector = {
       planeToggleBtn.title = this.calibrationMode === 'slant'
         ? 'Current: Slant Optical Plane (Elevated Structures & Roofs). Click to switch to Flat Ground.'
         : 'Current: Flat Ground Plane (Terrain & Driveways). Click to switch to Slant Structure Plane.';
+    }
+
+    const panoBtn = document.getElementById('photo-360-view-btn');
+    if (panoBtn) {
+      const isPano = Boolean(p.isPanorama || p.mode === 'panorama' || (p.filename && (p.filename.includes('photosphere') || p.filename.includes('pano'))) || (p.gpano && p.gpano.projectionType === 'equirectangular'));
+      panoBtn.style.display = isPano ? 'inline-flex' : 'none';
+      if (this.is360Mode) {
+        panoBtn.classList.add('active');
+        panoBtn.style.background = 'rgba(168, 85, 247, 0.3)';
+      } else {
+        panoBtn.classList.remove('active');
+        panoBtn.style.background = '';
+      }
     }
 
     const isComp = p.variance ? p.variance.isCompliant : true;
@@ -114381,6 +115368,12 @@ const PhotoInspector = {
     const exportBtn = document.getElementById('inspector-export-img-btn');
 
     if (closeBtn) closeBtn.onclick = () => this.close();
+    const pano360Btn = document.getElementById('photo-360-view-btn');
+    if (pano360Btn) {
+      pano360Btn.onclick = () => {
+        this.toggle360Viewer();
+      };
+    }
     if (unitBtn) {
       unitBtn.onclick = () => {
         this.unit = this.unit === 'metric' ? 'imperial' : 'metric';
@@ -114782,6 +115775,133 @@ const PhotoInspector = {
     link.download = `${this.activePhoto.filename.replace(/\.[^.]+$/, '')}_annotated.jpg`;
     link.href = off.toDataURL('image/jpeg', 0.92);
     link.click();
+  },
+
+  toggle360Viewer(enable) {
+    const btn = document.getElementById('photo-360-view-btn');
+    const container360 = document.getElementById('photo-360-container');
+    const transformLayer = document.getElementById('photo-transform-layer');
+    const toolbar = document.getElementById('photo-marker-toolbar');
+    if (!container360) return;
+
+    if (enable === undefined) enable = !this.is360Mode;
+    this.is360Mode = enable;
+
+    if (this.is360Mode) {
+      container360.classList.remove('hidden');
+      if (transformLayer) transformLayer.style.display = 'none';
+      if (toolbar) toolbar.style.opacity = '0.3';
+      if (btn) {
+        btn.classList.add('active');
+        btn.style.background = 'rgba(168, 85, 247, 0.3)';
+      }
+      this.init360Viewer();
+    } else {
+      container360.classList.add('hidden');
+      if (transformLayer) transformLayer.style.display = 'block';
+      if (toolbar) toolbar.style.opacity = '1';
+      if (btn) {
+        btn.classList.remove('active');
+        btn.style.background = '';
+      }
+      this.destroy360Viewer();
+    }
+  },
+
+  init360Viewer() {
+    const container = document.getElementById('photo-360-container');
+    const canvas = document.getElementById('photo-360-canvas');
+    if (!container || !canvas || typeof THREE === 'undefined') return;
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 600;
+
+    if (!this.three360Scene) {
+      this.three360Scene = new THREE.Scene();
+      this.three360Camera = new THREE.PerspectiveCamera(75, width / height, 1, 1100);
+      this.three360Camera.target = new THREE.Vector3(0, 0, 0);
+
+      this.three360Renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      this.three360Renderer.setPixelRatio(window.devicePixelRatio || 1);
+      this.three360Renderer.setSize(width, height);
+
+      const geometry = new THREE.SphereGeometry(500, 60, 40);
+      geometry.scale(-1, 1, 1);
+
+      const imgEl = document.getElementById('photo-inspector-img');
+      const texture = new THREE.Texture(imgEl);
+      texture.needsUpdate = true;
+
+      const material = new THREE.MeshBasicMaterial({ map: texture });
+      this.three360Mesh = new THREE.Mesh(geometry, material);
+      this.three360Scene.add(this.three360Mesh);
+
+      let isUserInteracting = false;
+      let onPointerDownPointerX = 0, onPointerDownPointerY = 0;
+      let lon = 0, onPointerDownLon = 0;
+      let lat = 0, onPointerDownLat = 0;
+      let phi = 0, theta = 0;
+
+      const onPointerDown = (e) => {
+        isUserInteracting = true;
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+        onPointerDownPointerX = clientX;
+        onPointerDownPointerY = clientY;
+        onPointerDownLon = lon;
+        onPointerDownLat = lat;
+      };
+
+      const onPointerMove = (e) => {
+        if (!isUserInteracting) return;
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+        lon = (onPointerDownPointerX - clientX) * 0.1 + onPointerDownLon;
+        lat = (clientY - onPointerDownPointerY) * 0.1 + onPointerDownLat;
+      };
+
+      const onPointerUp = () => { isUserInteracting = false; };
+      const onWheel = (e) => {
+        const fov = this.three360Camera.fov + e.deltaY * 0.05;
+        this.three360Camera.fov = Math.max(20, Math.min(100, fov));
+        this.three360Camera.updateProjectionMatrix();
+      };
+
+      container.onpointerdown = onPointerDown;
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      container.onwheel = onWheel;
+
+      const animate = () => {
+        if (!this.is360Mode) return;
+        this.three360AnimId = requestAnimationFrame(animate);
+        lat = Math.max(-85, Math.min(85, lat));
+        phi = THREE.MathUtils ? THREE.MathUtils.degToRad(90 - lat) : (90 - lat) * (Math.PI / 180);
+        theta = THREE.MathUtils ? THREE.MathUtils.degToRad(lon) : lon * (Math.PI / 180);
+
+        const targetX = 500 * Math.sin(phi) * Math.cos(theta);
+        const targetY = 500 * Math.cos(phi);
+        const targetZ = 500 * Math.sin(phi) * Math.sin(theta);
+
+        this.three360Camera.lookAt(targetX, targetY, targetZ);
+        this.three360Renderer.render(this.three360Scene, this.three360Camera);
+      };
+      animate();
+    }
+  },
+
+  destroy360Viewer() {
+    if (this.three360AnimId) {
+      cancelAnimationFrame(this.three360AnimId);
+      this.three360AnimId = null;
+    }
+    if (this.three360Renderer) {
+      try { this.three360Renderer.dispose(); } catch (_) {}
+      this.three360Renderer = null;
+    }
+    this.three360Scene = null;
+    this.three360Camera = null;
+    this.three360Mesh = null;
   }
 };
 
@@ -116223,6 +117343,8 @@ async function executeMediaPull() {
     const scanTags = Boolean(scanTagsCheck ? scanTagsCheck.checked : true);
     const extractWireframeCheck = document.getElementById('ingest-extract-wireframe');
     const extractWireframe = Boolean(extractWireframeCheck ? extractWireframeCheck.checked : true);
+    const quickStitchCheck = document.getElementById('ingest-quick-stitch');
+    const quickStitch = Boolean(quickStitchCheck ? quickStitchCheck.checked : true);
 
     const cleanWps = activeWps.map((w, idx) => ({
       idx: typeof w.idx === 'number' ? w.idx : idx,
@@ -116283,6 +117405,7 @@ async function executeMediaPull() {
         deleteFromDrone: shouldDeleteFromDrone,
         scanTags: scanTags,
         extractWireframe: extractWireframe,
+        quickStitch: quickStitch,
         timeWindow,
         bounds,
         telemetry: cleanTelem || { points: [] }

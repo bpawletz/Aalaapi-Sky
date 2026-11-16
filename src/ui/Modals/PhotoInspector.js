@@ -17,6 +17,12 @@ const PhotoInspector = {
   activeMeasurePoints: [],
   activeArrowStart: null,
   activeBoxStart: null,
+  is360Mode: false,
+  three360Scene: null,
+  three360Camera: null,
+  three360Renderer: null,
+  three360Mesh: null,
+  three360AnimId: null,
   _layers: {
     hud: true,
     boundary: true,
@@ -48,6 +54,7 @@ const PhotoInspector = {
   getLayerBoundaryGeoPolygon,
   computeConvexHullGeo,
   extractDjiXmpMetadata,
+  extractGpanoXmpMetadata,
 
   getPhotoList() {
     if (Array.isArray(this.photoList) && this.photoList.length > 0) {
@@ -361,6 +368,15 @@ const PhotoInspector = {
         this.fitToViewport();
         this.renderCanvas();
 
+        // Check for 360 Photo Sphere GPano metadata or 2:1 equirectangular aspect ratio (Issue #305)
+        if (imgEl.naturalWidth > 0 && imgEl.naturalHeight > 0) {
+          const aspect = imgEl.naturalWidth / imgEl.naturalHeight;
+          if (Math.abs(aspect - 2.0) < 0.08 || this.activePhoto.isPanorama || this.activePhoto.mode === 'panorama') {
+            this.activePhoto.isPanorama = true;
+            this.updateHeaderUI();
+          }
+        }
+
         // If coordinates are 0, dynamically fetch JPEG header to extract embedded DJI XMP metadata
         if (this.activePhoto && (!this.activePhoto.actual?.lat && !this.activePhoto.actual?.lon) && imgSrc && !imgSrc.startsWith('data:') && typeof fetch !== 'undefined') {
           fetch(imgSrc)
@@ -380,6 +396,24 @@ const PhotoInspector = {
                 if (xmp.date && !this.activePhoto.date) this.activePhoto.date = xmp.date;
                 this.updateHeaderUI();
                 this.renderCanvas();
+              }
+              const gpano = extractGpanoXmpMetadata(ab);
+              if (gpano) {
+                this.activePhoto.gpano = gpano;
+                this.activePhoto.isPanorama = true;
+                this.updateHeaderUI();
+              }
+            })
+            .catch(() => {});
+        } else if (imgSrc && !imgSrc.startsWith('data:') && typeof fetch !== 'undefined') {
+          fetch(imgSrc, { method: 'GET', headers: { Range: 'bytes=0-131072' } })
+            .then(res => res.arrayBuffer())
+            .then(ab => {
+              const gpano = extractGpanoXmpMetadata(ab);
+              if (gpano) {
+                this.activePhoto.gpano = gpano;
+                this.activePhoto.isPanorama = true;
+                this.updateHeaderUI();
               }
             })
             .catch(() => {});
@@ -412,6 +446,9 @@ const PhotoInspector = {
 
   close() {
     if (typeof document === 'undefined') return;
+    if (this.is360Mode) {
+      this.toggle360Viewer(false);
+    }
     const modal = document.getElementById('photo-inspector-modal');
     if (modal) modal.classList.add('hidden');
     if (typeof clearSinglePhotoFootprint === 'function') {
@@ -540,6 +577,19 @@ const PhotoInspector = {
       planeToggleBtn.title = this.calibrationMode === 'slant'
         ? 'Current: Slant Optical Plane (Elevated Structures & Roofs). Click to switch to Flat Ground.'
         : 'Current: Flat Ground Plane (Terrain & Driveways). Click to switch to Slant Structure Plane.';
+    }
+
+    const panoBtn = document.getElementById('photo-360-view-btn');
+    if (panoBtn) {
+      const isPano = Boolean(p.isPanorama || p.mode === 'panorama' || (p.filename && (p.filename.includes('photosphere') || p.filename.includes('pano'))) || (p.gpano && p.gpano.projectionType === 'equirectangular'));
+      panoBtn.style.display = isPano ? 'inline-flex' : 'none';
+      if (this.is360Mode) {
+        panoBtn.classList.add('active');
+        panoBtn.style.background = 'rgba(168, 85, 247, 0.3)';
+      } else {
+        panoBtn.classList.remove('active');
+        panoBtn.style.background = '';
+      }
     }
 
     const isComp = p.variance ? p.variance.isCompliant : true;
@@ -2396,6 +2446,12 @@ const PhotoInspector = {
     const exportBtn = document.getElementById('inspector-export-img-btn');
 
     if (closeBtn) closeBtn.onclick = () => this.close();
+    const pano360Btn = document.getElementById('photo-360-view-btn');
+    if (pano360Btn) {
+      pano360Btn.onclick = () => {
+        this.toggle360Viewer();
+      };
+    }
     if (unitBtn) {
       unitBtn.onclick = () => {
         this.unit = this.unit === 'metric' ? 'imperial' : 'metric';
@@ -2797,6 +2853,133 @@ const PhotoInspector = {
     link.download = `${this.activePhoto.filename.replace(/\.[^.]+$/, '')}_annotated.jpg`;
     link.href = off.toDataURL('image/jpeg', 0.92);
     link.click();
+  },
+
+  toggle360Viewer(enable) {
+    const btn = document.getElementById('photo-360-view-btn');
+    const container360 = document.getElementById('photo-360-container');
+    const transformLayer = document.getElementById('photo-transform-layer');
+    const toolbar = document.getElementById('photo-marker-toolbar');
+    if (!container360) return;
+
+    if (enable === undefined) enable = !this.is360Mode;
+    this.is360Mode = enable;
+
+    if (this.is360Mode) {
+      container360.classList.remove('hidden');
+      if (transformLayer) transformLayer.style.display = 'none';
+      if (toolbar) toolbar.style.opacity = '0.3';
+      if (btn) {
+        btn.classList.add('active');
+        btn.style.background = 'rgba(168, 85, 247, 0.3)';
+      }
+      this.init360Viewer();
+    } else {
+      container360.classList.add('hidden');
+      if (transformLayer) transformLayer.style.display = 'block';
+      if (toolbar) toolbar.style.opacity = '1';
+      if (btn) {
+        btn.classList.remove('active');
+        btn.style.background = '';
+      }
+      this.destroy360Viewer();
+    }
+  },
+
+  init360Viewer() {
+    const container = document.getElementById('photo-360-container');
+    const canvas = document.getElementById('photo-360-canvas');
+    if (!container || !canvas || typeof THREE === 'undefined') return;
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 600;
+
+    if (!this.three360Scene) {
+      this.three360Scene = new THREE.Scene();
+      this.three360Camera = new THREE.PerspectiveCamera(75, width / height, 1, 1100);
+      this.three360Camera.target = new THREE.Vector3(0, 0, 0);
+
+      this.three360Renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      this.three360Renderer.setPixelRatio(window.devicePixelRatio || 1);
+      this.three360Renderer.setSize(width, height);
+
+      const geometry = new THREE.SphereGeometry(500, 60, 40);
+      geometry.scale(-1, 1, 1);
+
+      const imgEl = document.getElementById('photo-inspector-img');
+      const texture = new THREE.Texture(imgEl);
+      texture.needsUpdate = true;
+
+      const material = new THREE.MeshBasicMaterial({ map: texture });
+      this.three360Mesh = new THREE.Mesh(geometry, material);
+      this.three360Scene.add(this.three360Mesh);
+
+      let isUserInteracting = false;
+      let onPointerDownPointerX = 0, onPointerDownPointerY = 0;
+      let lon = 0, onPointerDownLon = 0;
+      let lat = 0, onPointerDownLat = 0;
+      let phi = 0, theta = 0;
+
+      const onPointerDown = (e) => {
+        isUserInteracting = true;
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+        onPointerDownPointerX = clientX;
+        onPointerDownPointerY = clientY;
+        onPointerDownLon = lon;
+        onPointerDownLat = lat;
+      };
+
+      const onPointerMove = (e) => {
+        if (!isUserInteracting) return;
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+        lon = (onPointerDownPointerX - clientX) * 0.1 + onPointerDownLon;
+        lat = (clientY - onPointerDownPointerY) * 0.1 + onPointerDownLat;
+      };
+
+      const onPointerUp = () => { isUserInteracting = false; };
+      const onWheel = (e) => {
+        const fov = this.three360Camera.fov + e.deltaY * 0.05;
+        this.three360Camera.fov = Math.max(20, Math.min(100, fov));
+        this.three360Camera.updateProjectionMatrix();
+      };
+
+      container.onpointerdown = onPointerDown;
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      container.onwheel = onWheel;
+
+      const animate = () => {
+        if (!this.is360Mode) return;
+        this.three360AnimId = requestAnimationFrame(animate);
+        lat = Math.max(-85, Math.min(85, lat));
+        phi = THREE.MathUtils ? THREE.MathUtils.degToRad(90 - lat) : (90 - lat) * (Math.PI / 180);
+        theta = THREE.MathUtils ? THREE.MathUtils.degToRad(lon) : lon * (Math.PI / 180);
+
+        const targetX = 500 * Math.sin(phi) * Math.cos(theta);
+        const targetY = 500 * Math.cos(phi);
+        const targetZ = 500 * Math.sin(phi) * Math.sin(theta);
+
+        this.three360Camera.lookAt(targetX, targetY, targetZ);
+        this.three360Renderer.render(this.three360Scene, this.three360Camera);
+      };
+      animate();
+    }
+  },
+
+  destroy360Viewer() {
+    if (this.three360AnimId) {
+      cancelAnimationFrame(this.three360AnimId);
+      this.three360AnimId = null;
+    }
+    if (this.three360Renderer) {
+      try { this.three360Renderer.dispose(); } catch (_) {}
+      this.three360Renderer = null;
+    }
+    this.three360Scene = null;
+    this.three360Camera = null;
+    this.three360Mesh = null;
   }
 };
 

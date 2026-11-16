@@ -46242,12 +46242,12 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assertVersionConsistency('1.248.1');
 
       const gradle = fs.readFileSync(path.join(__dirname, 'android/app/build.gradle.kts'), 'utf8');
-      assert.ok(gradle.includes('versionName = "1.248.1"'), 'build.gradle.kts must include versionName = "1.248.1"');
-      assert.ok(gradle.includes('versionCode = 1248001'), 'build.gradle.kts must include versionCode = 1248001');
+      const vNameMatch = gradle.match(/versionName\s*=\s*"([^"]+)"/);
+      const vCodeMatch = gradle.match(/versionCode\s*=\s*(\d+)/);
+      assert.ok(vNameMatch && semverGte(vNameMatch[1], '1.248.1'), 'build.gradle.kts versionName must be >= 1.248.1');
+      assert.ok(vCodeMatch && parseInt(vCodeMatch[1], 10) >= 1248001, 'build.gradle.kts versionCode must be >= 1248001');
 
       const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-      assert.ok(template.includes('v1.248.1'), 'index_template.html must include v1.248.1');
-      assert.ok(template.includes('Version 1.248.1'), 'index_template.html must include Version 1.248.1');
       assert.ok(template.includes('Changelog (v1.248.1):'), 'index_template.html must include Changelog (v1.248.1)');
     });
 
@@ -46270,6 +46270,149 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(el, '#test-div element must exist');
       assert.strictEqual(el.textContent, 'Aalaapi Sky');
       assert.ok(el.classList.contains('drone-box'), 'classList.contains must work');
+    });
+  });
+
+  describe('Photography & Post-Processing Tool Mapping & Presets Suite (v1.249.0 - Issue #302)', () => {
+    test('v1.249.0: version consistency across all 6 required locations', () => {
+      assertVersionConsistency('1.249.0');
+
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('Changelog (v1.249.0):'), 'index_template.html must include Changelog (v1.249.0)');
+    });
+
+    test('PHOTOGRAPHY_TOOL_PRESETS defines all 14 profiles and every primaryPattern maps to a valid #grid-type option', () => {
+      assert.ok(global.PHOTOGRAPHY_TOOL_PRESETS, 'PHOTOGRAPHY_TOOL_PRESETS must be exported globally');
+      const presetKeys = Object.keys(global.PHOTOGRAPHY_TOOL_PRESETS);
+      assert.strictEqual(presetKeys.length, 14, 'Expected 14 photography tool presets');
+
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const gridTypeMatch = templateHtml.match(/<select id="grid-type"[\s\S]*?<\/select>/);
+      assert.ok(gridTypeMatch, '#grid-type select must exist in index_template.html');
+
+      const docContent = fs.readFileSync(path.join(__dirname, 'docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md'), 'utf8');
+
+      presetKeys.forEach((key) => {
+        const preset = global.PHOTOGRAPHY_TOOL_PRESETS[key];
+        assert.ok(gridTypeMatch[0].includes(`value="${preset.primaryPattern}"`), `Preset ${key} pattern "${preset.primaryPattern}" must exist in #grid-type`);
+        assert.ok(templateHtml.includes(`data-tool-preset="${key}"`), `index_template.html #photography-tool-matrix-table must include row for ${key}`);
+        assert.ok(templateHtml.includes(`<option value="${key}"`), `index_template.html #photography-tool-preset-select must include option for ${key}`);
+        assert.ok(docContent.includes(`\`${key}\``), `docs/FLIGHT_PLAN_DECISION_TREE_AND_SETTINGS_GUIDE.md must document ${key}`);
+      });
+    });
+
+    test('applyPhotographyToolPreset updates active layer settings and records undo snapshot', () => {
+      assert.strictEqual(typeof global.applyPhotographyToolPreset, 'function', 'applyPhotographyToolPreset must be a function');
+
+      const layer = {
+        id: 'layer-test-preset',
+        name: 'Test Layer',
+        pattern: 'single',
+        altitude: 70,
+        gimbalPitch: -90,
+        frontOverlap: 75,
+        sideOverlap: 70,
+        captureMode: 'continuous',
+        headingMode: 'followWayline',
+        pathMode: 'straight',
+        speed: 8.0
+      };
+
+      const prevGetActiveLayer = global.getActiveLayer;
+      const prevPushUndo = global.pushUndoSnapshot;
+      let recordedLabel = null;
+      global.getActiveLayer = () => layer;
+      global.pushUndoSnapshot = (lbl) => { recordedLabel = lbl; };
+
+      const ok = global.applyPhotographyToolPreset('splat-object');
+      assert.strictEqual(ok, true, 'applyPhotographyToolPreset should return true for valid preset');
+      assert.strictEqual(layer.pattern, 'dome-shell');
+      assert.strictEqual(layer.gimbalPitch, -45);
+      assert.strictEqual(layer.frontOverlap, 80);
+      assert.strictEqual(layer.sideOverlap, 75);
+      assert.strictEqual(layer.headingMode, 'towardCenter');
+      assert.strictEqual(layer.pathMode, 'curved');
+      assert.ok(recordedLabel && recordedLabel.includes('gsplat'), `Expected undo snapshot label, got: ${recordedLabel}`);
+
+      const invalidOk = global.applyPhotographyToolPreset('non-existent-preset');
+      assert.strictEqual(invalidOk, false, 'applyPhotographyToolPreset should return false for unknown preset');
+
+      global.getActiveLayer = prevGetActiveLayer;
+      global.pushUndoSnapshot = prevPushUndo;
+    });
+  });
+
+  describe('Issue #305: Instant OpenCV Field Preview Stitcher for 2D Maps and 360° Photo Spheres (v1.250.0)', () => {
+    test('Version consistency: v1.250.0 across package.json, changelog, index_template.html, and android/app/build.gradle.kts', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.250.0');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.250.0] - 2026-11-16'), 'CHANGELOG missing 1.250.0 header');
+      assert.ok(changelog.includes('Closes #305'), 'CHANGELOG missing Closes #305 reference');
+
+      const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(tmpl.includes('Version 1.250.0'), 'index_template.html missing Version 1.250.0 tag');
+      assert.ok(tmpl.includes('v1.250.0</span></h1>'), 'index_template.html missing header badge v1.250.0');
+      assert.ok(tmpl.includes('Changelog (v1.250.0):'), 'index_template.html missing Changelog (v1.250.0)');
+
+      const gradle = fs.readFileSync(path.join(__dirname, 'android/app/build.gradle.kts'), 'utf8');
+      assert.ok(gradle.includes('versionName = "1.250.0"'), 'build.gradle.kts missing versionName 1.250.0');
+      assert.ok(gradle.includes('versionCode = 1250000'), 'build.gradle.kts missing versionCode 1250000');
+    });
+
+    test('DOM Architecture: Flight Diagnostics and Photo Inspector contain stitcher and 360 viewer controls', () => {
+      const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(tmpl.includes('id="diag-btn-stitch-ortho"'), 'Missing #diag-btn-stitch-ortho in template');
+      assert.ok(tmpl.includes('id="diag-btn-stitch-pano"'), 'Missing #diag-btn-stitch-pano in template');
+      assert.ok(tmpl.includes('id="photo-360-view-btn"'), 'Missing #photo-360-view-btn in template');
+      assert.ok(tmpl.includes('id="photo-360-container"'), 'Missing #photo-360-container in template');
+      assert.ok(tmpl.includes('id="ingest-quick-stitch"'), 'Missing #ingest-quick-stitch in template');
+    });
+
+    test('Map Engine: exports 2D orthomosaic layer rendering and opacity controls', () => {
+      const { renderStitchedOrthomosaicMapLayer, setStitchedOrthomosaicOpacity, clearStitchedOrthomosaicMapLayer } = require('./src/map/MapEngine.js');
+      assert.strictEqual(typeof renderStitchedOrthomosaicMapLayer, 'function');
+      assert.strictEqual(typeof setStitchedOrthomosaicOpacity, 'function');
+      assert.strictEqual(typeof clearStitchedOrthomosaicMapLayer, 'function');
+    });
+
+    test('Photogrammetry: extractGpanoXmpMetadata extracts Google Photo Sphere metadata', () => {
+      const sampleGpanoXml = `
+        <x:xmpmeta xmlns:x="adobe:ns:meta/">
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+            <rdf:Description rdf:about="" xmlns:GPano="http://ns.google.com/photos/1.0/panorama/">
+              <GPano:ProjectionType>equirectangular</GPano:ProjectionType>
+              <GPano:UsePanoramaViewer>True</GPano:UsePanoramaViewer>
+              <GPano:CroppedAreaImageWidthPixels>4096</GPano:CroppedAreaImageWidthPixels>
+              <GPano:CroppedAreaImageHeightPixels>2048</GPano:CroppedAreaImageHeightPixels>
+              <GPano:FullPanoWidthPixels>4096</GPano:FullPanoWidthPixels>
+              <GPano:FullPanoHeightPixels>2048</GPano:FullPanoHeightPixels>
+            </rdf:Description>
+          </rdf:RDF>
+        </x:xmpmeta>
+      `;
+      const meta = extractGpanoXmpMetadata(sampleGpanoXml);
+      assert.ok(meta, 'extractGpanoXmpMetadata should return parsed metadata');
+      assert.strictEqual(meta.projectionType, 'equirectangular');
+      assert.strictEqual(meta.usePanoramaViewer, true);
+      assert.strictEqual(meta.croppedWidth, 4096);
+      assert.strictEqual(meta.croppedHeight, 2048);
+      assert.strictEqual(meta.fullWidth, 4096);
+      assert.strictEqual(meta.fullHeight, 2048);
+    });
+
+    test('Platform Adapters: BasePlatformAdapter and AndroidPlatformAdapter export stitcher interface', () => {
+      const { BasePlatformAdapter } = require('./src/platform/BasePlatformAdapter.js');
+      const { AndroidPlatformAdapter } = require('./src/platform/AndroidPlatformAdapter.js');
+
+      const base = new BasePlatformAdapter();
+      assert.strictEqual(typeof base.runFieldStitch, 'function');
+      assert.strictEqual(typeof base.getFieldStitchStatus, 'function');
+
+      const android = new AndroidPlatformAdapter();
+      assert.strictEqual(typeof android.runFieldStitch, 'function');
+      assert.strictEqual(typeof android.getFieldStitchStatus, 'function');
     });
   });
 

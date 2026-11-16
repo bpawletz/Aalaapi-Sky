@@ -3518,6 +3518,24 @@ function connectCompanionStatusStream() {
 
     });
 
+    companionStatusEventSource.addEventListener('stitch-progress', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.onStitchProgress === 'function') {
+          FlightDiagnostics.onStitchProgress(data);
+        }
+      } catch (_) {}
+    });
+
+    companionStatusEventSource.addEventListener('stitch-complete', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.onStitchComplete === 'function') {
+          FlightDiagnostics.onStitchComplete(data);
+        }
+      } catch (_) {}
+    });
+
 
 
     companionStatusEventSource.onerror = () => {

@@ -280,6 +280,44 @@ function extractDjiXmpMetadata(data) {
   return Object.keys(result).length > 0 ? result : null;
 }
 
+/**
+ * Extracts Google Photo Sphere (GPano) metadata from an ArrayBuffer, Buffer, or text string.
+ * @param {ArrayBuffer|Uint8Array|Buffer|string} data
+ * @returns {object|null}
+ */
+function extractGpanoXmpMetadata(data) {
+  if (!data) return null;
+  let str = '';
+  if (typeof data === 'string') {
+    str = data;
+  } else if (typeof Buffer !== 'undefined' && Buffer.isBuffer(data)) {
+    str = data.toString('latin1');
+  } else if (data instanceof Uint8Array || data instanceof ArrayBuffer) {
+    const u8 = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+    const searchLimit = Math.min(u8.length, 524288);
+    str = new TextDecoder('latin1', { fatal: false }).decode(u8.subarray(0, searchLimit));
+  }
+
+  const projMatch = str.match(/GPano:ProjectionType="([^"]+)"/i) || str.match(/<GPano:ProjectionType>([^<]+)<\/GPano:ProjectionType>/i);
+  const usePanoMatch = str.match(/GPano:UsePanoramaViewer="([^"]+)"/i) || str.match(/<GPano:UsePanoramaViewer>([^<]+)<\/GPano:UsePanoramaViewer>/i);
+  const croppedWidthMatch = str.match(/GPano:CroppedAreaImageWidthPixels="([^"]+)"/i) || str.match(/<GPano:CroppedAreaImageWidthPixels>([^<]+)<\/GPano:CroppedAreaImageWidthPixels>/i);
+  const croppedHeightMatch = str.match(/GPano:CroppedAreaImageHeightPixels="([^"]+)"/i) || str.match(/<GPano:CroppedAreaImageHeightPixels>([^<]+)<\/GPano:CroppedAreaImageHeightPixels>/i);
+  const fullWidthMatch = str.match(/GPano:FullPanoWidthPixels="([^"]+)"/i) || str.match(/<GPano:FullPanoWidthPixels>([^<]+)<\/GPano:FullPanoWidthPixels>/i);
+  const fullHeightMatch = str.match(/GPano:FullPanoHeightPixels="([^"]+)"/i) || str.match(/<GPano:FullPanoHeightPixels>([^<]+)<\/GPano:FullPanoHeightPixels>/i);
+
+  if (projMatch || usePanoMatch) {
+    return {
+      projectionType: projMatch ? projMatch[1].trim() : 'equirectangular',
+      usePanoramaViewer: usePanoMatch ? (usePanoMatch[1].trim().toLowerCase() === 'true') : true,
+      croppedWidth: croppedWidthMatch ? parseInt(croppedWidthMatch[1], 10) : null,
+      croppedHeight: croppedHeightMatch ? parseInt(croppedHeightMatch[1], 10) : null,
+      fullWidth: fullWidthMatch ? parseInt(fullWidthMatch[1], 10) : null,
+      fullHeight: fullHeightMatch ? parseInt(fullHeightMatch[1], 10) : null
+    };
+  }
+  return null;
+}
+
 // =============================================================================
 // Optical Tag Detector (AprilTag & ArUco) WebAssembly/JS Engine (v1.114.0)
 // =============================================================================

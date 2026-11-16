@@ -323,3 +323,73 @@ When surveying undulating topography, valleys, open-pit quarries, or hilly terra
    - Tier 1: Global Terrain Following toggle and default Target AGL in Section 3.
    - Tier 2: Layer Terrain Following override, Target AGL, Max Slope Limit ($10^\circ$ to $35^\circ$), and DEM source selector in Section 2.
    - Tier 3: Waypoint overrides displaying surface elevation with manual altitude lock.
+
+---
+
+## 7. Photography & Post-Processing Tool Mapping (WebODM, 3D Gaussian Splatting, Photogrammetry & Media)
+
+Selecting the right flight pattern depends directly on the **downstream reconstruction or post-processing software** you plan to use. Different engines (Structure-from-Motion orthomosaic stitchers vs. 3D Gaussian Splatting vs. Dense MVS vs. 360° spherical stitchers) have strict requirements on camera parallax, gimbal pitch, and shutter blur.
+
+### Software-to-Flight-Plan Decision Tree
+
+```mermaid
+flowchart TD
+    ToolStart["What is your target open-source tool or workflow?"] --> GIS["WebODM / OpenDroneMap / QGIS (2D/3D GIS)"]
+    ToolStart --> Splat["gsplat / Brush / SuperSplat / Nerfstudio / COLMAP (3DGS / NeRF)"]
+    ToolStart --> MVS["Meshroom / OpenMVG / OpenMVS / CloudCompare (Dense MVS)"]
+    ToolStart --> Media["Hugin / Pannellum / FFmpeg / Kdenlive / Darktable / GIMP"]
+    ToolStart --> SAR["Thermal Imagery / IAMSAR / ATAK / OpenCV ArUco GCPs"]
+
+    GIS -->|"2D Ortho, DSM/DTM, NDVI"| WebOdmOrtho["webodm-ortho: 2D Map (single) or polygon-grid<br>-90° Nadir | 75%/70% Overlap | Continuous"]
+    GIS -->|"3D Site Mesh & Stockpiles"| WebOdm3D["webodm-3d: 3D Splat (double) or grid-orbit-combo<br>-60° Oblique | 75%/75% Overlap | Continuous"]
+    GIS -->|"Linear Highway / Pipeline"| CorridorGIS["corridor-gis: Corridor (2-3 passes) or road-following<br>-75° Pitch | 75%/70% Overlap"]
+
+    Splat -->|"Isolated Object / Statue / Tree"| SplatObj["splat-object: Hemispherical Dome (dome-shell)<br>Auto-Radial -20° to -90° | 80%/75% | Curved"]
+    Splat -->|"Compound / Campus Scene"| SplatScene["splat-scene: Target Splat (target-splat) + low orbit<br>-50° Pitch | 80%/75% | transforms.json"]
+
+    MVS -->|"Architecture / Heritage BIM"| RCStruct["rc-structure: Grid + Multi-Tier Orbit (grid-multi-orbit-combo)<br>-55° Combo | 80%/80% | Stop & Shoot"]
+    MVS -->|"Wall / Dam / Crack Audit"| FacadeWall["facade-wall: Vertical Facade (vertical-facade)<br>0° Horizontal | 80%/75% | Stop & Shoot"]
+    MVS -->|"Cell Tower / Wind Turbine"| TowerAudit["tower-audit: Tower Audit (tower)<br>-15° Pitch | 80%/75% | Stop & Shoot"]
+
+    Media -->|"360° x 180° Virtual Tour"| Pano360["pano-360: Photo Sphere (photo-sphere)<br>Multi-Ring Auto | Stop & Shoot | GPano XMP"]
+    Media -->|"Motion Time-Lapse"| HyperlapseVid["hyperlapse-video: Hyperlapse (hyperlapse)<br>-25° Spline | Smooth Transition"]
+    Media -->|"Dronie / Rocket / Boomerang"| CinMedia["cinematic-media: Cinematic Reveal (cinematic-reveal)<br>Dynamic POI | Video Continuous"]
+    Media -->|"Night LED Sky Vector Art"| LightPaint["light-painting: Light Art (light-art)<br>-90° Ground Locked | Continuous"]
+
+    SAR -->|"Sub-cm Survey Control"| GCPSurvey["gcp-survey: fiducial-markers + single + star-pass<br>-90° / -65° | 80%/75% | Stop & Shoot"]
+    SAR -->|"Thermal SAR / Perimeter"| ThermalSAR["thermal-sar: sar-search or perimeter-patrol<br>-50° Oblique | 70%/65% | Continuous"]
+```
+
+### 14-Profile Tool-to-Pattern Compatibility Matrix
+
+| Preset ID | Target Open-Source Tool / Workflow Type | Deliverable Type | Primary Pattern(s) | Multi-Layer / Combo Recommendation | Gimbal Pitch | Overlap (F / S) | Capture / Turn Mode |
+| :--- | :--- | :--- | :--- | :--- | :---: | :---: | :--- |
+| `webodm-ortho` | **WebODM / OpenDroneMap, QGIS (2D Ortho GIS)** | 2D Orthomosaic, GeoTIFF DSM/DTM, NDVI | `single` or `polygon-grid` | Add `fiducial-markers` (AprilTag/ArUco GCPs) | `-90°` | `75% / 70%` | `continuous` / `straight` |
+| `webodm-3d` | **WebODM 3D Model, OpenMVS, Meshroom** | Textured 3D Site Mesh & Stockpiles | `double` | `single` (`-90°`) + `double` (`-60°`) or `grid-orbit-combo` | `-60°` | `75% / 75%` | `continuous` / `curved` |
+| `splat-object` | **gsplat, Brush, SuperSplat (3DGS Object Tools)** | Object-Centric 3D Gaussian Splat / NeRF | `dome-shell` | `dome-shell` (3–5 rings + Zenith Cap) or `multi-orbit` | `-45°` / Auto | `80% / 75%` | `continuous` / `curved` |
+| `splat-scene` | **Nerfstudio (`splatfacto`), COLMAP / GLOMAP** | Compound / Campus Scale 3DGS | `target-splat` | `target-splat` (`balanced`, `-50°`) + low `orbit` (`-25°`) | `-50°` | `80% / 75%` | `continuous` / `curved` |
+| `rc-structure` | **Meshroom (AliceVision), OpenMVG / OpenMVS** | High-Poly Architecture & Heritage BIM Mesh | `grid-multi-orbit-combo` | Top Nadir Grid + 3-Tier Descending Orbits | `-55°` | `80% / 80%` | `stopAndShoot` / `curved` |
+| `facade-wall` | **CloudCompare, OpenMVS, MeshLab (Facade Tools)** | Vertical Orthophoto, Crack Audit & M3C2 Diff | `vertical-facade` | Pair with `fiducial-markers` on wall face | `0°` | `80% / 75%` | `stopAndShoot` / `straight` |
+| `tower-audit` | **OpenDroneMap, CloudCompare (Tower Audit)** | Lattice Cell Tower, Turbine & Pylon Audit | `tower` | Add `exclusion-box` over guy-wire anchors | `-15°` | `80% / 75%` | `stopAndShoot` / `straight` |
+| `corridor-gis` | **WebODM / OpenDroneMap, QGIS (Corridor GIS)** | Highway, Pipeline, Rail & Utility Corridor | `corridor` | 2–3 parallel passes (`-75°`) or `road-following` | `-75°` | `75% / 70%` | `continuous` / `straight` |
+| `pano-360` | **Hugin, Pannellum, Marzipano (360° Pano Tools)** | $360^\circ \times 180^\circ$ Virtual Tour Sphere | `photo-sphere` | Stack multiple `photo-sphere` nodes | Multi-Ring | Pano Rings | `stopAndShoot` / `straight` |
+| `hyperlapse-video` | **FFmpeg, Darktable, Kdenlive (Time-Lapse Tools)** | Smooth Motion Time-Lapse & Hyperlapse | `hyperlapse` | `Spline` (native) or `Dense` (RAW frames) | `-25°` Spline | Interval | `continuous` / `curved` |
+| `cinematic-media` | **Kdenlive, Blender VSE, Shotcut, FFmpeg** | 4K/60fps Dronie, Rocket & Boomerang Reels | `cinematic-reveal` | Combine Dronie, Rocket & Boomerang layers | Dynamic POI | Video | `video` / `curved` |
+| `light-painting` | **Darktable, GIMP, ImageMagick (Light Stack)** | Nighttime Drone LED Sky Vector Art | `light-art` | Pair with ground tripod camera (8s–30s Bulb) | `-90°` | LED Spline | `continuous` / `curved` |
+| `gcp-survey` | **OpenCV ArUco/AprilTag, WebODM GCP** | Sub-Centimeter Ground Control & Scale Bars | `fiducial-markers` | 5–9 GCPs + `single` (`-90°`) + `star-pass` (`-65°`) | `-90°` / `-65°` | `80% / 75%` | `stopAndShoot` / `straight` |
+| `thermal-sar` | **Thermal Imagery, IAMSAR, ATAK (Open CoT)** | Wilderness SAR, Thermal & Perimeter Patrol | `sar-search` | `sar-search` (ESS / Sector) or `perimeter-patrol` | `-50°` | `70% / 65%` | `continuous` / `straight` |
+
+### Deep-Dive Recipes by Toolchain
+1. **WebODM / OpenDroneMap & QGIS**:
+   - For flat 2D orthomosaics, use `single` or `polygon-grid` at `-90°` with `--dsm`, `--dtm`, and `--orthophoto-resolution 2`. Add a cross-diagonal `star-pass` (`-65°`) or `double` (`-60°`) when surveying non-RTK sites to eliminate the radial "bowling effect" in SfM bundle adjustment.
+   - For hilly terrain, always enable **Terrain Following** to maintain uniform GSD across valleys and ridges.
+2. **3D Gaussian Splatting (gsplat, Brush, SuperSplat, Nerfstudio `splatfacto`)**:
+   - **Never fly pure `-90°` nadir-only grids** for Gaussian Splatting; 3DGS requires multi-angle view-dependent parallax (`dome-shell` for objects, `target-splat` + low `orbit` for compounds) to prevent sky "floater" artifacts and smeared building facades.
+   - Keep gimbal pitch $\le -15^\circ$ on perimeter passes so the sky horizon is excluded from training frames.
+   - Use the Node-RED `aalaapi-splat-prep` node to export camera extrinsics directly into `transforms.json` for Nerfstudio.
+3. **Dense MVS Photogrammetry (Meshroom / AliceVision, OpenMVG, OpenMVS, CloudCompare)**:
+   - Dense MVS pipelines require gradual angular transitions ($< 15^\circ$ between adjacent rings) to connect roof nadir imagery to vertical facades without splitting into disconnected components; `grid-multi-orbit-combo` automates this transition.
+   - For hairline crack inspection (`vertical-facade`, `tower`), always select `stopAndShoot` to eliminate rolling shutter skew.
+4. **360° Panoramas, Hyperlapse & Night Light Art (Hugin, Pannellum, FFmpeg, Darktable, Kdenlive, GIMP)**:
+   - `photo-sphere` exports Google `GPano` XMP metadata sidecars automatically for instant interactive playback in Pannellum and Marzipano.
+   - `hyperlapse` interpolates smooth Catmull-Rom yaw and pitch curves to minimize jitter before optical-flow stabilization in FFmpeg or Kdenlive.

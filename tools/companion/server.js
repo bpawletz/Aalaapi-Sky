@@ -73,6 +73,7 @@ const SCRATCH_DIR = path.resolve(__dirname, '../../scratch');
 const TagDetector = require('../wasm/tag_detector.js');
 const wireframeEngine = require('./wireframe_engine.js');
 const aiMeshEngine = require('./ai_mesh_engine.js');
+const stitcherEngine = require('./stitcher_engine.js');
 const SolarEphemeris = require('./solar_ephemeris.js');
 const { TileCacheManager } = require('./tile_cache.js');
 const tileCache = new TileCacheManager();
@@ -191,6 +192,7 @@ function isPublicAuthEndpoint(pathname, method) {
   if (pathname === '/api/openapi.json' || pathname === '/api/mcp/openapi.json') return true;
   if (pathname.startsWith('/api/tools/')) return true;
   if (pathname.startsWith('/api/ai3d/')) return true;
+  if (pathname.startsWith('/api/stitch/') || pathname.startsWith('/api/process/stitch')) return true;
   if (pathname === '/health' || pathname === '/favicon.ico') return true;
   if (pathname === '/api/discovery' || pathname === '/api/airspace/discover' || pathname === '/api/adsb/discover' || pathname === '/api/bridge/discover') return true;
 
@@ -727,6 +729,53 @@ function broadcastMediaProgress(prog) {
   for (const client of sseUnifiedClients) {
     try {
       client.res.write(`event: progress\ndata: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseUnifiedClients.delete(client);
+    }
+  }
+}
+
+function broadcastStitchProgress(prog) {
+  if (sseMediaProgressClients.size === 0 && sseUnifiedClients.size === 0) return;
+  const payloadStr = JSON.stringify({ success: true, ...prog });
+  for (const client of sseMediaProgressClients) {
+    try {
+      client.res.write(`event: stitch-progress\ndata: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseMediaProgressClients.delete(client);
+    }
+  }
+  for (const client of sseUnifiedClients) {
+    try {
+      client.res.write(`event: stitch-progress\ndata: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseUnifiedClients.delete(client);
+    }
+  }
+}
+
+function broadcastStitchComplete(stitchData) {
+  if (sseMediaProgressClients.size === 0 && sseUnifiedClients.size === 0) return;
+  const payloadStr = JSON.stringify({
+    success: true,
+    event: 'stitch-complete',
+    timestamp: new Date().toISOString(),
+    ...stitchData
+  });
+  for (const client of sseMediaProgressClients) {
+    try {
+      client.res.write(`event: stitch-complete\ndata: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseMediaProgressClients.delete(client);
+    }
+  }
+  for (const client of sseUnifiedClients) {
+    try {
+      client.res.write(`event: stitch-complete\ndata: ${payloadStr}\n\n`);
     } catch (_) {
       try { client.res.end(); } catch (e) {}
       sseUnifiedClients.delete(client);
@@ -3111,6 +3160,31 @@ if ($copied.Count -eq 0 -and $thisPC) {
     }
   }
 
+  // Instant OpenCV Field Preview Stitcher (Issue #305)
+  let stitchData = null;
+  if (options.quickStitch === true && correlated.length > 0) {
+    try {
+      stitchData = await stitcherEngine.runStitchJob({
+        missionUuid,
+        photos: correlated.map(p => ({
+          ...p,
+          filePath: p.rawPath && fs.existsSync(p.rawPath) ? p.rawPath : (path.join(previewDir, p.filename))
+        })),
+        options: options.stitchOptions || {}
+      }, (update) => {
+        broadcastStitchProgress(update);
+      });
+      if (stitchData && stitchData.success) {
+        manifest.stitched = stitchData;
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+        broadcastStitchComplete({ missionUuid, stitched: stitchData });
+        logSuccess('[STITCHER]', `Instant ${stitchData.mode === 'panorama' ? '360° sphere' : '2D map'} preview stitched`);
+      }
+    } catch (sErr) {
+      logWarn('[STITCHER]', `Instant stitch note: ${sErr.message}`);
+    }
+  }
+
   // Index photo records into SQLite with thumbnail_url and preview_url
   if (diagDb && typeof diagDb.savePhotoRecords === 'function') {
     diagDb.savePhotoRecords(missionUuid, correlated);
@@ -3547,6 +3621,8 @@ function printStartupBanner() {
   console.log(`  ${colors.green}${colors.bold}GET  /api/media/detect${colors.reset}            ${colors.gray}Scan for Mini 4 Pro, SD Card readers, and RC 2 albums${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/media/pull${colors.reset}              ${colors.gray}Ingest flight photos, correlate telemetry, and build archive${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/process/wireframe${colors.reset}        ${colors.gray}Real-time OpenCV edge extraction & 3D wireframe projection${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/process/stitch${colors.reset}           ${colors.gray}Instant OpenCV 2D orthomosaic & 360 photo sphere stitcher${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/stitch/preview${colors.reset}           ${colors.gray}Stream stitched orthomosaic PNG or 360 photosphere JPG${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/drone/locate${colors.reset}         ${colors.gray}Rest API locate drone & inject live geo coordinates${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/weather/current${colors.reset}       ${colors.gray}Synchronized METAR weather & 24h solar ephemeris${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/checklist/template${colors.reset}    ${colors.gray}Master safety checklist item matrix and template categories${colors.reset}`);
@@ -5589,6 +5665,156 @@ const handleHttpRequest = async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify({ success: false, found: false, error: 'Wireframe not found', lines: [] }));
       return;
+    }
+
+    // Bridge-Hosted Instant OpenCV 2D Map & 360° Photo Sphere Stitcher (Issue #305)
+    if ((pathname === '/api/process/stitch' || pathname === '/api/stitch/generate') && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const missionUuid = payload.missionUuid || `mission_${Date.now()}`;
+          const mDir = path.join(ARCHIVE_DIR, missionUuid);
+
+          let photos = Array.isArray(payload.photos) ? payload.photos : [];
+          let manifest = null;
+          if (fs.existsSync(mDir)) {
+            const rec = loadOrRecoverManifest(mDir);
+            if (rec && rec.manifest) {
+              manifest = rec.manifest;
+              if (photos.length === 0 && Array.isArray(manifest.photos)) {
+                photos = manifest.photos;
+              }
+            }
+          }
+
+          const rawDir = path.join(mDir, 'photos', 'raw');
+          const prevDir = path.join(mDir, 'photos', 'previews');
+          const resolvedPhotos = photos.map((p, idx) => {
+            if (typeof p === 'string') {
+              if (fs.existsSync(p)) return p;
+              const fn = path.basename(p);
+              if (fs.existsSync(path.join(rawDir, fn))) return path.join(rawDir, fn);
+              if (fs.existsSync(path.join(prevDir, fn))) return path.join(prevDir, fn);
+              return p;
+            }
+            const fn = p.filename || p.photoId || p.id || `photo_${idx}.jpg`;
+            if (p.filePath && fs.existsSync(p.filePath)) return p.filePath;
+            if (p.rawPath && fs.existsSync(p.rawPath)) return p.rawPath;
+            if (fs.existsSync(path.join(rawDir, fn))) return path.join(rawDir, fn);
+            if (fs.existsSync(path.join(prevDir, fn))) return path.join(prevDir, fn);
+            return p.previewUrl || p.thumbnailUrl || fn;
+          });
+
+          const mode = (payload.mode === 'panorama' || payload.mode === 'photosphere' || payload.mode === '360') ? 'panorama' : 'scans';
+          const outDir = path.join(mDir, 'stitched');
+
+          const jobConfig = {
+            missionUuid,
+            photos: resolvedPhotos,
+            metadata: Array.isArray(photos) ? photos : [],
+            mode,
+            outputDir: outDir,
+            resolution: payload.resolution || 'preview',
+            cropBlackBorders: payload.cropBlackBorders !== false,
+            injectXmp: payload.injectXmp !== false,
+            homePoint: payload.homePoint || manifest?.homePoint || null
+          };
+
+          broadcastStitchProgress({
+            missionUuid,
+            mode,
+            progressPct: 5,
+            stage: 'Job initiated'
+          });
+
+          const stitchResult = await stitcherEngine.runStitchJob(jobConfig, (pct, stage) => {
+            broadcastStitchProgress({
+              missionUuid,
+              mode,
+              progressPct: pct,
+              stage
+            });
+          });
+
+          if (manifest) {
+            if (!manifest.stitched) manifest.stitched = {};
+            manifest.stitched[mode] = stitchResult;
+            try {
+              fs.writeFileSync(path.join(mDir, 'inspection_manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
+            } catch (_) {}
+          }
+
+          broadcastStitchComplete({
+            missionUuid,
+            mode,
+            ...stitchResult
+          });
+
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ success: true, result: stitchResult }));
+        } catch (err) {
+          logError('[STITCH API ERROR]', err.message);
+          res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if ((pathname === '/api/process/stitch' || pathname === '/api/stitch/status') && req.method === 'GET') {
+      const missionUuid = url.searchParams.get('missionUuid') || url.searchParams.get('uuid');
+      if (!missionUuid) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: false, error: 'missionUuid parameter required' }));
+        return;
+      }
+      const mDir = path.join(ARCHIVE_DIR, missionUuid);
+      const manifestPath = path.join(mDir, 'stitched', 'stitch_manifest.json');
+      if (fs.existsSync(manifestPath)) {
+        try {
+          const data = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ success: true, manifest: data }));
+          return;
+        } catch (_) {}
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ success: false, found: false, error: 'No stitched preview found for mission' }));
+      return;
+    }
+
+    if (pathname === '/api/stitch/preview' && (req.method === 'GET' || req.method === 'HEAD')) {
+      const missionUuid = url.searchParams.get('missionUuid') || url.searchParams.get('uuid');
+      const mode = (url.searchParams.get('mode') === 'panorama' || url.searchParams.get('mode') === '360') ? 'panorama' : 'scans';
+      if (!missionUuid) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: false, error: 'missionUuid parameter required' }));
+        return;
+      }
+      const mDir = path.join(ARCHIVE_DIR, missionUuid, 'stitched');
+      const filename = mode === 'panorama' ? 'photosphere_360.jpg' : 'orthomosaic_preview.png';
+      const targetPath = path.join(mDir, filename);
+
+      if (fs.existsSync(targetPath)) {
+        const contentType = mode === 'panorama' ? 'image/jpeg' : 'image/png';
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=3600'
+        });
+        if (req.method === 'HEAD') {
+          res.end();
+          return;
+        }
+        fs.createReadStream(targetPath).pipe(res);
+        return;
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: false, error: 'Stitched preview image not found' }));
+        return;
+      }
     }
 
     // Bridge-Hosted AI 3D Reconstruction Architecture (Issue #96)
@@ -7836,6 +8062,7 @@ module.exports = {
   decryptFlightRecordWithDjiCli,
   extractWireframe: wireframeEngine.extractWireframe,
   wireframeEngine,
+  stitcherEngine,
   aiMeshEngine,
   packageInspectionArchive,
   adsbTracker,

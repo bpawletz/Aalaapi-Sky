@@ -3365,6 +3365,53 @@ function initUIEventListeners() {
     });
   });
 
+  // Wire up Photography & Post-Processing Tool Matrix filter buttons
+  const toolMatrixFilterBtns = document.querySelectorAll('.tool-matrix-filter-btn');
+  toolMatrixFilterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      toolMatrixFilterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cat = btn.getAttribute('data-tool-category');
+      const rows = document.querySelectorAll('#photography-tool-matrix-body tr');
+      rows.forEach(r => {
+        if (cat === 'all' || r.getAttribute('data-tool-category') === cat) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  // Wire up One-Click Photography Tool Preset buttons in Help Hub Matrix
+  document.addEventListener('click', (e) => {
+    const presetBtn = e.target.closest('.apply-tool-preset-btn');
+    if (!presetBtn) return;
+    const presetId = presetBtn.getAttribute('data-tool-preset');
+    if (!presetId || typeof applyPhotographyToolPreset !== 'function') return;
+
+    const applied = applyPhotographyToolPreset(presetId);
+    if (applied) {
+      if (typeof closeIntroModal === 'function') {
+        closeIntroModal();
+      } else {
+        const modal = document.getElementById('quickstart-modal');
+        if (modal) modal.classList.add('hidden');
+      }
+    }
+  });
+
+  // Wire up Sidebar Photography Tool Preset selector
+  const toolPresetSelect = document.getElementById('photography-tool-preset-select');
+  if (toolPresetSelect) {
+    toolPresetSelect.addEventListener('change', (e) => {
+      const presetId = e.target.value;
+      if (presetId && typeof applyPhotographyToolPreset === 'function') {
+        applyPhotographyToolPreset(presetId);
+      }
+    });
+  }
+
   // Wire up Spotlight Tour controls
   const tourNextBtn = document.getElementById('tour-next-btn');
   const tourPrevBtn = document.getElementById('tour-prev-btn');
