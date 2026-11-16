@@ -14229,4 +14229,81 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       });
     });
   });
+
+  describe('Issue #314: Android tablet Bonjour mDNS auto-discovery and SQLite mission database persistence (v1.251.0)', () => {
+    test('E2E UI: Companion Host Panel Bonjour Scan, Archive to DB, and Browse DB Missions Modal', async () => {
+      // 1. Open Companion Host Panel
+      const panelState = await page.evaluate(() => {
+        const cfgBtn = document.getElementById('companion-config-host-btn');
+        if (cfgBtn) cfgBtn.click();
+        const panel = document.getElementById('companion-host-panel');
+        const discoverBtn = document.getElementById('companion-discover-btn');
+        const saveDbBtn = document.getElementById('companion-save-db-btn');
+        const browseDbBtn = document.getElementById('companion-browse-db-btn');
+        const discList = document.getElementById('companion-discovered-list');
+
+        return {
+          panelVisible: panel ? panel.style.display !== 'none' : false,
+          discoverBtnPresent: Boolean(discoverBtn),
+          saveDbBtnPresent: Boolean(saveDbBtn),
+          browseDbBtnPresent: Boolean(browseDbBtn),
+          discListPresent: Boolean(discList)
+        };
+      });
+
+      assert.strictEqual(panelState.panelVisible, true, '#companion-host-panel must be visible after clicking config button');
+      assert.strictEqual(panelState.discoverBtnPresent, true, '#companion-discover-btn must exist');
+      assert.strictEqual(panelState.saveDbBtnPresent, true, '#companion-save-db-btn must exist');
+      assert.strictEqual(panelState.browseDbBtnPresent, true, '#companion-browse-db-btn must exist');
+      assert.strictEqual(panelState.discListPresent, true, '#companion-discovered-list must exist');
+
+      // 2. Open Companion Missions Database Modal
+      const modalState = await page.evaluate(() => {
+        const browseBtn = document.getElementById('companion-browse-db-btn');
+        if (browseBtn) browseBtn.click();
+        const modal = document.getElementById('companion-missions-modal');
+        const hostBadge = document.getElementById('companion-missions-host-badge');
+        const countBadge = document.getElementById('companion-missions-count-badge');
+        const archiveNowBtn = document.getElementById('companion-missions-archive-now-btn');
+
+        return {
+          modalVisible: modal ? !modal.classList.contains('hidden') : false,
+          hostBadgePresent: Boolean(hostBadge),
+          countBadgePresent: Boolean(countBadge),
+          archiveNowBtnPresent: Boolean(archiveNowBtn)
+        };
+      });
+
+      assert.strictEqual(modalState.modalVisible, true, '#companion-missions-modal must be open');
+      assert.strictEqual(modalState.hostBadgePresent, true, '#companion-missions-host-badge must exist');
+      assert.strictEqual(modalState.countBadgePresent, true, '#companion-missions-count-badge must exist');
+      assert.strictEqual(modalState.archiveNowBtnPresent, true, '#companion-missions-archive-now-btn must exist');
+
+      // 3. Close Companion Missions Modal
+      const closedState = await page.evaluate(() => {
+        const closeBtn = document.getElementById('companion-missions-close-btn');
+        if (closeBtn) closeBtn.click();
+        const modal = document.getElementById('companion-missions-modal');
+        return {
+          modalHidden: modal ? modal.classList.contains('hidden') : true
+        };
+      });
+
+      assert.strictEqual(closedState.modalHidden, true, '#companion-missions-modal must close on clicking close button');
+
+      // 4. Test Bonjour scan feedback
+      const scanState = await page.evaluate(async () => {
+        const discBtn = document.getElementById('companion-discover-btn');
+        const discList = document.getElementById('companion-discovered-list');
+        if (discBtn) discBtn.click();
+        return {
+          discListVisible: discList ? discList.style.display !== 'none' : false,
+          discListHtml: discList ? discList.innerHTML : ''
+        };
+      });
+
+      assert.strictEqual(scanState.discListVisible, true, '#companion-discovered-list must become visible on scan');
+      assert.ok(scanState.discListHtml.length > 0, '#companion-discovered-list must have feedback HTML');
+    });
+  });
 });

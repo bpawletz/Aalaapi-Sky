@@ -341,6 +341,61 @@ class BasePlatformAdapter {
     return await res.json();
   }
 
+  async discoverCompanionBridges(timeoutMs = 2500, apiBase = 'http://127.0.0.1:8765') {
+    // 1. Query /api/bridge/discover on the configured/connected bridge
+    try {
+      const res = await fetch(`${apiBase}/api/bridge/discover?timeout=${encodeURIComponent(timeoutMs)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json && Array.isArray(json.bridges) && json.bridges.length > 0) return json;
+      }
+    } catch (_) {}
+
+    // 2. Query mDNS domain aalaapi-sky.local:8765/api/discovery
+    try {
+      const res = await fetch(`http://aalaapi-sky.local:8765/api/discovery`);
+      if (res.ok) {
+        const json = await res.json();
+        return {
+          success: true,
+          count: 1,
+          bridges: [{
+            name: 'Aalaapi Sky Companion Bridge',
+            host: 'aalaapi-sky.local',
+            address: 'aalaapi-sky.local',
+            port: 8765,
+            httpPort: 8765,
+            version: json.version || '',
+            url: 'http://aalaapi-sky.local:8765'
+          }]
+        };
+      }
+    } catch (_) {}
+
+    // 3. Fallback to local 127.0.0.1
+    try {
+      const res = await fetch(`http://127.0.0.1:8765/api/discovery`);
+      if (res.ok) {
+        const json = await res.json();
+        return {
+          success: true,
+          count: 1,
+          bridges: [{
+            name: 'Local Aalaapi Companion Bridge',
+            host: '127.0.0.1',
+            address: '127.0.0.1',
+            port: 8765,
+            httpPort: 8765,
+            version: json.version || '',
+            url: 'http://127.0.0.1:8765'
+          }]
+        };
+      }
+    } catch (_) {}
+
+    return { success: true, count: 0, bridges: [] };
+  }
+
   // ─── 9. Instant OpenCV Field Preview Stitcher (Issue #305) ─────────────────
   async runFieldStitch(payload, apiBase = 'http://127.0.0.1:8765') {
     const res = await fetch(`${apiBase}/api/process/stitch`, {

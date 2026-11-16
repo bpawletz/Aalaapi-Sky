@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.250.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.251.0</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -3868,6 +3868,13 @@
                 <button id="companion-preset-https-btn" type="button" class="btn-secondary" style="padding: 2px 5px; font-size: 0.65rem; line-height: 1; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">HTTPS :8766</button>
                 <a id="companion-open-cert-link" href="https://127.0.0.1:8766/api/status" target="_blank" rel="noopener" style="font-size: 0.65rem; color: #a855f7; margin-left: auto; text-decoration: underline;" title="Open HTTPS status in new tab to trust self-signed cert">Trust SSL Cert ↗</a>
               </div>
+              <!-- Bonjour Discovery & SQLite DB Controls (v1.251.0, Issue #314) -->
+              <div style="display: flex; gap: 4px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
+                <button id="companion-discover-btn" type="button" class="btn-secondary" style="padding: 2px 6px; font-size: 0.65rem; line-height: 1; border-color: rgba(34, 197, 94, 0.4); color: #4ade80;" title="Scan local Wi-Fi for Aalaapi Companion Bridge via Bonjour">🔍 Scan via Bonjour</button>
+                <button id="companion-save-db-btn" type="button" class="btn-secondary" style="padding: 2px 6px; font-size: 0.65rem; line-height: 1; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" title="Archive current mission into Companion SQLite DB">💾 Archive to DB</button>
+                <button id="companion-browse-db-btn" type="button" class="btn-secondary" style="padding: 2px 6px; font-size: 0.65rem; line-height: 1; border-color: rgba(168, 85, 247, 0.4); color: #c084fc;" title="Browse archived missions in Companion SQLite DB">📂 Browse DB</button>
+              </div>
+              <div id="companion-discovered-list" style="display: none; margin-top: 4px; padding: 4px 6px; background: rgba(0,0,0,0.4); border-radius: 4px; font-size: 0.68rem; border: 1px solid rgba(255,255,255,0.08); flex-direction: column; gap: 3px;"></div>
               <div id="companion-host-hint" style="color: var(--text-muted); font-size: 0.65rem; line-height: 1.2;">Enter remote PC IP (e.g. <code>http://192.168.1.50:8765</code>) or use URL param <code>?companion=...</code></div>
               <!-- Map Tile & Asset Cache Config (Issue #91) -->
               <div id="bridge-tile-cache-section" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 4px;">
@@ -7366,6 +7373,32 @@
     </div>
   </div>
 
+  <!-- Companion Missions SQLite Database Modal (v1.251.0, Issue #314) -->
+  <div id="companion-missions-modal" class="modal-overlay hidden" style="z-index: 10065;">
+    <div class="modal glass" style="max-width: 780px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+      <div class="modal-header" style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.1rem;">🗄️</span>
+          <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-main);">Companion Bridge Mission Database</h3>
+        </div>
+        <button id="companion-missions-close-btn" type="button" class="close-btn" style="font-size: 1.2rem;">&times;</button>
+      </div>
+      <div style="padding: 10px 18px; background: rgba(0,0,0,0.25); border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span id="companion-missions-host-badge" style="font-size: 0.7rem; color: #38bdf8; background: rgba(56, 189, 248, 0.12); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.25);">Host: http://127.0.0.1:8765</span>
+          <span id="companion-missions-count-badge" style="font-size: 0.7rem; color: #4ade80; background: rgba(34, 197, 94, 0.12); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.25);">0 Archived Missions</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button id="companion-missions-archive-now-btn" type="button" class="btn-primary" style="font-size: 0.72rem; padding: 4px 10px;">💾 Archive Current Plan</button>
+          <button id="companion-missions-refresh-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;">🔄 Refresh</button>
+        </div>
+      </div>
+      <div id="companion-missions-list" style="padding: 16px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px;">
+        <!-- Entries populated dynamically -->
+      </div>
+    </div>
+  </div>
+
   <!-- Interactive UI Spotlight Tour Overlay & Tooltip Card -->
   <div id="tour-overlay-container" class="tour-overlay-container hidden" style="position: fixed; inset: 0; z-index: 10050; pointer-events: none;">
     <!-- Backdrop Cutout Overlay Canvas/Box -->
@@ -8090,7 +8123,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.250.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.251.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -8281,6 +8314,13 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                                 <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.251.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Bonjour (mDNS) Auto-Discovery for Android Tablets &amp; Web (Closes #314):</strong> Added 1-tap Bonjour service discovery in the Companion Host settings panel (<code>#companion-discover-btn</code>) and native Android container (<code>AndroidMdnsDiscovery.kt</code>), allowing tablets to instantly resolve and connect to the Companion Bridge on local Wi-Fi without manual IP entry.</li>
+                  <li><strong>Companion SQLite Mission Database Persistence &amp; Vault Modal (Closes #314):</strong> Added dedicated <strong>Archive to DB</strong> (<code>#companion-save-db-btn</code>) and <strong>Browse DB</strong> (<code>#companion-browse-db-btn</code> / <code>#companion-missions-modal</code>) controls, enabling field pilots to archive full waypoint mission plans into the companion SQLite database (<code>scratch/missions.db</code>) and restore historical missions directly into the active planner.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.250.2):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">

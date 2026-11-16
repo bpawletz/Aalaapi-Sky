@@ -344,6 +344,7 @@ class DiagnosticsDatabase {
       if (!planObj.inclusionZones && Array.isArray(payload.inclusionZones)) planObj.inclusionZones = payload.inclusionZones;
       if (!planObj.exclusionZones && Array.isArray(payload.exclusionZones)) planObj.exclusionZones = payload.exclusionZones;
       if (!planObj.parcels && Array.isArray(payload.parcels)) planObj.parcels = payload.parcels;
+      if (!planObj.waypoints && Array.isArray(payload.waypoints)) planObj.waypoints = payload.waypoints;
       const planJson = JSON.stringify(planObj);
       const diagJson = payload.diagnostics ? JSON.stringify(payload.diagnostics) : (payload.diag_json || JSON.stringify(payload));
 
@@ -444,6 +445,7 @@ class DiagnosticsDatabase {
       inclusionZones: plan?.inclusionZones || [],
       exclusionZones: plan?.exclusionZones || [],
       parcels: plan?.parcels || [],
+      waypoints: plan?.waypoints || (row.diag_json ? (() => { try { return JSON.parse(row.diag_json).waypoints || []; } catch (_) { return []; } })() : []),
       diagnostics: row.diag_json ? JSON.parse(row.diag_json) : null,
       validationReport: row.validation_report_json ? JSON.parse(row.validation_report_json) : null,
       validationErrors: row.validation_errors_json ? JSON.parse(row.validation_errors_json) : [],

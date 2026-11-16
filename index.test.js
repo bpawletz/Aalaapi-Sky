@@ -46649,6 +46649,66 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('Android tablet Bonjour mDNS auto-discovery and SQLite mission database persistence (v1.251.0 - Closes #314)', () => {
+    test('Version consistency: v1.251.0 across package.json, changelog, index_template.html, and index.html', () => {
+      assertVersionConsistency('1.251.0');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.251.0] - 2026-11-16'));
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('v1.251.0'));
+      assert.ok(template.includes('Changelog (v1.251.0):'));
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      assert.ok(indexHtml.includes('v1.251.0'));
+      assert.ok(indexHtml.includes('Changelog (v1.251.0):'));
+    });
+
+    test('Android tablet Bonjour mDNS auto-discovery and SQLite mission database persistence (Issue #314)', async () => {
+      const { Platform, PlatformManager } = require('./src/platform/PlatformManager.js');
+      const { AndroidPlatformAdapter } = require('./src/platform/AndroidPlatformAdapter.js');
+      const { BasePlatformAdapter } = require('./src/platform/BasePlatformAdapter.js');
+      const ApiClient = require('./src/bridge/ApiClient.js');
+
+      // 1. Verify Platform Adapter methods exist
+      assert.strictEqual(typeof Platform.discoverCompanionBridges, 'function', 'Platform.discoverCompanionBridges must be defined');
+      assert.strictEqual(typeof PlatformManager.discoverCompanionBridges, 'function', 'PlatformManager.discoverCompanionBridges must be defined');
+      assert.strictEqual(typeof AndroidPlatformAdapter.prototype.discoverCompanionBridges, 'function', 'AndroidPlatformAdapter must implement discoverCompanionBridges');
+      assert.strictEqual(typeof BasePlatformAdapter.prototype.discoverCompanionBridges, 'function', 'BasePlatformAdapter must implement discoverCompanionBridges');
+
+      // 2. Verify ApiClient exports DB persistence methods
+      assert.strictEqual(typeof ApiClient.archiveCurrentMissionToCompanionDb, 'function', 'ApiClient must export archiveCurrentMissionToCompanionDb');
+      assert.strictEqual(typeof ApiClient.fetchCompanionMissionHistory, 'function', 'ApiClient must export fetchCompanionMissionHistory');
+      assert.strictEqual(typeof ApiClient.loadCompanionMissionById, 'function', 'ApiClient must export loadCompanionMissionById');
+
+      // 3. Verify HTML template contains Bonjour scan and DB controls
+      const tplHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(tplHtml.includes('id="companion-discover-btn"'), 'Template must include #companion-discover-btn');
+      assert.ok(tplHtml.includes('id="companion-discovered-list"'), 'Template must include #companion-discovered-list');
+      assert.ok(tplHtml.includes('id="companion-save-db-btn"'), 'Template must include #companion-save-db-btn');
+      assert.ok(tplHtml.includes('id="companion-browse-db-btn"'), 'Template must include #companion-browse-db-btn');
+      assert.ok(tplHtml.includes('id="companion-missions-modal"'), 'Template must include #companion-missions-modal');
+
+      // 4. Test AndroidPlatformAdapter mock resolution
+      const mockBridge = {
+        discoverCompanionBridges: (timeout) => JSON.stringify({
+          success: true,
+          count: 1,
+          bridges: [{
+            name: 'Aalaapi Sky Drone Bridge',
+            host: '192.168.1.150',
+            address: '192.168.1.150',
+            port: 8765,
+            url: 'http://192.168.1.150:8765'
+          }]
+        })
+      };
+      const androidAdapter = new AndroidPlatformAdapter(mockBridge);
+      const discovered = await androidAdapter.discoverCompanionBridges(1000);
+      assert.strictEqual(discovered.success, true);
+      assert.strictEqual(discovered.bridges.length, 1);
+      assert.strictEqual(discovered.bridges[0].url, 'http://192.168.1.150:8765');
+    });
+  });
+
 });
 });
 

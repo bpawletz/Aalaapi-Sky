@@ -8,11 +8,15 @@
  */
 
 class AndroidPlatformAdapter extends BasePlatformAdapter {
-  constructor() {
+  constructor(customBridge = null) {
     super('android');
+    this._customBridge = customBridge;
   }
 
   _bridge() {
+    if (this._customBridge) {
+      return this._customBridge;
+    }
     if (typeof window !== 'undefined' && window.AalaapiAndroid) {
       return window.AalaapiAndroid;
     }
@@ -345,6 +349,18 @@ class AndroidPlatformAdapter extends BasePlatformAdapter {
       return typeof raw === 'string' ? JSON.parse(raw) : raw;
     }
     return super.discoverMdnsServers(timeoutMs, apiBase);
+  }
+
+  async discoverCompanionBridges(timeoutMs = 2500, apiBase = 'http://127.0.0.1:8765') {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.discoverCompanionBridges === 'function') {
+      const raw = bridge.discoverCompanionBridges(timeoutMs);
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (parsed && Array.isArray(parsed.bridges) && parsed.bridges.length > 0) {
+        return parsed;
+      }
+    }
+    return super.discoverCompanionBridges(timeoutMs, apiBase);
   }
 
   // ─── 9. Instant OpenCV Field Preview Stitcher (Issue #305) ─────────────────

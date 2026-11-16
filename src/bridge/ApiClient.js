@@ -23918,6 +23918,136 @@ if (typeof global !== 'undefined') {
 
 
 
+// ─── Companion SQLite Database Persistence (v1.251.0 - Issue #314) ────────────
+
+async function archiveCurrentMissionToCompanionDb() {
+  const activeWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) ||
+    (typeof generatedWaypoints !== 'undefined' ? generatedWaypoints : null) ||
+    (typeof importedWaypoints !== 'undefined' ? importedWaypoints : null) || [];
+
+  if (!activeWps || activeWps.length === 0) {
+    if (typeof showToast === 'function') showToast('⚠️ No active waypoints to archive. Plan a mission first.', 'warning');
+    return { success: false, error: 'No waypoints' };
+  }
+
+  const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+  const targetUuid = (typeof getRC2UUID === 'function' && getRC2UUID()) ? getRC2UUID() : (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'mission_' + Date.now());
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const layerName = (activeLayer && activeLayer.name) ? activeLayer.name : 'Aalaapi_Mission';
+
+  const payload = {
+    uuid: targetUuid,
+    filename: `${layerName}_${new Date().toISOString().slice(0, 10)}.kmz`,
+    createdAt: new Date().toISOString(),
+    flightPattern: (typeof currentGridType !== 'undefined' ? currentGridType : 'grid'),
+    altitude: (typeof defaultAltitude !== 'undefined' ? defaultAltitude : 50),
+    speed: (typeof defaultSpeed !== 'undefined' ? defaultSpeed : 5),
+    gimbalPitch: (typeof defaultGimbalPitch !== 'undefined' ? defaultGimbalPitch : -90),
+    waypointCount: activeWps.length,
+    photoCount: (typeof estimatedPhotos !== 'undefined' ? estimatedPhotos : activeWps.length),
+    totalDistance: (typeof totalDistanceMeters !== 'undefined' ? totalDistanceMeters : 0),
+    estimatedDuration: (typeof estimatedDurationSeconds !== 'undefined' ? estimatedDurationSeconds : 0),
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'AalaapiSkyClient',
+    waypoints: activeWps.map((wp, idx) => ({
+      waypointIndex: idx,
+      lat: wp.lat,
+      lon: wp.lon,
+      altWgs84: wp.altWgs84 || wp.alt || 50,
+      altRel: wp.altRel || wp.alt || 50,
+      speed: wp.speed || 5,
+      heading: wp.heading || 0,
+      gimbalPitch: wp.gimbalPitch !== undefined ? wp.gimbalPitch : -90,
+      turnMode: wp.turnMode || 'toPointAndStopWithDiscontinuitySlightly'
+    })),
+    missionData: {
+      gridType: (typeof currentGridType !== 'undefined' ? currentGridType : 'grid'),
+      center: (typeof centerMarker !== 'undefined' && centerMarker ? [centerMarker.getLatLng().lat, centerMarker.getLatLng().lng] : null),
+      flightLayers: (typeof flightLayers !== 'undefined' ? flightLayers : null),
+      settings: (typeof getMissionFailsafesPayload === 'function' ? getMissionFailsafesPayload() : null)
+    }
+  };
+
+  const res = await fetch(`${apiBase}/api/diagnostics/archive`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Companion Bridge error: HTTP ${res.status} ${errText}`);
+  }
+
+  const result = await res.json();
+  if (result.success) {
+    if (typeof showToast === 'function') {
+      showToast(`💾 Successfully archived mission to Companion DB! (${result.archiveId || targetUuid})`, 'success');
+    }
+  }
+  return result;
+}
+
+async function fetchCompanionMissionHistory(limit = 50, offset = 0) {
+  const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+  const res = await fetch(`${apiBase}/api/diagnostics/history?limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch history: HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
+async function loadCompanionMissionById(identifier) {
+  const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+  const res = await fetch(`${apiBase}/api/diagnostics/${encodeURIComponent(identifier)}`);
+  if (!res.ok) {
+    throw new Error(`Failed to load mission: HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  if (!data || !data.mission) {
+    throw new Error('Mission not found in companion database');
+  }
+
+  const rec = data.mission;
+  let wps = [];
+  if (rec.waypoints && Array.isArray(rec.waypoints) && rec.waypoints.length > 0) {
+    wps = rec.waypoints.map((wp, idx) => ({
+      idx: wp.waypoint_index !== undefined ? wp.waypoint_index : idx,
+      lat: wp.lat,
+      lon: wp.lon,
+      alt: wp.alt_rel || wp.alt_wgs84 || rec.altitude || 50,
+      speed: wp.speed || rec.speed || 5,
+      heading: wp.heading || 0,
+      gimbalPitch: wp.gimbal_pitch !== undefined ? wp.gimbal_pitch : (rec.gimbal_pitch || -90),
+      turnMode: wp.turn_mode || 'toPointAndStopWithDiscontinuitySlightly'
+    }));
+  } else if (rec.payload_json) {
+    try {
+      const parsed = JSON.parse(rec.payload_json);
+      if (parsed.waypoints && Array.isArray(parsed.waypoints)) {
+        wps = parsed.waypoints;
+      }
+    } catch (_) {}
+  }
+
+  if (wps.length > 0) {
+    if (typeof importedWaypoints !== 'undefined') {
+      importedWaypoints = wps;
+    }
+    const firstWp = wps[0];
+    if (typeof setGridCenter === 'function') setGridCenter(firstWp.lat, firstWp.lon);
+    if (typeof map !== 'undefined' && map && typeof map.setView === 'function') {
+      map.setView([firstWp.lat, firstWp.lon], 17);
+    }
+    if (typeof toggleUIControlsState === 'function') toggleUIControlsState(true);
+    if (typeof updateGrid === 'function') updateGrid();
+    if (typeof showToast === 'function') {
+      showToast(`✅ Loaded mission "${rec.archive_id || rec.uuid}" (${wps.length} waypoints) into Planner!`, 'success');
+    }
+  }
+
+  return data;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
 
 
@@ -23953,7 +24083,10 @@ if (typeof module !== 'undefined' && module.exports) {
     setNativeRc2Connection,
     updateNativeAndroidStatusUI,
     sendDirectlyToRC2,
-    pullFlightLogFromRC2
+    pullFlightLogFromRC2,
+    archiveCurrentMissionToCompanionDb,
+    fetchCompanionMissionHistory,
+    loadCompanionMissionById
   };
 
 }
@@ -23973,6 +24106,9 @@ if (typeof window !== 'undefined') {
   window.setNativeRc2Connection = setNativeRc2Connection;
 
   window.updateNativeAndroidStatusUI = updateNativeAndroidStatusUI;
+  window.archiveCurrentMissionToCompanionDb = archiveCurrentMissionToCompanionDb;
+  window.fetchCompanionMissionHistory = fetchCompanionMissionHistory;
+  window.loadCompanionMissionById = loadCompanionMissionById;
 
 }
 

@@ -9428,7 +9428,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.250.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.251.0</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -13206,6 +13206,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <button id="companion-preset-https-btn" type="button" class="btn-secondary" style="padding: 2px 5px; font-size: 0.65rem; line-height: 1; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">HTTPS :8766</button>
                 <a id="companion-open-cert-link" href="https://127.0.0.1:8766/api/status" target="_blank" rel="noopener" style="font-size: 0.65rem; color: #a855f7; margin-left: auto; text-decoration: underline;" title="Open HTTPS status in new tab to trust self-signed cert">Trust SSL Cert ↗</a>
               </div>
+              <!-- Bonjour Discovery & SQLite DB Controls (v1.251.0, Issue #314) -->
+              <div style="display: flex; gap: 4px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
+                <button id="companion-discover-btn" type="button" class="btn-secondary" style="padding: 2px 6px; font-size: 0.65rem; line-height: 1; border-color: rgba(34, 197, 94, 0.4); color: #4ade80;" title="Scan local Wi-Fi for Aalaapi Companion Bridge via Bonjour">🔍 Scan via Bonjour</button>
+                <button id="companion-save-db-btn" type="button" class="btn-secondary" style="padding: 2px 6px; font-size: 0.65rem; line-height: 1; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" title="Archive current mission into Companion SQLite DB">💾 Archive to DB</button>
+                <button id="companion-browse-db-btn" type="button" class="btn-secondary" style="padding: 2px 6px; font-size: 0.65rem; line-height: 1; border-color: rgba(168, 85, 247, 0.4); color: #c084fc;" title="Browse archived missions in Companion SQLite DB">📂 Browse DB</button>
+              </div>
+              <div id="companion-discovered-list" style="display: none; margin-top: 4px; padding: 4px 6px; background: rgba(0,0,0,0.4); border-radius: 4px; font-size: 0.68rem; border: 1px solid rgba(255,255,255,0.08); flex-direction: column; gap: 3px;"></div>
               <div id="companion-host-hint" style="color: var(--text-muted); font-size: 0.65rem; line-height: 1.2;">Enter remote PC IP (e.g. <code>http://192.168.1.50:8765</code>) or use URL param <code>?companion=...</code></div>
               <!-- Map Tile & Asset Cache Config (Issue #91) -->
               <div id="bridge-tile-cache-section" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 4px;">
@@ -16704,6 +16711,32 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
     </div>
   </div>
 
+  <!-- Companion Missions SQLite Database Modal (v1.251.0, Issue #314) -->
+  <div id="companion-missions-modal" class="modal-overlay hidden" style="z-index: 10065;">
+    <div class="modal glass" style="max-width: 780px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+      <div class="modal-header" style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.1rem;">🗄️</span>
+          <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-main);">Companion Bridge Mission Database</h3>
+        </div>
+        <button id="companion-missions-close-btn" type="button" class="close-btn" style="font-size: 1.2rem;">&times;</button>
+      </div>
+      <div style="padding: 10px 18px; background: rgba(0,0,0,0.25); border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span id="companion-missions-host-badge" style="font-size: 0.7rem; color: #38bdf8; background: rgba(56, 189, 248, 0.12); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.25);">Host: http://127.0.0.1:8765</span>
+          <span id="companion-missions-count-badge" style="font-size: 0.7rem; color: #4ade80; background: rgba(34, 197, 94, 0.12); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.25);">0 Archived Missions</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button id="companion-missions-archive-now-btn" type="button" class="btn-primary" style="font-size: 0.72rem; padding: 4px 10px;">💾 Archive Current Plan</button>
+          <button id="companion-missions-refresh-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;">🔄 Refresh</button>
+        </div>
+      </div>
+      <div id="companion-missions-list" style="padding: 16px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px;">
+        <!-- Entries populated dynamically -->
+      </div>
+    </div>
+  </div>
+
   <!-- Interactive UI Spotlight Tour Overlay & Tooltip Card -->
   <div id="tour-overlay-container" class="tour-overlay-container hidden" style="position: fixed; inset: 0; z-index: 10050; pointer-events: none;">
     <!-- Backdrop Cutout Overlay Canvas/Box -->
@@ -17428,7 +17461,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.250.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.251.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17619,6 +17652,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                                 <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.251.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Bonjour (mDNS) Auto-Discovery for Android Tablets &amp; Web (Closes #314):</strong> Added 1-tap Bonjour service discovery in the Companion Host settings panel (<code>#companion-discover-btn</code>) and native Android container (<code>AndroidMdnsDiscovery.kt</code>), allowing tablets to instantly resolve and connect to the Companion Bridge on local Wi-Fi without manual IP entry.</li>
+                  <li><strong>Companion SQLite Mission Database Persistence &amp; Vault Modal (Closes #314):</strong> Added dedicated <strong>Archive to DB</strong> (<code>#companion-save-db-btn</code>) and <strong>Browse DB</strong> (<code>#companion-browse-db-btn</code> / <code>#companion-missions-modal</code>) controls, enabling field pilots to archive full waypoint mission plans into the companion SQLite database (<code>scratch/missions.db</code>) and restore historical missions directly into the active planner.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.250.2):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -28182,6 +28222,61 @@ class BasePlatformAdapter {
     return await res.json();
   }
 
+  async discoverCompanionBridges(timeoutMs = 2500, apiBase = 'http://127.0.0.1:8765') {
+    // 1. Query /api/bridge/discover on the configured/connected bridge
+    try {
+      const res = await fetch(`${apiBase}/api/bridge/discover?timeout=${encodeURIComponent(timeoutMs)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json && Array.isArray(json.bridges) && json.bridges.length > 0) return json;
+      }
+    } catch (_) {}
+
+    // 2. Query mDNS domain aalaapi-sky.local:8765/api/discovery
+    try {
+      const res = await fetch(`http://aalaapi-sky.local:8765/api/discovery`);
+      if (res.ok) {
+        const json = await res.json();
+        return {
+          success: true,
+          count: 1,
+          bridges: [{
+            name: 'Aalaapi Sky Companion Bridge',
+            host: 'aalaapi-sky.local',
+            address: 'aalaapi-sky.local',
+            port: 8765,
+            httpPort: 8765,
+            version: json.version || '',
+            url: 'http://aalaapi-sky.local:8765'
+          }]
+        };
+      }
+    } catch (_) {}
+
+    // 3. Fallback to local 127.0.0.1
+    try {
+      const res = await fetch(`http://127.0.0.1:8765/api/discovery`);
+      if (res.ok) {
+        const json = await res.json();
+        return {
+          success: true,
+          count: 1,
+          bridges: [{
+            name: 'Local Aalaapi Companion Bridge',
+            host: '127.0.0.1',
+            address: '127.0.0.1',
+            port: 8765,
+            httpPort: 8765,
+            version: json.version || '',
+            url: 'http://127.0.0.1:8765'
+          }]
+        };
+      }
+    } catch (_) {}
+
+    return { success: true, count: 0, bridges: [] };
+  }
+
   // ─── 9. Instant OpenCV Field Preview Stitcher (Issue #305) ─────────────────
   async runFieldStitch(payload, apiBase = 'http://127.0.0.1:8765') {
     const res = await fetch(`${apiBase}/api/process/stitch`, {
@@ -28259,11 +28354,15 @@ if (typeof module !== 'undefined' && module.exports) {
  */
 
 class AndroidPlatformAdapter extends BasePlatformAdapter {
-  constructor() {
+  constructor(customBridge = null) {
     super('android');
+    this._customBridge = customBridge;
   }
 
   _bridge() {
+    if (this._customBridge) {
+      return this._customBridge;
+    }
     if (typeof window !== 'undefined' && window.AalaapiAndroid) {
       return window.AalaapiAndroid;
     }
@@ -28596,6 +28695,18 @@ class AndroidPlatformAdapter extends BasePlatformAdapter {
       return typeof raw === 'string' ? JSON.parse(raw) : raw;
     }
     return super.discoverMdnsServers(timeoutMs, apiBase);
+  }
+
+  async discoverCompanionBridges(timeoutMs = 2500, apiBase = 'http://127.0.0.1:8765') {
+    const bridge = this._bridge();
+    if (bridge && typeof bridge.discoverCompanionBridges === 'function') {
+      const raw = bridge.discoverCompanionBridges(timeoutMs);
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (parsed && Array.isArray(parsed.bridges) && parsed.bridges.length > 0) {
+        return parsed;
+      }
+    }
+    return super.discoverCompanionBridges(timeoutMs, apiBase);
   }
 
   // ─── 9. Instant OpenCV Field Preview Stitcher (Issue #305) ─────────────────
@@ -29025,6 +29136,14 @@ const PlatformManager = {
     return this.getAdapter();
   },
 
+  discoverMdnsServers(timeoutMs, apiBase) {
+    return this.getAdapter().discoverMdnsServers(timeoutMs, apiBase);
+  },
+
+  discoverCompanionBridges(timeoutMs, apiBase) {
+    return this.getAdapter().discoverCompanionBridges(timeoutMs, apiBase);
+  },
+
   reset() {
     this._customAdapter = null;
     this._forcedPlatformId = null;
@@ -29151,6 +29270,9 @@ const Platform = {
   },
   discoverMdnsServers(timeoutMs, apiBase) {
     return PlatformManager.getAdapter().discoverMdnsServers(timeoutMs, apiBase);
+  },
+  discoverCompanionBridges(timeoutMs, apiBase) {
+    return PlatformManager.getAdapter().discoverCompanionBridges(timeoutMs, apiBase);
   }
 };
 
@@ -42555,6 +42677,236 @@ function initUIEventListeners() {
       presetHttpsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         companionHostInput.value = 'https://127.0.0.1:8766';
+      });
+    }
+
+    // ─── Bonjour Discovery & SQLite DB Controls (v1.251.0, Issue #314) ────────
+    const companionDiscoverBtn = document.getElementById('companion-discover-btn');
+    const companionDiscoveredList = document.getElementById('companion-discovered-list');
+    const companionSaveDbBtn = document.getElementById('companion-save-db-btn');
+    const companionBrowseDbBtn = document.getElementById('companion-browse-db-btn');
+
+    if (companionDiscoverBtn && companionDiscoveredList) {
+      companionDiscoverBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        companionDiscoverBtn.disabled = true;
+        companionDiscoverBtn.textContent = '⏳ Scanning...';
+        companionDiscoveredList.style.display = 'flex';
+        companionDiscoveredList.innerHTML = '<span style="color: #4ade80;">🔍 Scanning local Wi-Fi for Aalaapi Companion Bridge via Bonjour...</span>';
+
+        try {
+          const apiBase = companionHostInput.value.trim() || ((typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765');
+          let result;
+          if (typeof Platform !== 'undefined' && typeof Platform.discoverCompanionBridges === 'function') {
+            result = await Platform.discoverCompanionBridges(3000, apiBase);
+          } else if (typeof PlatformManager !== 'undefined' && typeof PlatformManager.discoverCompanionBridges === 'function') {
+            result = await PlatformManager.discoverCompanionBridges(3000, apiBase);
+          } else {
+            const res = await fetch(`${apiBase}/api/bridge/discover?timeout=3000`);
+            result = await res.json();
+          }
+
+          if (result && Array.isArray(result.bridges) && result.bridges.length > 0) {
+            let html = '<div style="font-weight: 600; color: #4ade80; margin-bottom: 2px;">✨ Discovered ' + result.bridges.length + ' Companion Bridge(s):</div>';
+            result.bridges.forEach((b) => {
+              const bHost = b.address || b.host || 'aalaapi-sky.local';
+              const bPort = b.port || b.httpPort || 8765;
+              const targetUrl = b.url || `http://${bHost}:${bPort}`;
+              const ver = b.version ? ` (v${b.version})` : '';
+              html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-top: 1px solid rgba(255,255,255,0.08);">` +
+                `<span><b>${b.name || 'Aalaapi Bridge'}</b>${ver} &mdash; <code>${bHost}:${bPort}</code></span>` +
+                `<button type="button" class="btn-xs companion-connect-bridge-btn" data-url="${targetUrl}" style="padding: 2px 7px; font-size: 0.62rem; cursor: pointer; background: #22c55e; color: #fff; border: none; border-radius: 3px; font-weight: 600;">Connect</button>` +
+                `</div>`;
+            });
+            companionDiscoveredList.innerHTML = html;
+            companionDiscoveredList.querySelectorAll('.companion-connect-bridge-btn').forEach(btn => {
+              btn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                const u = btn.getAttribute('data-url');
+                if (u) {
+                  companionHostInput.value = u;
+                  if (typeof setCompanionApiBase === 'function') setCompanionApiBase(u);
+                  companionHostPanel.style.display = 'none';
+                  if (typeof showToast === 'function') showToast(`🔗 Connected to Companion Bridge at ${u}!`, 'success');
+                }
+              });
+            });
+          } else {
+            companionDiscoveredList.innerHTML = '<span style="color: #facc15;">ℹ️ No remote Companion Bridges found on LAN. Ensure Companion Bridge is running on your host machine.</span>';
+          }
+        } catch (err) {
+          companionDiscoveredList.innerHTML = `<span style="color: #f87171;">⚠️ Discovery error: ${err.message}</span>`;
+        } finally {
+          companionDiscoverBtn.disabled = false;
+          companionDiscoverBtn.textContent = '🔍 Scan via Bonjour';
+        }
+      });
+    }
+
+    if (companionSaveDbBtn) {
+      companionSaveDbBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        companionSaveDbBtn.disabled = true;
+        companionSaveDbBtn.textContent = '⏳ Saving...';
+        try {
+          if (typeof archiveCurrentMissionToCompanionDb === 'function') {
+            await archiveCurrentMissionToCompanionDb();
+          } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.archiveCurrentMissionToCompanionDb === 'function') {
+            await ApiClient.archiveCurrentMissionToCompanionDb();
+          }
+        } catch (err) {
+          if (typeof showToast === 'function') showToast(`❌ Failed to archive: ${err.message}`, 'error');
+        } finally {
+          companionSaveDbBtn.disabled = false;
+          companionSaveDbBtn.textContent = '💾 Archive to DB';
+        }
+      });
+    }
+
+    if (companionBrowseDbBtn) {
+      companionBrowseDbBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openCompanionMissionsModal();
+      });
+    }
+
+    // ─── Companion Missions SQLite Modal Management (Issue #314) ─────────────
+    const companionMissionsModal = document.getElementById('companion-missions-modal');
+    const companionMissionsCloseBtn = document.getElementById('companion-missions-close-btn');
+    const companionMissionsRefreshBtn = document.getElementById('companion-missions-refresh-btn');
+    const companionMissionsArchiveNowBtn = document.getElementById('companion-missions-archive-now-btn');
+    const companionMissionsList = document.getElementById('companion-missions-list');
+    const companionMissionsHostBadge = document.getElementById('companion-missions-host-badge');
+    const companionMissionsCountBadge = document.getElementById('companion-missions-count-badge');
+
+    function openCompanionMissionsModal() {
+      if (!companionMissionsModal) return;
+      companionMissionsModal.classList.remove('hidden');
+      refreshCompanionMissionsModalList();
+    }
+
+    function closeCompanionMissionsModal() {
+      if (!companionMissionsModal) return;
+      companionMissionsModal.classList.add('hidden');
+    }
+
+    async function refreshCompanionMissionsModalList() {
+      if (!companionMissionsList) return;
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+      if (companionMissionsHostBadge) {
+        companionMissionsHostBadge.textContent = `Host: ${apiBase}`;
+      }
+
+      companionMissionsList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 20px;">⏳ Loading missions from Companion SQLite DB...</div>';
+
+      try {
+        let data;
+        if (typeof fetchCompanionMissionHistory === 'function') {
+          data = await fetchCompanionMissionHistory(50, 0);
+        } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.fetchCompanionMissionHistory === 'function') {
+          data = await ApiClient.fetchCompanionMissionHistory(50, 0);
+        } else {
+          const res = await fetch(`${apiBase}/api/diagnostics/history?limit=50&offset=0`);
+          data = await res.json();
+        }
+
+        const missions = (data && Array.isArray(data.missions)) ? data.missions : [];
+        if (companionMissionsCountBadge) {
+          companionMissionsCountBadge.textContent = `${missions.length} Archived Missions`;
+        }
+
+        if (missions.length === 0) {
+          companionMissionsList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.82rem; text-align: center; padding: 30px;">📭 No missions found in Companion SQLite database yet.<br/><span style="font-size: 0.72rem; color: #94a3b8;">Click <b>"Archive Current Plan"</b> above or sync to your DJI RC 2 to automatically save missions.</span></div>';
+          return;
+        }
+
+        let html = '';
+        missions.forEach((m) => {
+          const dateStr = m.created_at ? new Date(m.created_at).toLocaleString() : 'Unknown date';
+          const pattern = (m.flight_pattern || 'Custom').toUpperCase();
+          const distKm = (typeof m.total_distance === 'number') ? (m.total_distance / 1000).toFixed(2) + ' km' : '0 km';
+          const durMin = (typeof m.estimated_duration === 'number') ? Math.round(m.estimated_duration / 60) + ' min' : '0 min';
+          const waypoints = m.waypoint_count || 0;
+          const alt = m.altitude || 50;
+          const speed = m.speed || 5;
+          const id = m.archive_id || m.uuid || m.id;
+
+          html += `<div class="card glass" style="padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-weight: 700; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px;">${pattern}</span>
+                <strong style="color: var(--text-main); font-size: 0.82rem;">${m.filename || id}</strong>
+              </div>
+              <span style="font-size: 0.7rem; color: var(--text-muted);">${dateStr}</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.72rem; color: var(--text-muted);">
+              <span>📍 <b>${waypoints}</b> waypoints</span>
+              <span>📐 <b>${alt}m</b> alt</span>
+              <span>⚡ <b>${speed}m/s</b></span>
+              <span>📏 <b>${distKm}</b></span>
+              <span>⏱️ <b>${durMin}</b></span>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.05);">
+              <button type="button" class="btn-xs companion-load-mission-btn" data-id="${id}" style="padding: 4px 10px; font-size: 0.7rem; background: #0284c7; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">🎯 Load into Planner</button>
+            </div>
+          </div>`;
+        });
+
+        companionMissionsList.innerHTML = html;
+        companionMissionsList.querySelectorAll('.companion-load-mission-btn').forEach(btn => {
+          btn.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            const id = btn.getAttribute('data-id');
+            if (!id) return;
+            btn.disabled = true;
+            btn.textContent = '⏳ Loading...';
+            try {
+              if (typeof loadCompanionMissionById === 'function') {
+                await loadCompanionMissionById(id);
+              } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.loadCompanionMissionById === 'function') {
+                await ApiClient.loadCompanionMissionById(id);
+              }
+              closeCompanionMissionsModal();
+            } catch (err) {
+              if (typeof showToast === 'function') showToast(`❌ Load failed: ${err.message}`, 'error');
+              btn.disabled = false;
+              btn.textContent = '🎯 Load into Planner';
+            }
+          });
+        });
+      } catch (err) {
+        companionMissionsList.innerHTML = `<div style="color: #f87171; font-size: 0.8rem; text-align: center; padding: 20px;">⚠️ Failed to load missions: ${err.message}</div>`;
+      }
+    }
+
+    if (companionMissionsCloseBtn) {
+      companionMissionsCloseBtn.addEventListener('click', closeCompanionMissionsModal);
+    }
+    if (companionMissionsModal) {
+      companionMissionsModal.addEventListener('click', (e) => {
+        if (e.target === companionMissionsModal) closeCompanionMissionsModal();
+      });
+    }
+    if (companionMissionsRefreshBtn) {
+      companionMissionsRefreshBtn.addEventListener('click', refreshCompanionMissionsModalList);
+    }
+    if (companionMissionsArchiveNowBtn) {
+      companionMissionsArchiveNowBtn.addEventListener('click', async () => {
+        companionMissionsArchiveNowBtn.disabled = true;
+        companionMissionsArchiveNowBtn.textContent = '⏳ Archiving...';
+        try {
+          if (typeof archiveCurrentMissionToCompanionDb === 'function') {
+            await archiveCurrentMissionToCompanionDb();
+          } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.archiveCurrentMissionToCompanionDb === 'function') {
+            await ApiClient.archiveCurrentMissionToCompanionDb();
+          }
+          await refreshCompanionMissionsModalList();
+        } catch (err) {
+          if (typeof showToast === 'function') showToast(`❌ Archival error: ${err.message}`, 'error');
+        } finally {
+          companionMissionsArchiveNowBtn.disabled = false;
+          companionMissionsArchiveNowBtn.textContent = '💾 Archive Current Plan';
+        }
       });
     }
 
@@ -86884,6 +87236,136 @@ if (typeof global !== 'undefined') {
 
 
 
+// ─── Companion SQLite Database Persistence (v1.251.0 - Issue #314) ────────────
+
+async function archiveCurrentMissionToCompanionDb() {
+  const activeWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) ||
+    (typeof generatedWaypoints !== 'undefined' ? generatedWaypoints : null) ||
+    (typeof importedWaypoints !== 'undefined' ? importedWaypoints : null) || [];
+
+  if (!activeWps || activeWps.length === 0) {
+    if (typeof showToast === 'function') showToast('⚠️ No active waypoints to archive. Plan a mission first.', 'warning');
+    return { success: false, error: 'No waypoints' };
+  }
+
+  const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+  const targetUuid = (typeof getRC2UUID === 'function' && getRC2UUID()) ? getRC2UUID() : (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'mission_' + Date.now());
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const layerName = (activeLayer && activeLayer.name) ? activeLayer.name : 'Aalaapi_Mission';
+
+  const payload = {
+    uuid: targetUuid,
+    filename: `${layerName}_${new Date().toISOString().slice(0, 10)}.kmz`,
+    createdAt: new Date().toISOString(),
+    flightPattern: (typeof currentGridType !== 'undefined' ? currentGridType : 'grid'),
+    altitude: (typeof defaultAltitude !== 'undefined' ? defaultAltitude : 50),
+    speed: (typeof defaultSpeed !== 'undefined' ? defaultSpeed : 5),
+    gimbalPitch: (typeof defaultGimbalPitch !== 'undefined' ? defaultGimbalPitch : -90),
+    waypointCount: activeWps.length,
+    photoCount: (typeof estimatedPhotos !== 'undefined' ? estimatedPhotos : activeWps.length),
+    totalDistance: (typeof totalDistanceMeters !== 'undefined' ? totalDistanceMeters : 0),
+    estimatedDuration: (typeof estimatedDurationSeconds !== 'undefined' ? estimatedDurationSeconds : 0),
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'AalaapiSkyClient',
+    waypoints: activeWps.map((wp, idx) => ({
+      waypointIndex: idx,
+      lat: wp.lat,
+      lon: wp.lon,
+      altWgs84: wp.altWgs84 || wp.alt || 50,
+      altRel: wp.altRel || wp.alt || 50,
+      speed: wp.speed || 5,
+      heading: wp.heading || 0,
+      gimbalPitch: wp.gimbalPitch !== undefined ? wp.gimbalPitch : -90,
+      turnMode: wp.turnMode || 'toPointAndStopWithDiscontinuitySlightly'
+    })),
+    missionData: {
+      gridType: (typeof currentGridType !== 'undefined' ? currentGridType : 'grid'),
+      center: (typeof centerMarker !== 'undefined' && centerMarker ? [centerMarker.getLatLng().lat, centerMarker.getLatLng().lng] : null),
+      flightLayers: (typeof flightLayers !== 'undefined' ? flightLayers : null),
+      settings: (typeof getMissionFailsafesPayload === 'function' ? getMissionFailsafesPayload() : null)
+    }
+  };
+
+  const res = await fetch(`${apiBase}/api/diagnostics/archive`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Companion Bridge error: HTTP ${res.status} ${errText}`);
+  }
+
+  const result = await res.json();
+  if (result.success) {
+    if (typeof showToast === 'function') {
+      showToast(`💾 Successfully archived mission to Companion DB! (${result.archiveId || targetUuid})`, 'success');
+    }
+  }
+  return result;
+}
+
+async function fetchCompanionMissionHistory(limit = 50, offset = 0) {
+  const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+  const res = await fetch(`${apiBase}/api/diagnostics/history?limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch history: HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
+async function loadCompanionMissionById(identifier) {
+  const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+  const res = await fetch(`${apiBase}/api/diagnostics/${encodeURIComponent(identifier)}`);
+  if (!res.ok) {
+    throw new Error(`Failed to load mission: HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  if (!data || !data.mission) {
+    throw new Error('Mission not found in companion database');
+  }
+
+  const rec = data.mission;
+  let wps = [];
+  if (rec.waypoints && Array.isArray(rec.waypoints) && rec.waypoints.length > 0) {
+    wps = rec.waypoints.map((wp, idx) => ({
+      idx: wp.waypoint_index !== undefined ? wp.waypoint_index : idx,
+      lat: wp.lat,
+      lon: wp.lon,
+      alt: wp.alt_rel || wp.alt_wgs84 || rec.altitude || 50,
+      speed: wp.speed || rec.speed || 5,
+      heading: wp.heading || 0,
+      gimbalPitch: wp.gimbal_pitch !== undefined ? wp.gimbal_pitch : (rec.gimbal_pitch || -90),
+      turnMode: wp.turn_mode || 'toPointAndStopWithDiscontinuitySlightly'
+    }));
+  } else if (rec.payload_json) {
+    try {
+      const parsed = JSON.parse(rec.payload_json);
+      if (parsed.waypoints && Array.isArray(parsed.waypoints)) {
+        wps = parsed.waypoints;
+      }
+    } catch (_) {}
+  }
+
+  if (wps.length > 0) {
+    if (typeof importedWaypoints !== 'undefined') {
+      importedWaypoints = wps;
+    }
+    const firstWp = wps[0];
+    if (typeof setGridCenter === 'function') setGridCenter(firstWp.lat, firstWp.lon);
+    if (typeof map !== 'undefined' && map && typeof map.setView === 'function') {
+      map.setView([firstWp.lat, firstWp.lon], 17);
+    }
+    if (typeof toggleUIControlsState === 'function') toggleUIControlsState(true);
+    if (typeof updateGrid === 'function') updateGrid();
+    if (typeof showToast === 'function') {
+      showToast(`✅ Loaded mission "${rec.archive_id || rec.uuid}" (${wps.length} waypoints) into Planner!`, 'success');
+    }
+  }
+
+  return data;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
 
 
@@ -86919,7 +87401,10 @@ if (typeof module !== 'undefined' && module.exports) {
     setNativeRc2Connection,
     updateNativeAndroidStatusUI,
     sendDirectlyToRC2,
-    pullFlightLogFromRC2
+    pullFlightLogFromRC2,
+    archiveCurrentMissionToCompanionDb,
+    fetchCompanionMissionHistory,
+    loadCompanionMissionById
   };
 
 }
@@ -86939,6 +87424,9 @@ if (typeof window !== 'undefined') {
   window.setNativeRc2Connection = setNativeRc2Connection;
 
   window.updateNativeAndroidStatusUI = updateNativeAndroidStatusUI;
+  window.archiveCurrentMissionToCompanionDb = archiveCurrentMissionToCompanionDb;
+  window.fetchCompanionMissionHistory = fetchCompanionMissionHistory;
+  window.loadCompanionMissionById = loadCompanionMissionById;
 
 }
 

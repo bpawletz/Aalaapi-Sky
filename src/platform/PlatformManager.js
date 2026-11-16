@@ -126,6 +126,14 @@ const PlatformManager = {
     return this.getAdapter();
   },
 
+  discoverMdnsServers(timeoutMs, apiBase) {
+    return this.getAdapter().discoverMdnsServers(timeoutMs, apiBase);
+  },
+
+  discoverCompanionBridges(timeoutMs, apiBase) {
+    return this.getAdapter().discoverCompanionBridges(timeoutMs, apiBase);
+  },
+
   reset() {
     this._customAdapter = null;
     this._forcedPlatformId = null;
@@ -252,6 +260,9 @@ const Platform = {
   },
   discoverMdnsServers(timeoutMs, apiBase) {
     return PlatformManager.getAdapter().discoverMdnsServers(timeoutMs, apiBase);
+  },
+  discoverCompanionBridges(timeoutMs, apiBase) {
+    return PlatformManager.getAdapter().discoverCompanionBridges(timeoutMs, apiBase);
   }
 };
 

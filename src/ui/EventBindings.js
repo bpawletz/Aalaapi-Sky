@@ -3049,6 +3049,236 @@ function initUIEventListeners() {
       });
     }
 
+    // ─── Bonjour Discovery & SQLite DB Controls (v1.251.0, Issue #314) ────────
+    const companionDiscoverBtn = document.getElementById('companion-discover-btn');
+    const companionDiscoveredList = document.getElementById('companion-discovered-list');
+    const companionSaveDbBtn = document.getElementById('companion-save-db-btn');
+    const companionBrowseDbBtn = document.getElementById('companion-browse-db-btn');
+
+    if (companionDiscoverBtn && companionDiscoveredList) {
+      companionDiscoverBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        companionDiscoverBtn.disabled = true;
+        companionDiscoverBtn.textContent = '⏳ Scanning...';
+        companionDiscoveredList.style.display = 'flex';
+        companionDiscoveredList.innerHTML = '<span style="color: #4ade80;">🔍 Scanning local Wi-Fi for Aalaapi Companion Bridge via Bonjour...</span>';
+
+        try {
+          const apiBase = companionHostInput.value.trim() || ((typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765');
+          let result;
+          if (typeof Platform !== 'undefined' && typeof Platform.discoverCompanionBridges === 'function') {
+            result = await Platform.discoverCompanionBridges(3000, apiBase);
+          } else if (typeof PlatformManager !== 'undefined' && typeof PlatformManager.discoverCompanionBridges === 'function') {
+            result = await PlatformManager.discoverCompanionBridges(3000, apiBase);
+          } else {
+            const res = await fetch(`${apiBase}/api/bridge/discover?timeout=3000`);
+            result = await res.json();
+          }
+
+          if (result && Array.isArray(result.bridges) && result.bridges.length > 0) {
+            let html = '<div style="font-weight: 600; color: #4ade80; margin-bottom: 2px;">✨ Discovered ' + result.bridges.length + ' Companion Bridge(s):</div>';
+            result.bridges.forEach((b) => {
+              const bHost = b.address || b.host || 'aalaapi-sky.local';
+              const bPort = b.port || b.httpPort || 8765;
+              const targetUrl = b.url || `http://${bHost}:${bPort}`;
+              const ver = b.version ? ` (v${b.version})` : '';
+              html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-top: 1px solid rgba(255,255,255,0.08);">` +
+                `<span><b>${b.name || 'Aalaapi Bridge'}</b>${ver} &mdash; <code>${bHost}:${bPort}</code></span>` +
+                `<button type="button" class="btn-xs companion-connect-bridge-btn" data-url="${targetUrl}" style="padding: 2px 7px; font-size: 0.62rem; cursor: pointer; background: #22c55e; color: #fff; border: none; border-radius: 3px; font-weight: 600;">Connect</button>` +
+                `</div>`;
+            });
+            companionDiscoveredList.innerHTML = html;
+            companionDiscoveredList.querySelectorAll('.companion-connect-bridge-btn').forEach(btn => {
+              btn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                const u = btn.getAttribute('data-url');
+                if (u) {
+                  companionHostInput.value = u;
+                  if (typeof setCompanionApiBase === 'function') setCompanionApiBase(u);
+                  companionHostPanel.style.display = 'none';
+                  if (typeof showToast === 'function') showToast(`🔗 Connected to Companion Bridge at ${u}!`, 'success');
+                }
+              });
+            });
+          } else {
+            companionDiscoveredList.innerHTML = '<span style="color: #facc15;">ℹ️ No remote Companion Bridges found on LAN. Ensure Companion Bridge is running on your host machine.</span>';
+          }
+        } catch (err) {
+          companionDiscoveredList.innerHTML = `<span style="color: #f87171;">⚠️ Discovery error: ${err.message}</span>`;
+        } finally {
+          companionDiscoverBtn.disabled = false;
+          companionDiscoverBtn.textContent = '🔍 Scan via Bonjour';
+        }
+      });
+    }
+
+    if (companionSaveDbBtn) {
+      companionSaveDbBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        companionSaveDbBtn.disabled = true;
+        companionSaveDbBtn.textContent = '⏳ Saving...';
+        try {
+          if (typeof archiveCurrentMissionToCompanionDb === 'function') {
+            await archiveCurrentMissionToCompanionDb();
+          } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.archiveCurrentMissionToCompanionDb === 'function') {
+            await ApiClient.archiveCurrentMissionToCompanionDb();
+          }
+        } catch (err) {
+          if (typeof showToast === 'function') showToast(`❌ Failed to archive: ${err.message}`, 'error');
+        } finally {
+          companionSaveDbBtn.disabled = false;
+          companionSaveDbBtn.textContent = '💾 Archive to DB';
+        }
+      });
+    }
+
+    if (companionBrowseDbBtn) {
+      companionBrowseDbBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openCompanionMissionsModal();
+      });
+    }
+
+    // ─── Companion Missions SQLite Modal Management (Issue #314) ─────────────
+    const companionMissionsModal = document.getElementById('companion-missions-modal');
+    const companionMissionsCloseBtn = document.getElementById('companion-missions-close-btn');
+    const companionMissionsRefreshBtn = document.getElementById('companion-missions-refresh-btn');
+    const companionMissionsArchiveNowBtn = document.getElementById('companion-missions-archive-now-btn');
+    const companionMissionsList = document.getElementById('companion-missions-list');
+    const companionMissionsHostBadge = document.getElementById('companion-missions-host-badge');
+    const companionMissionsCountBadge = document.getElementById('companion-missions-count-badge');
+
+    function openCompanionMissionsModal() {
+      if (!companionMissionsModal) return;
+      companionMissionsModal.classList.remove('hidden');
+      refreshCompanionMissionsModalList();
+    }
+
+    function closeCompanionMissionsModal() {
+      if (!companionMissionsModal) return;
+      companionMissionsModal.classList.add('hidden');
+    }
+
+    async function refreshCompanionMissionsModalList() {
+      if (!companionMissionsList) return;
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+      if (companionMissionsHostBadge) {
+        companionMissionsHostBadge.textContent = `Host: ${apiBase}`;
+      }
+
+      companionMissionsList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 20px;">⏳ Loading missions from Companion SQLite DB...</div>';
+
+      try {
+        let data;
+        if (typeof fetchCompanionMissionHistory === 'function') {
+          data = await fetchCompanionMissionHistory(50, 0);
+        } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.fetchCompanionMissionHistory === 'function') {
+          data = await ApiClient.fetchCompanionMissionHistory(50, 0);
+        } else {
+          const res = await fetch(`${apiBase}/api/diagnostics/history?limit=50&offset=0`);
+          data = await res.json();
+        }
+
+        const missions = (data && Array.isArray(data.missions)) ? data.missions : [];
+        if (companionMissionsCountBadge) {
+          companionMissionsCountBadge.textContent = `${missions.length} Archived Missions`;
+        }
+
+        if (missions.length === 0) {
+          companionMissionsList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.82rem; text-align: center; padding: 30px;">📭 No missions found in Companion SQLite database yet.<br/><span style="font-size: 0.72rem; color: #94a3b8;">Click <b>"Archive Current Plan"</b> above or sync to your DJI RC 2 to automatically save missions.</span></div>';
+          return;
+        }
+
+        let html = '';
+        missions.forEach((m) => {
+          const dateStr = m.created_at ? new Date(m.created_at).toLocaleString() : 'Unknown date';
+          const pattern = (m.flight_pattern || 'Custom').toUpperCase();
+          const distKm = (typeof m.total_distance === 'number') ? (m.total_distance / 1000).toFixed(2) + ' km' : '0 km';
+          const durMin = (typeof m.estimated_duration === 'number') ? Math.round(m.estimated_duration / 60) + ' min' : '0 min';
+          const waypoints = m.waypoint_count || 0;
+          const alt = m.altitude || 50;
+          const speed = m.speed || 5;
+          const id = m.archive_id || m.uuid || m.id;
+
+          html += `<div class="card glass" style="padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-weight: 700; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px;">${pattern}</span>
+                <strong style="color: var(--text-main); font-size: 0.82rem;">${m.filename || id}</strong>
+              </div>
+              <span style="font-size: 0.7rem; color: var(--text-muted);">${dateStr}</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.72rem; color: var(--text-muted);">
+              <span>📍 <b>${waypoints}</b> waypoints</span>
+              <span>📐 <b>${alt}m</b> alt</span>
+              <span>⚡ <b>${speed}m/s</b></span>
+              <span>📏 <b>${distKm}</b></span>
+              <span>⏱️ <b>${durMin}</b></span>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.05);">
+              <button type="button" class="btn-xs companion-load-mission-btn" data-id="${id}" style="padding: 4px 10px; font-size: 0.7rem; background: #0284c7; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">🎯 Load into Planner</button>
+            </div>
+          </div>`;
+        });
+
+        companionMissionsList.innerHTML = html;
+        companionMissionsList.querySelectorAll('.companion-load-mission-btn').forEach(btn => {
+          btn.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            const id = btn.getAttribute('data-id');
+            if (!id) return;
+            btn.disabled = true;
+            btn.textContent = '⏳ Loading...';
+            try {
+              if (typeof loadCompanionMissionById === 'function') {
+                await loadCompanionMissionById(id);
+              } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.loadCompanionMissionById === 'function') {
+                await ApiClient.loadCompanionMissionById(id);
+              }
+              closeCompanionMissionsModal();
+            } catch (err) {
+              if (typeof showToast === 'function') showToast(`❌ Load failed: ${err.message}`, 'error');
+              btn.disabled = false;
+              btn.textContent = '🎯 Load into Planner';
+            }
+          });
+        });
+      } catch (err) {
+        companionMissionsList.innerHTML = `<div style="color: #f87171; font-size: 0.8rem; text-align: center; padding: 20px;">⚠️ Failed to load missions: ${err.message}</div>`;
+      }
+    }
+
+    if (companionMissionsCloseBtn) {
+      companionMissionsCloseBtn.addEventListener('click', closeCompanionMissionsModal);
+    }
+    if (companionMissionsModal) {
+      companionMissionsModal.addEventListener('click', (e) => {
+        if (e.target === companionMissionsModal) closeCompanionMissionsModal();
+      });
+    }
+    if (companionMissionsRefreshBtn) {
+      companionMissionsRefreshBtn.addEventListener('click', refreshCompanionMissionsModalList);
+    }
+    if (companionMissionsArchiveNowBtn) {
+      companionMissionsArchiveNowBtn.addEventListener('click', async () => {
+        companionMissionsArchiveNowBtn.disabled = true;
+        companionMissionsArchiveNowBtn.textContent = '⏳ Archiving...';
+        try {
+          if (typeof archiveCurrentMissionToCompanionDb === 'function') {
+            await archiveCurrentMissionToCompanionDb();
+          } else if (typeof ApiClient !== 'undefined' && typeof ApiClient.archiveCurrentMissionToCompanionDb === 'function') {
+            await ApiClient.archiveCurrentMissionToCompanionDb();
+          }
+          await refreshCompanionMissionsModalList();
+        } catch (err) {
+          if (typeof showToast === 'function') showToast(`❌ Archival error: ${err.message}`, 'error');
+        } finally {
+          companionMissionsArchiveNowBtn.disabled = false;
+          companionMissionsArchiveNowBtn.textContent = '💾 Archive Current Plan';
+        }
+      });
+    }
+
     const bridgeTileCacheToggle = document.getElementById('bridge-tile-cache-toggle');
     if (bridgeTileCacheToggle) {
       bridgeTileCacheToggle.checked = (typeof isBridgeTileCachingEnabled === 'function') ? isBridgeTileCachingEnabled() : true;

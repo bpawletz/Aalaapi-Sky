@@ -1,3 +1,30 @@
+## [1.251.0] - 2026-11-16
+
+Introduced 1-tap Bonjour (mDNS) auto-discovery for Android tablets and web clients, coupled with explicit SQLite mission database persistence and browsing in the Companion Bridge.
+
+### Added
+
+#### Pilot & Operational Features
+- **1-Tap Bonjour (mDNS) Discovery for Android Tablets & Web (Closes #314)**:
+  - Added a dedicated **Scan via Bonjour** button (`#companion-discover-btn`) inside the Companion Host settings panel (`#companion-host-panel`), scanning local Wi-Fi for active Companion Bridge services (`_aalaapi-sky._tcp.local`) and populating discovered hosts with 1-tap connection.
+  - Enabled native Android Bonjour discovery via `NsdManager` and UDP multicast fallback (`AndroidMdnsDiscovery.kt`), allowing tablets running the native APK or web browsers to find and bind to the host PC automatically without manual IP typing.
+- **Companion SQLite Mission Database Persistence & Vault Modal (Closes #314)**:
+  - Added explicit **Archive to DB** (`#companion-save-db-btn`) and **Browse DB** (`#companion-browse-db-btn`) actions in the Companion Host settings panel.
+  - Added the **Companion Bridge Mission Database** modal (`#companion-missions-modal`) displaying archived missions with flight pattern, waypoints count, altitude, speed, distance, duration, and a 1-click **Load into Planner** action that restores historical missions and geometry directly into the active workspace.
+  - Retained automatic background mission diagnostics archiving during direct DJI RC 2 synchronization (`POST /api/sync`).
+
+#### Under the Hood & Technical Details
+- **Android Native Bridge (`android/app/src/main/java/com/aalaapi/sky/AndroidMdnsDiscovery.kt`, `MainActivity.kt`)**:
+  - Implemented `discoverCompanionBridges(timeoutMs)` leveraging Android's `NsdManager` and UDP multicast query fallback on port 5353.
+  - Exposed `@JavascriptInterface fun discoverCompanionBridges(timeoutMs)` to the WebView container.
+- **Platform Layer (`src/platform/AndroidPlatformAdapter.js`, `src/platform/BasePlatformAdapter.js`, `src/platform/PlatformManager.js`)**:
+  - Added `discoverCompanionBridges(timeoutMs, apiBase)` across platform adapters, implementing native container forwarding, local mDNS proxying via `/api/bridge/discover`, and `aalaapi-sky.local` DNS fallback.
+- **API Client & UI Orchestration (`src/bridge/ApiClient.js`, `src/ui/EventBindings.js`)**:
+  - Added `archiveCurrentMissionToCompanionDb()`, `fetchCompanionMissionHistory()`, and `loadCompanionMissionById()` in `src/bridge/ApiClient.js`.
+  - Wired discovery result rendering, host selection, and mission restore event listeners in `src/ui/EventBindings.js`.
+- **Diagnostics Database Schema (`tools/companion/diagnostics_db.js`, `tools/companion/diagnostics_db.test.js`)**:
+  - Enhanced `DiagnosticsDatabase` to preserve child waypoint arrays in `plan_json` and surface `waypoints[]` directly on retrieved mission records.
+
 ## [1.250.2] - 2026-11-16
 
 ### Fixed

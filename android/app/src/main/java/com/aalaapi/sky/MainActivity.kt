@@ -750,6 +750,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             @JavascriptInterface
+            fun discoverCompanionBridges(timeoutMs: Long): String {
+                return runBlocking {
+                    mdnsDiscovery.discoverCompanionBridges(if (timeoutMs > 0) timeoutMs else 2500L)
+                }
+            }
+
+            @JavascriptInterface
             fun fetchHttp(urlStr: String): String {
                 return runBlocking(Dispatchers.IO) {
                     try {

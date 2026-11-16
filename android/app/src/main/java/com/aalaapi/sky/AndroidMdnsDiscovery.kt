@@ -255,4 +255,140 @@ class AndroidMdnsDiscovery(private val context: Context) {
         bos.write(byteArrayOf(0, 1))  // QCLASS = IN (1)
         return bos.toByteArray()
     }
+
+    /**
+     * Discovers Aalaapi Sky Companion Bridge nodes on local Wi-Fi via Bonjour (mDNS / DNS-SD).
+     * Discovers services registered as _aalaapi-sky._tcp and _http._tcp.
+     */
+    suspend fun discoverCompanionBridges(timeoutMs: Long = 2500): String = withContext(Dispatchers.IO) {
+        val bridgesMap = ConcurrentHashMap<String, JSONObject>()
+
+        val multicastLock = wifiManager?.createMulticastLock("AalaapiCompanionMdnsLock")?.apply {
+            setReferenceCounted(true)
+            try { acquire() } catch (_: Exception) {}
+        }
+
+        try {
+            // 1. Android NsdManager discovery for _aalaapi-sky._tcp
+            val activeListeners = mutableListOf<NsdManager.DiscoveryListener>()
+
+            nsdManager?.let { nsd ->
+                val listener = object : NsdManager.DiscoveryListener {
+                    override fun onDiscoveryStarted(regType: String) {}
+                    override fun onServiceFound(serviceInfo: NsdServiceInfo) {
+                        try {
+                            nsd.resolveService(serviceInfo, object : NsdManager.ResolveListener {
+                                override fun onResolveFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {}
+                                override fun onServiceResolved(resolved: NsdServiceInfo?) {
+                                    resolved?.let { info ->
+                                        val host = info.host?.hostAddress ?: return@let
+                                        val port = if (info.port > 0) info.port else 8765
+                                        val name = info.serviceName ?: "Aalaapi Sky Drone Bridge"
+                                        val key = "$host:$port"
+
+                                        val txtMap = JSONObject()
+                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                                            try {
+                                                info.attributes?.forEach { (k, v) ->
+                                                    txtMap.put(k, if (v != null) String(v, Charsets.UTF_8) else "")
+                                                }
+                                            } catch (_: Exception) {}
+                                        }
+
+                                        val item = JSONObject().apply {
+                                            put("name", name)
+                                            put("host", host)
+                                            put("address", host)
+                                            put("port", port)
+                                            put("httpPort", port)
+                                            put("httpsPort", txtMap.optString("httpsPort", "8766"))
+                                            put("version", txtMap.optString("version", ""))
+                                            put("txt", txtMap)
+                                            put("url", "http://$host:$port")
+                                        }
+                                        bridgesMap[key] = item
+                                    }
+                                }
+                            })
+                        } catch (_: Exception) {}
+                    }
+                    override fun onServiceLost(serviceInfo: NsdServiceInfo) {}
+                    override fun onDiscoveryStopped(serviceType: String) {}
+                    override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {}
+                    override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {}
+                }
+                try {
+                    nsd.discoverServices("_aalaapi-sky._tcp", NsdManager.PROTOCOL_DNS_SD, listener)
+                    activeListeners.add(listener)
+                } catch (_: Exception) {}
+            }
+
+            // 2. Direct UDP mDNS Query fallback for _aalaapi-sky._tcp.local
+            runUdpCompanionQuery(bridgesMap, timeoutMs)
+
+            // Stop NsdManager discovery listeners
+            for (listener in activeListeners) {
+                try { nsdManager?.stopServiceDiscovery(listener) } catch (_: Exception) {}
+            }
+        } finally {
+            try {
+                if (multicastLock?.isHeld == true) multicastLock.release()
+            } catch (_: Exception) {}
+        }
+
+        val bridgesArray = JSONArray()
+        bridgesMap.values.forEach { bridgesArray.put(it) }
+
+        val result = JSONObject().apply {
+            put("success", true)
+            put("count", bridgesArray.length())
+            put("bridges", bridgesArray)
+        }
+        result.toString()
+    }
+
+    private fun runUdpCompanionQuery(bridgesMap: ConcurrentHashMap<String, JSONObject>, timeoutMs: Long) {
+        var socket: DatagramSocket? = null
+        try {
+            socket = DatagramSocket()
+            socket.soTimeout = (timeoutMs / 2).toInt().coerceAtLeast(600)
+
+            val queryPacket = buildMdnsQueryPacket("_aalaapi-sky._tcp.local")
+            val destGroup = InetAddress.getByName("224.0.0.251")
+            val packet = DatagramPacket(queryPacket, queryPacket.size, destGroup, 5353)
+            socket.send(packet)
+
+            val buf = ByteArray(2048)
+            val startTime = System.currentTimeMillis()
+            while (System.currentTimeMillis() - startTime < timeoutMs) {
+                try {
+                    val resp = DatagramPacket(buf, buf.size)
+                    socket.receive(resp)
+                    val senderIp = resp.address.hostAddress ?: continue
+                    val text = String(buf, 0, resp.length, Charsets.ISO_8859_1)
+
+                    if (text.contains("aalaapi", ignoreCase = true) || text.contains("sky", ignoreCase = true) || text.contains("8765")) {
+                        val key = "$senderIp:8765"
+                        if (!bridgesMap.containsKey(key)) {
+                            bridgesMap[key] = JSONObject().apply {
+                                put("name", "Aalaapi Sky Drone Bridge ($senderIp)")
+                                put("host", senderIp)
+                                put("address", senderIp)
+                                put("port", 8765)
+                                put("httpPort", 8765)
+                                put("httpsPort", 8766)
+                                put("url", "http://$senderIp:8765")
+                            }
+                        }
+                    }
+                } catch (_: Exception) {
+                    break // Timeout reached
+                }
+            }
+        } catch (_: Exception) {
+            // Ignore UDP socket errors
+        } finally {
+            try { socket?.close() } catch (_: Exception) {}
+        }
+    }
 }

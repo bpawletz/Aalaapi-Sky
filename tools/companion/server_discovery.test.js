@@ -95,3 +95,29 @@ test('server_discovery: GET /api/status includes mdns status payload', async () 
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test('server_discovery: GET /api/bridge/discover executes mDNS companion discovery without crashing', async () => {
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const testPort = server.address().port;
+
+  try {
+    const data = await new Promise((resolve, reject) => {
+      const req = http.get({
+        hostname: '127.0.0.1',
+        port: testPort,
+        path: '/api/bridge/discover?timeout=50'
+      }, (res) => {
+        assert.strictEqual(res.statusCode, 200);
+        let body = '';
+        res.on('data', chunk => { body += chunk; });
+        res.on('end', () => resolve(JSON.parse(body)));
+      });
+      req.on('error', reject);
+    });
+
+    assert.strictEqual(data.success, true);
+    assert.ok(Array.isArray(data.bridges));
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
