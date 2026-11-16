@@ -1152,13 +1152,22 @@ function saveActiveLayerFromUi(targetLayer) {
   if (cineStartAltEl) layer.cinematicStartAlt = parseFloat(cineStartAltEl.value) || 10;
   if (cineEndAltEl) layer.cinematicEndAlt = parseFloat(cineEndAltEl.value) || 40;
 
-  // Boundary & Fiducial Layer names
-  const boundaryNameEl = document.getElementById('boundary-layer-name');
-  if (boundaryNameEl && boundaryNameEl.value) layer.name = boundaryNameEl.value;
-  const fiducialNameEl = document.getElementById('fiducial-layer-name');
-  if (fiducialNameEl && fiducialNameEl.value) layer.name = fiducialNameEl.value;
-  const fiducialRingsEl = document.getElementById('fiducial-show-range-rings');
-  if (fiducialRingsEl) layer.showRangeRings = !!fiducialRingsEl.checked;
+  // Boundary & Fiducial Layer names (only apply to their respective drawing layer types)
+  if (layer.pattern === 'boundary-polygon') {
+    const boundaryNameEl = document.getElementById('boundary-layer-name');
+    if (boundaryNameEl && boundaryNameEl.value && boundaryNameEl.value !== 'Fiducial / GCPs') {
+      layer.name = boundaryNameEl.value;
+    } else if (!layer.name || layer.name === 'Fiducial / GCPs') {
+      layer.name = 'Boundary / Parcel';
+    }
+  } else if (layer.pattern === 'fiducial-markers' || layer.isFiducialLayer) {
+    const fiducialNameEl = document.getElementById('fiducial-layer-name');
+    if (fiducialNameEl && fiducialNameEl.value) layer.name = fiducialNameEl.value;
+    const fiducialRingsEl = document.getElementById('fiducial-show-range-rings');
+    if (fiducialRingsEl) layer.showRangeRings = !!fiducialRingsEl.checked;
+  } else if (layer.name === 'Fiducial / GCPs' || layer.name === 'Boundary / Parcel') {
+    layer.name = getPatternDisplayName(layer.pattern);
+  }
 
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;

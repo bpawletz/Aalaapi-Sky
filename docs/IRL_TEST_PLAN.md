@@ -3,9 +3,9 @@
 > [!CAUTION]
 > **LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER ("THE LEGALIZE"): An "IRL Verified" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.**
 
-**Document & Tracker Version:** `v1.250.1` | **WPML Compiler Hash:** `eb2417f42275` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
+**Document & Tracker Version:** `v1.250.2` | **WPML Compiler Hash:** `eb2417f42275` | **Master GitHub Tracking Issue:** [#202](https://github.com/bpawletz/Aalaapi-Sky/issues/202)
 
-**Summary Progress:** **8 / 26** Patterns Verified | **1** Needs Re-Test | **17** Untested | **0** Failed
+**Summary Progress:** **10 / 26** Patterns Verified | **0** Needs Re-Test | **16** Untested | **0** Failed
 
 ---
 
@@ -81,7 +81,7 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 | :---: | :--- | :--- | :--- | :---: | :---: | :---: | :--- | :---: |
 | 1 | `single` | **2D Map (Nadir Grid)** | Mapping & 3D | ✅ `VERIFIED` | `2060d0169374` | v1.210.0 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 2 | `double` | **3D Splat (Double Grid)** | Mapping & 3D | ✅ `VERIFIED` | `dd5cae736203` | v1.215.2 | DJI Mini 4 Pro (01.00.0600) | `6/6` |
-| 3 | `target-splat` | **Target Splat (Frustum Grid)** | Mapping & 3D | 🧪 `NEEDS_RETEST` | `ace7a10ba77e` | v1.246.0 | DJI Mini 4 Pro (68) (RC 2 / DJI Fly) | `0/6` |
+| 3 | `target-splat` | **Target Splat (Frustum Grid)** | Mapping & 3D | ✅ `VERIFIED` | `ace7a10ba77e` | v1.250.2 | DJI Mini 4 Pro (68) (RC 2 / DJI Fly) | `6/6` |
 | 4 | `orbit` | **3D Object (Circular Orbit)** | Orbit & Structure | ✅ `VERIFIED` | `64011bf49858` | v1.215.0 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 5 | `multi-orbit` | **3D Object (Multi-Tiered Orbit)** | Orbit & Structure | ✅ `VERIFIED` | `0d54cef3c772` | v1.220.0 | DJI Mini 4 Pro (68) (RC 2 / DJI Fly) | `6/6` |
 | 6 | `tower` | **3D Structure (Tower Audit)** | Orbit & Structure | ✅ `VERIFIED` | `691c76eb56a7` | v1.219.2 | DJI Mini 4 Pro (RC 2 / DJI Fly v1.21.18) | `6/6` |
@@ -98,7 +98,7 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 | 17 | `corridor` | **Corridor Mapping (Multi-Pass Polyline)** | Linear & Route | ✅ `VERIFIED` | `4ff8bc9f909e` | v1.215.1 | DJI Mini 4 Pro (RC 2 / DJI Fly) | `6/6` |
 | 18 | `exclusion-box` | **Exclusion Zone (Rectangular Box)** | Safety & GCP | ⬜ `UNTESTED` | `912ee3191092` | — | — | `0/6` |
 | 19 | `exclusion-freeform` | **Exclusion Zone (Freeform Polygon)** | Safety & GCP | ⬜ `UNTESTED` | `3950f2668594` | — | — | `0/6` |
-| 20 | `boundary-polygon` | **Boundary / Parcel (Drawing Layer)** | Safety & GCP | ⬜ `UNTESTED` | `49ed96c0dfa0` | — | — | `0/6` |
+| 20 | `boundary-polygon` | **Boundary / Parcel (Drawing Layer)** | Safety & GCP | ✅ `VERIFIED` | `49ed96c0dfa0` | v1.250.2 | DJI Mini 4 Pro (68) (RC 2 / DJI Fly) | `6/6` |
 | 21 | `fiducial-markers` | **Fiducial / GCPs (ArUco / AprilTag Survey)** | Safety & GCP | ⬜ `UNTESTED` | `66a0acd7ab2e` | — | — | `0/6` |
 | 22 | `dome-shell` | **Hemispherical Dome (3D Geodesic Shell)** | Orbit & Structure | ⬜ `UNTESTED` | `1a6a09ce38be` | — | — | `0/6` |
 | 23 | `polygon-grid` | **Polygon Area Grid (Custom Survey)** | Mapping & 3D | ⬜ `UNTESTED` | `867bcbae0dc0` | — | — | `0/6` |
@@ -137,15 +137,15 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 - **Edge-Case & Safety Watchout:** Watch the Pass 1 -> Pass 2 corner transition: aircraft must rotate 90° and settle before starting perpendicular pass.
 
 #### `target-splat` — Target Splat (Frustum Grid)
-- **Current Status:** 🧪 `NEEDS_RETEST` | **Generator Hash:** `ace7a10ba77e` (`src/3d/GeometryBuilder.js` -> `generateTargetSplatCoordinates`)
+- **Current Status:** ✅ `VERIFIED` | **Generator Hash:** `ace7a10ba77e` (`src/3d/GeometryBuilder.js` -> `generateTargetSplatCoordinates`)
 - **Recommended Safe Field Parameters:** Origin `[41.3215, -88.9950]`, `altitudeM: 45`, `widthM: 80`, `heightM: 80`, `targetRadiusM: 20`, `targetHeightM: 8`, `speedMps: 4.5`, `gimbalPitchDeg: -45`, `captureMode: continuous`, `headingMode: followWayline`, `pathMode: straight`, `framingMode: balanced`
 - **6-Phase Field Verification Checklist:**
-  - [ ] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export Target Splat mission (`balanced` framing) and verify pruned outer lines and lead-in offsets on RC 2.
-  - [ ] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Confirm climb to 45m AGL and entry at optical lead-in standoff distance.
-  - [ ] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify survey lines terminate once camera frustum passes the target volume (no wasted trailing flight lines).
-  - [ ] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Confirm -45° oblique gimbal pitch keeps the central 20m radius target framed during approach legs.
-  - [ ] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Verify photos trigger only while the 3D frustum intersects the target cylinder/polygon.
-  - [ ] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: If optional Perimeter Orbit Pass is enabled, verify clean transition to perimeter ring before RTH.
+  - [x] **Phase 1: KMZ / WPML Export & RC 2 Import**: Export Target Splat mission (`balanced` framing) and verify pruned outer lines and lead-in offsets on RC 2.
+  - [x] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Confirm climb to 45m AGL and entry at optical lead-in standoff distance.
+  - [x] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Verify survey lines terminate once camera frustum passes the target volume (no wasted trailing flight lines).
+  - [x] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Confirm -45° oblique gimbal pitch keeps the central 20m radius target framed during approach legs.
+  - [x] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Verify photos trigger only while the 3D frustum intersects the target cylinder/polygon.
+  - [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: If optional Perimeter Orbit Pass is enabled, verify clean transition to perimeter ring before RTH.
 - **Edge-Case & Safety Watchout:** Verify lead-up auto-pruning does not clip the near edge of the target roof at -45° pitch.
 
 #### `grid-orbit-combo` — 2D + 3D Hybrid (Grid + Orbit Combo)
@@ -397,15 +397,15 @@ npm run irl:check -- double --drone "DJI Mini 4 Pro" --fw "01.00.0600" --pilot "
 - **Edge-Case & Safety Watchout:** Test concave polygon indentations to verify segment-polygon collision check (`isSegmentCollidingWithPolygon`) prevents shortcutting across restricted airspace.
 
 #### `boundary-polygon` — Boundary / Parcel (Drawing Layer)
-- **Current Status:** ⬜ `UNTESTED` | **Generator Hash:** `49ed96c0dfa0` (`src/layers/LayerManager.js` -> `compileMissionGeometry`)
+- **Current Status:** ✅ `VERIFIED` | **Generator Hash:** `49ed96c0dfa0` (`src/layers/LayerManager.js` -> `compileMissionGeometry`)
 - **Recommended Safe Field Parameters:** Origin `[41.3215, -88.9950]`, `verticesCount: 4`, `elevationOffsetM: 0`
 - **6-Phase Field Verification Checklist:**
-  - [ ] **Phase 1: KMZ / WPML Export & RC 2 Import**: Create a 4-vertex `boundary-polygon` parcel layer alongside an active survey layer; verify the boundary layer itself exports 0 flight waypoints in `waylines.wpml`.
-  - [ ] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Verify acreage (`ac` / `ha`) and perimeter (`m` / `ft`) readouts match geodetic ground truth.
-  - [ ] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Click "Sync from Boundary" on a `polygon-grid` layer and verify exact vertex transfer.
-  - [ ] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Open 3D View and verify the parcel boundary renders as a ground-draped 3D ribbon.
-  - [ ] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Open Photo Inspector on a captured survey photo and verify the parcel boundary projects accurately onto the image plane.
-  - [ ] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Verify Undo/Redo and project JSON export/import preserve all boundary vertices and styling.
+  - [x] **Phase 1: KMZ / WPML Export & RC 2 Import**: Create a 4-vertex `boundary-polygon` parcel layer alongside an active survey layer; verify the boundary layer itself exports 0 flight waypoints in `waylines.wpml`.
+  - [x] **Phase 2: Takeoff, Entry Transition & Target AGL Stabilization**: Verify acreage (`ac` / `ha`) and perimeter (`m` / `ft`) readouts match geodetic ground truth.
+  - [x] **Phase 3: 3D Path Geometry, Turn Mode & Speed Adherence**: Click "Sync from Boundary" on a `polygon-grid` layer and verify exact vertex transfer.
+  - [x] **Phase 4: Aircraft Heading / Yaw Lock & Gimbal Pitch Tracking**: Open 3D View and verify the parcel boundary renders as a ground-draped 3D ribbon.
+  - [x] **Phase 5: Camera Shutter / Interval / Action Group Execution**: Open Photo Inspector on a captured survey photo and verify the parcel boundary projects accurately onto the image plane.
+  - [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**: Verify Undo/Redo and project JSON export/import preserve all boundary vertices and styling.
 - **Edge-Case & Safety Watchout:** Boundary layers are non-flying spatial reference layers; ensure they never inject phantom placemarks into exported WPML.
 
 #### `fiducial-markers` — Fiducial / GCPs (ArUco / AprilTag Survey)

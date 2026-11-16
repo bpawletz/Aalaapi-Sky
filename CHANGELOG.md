@@ -1,3 +1,21 @@
+## [1.250.2] - 2026-11-16
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Multi-Layer Name Preservation & Non-Flying Layer Attribution (Closes #313)**:
+  - Fixed a bug where selecting or saving any layer while `#fiducial-layer-name` or `#boundary-layer-name` had default values in the DOM could overwrite flying layer names (e.g., `target-splat` or `boundary-polygon`) to `"Fiducial / GCPs"`.
+  - Fixed primary flight pattern resolution in mission exports, Flight Diagnostics AI Context (`KMZInspector.generateAntigravityPrompt`), and the IRL Verification modal (`IrlVerifier`) so that when a non-flying modifier/drawing layer (`boundary-polygon`, `fiducial-markers`, `exclusion-box`, `exclusion-freeform`) is active alongside an enabled flying layer, the flying layer's pattern is accurately reported as the mission's primary pattern and non-flying layers report `0` waypoints.
+- **IRL Field Flight Verification (`target-splat` & `boundary-polygon`, Refs #202)**:
+  - Recorded 6/6 phase IRL field verification from `FlightRecord_2026-11-16_[16-38-27].txt` (93/93 waypoints reached, 0.37m RMS XTE, 0.06m RMS altitude variance, 0.9° mean pitch error, 0.5° mean yaw error, 124/72 photos, 40% ending battery) for `target-splat` (re-verified at hash `ace7a10ba77e` with v1.247.0 nadir roof bridge `-60°..-85°` and perimeter orbit at 20.2m AGL) and `boundary-polygon` (hash `49ed96c0dfa0`).
+
+#### Under the Hood & Technical Details
+- **Layer Name Guard (`src/layers/LayerManager.js`)**:
+  - Guarded `#boundary-layer-name` and `#fiducial-layer-name` reads in `saveActiveLayerFromUi()` so they only apply to their respective layer patterns (`boundary-polygon` and `fiducial-markers`), and restored pattern display names if a flying layer previously inherited a stale default drawing label.
+- **Diagnostics Serialization & AI Context (`src/export/Packager.js`, `src/3d/DigitalTwin.js`, `src/qa/IrlVerifier.js`)**:
+  - Added `isNonFlyingModifierLayer()`, `resolvePrimaryFlightPattern()`, and `serializeLayerSummaryForDiagnostics()` in `src/export/Packager.js`, preserving `polygonVertices`, `boundaryPolygon`, and `fiducialMarkersCount` on serialized `layers[]` entries and forcing `waypointCount: 0` on non-flying layers.
+  - Updated `KMZInspector.generateAntigravityPrompt()` in `src/3d/DigitalTwin.js` to never assign `activeWps` to non-flying layers, resolve `boundaryPolygon` / `polygonVertices` from `layer` or `mission.parcels`, and match waypoints by `wp.layerId` or flying layer fallback.
+
 ## [1.250.1] - 2026-11-16
 
 ### Added

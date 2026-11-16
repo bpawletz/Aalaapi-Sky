@@ -447,7 +447,10 @@ const IrlVerifier = {
         if (typeof getActiveMissionWaypoints === 'function') {
           const activeWps = getActiveMissionWaypoints();
           if (activeWps && activeWps.length > 0 && activeWps !== this.currentPlannedWaypoints) {
-            const activePat = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || 'single';
+            const rawActivePat = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || 'single';
+            const activePat = (typeof resolvePrimaryFlightPattern === 'function')
+              ? resolvePrimaryFlightPattern(null)
+              : rawActivePat;
             this.planCandidates.push({
               id: 'active-workspace',
               label: `\uD83D\uDDFA\uFE0F Active Workspace (${activeWps.length} WPs • ${activePat})`,
@@ -486,7 +489,10 @@ const IrlVerifier = {
       }
     }
 
-    const activePattern = options.patternId || (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : 'double') || 'double';
+    const fallbackActivePat = (typeof resolvePrimaryFlightPattern === 'function')
+      ? resolvePrimaryFlightPattern(null)
+      : ((typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : 'double') || 'double');
+    const activePattern = options.patternId || fallbackActivePat;
     if (patSelect && activePattern) {
       patSelect.value = activePattern;
     }

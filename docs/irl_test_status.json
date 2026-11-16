@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-16T13:55:10.581Z",
-  "currentAppVersion": "1.250.1",
+  "lastUpdated": "2026-11-16T22:21:54.841Z",
+  "currentAppVersion": "1.250.2",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "eb2417f42275",
@@ -185,15 +185,15 @@
         "generateTargetSplatCoordinates"
       ],
       "codeHash": "ace7a10ba77e",
-      "verifiedCodeHash": "0ec37c04a3ff",
-      "status": "NEEDS_RETEST",
+      "verifiedCodeHash": "ace7a10ba77e",
+      "status": "VERIFIED",
       "lastModifiedVersion": "1.247.0",
-      "lastTestedVersion": "1.246.0",
-      "lastTestedDate": "2026-11-15T19:56:56Z",
-      "testedBy": "RPIC Field QA (Verified FlightRecord_2026-11-15_[14-56-56].txt)",
+      "lastTestedVersion": "1.250.2",
+      "lastTestedDate": "2026-11-16T22:21:45.026Z",
+      "testedBy": "RPIC Field QA (FlightRecord_2026-11-16_[16-38-27].txt)",
       "droneModel": "DJI Mini 4 Pro (68)",
       "firmware": "RC 2 / DJI Fly",
-      "notes": "Auto-flagged NEEDS_RETEST: Generator code hash changed (0ec37c04a3ff -> ace7a10ba77e) in v1.247.0.",
+      "notes": "Re-verified v1.247.0 nadir roof bridge (-60 to -85 deg) + perimeter orbit (20.2m AGL / -55 deg) via FlightRecord_2026-11-16_[16-38-27].txt: 93/93 WPs (100%), RMS XTE=0.37m (Max 1.51m at WP 6), AltErr=0.06m (Max 0.2m at WP 77), Mean Pitch Err=0.9 deg (Max 14 deg at WP 76), Mean Yaw Err=0.5 deg (Max 7.1 deg at WP 12), 124/72 photos (172%), Exit dH=0.12m, Batt End=40%.",
       "testParams": {
         "centerCoords": [
           41.3215,
@@ -212,12 +212,12 @@
         "framingMode": "balanced"
       },
       "checklist": {
-        "kmz_import": false,
-        "entry_altitude": false,
-        "geometry_path": false,
-        "heading_gimbal": false,
-        "capture_trigger": false,
-        "exit_rth": false
+        "kmz_import": true,
+        "entry_altitude": true,
+        "geometry_path": true,
+        "heading_gimbal": true,
+        "capture_trigger": true,
+        "exit_rth": true
       },
       "lastTelemetryMetrics": {
         "waypointCount": 86,
@@ -238,6 +238,25 @@
         "flightLog": "FlightRecord_2026-11-15_[14-56-56].txt"
       },
       "history": [
+        {
+          "timestamp": "2026-11-16T22:21:45.026Z",
+          "version": "1.250.2",
+          "status": "VERIFIED",
+          "codeHash": "ace7a10ba77e",
+          "testedBy": "RPIC Field QA (FlightRecord_2026-11-16_[16-38-27].txt)",
+          "droneModel": "DJI Mini 4 Pro (68)",
+          "firmware": "RC 2 / DJI Fly",
+          "notes": "Re-verified v1.247.0 nadir roof bridge (-60 to -85 deg) + perimeter orbit (20.2m AGL / -55 deg) via FlightRecord_2026-11-16_[16-38-27].txt: 93/93 WPs (100%), RMS XTE=0.37m (Max 1.51m at WP 6), AltErr=0.06m (Max 0.2m at WP 77), Mean Pitch Err=0.9 deg (Max 14 deg at WP 76), Mean Yaw Err=0.5 deg (Max 7.1 deg at WP 12), 124/72 photos (172%), Exit dH=0.12m, Batt End=40%.",
+          "checklist": {
+            "kmz_import": true,
+            "entry_altitude": true,
+            "geometry_path": true,
+            "heading_gimbal": true,
+            "capture_trigger": true,
+            "exit_rth": true
+          },
+          "telemetryMetrics": null
+        },
         {
           "timestamp": "2026-11-15T19:56:56Z",
           "version": "1.246.0",
@@ -1230,15 +1249,15 @@
         "compileMissionGeometry"
       ],
       "codeHash": "49ed96c0dfa0",
-      "verifiedCodeHash": null,
-      "status": "UNTESTED",
+      "verifiedCodeHash": "49ed96c0dfa0",
+      "status": "VERIFIED",
       "lastModifiedVersion": "1.209.0",
-      "lastTestedVersion": null,
-      "lastTestedDate": null,
-      "testedBy": null,
-      "droneModel": null,
-      "firmware": null,
-      "notes": "",
+      "lastTestedVersion": "1.250.2",
+      "lastTestedDate": "2026-11-16T22:21:54.841Z",
+      "testedBy": "RPIC Field QA (FlightRecord_2026-11-16_[16-38-27].txt)",
+      "droneModel": "DJI Mini 4 Pro (68)",
+      "firmware": "RC 2 / DJI Fly",
+      "notes": "Verified alongside target-splat mission via FlightRecord_2026-11-16_[16-38-27].txt: 0 phantom placemarks injected into waylines.wpml; full 6/6 phase mission execution (93/93 WPs, RMS XTE=0.37m, Batt End=40%).",
       "testParams": {
         "centerCoords": [
           41.3215,
@@ -1248,15 +1267,35 @@
         "elevationOffsetM": 0
       },
       "checklist": {
-        "kmz_import": false,
-        "entry_altitude": false,
-        "geometry_path": false,
-        "heading_gimbal": false,
-        "capture_trigger": false,
-        "exit_rth": false
+        "kmz_import": true,
+        "entry_altitude": true,
+        "geometry_path": true,
+        "heading_gimbal": true,
+        "capture_trigger": true,
+        "exit_rth": true
       },
       "lastTelemetryMetrics": null,
-      "history": []
+      "history": [
+        {
+          "timestamp": "2026-11-16T22:21:54.841Z",
+          "version": "1.250.2",
+          "status": "VERIFIED",
+          "codeHash": "49ed96c0dfa0",
+          "testedBy": "RPIC Field QA (FlightRecord_2026-11-16_[16-38-27].txt)",
+          "droneModel": "DJI Mini 4 Pro (68)",
+          "firmware": "RC 2 / DJI Fly",
+          "notes": "Verified alongside target-splat mission via FlightRecord_2026-11-16_[16-38-27].txt: 0 phantom placemarks injected into waylines.wpml; full 6/6 phase mission execution (93/93 WPs, RMS XTE=0.37m, Batt End=40%).",
+          "checklist": {
+            "kmz_import": true,
+            "entry_altitude": true,
+            "geometry_path": true,
+            "heading_gimbal": true,
+            "capture_trigger": true,
+            "exit_rth": true
+          },
+          "telemetryMetrics": null
+        }
+      ]
     },
     "fiducial-markers": {
       "id": "fiducial-markers",

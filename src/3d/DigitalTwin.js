@@ -2008,14 +2008,29 @@ const FlightDiagnostics = {
       });
     }, 600);
     const planned = this.plannedWaypoints || (typeof getActiveMissionWaypoints === 'function' ? getActiveMissionWaypoints() : []);
-    const activePattern = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || 'single';
+    const rawActivePattern = (typeof getActiveLayer === 'function' ? getActiveLayer()?.pattern : null) || 'single';
+    const activePattern = (typeof resolvePrimaryFlightPattern === 'function')
+      ? resolvePrimaryFlightPattern(null)
+      : rawActivePattern;
+
+    const resolveMissionPrimaryPattern = (missionObj, fallbackPat) => {
+      const mLayers = (missionObj && Array.isArray(missionObj.layers))
+        ? missionObj.layers
+        : ((missionObj && missionObj.plan && Array.isArray(missionObj.plan.layers)) ? missionObj.plan.layers : null);
+      const rawPat = (missionObj && missionObj.flight_pattern) || (missionObj && missionObj.plan && missionObj.plan.mission && missionObj.plan.mission.pattern) || fallbackPat;
+      if (typeof isNonFlyingModifierLayer === 'function' && isNonFlyingModifierLayer(rawPat) && Array.isArray(mLayers) && mLayers.length > 0) {
+        const firstFlying = mLayers.find(l => l && l.enabled !== false && !isNonFlyingModifierLayer(l));
+        if (firstFlying && firstFlying.pattern) return firstFlying.pattern;
+      }
+      return rawPat;
+    };
 
     const planCandidates = [];
 
     // 1. Matched / Correlated Mission Plan
     if (this.currentLoadedMission && this.currentLoadedMission.plan && Array.isArray(this.currentLoadedMission.plan.waypoints)) {
       const missionWps = this.currentLoadedMission.plan.waypoints;
-      const mPattern = this.currentLoadedMission.flight_pattern || activePattern;
+      const mPattern = resolveMissionPrimaryPattern(this.currentLoadedMission, activePattern);
       planCandidates.push({
         id: 'matched-mission',
         label: '\uD83C\uDFAF Matched DB Mission (' + missionWps.length + ' WPs \u2022 ' + mPattern + ')',
@@ -2052,11 +2067,12 @@ const FlightDiagnostics = {
           const mKey = 'db:' + (m.archive_id || m.id || m.uuid);
           if (!planCandidates.some(c => c.id === mKey)) {
             const mDate = (m.created_at || '').replace('T', ' ').replace(/\..+/, '');
+            const resolvedMPat = resolveMissionPrimaryPattern(m, 'single');
             planCandidates.push({
               id: mKey,
-              label: '\uD83D\uDCBE ' + (m.name || m.filename || m.uuid || 'Mission') + ' (' + mWaypoints.length + ' WPs \u2022 ' + (m.flight_pattern || 'Grid') + ' \u2022 ' + mDate + ')',
+              label: '\uD83D\uDCBE ' + (m.name || m.filename || m.uuid || 'Mission') + ' (' + mWaypoints.length + ' WPs \u2022 ' + (resolvedMPat || 'Grid') + ' \u2022 ' + mDate + ')',
               waypoints: mWaypoints,
-              pattern: m.flight_pattern || 'single'
+              pattern: resolvedMPat || 'single'
             });
           }
         }
@@ -2064,10 +2080,7 @@ const FlightDiagnostics = {
     }
 
     if (typeof IrlVerifier !== 'undefined' && typeof IrlVerifier.openIrlVerificationModal === 'function') {
-      const defaultPattern = (this.currentLoadedMission && this.currentLoadedMission.flight_pattern)
-        || this.currentMatchedMissionPattern
-        || (planCandidates[0] && planCandidates[0].pattern)
-        || activePattern;
+      const defaultPattern = resolveMissionPrimaryPattern(this.currentLoadedMission, this.currentMatchedMissionPattern || (planCandidates[0] && planCandidates[0].pattern) || activePattern);
       IrlVerifier.openIrlVerificationModal(this.selectedFlightId, planned, this.telemetryData, {
         planCandidates,
         patternId: defaultPattern
@@ -7167,11 +7180,32 @@ const KMZInspector = {
       };
     }
 
+    const isNonFlyingLayerObj = (l) => Boolean(
+      l && (
+        l.isExclusionZone ||
+        l.isDrawingLayer ||
+        l.isFiducialLayer ||
+        l.pattern === 'exclusion-box' ||
+        l.pattern === 'exclusion-freeform' ||
+        l.pattern === 'boundary-polygon' ||
+        l.pattern === 'fiducial-markers'
+      )
+    );
+    const enabledFlyingLayers = allLayers.filter(l => l && l.enabled !== false && !isNonFlyingLayerObj(l));
+    if ((isNonFlyingLayerObj({ pattern }) || options.mission) && enabledFlyingLayers.length > 0) {
+      const mPat = options.mission?.flight_pattern || options.mission?.plan?.mission?.pattern;
+      const primaryFlying = (mPat && !isNonFlyingLayerObj({ pattern: mPat })) ? { pattern: mPat } : enabledFlyingLayers[0];
+      if (primaryFlying.pattern) pattern = primaryFlying.pattern;
+      if (primaryFlying.altitude !== undefined) alt = String(primaryFlying.altitude);
+      if (primaryFlying.speed !== undefined) speed = String(primaryFlying.speed);
+      if (primaryFlying.gimbalPitch !== undefined) pitch = String(primaryFlying.gimbalPitch);
+    }
+
     // Calculate total waypoints across all layers
     let totalWaypointsCount = 0;
     if (allLayers.length > 0) {
       allLayers.forEach(l => {
-        if (l.enabled !== false) {
+        if (l.enabled !== false && !isNonFlyingLayerObj(l)) {
           const count = (l.waypoints && l.waypoints.length) || (l.freeformWaypoints && l.freeformWaypoints.length) || 0;
           totalWaypointsCount += count;
         }
@@ -7226,6 +7260,10 @@ const KMZInspector = {
       prompt += `\n**Multi-Layer Mission Stack (${allLayers.length} Layers):**\n`;
       allLayers.forEach((layer, idx) => {
         const isEnabled = layer.enabled !== false;
+        const isNonFlying = isNonFlyingLayerObj(layer);
+        const liveMatchLayer = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers))
+          ? flightLayers.find(fl => fl && fl.id === layer.id)
+          : null;
         const lAlt = layer.altitude ?? alt;
         const lSpeed = layer.speed ?? speed;
         const lPitch = layer.gimbalPitch ?? pitch;
@@ -7236,22 +7274,34 @@ const KMZInspector = {
         const lHover = layer.hoverTime || 0;
 
         let layerWps = [];
-        if (Array.isArray(layer.waypoints) && layer.waypoints.length > 0) {
-          layerWps = layer.waypoints;
-        } else if (Array.isArray(layer.freeformWaypoints) && layer.freeformWaypoints.length > 0) {
-          layerWps = layer.freeformWaypoints;
-        } else if ((allLayers.length === 1 || layer.id === (typeof activeLayerId !== 'undefined' ? activeLayerId : null)) && activeWps.length > 0) {
-          layerWps = activeWps;
-        } else if (typeof generateLayerWaypoints === 'function' && !layer.isExclusionZone && !layer.isDrawingLayer && layer.pattern !== 'exclusion-box' && layer.pattern !== 'exclusion-freeform' && layer.pattern !== 'boundary-polygon' && layer.pattern !== 'fiducial-markers') {
-          try {
-            const res = generateLayerWaypoints(layer, layer.centerLat ?? refLat, layer.centerLon ?? refLon);
-            layerWps = res.waypoints || [];
-          } catch (_) {
-            layerWps = [];
+        if (!isNonFlying) {
+          if (Array.isArray(layer.waypoints) && layer.waypoints.length > 0) {
+            layerWps = layer.waypoints;
+          } else if (Array.isArray(layer.freeformWaypoints) && layer.freeformWaypoints.length > 0) {
+            layerWps = layer.freeformWaypoints;
+          } else if (activeWps.length > 0 && activeWps.some(wp => wp && wp.layerId && wp.layerId === layer.id)) {
+            layerWps = activeWps.filter(wp => wp && wp.layerId === layer.id);
+          } else if ((enabledFlyingLayers.length === 1 || allLayers.length === 1 || layer.id === (typeof activeLayerId !== 'undefined' ? activeLayerId : null)) && activeWps.length > 0) {
+            layerWps = activeWps;
+          } else if (typeof generateLayerWaypoints === 'function') {
+            try {
+              const res = generateLayerWaypoints(liveMatchLayer || layer, layer.centerLat ?? refLat, layer.centerLon ?? refLon);
+              layerWps = res.waypoints || [];
+            } catch (_) {
+              layerWps = [];
+            }
           }
         }
 
-        prompt += `\n#### Layer ${idx + 1}: ${layer.name || 'Layer ' + (idx + 1)} (\`${layer.pattern || 'default'}\`)\n`;
+        let displayLayerName = layer.name || ('Layer ' + (idx + 1));
+        if ((displayLayerName === 'Fiducial / GCPs' && layer.pattern !== 'fiducial-markers' && !layer.isFiducialLayer) ||
+            (displayLayerName === 'Boundary / Parcel' && layer.pattern !== 'boundary-polygon')) {
+          displayLayerName = (typeof getPatternDisplayName === 'function' && layer.pattern)
+            ? getPatternDisplayName(layer.pattern)
+            : (layer.pattern || ('Layer ' + (idx + 1)));
+        }
+
+        prompt += `\n#### Layer ${idx + 1}: ${displayLayerName} (\`${layer.pattern || 'default'}\`)\n`;
         prompt += `- **Status:** ${isEnabled ? '✅ Enabled' : '⏸️ Disabled'} | **ID:** \`${layer.id || 'layer-' + idx}\`\n`;
         prompt += `- **Dynamics:** Alt: ${lAlt}m | Speed: ${lSpeed}m/s | Pitch: ${lPitch}° | Heading: ${lHeading} | Turn: ${lPath} | Capture: ${lCapture} | Zoom: ${lZoom}x | Dwell: ${lHover}s\n`;
 
@@ -7259,13 +7309,21 @@ const KMZInspector = {
         if (layer.pattern === 'double' || layer.pattern === 'single' || layer.pattern === 'smart-oblique') {
           prompt += `- **Grid Properties:** Width: ${layer.gridWidth || 100}m | Height: ${layer.gridHeight || 100}m | Rotation: ${layer.gridRotation || 0}° | Overlap: ${layer.frontOverlap || 80}% front, ${layer.sideOverlap || 75}% side\n`;
         } else if (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform' || layer.isExclusionZone) {
-          prompt += `- **Exclusion Envelope:** Clearance: ${layer.clearanceBuffer || 5}m | Detour: ${layer.detourMode || 'inherit'} | Alt Bounds: [${layer.minAltitude || 0}m, ${layer.maxAltitude || 60}m] | Vertices: ${layer.polygonVertices?.length || 0}\n`;
-        } else if (layer.pattern === 'boundary-polygon' || layer.isDrawingLayer) {
-          prompt += `- **Boundary Polygon:** Vertices: ${layer.boundaryPolygon?.length || layer.polygonVertices?.length || 0}\n`;
-        } else if (layer.pattern === 'tower' || layer.pattern === 'spiral-cylinder') {
-          prompt += `- **Tower Target (Target Splat):** Mode: ${layer.targetMode || 'radius'} | Radius: ${layer.targetRadius || 25}m | Height: ${layer.targetHeight || 8}m | Framing: ${layer.targetFramingMode || 'balanced'} | Culling: ${layer.targetCullingMode || 'smartTrim'}\n`;
+          const exclPools = options?.mission?.exclusionZones || options?.mission?.plan?.exclusionZones || [];
+          const matchedExcl = exclPools.find(z => z.layerId === layer.id) || exclPools[0];
+          const exclVertsCount = layer.polygonVertices?.length || liveMatchLayer?.polygonVertices?.length || matchedExcl?.polygon?.length || 0;
+          prompt += `- **Exclusion Envelope:** Clearance: ${layer.clearanceBuffer || 5}m | Detour: ${layer.detourMode || 'inherit'} | Alt Bounds: [${layer.minAltitude || 0}m, ${layer.maxAltitude || 60}m] | Vertices: ${exclVertsCount}\n`;
+        } else if (layer.pattern === 'boundary-polygon' || (layer.isDrawingLayer && layer.pattern !== 'fiducial-markers' && !layer.isFiducialLayer)) {
+          const parcelPools = options?.mission?.parcels || options?.mission?.plan?.parcels || [];
+          const matchedParcel = parcelPools.find(p => p.layerId === layer.id) || parcelPools[0];
+          const boundaryVertsCount = layer.boundaryPolygon?.length || layer.polygonVertices?.length || liveMatchLayer?.boundaryPolygon?.length || liveMatchLayer?.polygonVertices?.length || matchedParcel?.polygon?.length || 0;
+          prompt += `- **Boundary Polygon:** Vertices: ${boundaryVertsCount}\n`;
+        } else if (layer.pattern === 'target-splat' || layer.pattern === 'tower' || layer.pattern === 'spiral-cylinder') {
+          prompt += `- **Tower Target (Target Splat):** Mode: ${layer.targetMode || liveMatchLayer?.targetMode || 'radius'} | Radius: ${layer.targetRadius || liveMatchLayer?.targetRadius || 25}m | Height: ${layer.targetHeight || liveMatchLayer?.targetHeight || 8}m | Framing: ${layer.targetFramingMode || liveMatchLayer?.targetFramingMode || 'balanced'} | Culling: ${layer.targetCullingMode || liveMatchLayer?.targetCullingMode || 'smartTrim'}\n`;
         } else if (layer.pattern === 'fiducial-markers' || layer.isFiducialLayer) {
-          prompt += `- **Fiducials:** Markers: ${layer.fiducialMarkers?.length || 0}\n`;
+          const gcpPools = options?.mission?.groundControl || options?.mission?.plan?.groundControl || [];
+          const fidCount = layer.fiducialMarkers?.length ?? layer.fiducialMarkersCount ?? liveMatchLayer?.fiducialMarkers?.length ?? gcpPools.filter(g => !g.layerId || g.layerId === layer.id).length ?? 0;
+          prompt += `- **Fiducials:** Markers: ${fidCount}\n`;
         } else if (layer.pattern === 'corridor' || layer.roadSnap) {
           prompt += `- **Corridor Properties:** Offset: ${layer.roadOffset || 15}m | Snap: ${layer.roadSnap ? 'Yes' : 'No'} | Focus: ${layer.roadFocusMode || 'focusRoad'}\n`;
         }

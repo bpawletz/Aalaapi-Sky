@@ -577,11 +577,74 @@ function extractSpatialMissionLayers(layers = null) {
   };
 }
 
+function isNonFlyingModifierLayer(l) {
+  if (!l) return false;
+  const p = typeof l === 'string' ? l : l.pattern;
+  return Boolean(
+    (typeof l === 'object' && (l.isExclusionZone || l.isDrawingLayer || l.isFiducialLayer)) ||
+    p === 'boundary-polygon' ||
+    p === 'fiducial-markers' ||
+    p === 'exclusion-box' ||
+    p === 'exclusion-freeform'
+  );
+}
+
+function resolvePrimaryFlightPattern(explicitPattern = null, layersList = null) {
+  if (explicitPattern) return explicitPattern;
+  const uiPat = (typeof document !== 'undefined' && document.getElementById('grid-type')?.value) || 'single';
+  const allLayers = Array.isArray(layersList)
+    ? layersList
+    : ((typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+      ? global.flightLayers
+      : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []));
+  const gActiveId = (typeof global !== 'undefined' && global.activeLayerId) ? global.activeLayerId : (typeof activeLayerId !== 'undefined' ? activeLayerId : null);
+  const activeL = (gActiveId && allLayers.find(l => l && l.id === gActiveId)) || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  if ((isNonFlyingModifierLayer(uiPat) || isNonFlyingModifierLayer(activeL)) && allLayers.length > 0) {
+    const firstFlying = allLayers.find(l => l && l.enabled !== false && !isNonFlyingModifierLayer(l));
+    if (firstFlying && firstFlying.pattern) {
+      return firstFlying.pattern;
+    }
+  }
+  return uiPat;
+}
+
+function serializeLayerSummaryForDiagnostics(l) {
+  const isNonFlying = isNonFlyingModifierLayer(l);
+  const polyVerts = Array.isArray(l.polygonVertices)
+    ? l.polygonVertices.map(pt => Array.isArray(pt) ? [pt[0], pt[1]] : { lat: pt.lat, lon: pt.lon !== undefined ? pt.lon : pt.lng })
+    : undefined;
+  const boundPoly = Array.isArray(l.boundaryPolygon)
+    ? l.boundaryPolygon.map(pt => Array.isArray(pt) ? [pt[0], pt[1]] : { lat: pt.lat, lon: pt.lon !== undefined ? pt.lon : pt.lng })
+    : undefined;
+  return {
+    id: l.id,
+    name: l.name,
+    pattern: l.pattern,
+    enabled: l.enabled !== false,
+    isExclusionZone: Boolean(l.isExclusionZone || l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform'),
+    isDrawingLayer: Boolean(l.isDrawingLayer || l.pattern === 'boundary-polygon' || l.pattern === 'fiducial-markers'),
+    isFiducialLayer: Boolean(l.isFiducialLayer || l.pattern === 'fiducial-markers'),
+    altitude: l.altitude,
+    speed: l.speed,
+    gimbalPitch: l.gimbalPitch,
+    headingMode: l.headingMode,
+    captureMode: l.captureMode,
+    pathMode: l.pathMode,
+    polygonVertices: polyVerts,
+    boundaryPolygon: boundPoly,
+    fiducialMarkersCount: Array.isArray(l.fiducialMarkers) ? l.fiducialMarkers.length : undefined,
+    waypointCount: isNonFlying ? 0 : ((l.waypoints && l.waypoints.length) || (l.freeformWaypoints && l.freeformWaypoints.length) || 0)
+  };
+}
+
 function buildMissionPlanJSON(customWps = null, options = {}) {
   const currentWps = customWps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
   const centerLatLng = (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) ? centerMarker.getLatLng() : null;
 
-  const gridType = options.flightPattern || options.pattern || document.getElementById('grid-type')?.value || 'single';
+  const allLayers = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+    ? global.flightLayers
+    : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []);
+  const gridType = resolvePrimaryFlightPattern(options.flightPattern || options.pattern || null, allLayers);
   const gridWidth = parseFloat(document.getElementById('grid-width')?.value) || 100;
   const gridHeight = parseFloat(document.getElementById('grid-height')?.value) || 100;
   const rotation = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
@@ -610,9 +673,6 @@ function buildMissionPlanJSON(customWps = null, options = {}) {
   const storedUuid = typeof getRC2UUID === 'function' ? getRC2UUID() : null;
 
   // Resolve active/first layer speed if available
-  const allLayers = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
-    ? global.flightLayers
-    : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []);
   const activeLayer = (typeof getActiveLayer === 'function' ? getActiveLayer() : null) || allLayers[0] || null;
   const layerSpeed = activeLayer?.speed !== undefined ? activeLayer.speed : globalSpeed;
 
@@ -639,7 +699,7 @@ function buildMissionPlanJSON(customWps = null, options = {}) {
       headingMode: wp.headingMode !== undefined ? wp.headingMode : null,
       isHyperlapse: Boolean(wp.isHyperlapse || gridType === 'hyperlapse'),
       gridType: wp.gridType || (gridType === 'hyperlapse' ? 'hyperlapse' : null),
-      layerPattern: wp.layerPattern || (activeLayer?.pattern || null),
+      layerPattern: wp.layerPattern || (activeLayer && !isNonFlyingModifierLayer(activeLayer) ? activeLayer.pattern : gridType),
       skipPhoto: Boolean(wp.skipPhoto),
       hyperlapseInterval: wp.hyperlapseInterval !== undefined ? wp.hyperlapseInterval : (activeLayer?.hyperlapseInterval || null)
     };
@@ -709,19 +769,7 @@ function buildMissionPlanJSON(customWps = null, options = {}) {
       lon: p.lon !== undefined ? p.lon : p.lng,
       alt: p.alt || 0
     })),
-    layers: allLayers.map(l => ({
-      id: l.id,
-      name: l.name,
-      pattern: l.pattern,
-      enabled: l.enabled !== false,
-      altitude: l.altitude,
-      speed: l.speed,
-      gimbalPitch: l.gimbalPitch,
-      headingMode: l.headingMode,
-      captureMode: l.captureMode,
-      pathMode: l.pathMode,
-      waypointCount: (l.waypoints && l.waypoints.length) || (l.freeformWaypoints && l.freeformWaypoints.length) || 0
-    })),
+    layers: allLayers.map(l => serializeLayerSummaryForDiagnostics(l)),
     groundControl: spatialData.groundControl,
     inclusionZones: spatialData.inclusionZones,
     exclusionZones: spatialData.exclusionZones,
@@ -855,26 +903,14 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
     uuid,
     createdAt,
     filename: options.filename || `${uuid}.kmz`,
-    flightPattern: options.flightPattern || options.pattern || (typeof document !== 'undefined' && document.getElementById('grid-type')?.value) || plan?.geometry?.pattern || 'single',
+    flightPattern: resolvePrimaryFlightPattern(options.flightPattern || options.pattern || null, plan?.layers || null) || plan?.mission?.pattern || plan?.geometry?.pattern || 'single',
     altitude,
     speed,
     gimbalPitch,
     userAgent,
     plan,
     diagnostics: telemetry,
-    layers: (plan && plan.layers) ? plan.layers : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers.map(l => ({
-      id: l.id,
-      name: l.name,
-      pattern: l.pattern,
-      enabled: l.enabled !== false,
-      altitude: l.altitude,
-      speed: l.speed,
-      gimbalPitch: l.gimbalPitch,
-      headingMode: l.headingMode,
-      captureMode: l.captureMode,
-      pathMode: l.pathMode,
-      waypointCount: (l.waypoints && l.waypoints.length) || (l.freeformWaypoints && l.freeformWaypoints.length) || 0
-    })) : []),
+    layers: (plan && plan.layers) ? plan.layers : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers.map(l => serializeLayerSummaryForDiagnostics(l)) : []),
     pointsOfInterest: (plan && plan.pointsOfInterest) ? plan.pointsOfInterest : ((typeof pois !== 'undefined' && Array.isArray(pois)) ? pois.map(p => ({
       id: p.id,
       name: p.name,
