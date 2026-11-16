@@ -710,16 +710,34 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
   const centerLon = layer ? layer.centerLon : 0;
   const localTargetPoly = getLocalTargetPolygon(layer, centerLat, centerLon, rotation);
 
-  // Compute centroid of target polygon in grid-local space
+  // Compute centroid and footprint bounding box of target polygon in grid-local space
   let centroidX = 0, centroidY = 0;
+  let polyMinX = -15, polyMaxX = 15, polyMinY = -15, polyMaxY = 15;
   if (localTargetPoly.length > 0) {
+    polyMinX = Infinity; polyMaxX = -Infinity;
+    polyMinY = Infinity; polyMaxY = -Infinity;
     localTargetPoly.forEach(pt => {
       centroidX += pt.x;
       centroidY += pt.y;
+      if (pt.x < polyMinX) polyMinX = pt.x;
+      if (pt.x > polyMaxX) polyMaxX = pt.x;
+      if (pt.y < polyMinY) polyMinY = pt.y;
+      if (pt.y > polyMaxY) polyMaxY = pt.y;
     });
     centroidX /= localTargetPoly.length;
     centroidY /= localTargetPoly.length;
   }
+
+  // Core footprint bounds (60% of span in smartTrim/pruneOnly, 40% in convergent)
+  // Interior lines scan straight across large buildings without clipping wings,
+  // while outer standoff lines angle smoothly inward toward the building corners.
+  const coreRatio = (cullingMode === 'convergent') ? 0.40 : 0.60;
+  const halfSpanX = Math.max(1.0, ((polyMaxX - polyMinX) * 0.5) * coreRatio);
+  const halfSpanY = Math.max(1.0, ((polyMaxY - polyMinY) * 0.5) * coreRatio);
+  const coreMinX = centroidX - halfSpanX;
+  const coreMaxX = centroidX + halfSpanX;
+  const coreMinY = centroidY - halfSpanY;
+  const coreMaxY = centroidY + halfSpanY;
 
   let totalCandidates = 0;
   let activePhotosCount = 0;
@@ -729,32 +747,80 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
     if (!linePoints || linePoints.length === 0) return;
     totalCandidates += linePoints.length;
 
-    // Evaluate visibility for each candidate point
+    // Evaluate visibility and Footprint-Clamped Inward Pose for each candidate point
     linePoints.forEach(pt => {
       let isVisible = false;
-      let effectivePitch = (pt.pitch !== undefined && pt.pitch !== null) ? pt.pitch : defaultGimbalPitch;
-      let effectiveHeading = pt.heading;
+      const basePitch = -Math.abs((pt.pitch !== undefined && pt.pitch !== null) ? pt.pitch : (defaultGimbalPitch !== undefined && defaultGimbalPitch !== null ? defaultGimbalPitch : -60));
+      const clampedBasePitch = Math.max(-85, Math.min(-15, basePitch));
+
+      // Determine inward axis heading so adjacent lines never flip 180° away from the target
+      const isPass2 = (pt.heading === 90 || pt.heading === 270);
+      const inwardAxisHeading = isPass2
+        ? ((pt.x <= centroidX) ? 90 : 270)
+        : ((pt.y <= centroidY) ? 0 : 180);
+
+      // Clamp aim point to target core footprint (prevents cutting off wings on large buildings)
+      const aimX = (cullingMode === 'convergent') ? centroidX : Math.max(coreMinX, Math.min(coreMaxX, pt.x));
+      const aimY = (cullingMode === 'convergent') ? centroidY : Math.max(coreMinY, Math.min(coreMaxY, pt.y));
+      const dx = aimX - pt.x;
+      const dy = aimY - pt.y;
+      const distToAim = Math.sqrt(dx * dx + dy * dy);
+      const deltaZ = Math.max(2.0, (altitude || 50) - (objectHeight * 0.5));
+
+      let effectiveHeading = inwardAxisHeading;
+      let effectivePitch = clampedBasePitch;
 
       if (cullingMode === 'convergent') {
-        // Compute yaw and pitch to point directly at target centroid
-        const dx = centroidX - pt.x;
-        const dy = centroidY - pt.y;
-        const distToCenter = Math.max(1.0, Math.sqrt(dx * dx + dy * dy));
-        let centYaw = Math.atan2(dx, dy) * (180.0 / Math.PI);
-        if (centYaw < 0) centYaw += 360;
-        effectiveHeading = Math.round(centYaw * 10) / 10;
-        const deltaZ = Math.max(2.0, (altitude || 50) - (objectHeight * 0.5));
+        const distToCenter = Math.max(1.0, distToAim);
+        if (distToAim >= 2.0) {
+          let centYaw = Math.atan2(dx, dy) * (180.0 / Math.PI);
+          if (centYaw < 0) centYaw += 360;
+          effectiveHeading = Math.round(centYaw * 10) / 10;
+        }
         effectivePitch = -Math.atan2(deltaZ, distToCenter) * (180.0 / Math.PI);
         effectivePitch = Math.round(Math.max(-85, Math.min(-15, effectivePitch)));
-        pt.heading = effectiveHeading;
-        pt.pitch = effectivePitch;
-        pt.headingMode = 'smoothTransition';
-        pt.gridType = 'target-splat';
-        isVisible = true; // Always pointed at target
+        isVisible = true;
       } else {
-        isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, effectivePitch, hfov, vfov, localTargetPoly, objectHeight, framingRatio);
+        // Test frustum visibility using the original line heading so distant lead-up and outer legs are pruned
+        isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, clampedBasePitch, hfov, vfov, localTargetPoly, objectHeight, framingRatio);
+
+        // Because dynamic pitch (-60° -> -85°) captures the roof directly as the drone crosses over,
+        // cap lead-up distance in balanced/tight modes to boresight standoff so distant grazing shots are pruned
+        if (isVisible && framingMode !== 'full') {
+          const alphaRad = ((90.0 + clampedBasePitch) * Math.PI) / 180.0;
+          const boresightStandoff = Math.max(8.0, deltaZ * Math.tan(alphaRad));
+          const leadUpScale = (framingMode === 'tight') ? 0.85 : 1.15;
+          if (distToAim > boresightStandoff * leadUpScale + Math.max(halfSpanX, halfSpanY) * 0.5) {
+            isVisible = false;
+          }
+        }
+
+        // Apply Footprint-Clamped Inward Aiming & Nadir Roof Bridge (-85° over roof core)
+        if (distToAim >= 2.0) {
+          let inwardYaw = Math.atan2(dx, dy) * (180.0 / Math.PI);
+          if (inwardYaw < 0) inwardYaw += 360;
+          effectiveHeading = Math.round(inwardYaw * 10) / 10;
+
+          // Smoothly transition pitch from basePitch at standoff to -85° as drone crosses roof edge
+          const roofBlendDist = Math.max(8.0, Math.min(20.0, deltaZ * 0.6));
+          if (distToAim < roofBlendDist) {
+            const t = distToAim / roofBlendDist; // 0 at roof edge -> 1 at standoff
+            effectivePitch = Math.round(-85 + t * (clampedBasePitch - (-85)));
+          } else {
+            effectivePitch = Math.round(clampedBasePitch);
+          }
+        } else {
+          // Directly over the building roof core: Nadir Roof Bridge (-85°) without mid-roof yaw spin
+          effectiveHeading = inwardAxisHeading;
+          effectivePitch = -85;
+        }
+        effectivePitch = Math.round(Math.max(-85, Math.min(-15, effectivePitch)));
       }
 
+      pt.heading = effectiveHeading;
+      pt.pitch = effectivePitch;
+      pt.headingMode = 'smoothTransition';
+      pt.gridType = 'target-splat';
       pt.targetVisible = isVisible;
     });
 

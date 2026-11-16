@@ -9428,7 +9428,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.246.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.247.0</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -10342,13 +10342,13 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <!-- Perimeter Orbit Pass -->
             <div style="border-top: 1px solid rgba(16, 185, 129, 0.2); padding-top: 10px; margin-top: 2px;">
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin-bottom: 6px;">
-                <input type="checkbox" id="target-perimeter-pass" style="accent-color: #10b981; width: 14px; height: 14px;">
-                <span style="font-size: 0.75rem; color: var(--text-main); font-weight: 600;">🔄 Perimeter Orbit Pass</span>
+                <input type="checkbox" id="target-perimeter-pass" checked style="accent-color: #10b981; width: 14px; height: 14px;">
+                <span style="font-size: 0.75rem; color: var(--text-main); font-weight: 600;">🔄 Perimeter Orbit Pass (Recommended for 3D)</span>
               </label>
               <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 6px; line-height: 1.35;">
-                Flies a convergent orbit around the building perimeter at facade altitude. Captures vertical walls, windows &amp; doors missed by the overhead grid.
+                Flies a convergent orbit around the building perimeter at facade altitude. Captures vertical walls, windows &amp; doors and ties all 4 sides together for 3D extraction.
               </div>
-              <div id="target-perimeter-controls" class="hidden" style="display: flex; flex-direction: column; gap: 8px; padding: 8px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.18); border-radius: 6px;">
+              <div id="target-perimeter-controls" style="display: flex; flex-direction: column; gap: 8px; padding: 8px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.18); border-radius: 6px;">
                 <!-- Standoff Distance -->
                 <div>
                   <div class="control-label" style="margin-bottom: 2px;">
@@ -17188,7 +17188,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.246.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.247.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17379,6 +17379,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                                 <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.247.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Target Splat 3D Extraction Overhaul (Closes #300):</strong> Eliminated 180&deg; lawnmower flips by implementing Footprint-Clamped Inward Aiming to scan large building wings without clipping, added an automated Nadir Roof Bridge (-85&deg; over roof peak) for loop closure, enabled Perimeter Orbit Pass by default, and fixed 10Hz flight log rising-edge photo counting (reporting true 76 photos instead of 171).</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.246.1):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -24250,7 +24256,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
   <!-- Custom Javascript -->
   <script>
-if (typeof window !== "undefined") { window.AALAAPI_IRL_STATUS = {"_issue":"https://github.com/bpawletz/Aalaapi-Sky/issues/202","single":{"s":"V","v":"1.210.0"},"double":{"s":"V","v":"1.215.2"},"target-splat":{"s":"V","v":"1.246.0"},"orbit":{"s":"V","v":"1.215.0"},"multi-orbit":{"s":"V","v":"1.220.0"},"tower":{"s":"V","v":"1.219.2"},"vertical-facade":{"s":"V","v":"1.243.2"},"continuous-helix":{"s":"U","v":null},"star-pass":{"s":"U","v":null},"photo-sphere":{"s":"U","v":null},"hyperlapse":{"s":"U","v":null},"light-art":{"s":"U","v":null},"grid-orbit-combo":{"s":"U","v":null},"grid-multi-orbit-combo":{"s":"U","v":null},"freeform":{"s":"U","v":null},"road-following":{"s":"V","v":"1.215.4"},"corridor":{"s":"V","v":"1.215.1"},"exclusion-box":{"s":"U","v":null},"exclusion-freeform":{"s":"U","v":null},"boundary-polygon":{"s":"U","v":null},"fiducial-markers":{"s":"U","v":null},"dome-shell":{"s":"U","v":null},"polygon-grid":{"s":"U","v":null},"sar-search":{"s":"U","v":null},"perimeter-patrol":{"s":"U","v":null},"cinematic-reveal":{"s":"U","v":null}}; }
+if (typeof window !== "undefined") { window.AALAAPI_IRL_STATUS = {"_issue":"https://github.com/bpawletz/Aalaapi-Sky/issues/202","single":{"s":"V","v":"1.210.0"},"double":{"s":"V","v":"1.215.2"},"target-splat":{"s":"R","v":"1.246.0"},"orbit":{"s":"V","v":"1.215.0"},"multi-orbit":{"s":"V","v":"1.220.0"},"tower":{"s":"V","v":"1.219.2"},"vertical-facade":{"s":"V","v":"1.243.2"},"continuous-helix":{"s":"U","v":null},"star-pass":{"s":"U","v":null},"photo-sphere":{"s":"U","v":null},"hyperlapse":{"s":"U","v":null},"light-art":{"s":"U","v":null},"grid-orbit-combo":{"s":"U","v":null},"grid-multi-orbit-combo":{"s":"U","v":null},"freeform":{"s":"U","v":null},"road-following":{"s":"V","v":"1.215.4"},"corridor":{"s":"V","v":"1.215.1"},"exclusion-box":{"s":"U","v":null},"exclusion-freeform":{"s":"U","v":null},"boundary-polygon":{"s":"U","v":null},"fiducial-markers":{"s":"U","v":null},"dome-shell":{"s":"U","v":null},"polygon-grid":{"s":"U","v":null},"sar-search":{"s":"U","v":null},"perimeter-patrol":{"s":"U","v":null},"cinematic-reveal":{"s":"U","v":null}}; }
 // -------------------- src/core/Logger.js --------------------
 // Centralized Logging Utility
 const Logger = {
@@ -52032,16 +52038,34 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
   const centerLon = layer ? layer.centerLon : 0;
   const localTargetPoly = getLocalTargetPolygon(layer, centerLat, centerLon, rotation);
 
-  // Compute centroid of target polygon in grid-local space
+  // Compute centroid and footprint bounding box of target polygon in grid-local space
   let centroidX = 0, centroidY = 0;
+  let polyMinX = -15, polyMaxX = 15, polyMinY = -15, polyMaxY = 15;
   if (localTargetPoly.length > 0) {
+    polyMinX = Infinity; polyMaxX = -Infinity;
+    polyMinY = Infinity; polyMaxY = -Infinity;
     localTargetPoly.forEach(pt => {
       centroidX += pt.x;
       centroidY += pt.y;
+      if (pt.x < polyMinX) polyMinX = pt.x;
+      if (pt.x > polyMaxX) polyMaxX = pt.x;
+      if (pt.y < polyMinY) polyMinY = pt.y;
+      if (pt.y > polyMaxY) polyMaxY = pt.y;
     });
     centroidX /= localTargetPoly.length;
     centroidY /= localTargetPoly.length;
   }
+
+  // Core footprint bounds (60% of span in smartTrim/pruneOnly, 40% in convergent)
+  // Interior lines scan straight across large buildings without clipping wings,
+  // while outer standoff lines angle smoothly inward toward the building corners.
+  const coreRatio = (cullingMode === 'convergent') ? 0.40 : 0.60;
+  const halfSpanX = Math.max(1.0, ((polyMaxX - polyMinX) * 0.5) * coreRatio);
+  const halfSpanY = Math.max(1.0, ((polyMaxY - polyMinY) * 0.5) * coreRatio);
+  const coreMinX = centroidX - halfSpanX;
+  const coreMaxX = centroidX + halfSpanX;
+  const coreMinY = centroidY - halfSpanY;
+  const coreMaxY = centroidY + halfSpanY;
 
   let totalCandidates = 0;
   let activePhotosCount = 0;
@@ -52051,32 +52075,80 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
     if (!linePoints || linePoints.length === 0) return;
     totalCandidates += linePoints.length;
 
-    // Evaluate visibility for each candidate point
+    // Evaluate visibility and Footprint-Clamped Inward Pose for each candidate point
     linePoints.forEach(pt => {
       let isVisible = false;
-      let effectivePitch = (pt.pitch !== undefined && pt.pitch !== null) ? pt.pitch : defaultGimbalPitch;
-      let effectiveHeading = pt.heading;
+      const basePitch = -Math.abs((pt.pitch !== undefined && pt.pitch !== null) ? pt.pitch : (defaultGimbalPitch !== undefined && defaultGimbalPitch !== null ? defaultGimbalPitch : -60));
+      const clampedBasePitch = Math.max(-85, Math.min(-15, basePitch));
+
+      // Determine inward axis heading so adjacent lines never flip 180° away from the target
+      const isPass2 = (pt.heading === 90 || pt.heading === 270);
+      const inwardAxisHeading = isPass2
+        ? ((pt.x <= centroidX) ? 90 : 270)
+        : ((pt.y <= centroidY) ? 0 : 180);
+
+      // Clamp aim point to target core footprint (prevents cutting off wings on large buildings)
+      const aimX = (cullingMode === 'convergent') ? centroidX : Math.max(coreMinX, Math.min(coreMaxX, pt.x));
+      const aimY = (cullingMode === 'convergent') ? centroidY : Math.max(coreMinY, Math.min(coreMaxY, pt.y));
+      const dx = aimX - pt.x;
+      const dy = aimY - pt.y;
+      const distToAim = Math.sqrt(dx * dx + dy * dy);
+      const deltaZ = Math.max(2.0, (altitude || 50) - (objectHeight * 0.5));
+
+      let effectiveHeading = inwardAxisHeading;
+      let effectivePitch = clampedBasePitch;
 
       if (cullingMode === 'convergent') {
-        // Compute yaw and pitch to point directly at target centroid
-        const dx = centroidX - pt.x;
-        const dy = centroidY - pt.y;
-        const distToCenter = Math.max(1.0, Math.sqrt(dx * dx + dy * dy));
-        let centYaw = Math.atan2(dx, dy) * (180.0 / Math.PI);
-        if (centYaw < 0) centYaw += 360;
-        effectiveHeading = Math.round(centYaw * 10) / 10;
-        const deltaZ = Math.max(2.0, (altitude || 50) - (objectHeight * 0.5));
+        const distToCenter = Math.max(1.0, distToAim);
+        if (distToAim >= 2.0) {
+          let centYaw = Math.atan2(dx, dy) * (180.0 / Math.PI);
+          if (centYaw < 0) centYaw += 360;
+          effectiveHeading = Math.round(centYaw * 10) / 10;
+        }
         effectivePitch = -Math.atan2(deltaZ, distToCenter) * (180.0 / Math.PI);
         effectivePitch = Math.round(Math.max(-85, Math.min(-15, effectivePitch)));
-        pt.heading = effectiveHeading;
-        pt.pitch = effectivePitch;
-        pt.headingMode = 'smoothTransition';
-        pt.gridType = 'target-splat';
-        isVisible = true; // Always pointed at target
+        isVisible = true;
       } else {
-        isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, effectivePitch, hfov, vfov, localTargetPoly, objectHeight, framingRatio);
+        // Test frustum visibility using the original line heading so distant lead-up and outer legs are pruned
+        isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, clampedBasePitch, hfov, vfov, localTargetPoly, objectHeight, framingRatio);
+
+        // Because dynamic pitch (-60° -> -85°) captures the roof directly as the drone crosses over,
+        // cap lead-up distance in balanced/tight modes to boresight standoff so distant grazing shots are pruned
+        if (isVisible && framingMode !== 'full') {
+          const alphaRad = ((90.0 + clampedBasePitch) * Math.PI) / 180.0;
+          const boresightStandoff = Math.max(8.0, deltaZ * Math.tan(alphaRad));
+          const leadUpScale = (framingMode === 'tight') ? 0.85 : 1.15;
+          if (distToAim > boresightStandoff * leadUpScale + Math.max(halfSpanX, halfSpanY) * 0.5) {
+            isVisible = false;
+          }
+        }
+
+        // Apply Footprint-Clamped Inward Aiming & Nadir Roof Bridge (-85° over roof core)
+        if (distToAim >= 2.0) {
+          let inwardYaw = Math.atan2(dx, dy) * (180.0 / Math.PI);
+          if (inwardYaw < 0) inwardYaw += 360;
+          effectiveHeading = Math.round(inwardYaw * 10) / 10;
+
+          // Smoothly transition pitch from basePitch at standoff to -85° as drone crosses roof edge
+          const roofBlendDist = Math.max(8.0, Math.min(20.0, deltaZ * 0.6));
+          if (distToAim < roofBlendDist) {
+            const t = distToAim / roofBlendDist; // 0 at roof edge -> 1 at standoff
+            effectivePitch = Math.round(-85 + t * (clampedBasePitch - (-85)));
+          } else {
+            effectivePitch = Math.round(clampedBasePitch);
+          }
+        } else {
+          // Directly over the building roof core: Nadir Roof Bridge (-85°) without mid-roof yaw spin
+          effectiveHeading = inwardAxisHeading;
+          effectivePitch = -85;
+        }
+        effectivePitch = Math.round(Math.max(-85, Math.min(-15, effectivePitch)));
       }
 
+      pt.heading = effectiveHeading;
+      pt.pitch = effectivePitch;
+      pt.headingMode = 'smoothTransition';
+      pt.gridType = 'target-splat';
       pt.targetVisible = isVisible;
     });
 
@@ -98661,6 +98733,24 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv', options = 
 
   if (rawRows.length === 0) return null;
 
+  // Normalize millisecond timestamps to seconds if applicable
+  if (rawRows.length >= 2 && timeIdx !== -1) {
+    const isMilliHeader = header[timeIdx].includes('milli') || header[timeIdx].includes('[ms]') || header[timeIdx].includes('(ms)');
+    const firstT = rawRows[0].rowTime;
+    const lastT = rawRows[rawRows.length - 1].rowTime;
+    if (firstT !== null && lastT !== null) {
+      const span = Math.abs(lastT - firstT);
+      const avgStep = span / (rawRows.length - 1);
+      if (isMilliHeader || span > 100000) {
+        for (let i = 0; i < rawRows.length; i++) {
+          if (rawRows[i].rowTime !== null) {
+            rawRows[i].rowTime = rawRows[i].rowTime / 1000;
+          }
+        }
+      }
+    }
+  }
+
   let firstTime = rawRows[0].rowTime !== null ? rawRows[0].rowTime : 0;
   let lastTime = rawRows[rawRows.length - 1].rowTime !== null ? rawRows[rawRows.length - 1].rowTime : rawRows.length;
   let durationSec = Math.max(1, Math.round(lastTime - firstTime));
@@ -98687,17 +98777,29 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv', options = 
   let maxAlt = 0;
   let prevSec = -1;
   let photoCount = 0;
+  let prevRowIsPhoto = false;
+  let lastPhotoRowTime = null;
   let batteryRunning = rawRows[0].battery !== null ? rawRows[0].battery : 98.0;
 
   for (let i = 0; i < rawRows.length; i++) {
     const row = rawRows[i];
+    const isSubSecondHold = (
+      (row.rowTime !== null && lastPhotoRowTime !== null && Math.abs(row.rowTime - lastPhotoRowTime) < 0.8) ||
+      (row.rowTime === null && prevRowIsPhoto)
+    );
+    const isPhotoEdge = Boolean(row.isPhoto && !isSubSecondHold);
+    if (isPhotoEdge && row.rowTime !== null) {
+      lastPhotoRowTime = row.rowTime;
+    }
+    prevRowIsPhoto = Boolean(row.isPhoto);
+
     const sec = (row.rowTime !== null) ? Math.floor(row.rowTime - firstTime) : i;
-    const isSamplePoint = (sec !== prevSec) || row.isPhoto || (i === rawRows.length - 1);
+    const isSamplePoint = (sec !== prevSec) || isPhotoEdge || (i === rawRows.length - 1);
 
     if (isSamplePoint) {
       prevSec = sec;
       if (row.alt > maxAlt) maxAlt = row.alt;
-      if (row.isPhoto) photoCount++;
+      if (isPhotoEdge) photoCount++;
       if (row.battery !== null) batteryRunning = row.battery;
 
       if (points.length > 0) {
@@ -98722,7 +98824,7 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv', options = 
         yaw: Math.round(row.yaw * 10) / 10,
         battery: Math.round(batteryRunning * 10) / 10,
         satellites: row.satellites,
-        isPhoto: row.isPhoto,
+        isPhoto: isPhotoEdge,
         rc: row.rc,
         elevator: row.rc ? row.rc.elevator : 0,
         aileron: row.rc ? row.rc.aileron : 0,

@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.246.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.247.0</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -1004,13 +1004,13 @@
             <!-- Perimeter Orbit Pass -->
             <div style="border-top: 1px solid rgba(16, 185, 129, 0.2); padding-top: 10px; margin-top: 2px;">
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin-bottom: 6px;">
-                <input type="checkbox" id="target-perimeter-pass" style="accent-color: #10b981; width: 14px; height: 14px;">
-                <span style="font-size: 0.75rem; color: var(--text-main); font-weight: 600;">🔄 Perimeter Orbit Pass</span>
+                <input type="checkbox" id="target-perimeter-pass" checked style="accent-color: #10b981; width: 14px; height: 14px;">
+                <span style="font-size: 0.75rem; color: var(--text-main); font-weight: 600;">🔄 Perimeter Orbit Pass (Recommended for 3D)</span>
               </label>
               <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 6px; line-height: 1.35;">
-                Flies a convergent orbit around the building perimeter at facade altitude. Captures vertical walls, windows &amp; doors missed by the overhead grid.
+                Flies a convergent orbit around the building perimeter at facade altitude. Captures vertical walls, windows &amp; doors and ties all 4 sides together for 3D extraction.
               </div>
-              <div id="target-perimeter-controls" class="hidden" style="display: flex; flex-direction: column; gap: 8px; padding: 8px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.18); border-radius: 6px;">
+              <div id="target-perimeter-controls" style="display: flex; flex-direction: column; gap: 8px; padding: 8px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.18); border-radius: 6px;">
                 <!-- Standoff Distance -->
                 <div>
                   <div class="control-label" style="margin-bottom: 2px;">
@@ -7850,7 +7850,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.246.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.247.0</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -8041,6 +8041,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                                 <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.247.0):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Target Splat 3D Extraction Overhaul (Closes #300):</strong> Eliminated 180&deg; lawnmower flips by implementing Footprint-Clamped Inward Aiming to scan large building wings without clipping, added an automated Nadir Roof Bridge (-85&deg; over roof peak) for loop closure, enabled Perimeter Orbit Pass by default, and fixed 10Hz flight log rising-edge photo counting (reporting true 76 photos instead of 171).</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.246.1):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">

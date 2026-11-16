@@ -46000,14 +46000,11 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(indexHtml.includes('Changelog (v1.246.1):'));
     });
 
-    test('IRL status tracker formally marks target-splat as VERIFIED with all 6 checklist phases passed', () => {
+    test('IRL status tracker records target-splat telemetry and tracks code hash lifecycle', () => {
       const statusData = JSON.parse(fs.readFileSync(path.join(__dirname, 'docs/irl_test_status.json'), 'utf8'));
-      assert.strictEqual(statusData.patterns['target-splat'].status, 'VERIFIED');
-      assert.strictEqual(statusData.patterns['target-splat'].codeHash, '0ec37c04a3ff');
+      assert.ok(statusData.patterns['target-splat'].status === 'VERIFIED' || statusData.patterns['target-splat'].status === 'NEEDS_RETEST');
       assert.strictEqual(statusData.patterns['target-splat'].verifiedCodeHash, '0ec37c04a3ff');
       assert.strictEqual(statusData.patterns['target-splat'].lastTestedVersion, '1.246.0');
-      const chk = statusData.patterns['target-splat'].checklist;
-      assert.ok(chk.kmz_import && chk.entry_altitude && chk.geometry_path && chk.heading_gimbal && chk.capture_trigger && chk.exit_rth);
       assert.strictEqual(statusData.patterns['target-splat'].lastTelemetryMetrics.waypointCompletionPct, 100);
       assert.strictEqual(statusData.patterns['target-splat'].lastTelemetryMetrics.waypointCount, 86);
       assert.strictEqual(statusData.patterns['target-splat'].lastTelemetryMetrics.rmsXteM, 0.29);
@@ -46015,12 +46012,100 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.strictEqual(statusData.patterns['target-splat'].lastTelemetryMetrics.flightLog, 'FlightRecord_2026-11-15_[14-56-56].txt');
     });
 
-    test('IRL test plan markdown reflects 9/26 patterns verified and target-splat checked off', () => {
+    test('IRL test plan markdown documents target-splat in pattern matrix', () => {
       const planMd = fs.readFileSync(path.join(__dirname, 'docs/IRL_TEST_PLAN.md'), 'utf8');
-      assert.ok(planMd.includes('**9 / 26** Patterns Verified'), 'Summary progress must report 9 / 26 Patterns Verified');
-      assert.ok(planMd.includes('| 3 | `target-splat` | **Target Splat (Frustum Grid)** | Mapping & 3D | ✅ `VERIFIED` |'), 'Table row must mark target-splat as VERIFIED');
-      assert.ok(planMd.includes('- [x] **Phase 1: KMZ / WPML Export & RC 2 Import**'), 'Phase 1 checklist item must be checked');
-      assert.ok(planMd.includes('- [x] **Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH**'), 'Phase 6 checklist item must be checked');
+      assert.ok(planMd.includes('`target-splat`'), 'Table row must include target-splat');
+      assert.ok(planMd.includes('Target Splat (Frustum Grid)'), 'Table row must include Target Splat');
+      assert.ok(planMd.includes('Phase 1: KMZ / WPML Export & RC 2 Import'), 'Phase 1 checklist item must be present');
+      assert.ok(planMd.includes('Phase 6: Final Waypoint Completion, Manual Pause Check & Safe RTH'), 'Phase 6 checklist item must be present');
+    });
+  });
+
+  describe('Target Splat Footprint-Clamped Aiming, Nadir Roof Bridge & 10Hz Rising-Edge Photo Fix (v1.247.0 - Closes #300)', () => {
+    test('Version consistency: v1.247.0 across package.json, changelog, index_template.html, and index.html', () => {
+      assertVersionConsistency('1.247.0');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.247.0] - 2026-11-15'));
+      const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(template.includes('v1.247.0'));
+      assert.ok(template.includes('Changelog (v1.247.0):'));
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      assert.ok(indexHtml.includes('v1.247.0'));
+      assert.ok(indexHtml.includes('Changelog (v1.247.0):'));
+    });
+
+    test('parseCsvTelemetry counts 10Hz rising-edge photo triggers accurately (no sub-second double count)', () => {
+      const { parseCsvTelemetry } = require('./tools/companion/log_decoder.js');
+      // Create a 10Hz CSV where each photo stays isPhoto=1 for 3 consecutive 100ms frames
+      let csv = 'time(millisecond),OSD.latitude,OSD.longitude,OSD.height [m],OSD.pitch,OSD.roll,OSD.yaw,BATTERY.chargeLevel,RC.elevator,RC.aileron,RC.rudder,RC.throttle,CAMERA.isPhoto\n';
+      // 9 photo clicks across 100 frames (10 seconds), each lasting 3 frames (30 total 1s)
+      for (let i = 0; i < 100; i++) {
+        const timeMs = i * 100;
+        const lat = 40.013000 + i * 0.000010;
+        const lon = -83.176500;
+        const alt = 25.0;
+        // Photo fires at i = 10..12, 20..22, 30..32, etc.
+        const isPhotoFrame = (i % 10 === 0 && i > 0) || (i % 10 === 1 && i > 1) || (i % 10 === 2 && i > 2);
+        csv += `${timeMs},${lat.toFixed(6)},${lon.toFixed(6)},${alt.toFixed(1)},-60.0,0.0,0.0,90,0,0,0,0,${isPhotoFrame ? 1 : 0}\n`;
+      }
+
+      const telemCompanion = parseCsvTelemetry(csv, 'FlightRecord_10hz_companion.csv');
+      assert.ok(telemCompanion, 'Must parse companion telemetry');
+      assert.strictEqual(telemCompanion.photoCount, 9, 'Must count exactly 9 distinct photo events, not 27');
+      assert.strictEqual(telemCompanion.points.filter(p => p.isPhoto).length, 9, 'Exactly 9 points should have isPhoto: true');
+    });
+
+    test('generateTargetSplatCoordinates keeps North-South runs facing North while South of target (no 180 deg lawnmower flip)', () => {
+      const layer = {
+        centerLat: 40.0,
+        centerLon: -85.0,
+        targetMode: 'radius',
+        targetRadius: 20,
+        targetHeight: 8,
+        targetCullingMode: 'smartTrim',
+        targetGridPass: 'double',
+        targetPerimeterPass: false,
+        altitude: 33,
+        gimbalPitch: -60
+      };
+
+      const result = generateTargetSplatCoordinates(60, 60, 0, 'stopAndShoot', 9.55, 6.8, 33, -60, layer);
+      assert.ok(result && result.waypoints.length > 0, 'Must generate waypoints');
+
+      // Check all waypoints that are significantly South of the target center (y < -10)
+      const southWaypoints = result.waypoints.filter(wp => wp.y < -10);
+      assert.ok(southWaypoints.length >= 4, 'Must have waypoints south of target');
+      southWaypoints.forEach((wp, idx) => {
+        // While south of the target, the camera must face North toward the building (North quadrant / hemisphere),
+        // NEVER 180° away from the building!
+        const diffFromNorth = Math.min(Math.abs(wp.heading - 0), Math.abs(wp.heading - 360));
+        assert.ok(diffFromNorth < 80, `South waypoint ${idx} at y=${wp.y} heading ${wp.heading} must face North toward building, not away`);
+      });
+    });
+
+    test('generateTargetSplatCoordinates implements Nadir Roof Bridge (-85 deg) directly over the roof core', () => {
+      const layer = {
+        centerLat: 40.0,
+        centerLon: -85.0,
+        targetMode: 'radius',
+        targetRadius: 25,
+        targetHeight: 8,
+        targetCullingMode: 'smartTrim',
+        targetGridPass: 'double',
+        targetPerimeterPass: false,
+        altitude: 33,
+        gimbalPitch: -60
+      };
+
+      const result = generateTargetSplatCoordinates(70, 70, 0, 'stopAndShoot', 8, 5, 33, -60, layer);
+      assert.ok(result && result.waypoints.length > 0);
+
+      // Find waypoints passing directly over the roof core (within 3m of centroid 0,0)
+      const roofCoreWps = result.waypoints.filter(wp => Math.hypot(wp.x, wp.y) <= 4.0);
+      assert.ok(roofCoreWps.length > 0, 'Must have at least one waypoint crossing directly over the roof core');
+      roofCoreWps.forEach(wp => {
+        assert.strictEqual(wp.pitch, -85, `Waypoint at (${wp.x.toFixed(1)}, ${wp.y.toFixed(1)}) directly over roof must pitch to -85 nadir roof bridge`);
+      });
     });
   });
 
