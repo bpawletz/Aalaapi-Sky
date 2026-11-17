@@ -366,6 +366,8 @@ function evaluateFlightPlanWireframeReadiness(waypoints, photoLocations = null, 
   let totalPlannedPhotos = 0;
   let rejectedShallowPhotos = 0;
   let marginalPitchPhotos = 0;
+  let steepNadirPhotos = 0;
+  let obliqueFacadePhotos = 0;
   let noGroundInterceptCount = 0;
   let videoOnlyCount = 0;
   let hoverNoPhotoCount = 0;
@@ -412,6 +414,12 @@ function evaluateFlightPlanWireframeReadiness(waypoints, photoLocations = null, 
     }
     if (effPitch > -35.0) {
       marginalPitchPhotos++;
+    }
+    if (effPitch <= -70.0) {
+      steepNadirPhotos++;
+    }
+    if (effPitch >= -60.0 && effPitch <= -25.0) {
+      obliqueFacadePhotos++;
     }
 
     const lat = item.lat ?? act.lat ?? originLat;
@@ -561,9 +569,32 @@ function evaluateFlightPlanWireframeReadiness(waypoints, photoLocations = null, 
     }
   }
 
+  let opposingRoofYawFlips = 0;
+  for (let k = 1; k < validPoses.length; k++) {
+    const pPrev = validPoses[k - 1];
+    const pCurr = validPoses[k];
+    if (pPrev.pitch <= -70.0 && pCurr.pitch <= -70.0) {
+      const yawDiff = Math.abs((((pCurr.yaw - pPrev.yaw) % 360) + 540) % 360 - 180);
+      if (yawDiff >= 135.0) {
+        opposingRoofYawFlips++;
+      }
+    }
+  }
+
   if (boundaryPolyXZ && validPoses.length > 0 && insideBoundaryCount === 0) {
     reasons.push('0 planned camera ground footprints intersect the active Layer Boundary Hull.');
     recommendations.push('Move the pattern over the Layer Boundary or uncheck "Boundary Hull" in the 3D Wireframe Toolkit.');
+  }
+
+  if (validPoses.length >= 4 && (steepNadirPhotos / validPoses.length) > 0.70 && (obliqueFacadePhotos / validPoses.length) < 0.20) {
+    reasons.push(`Flight plan is nadir-heavy (${steepNadirPhotos}/${validPoses.length} photos <= -70°); vertical walls and corners require oblique viewing angles (-35° to -55°).`);
+    recommendations.push('Add an oblique facade perimeter orbit or set layer pitch to -45° to -55°.');
+    canAutoOptimize = true;
+  }
+  if (opposingRoofYawFlips > 0) {
+    reasons.push(`${opposingRoofYawFlips} opposing 180° yaw reversal(s) detected across steep roof waypoints.`);
+    recommendations.push('Maintain forward heading across roof passes to eliminate optical inversion & motion blur.');
+    canAutoOptimize = true;
   }
 
   let status = 'insufficient';
@@ -590,6 +621,9 @@ function evaluateFlightPlanWireframeReadiness(waypoints, photoLocations = null, 
     validPitchPhotos: validPoses.length,
     rejectedShallowPhotos,
     marginalPitchPhotos,
+    steepNadirPhotos,
+    obliqueFacadePhotos,
+    opposingRoofYawFlips,
     stereoPairsCount,
     avgBaselineMeters,
     insideBoundaryCount,

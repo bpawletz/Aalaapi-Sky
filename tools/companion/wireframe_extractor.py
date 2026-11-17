@@ -677,6 +677,96 @@ def build_stereo_pair_graph(photo_meta, options=None):
     pairs.sort(key=lambda p: p["score"], reverse=True)
     return pairs
 
+def triangulate_stereo_lines(posA, r1a, r2a, posB, r1b, r2b, sensitivity=1.0):
+    """
+    Triangulates two 2D line segments from calibrated stereo photo poses into a 3D line segment.
+    Uses epipolar viewing plane intersection with ray coplanarity validation.
+    Falls back to direct endpoint ray intersection if endpoints coincide.
+    """
+    # 1. First test direct endpoint pairing (1-1, 2-2) or swapped (1-2, 2-1)
+    m1_dir, d1_dir, _ = closest_points_between_rays(posA, r1a, posB, r1b)
+    m2_dir, d2_dir, _ = closest_points_between_rays(posA, r2a, posB, r2b)
+    err_dir = max(d1_dir, d2_dir)
+
+    m1_swp, d1_swp, _ = closest_points_between_rays(posA, r1a, posB, r2b)
+    m2_swp, d2_swp, _ = closest_points_between_rays(posA, r2a, posB, r1b)
+    err_swp = max(d1_swp, d2_swp)
+
+    if err_dir <= err_swp and err_dir <= sensitivity and m1_dir is not None and m2_dir is not None:
+        return m1_dir, m2_dir
+    if err_swp < err_dir and err_swp <= sensitivity and m1_swp is not None and m2_swp is not None:
+        return m1_swp, m2_swp
+
+    # 2. Epipolar Viewing Plane Intersection for non-coincident Hough segment endpoints
+    nA = np.cross(r1a, r2a)
+    norm_nA = float(np.linalg.norm(nA))
+    if norm_nA < 1e-4:
+        return None, None
+    nA /= norm_nA
+
+    nB = np.cross(r1b, r2b)
+    norm_nB = float(np.linalg.norm(nB))
+    if norm_nB < 1e-4:
+        return None, None
+    nB /= norm_nB
+
+    u_raw = np.cross(nA, nB)
+    len_u = float(np.linalg.norm(u_raw))
+    if len_u < 0.02:
+        return None, None
+    u = u_raw / len_u
+
+    dA = -float(np.dot(nA, posA))
+    dB = -float(np.dot(nB, posB))
+
+    nBxU = np.cross(nB, u_raw)
+    uXnA = np.cross(u_raw, nA)
+    denom_p0 = len_u * len_u
+
+    P0 = ((-dA) * nBxU + (-dB) * uXnA) / denom_p0
+
+    def project_ray_to_line(C, r):
+        w0 = C - P0
+        b = float(np.dot(r, u))
+        d = float(np.dot(r, w0))
+        e = float(np.dot(u, w0))
+        den = 1.0 - b * b
+        if abs(den) < 1e-5:
+            return None
+        s = (e - b * d) / den
+        t = b * s - d
+        if t <= 0 or t > 350:
+            return None
+        pt_ray = C + t * r
+        pt_line = P0 + s * u
+        dist = float(np.linalg.norm(pt_ray - pt_line))
+        if dist > sensitivity:
+            return None
+        return s
+
+    s1a = project_ray_to_line(posA, r1a)
+    s2a = project_ray_to_line(posA, r2a)
+    s1b = project_ray_to_line(posB, r1b)
+    s2b = project_ray_to_line(posB, r2b)
+    if s1a is None or s2a is None or s1b is None or s2b is None:
+        return None, None
+
+    min_a = min(s1a, s2a)
+    max_a = max(s1a, s2a)
+    min_b = min(s1b, s2b)
+    max_b = max(s1b, s2b)
+
+    overlap = min(max_a, max_b) - max(min_a, min_b)
+    if overlap < -2.0:
+        return None, None
+
+    start_s = min(min_a, min_b)
+    end_s = max(max_a, max_b)
+    p1 = P0 + start_s * u
+    p2 = P0 + end_s * u
+
+    return p1, p2
+
 def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None, options=None):
     """
     OpenCV 5.0 Multi-View Stereo (MVS) Architectural 3D Wireframe & Plane Triangulation.
@@ -832,21 +922,8 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
 
         for (r1a, r2a, _) in raysA:
             for (r1b, r2b, _) in raysB:
-                # Test direct endpoint pairing (1-1, 2-2)
-                m1_dir, d1_dir, _ = closest_points_between_rays(posA, r1a, posB, r1b)
-                m2_dir, d2_dir, _ = closest_points_between_rays(posA, r2a, posB, r2b)
-                err_dir = max(d1_dir, d2_dir)
-
-                # Test swapped endpoint pairing (1-2, 2-1)
-                m1_swp, d1_swp, _ = closest_points_between_rays(posA, r1a, posB, r2b)
-                m2_swp, d2_swp, _ = closest_points_between_rays(posA, r2a, posB, r1b)
-                err_swp = max(d1_swp, d2_swp)
-
-                if err_dir <= err_swp and err_dir <= sensitivity and m1_dir is not None and m2_dir is not None:
-                    p1, p2 = m1_dir, m2_dir
-                elif err_swp < err_dir and err_swp <= sensitivity and m1_swp is not None and m2_swp is not None:
-                    p1, p2 = m1_swp, m2_swp
-                else:
+                p1, p2 = triangulate_stereo_lines(posA, r1a, r2a, posB, r1b, r2b, sensitivity=sensitivity)
+                if p1 is None or p2 is None:
                     continue
 
                 # Validate altitude above ground
@@ -1085,6 +1162,22 @@ def main():
         if authentic_lines and len(authentic_lines) >= 4:
             final_3d_lines = authentic_lines
             is_success = True
+        elif all_lines and len(all_lines) >= 4:
+            # Fall back to single-image architectural edge extrusions if MVS stereo graph had sparse baseline pairs
+            deduped_fallback = []
+            tol_sq_fb = 0.4 * 0.4
+            for l in all_lines:
+                dup = False
+                for ex in deduped_fallback:
+                    d11 = (l[0]-ex[0])**2 + (l[1]-ex[1])**2 + (l[2]-ex[2])**2
+                    d22 = (l[3]-ex[3])**2 + (l[4]-ex[4])**2 + (l[5]-ex[5])**2
+                    if d11 < tol_sq_fb and d22 < tol_sq_fb:
+                        dup = True
+                        break
+                if not dup:
+                    deduped_fallback.append(l)
+            final_3d_lines = deduped_fallback
+            is_success = len(final_3d_lines) > 0
         else:
             final_3d_lines = authentic_lines
             is_success = len(authentic_lines) > 0

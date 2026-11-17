@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-11-17T05:04:41.772Z",
-  "currentAppVersion": "1.251.1",
+  "lastUpdated": "2026-11-17T16:40:02.848Z",
+  "currentAppVersion": "1.251.2",
   "masterIssueUrl": "https://github.com/bpawletz/Aalaapi-Sky/issues/202",
   "legalDisclaimer": "LEGAL & OPERATIONAL NON-GUARANTEE DISCLAIMER (\"THE LEGALIZE\"): An \"IRL Verified\" status badge, completed field checklist, or passing post-flight telemetry log analysis indicates SOLELY that a specific reference mission configuration was flown and logged on a specific aircraft and firmware combination at a specific point in time. It DOES NOT constitute a guarantee, warranty of fitness or airworthiness, regulatory certification, or assurance that future flights will execute identically or safely. Real-world flight execution is subject to numerous external, environmental, hardware, and site variations beyond software control—including wind gusts, air density, temperature, GNSS/GPS satellite geometry and multipath interference, compass/geomagnetic anomalies, barometric altimeter drift, Digital Elevation Model (DEM) and map alignment inaccuracies, unmapped physical obstacles (guy wires, power lines, tree growth), battery cell degradation, and unannounced OEM autopilot or firmware behavior changes. The Remote Pilot in Command (RPIC) retains 100% sole legal and operational responsibility for preflight verification, maintaining Visual Line of Sight (VLOS), obstacle clearance, and immediate manual override.",
   "wpmlCompilerHash": "eb2417f42275",
@@ -184,16 +184,16 @@
       "generatorFunctions": [
         "generateTargetSplatCoordinates"
       ],
-      "codeHash": "ace7a10ba77e",
+      "codeHash": "207972ba8771",
       "verifiedCodeHash": "ace7a10ba77e",
-      "status": "VERIFIED",
-      "lastModifiedVersion": "1.247.0",
+      "status": "NEEDS_RETEST",
+      "lastModifiedVersion": "1.251.2",
       "lastTestedVersion": "1.250.2",
       "lastTestedDate": "2026-11-16T22:21:45.026Z",
       "testedBy": "RPIC Field QA (FlightRecord_2026-11-16_[16-38-27].txt)",
       "droneModel": "DJI Mini 4 Pro (68)",
       "firmware": "RC 2 / DJI Fly",
-      "notes": "Re-verified v1.247.0 nadir roof bridge (-60 to -85 deg) + perimeter orbit (20.2m AGL / -55 deg) via FlightRecord_2026-11-16_[16-38-27].txt: 93/93 WPs (100%), RMS XTE=0.37m (Max 1.51m at WP 6), AltErr=0.06m (Max 0.2m at WP 77), Mean Pitch Err=0.9 deg (Max 14 deg at WP 76), Mean Yaw Err=0.5 deg (Max 7.1 deg at WP 12), 124/72 photos (172%), Exit dH=0.12m, Batt End=40%.",
+      "notes": "Auto-flagged NEEDS_RETEST: Generator code hash changed (ace7a10ba77e -> 207972ba8771) in v1.251.2.",
       "testParams": {
         "centerCoords": [
           41.3215,
@@ -212,12 +212,12 @@
         "framingMode": "balanced"
       },
       "checklist": {
-        "kmz_import": true,
-        "entry_altitude": true,
-        "geometry_path": true,
-        "heading_gimbal": true,
-        "capture_trigger": true,
-        "exit_rth": true
+        "kmz_import": false,
+        "entry_altitude": false,
+        "geometry_path": false,
+        "heading_gimbal": false,
+        "capture_trigger": false,
+        "exit_rth": false
       },
       "lastTelemetryMetrics": {
         "waypointCount": 86,

@@ -5360,7 +5360,18 @@ const FlightDiagnostics = {
     if (!this.wireframeData || !Array.isArray(this.wireframeData.lines) || index < 0 || index >= this.wireframeData.lines.length) return;
     this.wireframeSelectedLineIndex = index;
     const line = this.wireframeData.lines[index];
-    const [x1, y1, z1, x2, y2, z2] = line;
+    let x1, y1, z1, x2, y2, z2;
+    if (Array.isArray(line) && line.length >= 6) {
+      [x1, y1, z1, x2, y2, z2] = line.map(Number);
+    } else if (Array.isArray(line) && line.length === 2 && Array.isArray(line[0]) && Array.isArray(line[1])) {
+      [x1, y1, z1] = line[0].map(Number);
+      [x2, y2, z2] = line[1].map(Number);
+    } else {
+      return;
+    }
+    x1 = Number(x1) || 0; y1 = Number(y1) || 0; z1 = Number(z1) || 0;
+    x2 = Number(x2) || 0; y2 = Number(y2) || 0; z2 = Number(z2) || 0;
+
     const elevOffset = typeof this.wireframeElevationOffset === 'number' ? this.wireframeElevationOffset : 0.0;
     const len = Math.hypot(x2 - x1, y2 - y1, z2 - z1);
 

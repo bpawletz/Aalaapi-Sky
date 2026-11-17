@@ -90,7 +90,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.251.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.251.2</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -1055,9 +1055,9 @@
                 <div>
                   <div class="control-label" style="margin-bottom: 2px;">
                     <span style="font-size: 0.74rem; color: var(--text-muted);">Facade Pitch</span>
-                    <span class="value-display" style="font-size: 0.74rem;"><span id="target-perimeter-pitch-val">-55</span>°</span>
+                    <span class="value-display" style="font-size: 0.74rem;"><span id="target-perimeter-pitch-val">-35</span>°</span>
                   </div>
-                  <input type="range" id="target-perimeter-pitch" min="-80" max="-30" value="-55" step="5" class="slider" aria-label="Perimeter Orbit Gimbal Pitch">
+                  <input type="range" id="target-perimeter-pitch" min="-75" max="-20" value="-35" step="5" class="slider" aria-label="Perimeter Orbit Gimbal Pitch">
                 </div>
               </div>
             </div>
@@ -8123,7 +8123,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.251.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.251.2</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -8314,6 +8314,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                                 <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.251.2):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Target-Splat Oblique Facade Framing &amp; 3D Triangulation (Closes #316):</strong> Maintained full oblique gimbal pitch on standoff approach legs outside the building footprint ($dist \ge 4\text{m}$), blending downward only within 4m of the roof footprint to preserve facade parallax. Preserved flight line travel heading over the roof core, eliminating $180^\circ$ mid-roof yaw spins. Defaulted perimeter orbit pitch to $-35^\circ$ (was $-55^\circ$). Implemented epipolar viewing plane line triangulation in OpenCV and JS fallback to merge overlapping 2D Hough line segments, and added nadir-heavy pitch warnings to the Telemetry HUD.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.251.1):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">

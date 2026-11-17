@@ -415,24 +415,9 @@ function extractWireframeJsFallback(payload = {}) {
 
       raysA.forEach(itemA => {
         raysB.forEach(itemB => {
-          // Direct pairing
-          const cp1Dir = closestPointsBetweenRays(pmA.camPos, itemA.r1, pmB.camPos, itemB.r1);
-          const cp2Dir = closestPointsBetweenRays(pmA.camPos, itemA.r2, pmB.camPos, itemB.r2);
-          const errDir = Math.max(cp1Dir.dist, cp2Dir.dist);
-
-          // Swapped pairing
-          const cp1Swp = closestPointsBetweenRays(pmA.camPos, itemA.r1, pmB.camPos, itemB.r2);
-          const cp2Swp = closestPointsBetweenRays(pmA.camPos, itemA.r2, pmB.camPos, itemB.r1);
-          const errSwp = Math.max(cp1Swp.dist, cp2Swp.dist);
-
-          let p1 = null, p2 = null;
-          if (errDir <= errSwp && errDir <= sensitivity && cp1Dir.midpoint && cp2Dir.midpoint) {
-            p1 = cp1Dir.midpoint; p2 = cp2Dir.midpoint;
-          } else if (errSwp < errDir && errSwp <= sensitivity && cp1Swp.midpoint && cp2Swp.midpoint) {
-            p1 = cp1Swp.midpoint; p2 = cp2Swp.midpoint;
-          } else {
-            return;
-          }
+          const pts = triangulateStereoLines(pmA.camPos, itemA.r1, itemA.r2, pmB.camPos, itemB.r1, itemB.r2, sensitivity);
+          if (!pts) return;
+          const [p1, p2] = pts;
 
           if (p1[1] < (groundY - 1.0) || p2[1] < (groundY - 1.0)) return;
           const segLen = Math.hypot(p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]);
@@ -699,6 +684,106 @@ function closestPointsBetweenRays(p1, r1, p2, r2) {
   const dist = Math.hypot(pt1[0] - pt2[0], pt1[1] - pt2[1], pt1[2] - pt2[2]);
   const midpoint = [(pt1[0] + pt2[0]) / 2, (pt1[1] + pt2[1]) / 2, (pt1[2] + pt2[2]) / 2];
   return { midpoint, dist };
+}
+
+/**
+ * Triangulates two 2D line segments from calibrated stereo photo poses into a 3D line segment.
+ * Uses epipolar viewing plane intersection with ray coplanarity validation.
+ * Falls back to direct endpoint ray intersection if endpoints coincide.
+ */
+function triangulateStereoLines(posA, r1a, r2a, posB, r1b, r2b, sensitivity = 1.0) {
+  // 1. Direct endpoint pairing
+  const cp1Dir = closestPointsBetweenRays(posA, r1a, posB, r1b);
+  const cp2Dir = closestPointsBetweenRays(posA, r2a, posB, r2b);
+  const errDir = Math.max(cp1Dir.dist, cp2Dir.dist);
+
+  const cp1Swp = closestPointsBetweenRays(posA, r1a, posB, r2b);
+  const cp2Swp = closestPointsBetweenRays(posA, r2a, posB, r1b);
+  const errSwp = Math.max(cp1Swp.dist, cp2Swp.dist);
+
+  if (errDir <= errSwp && errDir <= sensitivity && cp1Dir.midpoint && cp2Dir.midpoint) {
+    return [cp1Dir.midpoint, cp2Dir.midpoint];
+  }
+  if (errSwp < errDir && errSwp <= sensitivity && cp1Swp.midpoint && cp2Swp.midpoint) {
+    return [cp1Swp.midpoint, cp2Swp.midpoint];
+  }
+
+  // 2. Epipolar Viewing Plane Intersection for non-coincident endpoints
+  const cross = (a, b) => [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
+
+  // Plane A normal
+  let nA = cross(r1a, r2a);
+  const normA = Math.hypot(nA[0], nA[1], nA[2]);
+  if (normA < 1e-4) return null;
+  nA = [nA[0] / normA, nA[1] / normA, nA[2] / normA];
+
+  // Plane B normal
+  let nB = cross(r1b, r2b);
+  const normB = Math.hypot(nB[0], nB[1], nB[2]);
+  if (normB < 1e-4) return null;
+  nB = [nB[0] / normB, nB[1] / normB, nB[2] / normB];
+
+  // Intersection line direction
+  const uRaw = cross(nA, nB);
+  const lenU = Math.hypot(uRaw[0], uRaw[1], uRaw[2]);
+  if (lenU < 0.02) return null;
+  const u = [uRaw[0] / lenU, uRaw[1] / lenU, uRaw[2] / lenU];
+
+  const dA = -(nA[0] * posA.x + nA[1] * posA.y + nA[2] * posA.z);
+  const dB = -(nB[0] * posB.x + nB[1] * posB.y + nB[2] * posB.z);
+
+  const nBxU = cross(nB, uRaw);
+  const uXnA = cross(uRaw, nA);
+  const denomP0 = lenU * lenU;
+
+  const P0 = [
+    ((-dA) * nBxU[0] + (-dB) * uXnA[0]) / denomP0,
+    ((-dA) * nBxU[1] + (-dB) * uXnA[1]) / denomP0,
+    ((-dA) * nBxU[2] + (-dB) * uXnA[2]) / denomP0
+  ];
+
+  // Project ray C + t*r onto 3D line P0 + s*u
+  const projectRayToLine = (C, r) => {
+    const w0 = [C.x - P0[0], C.y - P0[1], C.z - P0[2]];
+    const b = r[0] * u[0] + r[1] * u[1] + r[2] * u[2];
+    const d = r[0] * w0[0] + r[1] * w0[1] + r[2] * w0[2];
+    const e = u[0] * w0[0] + u[1] * w0[1] + u[2] * w0[2];
+    const den = 1.0 - b * b;
+    if (Math.abs(den) < 1e-5) return null;
+    const s = (e - b * d) / den;
+    const t = b * s - d;
+    if (t <= 0 || t > 350) return null;
+    const ptRay = [C.x + t * r[0], C.y + t * r[1], C.z + t * r[2]];
+    const ptLine = [P0[0] + s * u[0], P0[1] + s * u[1], P0[2] + s * u[2]];
+    const dist = Math.hypot(ptRay[0] - ptLine[0], ptRay[1] - ptLine[1], ptRay[2] - ptLine[2]);
+    if (dist > sensitivity) return null;
+    return s;
+  };
+
+  const s1a = projectRayToLine(posA, r1a);
+  const s2a = projectRayToLine(posA, r2a);
+  const s1b = projectRayToLine(posB, r1b);
+  const s2b = projectRayToLine(posB, r2b);
+  if (s1a === null || s2a === null || s1b === null || s2b === null) return null;
+
+  const minA = Math.min(s1a, s2a);
+  const maxA = Math.max(s1a, s2a);
+  const minB = Math.min(s1b, s2b);
+  const maxB = Math.max(s1b, s2b);
+
+  const overlap = Math.min(maxA, maxB) - Math.max(minA, minB);
+  if (overlap < -2.0) return null;
+
+  const startS = Math.min(minA, minB);
+  const endS = Math.max(maxA, maxB);
+  const p1 = [P0[0] + startS * u[0], P0[1] + startS * u[1], P0[2] + startS * u[2]];
+  const p2 = [P0[0] + endS * u[0], P0[1] + endS * u[1], P0[2] + endS * u[2]];
+
+  return [p1, p2];
 }
 
 /**
@@ -1182,5 +1267,6 @@ module.exports = {
   wireframeToThreeJson,
   computeConvexHull2D,
   deduplicateLines,
-  buildFrustumSegments
+  buildFrustumSegments,
+  triangulateStereoLines
 };

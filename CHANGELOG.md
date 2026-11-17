@@ -1,3 +1,20 @@
+## [1.251.2] - 2026-11-17
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Target-Splat Oblique Facade Framing & Nadir Roof Edge Alignment (Closes #316)**:
+  - Fixed an issue where the camera prematurely pitched down to steep angles (`-71°..-85°`) outside the building footprint, depriving facades, exterior wall corners, and eaves of oblique stereo parallax. Standoff approach legs now maintain full oblique pitch (e.g. `-60°`), smoothly blending downward only within 4 meters of the roof footprint.
+  - Changed the default Perimeter Orbit pitch from `-55°` to `-35°` (`#target-perimeter-pitch`), correctly centering building facades in the optical field of view at standoff instead of pointing down at the foundation.
+  - Added 3D Wireframe Readiness warnings in the Telemetry HUD (`#fpv-flight-hud`) when flight plans are heavily nadir-dominant ($>70\%$ steep downward) or contain opposing yaw flips over the roof.
+
+#### Under the Hood & Technical Details
+- **Mid-Roof Yaw Reversal Elimination (`src/3d/GeometryBuilder.js`)**:
+  - Fixed `inwardAxisHeading` flipping $180^\circ$ mid-roof between adjacent waypoints over the centroid (`WP 11→12`, `19→20`, etc.), preserving the flight pass travel heading across the roof footprint to eliminate gimbal motion blur and tracking error.
+- **Multi-View Stereo Epipolar Viewing Plane Triangulation (`tools/companion/wireframe_extractor.py`, `wireframe_engine.js`)**:
+  - Implemented viewing plane intersection (`triangulate_stereo_lines` / `triangulateStereoLines`) across stereo baseline pairs, merging collinear 2D Hough line segments even when edge endpoints are split at differing lengths across photos.
+  - Added single-photo architectural edge fallback unprojection when stereo baseline graphs yield sparse MVS pairs.
+
 ## [1.251.1] - 2026-11-17
 
 ### Fixed

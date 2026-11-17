@@ -1085,7 +1085,7 @@ function initUIEventListeners() {
   if (perimPitchSlider) {
     perimPitchSlider.addEventListener('input', () => {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
-      if (activeLayer) activeLayer.targetPerimeterPitch = parseFloat(perimPitchSlider.value) || -55;
+      if (activeLayer) activeLayer.targetPerimeterPitch = parseFloat(perimPitchSlider.value) || -35;
       syncDisplayValues();
       updateGrid();
       saveAllSettingsToLocalStorage();

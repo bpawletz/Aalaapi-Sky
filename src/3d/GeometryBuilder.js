@@ -751,7 +751,13 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
     linePoints.forEach(pt => {
       let isVisible = false;
       const basePitch = -Math.abs((pt.pitch !== undefined && pt.pitch !== null) ? pt.pitch : (defaultGimbalPitch !== undefined && defaultGimbalPitch !== null ? defaultGimbalPitch : -60));
-      const clampedBasePitch = Math.max(-85, Math.min(-15, basePitch));
+      const clampedBasePitch = Math.max(-80, Math.min(-15, basePitch));
+
+      // Determine distance from point to target footprint bounding box
+      const dxFoot = Math.max(0, Math.max(polyMinX - pt.x, pt.x - polyMaxX));
+      const dyFoot = Math.max(0, Math.max(polyMinY - pt.y, pt.y - polyMaxY));
+      const distToFootprint = Math.hypot(dxFoot, dyFoot);
+      const isOverRoof = (distToFootprint <= 0.05);
 
       // Determine inward axis heading so adjacent lines never flip 180° away from the target
       const isPass2 = (pt.heading === 90 || pt.heading === 270);
@@ -784,8 +790,7 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
         // Test frustum visibility using the original line heading so distant lead-up and outer legs are pruned
         isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, clampedBasePitch, hfov, vfov, localTargetPoly, objectHeight, framingRatio);
 
-        // Because dynamic pitch (-60° -> -85°) captures the roof directly as the drone crosses over,
-        // cap lead-up distance in balanced/tight modes to boresight standoff so distant grazing shots are pruned
+        // Cap lead-up distance in balanced/tight modes to boresight standoff so distant grazing shots are pruned
         if (isVisible && framingMode !== 'full') {
           const alphaRad = ((90.0 + clampedBasePitch) * Math.PI) / 180.0;
           const boresightStandoff = Math.max(8.0, deltaZ * Math.tan(alphaRad));
@@ -796,22 +801,28 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
         }
 
         // Apply Footprint-Clamped Inward Aiming & Nadir Roof Bridge (-85° over roof core)
-        if (distToAim >= 2.0) {
+        if (distToAim >= 3.5) {
           let inwardYaw = Math.atan2(dx, dy) * (180.0 / Math.PI);
           if (inwardYaw < 0) inwardYaw += 360;
           effectiveHeading = Math.round(inwardYaw * 10) / 10;
 
-          // Smoothly transition pitch from basePitch at standoff to -85° as drone crosses roof edge
-          const roofBlendDist = Math.max(8.0, Math.min(20.0, deltaZ * 0.6));
-          if (distToAim < roofBlendDist) {
-            const t = distToAim / roofBlendDist; // 0 at roof edge -> 1 at standoff
-            effectivePitch = Math.round(-85 + t * (clampedBasePitch - (-85)));
+          // Outside the roof footprint, keep full oblique basePitch for facade/eave inspection.
+          // Blend downward only when within 4m of the roof footprint edge.
+          if (distToFootprint > 0) {
+            const roofEdgeBlendDist = 4.0;
+            if (distToFootprint < roofEdgeBlendDist) {
+              const t = distToFootprint / roofEdgeBlendDist;
+              effectivePitch = Math.round(-85 + t * (clampedBasePitch - (-85)));
+            } else {
+              effectivePitch = Math.round(clampedBasePitch);
+            }
           } else {
-            effectivePitch = Math.round(clampedBasePitch);
+            effectivePitch = -85;
           }
         } else {
-          // Directly over the building roof core: Nadir Roof Bridge (-85°) without mid-roof yaw spin
-          effectiveHeading = inwardAxisHeading;
+          // Directly over building roof core: Nadir Roof Bridge (-85°)
+          // Maintain line flight heading (pt.heading) to eliminate 180° mid-roof yaw spins
+          effectiveHeading = pt.heading;
           effectivePitch = -85;
         }
         effectivePitch = Math.round(Math.max(-85, Math.min(-15, effectivePitch)));
@@ -963,7 +974,9 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
     const orbitAlt = (layer.targetPerimeterAltitude !== null && layer.targetPerimeterAltitude !== undefined)
       ? parseFloat(layer.targetPerimeterAltitude)
       : null;
-    const orbitPitch = parseFloat(layer.targetPerimeterPitch) || -55;
+    const orbitPitch = (layer.targetPerimeterPitch !== null && layer.targetPerimeterPitch !== undefined && !isNaN(parseFloat(layer.targetPerimeterPitch)))
+      ? parseFloat(layer.targetPerimeterPitch)
+      : -35;
     const perimResult = generateTargetPerimeterOrbit(layer, standoff, orbitAlt, orbitPitch, sPhoto, centroidX, centroidY, localTargetPoly, altitude);
 
     if (perimResult.waypoints.length > 0) {
@@ -1082,7 +1095,13 @@ function generateTargetPerimeterOrbit(layer, standoffMeters, orbitAlt, orbitPitc
       let heading = Math.atan2(dxC, dyC) * (180.0 / Math.PI);
       if (heading < 0) heading += 360;
       heading = Math.round(heading * 10) / 10;
-      const effectiveOrbitPitch = Math.round(orbitPitch);
+      let effectiveOrbitPitch = Math.round(orbitPitch);
+      if (layer && (layer.targetPerimeterAutoPitch || layer.targetPerimeterPitch === 'auto')) {
+        const dCenter = Math.hypot(dxC, dyC);
+        const deltaZ = Math.max(2.0, effectiveAlt - (targetHeight * 0.5));
+        const autoPitch = -Math.round(Math.atan2(deltaZ, Math.max(4.0, dCenter * 0.75)) * (180.0 / Math.PI));
+        effectiveOrbitPitch = Math.max(-55, Math.min(-20, autoPitch));
+      }
 
       const pt = {
         x: px,

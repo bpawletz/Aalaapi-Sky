@@ -9428,7 +9428,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.251.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.65rem; font-weight: 700; color: #a78bfa; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); padding: 1px 6px; border-radius: 9999px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.03em;">v1.251.2</span></h1>
         </div>
         <button id="topbar-scroll-cue-left" class="topbar-scroll-cue cue-left" type="button" aria-label="Scroll menu left" title="Click or swipe to scroll menu left">‹</button>
       </div>
@@ -10393,9 +10393,9 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
                 <div>
                   <div class="control-label" style="margin-bottom: 2px;">
                     <span style="font-size: 0.74rem; color: var(--text-muted);">Facade Pitch</span>
-                    <span class="value-display" style="font-size: 0.74rem;"><span id="target-perimeter-pitch-val">-55</span>°</span>
+                    <span class="value-display" style="font-size: 0.74rem;"><span id="target-perimeter-pitch-val">-35</span>°</span>
                   </div>
-                  <input type="range" id="target-perimeter-pitch" min="-80" max="-30" value="-55" step="5" class="slider" aria-label="Perimeter Orbit Gimbal Pitch">
+                  <input type="range" id="target-perimeter-pitch" min="-75" max="-20" value="-35" step="5" class="slider" aria-label="Perimeter Orbit Gimbal Pitch">
                 </div>
               </div>
             </div>
@@ -17461,7 +17461,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.251.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;">Version 1.251.2</span>
               <button id="about-open-debug-console-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px; margin-left: 8px; border-radius: 999px; vertical-align: middle;" title="Open Mobile Debug Console">🛠️ Console</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -17652,6 +17652,12 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
                                 <div>
+                                <li style="margin-bottom: 8px;">
+                                <strong style="color: var(--text-main);">Changelog (v1.251.2):</strong>
+                <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
+                  <li><strong>Target-Splat Oblique Facade Framing &amp; 3D Triangulation (Closes #316):</strong> Maintained full oblique gimbal pitch on standoff approach legs outside the building footprint ($dist \ge 4\text{m}$), blending downward only within 4m of the roof footprint to preserve facade parallax. Preserved flight line travel heading over the roof core, eliminating $180^\circ$ mid-roof yaw spins. Defaulted perimeter orbit pitch to $-35^\circ$ (was $-55^\circ$). Implemented epipolar viewing plane line triangulation in OpenCV and JS fallback to merge overlapping 2D Hough line segments, and added nadir-heavy pitch warnings to the Telemetry HUD.</li>
+                </ul>
+              </li>
                                 <li style="margin-bottom: 8px;">
                                 <strong style="color: var(--text-main);">Changelog (v1.251.1):</strong>
                 <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: var(--text-muted);">
@@ -24608,7 +24614,7 @@ html[data-map-filter="red-nvg"] .aalaapi-base-tile-layer.aalaapi-base-satellite 
 
   <!-- Custom Javascript -->
   <script>
-if (typeof window !== "undefined") { window.AALAAPI_IRL_STATUS = {"_issue":"https://github.com/bpawletz/Aalaapi-Sky/issues/202","single":{"s":"V","v":"1.210.0"},"double":{"s":"V","v":"1.215.2"},"target-splat":{"s":"V","v":"1.250.2"},"orbit":{"s":"V","v":"1.215.0"},"multi-orbit":{"s":"V","v":"1.220.0"},"tower":{"s":"V","v":"1.219.2"},"vertical-facade":{"s":"V","v":"1.243.2"},"continuous-helix":{"s":"U","v":null},"star-pass":{"s":"U","v":null},"photo-sphere":{"s":"U","v":null},"hyperlapse":{"s":"U","v":null},"light-art":{"s":"U","v":null},"grid-orbit-combo":{"s":"U","v":null},"grid-multi-orbit-combo":{"s":"U","v":null},"freeform":{"s":"U","v":null},"road-following":{"s":"V","v":"1.215.4"},"corridor":{"s":"V","v":"1.215.1"},"exclusion-box":{"s":"U","v":null},"exclusion-freeform":{"s":"U","v":null},"boundary-polygon":{"s":"V","v":"1.250.2"},"fiducial-markers":{"s":"U","v":null},"dome-shell":{"s":"U","v":null},"polygon-grid":{"s":"U","v":null},"sar-search":{"s":"U","v":null},"perimeter-patrol":{"s":"U","v":null},"cinematic-reveal":{"s":"U","v":null}}; }
+if (typeof window !== "undefined") { window.AALAAPI_IRL_STATUS = {"_issue":"https://github.com/bpawletz/Aalaapi-Sky/issues/202","single":{"s":"V","v":"1.210.0"},"double":{"s":"V","v":"1.215.2"},"target-splat":{"s":"R","v":"1.250.2"},"orbit":{"s":"V","v":"1.215.0"},"multi-orbit":{"s":"V","v":"1.220.0"},"tower":{"s":"V","v":"1.219.2"},"vertical-facade":{"s":"V","v":"1.243.2"},"continuous-helix":{"s":"U","v":null},"star-pass":{"s":"U","v":null},"photo-sphere":{"s":"U","v":null},"hyperlapse":{"s":"U","v":null},"light-art":{"s":"U","v":null},"grid-orbit-combo":{"s":"U","v":null},"grid-multi-orbit-combo":{"s":"U","v":null},"freeform":{"s":"U","v":null},"road-following":{"s":"V","v":"1.215.4"},"corridor":{"s":"V","v":"1.215.1"},"exclusion-box":{"s":"U","v":null},"exclusion-freeform":{"s":"U","v":null},"boundary-polygon":{"s":"V","v":"1.250.2"},"fiducial-markers":{"s":"U","v":null},"dome-shell":{"s":"U","v":null},"polygon-grid":{"s":"U","v":null},"sar-search":{"s":"U","v":null},"perimeter-patrol":{"s":"U","v":null},"cinematic-reveal":{"s":"U","v":null}}; }
 // -------------------- src/core/Logger.js --------------------
 // Centralized Logging Utility
 const Logger = {
@@ -32783,7 +32789,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     targetPerimeterPass: false, // Enable perimeter orbit pass
     targetPerimeterStandoff: 8, // Meters outside polygon/radius boundary
     targetPerimeterAltitude: null, // null = auto (65% of grid alt)
-    targetPerimeterPitch: -55, // Gimbal pitch for facade orbit
+    targetPerimeterPitch: -35, // Gimbal pitch for facade orbit
     targetPerimeterSpeed: null, // null = inherit layer speed
     targetPrunedCount: 0,
     targetSavedPercent: 0,
@@ -33577,7 +33583,7 @@ function saveActiveLayerFromUi(targetLayer) {
     const rawAlt = parseFloat(perimAltEl.value);
     layer.targetPerimeterAltitude = (rawAlt === 0 || isNaN(rawAlt)) ? null : rawAlt;
   }
-  if (perimPitchEl) layer.targetPerimeterPitch = parseFloat(perimPitchEl.value) || -55;
+  if (perimPitchEl) layer.targetPerimeterPitch = parseFloat(perimPitchEl.value) || -35;
 
   const towerMinH = document.getElementById('tower-min-height');
   const towerMaxH = document.getElementById('tower-max-height');
@@ -33961,7 +33967,7 @@ function syncUiWithActiveLayer() {
   }
   setVal('target-perimeter-standoff', layer.targetPerimeterStandoff !== undefined ? layer.targetPerimeterStandoff : 8);
   setVal('target-perimeter-alt', (layer.targetPerimeterAltitude !== null && layer.targetPerimeterAltitude !== undefined) ? layer.targetPerimeterAltitude : 0);
-  setVal('target-perimeter-pitch', layer.targetPerimeterPitch !== undefined ? layer.targetPerimeterPitch : -55);
+  setVal('target-perimeter-pitch', layer.targetPerimeterPitch !== undefined ? layer.targetPerimeterPitch : -35);
 
   // Tower controls
   setVal('tower-min-height', layer.towerMinHeight !== undefined ? layer.towerMinHeight : 20);
@@ -40722,7 +40728,7 @@ function initUIEventListeners() {
   if (perimPitchSlider) {
     perimPitchSlider.addEventListener('input', () => {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
-      if (activeLayer) activeLayer.targetPerimeterPitch = parseFloat(perimPitchSlider.value) || -55;
+      if (activeLayer) activeLayer.targetPerimeterPitch = parseFloat(perimPitchSlider.value) || -35;
       syncDisplayValues();
       updateGrid();
       saveAllSettingsToLocalStorage();
@@ -53361,7 +53367,13 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
     linePoints.forEach(pt => {
       let isVisible = false;
       const basePitch = -Math.abs((pt.pitch !== undefined && pt.pitch !== null) ? pt.pitch : (defaultGimbalPitch !== undefined && defaultGimbalPitch !== null ? defaultGimbalPitch : -60));
-      const clampedBasePitch = Math.max(-85, Math.min(-15, basePitch));
+      const clampedBasePitch = Math.max(-80, Math.min(-15, basePitch));
+
+      // Determine distance from point to target footprint bounding box
+      const dxFoot = Math.max(0, Math.max(polyMinX - pt.x, pt.x - polyMaxX));
+      const dyFoot = Math.max(0, Math.max(polyMinY - pt.y, pt.y - polyMaxY));
+      const distToFootprint = Math.hypot(dxFoot, dyFoot);
+      const isOverRoof = (distToFootprint <= 0.05);
 
       // Determine inward axis heading so adjacent lines never flip 180° away from the target
       const isPass2 = (pt.heading === 90 || pt.heading === 270);
@@ -53394,8 +53406,7 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
         // Test frustum visibility using the original line heading so distant lead-up and outer legs are pruned
         isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, clampedBasePitch, hfov, vfov, localTargetPoly, objectHeight, framingRatio);
 
-        // Because dynamic pitch (-60° -> -85°) captures the roof directly as the drone crosses over,
-        // cap lead-up distance in balanced/tight modes to boresight standoff so distant grazing shots are pruned
+        // Cap lead-up distance in balanced/tight modes to boresight standoff so distant grazing shots are pruned
         if (isVisible && framingMode !== 'full') {
           const alphaRad = ((90.0 + clampedBasePitch) * Math.PI) / 180.0;
           const boresightStandoff = Math.max(8.0, deltaZ * Math.tan(alphaRad));
@@ -53406,22 +53417,28 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
         }
 
         // Apply Footprint-Clamped Inward Aiming & Nadir Roof Bridge (-85° over roof core)
-        if (distToAim >= 2.0) {
+        if (distToAim >= 3.5) {
           let inwardYaw = Math.atan2(dx, dy) * (180.0 / Math.PI);
           if (inwardYaw < 0) inwardYaw += 360;
           effectiveHeading = Math.round(inwardYaw * 10) / 10;
 
-          // Smoothly transition pitch from basePitch at standoff to -85° as drone crosses roof edge
-          const roofBlendDist = Math.max(8.0, Math.min(20.0, deltaZ * 0.6));
-          if (distToAim < roofBlendDist) {
-            const t = distToAim / roofBlendDist; // 0 at roof edge -> 1 at standoff
-            effectivePitch = Math.round(-85 + t * (clampedBasePitch - (-85)));
+          // Outside the roof footprint, keep full oblique basePitch for facade/eave inspection.
+          // Blend downward only when within 4m of the roof footprint edge.
+          if (distToFootprint > 0) {
+            const roofEdgeBlendDist = 4.0;
+            if (distToFootprint < roofEdgeBlendDist) {
+              const t = distToFootprint / roofEdgeBlendDist;
+              effectivePitch = Math.round(-85 + t * (clampedBasePitch - (-85)));
+            } else {
+              effectivePitch = Math.round(clampedBasePitch);
+            }
           } else {
-            effectivePitch = Math.round(clampedBasePitch);
+            effectivePitch = -85;
           }
         } else {
-          // Directly over the building roof core: Nadir Roof Bridge (-85°) without mid-roof yaw spin
-          effectiveHeading = inwardAxisHeading;
+          // Directly over building roof core: Nadir Roof Bridge (-85°)
+          // Maintain line flight heading (pt.heading) to eliminate 180° mid-roof yaw spins
+          effectiveHeading = pt.heading;
           effectivePitch = -85;
         }
         effectivePitch = Math.round(Math.max(-85, Math.min(-15, effectivePitch)));
@@ -53573,7 +53590,9 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
     const orbitAlt = (layer.targetPerimeterAltitude !== null && layer.targetPerimeterAltitude !== undefined)
       ? parseFloat(layer.targetPerimeterAltitude)
       : null;
-    const orbitPitch = parseFloat(layer.targetPerimeterPitch) || -55;
+    const orbitPitch = (layer.targetPerimeterPitch !== null && layer.targetPerimeterPitch !== undefined && !isNaN(parseFloat(layer.targetPerimeterPitch)))
+      ? parseFloat(layer.targetPerimeterPitch)
+      : -35;
     const perimResult = generateTargetPerimeterOrbit(layer, standoff, orbitAlt, orbitPitch, sPhoto, centroidX, centroidY, localTargetPoly, altitude);
 
     if (perimResult.waypoints.length > 0) {
@@ -53692,7 +53711,13 @@ function generateTargetPerimeterOrbit(layer, standoffMeters, orbitAlt, orbitPitc
       let heading = Math.atan2(dxC, dyC) * (180.0 / Math.PI);
       if (heading < 0) heading += 360;
       heading = Math.round(heading * 10) / 10;
-      const effectiveOrbitPitch = Math.round(orbitPitch);
+      let effectiveOrbitPitch = Math.round(orbitPitch);
+      if (layer && (layer.targetPerimeterAutoPitch || layer.targetPerimeterPitch === 'auto')) {
+        const dCenter = Math.hypot(dxC, dyC);
+        const deltaZ = Math.max(2.0, effectiveAlt - (targetHeight * 0.5));
+        const autoPitch = -Math.round(Math.atan2(deltaZ, Math.max(4.0, dCenter * 0.75)) * (180.0 / Math.PI));
+        effectiveOrbitPitch = Math.max(-55, Math.min(-20, autoPitch));
+      }
 
       const pt = {
         x: px,
@@ -59121,6 +59146,8 @@ function evaluateFlightPlanWireframeReadiness(waypoints, photoLocations = null, 
   let totalPlannedPhotos = 0;
   let rejectedShallowPhotos = 0;
   let marginalPitchPhotos = 0;
+  let steepNadirPhotos = 0;
+  let obliqueFacadePhotos = 0;
   let noGroundInterceptCount = 0;
   let videoOnlyCount = 0;
   let hoverNoPhotoCount = 0;
@@ -59167,6 +59194,12 @@ function evaluateFlightPlanWireframeReadiness(waypoints, photoLocations = null, 
     }
     if (effPitch > -35.0) {
       marginalPitchPhotos++;
+    }
+    if (effPitch <= -70.0) {
+      steepNadirPhotos++;
+    }
+    if (effPitch >= -60.0 && effPitch <= -25.0) {
+      obliqueFacadePhotos++;
     }
 
     const lat = item.lat ?? act.lat ?? originLat;
@@ -59316,9 +59349,32 @@ function evaluateFlightPlanWireframeReadiness(waypoints, photoLocations = null, 
     }
   }
 
+  let opposingRoofYawFlips = 0;
+  for (let k = 1; k < validPoses.length; k++) {
+    const pPrev = validPoses[k - 1];
+    const pCurr = validPoses[k];
+    if (pPrev.pitch <= -70.0 && pCurr.pitch <= -70.0) {
+      const yawDiff = Math.abs((((pCurr.yaw - pPrev.yaw) % 360) + 540) % 360 - 180);
+      if (yawDiff >= 135.0) {
+        opposingRoofYawFlips++;
+      }
+    }
+  }
+
   if (boundaryPolyXZ && validPoses.length > 0 && insideBoundaryCount === 0) {
     reasons.push('0 planned camera ground footprints intersect the active Layer Boundary Hull.');
     recommendations.push('Move the pattern over the Layer Boundary or uncheck "Boundary Hull" in the 3D Wireframe Toolkit.');
+  }
+
+  if (validPoses.length >= 4 && (steepNadirPhotos / validPoses.length) > 0.70 && (obliqueFacadePhotos / validPoses.length) < 0.20) {
+    reasons.push(`Flight plan is nadir-heavy (${steepNadirPhotos}/${validPoses.length} photos <= -70°); vertical walls and corners require oblique viewing angles (-35° to -55°).`);
+    recommendations.push('Add an oblique facade perimeter orbit or set layer pitch to -45° to -55°.');
+    canAutoOptimize = true;
+  }
+  if (opposingRoofYawFlips > 0) {
+    reasons.push(`${opposingRoofYawFlips} opposing 180° yaw reversal(s) detected across steep roof waypoints.`);
+    recommendations.push('Maintain forward heading across roof passes to eliminate optical inversion & motion blur.');
+    canAutoOptimize = true;
   }
 
   let status = 'insufficient';
@@ -59345,6 +59401,9 @@ function evaluateFlightPlanWireframeReadiness(waypoints, photoLocations = null, 
     validPitchPhotos: validPoses.length,
     rejectedShallowPhotos,
     marginalPitchPhotos,
+    steepNadirPhotos,
+    obliqueFacadePhotos,
+    opposingRoofYawFlips,
     stereoPairsCount,
     avgBaselineMeters,
     insideBoundaryCount,
@@ -98844,7 +98903,18 @@ const FlightDiagnostics = {
     if (!this.wireframeData || !Array.isArray(this.wireframeData.lines) || index < 0 || index >= this.wireframeData.lines.length) return;
     this.wireframeSelectedLineIndex = index;
     const line = this.wireframeData.lines[index];
-    const [x1, y1, z1, x2, y2, z2] = line;
+    let x1, y1, z1, x2, y2, z2;
+    if (Array.isArray(line) && line.length >= 6) {
+      [x1, y1, z1, x2, y2, z2] = line.map(Number);
+    } else if (Array.isArray(line) && line.length === 2 && Array.isArray(line[0]) && Array.isArray(line[1])) {
+      [x1, y1, z1] = line[0].map(Number);
+      [x2, y2, z2] = line[1].map(Number);
+    } else {
+      return;
+    }
+    x1 = Number(x1) || 0; y1 = Number(y1) || 0; z1 = Number(z1) || 0;
+    x2 = Number(x2) || 0; y2 = Number(y2) || 0; z2 = Number(z2) || 0;
+
     const elevOffset = typeof this.wireframeElevationOffset === 'number' ? this.wireframeElevationOffset : 0.0;
     const len = Math.hypot(x2 - x1, y2 - y1, z2 - z1);
 

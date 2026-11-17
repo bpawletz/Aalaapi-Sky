@@ -143,7 +143,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     targetPerimeterPass: false, // Enable perimeter orbit pass
     targetPerimeterStandoff: 8, // Meters outside polygon/radius boundary
     targetPerimeterAltitude: null, // null = auto (65% of grid alt)
-    targetPerimeterPitch: -55, // Gimbal pitch for facade orbit
+    targetPerimeterPitch: -35, // Gimbal pitch for facade orbit
     targetPerimeterSpeed: null, // null = inherit layer speed
     targetPrunedCount: 0,
     targetSavedPercent: 0,
@@ -937,7 +937,7 @@ function saveActiveLayerFromUi(targetLayer) {
     const rawAlt = parseFloat(perimAltEl.value);
     layer.targetPerimeterAltitude = (rawAlt === 0 || isNaN(rawAlt)) ? null : rawAlt;
   }
-  if (perimPitchEl) layer.targetPerimeterPitch = parseFloat(perimPitchEl.value) || -55;
+  if (perimPitchEl) layer.targetPerimeterPitch = parseFloat(perimPitchEl.value) || -35;
 
   const towerMinH = document.getElementById('tower-min-height');
   const towerMaxH = document.getElementById('tower-max-height');
@@ -1321,7 +1321,7 @@ function syncUiWithActiveLayer() {
   }
   setVal('target-perimeter-standoff', layer.targetPerimeterStandoff !== undefined ? layer.targetPerimeterStandoff : 8);
   setVal('target-perimeter-alt', (layer.targetPerimeterAltitude !== null && layer.targetPerimeterAltitude !== undefined) ? layer.targetPerimeterAltitude : 0);
-  setVal('target-perimeter-pitch', layer.targetPerimeterPitch !== undefined ? layer.targetPerimeterPitch : -55);
+  setVal('target-perimeter-pitch', layer.targetPerimeterPitch !== undefined ? layer.targetPerimeterPitch : -35);
 
   // Tower controls
   setVal('tower-min-height', layer.towerMinHeight !== undefined ? layer.towerMinHeight : 20);
