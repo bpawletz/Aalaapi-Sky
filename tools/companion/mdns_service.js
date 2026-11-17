@@ -686,6 +686,14 @@ class MdnsService extends EventEmitter {
       });
       const resBuf = responsePacket.encode();
       this._sendMulticast(resBuf);
+
+      // RFC 6762 Section 5.4: If querier used an ephemeral port (legacy unicast or ad-hoc discoverer),
+      // send direct unicast response back to source address and port
+      if (rinfo && rinfo.port && rinfo.port !== MDNS_PORT && rinfo.address) {
+        try {
+          this.socket.send(resBuf, 0, resBuf.length, rinfo.port, rinfo.address, () => {});
+        } catch (_) {}
+      }
     }
   }
 
@@ -793,6 +801,12 @@ class MdnsService extends EventEmitter {
 
         try {
           client.send(queryBuf, 0, queryBuf.length, MDNS_PORT, MDNS_MULTICAST_IPV4, () => {});
+          client.send(queryBuf, 0, queryBuf.length, MDNS_PORT, '127.0.0.1', () => {});
+          for (const net of getLocalIpv4Addresses()) {
+            if (net.address && net.address !== '127.0.0.1') {
+              try { client.send(queryBuf, 0, queryBuf.length, MDNS_PORT, net.address, () => {}); } catch (_) {}
+            }
+          }
         } catch (_) {}
 
         setTimeout(() => {

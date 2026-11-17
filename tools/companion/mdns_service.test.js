@@ -183,3 +183,47 @@ test('MdnsService.generateAvahiServiceXml produces valid XML', () => {
   assert.ok(xml.includes('<type>_dump1090._tcp</type>'));
   assert.ok(xml.includes('<txt-record>format=basestation</txt-record>'));
 });
+
+test('MdnsService _handleMessage sends RFC 6762 direct unicast response to ephemeral querier (Closes #315)', () => {
+  const service = new MdnsService({
+    hostname: 'aalaapi-sky',
+    port: 8765,
+    instanceName: 'Test Bridge'
+  });
+
+  const query = new DnsPacket({
+    id: 9999,
+    flags: 0x0000,
+    questions: [
+      { name: '_aalaapi-sky._tcp.local', type: RR_TYPE.PTR, class: 1 }
+    ]
+  });
+
+  const sentPackets = [];
+  service.socket = {
+    send: (buf, offset, len, port, address, cb) => {
+      sentPackets.push({ port, address, buf: buf.slice(offset, offset + len) });
+      if (cb) cb();
+    }
+  };
+
+  // Simulate query from an ephemeral UDP port (e.g. 54321) on 127.0.0.1
+  const rinfo = { address: '127.0.0.1', port: 54321 };
+  service._handleMessage(query.encode(), rinfo);
+
+  // Assert both multicast (224.0.0.251:5353) and direct unicast (127.0.0.1:54321) were dispatched
+  assert.strictEqual(sentPackets.length, 2);
+
+  const multicastSend = sentPackets.find(p => p.port === 5353 && p.address === '224.0.0.251');
+  assert.ok(multicastSend, 'Must send multicast announcement to 224.0.0.251:5353');
+
+  const unicastSend = sentPackets.find(p => p.port === 54321 && p.address === '127.0.0.1');
+  assert.ok(unicastSend, 'Must send RFC 6762 unicast response to ephemeral querier at 127.0.0.1:54321');
+
+  const parsed = DnsPacket.parse(unicastSend.buf);
+  assert.strictEqual(parsed.id, 9999);
+  assert.strictEqual(parsed.isResponse, true);
+  const ptr = parsed.answers.find(a => a.type === RR_TYPE.PTR);
+  assert.ok(ptr);
+  assert.strictEqual(ptr.name, '_aalaapi-sky._tcp.local');
+});

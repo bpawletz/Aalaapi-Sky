@@ -46707,6 +46707,32 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.strictEqual(discovered.bridges.length, 1);
       assert.strictEqual(discovered.bridges[0].url, 'http://192.168.1.150:8765');
     });
+
+    test('MdnsService RFC 6762 unicast response handling for ad-hoc queriers (Issue #315)', () => {
+      const { MdnsService, DnsPacket, RR_TYPE } = require('./tools/companion/mdns_service.js');
+      const service = new MdnsService({ hostname: 'aalaapi-sky', port: 8765 });
+      const query = new DnsPacket({
+        id: 7777,
+        flags: 0x0000,
+        questions: [{ name: '_aalaapi-sky._tcp.local', type: RR_TYPE.PTR, class: 1 }]
+      });
+
+      const sent = [];
+      service.socket = {
+        send: (buf, offset, len, port, address, cb) => {
+          sent.push({ port, address, buf: buf.slice(offset, offset + len) });
+          if (cb) cb();
+        }
+      };
+
+      service._handleMessage(query.encode(), { address: '192.168.1.55', port: 61234 });
+      assert.strictEqual(sent.length, 2);
+      const unicast = sent.find(p => p.port === 61234 && p.address === '192.168.1.55');
+      assert.ok(unicast);
+      const parsed = DnsPacket.parse(unicast.buf);
+      assert.strictEqual(parsed.id, 7777);
+      assert.strictEqual(parsed.isResponse, true);
+    });
   });
 
 });

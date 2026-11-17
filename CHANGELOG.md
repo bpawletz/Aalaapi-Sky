@@ -1,3 +1,14 @@
+## [1.251.1] - 2026-11-17
+
+### Fixed
+
+#### Under the Hood & Technical Details
+- **Bonjour mDNS Ephemeral Querier Unicast Responses (`tools/companion/mdns_service.js`) (Closes #315)**:
+  - Fixed an issue where `MdnsService.discover()` and ad-hoc mDNS discovery tools querying from ephemeral UDP source ports (`port !== 5353`) received empty results because the responder only broadcast multicast packets to `224.0.0.251:5353`.
+  - Added RFC 6762 Section 5.4 compliant direct unicast responses dispatching to `(rinfo.address, rinfo.port)` whenever queries originate from an ephemeral UDP source port.
+  - Extended `MdnsService.discover()` to probe `MDNS_MULTICAST_IPV4`, loopback (`127.0.0.1`), and active LAN interfaces for resilient discovery across multi-homed Windows, WSL, and Linux setups.
+  - Added regression unit tests in `tools/companion/mdns_service.test.js` and `index.test.js`.
+
 ## [1.251.0] - 2026-11-16
 
 Introduced 1-tap Bonjour (mDNS) auto-discovery for Android tablets and web clients, coupled with explicit SQLite mission database persistence and browsing in the Companion Bridge.
