@@ -1,6 +1,6 @@
 # Aalaapi Sky Node-RED Integration Guide
 
-Welcome to the comprehensive integration and developer guide for **`node-red-contrib-aalaapi`**, the dedicated Node-RED node module designed to integrate [Aalaapi Sky Bridge](file:///tools/companion/server.js) (`127.0.0.1:8765`) directly into event-driven hardware, telemetry, and automated 3D reconstruction pipelines.
+Welcome to the comprehensive integration and developer guide for **`node-red-contrib-aalaapi`**, the dedicated Node-RED node module designed to integrate [Aalaapi Sky Bridge](tools/companion/server.js) (`127.0.0.1:8765`) directly into event-driven hardware, telemetry, and automated 3D reconstruction pipelines.
 
 ---
 
@@ -151,7 +151,7 @@ Spatial transformation and manifest formatting node. Transforms raw photo teleme
 
 ## 3. Spatial Mathematics & Coordinate Systems
 
-Accurate 3D reconstruction and Gaussian Splatting require strict adherence to camera reference frames. The single source of truth for all spatial calculations in `node-red-contrib-aalaapi` is located in [camera-pose.js](file:///tools/node-red-contrib-aalaapi/lib/camera-pose.js).
+Accurate 3D reconstruction and Gaussian Splatting require strict adherence to camera reference frames. The single source of truth for all spatial calculations in `node-red-contrib-aalaapi` is located in [camera-pose.js](tools/node-red-contrib-aalaapi/lib/camera-pose.js).
 
 ### Local Tangent Plane: ENU Reference Frame
 GPS coordinates $(\text{latitude } \phi, \text{longitude } \lambda, \text{altitude } h)$ are converted into a metric Local Tangent Plane using an East-North-Up (ENU) coordinate frame centered at reference origin $(\phi_0, \lambda_0, h_0)$:
@@ -293,7 +293,7 @@ npm link node-red-contrib-aalaapi
 
 ### Importing Pre-Built Example Flows
 
-A complete automated Gaussian Splatting pipeline is packaged in [auto-splat-pipeline.json](file:///tools/node-red-contrib-aalaapi/examples/auto-splat-pipeline.json):
+A complete automated Gaussian Splatting pipeline is packaged in [auto-splat-pipeline.json](tools/node-red-contrib-aalaapi/examples/auto-splat-pipeline.json):
 1. In Node-RED, open the top-right hamburger menu $\equiv$.
 2. Click **Import**.
 3. Select **Import from File** and choose `tools/node-red-contrib-aalaapi/examples/auto-splat-pipeline.json`.
@@ -316,5 +316,5 @@ A complete automated Gaussian Splatting pipeline is packaged in [auto-splat-pipe
 - For oblique survey flights, ensure the drone is writing DJI XMP metadata (default on DJI Pilot 2, DJI Fly, and GS Pro).
 
 ### Data Privacy & Safe Coordinate Redaction
-- In compliance with the Aalaapi Sky Security Policy ([AGENTS.md Section 8](file:///AGENTS.md#L182-L191)), never share logs or workflows containing client coordinates or real-world home locations.
+- In compliance with the Aalaapi Sky Security Policy ([AGENTS.md Section 8](AGENTS.md#L182-L191)), never share logs or workflows containing client coordinates or real-world home locations.
 - For public test flows and documentation, always use synthetic rural coordinates (e.g. $[41.3215, -88.9950]$) or normalized local offsets $(0, 0)$.

@@ -1069,8 +1069,8 @@ class AdsbAirspaceTracker extends EventEmitter {
       aircraftType: ac.aircraftType || ac.t || (ac.type === 'helicopter' ? 'B407' : ac.type === 'jet' ? 'B738' : (ac.type || 'C172')),
       type: ac.type || ac.t || ac.aircraftType || (ac.type === 'helicopter' ? 'B407' : ac.type === 'jet' ? 'B738' : 'C172'),
       category: ac.category || (ac.type === 'helicopter' ? 'A7' : ac.type === 'jet' ? 'A3' : 'A1'),
-      latitude: ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 40.0150),
-      longitude: ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -83.1700),
+      latitude: ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 41.3250),
+      longitude: ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -88.9900),
       altitude: ac.altitude !== undefined ? ac.altitude : (ac.alt !== undefined ? ac.alt : 1800),
       altitudeGeometric: ac.altitudeGeometric || ac.altitude || 1800,
       speed: ac.speed !== undefined ? ac.speed : 135,
@@ -1083,9 +1083,9 @@ class AdsbAirspaceTracker extends EventEmitter {
       packetCount: 1,
       dataSource: 'simulated',
       history: Array.isArray(ac.history) ? [...ac.history] : [
-        [(ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 40.0150)) + 0.012, (ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -83.1700)) + 0.012, 2200, now - 30000],
-        [(ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 40.0150)) + 0.006, (ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -83.1700)) + 0.006, 2000, now - 15000],
-        [(ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 40.0150)), (ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -83.1700)), (ac.altitude !== undefined ? ac.altitude : (ac.alt !== undefined ? ac.alt : 1800)), now]
+        [(ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 41.3250)) + 0.012, (ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -88.9900)) + 0.012, 2200, now - 30000],
+        [(ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 41.3250)) + 0.006, (ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -88.9900)) + 0.006, 2000, now - 15000],
+        [(ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 41.3250)), (ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -88.9900)), (ac.altitude !== undefined ? ac.altitude : (ac.alt !== undefined ? ac.alt : 1800)), now]
       ]
     };
 

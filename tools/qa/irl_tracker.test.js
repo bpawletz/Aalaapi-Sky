@@ -280,14 +280,14 @@ describe('IRL Test Plan Tracker & Post-Flight Log Analyzer Tests', () => {
   test('Issue #204: candidate scoring prioritizes geometric path fit and pattern over misleading 7cm center distance', () => {
     const { haversineDistance } = require('../companion/log_decoder.js');
 
-    // Simulate telemetry along a 30m grid at [40.0128, -83.1770]
+    // Simulate telemetry along a 30m grid at [41.3218, -88.9950]
     const telemetry = {
-      homePoint: { lat: 40.012874, lon: -83.177044 },
+      homePoint: { lat: 41.321874, lon: -88.995044 },
       points: [
-        { lat: 40.012702, lon: -83.177160, timestamp: '2026-10-30T16:27:06.000Z' },
-        { lat: 40.012759, lon: -83.177160, timestamp: '2026-10-30T16:27:10.000Z' },
-        { lat: 40.012816, lon: -83.177160, timestamp: '2026-10-30T16:27:15.000Z' },
-        { lat: 40.012874, lon: -83.176785, timestamp: '2026-10-30T16:28:00.000Z' }
+        { lat: 41.321702, lon: -88.995160, timestamp: '2026-10-30T16:27:06.000Z' },
+        { lat: 41.321759, lon: -88.995160, timestamp: '2026-10-30T16:27:10.000Z' },
+        { lat: 41.321816, lon: -88.995160, timestamp: '2026-10-30T16:27:15.000Z' },
+        { lat: 41.321874, lon: -88.994785, timestamp: '2026-10-30T16:28:00.000Z' }
       ]
     };
 
@@ -297,10 +297,10 @@ describe('IRL Test Plan Tracker & Post-Flight Log Analyzer Tests', () => {
       flight_pattern: 'road-following',
       created_at: '2026-10-30T00:41:36.000Z',
       plan_json: JSON.stringify({
-        mission: { center: { lat: 40.012818, lon: -83.176991 } }, // 8.53m from homePoint
+        mission: { center: { lat: 41.321818, lon: -88.994991 } }, // 8.53m from homePoint
         waypoints: [
-          { lat: 40.013070, lon: -83.177465 },
-          { lat: 40.013016, lon: -83.178080 }
+          { lat: 41.322070, lon: -88.995465 },
+          { lat: 41.322016, lon: -88.996080 }
         ]
       })
     };
@@ -311,11 +311,11 @@ describe('IRL Test Plan Tracker & Post-Flight Log Analyzer Tests', () => {
       flight_pattern: 'single',
       created_at: '2026-10-30T16:24:39.000Z',
       plan_json: JSON.stringify({
-        mission: { center: { lat: 40.012845, lon: -83.176972 } }, // 8.60m from homePoint (7cm further than Cand A!)
+        mission: { center: { lat: 41.321845, lon: -88.994972 } }, // 8.60m from homePoint (7cm further than Cand A!)
         waypoints: [
-          { lat: 40.012702, lon: -83.177160 },
-          { lat: 40.012759, lon: -83.177160 },
-          { lat: 40.012816, lon: -83.177160 }
+          { lat: 41.321702, lon: -88.995160 },
+          { lat: 41.321759, lon: -88.995160 },
+          { lat: 41.321816, lon: -88.995160 }
         ]
       })
     };

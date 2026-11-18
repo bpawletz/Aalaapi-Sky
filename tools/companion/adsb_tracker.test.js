@@ -55,12 +55,12 @@ describe('AdsbAirspaceTracker Tests', () => {
     assert.strictEqual(ac1.hex, 'A12345');
     assert.strictEqual(ac1.callsign, 'UAL452');
 
-    // MSG,3 - Airborne Position (Altitude 2200 ft, Lat 40.025, Lon -83.165)
-    const msg3 = 'MSG,3,1,1,A12345,1,2026/09/24,20:00:01.000,2026/09/24,20:00:01.000,,2200,,,40.0250,-83.1650,,,0,0,0,0';
+    // MSG,3 - Airborne Position (Altitude 2200 ft, Lat 41.3335, Lon -88.9835)
+    const msg3 = 'MSG,3,1,1,A12345,1,2026/09/24,20:00:01.000,2026/09/24,20:00:01.000,,2200,,,41.3335,-88.9835,,,0,0,0,0';
     const ac3 = tracker.parseSbsMessage(msg3);
     assert.strictEqual(ac3.altitude, 2200);
-    assert.strictEqual(ac3.latitude, 40.0250);
-    assert.strictEqual(ac3.longitude, -83.1650);
+    assert.strictEqual(ac3.latitude, 41.3335);
+    assert.strictEqual(ac3.longitude, -88.9835);
     assert.strictEqual(ac3.isOnGround, false);
 
     // MSG,4 - Airborne Velocity (Speed 145 kt, Track 45 deg, Vertical Rate -450 fpm)
@@ -88,8 +88,8 @@ describe('AdsbAirspaceTracker Tests', () => {
         {
           hex: 'C0FFEE',
           flight: 'DAL987 ',
-          lat: 40.0155,
-          lon: -83.1720,
+          lat: 41.3240,
+          lon: -88.9905,
           alt_baro: 1850,
           alt_geom: 1875,
           track: 180,
@@ -100,8 +100,8 @@ describe('AdsbAirspaceTracker Tests', () => {
         {
           hex: 'BEEF01',
           flight: 'AAL111 ',
-          lat: 40.2500,
-          lon: -83.5000,
+          lat: 41.5585,
+          lon: -89.3185,
           alt_baro: 12000,
           track: 270,
           speed: 350
@@ -123,15 +123,15 @@ describe('AdsbAirspaceTracker Tests', () => {
 
   test('getAirspaceBounds accurately classifies breached vs safe aircraft based on radius and ceiling', () => {
     const tracker = new AdsbAirspaceTracker();
-    const homeLat = 40.0130;
-    const homeLon = -83.1765;
+    const homeLat = 41.3215;
+    const homeLon = -88.9950;
 
     // Aircraft 1: Close (approx 1 mile away) and low (1,500 ft) -> BREACHED
     tracker.injectSimulatedAircraft({
       hex: 'AC0001',
       callsign: 'CLOSE_LOW',
-      lat: 40.0200,
-      lon: -83.1650,
+      lat: 41.3285,
+      lon: -88.9835,
       alt: 1500
     });
 
@@ -139,8 +139,8 @@ describe('AdsbAirspaceTracker Tests', () => {
     tracker.injectSimulatedAircraft({
       hex: 'AC0002',
       callsign: 'CLOSE_HIGH',
-      lat: 40.0200,
-      lon: -83.1650,
+      lat: 41.3285,
+      lon: -88.9835,
       alt: 8000
     });
 
@@ -148,8 +148,8 @@ describe('AdsbAirspaceTracker Tests', () => {
     tracker.injectSimulatedAircraft({
       hex: 'AC0003',
       callsign: 'FAR_LOW',
-      lat: 40.2500,
-      lon: -83.1765,
+      lat: 41.5585,
+      lon: -88.9950,
       alt: 1500
     });
 
@@ -264,8 +264,8 @@ describe('AdsbAirspaceTracker Tests', () => {
         body: JSON.stringify({
           hex: 'FEDCBA',
           callsign: 'TEST77',
-          lat: 40.0140,
-          lon: -83.1750,
+          lat: 41.3225,
+          lon: -88.9935,
           alt: 1200,
           speed: 110,
           track: 180
@@ -277,7 +277,7 @@ describe('AdsbAirspaceTracker Tests', () => {
       assert.strictEqual(simData.aircraft.callsign, 'TEST77');
 
       // 3. GET /api/airspace/bounds with drone home point
-      const boundsRes = await fetch(`${baseUrl}/api/airspace/bounds?lat=40.0130&lon=-83.1765&radius=3&ceiling=2500`);
+      const boundsRes = await fetch(`${baseUrl}/api/airspace/bounds?lat=41.3215&lon=-88.9950&radius=3&ceiling=2500`);
       assert.strictEqual(boundsRes.status, 200);
       const boundsData = await boundsRes.json();
       assert.strictEqual(boundsData.success, true);
@@ -312,7 +312,7 @@ describe('AdsbAirspaceTracker Tests', () => {
 
     await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
     const port = server.address().port;
-    const streamUrl = `http://127.0.0.1:${port}/api/airspace/stream?lat=40.0130&lon=-83.1765&radius=3&ceiling=2500`;
+    const streamUrl = `http://127.0.0.1:${port}/api/airspace/stream?lat=41.3215&lon=-88.9950&radius=3&ceiling=2500`;
 
     const http = require('node:http');
     let reqClient = null;
@@ -359,8 +359,8 @@ describe('AdsbAirspaceTracker Tests', () => {
       adsbTracker.injectSimulatedAircraft({
         hex: 'STR999',
         callsign: 'STREAM_TEST_99',
-        lat: 40.0135,
-        lon: -83.1760,
+        lat: 41.3220,
+        lon: -88.9945,
         alt: 1500
       });
 
@@ -401,22 +401,22 @@ describe('AdsbAirspaceTracker Tests', () => {
     const tracker = new AdsbAirspaceTracker();
 
     // Send 3 sequential SBS position reports with movement
-    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:00.000,2026/09/24,20:00:00.000,,2000,,,40.0100,-83.1700,,,0,0,0,0');
-    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:01.000,2026/09/24,20:00:01.000,,2050,,,40.0120,-83.1680,,,0,0,0,0');
-    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:02.000,2026/09/24,20:00:02.000,,2100,,,40.0140,-83.1660,,,0,0,0,0');
+    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:00.000,2026/09/24,20:00:00.000,,2000,,,41.3185,-88.9885,,,0,0,0,0');
+    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:01.000,2026/09/24,20:00:01.000,,2050,,,41.3205,-88.9865,,,0,0,0,0');
+    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:02.000,2026/09/24,20:00:02.000,,2100,,,41.3225,-88.9845,,,0,0,0,0');
 
     const ac = tracker.aircraft.get('A11111');
     assert.ok(ac, 'Aircraft record should exist');
     assert.strictEqual(ac.history.length, 3, 'Should have accumulated 3 history points');
-    assert.strictEqual(ac.history[0][0], 40.0100);
-    assert.strictEqual(ac.history[1][0], 40.0120);
-    assert.strictEqual(ac.history[2][0], 40.0140);
+    assert.strictEqual(ac.history[0][0], 41.3185);
+    assert.strictEqual(ac.history[1][0], 41.3205);
+    assert.strictEqual(ac.history[2][0], 41.3225);
     assert.strictEqual(ac.history[2][2], 2100);
 
     // Verify bounds output includes history
     const bounds = tracker.getAirspaceBounds({
-      homeLat: 40.0130,
-      homeLon: -83.1765,
+      homeLat: 41.3215,
+      homeLon: -88.9950,
       radiusMeters: 5000,
       ceilingFeet: 3000
     });
@@ -427,8 +427,8 @@ describe('AdsbAirspaceTracker Tests', () => {
 
     // Verify history capping
     for (let i = 0; i < 70; i++) {
-      const lat = 40.02 + (i * 0.001);
-      const lon = -83.16 + (i * 0.001);
+      const lat = 41.33 + (i * 0.001);
+      const lon = -88.98 + (i * 0.001);
       tracker.parseSbsMessage(`MSG,3,1,1,A11111,1,2026/09/24,20:00:00.000,2026/09/24,20:00:00.000,,2500,,,${lat.toFixed(4)},${lon.toFixed(4)},,,0,0,0,0`);
     }
     assert.strictEqual(ac.history.length, 60, 'History should cap at 60 points to preserve memory');
@@ -472,8 +472,8 @@ describe('AdsbAirspaceTracker Tests', () => {
 
     // Verify bounds summary includes positionPending aircraft
     const bounds = tracker.getAirspaceBounds({
-      homeLat: 40.0130,
-      homeLon: -83.1765,
+      homeLat: 41.3215,
+      homeLon: -88.9950,
       includeSafe: true
     });
     assert.strictEqual(bounds.summary.totalTracked, 3);
@@ -527,8 +527,8 @@ describe('AdsbAirspaceTracker Tests', () => {
           baro_rate: 1024,
           squawk: '1200',
           category: 'A1',
-          lat: 39.9039,
-          lon: -83.1345
+          lat: 41.2124,
+          lon: -88.9530
         },
         {
           hex: 'A20248',
@@ -539,8 +539,8 @@ describe('AdsbAirspaceTracker Tests', () => {
           alt_baro: 'ground',
           gs: 0,
           track: 284.0,
-          lat: 40.0104,
-          lon: -83.0183
+          lat: 41.3189,
+          lon: -88.8368
         }
       ]
     };
@@ -549,8 +549,8 @@ describe('AdsbAirspaceTracker Tests', () => {
     assert.strictEqual(count, 2);
 
     const bounds = tracker.getAirspaceBounds({
-      homeLat: 40.0130,
-      homeLon: -83.1765,
+      homeLat: 41.3215,
+      homeLon: -88.9950,
       includeSafe: true
     });
 
@@ -576,12 +576,12 @@ describe('AdsbAirspaceTracker Tests', () => {
     const tracker = new AdsbAirspaceTracker();
 
     // 1. Ingest local high-frequency SDR frame via SBS
-    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:00.000,2026/09/24,20:00:00.000,,2200,,,40.0200,-83.1700,,,0,0,0,0');
+    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:00.000,2026/09/24,20:00:00.000,,2200,,,41.3285,-88.9885,,,0,0,0,0');
     
     // Check initial local state
     let ac = tracker.aircraft.get('A11111');
     assert.ok(ac);
-    assert.strictEqual(ac.latitude, 40.0200);
+    assert.strictEqual(ac.latitude, 41.3285);
     assert.strictEqual(ac.altitude, 2200);
 
     // 2. Ingest external cloud feed (e.g. 30s-delayed or lower resolution position) for same hex
@@ -591,8 +591,8 @@ describe('AdsbAirspaceTracker Tests', () => {
         flight: 'CESSNA172',
         r: 'N11111',
         t: 'C172',
-        lat: 39.9900, // External delayed position
-        lon: -83.2000,
+        lat: 41.2985, // External delayed position
+        lon: -89.0185,
         alt_baro: 1800
       }]
     };
@@ -601,7 +601,7 @@ describe('AdsbAirspaceTracker Tests', () => {
 
     // Verify local SDR coordinates were NOT overwritten, but metadata (t, r, callsign) was enriched!
     ac = tracker.aircraft.get('A11111');
-    assert.strictEqual(ac.latitude, 40.0200, 'Local SDR latitude should take precedence');
+    assert.strictEqual(ac.latitude, 41.3285, 'Local SDR latitude should take precedence');
     assert.strictEqual(ac.altitude, 2200, 'Local SDR altitude should take precedence');
     assert.strictEqual(ac.aircraftType, 'C172', 'Aircraft type should be enriched from external feed');
     assert.strictEqual(ac.callsign, 'CESSNA172', 'Callsign should be enriched from external feed');
@@ -617,7 +617,7 @@ describe('AdsbAirspaceTracker Tests', () => {
 
     await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
     const port = server.address().port;
-    const streamUrl = `http://127.0.0.1:${port}/api/airspace/stream?lat=40.0130&lon=-83.1765&radius=3&ceiling=2500`;
+    const streamUrl = `http://127.0.0.1:${port}/api/airspace/stream?lat=41.3215&lon=-88.9950&radius=3&ceiling=2500`;
 
     const http = require('node:http');
     let reqClient = null;
@@ -667,8 +667,8 @@ describe('AdsbAirspaceTracker Tests', () => {
   test('evaluatePredictiveCone flags approaching aircraft on trajectory toward proximity radius with perimeter ETA', () => {
     const { evaluatePredictiveCone, AdsbAirspaceTracker } = require('./adsb_tracker.js');
 
-    const homeLat = 40.0130;
-    const homeLon = -83.1765;
+    const homeLat = 41.3215;
+    const homeLon = -88.9950;
     const radiusMeters = 4828.03; // 3.0 miles
 
     // Aircraft placed ~5.2 miles NE (distance ~8368 m) heading 225° SW (directly toward home) at 120 kts, alt 1800 ft

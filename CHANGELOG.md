@@ -1,3 +1,19 @@
+## [1.251.5] - 2026-11-18
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Data Privacy & Zero-Sensitive-Information Guardrails (Closes #319)**:
+  - Normalized all default and fallback coordinates across 3D digital twin, photo inspection, and telemetry to synthetic rural countryside standard (`41.3215, -88.9950`).
+  - Anonymized diagnostic hardware identifiers and removed local filesystem prefixes from guidance documentation.
+  - Added automated privacy guardrail test suites preventing regression of personal identifiers, local paths, or non-synthetic coordinates.
+
+#### Under the Hood & Technical Details
+- **Privacy Guardrail Test Suite (`index.test.js`)**:
+  - Added test assertions ensuring no local user paths (`C:\Users\...`, OneDrive project paths), real hardware serials, device nicknames, or real-world private coordinates exist in tracked repository files.
+- **Bytecode & Config Hygiene (`.gitignore`)**:
+  - Added explicit rules for `*.pyc`, `__pycache__/`, `companion_config.json`, `.env`, and keystores. Purged tracked pyc bytecode from repository tree.
+
 ## [1.251.4] - 2026-11-18
 
 ### Fixed
@@ -13297,7 +13313,7 @@ Introduces an interactive glassmorphism HUD overlay panel for the Flight Diagnos
 
 ### Added
 
-- **3D Cockpit HUD GPS Coordinates:** Added real-time geographic position readout (`diag-hud-coords`, e.g. `40.013000, -83.176500`) directly to the Cockpit HUD overlay during 3D diagnostics replay, displaying exact latitude and longitude throughout timeline playback.
+- **3D Cockpit HUD GPS Coordinates:** Added real-time geographic position readout (`diag-hud-coords`, e.g. `41.321500, -88.995000`) directly to the Cockpit HUD overlay during 3D diagnostics replay, displaying exact latitude and longitude throughout timeline playback.
 
 
 
@@ -14207,7 +14223,7 @@ Introduces an interactive glassmorphism HUD overlay panel for the Flight Diagnos
 
 ### Fixed
 
-- **FPV Waypoint Latitude/Longitude String Parsing Crash Fix:** Fixed an uncaught `TypeError` in `updateFPVEditorUI()` where string-formatted coordinates (e.g. `"40.0164223"`) caused `.toFixed(7)` to throw an exception, resulting in blank inputs and breaking position nudge calculations. Wrapped coordinate formatting in `parseFloat()`.
+- **FPV Waypoint Latitude/Longitude String Parsing Crash Fix:** Fixed an uncaught `TypeError` in `updateFPVEditorUI()` where string-formatted coordinates (e.g. `"41.3215422"`) caused `.toFixed(7)` to throw an exception, resulting in blank inputs and breaking position nudge calculations. Wrapped coordinate formatting in `parseFloat()`.
 
 
 

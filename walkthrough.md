@@ -78,7 +78,7 @@ Four government-sourced airspace layers were added to the Leaflet layer control 
   - Special Use: `https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Special_Use_Airspace/FeatureServer/0`
   - LAANC: `https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/FAA_UAS_FacilityMap_Data/FeatureServer/0`
 - Esri Leaflet automatically queries only the current map viewport bounding box, keeping responses lightweight.
-- Changes applied to both [index.js](file:///c:/Users/bpawl/OneDrive/code/DronePlanning/index.js) (source) and [index.html](file:///c:/Users/bpawl/OneDrive/code/DronePlanning/index.html) (built standalone file).
+- Changes applied to both [index.js](index.js) (source) and [index.html](index.html) (built standalone file).
 
 ---
 
@@ -111,7 +111,7 @@ When weather overlays are active, a unified **Map Overlays** legend is displayed
 
 ## How to Test the Weather Overlays
 
-1. Open [index.html](file:///c:/Users/bpawl/OneDrive/code/DronePlanning/index.html) in a browser.
+1. Open [index.html](index.html) in a browser.
 2. Open the **layer icon** (⊕) in the **top-left corner**.
 3. Under **Overlays**, toggle **Weather Radar (NEXRAD)** — you should see active rain/precipitation patterns if there are storms in the United States.
 4. Toggle **Weather Warnings (NWS Hazards)** — active weather warning polygons should load over the map.
@@ -121,7 +121,7 @@ When weather overlays are active, a unified **Map Overlays** legend is displayed
 
 Below is a live screenshot of the application running on Chrome (loaded via localhost web server) confirming that the Leaflet map and satellite layers are loading successfully:
 
-![Aalaapi Sky loaded on local server](/C:\Users\bpawl\.gemini\antigravity\brain\93596695-ae89-4291-bd63-28c2b6eefd09\sample_screenshot.png)
+![Aalaapi Sky loaded on local server]()
 
 ---
 

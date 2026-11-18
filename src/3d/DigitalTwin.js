@@ -15,8 +15,8 @@ function getActiveMissionWaypoints() {
   const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
   const pitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -90.0) : -90.0;
 
-  let centerLat = 40.0130;
-  let centerLon = -83.1765;
+  let centerLat = 41.3215;
+  let centerLon = -88.9950;
   if (typeof centerMarker !== 'undefined' && centerMarker) {
     const latlng = centerMarker.getLatLng();
     centerLat = latlng.lat;
@@ -2585,7 +2585,7 @@ const FlightDiagnostics = {
         return { lat: pLat, lon: pLon };
       }
     }
-    return { lat: 40.0130, lon: -83.1765 };
+    return { lat: 41.3215, lon: -88.9950 };
   },
 
   projectToWorld(lat, lon, alt = 0) {

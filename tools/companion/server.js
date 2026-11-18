@@ -6454,8 +6454,8 @@ const handleHttpRequest = async (req, res) => {
       req.on('end', () => {
         try {
           const payload = body ? JSON.parse(body) : {};
-          const lat = payload.latitude !== undefined ? parseFloat(payload.latitude) : (payload.lat !== undefined ? parseFloat(payload.lat) : 40.0130);
-          const lon = payload.longitude !== undefined ? parseFloat(payload.longitude) : (payload.lon !== undefined ? parseFloat(payload.lon) : -83.1765);
+          const lat = payload.latitude !== undefined ? parseFloat(payload.latitude) : (payload.lat !== undefined ? parseFloat(payload.lat) : 41.3215);
+          const lon = payload.longitude !== undefined ? parseFloat(payload.longitude) : (payload.lon !== undefined ? parseFloat(payload.lon) : -88.9950);
           const alt = payload.altitude !== undefined ? parseFloat(payload.altitude) : (payload.alt !== undefined ? parseFloat(payload.alt) : 25.0);
           const speed = payload.speed !== undefined ? parseFloat(payload.speed) : 4.0;
           const heading = payload.heading !== undefined ? parseFloat(payload.heading) : 90;
@@ -7824,7 +7824,7 @@ if (process.stdin.isTTY) {
         if (active.length === 0) {
           console.log(`    ${colors.yellow}No active drones detected in local airspace.${colors.reset}`);
           console.log(`    ${colors.gray}Injecting simulated DJI Mini 4 Pro Remote ID broadcast test packet...${colors.reset}`);
-          const syn = createSyntheticOdidPayload({ uasId: '1581F4TEST-M4P', lat: 40.0132, lon: -83.1760, alt: 35.0, heading: 45 });
+          const syn = createSyntheticOdidPayload({ uasId: '1581F4TEST-M4P', lat: 41.3217, lon: -88.9945, alt: 35.0, heading: 45 });
           const drone = airspaceTracker.processAdvertisement({ mac: 'FA:0B:BC:15:81:F4', rssi: -58, rawPayload: syn });
           logSuccess('[REMOTE ID]', `Detected: ${drone.model} [${drone.uasId}] at (${drone.latitude}, ${drone.longitude}) alt: ${drone.altitudeGeodetic}m`);
         } else {

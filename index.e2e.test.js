@@ -1463,14 +1463,14 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         uasId: '1581F4TEST123456',
         model: 'DJI Mini 4 Pro',
         status: 'Airborne',
-        latitude: 40.0125,
-        longitude: -83.1760,
+        latitude: 41.3215,
+        longitude: -88.9950,
         altitudeGeodetic: 30.5,
         speedHorizontal: 4.8,
         trackDirection: 120,
         transport: 'Wi-Fi 5.8 GHz',
         rssi: -58,
-        breadcrumbs: [{ lat: 40.0125, lon: -83.1760, alt: 30.5, time: Date.now() }]
+        breadcrumbs: [{ lat: 41.3215, lon: -88.9950, alt: 30.5, time: Date.now() }]
       };
 
       window.RemoteIdRadar.updateDroneLocation(testDrone);
@@ -1485,7 +1485,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       // Verify hover tooltip content
       const tooltipHtml = window.RemoteIdRadar.formatDroneTooltip(testDrone);
       const hasModelInTooltip = tooltipHtml.includes('DJI Mini 4 Pro');
-      const hasCoordsInTooltip = tooltipHtml.includes('40.012500, -83.176000');
+      const hasCoordsInTooltip = tooltipHtml.includes('41.321500, -88.995000');
       const hasAltInTooltip = tooltipHtml.includes('30.5m');
       const hasSpeedInTooltip = tooltipHtml.includes('4.8 m/s');
 
@@ -1498,8 +1498,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       // 3. Ingest updated geo location
       const movedDrone = {
         ...testDrone,
-        latitude: 40.0140,
-        longitude: -83.1745,
+        latitude: 41.3230,
+        longitude: -88.9935,
         altitudeGeodetic: 35.0,
         speedHorizontal: 6.2,
         trackDirection: 90
@@ -1508,7 +1508,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       window.RemoteIdRadar.updateDroneLocation(movedDrone);
       const updatedMarker = window.RemoteIdRadar.markers.get('e2e-drone-alpha');
       const latlng = updatedMarker && updatedMarker.marker && updatedMarker.marker.getLatLng ? updatedMarker.marker.getLatLng() : null;
-      const coordsMatch = latlng ? (Math.abs(latlng.lat - 40.0140) < 0.0001 && Math.abs(latlng.lng - (-83.1745)) < 0.0001) : true;
+      const coordsMatch = latlng ? (Math.abs(latlng.lat - 41.3230) < 0.0001 && Math.abs(latlng.lng - (-88.9935)) < 0.0001) : true;
 
       // Clean up test marker
       if (window.RemoteIdRadar.layerGroup && markerEntry.marker) {
@@ -1546,11 +1546,11 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         uasId: 'RID-CAL-E2E-123',
         model: 'DJI Mini 4 Pro',
         status: 'Airborne',
-        latitude: 40.0125,
-        longitude: -83.1760,
+        latitude: 41.3215,
+        longitude: -88.9950,
         altitudeGeodetic: 30.0,
-        operatorLatitude: 40.0120,
-        operatorLongitude: -83.1765
+        operatorLatitude: 41.3210,
+        operatorLongitude: -88.9955
       };
 
       window.RemoteIdRadar.updateDroneLocation(testDrone);
@@ -1590,8 +1590,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       // Verify marker position on map shifted
       const markerEntry = window.RemoteIdRadar.markers.get('e2e-cal-drone');
       const markerLatLng = markerEntry && markerEntry.marker ? markerEntry.marker.getLatLng() : null;
-      const markerShiftedNorth = markerLatLng ? markerLatLng.lat > 40.0125 : false;
-      const markerShiftedEast = markerLatLng ? markerLatLng.lng > -83.1760 : false;
+      const markerShiftedNorth = markerLatLng ? markerLatLng.lat > 41.3215 : false;
+      const markerShiftedEast = markerLatLng ? markerLatLng.lng > -88.9950 : false;
 
       // Click Reset to GPS button
       const resetBtn = document.getElementById('remote-id-cal-reset-btn');
@@ -1604,7 +1604,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const textReset = offsetText && offsetText.textContent.includes('0.0m');
 
       const markerResetLatLng = markerEntry && markerEntry.marker ? markerEntry.marker.getLatLng() : null;
-      const markerReset = markerResetLatLng ? (Math.abs(markerResetLatLng.lat - 40.0125) < 0.00001 && Math.abs(markerResetLatLng.lng - (-83.1760)) < 0.00001) : false;
+      const markerReset = markerResetLatLng ? (Math.abs(markerResetLatLng.lat - 41.3215) < 0.00001 && Math.abs(markerResetLatLng.lng - (-88.9950)) < 0.00001) : false;
 
       // Close panel
       const closeBtn = document.getElementById('remote-id-cal-close-btn');
@@ -1675,8 +1675,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       }
 
       if (typeof addFreeformWaypoint === 'function') {
-        addFreeformWaypoint(40.0125, -83.1770);
-        addFreeformWaypoint(40.0135, -83.1770);
+        addFreeformWaypoint(41.3215, -88.9950);
+        addFreeformWaypoint(41.3225, -88.9950);
       }
 
       const freeformWps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null;
@@ -2615,7 +2615,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       }
 
       // Place center
-      setGridCenter(40.0125, -83.1770);
+      setGridCenter(41.3215, -88.9950);
       updateGrid();
 
       // Layer 1: Double Grid
@@ -2629,9 +2629,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       if (roadSnapCheckbox) roadSnapCheckbox.checked = false;
       
       // Add road waypoints to Layer 2
-      addRoadWaypoint(40.0130, -83.1770);
-      addRoadWaypoint(40.0140, -83.1770);
-      addRoadWaypoint(40.0150, -83.1770);
+      addRoadWaypoint(41.3220, -88.9950);
+      addRoadWaypoint(41.3230, -88.9950);
+      addRoadWaypoint(41.3240, -88.9950);
 
       const l2RoadCount = l2.roadWaypoints.length;
       const l2WpCount = l2.waypoints ? l2.waypoints.length : 0;
@@ -2670,14 +2670,14 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       roadWaypoints = [];
 
       // Place center
-      setGridCenter(40.0125, -83.1770);
+      setGridCenter(41.3215, -88.9950);
 
       // Layer 1: Freeform path crossing the center
       const l1 = addFlightLayer('freeform');
       l1.altitude = 25;
       l1.freeformWaypoints = [
-        { lat: 40.0125, lon: -83.1790, x: -150, y: 0, alt: 25, idx: 0 },
-        { lat: 40.0125, lon: -83.1750, x: 150, y: 0, alt: 25, idx: 1 }
+        { lat: 41.3215, lon: -88.9970, x: -150, y: 0, alt: 25, idx: 0 },
+        { lat: 41.3215, lon: -88.9930, x: 150, y: 0, alt: 25, idx: 1 }
       ];
 
       // Layer 2: Exclusion Zone with 35m ceiling
@@ -2691,7 +2691,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       l2.detourMode = 'overTop';
 
       // Compile mission
-      const mission = compileMultiLayerMission(40.0125, -83.1770);
+      const mission = compileMultiLayerMission(41.3215, -88.9950);
       const waypoints = mission.waypoints || [];
       const climbWps = waypoints.filter(w => w.isClimbOver);
 
@@ -5082,8 +5082,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         FlightDiagnostics.flightPhotosFlightId = null;
         FlightDiagnostics.telemetryData = {
           points: [
-            { lat: 40.01297, lon: -83.17707, alt: 25, speed: 4.5, pitch: -60, yaw: 90, isPhoto: true, waypointIndex: 0 },
-            { lat: 40.01350, lon: -83.17707, alt: 25, speed: 4.5, pitch: -60, yaw: 90, isPhoto: true, waypointIndex: 1 }
+            { lat: 41.32197, lon: -88.99507, alt: 25, speed: 4.5, pitch: -60, yaw: 90, isPhoto: true, waypointIndex: 0 },
+            { lat: 41.32250, lon: -88.99507, alt: 25, speed: 4.5, pitch: -60, yaw: 90, isPhoto: true, waypointIndex: 1 }
           ]
         };
         FlightDiagnostics.renderInspectionPhotosUI();
@@ -5159,8 +5159,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         const points = [];
         for (let i = 0; i < 111; i++) {
           points.push({
-            lat: 40.0129 + i * 0.0001,
-            lon: -83.1771 + (i % 5) * 0.0001,
+            lat: 41.3219 + i * 0.0001,
+            lon: -88.9951 + (i % 5) * 0.0001,
             alt: 16.0,
             pitch: -45,
             yaw: 0,
@@ -5210,8 +5210,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
           photoId: 'TEST_PHOTO_0218',
           filename: 'DJI_20260904185243_0218_D.JPG',
           waypointIndex: 6,
-          actual: { lat: 40.013, lon: -83.176, altAgl: 25, gimbalPitch: -45 },
-          planned: { lat: 40.013, lon: -83.176, alt: 25, gimbalPitch: -45 },
+          actual: { lat: 41.322, lon: -88.995, altAgl: 25, gimbalPitch: -45 },
+          planned: { lat: 41.322, lon: -88.995, alt: 25, gimbalPitch: -45 },
           variance: { horizontalDeltaMeters: 0.1, verticalDeltaMeters: 0.05, isCompliant: true },
           gsd: { gsdCm: 0.89 },
           annotations: []
@@ -6563,7 +6563,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         PhotoInspector.openPhoto({
           photoId: 'PHOTO_E2E_01',
           filename: 'E2E_HOUSE.JPG',
-          actual: { lat: 40.0131, lon: -83.1772, altAgl: 30, heading: 164.1, gimbalPitch: -60 },
+          actual: { lat: 41.3221, lon: -88.9952, altAgl: 30, heading: 164.1, gimbalPitch: -60 },
           detectedLines: [
             [0.15, 0.25, 0.85, 0.25],
             [0.15, 0.45, 0.85, 0.45]
@@ -6679,8 +6679,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
             durationSec: 99,
             maxAltitude: 25.5,
             points: [
-              { time: 0, lat: 40.0128, lon: -83.1770, alt: 10, speed: 2, pitch: -30, yaw: 0, battery: 98, satellites: 20, timeStr: '00:00' },
-              { time: 10, lat: 40.0129, lon: -83.1771, alt: 25.5, speed: 4, pitch: -45, yaw: 45, battery: 92, satellites: 22, timeStr: '00:10' }
+              { time: 0, lat: 41.3218, lon: -88.9950, alt: 10, speed: 2, pitch: -30, yaw: 0, battery: 98, satellites: 20, timeStr: '00:00' },
+              { time: 10, lat: 41.3219, lon: -88.9951, alt: 25.5, speed: 4, pitch: -45, yaw: 45, battery: 92, satellites: 22, timeStr: '00:10' }
             ]
           }
         })

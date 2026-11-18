@@ -684,13 +684,13 @@ class RemoteIdAirspaceTracker extends EventEmitter {
  */
 function createSyntheticOdidPayload({
   uasId = '1581F4TEST998877',
-  lat = 40.0130,
-  lon = -83.1765,
+  lat = 41.3215,
+  lon = -88.9950,
   alt = 25.0,
   speed = 4.5,
   heading = 90,
-  opLat = 40.0128,
-  opLon = -83.1766
+  opLat = 41.3213,
+  opLon = -88.9951
 } = {}) {
   // 1. Basic ID (Msg Type 0)
   const basicBuf = Buffer.alloc(25);

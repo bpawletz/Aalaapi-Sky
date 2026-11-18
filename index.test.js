@@ -2098,7 +2098,7 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
   });
 
   test('recalculateRoadOffsetPath preserves custom drone waypoint overrides and initializes baselines', () => {
-    vm.runInThisContext('roadWaypoints = [{ lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 50, pitch: -60 }, { lat: 40.01, lon: -83.01, x: 10, y: 10, alt: 50, pitch: -60 }];');
+    vm.runInThisContext('roadWaypoints = [{ lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 50, pitch: -60 }, { lat: 41.32, lon: -83.01, x: 10, y: 10, alt: 50, pitch: -60 }];');
     vm.runInThisContext('recalculateRoadOffsetPath(40.0, -83.0);');
 
     const waypoints = vm.runInThisContext('generatedWaypoints');
@@ -2641,8 +2641,8 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
     };
     try {
       const wps = [
-        { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
-        { lat: 40.0128, lon: -83.1771, alt: 17, headingMode: 'inherit' }
+        { lat: 41.3227, lon: -88.9971, alt: 17, headingMode: 'inherit' },
+        { lat: 41.3228, lon: -88.9971, alt: 17, headingMode: 'inherit' }
       ];
       const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
       assert.strictEqual(xml.includes('<wpml:templateType>waypoint</wpml:templateType>'), true, 'waylines.wpml Folder must contain wpml:templateType tag for Enterprise drones');
@@ -2653,7 +2653,7 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
 
   test('buildWaylinesWpml omits templateType and payloadParam for consumer drones (Mini 4 Pro)', () => {
     const wps = [
-      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' }
+      { lat: 41.3227, lon: -88.9971, alt: 17, headingMode: 'inherit' }
     ];
     // Mock the drone-model value to 68 (Mini 4 Pro)
     const originalGetElementById = global.document.getElementById;
@@ -2677,8 +2677,8 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
 
   test('buildWaylinesWpml exports native RC2 2D coordinates (lon,lat) matching DJI Fly relativeToStartPoint schema', () => {
     const wps = [
-      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
-      { lat: 40.0128, lon: -83.1771, alt: 25, headingMode: 'inherit' }
+      { lat: 41.3227, lon: -88.9971, alt: 17, headingMode: 'inherit' },
+      { lat: 41.3228, lon: -88.9971, alt: 25, headingMode: 'inherit' }
     ];
     const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
     
@@ -2692,13 +2692,13 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
     // Check that there are 2 comma-separated components: longitude, latitude
     const coord0Parts = coord0.split(',');
     assert.strictEqual(coord0Parts.length, 2, 'WP 0 coordinates should have 2 parts (lon,lat)');
-    assert.strictEqual(parseFloat(coord0Parts[0]), -83.1771);
-    assert.strictEqual(parseFloat(coord0Parts[1]), 40.0127);
+    assert.strictEqual(parseFloat(coord0Parts[0]), -88.9971);
+    assert.strictEqual(parseFloat(coord0Parts[1]), 41.3227);
     
     const coord1Parts = coord1.split(',');
     assert.strictEqual(coord1Parts.length, 2, 'WP 1 coordinates should have 2 parts (lon,lat)');
-    assert.strictEqual(parseFloat(coord1Parts[0]), -83.1771);
-    assert.strictEqual(parseFloat(coord1Parts[1]), 40.0128);
+    assert.strictEqual(parseFloat(coord1Parts[0]), -88.9971);
+    assert.strictEqual(parseFloat(coord1Parts[1]), 41.3228);
 
     // Verify executeHeight specifies altitude
     assert.ok(xml.includes('<wpml:executeHeight>17</wpml:executeHeight>'));
@@ -2707,7 +2707,7 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
 
   test('buildWaylinesWpml includes waypointGimbalHeadingParam and extra gimbalRotate tags for DJI schema compliance', () => {
     const wps = [
-      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' }
+      { lat: 41.3227, lon: -88.9971, alt: 17, headingMode: 'inherit' }
     ];
     const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
     
@@ -2725,14 +2725,14 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
 
   test('multi-leg 2D grid export assigns correct wayline direction angles and enables them (waypointHeadingAngleEnable=1) for stationary fallback', () => {
     const wps = [
-      { lat: 40.0127, lon: -83.1771, alt: 17, heading: 0, headingMode: 'inherit' },
-      { lat: 40.0129, lon: -83.1771, alt: 17, heading: 0, headingMode: 'inherit' },
-      { lat: 40.0129, lon: -83.1770, alt: 17, heading: 180, headingMode: 'inherit' },
-      { lat: 40.0127, lon: -83.1770, alt: 17, heading: 180, headingMode: 'inherit' },
-      { lat: 40.0127, lon: -83.1769, alt: 17, heading: 0, headingMode: 'inherit' },
-      { lat: 40.0129, lon: -83.1769, alt: 17, heading: 0, headingMode: 'inherit' },
-      { lat: 40.0129, lon: -83.1768, alt: 17, heading: 180, headingMode: 'inherit' },
-      { lat: 40.0127, lon: -83.1768, alt: 17, heading: 180, headingMode: 'inherit' }
+      { lat: 41.3227, lon: -88.9971, alt: 17, heading: 0, headingMode: 'inherit' },
+      { lat: 41.3229, lon: -88.9971, alt: 17, heading: 0, headingMode: 'inherit' },
+      { lat: 41.3229, lon: -88.9970, alt: 17, heading: 180, headingMode: 'inherit' },
+      { lat: 41.3227, lon: -88.9970, alt: 17, heading: 180, headingMode: 'inherit' },
+      { lat: 41.3227, lon: -88.9969, alt: 17, heading: 0, headingMode: 'inherit' },
+      { lat: 41.3229, lon: -88.9969, alt: 17, heading: 0, headingMode: 'inherit' },
+      { lat: 41.3229, lon: -88.9968, alt: 17, heading: 180, headingMode: 'inherit' },
+      { lat: 41.3227, lon: -88.9968, alt: 17, heading: 180, headingMode: 'inherit' }
     ];
     const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
     assert.strictEqual(xml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'), true);
@@ -2743,8 +2743,8 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
 
   test('followWayline waypoints without x/y offsets (lat/lon only) never produce NaN waypointHeadingAngle', () => {
     const wps = [
-      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
-      { lat: 40.0129, lon: -83.1771, alt: 17, headingMode: 'inherit' }
+      { lat: 41.3227, lon: -88.9971, alt: 17, headingMode: 'inherit' },
+      { lat: 41.3229, lon: -88.9971, alt: 17, headingMode: 'inherit' }
     ];
     const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
     assert.strictEqual(xml.includes('<wpml:waypointHeadingAngle>NaN</wpml:waypointHeadingAngle>'), false);
@@ -2753,15 +2753,15 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
 
   test('all pattern types (double grid, orbit, multi-orbit) export valid waypointHeadingAngle and waypointHeadingAngleEnable=1', () => {
     const doubleGridWps = [
-      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
-      { lat: 40.0129, lon: -83.1771, alt: 17, headingMode: 'inherit' }
+      { lat: 41.3227, lon: -88.9971, alt: 17, headingMode: 'inherit' },
+      { lat: 41.3229, lon: -88.9971, alt: 17, headingMode: 'inherit' }
     ];
     const xmlDouble = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(doubleGridWps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
     assert.strictEqual(xmlDouble.includes('<wpml:waypointHeadingAngle>NaN</wpml:waypointHeadingAngle>'), false);
     assert.strictEqual(xmlDouble.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>'), true);
     const orbitWps = [
-      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'towardPOI' },
-      { lat: 40.0129, lon: -83.1771, alt: 17, headingMode: 'towardPOI' }
+      { lat: 41.3227, lon: -88.9971, alt: 17, headingMode: 'towardPOI' },
+      { lat: 41.3229, lon: -88.9971, alt: 17, headingMode: 'towardPOI' }
     ];
     const xmlOrbit = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(orbitWps)}, 17, 4, 'towardPOI', 'goHome', -90, 'stopAndShoot', 'straight')`);
     assert.strictEqual(xmlOrbit.includes('<wpml:waypointHeadingAngle>NaN</wpml:waypointHeadingAngle>'), false);
@@ -2802,7 +2802,7 @@ describe('RC2 WPML Compliance Tests', () => {
       };
 
       const wps = [
-        { lat: 40.010, lon: -83.177, alt: 25, pitch: -90, heading: 0, isRingStart: false, hoverTime: 2 }
+        { lat: 41.320, lon: -88.997, alt: 25, pitch: -90, heading: 0, isRingStart: false, hoverTime: 2 }
       ];
 
       const xml = vm.runInThisContext(`
@@ -2880,12 +2880,12 @@ describe('buildWaylinesWpml actionGroupId uniqueness regression', () => {
 
       // Simulate a 6-waypoint double grid (3 per pass) with stop-and-shoot
       const wps = [
-        { lat: 40.01, lon: -83.17, alt: 22, pitch: -90, heading: 45, isRingStart: false, hoverTime: 2 },
-        { lat: 40.02, lon: -83.17, alt: 22, pitch: -90, heading: 45, isRingStart: false, hoverTime: 2 },
-        { lat: 40.03, lon: -83.17, alt: 22, pitch: -90, heading: 45, isRingStart: false, hoverTime: 2 },
-        { lat: 40.01, lon: -83.16, alt: 22, pitch: -90, heading: 135, isRingStart: false, hoverTime: 2 },
-        { lat: 40.01, lon: -83.17, alt: 22, pitch: -90, heading: 135, isRingStart: false, hoverTime: 2 },
-        { lat: 40.01, lon: -83.18, alt: 22, pitch: -90, heading: 135, isRingStart: false, hoverTime: 2 },
+        { lat: 41.32, lon: -88.99, alt: 22, pitch: -90, heading: 45, isRingStart: false, hoverTime: 2 },
+        { lat: 40.02, lon: -88.99, alt: 22, pitch: -90, heading: 45, isRingStart: false, hoverTime: 2 },
+        { lat: 40.03, lon: -88.99, alt: 22, pitch: -90, heading: 45, isRingStart: false, hoverTime: 2 },
+        { lat: 41.32, lon: -88.98, alt: 22, pitch: -90, heading: 135, isRingStart: false, hoverTime: 2 },
+        { lat: 41.32, lon: -88.99, alt: 22, pitch: -90, heading: 135, isRingStart: false, hoverTime: 2 },
+        { lat: 41.32, lon: -89.00, alt: 22, pitch: -90, heading: 135, isRingStart: false, hoverTime: 2 },
       ];
 
       const xml = vm.runInThisContext(`
@@ -2930,8 +2930,8 @@ describe('buildWaylinesWpml actionGroupId uniqueness regression', () => {
 
       // Build 40 waypoints mimicking a double grid
       const wps = Array.from({ length: 40 }, (_, i) => ({
-        lat: 40.01 + (i % 20) * 0.001,
-        lon: -83.17 + Math.floor(i / 20) * 0.001,
+        lat: 41.32 + (i % 20) * 0.001,
+        lon: -88.99 + Math.floor(i / 20) * 0.001,
         alt: 22,
         pitch: -90,
         heading: i < 20 ? 0 : 90,
@@ -2975,11 +2975,11 @@ describe('buildWaylinesWpml stop-and-shoot 2s minimum hover regression', () => {
 
       // 5 waypoints on a straight N-S grid line: no reposition needed, constant pitch -90
       const wps = [
-        { lat: 40.010, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
-        { lat: 40.011, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
-        { lat: 40.012, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
-        { lat: 40.013, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
-        { lat: 40.014, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 41.320, lon: -88.997, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 41.321, lon: -88.997, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 41.322, lon: -88.997, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 41.323, lon: -88.997, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 41.324, lon: -88.997, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
       ];
 
       const xml = vm.runInThisContext(`
@@ -3021,8 +3021,8 @@ describe('buildWaylinesWpml stop-and-shoot 2s minimum hover regression', () => {
       };
 
       const wps = [
-        { lat: 40.010, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
-        { lat: 40.011, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 41.320, lon: -88.997, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 41.321, lon: -88.997, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
       ];
 
       const xml = vm.runInThisContext(`
@@ -3057,8 +3057,8 @@ describe('buildWaylinesWpml stop-and-shoot 2s minimum hover regression', () => {
       };
 
       const wps = [
-        { lat: 40.010, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
-        { lat: 40.011, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 41.320, lon: -88.997, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 41.321, lon: -88.997, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
       ];
 
       const xml = vm.runInThisContext(`
@@ -3078,9 +3078,9 @@ describe('buildWaylinesWpml stop-and-shoot 2s minimum hover regression', () => {
 describe('Mission Map Preview Generator Tests', () => {
   test('generateMissionPreviewBlob returns a Promise that resolves gracefully', async () => {
     const wps = [
-      { lat: 40.010, lon: -83.177, alt: 50 },
-      { lat: 40.011, lon: -83.176, alt: 50 },
-      { lat: 40.012, lon: -83.175, alt: 50 }
+      { lat: 41.320, lon: -88.997, alt: 50 },
+      { lat: 41.321, lon: -88.996, alt: 50 },
+      { lat: 41.322, lon: -88.995, alt: 50 }
     ];
 
     // Mock canvas in global context
@@ -3541,8 +3541,8 @@ describe('Companion Bridge & Direct Sync Tests', () => {
       origGetCurrentWaypoints = vm.runInThisContext('typeof getCurrentWaypoints !== "undefined" ? getCurrentWaypoints : null');
       vm.runInThisContext(`
         getCurrentWaypoints = () => [
-          { lat: 40.012, lon: -83.177, alt: 50, heading: 90, pitch: -45 },
-          { lat: 40.013, lon: -83.177, alt: 50, heading: 90, pitch: -45 }
+          { lat: 41.322, lon: -88.997, alt: 50, heading: 90, pitch: -45 },
+          { lat: 41.323, lon: -88.997, alt: 50, heading: 90, pitch: -45 }
         ];
       `);
 
@@ -3886,9 +3886,9 @@ describe('Companion Bridge & Direct Sync Tests', () => {
 describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
   test('generateTelemetryFromWaypoints generates complete time-series points with photo events', () => {
     const testWps = [
-      { lat: 40.012, lon: -83.177, altitude: 21, gimbalPitch: -60, speed: 4 },
-      { lat: 40.013, lon: -83.177, altitude: 21, gimbalPitch: -60, speed: 4 },
-      { lat: 40.013, lon: -83.176, altitude: 21, gimbalPitch: -60, speed: 4 }
+      { lat: 41.322, lon: -88.997, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 41.323, lon: -88.997, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 41.323, lon: -88.996, altitude: 21, gimbalPitch: -60, speed: 4 }
     ];
 
     const result = vm.runInThisContext(`generateTelemetryFromWaypoints(${JSON.stringify(testWps)}, { altitude: 21, speed: 4, gimbalPitch: -60 })`);
@@ -3963,11 +3963,11 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
 
   test('generateTelemetryFromWaypoints generates distinct profiles for different flight records', () => {
     const testWps = [
-      { lat: 40.012, lon: -83.177, altitude: 21, gimbalPitch: -60, speed: 4 },
-      { lat: 40.013, lon: -83.177, altitude: 21, gimbalPitch: -60, speed: 4 },
-      { lat: 40.013, lon: -83.176, altitude: 21, gimbalPitch: -60, speed: 4 },
-      { lat: 40.012, lon: -83.176, altitude: 21, gimbalPitch: -60, speed: 4 },
-      { lat: 40.011, lon: -83.175, altitude: 21, gimbalPitch: -60, speed: 4 }
+      { lat: 41.322, lon: -88.997, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 41.323, lon: -88.997, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 41.323, lon: -88.996, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 41.322, lon: -88.996, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 41.321, lon: -88.995, altitude: 21, gimbalPitch: -60, speed: 4 }
     ];
 
     // Flight 1 (Pre-flight calibration)
@@ -4051,9 +4051,9 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
           geometry: {
             type: "LineString",
             coordinates: [
-              [-83.177, 40.012, 10],
-              [-83.177, 40.013, 20],
-              [-83.176, 40.013, 25]
+              [-88.997, 41.322, 10],
+              [-88.997, 41.323, 20],
+              [-88.996, 41.323, 25]
             ]
           }
         }
@@ -4062,7 +4062,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
 
     const gResult = vm.runInThisContext(`parseGeoJsonTelemetry(${JSON.stringify(geojson)}, 'custom_track.geojson')`);
     assert.ok(gResult);
-    const csv = `latitude,longitude,altitude,speed,pitch,yaw,isPhoto\n40.012,-83.177,15,4,-60,0,0\n40.013,-83.177,20,4,-60,90,1`;
+    const csv = `latitude,longitude,altitude,speed,pitch,yaw,isPhoto\n41.322,-88.997,15,4,-60,0,0\n41.323,-88.997,20,4,-60,90,1`;
     const cResult = vm.runInThisContext(`parseCsvTelemetry(${JSON.stringify(csv)}, 'custom_log.csv')`);
     assert.ok(cResult);
     assert.strictEqual(cResult.points.length, 2);
@@ -4147,7 +4147,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
         var _activeMissionCallCount = 0;
         getActiveMissionWaypoints = function() {
           _activeMissionCallCount++;
-          return [{ lat: 40.0130, lon: -83.1765, altitude: 21 }];
+          return [{ lat: 41.3230, lon: -88.9965, altitude: 21 }];
         };
       `);
 
@@ -4232,7 +4232,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
         var _activeMissionCalled3 = false;
         getActiveMissionWaypoints = function() {
           _activeMissionCalled3 = true;
-          return [{ lat: 40.0130, lon: -83.1765, altitude: 21 }];
+          return [{ lat: 41.3230, lon: -88.9965, altitude: 21 }];
         };
         var _rc2PlannedCoords = [];
         FlightDiagnostics.plannedWaypoints = null;
@@ -4297,14 +4297,14 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
         var _activeMissionCalled4 = false;
         getActiveMissionWaypoints = function() {
           _activeMissionCalled4 = true;
-          return [{ lat: 40.0130, lon: -83.1765, altitude: 21 }];
+          return [{ lat: 41.3230, lon: -88.9965, altitude: 21 }];
         };
         FlightDiagnostics.plannedWaypoints = null;
         FlightDiagnostics.telemetryData = {
-          homePoint: { lat: 40.0130, lon: -83.1765, alt: 0 },
+          homePoint: { lat: 41.3230, lon: -88.9965, alt: 0 },
           points: [
-            { lat: 40.0130, lon: -83.1765, alt: 21, speed: 4, pitch: -60, battery: 98, satellites: 12, isPhoto: false, time: 0, timeStr: '00:00', yaw: 0, waypointIndex: 0 },
-            { lat: 40.0140, lon: -83.1775, alt: 21, speed: 4, pitch: -60, battery: 97, satellites: 12, isPhoto: false, time: 5, timeStr: '00:05', yaw: 0, waypointIndex: 1 }
+            { lat: 41.3230, lon: -88.9965, alt: 21, speed: 4, pitch: -60, battery: 98, satellites: 12, isPhoto: false, time: 0, timeStr: '00:00', yaw: 0, waypointIndex: 0 },
+            { lat: 41.3240, lon: -88.9975, alt: 21, speed: 4, pitch: -60, battery: 97, satellites: 12, isPhoto: false, time: 5, timeStr: '00:05', yaw: 0, waypointIndex: 1 }
           ]
         };
         var _noPhotoPlannedMeshAdded = false;
@@ -4346,8 +4346,8 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     // Fix: skip centerMarker; use telemetryData.points[0] directly.
     const FLIGHT_LAT = 51.5074;
     const FLIGHT_LON = -0.1278;
-    const WORKSPACE_LAT = 40.0130;
-    const WORKSPACE_LON = -83.1765;
+    const WORKSPACE_LAT = 41.3230;
+    const WORKSPACE_LON = -88.9965;
 
     try {
       vm.runInThisContext(`
@@ -4442,7 +4442,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
           totalDistance: 820,
           maxAltitude: 21,
           flightDate: '2026-08-20T19:42:28.000Z',
-          points: [{ lon: -83.17, lat: 40.01, alt: 21 }]
+          points: [{ lon: -88.99, lat: 41.32, alt: 21 }]
         };
         FlightDiagnostics.exportGeoJSON();
       `);
@@ -4478,8 +4478,8 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     assert.strictEqual(typeof fn, 'function');
 
     const testWps = [
-      { lat: 40.012, lon: -83.176, alt: 50, pitch: -60, heading: 90 },
-      { lat: 40.013, lon: -83.176, alt: 50, pitch: -60, heading: 90 }
+      { lat: 41.322, lon: -88.996, alt: 50, pitch: -60, heading: 90 },
+      { lat: 41.323, lon: -88.996, alt: 50, pitch: -60, heading: 90 }
     ];
 
     const diag = fn(testWps, { altitude: 50, speed: 5, gimbalPitch: -60, uuid: 'test_uuid_diag_123' });
@@ -4562,13 +4562,13 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
 
     const synPayload = createSyntheticOdidPayload({
       uasId: '1581F4DJI-MINI-4',
-      lat: 40.013055,
-      lon: -83.176511,
+      lat: 41.323055,
+      lon: -88.996511,
       alt: 45.0,
       speed: 6.5,
       heading: 180,
-      opLat: 40.012500,
-      opLon: -83.176000
+      opLat: 41.322500,
+      opLon: -88.996000
     });
 
     assert.ok(synPayload);
@@ -4584,8 +4584,8 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     // Location / Vector
     const loc = messages.find(m => m.msgType === 1);
     assert.ok(loc);
-    assert.strictEqual(loc.latitude, 40.013055);
-    assert.strictEqual(loc.longitude, -83.176511);
+    assert.strictEqual(loc.latitude, 41.323055);
+    assert.strictEqual(loc.longitude, -88.996511);
     assert.strictEqual(loc.altitudeGeodetic, 45.0);
     assert.strictEqual(loc.speedHorizontal, 6.5);
     assert.strictEqual(loc.trackDirection, 180);
@@ -4593,8 +4593,8 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     // System
     const sys = messages.find(m => m.msgType === 4);
     assert.ok(sys);
-    assert.strictEqual(sys.operatorLatitude, 40.0125);
-    assert.strictEqual(sys.operatorLongitude, -83.176);
+    assert.strictEqual(sys.operatorLatitude, 41.3225);
+    assert.strictEqual(sys.operatorLongitude, -88.996);
 
     // Tracker aggregation
     const tracker = new RemoteIdAirspaceTracker(10);
@@ -4607,7 +4607,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     assert.ok(drone);
     assert.strictEqual(drone.uasId, '1581F4DJI-MINI-4');
     assert.strictEqual(drone.model, 'DJI Mini 4 Pro');
-    assert.strictEqual(drone.latitude, 40.013055);
+    assert.strictEqual(drone.latitude, 41.323055);
     assert.strictEqual(drone.breadcrumbs.length, 1);
 
     const activeDrones = tracker.getActiveDrones();
@@ -4638,8 +4638,8 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
             model: 'DJI Mini 4 Pro',
             uaType: 'Multirotor',
             status: 'Airborne',
-            latitude: 40.0130,
-            longitude: -83.1765,
+            latitude: 41.3230,
+            longitude: -88.9965,
             altitudeGeodetic: 30,
             speedHorizontal: 4.0,
             trackDirection: 90,
@@ -4686,8 +4686,8 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     // 2. Ingest 2.4 GHz DJI Neo beacon with embedded ASTM IE payload
     const synPayload = createSyntheticOdidPayload({
       uasId: '1581F4NEO-9988',
-      lat: 40.0135,
-      lon: -83.1762,
+      lat: 41.3235,
+      lon: -88.9962,
       alt: 18.0
     });
 
@@ -4702,8 +4702,8 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
 
     assert.ok(drone2);
     assert.strictEqual(drone2.model, 'DJI Neo');
-    assert.strictEqual(drone2.latitude, 40.0135);
-    assert.strictEqual(drone2.longitude, -83.1762);
+    assert.strictEqual(drone2.latitude, 41.3235);
+    assert.strictEqual(drone2.longitude, -88.9962);
     assert.strictEqual(drone2.altitudeGeodetic, 18.0);
     assert.ok(drone2.transport.includes('2.4 GHz'));
 
@@ -4966,8 +4966,8 @@ describe('DJI RC 2 / DJI Fly Execution Validation Tests (v1.47.1 Regression Fix)
       };
 
       const wps = [
-        { lat: 40.01, lon: -83.17, alt: 32, heading: 45, pitch: -90, hoverTime: 2 },
-        { lat: 40.02, lon: -83.17, alt: 32, heading: 45, pitch: -90, hoverTime: 2 }
+        { lat: 41.32, lon: -88.99, alt: 32, heading: 45, pitch: -90, hoverTime: 2 },
+        { lat: 40.02, lon: -88.99, alt: 32, heading: 45, pitch: -90, hoverTime: 2 }
       ];
 
       const xml = vm.runInThisContext(`
@@ -5009,21 +5009,21 @@ describe('Drone REST API Locate & Hover Tooltip Tests (v1.48.0)', () => {
       uasId: '1581F4TEST998877',
       model: 'DJI Mini 4 Pro',
       status: 'Airborne',
-      latitude: 40.013245,
-      longitude: -83.176812,
+      latitude: 41.323245,
+      longitude: -88.996812,
       altitudeGeodetic: 35.4,
       speedHorizontal: 5.2,
       trackDirection: 135,
       transport: 'Wi-Fi 5.8 GHz',
       rssi: -56,
-      operatorLatitude: 40.0130,
-      operatorLongitude: -83.1765
+      operatorLatitude: 41.3230,
+      operatorLongitude: -88.9965
     };
 
     const tooltipHtml = radar.formatDroneTooltip(drone);
     assert.ok(tooltipHtml.includes('DJI Mini 4 Pro'), 'Must contain drone model');
     assert.ok(tooltipHtml.includes('1581F4TEST998877'), 'Must contain UAS ID');
-    assert.ok(tooltipHtml.includes('40.013245, -83.176812'), 'Must contain precise coordinates');
+    assert.ok(tooltipHtml.includes('41.323245, -88.996812'), 'Must contain precise coordinates');
     assert.ok(tooltipHtml.includes('35.4m'), 'Must contain metric altitude');
     assert.ok(tooltipHtml.includes('5.2 m/s'), 'Must contain horizontal speed');
     assert.ok(tooltipHtml.includes('135°'), 'Must contain heading/track');
@@ -5112,8 +5112,8 @@ describe('Drone REST API Locate & Hover Tooltip Tests (v1.48.0)', () => {
         uasId: '1581F4TEST998877',
         model: 'DJI Mini 4 Pro',
         status: 'Airborne',
-        latitude: 40.0130,
-        longitude: -83.1765,
+        latitude: 41.3230,
+        longitude: -88.9965,
         altitudeGeodetic: 25.0,
         speedHorizontal: 4.0,
         trackDirection: 90
@@ -5139,13 +5139,13 @@ describe('Drone REST API Locate & Hover Tooltip Tests (v1.48.0)', () => {
       assert.strictEqual(radar.locatedDroneId, 'drone-1', 'locatedDroneId must be set');
       assert.strictEqual(radar.isFollowing, true, 'isFollowing must be true');
       assert.strictEqual(mapSetViewCalls.length, 1, 'map.setView must be called');
-      assert.deepStrictEqual(mapSetViewCalls[0].coords, [40.0130, -83.1765], 'map.setView must target drone geo location');
+      assert.deepStrictEqual(mapSetViewCalls[0].coords, [41.3230, -88.9965], 'map.setView must target drone geo location');
 
       // 3. New geo location arrives via REST API
       const updatedDrone = {
         ...drone1,
-        latitude: 40.0135,
-        longitude: -83.1760,
+        latitude: 41.3235,
+        longitude: -88.9960,
         altitudeGeodetic: 30.0,
         speedHorizontal: 6.0,
         trackDirection: 45
@@ -5156,7 +5156,7 @@ describe('Drone REST API Locate & Hover Tooltip Tests (v1.48.0)', () => {
 
       // Marker must update position to new coordinates
       assert.ok(markerLatLngUpdates.length > 0, 'Marker position must update on map');
-      assert.deepStrictEqual(markerLatLngUpdates[markerLatLngUpdates.length - 1], [40.0135, -83.1760]);
+      assert.deepStrictEqual(markerLatLngUpdates[markerLatLngUpdates.length - 1], [41.3235, -88.9960]);
 
       // Tooltip must update with fresh altitude & speed
       assert.ok(markerTooltipUpdates.length > 0, 'Tooltip content must update');
@@ -5164,7 +5164,7 @@ describe('Drone REST API Locate & Hover Tooltip Tests (v1.48.0)', () => {
 
       // Map must auto-pan to follow the new geo location
       assert.strictEqual(mapPanCalls.length, 1, 'Map must panTo new drone coordinates');
-      assert.deepStrictEqual(mapPanCalls[0].coords, [40.0135, -83.1760]);
+      assert.deepStrictEqual(mapPanCalls[0].coords, [41.3235, -88.9960]);
     } finally {
       vm.runInThisContext(`
         map = null;
@@ -5194,8 +5194,8 @@ describe('v1.48.1 Double Grid and Freeform WPML Flight Execution Fixes', () => {
       });
 
       const wps = [
-        { lat: 40.0125, lon: -83.1770, alt: 30, pitch: -60, heading: 45.0, isRingStart: false },
-        { lat: 40.0128, lon: -83.1770, alt: 30, pitch: -60, heading: 135.0, isRingStart: false }
+        { lat: 41.3225, lon: -88.9970, alt: 30, pitch: -60, heading: 45.0, isRingStart: false },
+        { lat: 41.3228, lon: -88.9970, alt: 30, pitch: -60, heading: 135.0, isRingStart: false }
       ];
 
       const xml = vm.runInThisContext(`
@@ -5229,8 +5229,8 @@ describe('v1.48.1 Double Grid and Freeform WPML Flight Execution Fixes', () => {
       });
 
       const wps = [
-        { lat: 40.0125, lon: -83.1770, alt: 30, pitch: -90, heading: 0, isRingStart: false },
-        { lat: 40.0128, lon: -83.1770, alt: 30, pitch: -90, heading: 0, isRingStart: false }
+        { lat: 41.3225, lon: -88.9970, alt: 30, pitch: -90, heading: 0, isRingStart: false },
+        { lat: 41.3228, lon: -88.9970, alt: 30, pitch: -90, heading: 0, isRingStart: false }
       ];
 
       const xml = vm.runInThisContext(`
@@ -5261,8 +5261,8 @@ describe('v1.48.1 Double Grid and Freeform WPML Flight Execution Fixes', () => {
 
       // Heading strictly 0.0 deg
       const wps = [
-        { lat: 40.0125, lon: -83.1770, alt: 30, pitch: -60, heading: 0.0, isRingStart: false },
-        { lat: 40.0128, lon: -83.1770, alt: 30, pitch: -60, heading: 90.0, isRingStart: false }
+        { lat: 41.3225, lon: -88.9970, alt: 30, pitch: -60, heading: 0.0, isRingStart: false },
+        { lat: 41.3228, lon: -88.9970, alt: 30, pitch: -60, heading: 90.0, isRingStart: false }
       ];
 
       const xml = vm.runInThisContext(`
@@ -5767,10 +5767,10 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
           id: '0C:3D:5E:B4:A9:E4',
           model: 'Holyton HSRID02',
           uasId: '2003F100000000001146',
-          latitude: 40.0127595,
-          longitude: -83.1771417,
-          operatorLatitude: 40.0125000,
-          operatorLongitude: -83.1770000,
+          latitude: 41.3227595,
+          longitude: -88.9971417,
+          operatorLatitude: 41.3225000,
+          operatorLongitude: -88.9970000,
           altitudeGeodetic: 213.5,
           speedHorizontal: 5.2,
           trackDirection: 180,
@@ -5787,17 +5787,17 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
       const takeoffMarker = addedLayers[1];
       const vectorLine = addedLayers[2];
 
-      assert.deepStrictEqual(droneMarker.latlng, [40.0127595, -83.1771417], 'Drone marker coords match live position');
-      assert.deepStrictEqual(takeoffMarker.latlng, [40.0125000, -83.1770000], 'Takeoff marker coords match launch position');
-      assert.deepStrictEqual(vectorLine.pts[0], [40.0125000, -83.1770000], 'Vector line start matches takeoff');
-      assert.deepStrictEqual(vectorLine.pts[1], [40.0127595, -83.1771417], 'Vector line end matches drone');
+      assert.deepStrictEqual(droneMarker.latlng, [41.3227595, -88.9971417], 'Drone marker coords match live position');
+      assert.deepStrictEqual(takeoffMarker.latlng, [41.3225000, -88.9970000], 'Takeoff marker coords match launch position');
+      assert.deepStrictEqual(vectorLine.pts[0], [41.3225000, -88.9970000], 'Vector line start matches takeoff');
+      assert.deepStrictEqual(vectorLine.pts[1], [41.3227595, -88.9971417], 'Vector line end matches drone');
       assert.ok(vectorLine.opts && vectorLine.opts.dashArray, 'Vector line is dashed');
 
       // 2. Locate drone fits bounds around both Takeoff and Drone coordinates
       vm.runInThisContext(`RemoteIdRadar.locateDrone('0C:3D:5E:B4:A9:E4');`);
       assert.ok(fitBoundsArgs, 'locateDrone should call fitBounds when takeoff is present');
-      assert.deepStrictEqual(fitBoundsArgs.bounds[0], [40.0127595, -83.1771417]);
-      assert.deepStrictEqual(fitBoundsArgs.bounds[1], [40.0125000, -83.1770000]);
+      assert.deepStrictEqual(fitBoundsArgs.bounds[0], [41.3227595, -88.9971417]);
+      assert.deepStrictEqual(fitBoundsArgs.bounds[1], [41.3225000, -88.9970000]);
 
       // 3. When active drones are cleared, all 3 layers are removed
       vm.runInThisContext(`
@@ -5823,7 +5823,7 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
   test('RemoteIdAirspaceTracker flags signalLost: true and preserves drones during 15-minute retention window', () => {
     const { RemoteIdAirspaceTracker, createSyntheticOdidPayload } = require('./tools/companion/remote_id_decoder.js');
     const tracker = new RemoteIdAirspaceTracker(15, 900); // 15s active timeout, 900s retention
-    const payload = createSyntheticOdidPayload({ uasId: '2003F100000000001146', lat: 40.0127, lon: -83.1771 });
+    const payload = createSyntheticOdidPayload({ uasId: '2003F100000000001146', lat: 41.3227, lon: -88.9971 });
 
     const t0 = 1000000;
     tracker.processAdvertisement({ mac: '0C:3D:5E:B4:A9:E4', rssi: -30, rawPayload: payload, timestamp: t0 });
@@ -5908,10 +5908,10 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
           id: '0C:3D:5E:B4:A9:E4',
           model: 'Holyton HSRID02',
           uasId: '2003F100000000001146',
-          latitude: 40.0127595,
-          longitude: -83.1771417,
-          operatorLatitude: 40.0125000,
-          operatorLongitude: -83.1770000,
+          latitude: 41.3227595,
+          longitude: -88.9971417,
+          operatorLatitude: 41.3225000,
+          operatorLongitude: -88.9970000,
           altitudeGeodetic: 213.5,
           speedHorizontal: 0,
           trackDirection: 180,
@@ -5963,10 +5963,10 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
 describe('Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0)', () => {
   test('validateWpmlMission successfully validates compliant WPML mission (10/10 rules passed)', () => {
     const wps = [
-      { lat: 40.0127, lon: -83.1771, alt: 25 },
-      { lat: 40.0129, lon: -83.1771, alt: 25 },
-      { lat: 40.0129, lon: -83.1769, alt: 25 },
-      { lat: 40.0127, lon: -83.1769, alt: 25 }
+      { lat: 41.3227, lon: -88.9971, alt: 25 },
+      { lat: 41.3229, lon: -88.9971, alt: 25 },
+      { lat: 41.3229, lon: -88.9969, alt: 25 },
+      { lat: 41.3227, lon: -88.9969, alt: 25 }
     ];
     const originalGetElementById = global.document.getElementById;
     global.document.getElementById = (id) => {
@@ -5994,7 +5994,7 @@ describe('Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0)', () => {
     <Folder>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <Placemark>
-        <Point><coordinates>-83.177,40.012</coordinates></Point>
+        <Point><coordinates>-88.997,41.322</coordinates></Point>
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
           <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
@@ -6002,7 +6002,7 @@ describe('Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0)', () => {
         <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.178,40.013</coordinates></Point>
+        <Point><coordinates>-88.998,41.323</coordinates></Point>
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
           <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
@@ -6010,7 +6010,7 @@ describe('Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0)', () => {
         <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndPassWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.179,40.014</coordinates></Point>
+        <Point><coordinates>-88.999,41.324</coordinates></Point>
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
           <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
@@ -6032,12 +6032,12 @@ describe('Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0)', () => {
     <Folder>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <Placemark>
-        <Point><coordinates>-83.177,40.012</coordinates></Point>
+        <Point><coordinates>-88.997,41.322</coordinates></Point>
         <wpml:waypointHeadingParam><wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable><wpml:waypointHeadingAngle>10.0</wpml:waypointHeadingAngle></wpml:waypointHeadingParam>
         <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndPassWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.179,40.014</coordinates></Point>
+        <Point><coordinates>-88.999,41.324</coordinates></Point>
         <wpml:waypointHeadingParam><wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable><wpml:waypointHeadingAngle>10.0</wpml:waypointHeadingAngle></wpml:waypointHeadingParam>
         <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndPassWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
       </Placemark>
@@ -6057,7 +6057,7 @@ describe('Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0)', () => {
     <Folder>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <Placemark>
-        <Point><coordinates>-83.177,40.012,50.0</coordinates></Point>
+        <Point><coordinates>-88.997,41.322,50.0</coordinates></Point>
         <wpml:waypointHeadingParam><wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable><wpml:waypointHeadingAngle>10.0</wpml:waypointHeadingAngle></wpml:waypointHeadingParam>
         <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
       </Placemark>
@@ -6077,7 +6077,7 @@ describe('Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0)', () => {
       <wpml:droneEnumValue>68</wpml:droneEnumValue>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <Placemark>
-        <Point><coordinates>-83.177123,40.012456,50.0</coordinates></Point>
+        <Point><coordinates>-88.997123,41.322456,50.0</coordinates></Point>
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
           <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
@@ -6089,8 +6089,8 @@ describe('Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0)', () => {
   </Document>
 </kml>`;
     const fixed = vm.runInThisContext('validateAndFixWpml')(faultyWpml);
-    assert.ok(!fixed.wpmlXml.includes('-83.177123,40.012456,50.0'), 'Must strip 3rd coordinate');
-    assert.ok(fixed.wpmlXml.includes('-83.177123,40.012456'), 'Must retain 2D coordinates');
+    assert.ok(!fixed.wpmlXml.includes('-88.997123,41.322456,50.0'), 'Must strip 3rd coordinate');
+    assert.ok(fixed.wpmlXml.includes('-88.997123,41.322456'), 'Must retain 2D coordinates');
     assert.ok(fixed.wpmlXml.includes('<wpml:waypointHeadingAngle>0.1</wpml:waypointHeadingAngle>'), 'Must clamp 0 angle to 0.1');
     assert.strictEqual(fixed.validation.valid, true, 'Repaired mission must be valid');
   });
@@ -6103,7 +6103,7 @@ describe('Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0)', () => {
 
     const report = vm.runInThisContext(`
       (function() {
-        let testXml = '<kml><Document><Folder><wpml:droneEnumValue>68</wpml:droneEnumValue><wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode><Placemark><Point><coordinates>-83.177,40.012</coordinates></Point><wpml:waypointHeadingParam><wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam><wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam></Placemark><Placemark><Point><coordinates>-83.178,40.013</coordinates></Point><wpml:waypointHeadingParam><wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>0</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam><wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndPassWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam></Placemark><Placemark><Point><coordinates>-83.179,40.014</coordinates></Point><wpml:waypointHeadingParam><wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam><wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam></Placemark></Folder></Document></kml>';
+        let testXml = '<kml><Document><Folder><wpml:droneEnumValue>68</wpml:droneEnumValue><wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode><Placemark><Point><coordinates>-88.997,41.322</coordinates></Point><wpml:waypointHeadingParam><wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam><wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam></Placemark><Placemark><Point><coordinates>-88.998,41.323</coordinates></Point><wpml:waypointHeadingParam><wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>0</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam><wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndPassWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam></Placemark><Placemark><Point><coordinates>-88.999,41.324</coordinates></Point><wpml:waypointHeadingParam><wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam><wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam></Placemark></Folder></Document></kml>';
         return validateWpmlMission(testXml);
       })()
     `);
@@ -6179,7 +6179,7 @@ describe('Bad KMZ History Recording & Antigravity Triage Tests (v1.56.0)', () =>
 
   test('buildFlightDiagnosticsJSON records validation health, errors, and WPML XML', () => {
     const fn = vm.runInThisContext('buildFlightDiagnosticsJSON');
-    const dummyWps = [{ lat: 40.01, lon: -83.17, altitude: 50 }];
+    const dummyWps = [{ lat: 41.32, lon: -88.99, altitude: 50 }];
     const diag = fn(dummyWps, {
       uuid: 'diag_test_uuid_999',
       isValid: false,
@@ -6207,8 +6207,8 @@ describe('Bad KMZ History Recording & Antigravity Triage Tests (v1.56.0)', () =>
           errors: ['Intermediate waypoint has headingAngleEnable=1', 'Coordinates contain 3 values'],
           warnings: ['Spacing below 2m']
         };
-        const dummyWpml = '<kml><Placemark><Point><coordinates>-83.177,40.012,50</coordinates></Point></Placemark></kml>';
-        const dummyWps = [{ lat: 40.012, lon: -83.177, altitude: 50, heading: 0, turnMode: 'pass' }];
+        const dummyWpml = '<kml><Placemark><Point><coordinates>-88.997,41.322,50</coordinates></Point></Placemark></kml>';
+        const dummyWps = [{ lat: 41.322, lon: -88.997, altitude: 50, heading: 0, turnMode: 'pass' }];
         return KMZInspector.generateAntigravityPrompt(dummyReport, dummyWpml, dummyWps);
       })()
     `);
@@ -6237,9 +6237,9 @@ describe('Bad KMZ History Recording & Antigravity Triage Tests (v1.56.0)', () =>
 
 describe('Multi-Vendor Autopilots (PX4 / MAVLink / Autel) & Open MCP Server Tests (v1.57.0)', () => {
   const dummyWps = [
-    { lat: 40.012, lon: -83.177, alt: 45, speed: 4, heading: 90, isPhoto: true },
-    { lat: 40.013, lon: -83.177, alt: 45, speed: 4, heading: 90, isPhoto: true },
-    { lat: 40.014, lon: -83.178, alt: 45, speed: 4, heading: 270, isPhoto: false }
+    { lat: 41.322, lon: -88.997, alt: 45, speed: 4, heading: 90, isPhoto: true },
+    { lat: 41.323, lon: -88.997, alt: 45, speed: 4, heading: 90, isPhoto: true },
+    { lat: 41.324, lon: -88.998, alt: 45, speed: 4, heading: 270, isPhoto: false }
   ];
 
   test('buildQgcMissionPlan produces compliant QGroundControl .plan JSON', () => {
@@ -6261,8 +6261,8 @@ describe('Multi-Vendor Autopilots (PX4 / MAVLink / Autel) & Open MCP Server Test
 
     const wpItems = items.filter(it => it.command === 16);
     assert.strictEqual(wpItems.length, 3, 'Must have 3 waypoint items');
-    assert.strictEqual(wpItems[0].params[4], 40.012, 'Must record latitude');
-    assert.strictEqual(wpItems[0].params[5], -83.177, 'Must record longitude');
+    assert.strictEqual(wpItems[0].params[4], 41.322, 'Must record latitude');
+    assert.strictEqual(wpItems[0].params[5], -88.997, 'Must record longitude');
 
     const photoItems = items.filter(it => it.command === 203);
     assert.strictEqual(photoItems.length, 2, 'Must have 2 camera trigger items for photo waypoints');
@@ -6278,7 +6278,7 @@ describe('Multi-Vendor Autopilots (PX4 / MAVLink / Autel) & Open MCP Server Test
     assert.ok(kml.includes('<Document>'), 'Must contain Document');
     assert.ok(kml.includes('<name>TestAutelMission</name>'), 'Must contain mission name');
     assert.ok(kml.includes('<altitudeMode>relativeToGround</altitudeMode>'), 'Must specify relativeToGround');
-    assert.ok(kml.includes('<coordinates>-83.177,40.012,45</coordinates>'), 'Must format lon,lat,alt coordinates');
+    assert.ok(kml.includes('<coordinates>-88.997,41.322,45</coordinates>'), 'Must format lon,lat,alt coordinates');
     assert.ok(kml.includes('<Data name="gimbalPitch"><value>-45</value></Data>'), 'Must include gimbal pitch');
     assert.ok(kml.includes('<Data name="action"><value>takePhoto</value></Data>'), 'Must flag photo actions');
   });
@@ -6491,11 +6491,11 @@ describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
       });
 
       const wps = [
-        { index: 0, lat: 40.01277424204881, lon: -83.17710595012082, alt: '22', heading: 45 },
-        { index: 1, lat: 40.01295390510564, lon: -83.17710595012082, alt: '22', heading: 135 },
-        { index: 2, lat: 40.01295390510564, lon: -83.17702775756642, alt: '22', heading: 161.565051177078 },
-        { index: 3, lat: 40.01277424204881, lon: -83.17702775756642, alt: '22', heading: 18.43494882292201 },
-        { index: 4, lat: 40.01277424204881, lon: -83.17694956501204, alt: '22', heading: 341.565051177078 }
+        { index: 0, lat: 41.32277424204881, lon: -88.99710595012082, alt: '22', heading: 45 },
+        { index: 1, lat: 41.32295390510564, lon: -88.99710595012082, alt: '22', heading: 135 },
+        { index: 2, lat: 41.32295390510564, lon: -88.99702775756642, alt: '22', heading: 161.565051177078 },
+        { index: 3, lat: 41.32277424204881, lon: -88.99702775756642, alt: '22', heading: 18.43494882292201 },
+        { index: 4, lat: 41.32277424204881, lon: -88.99694956501204, alt: '22', heading: 341.565051177078 }
       ];
 
       const xml = vm.runInThisContext(`
@@ -6532,7 +6532,7 @@ describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
     <Folder>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <Placemark>
-        <Point><coordinates>-83.177105,40.012774</coordinates></Point>
+        <Point><coordinates>-88.997105,41.322774</coordinates></Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -6546,7 +6546,7 @@ describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
         </wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.177105,40.012953</coordinates></Point>
+        <Point><coordinates>-88.997105,41.322953</coordinates></Point>
         <wpml:index>1</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -6560,7 +6560,7 @@ describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
         </wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.177105,40.013153</coordinates></Point>
+        <Point><coordinates>-88.997105,41.323153</coordinates></Point>
         <wpml:index>2</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -6591,7 +6591,7 @@ describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
     <Folder>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <Placemark>
-        <Point><coordinates>-83.177105,40.012774</coordinates></Point>
+        <Point><coordinates>-88.997105,41.322774</coordinates></Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -6605,7 +6605,7 @@ describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
         </wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.177105,40.012953</coordinates></Point>
+        <Point><coordinates>-88.997105,41.322953</coordinates></Point>
         <wpml:index>1</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -6619,7 +6619,7 @@ describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
         </wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.177105,40.013153</coordinates></Point>
+        <Point><coordinates>-88.997105,41.323153</coordinates></Point>
         <wpml:index>2</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -6645,10 +6645,10 @@ describe('v1.58.2 Consumer Drone (Mini 4 Pro / Air 3) Turn Mode & StraightLine X
   test('DJI Mini 4 Pro (68) strictly exports ContinuityCurvature and useStraightLine: 0 even with straight pathMode', () => {
     global._stubElements = { 'drone-model': { value: '68' } };
     const waypoints = [
-      { index: 0, lat: 40.012751644699264, lon: -83.17711399670902, alt: '22', heading: 45, turnMode: 'inherit' },
-      { index: 1, lat: 40.01293130775609, lon: -83.17711399670902, alt: '22', heading: 135, turnMode: 'inherit' },
-      { index: 2, lat: 40.01293130775609, lon: -83.17703580418052, alt: '22', heading: 161.565, turnMode: 'inherit' },
-      { index: 3, lat: 40.012751644699264, lon: -83.17703580418052, alt: '22', heading: 18.435, turnMode: 'inherit' }
+      { index: 0, lat: 41.322751644699264, lon: -88.99711399670902, alt: '22', heading: 45, turnMode: 'inherit' },
+      { index: 1, lat: 41.32293130775609, lon: -88.99711399670902, alt: '22', heading: 135, turnMode: 'inherit' },
+      { index: 2, lat: 41.32293130775609, lon: -88.99703580418052, alt: '22', heading: 161.565, turnMode: 'inherit' },
+      { index: 3, lat: 41.322751644699264, lon: -88.99703580418052, alt: '22', heading: 18.435, turnMode: 'inherit' }
     ];
 
     const xml = vm.runInThisContext(`
@@ -6669,7 +6669,7 @@ describe('v1.58.2 Consumer Drone (Mini 4 Pro / Air 3) Turn Mode & StraightLine X
     <wpml:droneEnumValue>68</wpml:droneEnumValue>
     <Folder>
       <Placemark>
-        <Point><coordinates>-83.177113,40.012751</coordinates></Point>
+        <Point><coordinates>-88.997113,41.322751</coordinates></Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -6702,7 +6702,7 @@ describe('v1.58.2 Consumer Drone (Mini 4 Pro / Air 3) Turn Mode & StraightLine X
     <wpml:droneEnumValue>68</wpml:droneEnumValue>
     <Folder>
       <Placemark>
-        <Point><coordinates>-83.177113,40.012751</coordinates></Point>
+        <Point><coordinates>-88.997113,41.322751</coordinates></Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -6717,7 +6717,7 @@ describe('v1.58.2 Consumer Drone (Mini 4 Pro / Air 3) Turn Mode & StraightLine X
         <wpml:useStraightLine>1</wpml:useStraightLine>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.177113,40.012931</coordinates></Point>
+        <Point><coordinates>-88.997113,41.322931</coordinates></Point>
         <wpml:index>1</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -6732,7 +6732,7 @@ describe('v1.58.2 Consumer Drone (Mini 4 Pro / Air 3) Turn Mode & StraightLine X
         <wpml:useStraightLine>1</wpml:useStraightLine>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.177035,40.012931</coordinates></Point>
+        <Point><coordinates>-88.997035,41.322931</coordinates></Point>
         <wpml:index>2</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -6803,8 +6803,8 @@ describe('Companion Bridge Performance & Drone Location Freshness Tests (v1.59.1
     const tracker = new RemoteIdAirspaceTracker(15, 900); // 15s active timeout, 900s retention
 
     const t0 = 1000000;
-    const oldPayload = createSyntheticOdidPayload({ uasId: '1581F4OLD-DRONE', lat: 39.9990, lon: -83.1700 });
-    const newPayload = createSyntheticOdidPayload({ uasId: '1581F4NEW-DRONE', lat: 40.0150, lon: -83.1750 });
+    const oldPayload = createSyntheticOdidPayload({ uasId: '1581F4OLD-DRONE', lat: 39.9990, lon: -88.9900 });
+    const newPayload = createSyntheticOdidPayload({ uasId: '1581F4NEW-DRONE', lat: 41.3250, lon: -88.9950 });
 
     // Ingest old drone first at t0
     tracker.processAdvertisement({ mac: '11:22:33:44:55:66', rssi: -75, rawPayload: oldPayload, timestamp: t0 });
@@ -6821,7 +6821,7 @@ describe('Companion Bridge Performance & Drone Location Freshness Tests (v1.59.1
     // Live drone MUST be sorted first regardless of Map insertion order!
     assert.strictEqual(activeDrones[0].uasId, '1581F4NEW-DRONE', 'Freshest live drone must be index 0');
     assert.strictEqual(activeDrones[0].isLive, true);
-    assert.strictEqual(activeDrones[0].latitude, 40.015);
+    assert.strictEqual(activeDrones[0].latitude, 41.325);
 
     assert.strictEqual(activeDrones[1].uasId, '1581F4OLD-DRONE', 'Stale/LKP drone must be index 1');
     assert.strictEqual(activeDrones[1].isLive, false);
@@ -6832,13 +6832,13 @@ describe('Companion Bridge Performance & Drone Location Freshness Tests (v1.59.1
     const tracker = new RemoteIdAirspaceTracker(15, 900);
 
     const t0 = 2000000;
-    const initialPayload = createSyntheticOdidPayload({ uasId: '1581F4ROTATING-DRONE', lat: 40.0110, lon: -83.1710, alt: 20.0 });
-    const rotatedPayload = createSyntheticOdidPayload({ uasId: '1581F4ROTATING-DRONE', lat: 40.0118, lon: -83.1715, alt: 28.0 });
+    const initialPayload = createSyntheticOdidPayload({ uasId: '1581F4ROTATING-DRONE', lat: 41.3210, lon: -88.9910, alt: 20.0 });
+    const rotatedPayload = createSyntheticOdidPayload({ uasId: '1581F4ROTATING-DRONE', lat: 41.3218, lon: -88.9915, alt: 28.0 });
 
     // Packet from initial MAC address
     tracker.processAdvertisement({ mac: 'E1:22:33:AA:BB:CC', rssi: -62, rawPayload: initialPayload, timestamp: t0 });
     assert.strictEqual(tracker.drones.size, 1);
-    assert.strictEqual(tracker.drones.get('E1:22:33:AA:BB:CC').latitude, 40.011);
+    assert.strictEqual(tracker.drones.get('E1:22:33:AA:BB:CC').latitude, 41.321);
 
     // Drone rotates its BLE MAC address to a new private address 10 seconds later
     tracker.processAdvertisement({ mac: 'F9:88:77:66:55:44', rssi: -58, rawPayload: rotatedPayload, timestamp: t0 + 10000 });
@@ -6849,7 +6849,7 @@ describe('Companion Bridge Performance & Drone Location Freshness Tests (v1.59.1
     assert.strictEqual(tracker.drones.has('F9:88:77:66:55:44'), true, 'New MAC must be active');
 
     const drone = tracker.drones.get('F9:88:77:66:55:44');
-    assert.strictEqual(drone.latitude, 40.0118, 'Updated latitude must be reflected');
+    assert.strictEqual(drone.latitude, 41.3218, 'Updated latitude must be reflected');
     assert.strictEqual(drone.breadcrumbs.length, 2, 'Historical breadcrumbs must be merged across MAC rotations');
     assert.strictEqual(drone.firstSeen, t0, 'Original firstSeen timestamp must be preserved');
   });
@@ -6874,8 +6874,8 @@ describe('Companion Bridge Performance & Drone Location Freshness Tests (v1.59.1
     const radar = Object.create(RemoteIdRadar);
     radar.markers = new Map();
     radar.activeDrones = [
-      { id: 'OLD-LKP', uasId: '1581F4OLD', latitude: 39.99, longitude: -83.17, signalLost: true, isLive: false },
-      { id: 'FRESH-LIVE', uasId: '1581F4LIVE', latitude: 40.01, longitude: -83.18, signalLost: false, isLive: true }
+      { id: 'OLD-LKP', uasId: '1581F4OLD', latitude: 39.99, longitude: -88.99, signalLost: true, isLive: false },
+      { id: 'FRESH-LIVE', uasId: '1581F4LIVE', latitude: 41.32, longitude: -89.00, signalLost: false, isLive: true }
     ];
 
     // Calling locateDrone without argument should prefer FRESH-LIVE over OLD-LKP
@@ -6982,7 +6982,7 @@ describe('Multiple Mission Exports & Modal Close Shortcuts Tests (v1.60.2)', () 
       createdAt: '2026-08-29T23:11:46.729Z',
       waypointCount: 2,
       altitude: 21.0,
-      plan: { waypoints: [{ lat: 40.0, lon: -83.0 }, { lat: 40.01, lon: -83.01 }] }
+      plan: { waypoints: [{ lat: 40.0, lon: -83.0 }, { lat: 41.32, lon: -83.01 }] }
     };
     const res1 = db.saveDiagnostic(exp1);
     assert.strictEqual(res1.success, true);
@@ -7283,11 +7283,11 @@ describe('v1.61.3 Double Grid Oblique Pitch followWayline Compliance (Antigravit
 
       // Exact waypoints configuration from Antigravity bug report
       const sampleWps = [
-        { index: 0, lat: 40.01274682755848, lon: -83.17686868170873, alt: '22', heading: 142, turnMode: 'inherit' },
-        { index: 1, lat: 40.01272493213971, lon: -83.17710151073241, alt: '22', heading: 232, turnMode: 'inherit' },
-        { index: 2, lat: 40.01278437343159, lon: -83.17711104000223, alt: '22', heading: 258.565051177078, turnMode: 'inherit' },
-        { index: 3, lat: 40.01280626885036, lon: -83.17687821097853, alt: '22', heading: 115.43494882292201, turnMode: 'inherit' },
-        { index: 4, lat: 40.01286571014224, lon: -83.17688774024835, alt: '22', heading: 78.56505117707798, turnMode: 'inherit' }
+        { index: 0, lat: 41.32274682755848, lon: -88.99686868170873, alt: '22', heading: 142, turnMode: 'inherit' },
+        { index: 1, lat: 41.32272493213971, lon: -88.99710151073241, alt: '22', heading: 232, turnMode: 'inherit' },
+        { index: 2, lat: 41.32278437343159, lon: -88.99711104000223, alt: '22', heading: 258.565051177078, turnMode: 'inherit' },
+        { index: 3, lat: 41.32280626885036, lon: -88.99687821097853, alt: '22', heading: 115.43494882292201, turnMode: 'inherit' },
+        { index: 4, lat: 41.32286571014224, lon: -88.99688774024835, alt: '22', heading: 78.56505117707798, turnMode: 'inherit' }
       ];
 
       const xml = vm.runInThisContext(`
@@ -7324,7 +7324,7 @@ describe('v1.61.3 Double Grid Oblique Pitch followWayline Compliance (Antigravit
     <Folder>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <Placemark>
-        <Point><coordinates>-83.177105,40.012774</coordinates></Point>
+        <Point><coordinates>-88.997105,41.322774</coordinates></Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -7338,7 +7338,7 @@ describe('v1.61.3 Double Grid Oblique Pitch followWayline Compliance (Antigravit
         </wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.177105,40.012953</coordinates></Point>
+        <Point><coordinates>-88.997105,41.322953</coordinates></Point>
         <wpml:index>1</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -7352,7 +7352,7 @@ describe('v1.61.3 Double Grid Oblique Pitch followWayline Compliance (Antigravit
         </wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.177105,40.013153</coordinates></Point>
+        <Point><coordinates>-88.997105,41.323153</coordinates></Point>
         <wpml:index>2</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -7383,7 +7383,7 @@ describe('v1.61.3 Double Grid Oblique Pitch followWayline Compliance (Antigravit
     <Folder>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <Placemark>
-        <Point><coordinates>-83.177105,40.012774</coordinates></Point>
+        <Point><coordinates>-88.997105,41.322774</coordinates></Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -7397,7 +7397,7 @@ describe('v1.61.3 Double Grid Oblique Pitch followWayline Compliance (Antigravit
         </wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.177105,40.012953</coordinates></Point>
+        <Point><coordinates>-88.997105,41.322953</coordinates></Point>
         <wpml:index>1</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -7411,7 +7411,7 @@ describe('v1.61.3 Double Grid Oblique Pitch followWayline Compliance (Antigravit
         </wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.177105,40.013153</coordinates></Point>
+        <Point><coordinates>-88.997105,41.323153</coordinates></Point>
         <wpml:index>2</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -7455,11 +7455,11 @@ describe('v1.61.4 followWayline Endpoint Heading Angle Enable Preservation', () 
 
       // Sample 5 waypoints from the 40-waypoint bug report
       const sampleWps = [
-        { index: 0, lat: 40.01276942491348, lon: -83.17685124730684, alt: '22', heading: 142, turnMode: 'inherit' },
-        { index: 1, lat: 40.01276395105879, lon: -83.17690945458205, alt: '22', heading: 160.43494882292202, turnMode: 'inherit' },
-        { index: 2, lat: 40.012758477204095, lon: -83.17696766185723, alt: '22', heading: 187, turnMode: 'inherit' },
-        { index: 3, lat: 40.0127530033494, lon: -83.17702586913244, alt: '22', heading: 213.56505117707798, turnMode: 'inherit' },
-        { index: 4, lat: 40.01274752949471, lon: -83.17708407640764, alt: '22', heading: 232, turnMode: 'inherit' }
+        { index: 0, lat: 41.32276942491348, lon: -88.99685124730684, alt: '22', heading: 142, turnMode: 'inherit' },
+        { index: 1, lat: 41.32276395105879, lon: -88.99690945458205, alt: '22', heading: 160.43494882292202, turnMode: 'inherit' },
+        { index: 2, lat: 41.322758477204095, lon: -88.99696766185723, alt: '22', heading: 187, turnMode: 'inherit' },
+        { index: 3, lat: 41.3227530033494, lon: -88.99702586913244, alt: '22', heading: 213.56505117707798, turnMode: 'inherit' },
+        { index: 4, lat: 41.32274752949471, lon: -88.99708407640764, alt: '22', heading: 232, turnMode: 'inherit' }
       ];
 
       const rawXml = vm.runInThisContext(`
@@ -7502,7 +7502,7 @@ describe('v1.61.4 followWayline Endpoint Heading Angle Enable Preservation', () 
     <Folder>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <Placemark>
-        <Point><coordinates>-83.1768512473068,40.0127694249135</coordinates></Point>
+        <Point><coordinates>-88.9968512473068,41.3227694249135</coordinates></Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -7517,7 +7517,7 @@ describe('v1.61.4 followWayline Endpoint Heading Angle Enable Preservation', () 
         <wpml:useStraightLine>0</wpml:useStraightLine>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.1770840764076,40.0127475294947</coordinates></Point>
+        <Point><coordinates>-88.9970840764076,41.3227475294947</coordinates></Point>
         <wpml:index>1</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -7570,11 +7570,11 @@ describe('v1.61.5 followWayline waypointHeadingAngle: 0 & Rule 2 Stock RC 2 Sche
       });
 
       const sampleWps = [
-        { index: 0, lat: 40.01275709908441, lon: -83.17685795285298, alt: '22', turnMode: 'inherit' },
-        { index: 1, lat: 40.01275162522972, lon: -83.17691616011767, alt: '22', turnMode: 'inherit' },
-        { index: 2, lat: 40.012746151375026, lon: -83.17697436738236, alt: '22', turnMode: 'inherit' },
-        { index: 3, lat: 40.012740677520334, lon: -83.17703257464704, alt: '22', turnMode: 'inherit' },
-        { index: 4, lat: 40.01273520366564, lon: -83.17709078191173, alt: '22', turnMode: 'inherit' }
+        { index: 0, lat: 41.32275709908441, lon: -88.99685795285298, alt: '22', turnMode: 'inherit' },
+        { index: 1, lat: 41.32275162522972, lon: -88.99691616011767, alt: '22', turnMode: 'inherit' },
+        { index: 2, lat: 41.322746151375026, lon: -88.99697436738236, alt: '22', turnMode: 'inherit' },
+        { index: 3, lat: 41.322740677520334, lon: -88.99703257464704, alt: '22', turnMode: 'inherit' },
+        { index: 4, lat: 41.32273520366564, lon: -88.99709078191173, alt: '22', turnMode: 'inherit' }
       ];
 
       const rawXml = vm.runInThisContext(`
@@ -7607,7 +7607,7 @@ describe('v1.61.5 followWayline waypointHeadingAngle: 0 & Rule 2 Stock RC 2 Sche
     <Folder>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <Placemark>
-        <Point><coordinates>-83.1771582423143,40.0128314426079</coordinates></Point>
+        <Point><coordinates>-88.9971582423143,41.3228314426079</coordinates></Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>10</wpml:executeHeight>
         <wpml:waypointSpeed>12</wpml:waypointSpeed>
@@ -7626,7 +7626,7 @@ describe('v1.61.5 followWayline waypointHeadingAngle: 0 & Rule 2 Stock RC 2 Sche
         <wpml:useStraightLine>0</wpml:useStraightLine>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.1767677125856,40.0128610246434</coordinates></Point>
+        <Point><coordinates>-88.9967677125856,41.3228610246434</coordinates></Point>
         <wpml:index>1</wpml:index>
         <wpml:executeHeight>10</wpml:executeHeight>
         <wpml:waypointSpeed>12</wpml:waypointSpeed>
@@ -7645,7 +7645,7 @@ describe('v1.61.5 followWayline waypointHeadingAngle: 0 & Rule 2 Stock RC 2 Sche
         <wpml:useStraightLine>0</wpml:useStraightLine>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.1767677125856,40.0128610246434</coordinates></Point>
+        <Point><coordinates>-88.9967677125856,41.3228610246434</coordinates></Point>
         <wpml:index>2</wpml:index>
         <wpml:executeHeight>10</wpml:executeHeight>
         <wpml:waypointSpeed>12</wpml:waypointSpeed>
@@ -7664,7 +7664,7 @@ describe('v1.61.5 followWayline waypointHeadingAngle: 0 & Rule 2 Stock RC 2 Sche
         <wpml:useStraightLine>0</wpml:useStraightLine>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.1771582423143,40.0128314426079</coordinates></Point>
+        <Point><coordinates>-88.9971582423143,41.3228314426079</coordinates></Point>
         <wpml:index>3</wpml:index>
         <wpml:executeHeight>10</wpml:executeHeight>
         <wpml:waypointSpeed>12</wpml:waypointSpeed>
@@ -7697,7 +7697,7 @@ describe('v1.61.5 followWayline waypointHeadingAngle: 0 & Rule 2 Stock RC 2 Sche
       const isEndpoint = (i === 0 || i === 107);
       pms += `
       <Placemark>
-        <Point><coordinates>-83.176500,${(40.013000 + i * 0.0001).toFixed(6)}</coordinates></Point>
+        <Point><coordinates>-88.996500,${(41.323000 + i * 0.0001).toFixed(6)}</coordinates></Point>
         <wpml:index>${i}</wpml:index>
         <wpml:executeHeight>50.0</wpml:executeHeight>
         <wpml:waypointHeadingParam>
@@ -7935,7 +7935,7 @@ describe('v1.62.0 Flight Pattern Layers & Multi-Layer Transitions Tests', () => 
     layerB.gimbalPitch = -45;
 
     const lastWpA = { lat: 40.0, lon: -80.0, x: 0, y: 0, alt: 40 };
-    const firstWpB = { lat: 40.01, lon: -80.01, x: 100, y: 100, alt: 70 };
+    const firstWpB = { lat: 41.32, lon: -80.01, x: 100, y: 100, alt: 70 };
 
     // 1. Direct transition
     layerA.transition = { type: 'direct' };
@@ -9104,13 +9104,13 @@ describe('v1.70.1 Road Follow Layer Isolation & Multi-Layer Independence', () =>
 
     const l1 = createDefaultLayer('layer-1', 'Layer 1: Road Following A', 0, 'road-following', 40.0, -83.0);
     const l2 = createDefaultLayer('layer-2', 'Layer 2: Road Following B', 1, 'road-following', 40.0, -83.0);
-    l1.roadWaypoints = [{ lat: 40.01, lon: -83.01, x: 10, y: 10, idx: 0 }];
+    l1.roadWaypoints = [{ lat: 41.32, lon: -83.01, x: 10, y: 10, idx: 0 }];
     l2.roadWaypoints = [{ lat: 40.02, lon: -83.02, x: 20, y: 20, idx: 0 }, { lat: 40.03, lon: -83.03, x: 30, y: 30, idx: 1 }];
     flightLayers = [l1, l2];
 
     setActiveLayer(l1.id);
     assert.strictEqual(roadWaypoints.length, 1);
-    assert.strictEqual(roadWaypoints[0].lat, 40.01);
+    assert.strictEqual(roadWaypoints[0].lat, 41.32);
 
     setActiveLayer(l2.id);
     assert.strictEqual(roadWaypoints.length, 2);
@@ -9120,7 +9120,7 @@ describe('v1.70.1 Road Follow Layer Isolation & Multi-Layer Independence', () =>
     // Switch back to l1
     setActiveLayer(l1.id);
     assert.strictEqual(roadWaypoints.length, 1);
-    assert.strictEqual(roadWaypoints[0].lat, 40.01);
+    assert.strictEqual(roadWaypoints[0].lat, 41.32);
   });
 
   test('v1.103.1 regression: road node drag handler updates wp coords without calling updateGrid() during drag (only on dragend)', () => {
@@ -9684,7 +9684,7 @@ describe('Double Grid Flight Line Camera Heading & Turn Alignment Tests (v1.76.4
       assert.strictEqual(grid.waypoints.length, 137, 'Must generate exactly 137 waypoints');
 
       const sampleWps = grid.waypoints.map((pt, i) => {
-        const geo = localToGeodetic(pt.x, pt.y, 40.01284102456845, -83.17713611362149, 0);
+        const geo = localToGeodetic(pt.x, pt.y, 41.32284102456845, -88.99713611362149, 0);
         return {
           index: i,
           lat: geo.lat,
@@ -10345,8 +10345,8 @@ describe('Target Splat First Waypoint Stuck Fix & WPML Validation Tests (v1.77.7
       targetPerimeterAltitude: 12,
       targetPerimeterPitch: -45,
       targetHeight: 8,
-      centerLat: 40.0128,
-      centerLon: -83.1771
+      centerLat: 41.3228,
+      centerLon: -88.9971
     };
     const result = generateTargetSplatCoordinates(50, 50, 0, 'stopAndShoot', 10, 10, 16, -45, layer);
     assert.ok(result.waypoints.length > 0, 'Must generate waypoints');
@@ -10373,8 +10373,8 @@ describe('Target Splat First Waypoint Stuck Fix & WPML Validation Tests (v1.77.7
       for (let i = 0; i < 106; i++) {
         waypoints.push({
           index: i,
-          lat: 40.0128 + i * 0.00003,
-          lon: -83.1771,
+          lat: 41.3228 + i * 0.00003,
+          lon: -88.9971,
           alt: 16,
           heading: (i % 2 === 0) ? 0 : 180,
           turnMode: 'inherit',
@@ -10420,7 +10420,7 @@ describe('Target Splat First Waypoint Stuck Fix & WPML Validation Tests (v1.77.7
     <wpml:missionConfig><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:missionConfig>
     <Folder>
       <Placemark>
-        <Point><coordinates>-83.1771,40.0128</coordinates></Point>
+        <Point><coordinates>-88.9971,41.3228</coordinates></Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>16</wpml:executeHeight>
         <wpml:waypointSpeed>1</wpml:waypointSpeed>
@@ -10433,7 +10433,7 @@ describe('Target Splat First Waypoint Stuck Fix & WPML Validation Tests (v1.77.7
         <wpml:useStraightLine>0</wpml:useStraightLine>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.1771,40.0129</coordinates></Point>
+        <Point><coordinates>-88.9971,41.3229</coordinates></Point>
         <wpml:index>1</wpml:index>
         <wpml:executeHeight>16</wpml:executeHeight>
         <wpml:waypointSpeed>1</wpml:waypointSpeed>
@@ -10464,7 +10464,7 @@ describe('Target Splat First Waypoint Stuck Fix & WPML Validation Tests (v1.77.7
     <wpml:missionConfig><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:missionConfig>
     <Folder>
       <Placemark>
-        <Point><coordinates>-83.1771,40.0128</coordinates></Point>
+        <Point><coordinates>-88.9971,41.3228</coordinates></Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>16</wpml:executeHeight>
         <wpml:waypointSpeed>1</wpml:waypointSpeed>
@@ -10477,7 +10477,7 @@ describe('Target Splat First Waypoint Stuck Fix & WPML Validation Tests (v1.77.7
         <wpml:useStraightLine>0</wpml:useStraightLine>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.1771,40.0129</coordinates></Point>
+        <Point><coordinates>-88.9971,41.3229</coordinates></Point>
         <wpml:index>1</wpml:index>
         <wpml:executeHeight>16</wpml:executeHeight>
         <wpml:waypointSpeed>1</wpml:waypointSpeed>
@@ -10533,11 +10533,11 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       // Waypoint 3: moderate turn (heading 145 deg, diff 35 deg >= 25 deg) -> 4s settling hover
       // Waypoint 4: slight turn (heading 150 deg, diff 5 deg < 25 deg) -> base 2s
       const waypoints = [
-        { lat: 40.0128, lon: -83.1771, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
-        { lat: 40.0129, lon: -83.1771, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
-        { lat: 40.0129, lon: -83.1770, alt: 16, pitch: -45, heading: 180.0, gridType: 'target-splat', hoverTime: null },
-        { lat: 40.0128, lon: -83.1770, alt: 16, pitch: -45, heading: 145.0, gridType: 'target-splat', hoverTime: null },
-        { lat: 40.0127, lon: -83.1770, alt: 16, pitch: -45, heading: 150.0, gridType: 'target-splat', hoverTime: null }
+        { lat: 41.3228, lon: -88.9971, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
+        { lat: 41.3229, lon: -88.9971, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
+        { lat: 41.3229, lon: -88.9970, alt: 16, pitch: -45, heading: 180.0, gridType: 'target-splat', hoverTime: null },
+        { lat: 41.3228, lon: -88.9970, alt: 16, pitch: -45, heading: 145.0, gridType: 'target-splat', hoverTime: null },
+        { lat: 41.3227, lon: -88.9970, alt: 16, pitch: -45, heading: 150.0, gridType: 'target-splat', hoverTime: null }
       ];
 
       const xml = buildWaylinesWpml(waypoints, 16, 1, 'custom', 'goHome', -45, 'stopAndShoot', 'straight');
@@ -10579,8 +10579,8 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       // Waypoint 0: overhead grid pitch -45
       // Waypoint 1: facade orbit pitch -55 (pitch changed by 10 deg)
       const waypoints = [
-        { lat: 40.0128, lon: -83.1771, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
-        { lat: 40.0129, lon: -83.1771, alt: 12, pitch: -55, heading: 0.1, gridType: 'target-splat', hoverTime: null }
+        { lat: 41.3228, lon: -88.9971, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
+        { lat: 41.3229, lon: -88.9971, alt: 12, pitch: -55, heading: 0.1, gridType: 'target-splat', hoverTime: null }
       ];
 
       const xml = buildWaylinesWpml(waypoints, 16, 1, 'custom', 'goHome', -45, 'stopAndShoot', 'straight');
@@ -10629,8 +10629,8 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       global.document.getElementById = (id) => elMap[id] || { value: '', checked: false };
 
       // Define a 15x15m rectangular target polygon
-      const centerLat = 40.01298;
-      const centerLon = -83.17700;
+      const centerLat = 41.32298;
+      const centerLon = -88.99700;
       const dDeg = 0.0001; // ~11m
       const targetPoly = [
         { lat: centerLat - dDeg, lon: centerLon - dDeg },
@@ -10709,9 +10709,9 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       // WP 1: (0,50) heading 0, pitch -45 -> 0s additional settling (straight line)
       // WP 2: (10,50) heading 180 (turn 180 deg >= 60) -> 5s settling hover
       const waypoints = [
-        { x: 0, y: 0, lat: 40.01, lon: -83.17, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
-        { x: 0, y: 50, lat: 40.0105, lon: -83.17, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: 0 },
-        { x: 10, y: 50, lat: 40.0105, lon: -83.1699, alt: 16, pitch: -45, heading: 180.0, gridType: 'target-splat', hoverTime: 0 }
+        { x: 0, y: 0, lat: 41.32, lon: -88.99, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
+        { x: 0, y: 50, lat: 41.3205, lon: -88.99, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: 0 },
+        { x: 10, y: 50, lat: 41.3205, lon: -88.9899, alt: 16, pitch: -45, heading: 180.0, gridType: 'target-splat', hoverTime: 0 }
       ];
 
       const photos = [{}, {}, {}];
@@ -12060,15 +12060,15 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       const origGetElementById = document.getElementById;
       try {
         pois = [
-          { name: 'Target Center POI', lat: 40.013000, lon: -83.176500 }
+          { name: 'Target Center POI', lat: 41.323000, lon: -88.996500 }
         ];
 
         // 32-waypoint single grid snippet where wp.heading was initialized to 0 or 180
         const sampleWps = [
-          { index: 0, lat: 40.012841, lon: -83.177128, alt: 18, heading: 0, turnMode: 'inherit' },
-          { index: 1, lat: 40.012885, lon: -83.177128, alt: 18, heading: 0, turnMode: 'inherit' },
-          { index: 2, lat: 40.012921, lon: -83.177128, alt: 18, heading: 0, turnMode: 'inherit' },
-          { index: 3, lat: 40.012957, lon: -83.177128, alt: 18, heading: 180, turnMode: 'inherit' }
+          { index: 0, lat: 41.322841, lon: -88.997128, alt: 18, heading: 0, turnMode: 'inherit' },
+          { index: 1, lat: 41.322885, lon: -88.997128, alt: 18, heading: 0, turnMode: 'inherit' },
+          { index: 2, lat: 41.322921, lon: -88.997128, alt: 18, heading: 0, turnMode: 'inherit' },
+          { index: 3, lat: 41.322957, lon: -88.997128, alt: 18, heading: 180, turnMode: 'inherit' }
         ];
 
         const origDivIcon = L.divIcon;
@@ -12118,9 +12118,9 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
     test('Three-Tier Heading Hierarchy correctly cascades (Global -> Layer -> Waypoint)', () => {
       const origGetElementById = document.getElementById;
       try {
-        pois = [{ name: 'POI', lat: 40.013000, lon: -83.176500 }];
+        pois = [{ name: 'POI', lat: 41.323000, lon: -88.996500 }];
 
-        const wp = { lat: 40.012841, lon: -83.177128, heading: 0, headingMode: 'inherit' };
+        const wp = { lat: 41.322841, lon: -88.997128, heading: 0, headingMode: 'inherit' };
         const dy = pois[0].lat - wp.lat;
         const dx = pois[0].lon - wp.lon;
         const poiHeading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
@@ -12144,12 +12144,12 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         assert.ok(Math.abs(getEffectiveWaypointHeading(wp, 0, [wp], 0, null, layerPoi) - poiHeading) < 0.5);
 
         // Tier 3: Global towardPOI, Layer towardPOI, Waypoint overrides to custom (135°)
-        const wpCustom = { lat: 40.012841, lon: -83.177128, heading: 135, headingMode: 'custom' };
+        const wpCustom = { lat: 41.322841, lon: -88.997128, heading: 135, headingMode: 'custom' };
         assert.strictEqual(getEffectiveWaypointHeadingMode(wpCustom, layerPoi), 'custom');
         assert.strictEqual(getEffectiveWaypointHeading(wpCustom, 0, [wpCustom], 0, null, layerPoi), 135);
 
         // Tier 3: Waypoint overrides to fixed (0°)
-        const wpFixed = { lat: 40.012841, lon: -83.177128, heading: 90, headingMode: 'fixed' };
+        const wpFixed = { lat: 41.322841, lon: -88.997128, heading: 90, headingMode: 'fixed' };
         assert.strictEqual(getEffectiveWaypointHeadingMode(wpFixed, layerPoi), 'fixed');
         assert.strictEqual(getEffectiveWaypointHeading(wpFixed, 0, [wpFixed], 0, null, layerPoi), 0);
 
@@ -12685,8 +12685,8 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
     test('createWaypointEditorDOM generates #wp-popup-drag-handle with separate coordinates row', () => {
       const mockWp = {
-        lat: 40.01297,
-        lon: -83.17707,
+        lat: 41.32297,
+        lon: -88.99707,
         alt: 25,
         speed: 5.0,
         pitch: -60,
@@ -12697,7 +12697,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         hoverTime: 0
       };
       const mockMarker = {
-        getLatLng: () => ({ lat: 40.01297, lng: -83.17707 }),
+        getLatLng: () => ({ lat: 41.32297, lng: -88.99707 }),
         getPopup: () => null,
         closePopup: () => {}
       };
@@ -15998,9 +15998,9 @@ describe('v1.97.0 Flight Diagnostics Photo Ingestion & Inspection Gallery Tests'
 
     FlightDiagnostics.telemetryData = {
       points: [
-        { lat: 40.012, lon: -83.177, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 0 },
-        { lat: 40.013, lon: -83.177, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: false, waypointIndex: 1 },
-        { lat: 40.014, lon: -83.177, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 2 }
+        { lat: 41.322, lon: -88.997, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 0 },
+        { lat: 41.323, lon: -88.997, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: false, waypointIndex: 1 },
+        { lat: 41.324, lon: -88.997, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 2 }
       ]
     };
 
@@ -16011,7 +16011,7 @@ describe('v1.97.0 Flight Diagnostics Photo Ingestion & Inspection Gallery Tests'
       assert.strictEqual(photos[0].filename, 'DJI_0001.JPG');
       assert.strictEqual(photos[1].waypointIndex, 2);
       assert.strictEqual(photos[1].filename, 'DJI_0002.JPG');
-      assert.strictEqual(photos[0].actual.lat, 40.012);
+      assert.strictEqual(photos[0].actual.lat, 41.322);
       assert.ok(photos[0].gsd.gsdCm > 0, 'GSD should be computed');
     } finally {
       FlightDiagnostics.telemetryData = origTelem;
@@ -16059,8 +16059,8 @@ describe('v1.97.0 Flight Diagnostics Photo Ingestion & Inspection Gallery Tests'
 
     FlightDiagnostics.telemetryData = {
       points: [
-        { lat: 40.012, lon: -83.177, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 0 },
-        { lat: 40.014, lon: -83.177, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 1 }
+        { lat: 41.322, lon: -88.997, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 0 },
+        { lat: 41.324, lon: -88.997, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 1 }
       ]
     };
 
@@ -16112,8 +16112,8 @@ describe('v1.98.0 Mission-Specific Photo Ingestion & SQLite Indexing Tests', () 
           previewUrl: '/preview/DJI_0001.JPG',
           waypointIndex: 0,
           timestamp: '2026-09-12T14:05:00Z',
-          actual: { lat: 40.01297, lon: -83.17707, altAgl: 25.0, gimbalPitch: -60.0, heading: 90.0 },
-          planned: { lat: 40.01297, lon: -83.17707, altitude: 25.0 },
+          actual: { lat: 41.32297, lon: -88.99707, altAgl: 25.0, gimbalPitch: -60.0, heading: 90.0 },
+          planned: { lat: 41.32297, lon: -88.99707, altitude: 25.0 },
           variance: { horizontalDeltaMeters: 0.12, verticalDeltaMeters: 0.05 },
           gsd: { gsdCm: 0.88 },
           severity: 'clean',
@@ -16126,8 +16126,8 @@ describe('v1.98.0 Mission-Specific Photo Ingestion & SQLite Indexing Tests', () 
           previewUrl: '/preview/DJI_0002.JPG',
           waypointIndex: 1,
           timestamp: '2026-09-12T14:06:30Z',
-          actual: { lat: 40.01350, lon: -83.17707, altAgl: 24.8, gimbalPitch: -60.0, heading: 90.0 },
-          planned: { lat: 40.01350, lon: -83.17707, altitude: 25.0 },
+          actual: { lat: 41.32350, lon: -88.99707, altAgl: 24.8, gimbalPitch: -60.0, heading: 90.0 },
+          planned: { lat: 41.32350, lon: -88.99707, altitude: 25.0 },
           variance: { horizontalDeltaMeters: 1.45, verticalDeltaMeters: 0.20 },
           gsd: { gsdCm: 0.89 },
           severity: 'warning',
@@ -16227,7 +16227,7 @@ describe('v1.98.1 Flight Diagnostics Inspection Photo Rendering & Anti-Collapse 
       }
     ];
     const telemPoints = [
-      { lat: 40.0129, lon: -83.1771, alt: 25, pitch: -45, yaw: 0, isPhoto: true, waypointIndex: 0, timestamp: '2026-09-04T18:51:49.000Z' }
+      { lat: 41.3229, lon: -88.9971, alt: 25, pitch: -45, yaw: 0, isPhoto: true, waypointIndex: 0, timestamp: '2026-09-04T18:51:49.000Z' }
     ];
 
     const correlated = correlatePhotosWithTelemetry(photos, telemPoints);
@@ -16314,8 +16314,8 @@ describe('v1.98.2 Photo Inspector Image Resolution & Viewport Fitting Tests', ()
         photoId: 'PHOTO_0007',
         filename: 'DJI_20260904185243_0218_D.JPG',
         waypointIndex: 6,
-        actual: { lat: 40.013, lon: -83.176, altAgl: 25, gimbalPitch: -45, heading: 0 },
-        planned: { lat: 40.013, lon: -83.176, alt: 25, gimbalPitch: -45 },
+        actual: { lat: 41.323, lon: -88.996, altAgl: 25, gimbalPitch: -45, heading: 0 },
+        planned: { lat: 41.323, lon: -88.996, alt: 25, gimbalPitch: -45 },
         variance: { horizontalDeltaMeters: 0.1, verticalDeltaMeters: 0.05, isCompliant: true },
         gsd: { gsdCm: 0.89, gsdMeters: 0.0089 },
         annotations: []
@@ -16403,7 +16403,7 @@ describe('v1.98.2 Photo Inspector Image Resolution & Viewport Fitting Tests', ()
         previewUrl: '/scratch/mission_archives/test/photos/previews/DJI_0001.JPG',
         thumbnailUrl: '/scratch/mission_archives/test/photos/thumbnails/DJI_0001.JPG',
         waypointIndex: 0,
-        actual: { lat: 40.013, lon: -83.176, altAgl: 25.0 }
+        actual: { lat: 41.323, lon: -88.996, altAgl: 25.0 }
       }];
       const saveRes = db.savePhotoRecords(missionUuid, mockPhotos);
       assert.strictEqual(saveRes.success, true);
@@ -17227,9 +17227,9 @@ describe('v1.102.0 First-Class Drawing & Parcel Boundary Layer Tests', () => {
 describe('3D Diagnostics Multi-Altitude and WPML Attitude Tests (v1.102.1)', () => {
   test('generateTelemetryFromWaypoints respects wp.alt, pitch, yaw and captures photos when hoverTime is 0', () => {
     const multiAltWps = [
-      { lat: 40.0130, lon: -83.1765, alt: 14.0, pitch: 0, heading: 90, hoverTime: 0 },
-      { lat: 40.0131, lon: -83.1765, alt: 18.0, pitch: -10, heading: 180, hoverTime: 0 },
-      { lat: 40.0132, lon: -83.1765, alt: 24.2, pitch: -20, heading: 270, hoverTime: 0 }
+      { lat: 41.3230, lon: -88.9965, alt: 14.0, pitch: 0, heading: 90, hoverTime: 0 },
+      { lat: 41.3231, lon: -88.9965, alt: 18.0, pitch: -10, heading: 180, hoverTime: 0 },
+      { lat: 41.3232, lon: -88.9965, alt: 24.2, pitch: -20, heading: 270, hoverTime: 0 }
     ];
 
     const result = vm.runInThisContext(`
@@ -17261,7 +17261,7 @@ describe('3D Diagnostics Multi-Altitude and WPML Attitude Tests (v1.102.1)', () 
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.6">
   <Document>
     <Placemark>
-      <Point><coordinates>-83.1765,40.0130</coordinates></Point>
+      <Point><coordinates>-88.9965,41.3230</coordinates></Point>
       <wpml:executeHeight>16.5</wpml:executeHeight>
       <wpml:waypointSpeed>3.8</wpml:waypointSpeed>
       <wpml:waypointHeadingAngle>135</wpml:waypointHeadingAngle>
@@ -17269,7 +17269,7 @@ describe('3D Diagnostics Multi-Altitude and WPML Attitude Tests (v1.102.1)', () 
       <action>takePhoto</action>
     </Placemark>
     <Placemark>
-      <Point><coordinates>-83.1766,40.0131</coordinates></Point>
+      <Point><coordinates>-88.9966,41.3231</coordinates></Point>
       <wpml:executeHeight>22.0</wpml:executeHeight>
       <wpml:waypointSpeed>4.0</wpml:waypointSpeed>
       <wpml:waypointHeadingAngle>225</wpml:waypointHeadingAngle>
@@ -17303,8 +17303,8 @@ describe('3D Diagnostics Multi-Altitude and WPML Attitude Tests (v1.102.1)', () 
     const { generateTelemetryFromWaypoints, parseKmlOrWpmlTelemetry } = require('./tools/companion/log_decoder.js');
 
     const multiAltWps = [
-      { lat: 40.0130, lon: -83.1765, alt: 15.0, pitch: -15, heading: 45, hoverTime: 0 },
-      { lat: 40.0131, lon: -83.1765, alt: 25.0, pitch: -25, heading: 90, hoverTime: 0 }
+      { lat: 41.3230, lon: -88.9965, alt: 15.0, pitch: -15, heading: 45, hoverTime: 0 },
+      { lat: 41.3231, lon: -88.9965, alt: 25.0, pitch: -25, heading: 90, hoverTime: 0 }
     ];
 
     const result = generateTelemetryFromWaypoints(multiAltWps, { altitude: 50.0 });
@@ -17319,7 +17319,7 @@ describe('3D Diagnostics Multi-Altitude and WPML Attitude Tests (v1.102.1)', () 
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.6">
   <Document>
     <Placemark>
-      <Point><coordinates>-83.1765,40.0130</coordinates></Point>
+      <Point><coordinates>-88.9965,41.3230</coordinates></Point>
       <wpml:executeHeight>19.2</wpml:executeHeight>
       <action>takePhoto</action>
     </Placemark>
@@ -17356,8 +17356,8 @@ describe('3D Diagnostics Camera Cone Alignment & Directional Photo Frustums (v1.
         };
         FlightDiagnostics.telemetryData = {
           points: [
-            { lat: 40.012781, lon: -83.177077, alt: 20.9, yaw: 70, pitch: 0, speed: 2.7, battery: 80, satellites: 14, timeStr: '01:15' },
-            { lat: 40.012800, lon: -83.177000, alt: 20.9, yaw: 180, pitch: -90, speed: 2.7, battery: 79, satellites: 14, timeStr: '01:18' }
+            { lat: 41.322781, lon: -88.997077, alt: 20.9, yaw: 70, pitch: 0, speed: 2.7, battery: 80, satellites: 14, timeStr: '01:15' },
+            { lat: 41.322800, lon: -88.997000, alt: 20.9, yaw: 180, pitch: -90, speed: 2.7, battery: 79, satellites: 14, timeStr: '01:18' }
           ],
           durationFormatted: '02:30'
         };
@@ -18173,8 +18173,8 @@ describe('DJI Developer Cloud API Key Decryption & Telemetry Pipeline', () => {
     let csv = 'CUSTOM.updateTime,OSD.latitude,OSD.longitude,OSD.height [m],OSD.pitch,OSD.roll,OSD.yaw,BATTERY.chargeLevel,RC.elevator,RC.aileron,RC.rudder,RC.throttle,CAMERA.isPhoto\n';
     for (let i = 0; i < 30; i++) {
       const timeMs = i * 100;
-      const lat = 40.013000 + i * 0.000010;
-      const lon = -83.176500 + i * 0.000010;
+      const lat = 41.323000 + i * 0.000010;
+      const lon = -88.996500 + i * 0.000010;
       const alt = 15.0 + i * 0.2;
       const isPhoto = (i === 15) ? 1 : 0;
       csv += `${timeMs},${lat.toFixed(6)},${lon.toFixed(6)},${alt.toFixed(1)},-10.5,2.0,85.0,92,-200,150,50,300,${isPhoto}\n`;
@@ -19521,8 +19521,8 @@ describe('DJI Photo XMP Metadata Extraction & Telemetry Fallback (v1.113.3)', ()
         <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
           <rdf:Description rdf:about=""
             xmlns:drone-dji="http://www.dji.com/drone-dji/1.0/"
-            drone-dji:GpsLatitude="+40.012953939"
-            drone-dji:GpsLongitude="-83.177019368"
+            drone-dji:GpsLatitude="+41.322953939"
+            drone-dji:GpsLongitude="-88.997019368"
             drone-dji:RelativeAltitude="+2.800"
             drone-dji:AbsoluteAltitude="+265.400"
             drone-dji:GimbalPitchDegree="-46.80"
@@ -19539,8 +19539,8 @@ describe('DJI Photo XMP Metadata Extraction & Telemetry Fallback (v1.113.3)', ()
     // Test string input
     const resString = extractDjiXmpMetadata(sampleXmp);
     assert.ok(resString, 'Should parse string XMP data');
-    assert.strictEqual(resString.lat, 40.012953939);
-    assert.strictEqual(resString.lon, -83.177019368);
+    assert.strictEqual(resString.lat, 41.322953939);
+    assert.strictEqual(resString.lon, -88.997019368);
     assert.strictEqual(resString.altAgl, 2.8);
     assert.strictEqual(resString.altMsl, 265.4);
     assert.strictEqual(resString.gimbalPitch, -46.8);
@@ -19551,15 +19551,15 @@ describe('DJI Photo XMP Metadata Extraction & Telemetry Fallback (v1.113.3)', ()
     // Test Buffer input
     const resBuffer = extractDjiXmpMetadata(Buffer.from(sampleXmp, 'utf8'));
     assert.ok(resBuffer, 'Should parse Buffer XMP data');
-    assert.strictEqual(resBuffer.lat, 40.012953939);
-    assert.strictEqual(resBuffer.lon, -83.177019368);
+    assert.strictEqual(resBuffer.lat, 41.322953939);
+    assert.strictEqual(resBuffer.lon, -88.997019368);
     assert.strictEqual(resBuffer.droneModel, 'NEO2');
 
     // Test Uint8Array / ArrayBuffer input
     const uint8 = new Uint8Array(Buffer.from(sampleXmp, 'utf8'));
     const resUint8 = extractDjiXmpMetadata(uint8);
     assert.ok(resUint8, 'Should parse Uint8Array XMP data');
-    assert.strictEqual(resUint8.lat, 40.012953939);
+    assert.strictEqual(resUint8.lat, 41.322953939);
     assert.strictEqual(resUint8.altAgl, 2.8);
   });
 
@@ -19596,8 +19596,8 @@ describe('DJI Photo XMP Metadata Extraction & Telemetry Fallback (v1.113.3)', ()
 
     const photoWithXmp = {
       filename: 'DJI_20260919202324_0015_D.JPG',
-      lat: 40.012954,
-      lon: -83.177019,
+      lat: 41.322954,
+      lon: -88.997019,
       altAgl: 2.8,
       altMsl: 265.4,
       gimbalPitch: -46.8,
@@ -19611,8 +19611,8 @@ describe('DJI Photo XMP Metadata Extraction & Telemetry Fallback (v1.113.3)', ()
     assert.strictEqual(correlated.length, 1);
     const item = correlated[0];
     assert.ok(item.actual, 'Item should contain actual telemetry/spatial metadata');
-    assert.strictEqual(item.actual.lat, 40.012954);
-    assert.strictEqual(item.actual.lon, -83.177019);
+    assert.strictEqual(item.actual.lat, 41.322954);
+    assert.strictEqual(item.actual.lon, -88.997019);
     assert.strictEqual(item.actual.altAgl, 2.8);
     assert.strictEqual(item.actual.gimbalPitch, -46.8);
     assert.strictEqual(item.actual.heading, 116.0);
@@ -20162,8 +20162,8 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
       {
         id: 'PHOTO_0001',
         filename: 'DJI_0001.JPG',
-        lat: 40.013011,
-        lon: -83.177149,
+        lat: 41.323011,
+        lon: -88.997149,
         altAgl: 27.0,
         gimbalPitch: -45.0,
         heading: 154.7
@@ -20173,8 +20173,8 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
     // Flight log telemetry point with conflicting/shifted GPS and yaw (e.g. from an earlier waypoint or wrong index)
     const telemetryPoints = [
       {
-        lat: 40.012855,
-        lon: -83.176798,
+        lat: 41.322855,
+        lon: -88.996798,
         alt: 25.0,
         pitch: -45.0,
         yaw: -85.6,
@@ -20183,8 +20183,8 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
         satellites: 22
       },
       {
-        lat: 40.013011,
-        lon: -83.177149,
+        lat: 41.323011,
+        lon: -88.997149,
         alt: 27.0,
         pitch: -45.0,
         yaw: 154.7,
@@ -20195,8 +20195,8 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
     ];
 
     const plannedWps = [
-      { index: 0, lat: 40.012855, lon: -83.176798, alt: 27 },
-      { index: 1, lat: 40.013010, lon: -83.177150, alt: 27 }
+      { index: 0, lat: 41.322855, lon: -88.996798, alt: 27 },
+      { index: 1, lat: 41.323010, lon: -88.997150, alt: 27 }
     ];
 
     const correlated = correlatePhotosWithTelemetry(photos, telemetryPoints, plannedWps);
@@ -20204,8 +20204,8 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
 
     const result = correlated[0];
     // Must preserve photo's authoritative GPS and heading
-    assert.strictEqual(result.actual.lat, 40.013011, 'lat must match photo XMP');
-    assert.strictEqual(result.actual.lon, -83.177149, 'lon must match photo XMP');
+    assert.strictEqual(result.actual.lat, 41.323011, 'lat must match photo XMP');
+    assert.strictEqual(result.actual.lon, -88.997149, 'lon must match photo XMP');
     assert.strictEqual(result.actual.heading, 154.7, 'heading must match photo XMP (+154.7°)');
     assert.strictEqual(result.actual.gimbalPitch, -45.0, 'pitch must match photo XMP');
     // Must spatially correlate to planned waypoint index 1
@@ -20225,10 +20225,10 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
         enabled: true,
         targetHeight: 8.0, // Grid elevation for flight lines
         boundaryPolygon: [
-          { lat: 40.0131, lon: -83.1771 },
-          { lat: 40.0127, lon: -83.1771 },
-          { lat: 40.0127, lon: -83.1768 },
-          { lat: 40.0131, lon: -83.1768 }
+          { lat: 41.3231, lon: -88.9971 },
+          { lat: 41.3227, lon: -88.9971 },
+          { lat: 41.3227, lon: -88.9968 },
+          { lat: 41.3231, lon: -88.9968 }
         ]
       }
     ];
@@ -20918,7 +20918,7 @@ describe('3D Cinematic Movie Mode & FPV Flight Simulation Suite (v1.121.0)', () 
         importedWaypoints = null;
         generatedWaypoints = [
           { x: 0, y: 0, alt: 50, lat: 40.0, lon: -83.0, heading: 0, headingMode: 'fixed' },
-          { x: 0, y: 100, alt: 50, lat: 40.01, lon: -83.0, heading: 0, headingMode: 'fixed' }
+          { x: 0, y: 100, alt: 50, lat: 41.32, lon: -83.0, heading: 0, headingMode: 'fixed' }
         ];
         fpvCameraMode = 'follow';
         fpvProgressIndex = 0;
@@ -20986,7 +20986,7 @@ describe('3D Cinematic Movie Mode & FPV Flight Simulation Suite (v1.121.0)', () 
         generatedWaypoints = [
           { x: 0, y: 0, alt: 50, lat: 40.0, lon: -83.0, hoverTime: 0, cameraAction: 'stopAndShoot', speed: 10 },
           { x: 10, y: 0, alt: 50, lat: 40.0, lon: -82.99, hoverTime: 0, cameraAction: 'stopAndShoot', speed: 10 },
-          { x: 10, y: 10, alt: 50, lat: 40.01, lon: -82.99, hoverTime: 0, cameraAction: 'stopAndShoot', speed: 10 }
+          { x: 10, y: 10, alt: 50, lat: 41.32, lon: -82.99, hoverTime: 0, cameraAction: 'stopAndShoot', speed: 10 }
         ];
         updateFPVCamera(5.0);
       `);
@@ -21939,8 +21939,8 @@ describe('Manned Aircraft ADS-B Airspace Awareness & Flight Trails Suite (v1.123
         {
           hex: 'A12345',
           callsign: 'SAFE01',
-          latitude: 40.0100,
-          longitude: -83.1700,
+          latitude: 41.3200,
+          longitude: -88.9900,
           altitude: 3500,
           speed: 150,
           track: 90,
@@ -21958,8 +21958,8 @@ describe('Manned Aircraft ADS-B Airspace Awareness & Flight Trails Suite (v1.123
         {
           hex: 'A12345',
           callsign: 'SAFE01',
-          latitude: 40.0120,
-          longitude: -83.1680,
+          latitude: 41.3220,
+          longitude: -88.9880,
           altitude: 3500,
           speed: 150,
           track: 90,
@@ -21980,8 +21980,8 @@ describe('Manned Aircraft ADS-B Airspace Awareness & Flight Trails Suite (v1.123
         {
           hex: 'A12345',
           callsign: 'SAFE01',
-          latitude: 40.0140,
-          longitude: -83.1660,
+          latitude: 41.3240,
+          longitude: -88.9860,
           altitude: 1800,
           speed: 140,
           track: 90,
@@ -22458,8 +22458,8 @@ describe('Architectural House Edge Extraction & Vegetation Suppression Suite (v1
     const { latlonToWorld } = require('./tools/companion/wireframe_engine.js');
     assert.strictEqual(typeof latlonToWorld, 'function', 'latlonToWorld must be exported');
 
-    const originLat = 40.013195;
-    const originLon = -83.177193;
+    const originLat = 41.323195;
+    const originLon = -88.997193;
 
     // Origin coordinates should resolve to (0, 0)
     const atOrigin = latlonToWorld(originLat, originLon, originLat, originLon);
@@ -22506,7 +22506,7 @@ describe('Architectural House Edge Extraction & Vegetation Suppression Suite (v1
       PhotoInspector.activePhoto = {
         photoId: 'PHOTO_TEST',
         filename: 'TEST_HOUSE.JPG',
-        actual: { lat: 40.0131, lon: -83.1772, altAgl: 29.9, heading: 164.1, gimbalPitch: -60 }
+        actual: { lat: 41.3231, lon: -88.9972, altAgl: 29.9, heading: 164.1, gimbalPitch: -60 }
       };
 
       // Mock lines directly
@@ -22565,7 +22565,7 @@ describe('Architectural House Edge Extraction & Vegetation Suppression Suite (v1
       PhotoInspector.activePhoto = {
         photoId: 'PHOTO_0001',
         filename: 'TEST_ROOF.JPG',
-        actual: { lat: 40.0131, lon: -83.1772, altAgl: 29.9, heading: 164.1, gimbalPitch: -60 },
+        actual: { lat: 41.3231, lon: -88.9972, altAgl: 29.9, heading: 164.1, gimbalPitch: -60 },
         detectedLines: [
           [0.2, 0.3, 0.8, 0.3], // Roof ridge
           [0.1, 0.5, 0.9, 0.5]  // Eave line
@@ -23002,7 +23002,7 @@ describe('DJI Mini 4 Pro Photo Sphere KMZ Execution & APAS Obstacle Prevention S
     let rawXml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">\n  <Document>\n    <wpml:missionConfig>\n      <wpml:takeOffSecurityHeight>50</wpml:takeOffSecurityHeight>\n      <wpml:droneInfo><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:droneInfo>\n    </wpml:missionConfig>\n';
     for (let i = 0; i < 12; i++) {
       rawXml += `    <Placemark>
-      <Point><coordinates>-83.1769913434982,40.0128425033801</coordinates></Point>
+      <Point><coordinates>-88.9969913434982,41.3228425033801</coordinates></Point>
       <wpml:index>${i}</wpml:index>
       <wpml:executeHeight>10</wpml:executeHeight>
       <wpml:waypointHeadingParam><wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode><wpml:waypointHeadingAngle>${(i * 30 || 0.1)}</wpml:waypointHeadingAngle><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam>
@@ -23011,7 +23011,7 @@ describe('DJI Mini 4 Pro Photo Sphere KMZ Execution & APAS Obstacle Prevention S
     </Placemark>\n`;
     }
     rawXml += `    <Placemark>
-      <Point><coordinates>-83.1769913434982,40.0128425033801</coordinates></Point>
+      <Point><coordinates>-88.9969913434982,41.3228425033801</coordinates></Point>
       <wpml:index>12</wpml:index>
       <wpml:executeHeight>10</wpml:executeHeight>
       <wpml:waypointHeadingParam><wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode><wpml:waypointHeadingAngle>0.1</wpml:waypointHeadingAngle><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam>
@@ -23043,8 +23043,8 @@ describe('DJI Mini 4 Pro Photo Sphere KMZ Execution & APAS Obstacle Prevention S
       for (let i = 0; i < 12; i++) {
         waypoints.push({
           index: i,
-          lat: 40.01284250338008,
-          lon: -83.17699134349824,
+          lat: 41.32284250338008,
+          lon: -88.99699134349824,
           alt: '10',
           heading: i * 30,
           pitch: -15,
@@ -23055,8 +23055,8 @@ describe('DJI Mini 4 Pro Photo Sphere KMZ Execution & APAS Obstacle Prevention S
       }
       waypoints.push({
         index: 12,
-        lat: 40.01284250338008,
-        lon: -83.17699134349824,
+        lat: 41.32284250338008,
+        lon: -88.99699134349824,
         alt: '10',
         heading: 0,
         pitch: -90,
@@ -23099,7 +23099,7 @@ describe('DJI Mini 4 Pro Photo Sphere KMZ Execution & APAS Obstacle Prevention S
     let rawXml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">\n  <Document>\n    <wpml:missionConfig>\n      <wpml:takeOffSecurityHeight>50</wpml:takeOffSecurityHeight>\n      <wpml:droneInfo><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:droneInfo>\n    </wpml:missionConfig>\n';
     for (let i = 0; i < 12; i++) {
       rawXml += `    <Placemark>
-      <Point><coordinates>-83.1769913434982,40.0128425033801</coordinates></Point>
+      <Point><coordinates>-88.9969913434982,41.3228425033801</coordinates></Point>
       <wpml:index>${i}</wpml:index>
       <wpml:executeHeight>10</wpml:executeHeight>
       <wpml:waypointHeadingParam><wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode><wpml:waypointHeadingAngle>${(i * 30 || 0.1)}</wpml:waypointHeadingAngle><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam>
@@ -23108,7 +23108,7 @@ describe('DJI Mini 4 Pro Photo Sphere KMZ Execution & APAS Obstacle Prevention S
     </Placemark>\n`;
     }
     rawXml += `    <Placemark>
-      <Point><coordinates>-83.1769913434982,40.0128425033801</coordinates></Point>
+      <Point><coordinates>-88.9969913434982,41.3228425033801</coordinates></Point>
       <wpml:index>12</wpml:index>
       <wpml:executeHeight>10</wpml:executeHeight>
       <wpml:waypointHeadingParam><wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode><wpml:waypointHeadingAngle>0.1</wpml:waypointHeadingAngle><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam>
@@ -23413,8 +23413,8 @@ describe('v1.128.4 FAA TFR Ingestion & Display Resilience Tests (VIP 6/4933 & Du
       ]
     };
 
-    // User center near Columbus, OH (40.01, -83.15)
-    const processed = processTfrData(mockGeo, mockNotams, 40.01, -83.15);
+    // User center near Columbus, OH (39.85, -83.00)
+    const processed = processTfrData(mockGeo, mockNotams, 39.85, -83.00);
 
     assert.ok(Array.isArray(processed), 'Should return array');
     assert.strictEqual(processed.length, 2, 'Must retain both VIP TFR and stadium advisory');
@@ -23701,8 +23701,8 @@ describe('DJI Mini 4 Pro Photo Sphere Motion Stabilization & Auto-Settling Suite
       for (let i = 0; i < 12; i++) {
         waypoints.push({
           index: i,
-          lat: 40.01282966397379,
-          lon: -83.176993355155,
+          lat: 41.32282966397379,
+          lon: -88.996993355155,
           alt: '10',
           heading: i * 30,
           turnMode: 'inherit'
@@ -23766,7 +23766,7 @@ describe('DJI Mini 4 Pro Photo Sphere Motion Stabilization & Auto-Settling Suite
     let rawXml = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">\n  <Document>\n    <wpml:missionConfig>\n      <wpml:takeOffSecurityHeight>50</wpml:takeOffSecurityHeight>\n      <wpml:droneInfo><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:droneInfo>\n    </wpml:missionConfig>\n';
     for (let i = 0; i < 12; i++) {
       rawXml += `    <Placemark>
-      <Point><coordinates>-83.176993355155,40.01282966397379</coordinates></Point>
+      <Point><coordinates>-88.996993355155,41.32282966397379</coordinates></Point>
       <wpml:index>${i}</wpml:index>
       <wpml:executeHeight>10</wpml:executeHeight>
       <wpml:waypointSpeed>4</wpml:waypointSpeed>
@@ -23815,8 +23815,8 @@ describe('DJI Mini 4 Pro Photo Sphere Motion Stabilization & Auto-Settling Suite
         waypoints.push({
           x: 0,
           y: 0,
-          lat: 40.01282966397379,
-          lon: -83.176993355155,
+          lat: 41.32282966397379,
+          lon: -88.996993355155,
           alt: 10,
           pitch: -60,
           heading: i * 30,
@@ -23885,8 +23885,8 @@ describe('Photo Ingestion Circular Structure Prevention & Safe Serialization Sui
     mockMarker._map = { layers: {} };
 
     const wpWithMarkers = {
-      lat: 40.0128,
-      lon: -83.1770,
+      lat: 41.3228,
+      lon: -88.9970,
       alt: 25,
       roadMarker: mockMarker,
       droneMarker: mockMarker,
@@ -23897,8 +23897,8 @@ describe('Photo Ingestion Circular Structure Prevention & Safe Serialization Sui
     assert.doesNotThrow(() => {
       const json = safeJsonStringify({ waypoints: [wpWithMarkers] });
       const parsed = JSON.parse(json);
-      assert.strictEqual(parsed.waypoints[0].lat, 40.0128);
-      assert.strictEqual(parsed.waypoints[0].lon, -83.1770);
+      assert.strictEqual(parsed.waypoints[0].lat, 41.3228);
+      assert.strictEqual(parsed.waypoints[0].lon, -88.9970);
       assert.strictEqual(parsed.waypoints[0].alt, 25);
       assert.strictEqual(parsed.waypoints[0].roadMarker, undefined);
       assert.strictEqual(parsed.waypoints[0].droneMarker, undefined);
@@ -23917,8 +23917,8 @@ describe('Photo Ingestion Circular Structure Prevention & Safe Serialization Sui
     mockTooltip._source = mockMarker;
 
     const dummyWps = [
-      { lat: 40.0128, lon: -83.1770, alt: 30, roadMarker: mockMarker, mapMarker: mockMarker, isPhoto: true },
-      { lat: 40.0130, lon: -83.1765, alt: 30, roadMarker: mockMarker, mapMarker: mockMarker, isPhoto: true }
+      { lat: 41.3228, lon: -88.9970, alt: 30, roadMarker: mockMarker, mapMarker: mockMarker, isPhoto: true },
+      { lat: 41.3230, lon: -88.9965, alt: 30, roadMarker: mockMarker, mapMarker: mockMarker, isPhoto: true }
     ];
 
     const origGetCurrentWps = global.getCurrentWaypoints;
@@ -23977,8 +23977,8 @@ describe('Photo Ingestion Circular Structure Prevention & Safe Serialization Sui
       assert.strictEqual(pullResult.totalPhotos, 2);
       assert.ok(payloadSent, 'Payload must have been sent to companion server');
       assert.strictEqual(payloadSent.waypoints.length, 2);
-      assert.strictEqual(payloadSent.waypoints[0].lat, 40.0128);
-      assert.strictEqual(payloadSent.waypoints[0].lon, -83.1770);
+      assert.strictEqual(payloadSent.waypoints[0].lat, 41.3228);
+      assert.strictEqual(payloadSent.waypoints[0].lon, -88.9970);
       assert.strictEqual(payloadSent.waypoints[0].roadMarker, undefined, 'roadMarker must be stripped');
       assert.strictEqual(payloadSent.waypoints[0].mapMarker, undefined, 'mapMarker must be stripped');
     } finally {
@@ -24052,8 +24052,8 @@ describe('v1.130.0 Remote ADS-B Host Port Setup Helper, Raw Mode S AVR & Layer C
         {
           hex: 'A12345',
           callsign: 'GPS101',
-          latitude: 40.0150,
-          longitude: -83.1700,
+          latitude: 41.3250,
+          longitude: -88.9900,
           altitude: 1800,
           speed: 120,
           track: 90,
@@ -24151,8 +24151,8 @@ describe('v1.131.0 Real-Time Server-Sent Events (SSE) Airspace Stream Suite', ()
           {
             hex: 'A99999',
             callsign: 'STREAM_AIR1',
-            latitude: 40.0132,
-            longitude: -83.1764,
+            latitude: 41.3232,
+            longitude: -88.9964,
             altitude: 800,
             speed: 130,
             track: 45,
@@ -29314,13 +29314,13 @@ describe('Issue & v1.152.0: Photo Coverage Footprints 2D Map Overlay Control Sui
             photoId: 'p1',
             filename: 'DJI_0001.JPG',
             waypointIndex: 0,
-            actual: { lat: 40.01, lon: -83.17, altAgl: 25, gimbalPitch: -45 },
+            actual: { lat: 41.32, lon: -88.99, altAgl: 25, gimbalPitch: -45 },
             footprint: {
               coordinates: [
-                [40.0101, -83.1701],
-                [40.0101, -83.1699],
-                [40.0099, -83.1699],
-                [40.0099, -83.1701]
+                [41.3201, -88.9901],
+                [41.3201, -88.9899],
+                [40.0099, -88.9899],
+                [40.0099, -88.9901]
               ]
             }
           },
@@ -29328,13 +29328,13 @@ describe('Issue & v1.152.0: Photo Coverage Footprints 2D Map Overlay Control Sui
             photoId: 'p2',
             filename: 'DJI_0002.JPG',
             waypointIndex: 1,
-            actual: { lat: 40.02, lon: -83.17, altAgl: 25, gimbalPitch: -45 },
+            actual: { lat: 40.02, lon: -88.99, altAgl: 25, gimbalPitch: -45 },
             footprint: {
               coordinates: [
-                [40.0201, -83.1701],
-                [40.0201, -83.1699],
-                [40.0199, -83.1699],
-                [40.0199, -83.1701]
+                [40.0201, -88.9901],
+                [40.0201, -88.9899],
+                [41.3299, -88.9899],
+                [41.3299, -88.9901]
               ]
             }
           }
@@ -29488,7 +29488,7 @@ describe('Issue & v1.152.2: Light Art Spiral Start-Point Giggle & Clustering Eli
   });
 
   test('generateLightArtCoordinates ensures spiral starts cleanly at origin with safe node spacing >= 0.65m', () => {
-    const layer = createDefaultLayer('la-test-spiral', 'Light Art Layer', 0, 'light-art', 40.0128384, -83.1770276);
+    const layer = createDefaultLayer('la-test-spiral', 'Light Art Layer', 0, 'light-art', 41.3228384, -88.9970276);
     layer.lightArtPreset = 'spiral';
     layer.lightArtRadius = 20;
     layer.lightArtTurns = 3;
@@ -29496,13 +29496,13 @@ describe('Issue & v1.152.2: Light Art Spiral Start-Point Giggle & Clustering Eli
     layer.altitude = 26;
     layer.speed = 6.7;
 
-    const res = generateLayerWaypoints(layer, 40.0128384, -83.1770276);
+    const res = generateLayerWaypoints(layer, 41.3228384, -88.9970276);
     const wps = res.waypoints;
     assert.ok(Array.isArray(wps) && wps.length > 5, 'Must generate spiral waypoints');
 
     // First waypoint must start at the center origin
-    assert.strictEqual(wps[0].lat, 40.0128384, 'Waypoint 0 lat must be center origin');
-    assert.strictEqual(wps[0].lon, -83.1770276, 'Waypoint 0 lon must be center origin');
+    assert.strictEqual(wps[0].lat, 41.3228384, 'Waypoint 0 lat must be center origin');
+    assert.strictEqual(wps[0].lon, -88.9970276, 'Waypoint 0 lon must be center origin');
 
     // Verify distance between consecutive waypoints is always >= 0.60m (no sub-meter node crowding)
     for (let i = 1; i < wps.length; i++) {
@@ -29515,7 +29515,7 @@ describe('Issue & v1.152.2: Light Art Spiral Start-Point Giggle & Clustering Eli
   });
 
   test('buildWaylinesWpml exempts Light Art missions from 1.25m micro-orbital circle scattering', () => {
-    const layer = createDefaultLayer('la-test-wpml', 'Light Art Layer', 0, 'light-art', 40.0128384, -83.1770276);
+    const layer = createDefaultLayer('la-test-wpml', 'Light Art Layer', 0, 'light-art', 41.3228384, -88.9970276);
     layer.lightArtPreset = 'spiral';
     layer.lightArtRadius = 15;
     layer.lightArtTurns = 2;
@@ -29523,7 +29523,7 @@ describe('Issue & v1.152.2: Light Art Spiral Start-Point Giggle & Clustering Eli
     layer.altitude = 25;
     layer.speed = 5.0;
 
-    const res = generateLayerWaypoints(layer, 40.0128384, -83.1770276);
+    const res = generateLayerWaypoints(layer, 41.3228384, -88.9970276);
     const wps = res.waypoints;
     const origWp0Lat = wps[0].lat;
     const origWp0Lon = wps[0].lon;
@@ -32549,9 +32549,9 @@ describe('v1.167.1 Authoritative Camera Cones & Gimbal Pitch Stability Suite', (
     const { parseCsvTelemetry } = require('./tools/companion/log_decoder.js');
     const dummyCsv = [
       'CUSTOM.dateTime,OSD.flyTime,OSD.latitude,OSD.longitude,OSD.height,OSD.yaw,GIMBAL.pitch,GIMBAL.yaw,CAMERA.isPhoto',
-      '2026-10-17T17:39:51Z,38.3,40.012837,-83.177068,30.0,0.0,0.0,160.1,true',
-      '2026-10-17T17:39:52Z,39.3,40.012837,-83.177066,30.0,0.1,0.0,159.7,true',
-      '2026-10-17T17:39:59Z,46.3,40.012837,-83.176986,30.1,-0.3,-70.0,157.1,true'
+      '2026-10-17T17:39:51Z,38.3,41.322837,-88.997068,30.0,0.0,0.0,160.1,true',
+      '2026-10-17T17:39:52Z,39.3,41.322837,-88.997066,30.0,0.1,0.0,159.7,true',
+      '2026-10-17T17:39:59Z,46.3,41.322837,-88.996986,30.1,-0.3,-70.0,157.1,true'
     ].join('\n');
 
     const telemetry = parseCsvTelemetry(dummyCsv, 'FlightRecord_test.txt');
@@ -32581,7 +32581,7 @@ describe('v1.167.1 Authoritative Camera Cones & Gimbal Pitch Stability Suite', (
 
     const dummyCsv = [
       'CUSTOM.dateTime,OSD.flyTime,OSD.latitude,OSD.longitude,OSD.height,OSD.yaw,GIMBAL.pitch,GIMBAL.yaw,CAMERA.isPhoto',
-      '2026-10-17T17:39:51Z,38.3,40.012837,-83.177068,30.0,0.0,0.0,160.1,true'
+      '2026-10-17T17:39:51Z,38.3,41.322837,-88.997068,30.0,0.0,0.0,160.1,true'
     ].join('\n');
 
     const result = sandbox.parseCsvTelemetry(dummyCsv, 'client_test.txt');
@@ -40793,16 +40793,16 @@ describe('Issue #233 & v1.221.1: Ambient ADS-B Replay Synchronization & Spatial 
     // Synthetic frames mimicking SBS-1 / dump1090 output (first frame without coords, subsequent with latitude/longitude)
     const rawFrames = [
       { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now - 10000, latitude: null, longitude: null, altitude: null },
-      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now - 5000, latitude: 40.0100, longitude: -83.1850, altitude: 2200, speed: 140, track: 54 },
-      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now + 5000, latitude: 40.0200, longitude: -83.1750, altitude: 2250, speed: 140, track: 54 }
+      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now - 5000, latitude: 41.3200, longitude: -89.0050, altitude: 2200, speed: 140, track: 54 },
+      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now + 5000, latitude: 41.3300, longitude: -88.9950, altitude: 2250, speed: 140, track: 54 }
     ];
 
     const interpolated = TelemetryInterpolator._interpolateTrackState(now, rawFrames);
     assert.ok(interpolated, 'Interpolated state must not be null');
     assert.ok(!isNaN(interpolated.lat), 'lat must not be NaN');
     assert.ok(!isNaN(interpolated.lon), 'lon must not be NaN');
-    assert.strictEqual(Number(interpolated.lat.toFixed(4)), 40.0150);
-    assert.strictEqual(Number(interpolated.lon.toFixed(4)), -83.1800);
+    assert.strictEqual(Number(interpolated.lat.toFixed(4)), 41.3250);
+    assert.strictEqual(Number(interpolated.lon.toFixed(4)), -89.0000);
     assert.strictEqual(Math.round(interpolated.alt), 2225);
     assert.strictEqual(interpolated.track, 54);
     assert.strictEqual(interpolated.callsign, 'N72HP');
@@ -40812,10 +40812,10 @@ describe('Issue #233 & v1.221.1: Ambient ADS-B Replay Synchronization & Spatial 
     const TelemetryInterpolator = require('./src/core/TelemetryInterpolator.js');
 
     const now = 1793919700000;
-    const dronePt = { lat: 40.0128, lon: -83.1769, alt: 10, timestamp: new Date(now).toISOString() };
+    const dronePt = { lat: 41.3228, lon: -88.9969, alt: 10, timestamp: new Date(now).toISOString() };
     const adsbFrames = [
-      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now - 2000, latitude: 40.0161, longitude: -83.1802, altitude: 2275, speed: 138, track: 56 },
-      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now + 2000, latitude: 40.0175, longitude: -83.1780, altitude: 2275, speed: 138, track: 56 }
+      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now - 2000, latitude: 41.3261, longitude: -89.0002, altitude: 2275, speed: 138, track: 56 },
+      { hex: 'A9A1F0', callsign: 'N72HP', timestamp: now + 2000, latitude: 41.3275, longitude: -88.9980, altitude: 2275, speed: 138, track: 56 }
     ];
 
     const result = TelemetryInterpolator.interpolateAirspace(now, dronePt, adsbFrames, []);
@@ -41452,15 +41452,15 @@ describe('Issue #245 & v1.223.0: Native Android ADS-B, Cloud Feed & Bonjour Disc
     // Test ingestion of dump1090 JSON
     AndroidNativeBridge.ingestAdsbJson({
       ac: [
-        { hex: 'A9A1F0', flight: 'N72HP', lat: 40.016, lon: -83.180, alt_baro: 2275, gs: 138, track: 56 }
+        { hex: 'A9A1F0', flight: 'N72HP', lat: 41.326, lon: -89.000, alt_baro: 2275, gs: 138, track: 56 }
       ]
     });
 
     const ac = AndroidNativeBridge.adsbAircraft.get('A9A1F0');
     assert.ok(ac, 'Aircraft A9A1F0 must be present in map');
     assert.strictEqual(ac.callsign, 'N72HP');
-    assert.strictEqual(ac.latitude, 40.016);
-    assert.strictEqual(ac.longitude, -83.180);
+    assert.strictEqual(ac.latitude, 41.326);
+    assert.strictEqual(ac.longitude, -89.000);
     assert.strictEqual(ac.altitude, 2275);
     assert.strictEqual(ac.speed, 138);
     assert.strictEqual(ac.track, 56);
@@ -42661,8 +42661,8 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     const originalDocGetElementById = global.document.getElementById;
 
     const mockTelemetry = {
-      homePoint: { lat: 40.0127, lon: -83.1771 },
-      points: [{ lat: 40.0127, lon: -83.1771, alt: 25, speed: 4 }]
+      homePoint: { lat: 41.3227, lon: -88.9971 },
+      points: [{ lat: 41.3227, lon: -88.9971, alt: 25, speed: 4 }]
     };
 
     const origDiagOpen = vm.runInThisContext('FlightDiagnostics.open');
@@ -46054,8 +46054,8 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       // 9 photo clicks across 100 frames (10 seconds), each lasting 3 frames (30 total 1s)
       for (let i = 0; i < 100; i++) {
         const timeMs = i * 100;
-        const lat = 40.013000 + i * 0.000010;
-        const lon = -83.176500;
+        const lat = 41.323000 + i * 0.000010;
+        const lon = -88.996500;
         const alt = 25.0;
         // Photo fires at i = 10..12, 20..22, 30..32, etc.
         const isPhotoFrame = (i % 10 === 0 && i > 0) || (i % 10 === 1 && i > 1) || (i % 10 === 2 && i > 2);
@@ -46954,7 +46954,7 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
 
     test('DigitalTwin.getAssisted3dOptions guards boundary polygon against cross-site locations', () => {
       const dt = Object.create(DigitalTwin);
-      dt.getSceneOrigin = () => ({ lat: 40.0130, lon: -83.1765 });
+      dt.getSceneOrigin = () => ({ lat: 41.3230, lon: -88.9965 });
       global.flightLayers = [{
         boundaryPolygon: [
           { lat: 41.3215, lon: -88.9950 },
@@ -46984,6 +46984,71 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
       assert.ok(indexHtml.includes('id="global-toast-container"'), 'index.html must contain #global-toast-container');
       assert.ok(indexHtml.includes('id="diag-wf-live-status-bar"'), 'index.html must contain #diag-wf-live-status-bar');
       assert.ok(indexHtml.includes('id="diag-wireframe-diagnostics-box"'), 'index.html must contain #diag-wireframe-diagnostics-box');
+    });
+  });
+
+  describe('v1.251.5 Issue #319: Repository Privacy Guardrails & Synthetic Baseline Suite', () => {
+    test('Version consistency: v1.251.5 across package.json, CHANGELOG.md, and templates', () => {
+      assertVersionConsistency('1.251.5');
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.251.5] - 2026-11-18'), 'CHANGELOG.md must contain ## [1.251.5]');
+      assert.ok(changelog.includes('Closes #319'), 'CHANGELOG.md must reference issue #319');
+      const gradle = fs.readFileSync(path.join(__dirname, 'android/app/build.gradle.kts'), 'utf8');
+      assert.ok(gradle.includes('versionName = "1.251.5"'), 'build.gradle.kts must contain versionName = "1.251.5"');
+      assert.ok(gradle.includes('versionCode = 1251050'), 'build.gradle.kts must contain versionCode = 1251050');
+    });
+
+    test('Data Privacy Guardrail: No local machine paths or banned hardware serials in tracked files', () => {
+      const { execSync } = require('child_process');
+      const tracked = execSync('git ls-files', { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
+      assert.ok(tracked.length > 200, 'Must inspect tracked git files');
+
+      const bannedStrings = [
+        '1581F6Z9A247WML' + '3220V',
+        '1581FA6QC264L01' + 'C81WX',
+        '6UZBM6N021' + '047D',
+        'R52WB00' + '1SXW',
+        'Brian\'s S25' + ' Ultra'
+      ];
+
+      const violations = [];
+      for (const file of tracked) {
+        if (file === 'index.test.js') continue;
+        try {
+          const content = fs.readFileSync(path.join(__dirname, file), 'utf8');
+          for (const b of bannedStrings) {
+            if (content.includes(b)) {
+              violations.push({ file, banned: b });
+            }
+          }
+          if (/c:[\\\/]users[\\\/]bpawl/i.test(content) || /onedrive[\\\/]code/i.test(content)) {
+            violations.push({ file, banned: 'user_path' });
+          }
+        } catch (e) {
+          // ignore binary files
+        }
+      }
+
+      assert.deepStrictEqual(violations, [], `Tracked files must not contain sensitive strings or local user paths: ${JSON.stringify(violations)}`);
+    });
+
+    test('Data Privacy Guardrail: Fallback and default coordinates in source code normalize to synthetic baseline', () => {
+      const { execSync } = require('child_process');
+      const tracked = execSync('git ls-files', { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
+      const srcFiles = tracked.filter(f => (f.startsWith('src/') || f.startsWith('tools/companion/') || f === 'index_template.html') && !f.endsWith('.test.js'));
+
+      const violations = [];
+      for (const file of srcFiles) {
+        try {
+          const content = fs.readFileSync(path.join(__dirname, file), 'utf8');
+          const matches = content.match(/40\.01[2-6]\d*/g);
+          if (matches) {
+            violations.push({ file, matches });
+          }
+        } catch (e) {}
+      }
+
+      assert.deepStrictEqual(violations, [], `Source code must not contain residential coordinates: ${JSON.stringify(violations)}`);
     });
   });
 

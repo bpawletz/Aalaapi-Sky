@@ -278,7 +278,7 @@ describe('Companion Server Authentication Enforcement Suite', () => {
         const req = http.request({
           hostname: '127.0.0.1',
           port: testPort,
-          path: '/api/airspace/bounds?lat=40.01250&lon=-83.17593&radius=3&ceiling=2500&includeSafe=true',
+          path: '/api/airspace/bounds?lat=41.32150&lon=-88.99500&radius=3&ceiling=2500&includeSafe=true',
           method: 'GET'
         }, r => {
           let body = '';
@@ -320,7 +320,7 @@ describe('Companion Server Authentication Enforcement Suite', () => {
         const req = http.request({
           hostname: '127.0.0.1',
           port: testPort,
-          path: '/api/airspace/bounds?lat=40.01250&lon=-83.17593&radius=3&ceiling=2500&includeSafe=true',
+          path: '/api/airspace/bounds?lat=41.32150&lon=-88.99500&radius=3&ceiling=2500&includeSafe=true',
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${validToken}`
@@ -343,7 +343,7 @@ describe('Companion Server Authentication Enforcement Suite', () => {
         const req = http.request({
           hostname: '127.0.0.1',
           port: testPort,
-          path: `/api/airspace/bounds?lat=40.01250&lon=-83.17593&radius=3&ceiling=2500&includeSafe=true&token=${encodeURIComponent(validToken)}`,
+          path: `/api/airspace/bounds?lat=41.32150&lon=-88.99500&radius=3&ceiling=2500&includeSafe=true&token=${encodeURIComponent(validToken)}`,
           method: 'GET'
         }, r => {
           let body = '';
@@ -457,7 +457,7 @@ describe('Companion Server Authentication Enforcement Suite', () => {
         const req = http.request({
           hostname: '127.0.0.1',
           port: testPort,
-          path: `/api/airspace/stream?lat=40.0127&lon=-83.1761&radius=5&ceiling=2500&token=${encodeURIComponent(localToken)}`,
+          path: `/api/airspace/stream?lat=41.3217&lon=-88.9948&radius=5&ceiling=2500&token=${encodeURIComponent(localToken)}`,
           method: 'GET'
         }, r => {
           let body = '';
@@ -478,7 +478,7 @@ describe('Companion Server Authentication Enforcement Suite', () => {
         const req = http.request({
           hostname: '127.0.0.1',
           port: testPort,
-          path: `/api/airspace/stream?lat=40.0127&lon=-83.1761&radius=5&ceiling=2500&token=${encodeURIComponent(validToken)}`,
+          path: `/api/airspace/stream?lat=41.3217&lon=-88.9948&radius=5&ceiling=2500&token=${encodeURIComponent(validToken)}`,
           method: 'GET'
         }, r => {
           let receivedData = '';

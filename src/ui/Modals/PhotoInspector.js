@@ -1959,8 +1959,8 @@ const PhotoInspector = {
           ? getCompanionApiBase()
           : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
         const photoPath = p.rawPath || p.filePath || null;
-        const originLat = p.actual?.lat ?? p.lat ?? 40.013195;
-        const originLon = p.actual?.lon ?? p.lon ?? -83.177193;
+        const originLat = p.actual?.lat ?? p.lat ?? 41.321500;
+        const originLon = p.actual?.lon ?? p.lon ?? -88.995000;
         const manifestUuid = (this.activeManifest && this.activeManifest.missionUuid)
           || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.activeInspectionManifest?.missionUuid)
           || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.flightManifest?.missionUuid)

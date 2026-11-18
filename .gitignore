@@ -42,5 +42,17 @@ data/tfr_geojson.json
 android/app/src/main/assets/www/data/tfr_notams.json
 android/app/src/main/assets/www/data/tfr_geojson.json
 
+# Python Bytecode & Cache
+__pycache__/
+*.pyc
+
+# Local Credentials & Secrets
+companion_config.json
+.env
+*.jks
+*.keystore
+!android/app/debug.keystore
+
+
 
 
