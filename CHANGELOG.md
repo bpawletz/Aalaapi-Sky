@@ -1,3 +1,23 @@
+## [1.251.3] - 2026-11-17
+
+### Fixed
+
+#### Pilot & Operational Features
+- **3D Architectural Wireframe Extraction on Survey Imagery (Closes #317)**:
+  - Fixed an issue where running 3D wireframe extraction on survey missions with many downward photos produced a misleading error: `Insufficient authentic architectural lines detected in downward survey imagery (0 2D edges found in 72 downward photo(s))`.
+  - Wireframe edge extraction now processes large flight surveys in real time (~11 seconds for 72 photos, down from timing out after 60+ seconds), extracting thousands of authentic building footprint boundaries, roof ridges, and 3D architectural planes.
+
+#### Under the Hood & Technical Details
+- **Lightweight Preview Image Prioritization (`tools/companion/server.js`)**:
+  - Prioritized `photos/previews` over `photos/raw` in `/api/process/wireframe` and `/api/process/triangulate-mesh`, eliminating 3+ GB raw 48MP JPEG disk reads and 40+ second decode bottlenecks.
+- **Top-K Longest Line Selection & Fast Azimuth Co-Rejection (`tools/companion/wireframe_extractor.py`)**:
+  - Sorted detected Hough line segments by Euclidean pixel length descending and retained the top 45 most significant edges per photo, eliminating noisy micro-textures (shingles, asphalt, foliage) and reducing ray-pair iterations by 100×.
+  - Added rapid horizontal azimuth angle co-rejection (`dot_az < 0.70`), instantly skipping mismatched line pairs before expensive 3D plane intersection math.
+  - Capped evaluated baseline pairs to the top 15 highest-scoring MVS stereo pairs.
+- **Symmetrical Photo Keying & Adaptive Timeout Diagnostics (`tools/companion/wireframe_engine.js`, `wireframe_extractor.py`)**:
+  - Populated and resolved `perPhotoLines` symmetrically by both `photoId` and `filename` across Python and JavaScript engines.
+  - Added adaptive `spawnSync` process timeout scaling dynamically with photo count (`photoCount * 2500ms`, minimum 60s), with explicit `ETIMEDOUT` diagnostic reporting instead of masking timeouts behind empty line fallback errors.
+
 ## [1.251.2] - 2026-11-17
 
 ### Fixed

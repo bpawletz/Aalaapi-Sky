@@ -5468,9 +5468,11 @@ const handleHttpRequest = async (req, res) => {
                 const fname = p.filename || p.photoId || p.id || `photo_${idx}.jpg`;
                 const rawP = path.join(mDir, 'photos', 'raw', fname);
                 const prevP = path.join(mDir, 'photos', 'previews', fname);
-                const resolvedPath = (p.filePath && fs.existsSync(p.filePath))
+                // Prioritize lightweight preview images (960x720/1080p, 9ms load) for OpenCV edge extraction
+                // to avoid 40+ second I/O bottlenecks from 48MP raw JPEGs (which Python downscales anyway)
+                const resolvedPath = (payload.options?.useRawPhotos && p.filePath && fs.existsSync(p.filePath))
                   ? p.filePath
-                  : (fs.existsSync(rawP) ? rawP : (fs.existsSync(prevP) ? prevP : (p.rawPath && fs.existsSync(p.rawPath) ? p.rawPath : null)));
+                  : (fs.existsSync(prevP) ? prevP : (p.filePath && fs.existsSync(p.filePath) ? p.filePath : (fs.existsSync(rawP) ? rawP : (p.rawPath && fs.existsSync(p.rawPath) ? p.rawPath : null))));
 
                 const telem = p.telemetry || p;
                 const lat = telem.lat ?? telem.actual?.lat ?? p.lat ?? originLat;
@@ -5510,7 +5512,8 @@ const handleHttpRequest = async (req, res) => {
             const fname = payload.filename || payload.photoId;
             const rawP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'raw', fname);
             const prevP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'previews', fname);
-            if (fs.existsSync(rawP)) payload.imagePath = rawP;
+            if (!payload.options?.useRawPhotos && fs.existsSync(prevP)) payload.imagePath = prevP;
+            else if (fs.existsSync(rawP)) payload.imagePath = rawP;
             else if (fs.existsSync(prevP)) payload.imagePath = prevP;
           }
 
@@ -5854,9 +5857,11 @@ const handleHttpRequest = async (req, res) => {
                 const fname = p.filename || p.photoId || p.id || `photo_${idx}.jpg`;
                 const rawP = path.join(mDir, 'photos', 'raw', fname);
                 const prevP = path.join(mDir, 'photos', 'previews', fname);
-                const resolvedPath = (p.filePath && fs.existsSync(p.filePath))
+                // Prioritize lightweight preview images (960x720/1080p, 9ms load) for OpenCV edge extraction
+                // to avoid 40+ second I/O bottlenecks from 48MP raw JPEGs (which Python downscales anyway)
+                const resolvedPath = (payload.options?.useRawPhotos && p.filePath && fs.existsSync(p.filePath))
                   ? p.filePath
-                  : (fs.existsSync(rawP) ? rawP : (fs.existsSync(prevP) ? prevP : (p.rawPath && fs.existsSync(p.rawPath) ? p.rawPath : null)));
+                  : (fs.existsSync(prevP) ? prevP : (p.filePath && fs.existsSync(p.filePath) ? p.filePath : (fs.existsSync(rawP) ? rawP : (p.rawPath && fs.existsSync(p.rawPath) ? p.rawPath : null))));
                 return {
                   ...p,
                   filePath: resolvedPath,

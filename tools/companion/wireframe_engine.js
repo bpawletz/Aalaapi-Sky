@@ -315,8 +315,9 @@ function extractWireframeJsFallback(payload = {}) {
       rejectedPitchCount++;
       return;
     }
-    const pid = photo.photoId || photo.filename;
-    const lines2d = ppl[pid] || photo.lines2D || photo.detectedLines || [];
+    const pid = photo.photoId || photo.id || photo.filename;
+    const fname = photo.filename;
+    const lines2d = ppl[pid] || (fname && ppl[fname]) || photo.lines2D || photo.detectedLines || [];
     if (lines2d.length === 0) {
       zeroLinesCount++;
       return;
@@ -815,21 +816,30 @@ function extractWireframe(payload = {}) {
   const startTime = Date.now();
   const tmpFile = path.join(os.tmpdir(), `wireframe_${Date.now()}_${Math.random().toString(36).slice(2)}.json`);
 
+  const photoCount = Array.isArray(payload.photos) ? payload.photos.length : 1;
+  const timeoutMs = Math.max(60000, Math.min(300000, photoCount * 2500));
+
   try {
     fs.writeFileSync(tmpFile, JSON.stringify(payload), 'utf8');
 
     // Run python wireframe_extractor.py with cross-platform binary resolution
     const pythonBins = process.platform === 'win32' ? ['python', 'python3'] : ['python3', 'python'];
     let proc = null;
+    let pythonTimeoutOccurred = false;
     for (const bin of pythonBins) {
       try {
         proc = spawnSync(bin, [SCRIPT_PATH, '--input', tmpFile], {
-          timeout: 60000,
+          timeout: timeoutMs,
           encoding: 'utf8',
           windowsHide: true
         });
+        if (proc && proc.error && proc.error.code === 'ETIMEDOUT') {
+          pythonTimeoutOccurred = true;
+        }
         if (proc && proc.status === 0 && proc.stdout) break;
-      } catch (_) {}
+      } catch (err) {
+        if (err && err.code === 'ETIMEDOUT') pythonTimeoutOccurred = true;
+      }
     }
 
     try { fs.unlinkSync(tmpFile); } catch (_) {}
@@ -851,10 +861,14 @@ function extractWireframe(payload = {}) {
 
     // Fall back to JS engine if python fails or returned error
     const fallbackRes = extractWireframeJsFallback(payload);
-    if (!fallbackRes.success && pythonDiagnostic && pythonDiagnostic.error) {
-      fallbackRes.error = pythonDiagnostic.error;
-      if (pythonDiagnostic.diagnostics) fallbackRes.diagnostics = pythonDiagnostic.diagnostics;
-      if (pythonDiagnostic.opencvVersion) fallbackRes.opencvVersion = pythonDiagnostic.opencvVersion;
+    if (!fallbackRes.success) {
+      if (pythonTimeoutOccurred) {
+        fallbackRes.error = `OpenCV Python 3D wireframe extraction timed out after ${Math.round(timeoutMs / 1000)}s while processing ${photoCount} photos. Try reducing photo count or processing preview imagery.`;
+      } else if (pythonDiagnostic && pythonDiagnostic.error) {
+        fallbackRes.error = pythonDiagnostic.error;
+        if (pythonDiagnostic.diagnostics) fallbackRes.diagnostics = pythonDiagnostic.diagnostics;
+        if (pythonDiagnostic.opencvVersion) fallbackRes.opencvVersion = pythonDiagnostic.opencvVersion;
+      }
     }
     fallbackRes.executionTimeMs = Date.now() - startTime;
     return fallbackRes;

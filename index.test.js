@@ -46883,6 +46883,48 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('v1.251.3 Issue #317: OpenCV 3D Wireframe Extraction Timeout & 2D Line Fallback on Survey Imagery', () => {
+    const wireframeEngine = require('./tools/companion/wireframe_engine.js');
+
+    test('extractWireframeJsFallback performs symmetrical photo lookup by photoId, id, and filename', () => {
+      const photos = [
+        { photoId: 'PHOTO_0001', filename: 'DJI_0001.JPG', lat: 41.3215, lon: -88.9950, pitch: -60, heading: 0 },
+        { id: 'PHOTO_0002', filename: 'DJI_0002.JPG', lat: 41.3216, lon: -88.9950, pitch: -60, heading: 0 }
+      ];
+
+      // perPhotoLines keyed only by filename, but photo objects have photoId/id
+      const payload = {
+        photos,
+        perPhotoLines: {
+          'DJI_0001.JPG': [[0.1, 0.1, 0.9, 0.1]],
+          'DJI_0002.JPG': [[0.1, 0.1, 0.9, 0.1]]
+        }
+      };
+
+      const res = wireframeEngine.extractWireframeJsFallback(payload);
+      assert.strictEqual(res.diagnostics.zeroLinesCount, 0, 'Must find lines even when perPhotoLines is keyed by filename and photo uses photoId/id');
+    });
+
+    test('wireframe_extractor.py sorts Hough lines by length and limits 2D segments for fast MVS triangulation', () => {
+      const scriptCode = fs.readFileSync(path.join(__dirname, 'tools/companion/wireframe_extractor.py'), 'utf8');
+      assert.ok(scriptCode.includes('valid_candidates.sort(key=lambda c: c[0], reverse=True)'), 'Must sort candidates descending by length');
+      assert.ok(scriptCode.includes('max_2d = int(options.get("max2dLinesPerPhoto"'), 'Must support max2dLinesPerPhoto');
+      assert.ok(scriptCode.includes('max_pairs = int(options.get("maxStereoPairs"'), 'Must support maxStereoPairs');
+      assert.ok(scriptCode.includes('dot_az = abs(dirA[0] * dirB[0] + dirA[1] * dirB[1])'), 'Must perform fast horizontal azimuth co-rejection');
+    });
+
+    test('server.js /api/process/wireframe prioritizes lightweight preview images over 48MP raw JPEGs', () => {
+      const serverCode = fs.readFileSync(path.join(__dirname, 'tools/companion/server.js'), 'utf8');
+      assert.ok(serverCode.includes('fs.existsSync(prevP) ? prevP : (p.filePath && fs.existsSync(p.filePath) ? p.filePath : (fs.existsSync(rawP) ? rawP'), 'Must prioritize previews over raw in server.js');
+    });
+
+    test('wireframe_engine.js scales timeout adaptively and reports explicit ETIMEDOUT diagnostics', () => {
+      const engineCode = fs.readFileSync(path.join(__dirname, 'tools/companion/wireframe_engine.js'), 'utf8');
+      assert.ok(engineCode.includes('Math.max(60000, Math.min(300000, photoCount * 2500))'), 'Must adaptively scale timeout based on photo count');
+      assert.ok(engineCode.includes('timed out after'), 'Must provide clear diagnostic error message on timeout');
+    });
+  });
+
 });
 });
 

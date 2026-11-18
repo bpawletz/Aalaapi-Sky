@@ -452,6 +452,7 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None, origi
     est_eave_h = max(4.0, min(18.0, cam_alt * 0.42))
     est_roof_h = max(2.5, min(7.0, est_eave_h * 0.42))
 
+    valid_candidates = []
     for item in hough_lines:
         # Robust unpacking for both OpenCV 4 (N, 1, 4) and OpenCV 5 (N, 4)
         if hasattr(item, '__len__') and len(item) == 1 and hasattr(item[0], '__len__'):
@@ -467,6 +468,17 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None, origi
         pix_len = math.hypot(dx_pix, dy_pix)
         if pix_len < min_line_len:
             continue
+        valid_candidates.append((pix_len, x1_pix, y1_pix, x2_pix, y2_pix))
+
+    # Sort descending by 2D pixel length so authentic long edges (roof ridges, eaves, footprint)
+    # take precedence over short micro-texture noise (shingles, asphalt, foliage)
+    valid_candidates.sort(key=lambda c: c[0], reverse=True)
+    max_2d = int(options.get("max2dLinesPerPhoto", 45))
+    selected_lines = valid_candidates[:max_2d]
+
+    for (pix_len, x1_pix, y1_pix, x2_pix, y2_pix) in selected_lines:
+        dx_pix = x2_pix - x1_pix
+        dy_pix = y2_pix - y1_pix
 
         # Record normalized 2D line [u1, v1, u2, v2]
         u1 = round(x1_pix / float(new_w), 4)
@@ -674,8 +686,9 @@ def build_stereo_pair_graph(photo_meta, options=None):
                     "g_dist": g_dist
                 })
 
+    max_pairs = int(options.get("maxStereoPairs", 15))
     pairs.sort(key=lambda p: p["score"], reverse=True)
-    return pairs
+    return pairs[:max_pairs]
 
 def triangulate_stereo_lines(posA, r1a, r2a, posB, r1b, r2b, sensitivity=1.0):
     """
@@ -824,8 +837,9 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
         if pitch > -20.0:
             rejected_pitch_count += 1
             continue
-        pid = p.get("photoId") or p.get("filename")
-        lines2d = per_photo_lines.get(pid, [])
+        pid = p.get("photoId") or p.get("id") or p.get("filename")
+        fname = p.get("filename")
+        lines2d = per_photo_lines.get(pid) or (per_photo_lines.get(fname) if fname else None) or p.get("lines2D") or p.get("detectedLines") or []
         if len(lines2d) == 0:
             zero_lines_2d_count += 1
             continue
@@ -904,24 +918,34 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
         posA = pmA["cam_pos"]
         posB = pmB["cam_pos"]
 
-        # Precompute ray directions for lines in photo A
+        # Precompute ray directions and horizontal unit azimuths for lines in photo A
         raysA = []
         for lA in linesA:
             u1, v1, u2, v2 = lA
             r1 = project_pixel_to_ray(u1 * 1920.0, v1 * 1080.0, 1920.0, 1080.0, pmA["hfov"], pmA["vfov"], posA, pmA["yaw"], pmA["pitch"], pmA["roll"])
             r2 = project_pixel_to_ray(u2 * 1920.0, v2 * 1080.0, 1920.0, 1080.0, pmA["hfov"], pmA["vfov"], posA, pmA["yaw"], pmA["pitch"], pmA["roll"])
-            raysA.append((r1, r2, (u1, v1, u2, v2)))
+            dr = r2 - r1
+            norm_dr = math.hypot(dr[0], dr[2])
+            dir_xz = (dr[0] / norm_dr, dr[2] / norm_dr) if norm_dr > 1e-4 else (0.0, 0.0)
+            raysA.append((r1, r2, dir_xz))
 
-        # Precompute ray directions for lines in photo B
+        # Precompute ray directions and horizontal unit azimuths for lines in photo B
         raysB = []
         for lB in linesB:
             u1, v1, u2, v2 = lB
             r1 = project_pixel_to_ray(u1 * 1920.0, v1 * 1080.0, 1920.0, 1080.0, pmB["hfov"], pmB["vfov"], posB, pmB["yaw"], pmB["pitch"], pmB["roll"])
             r2 = project_pixel_to_ray(u2 * 1920.0, v2 * 1080.0, 1920.0, 1080.0, pmB["hfov"], pmB["vfov"], posB, pmB["yaw"], pmB["pitch"], pmB["roll"])
-            raysB.append((r1, r2, (u1, v1, u2, v2)))
+            dr = r2 - r1
+            norm_dr = math.hypot(dr[0], dr[2])
+            dir_xz = (dr[0] / norm_dr, dr[2] / norm_dr) if norm_dr > 1e-4 else (0.0, 0.0)
+            raysB.append((r1, r2, dir_xz))
 
-        for (r1a, r2a, _) in raysA:
-            for (r1b, r2b, _) in raysB:
+        for (r1a, r2a, dirA) in raysA:
+            for (r1b, r2b, dirB) in raysB:
+                # Fast azimuth angle co-rejection: lines differing by > 45 deg in horizontal azimuth cannot match
+                dot_az = abs(dirA[0] * dirB[0] + dirA[1] * dirB[1])
+                if dot_az < 0.70 and (dirA[0] != 0.0 or dirA[1] != 0.0) and (dirB[0] != 0.0 or dirB[1] != 0.0):
+                    continue
                 p1, p2 = triangulate_stereo_lines(posA, r1a, r2a, posB, r1b, r2b, sensitivity=sensitivity)
                 if p1 is None or p2 is None:
                     continue
@@ -1122,21 +1146,27 @@ def main():
             p_path = photo.get("filePath") or photo.get("rawPath") or photo.get("path")
             p_data = photo.get("imageData")
             p_telem = photo.get("telemetry", photo)
-            p_key = photo.get("filename") or photo.get("photoId") or (os.path.basename(p_path) if p_path else "unknown")
-            if p_key in per_photo_lines and per_photo_lines[p_key]:
+            p_fname = photo.get("filename") or (os.path.basename(p_path) if p_path else None)
+            p_id = photo.get("photoId") or photo.get("id")
+            p_key = p_fname or p_id or "unknown"
+            if (p_fname and p_fname in per_photo_lines and per_photo_lines[p_fname]) or (p_id and p_id in per_photo_lines and per_photo_lines[p_id]):
                 continue
             if photo.get("lines2D"):
-                per_photo_lines[p_key] = photo["lines2D"]
-                if photo.get("photoId"):
-                    per_photo_lines[photo["photoId"]] = photo["lines2D"]
+                l2d = photo["lines2D"]
+                if p_fname:
+                    per_photo_lines[p_fname] = l2d
+                if p_id:
+                    per_photo_lines[p_id] = l2d
                 continue
             res = extract_wireframe_from_image(p_path, telemetry=p_telem, options=options, origin=origin, image_data=p_data)
             if res.get("success"):
                 all_lines.extend(res.get("lines", []))
                 total_raw += res.get("totalRawLines", 0)
-                per_photo_lines[p_key] = res.get("lines2D", [])
-                if photo.get("photoId") and photo.get("photoId") != p_key:
-                    per_photo_lines[photo["photoId"]] = res.get("lines2D", [])
+                extracted_2d = res.get("lines2D", [])
+                if p_fname:
+                    per_photo_lines[p_fname] = extracted_2d
+                if p_id:
+                    per_photo_lines[p_id] = extracted_2d
 
         # Priority 1: Unproject authentic detected architectural lines from photos
         authentic_res = unproject_authentic_architectural_lines(photos, per_photo_lines, origin=origin, options=options)
