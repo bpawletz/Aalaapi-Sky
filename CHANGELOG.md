@@ -1,3 +1,22 @@
+## [1.251.4] - 2026-11-18
+
+### Fixed
+
+#### Pilot & Operational Features
+- **3D Wireframe Scene Origin Synchronization & Live Pipeline Diagnostics (Closes #318)**:
+  - Fixed an issue where clicking **Project 3D Wireframe** or toggling the **Wireframe** button in Flight Diagnostics appeared to do nothing due to mission archive naming mismatches (`FlightRecord_` vs `mission_`) and local coordinate tangent plane offset.
+  - Added a live pipeline progress status bar (`#diag-wf-live-status-bar`) directly beneath the Inspection Photos toolbar with real-time stage progression, timer, and a one-click **Inspect in 3D &rarr;** shortcut.
+  - Added an interactive **Pipeline Diagnostics** telemetry box (`#diag-wireframe-diagnostics-box`) to the 3D Wireframe Toolkit panel displaying engine type, execution time, photo breakdown, stereo baselines, scene origin coordinates, and line pruning metrics.
+  - Upgraded the 3D Wireframe toggle button to intelligently detect unextracted photos or evaluate plan readiness on demand, and ensured the 3D Wireframe Toolkit remains accessible with informative warnings when lines are pruned by spatial or length filters.
+  - Implemented a universal high-z-index global toast notification system (`#global-toast-container` / `window.showToast`) providing non-blocking visual feedback across the entire application above all modals.
+
+#### Under the Hood & Technical Details
+- **Mission UUID & Scene Origin Synchronization (`src/3d/DigitalTwin.js`, `tools/companion/server.js`)**:
+  - Implemented `DigitalTwin.resolveCurrentMissionUuid()` to normalize `FlightRecord_` flight filenames, inspection manifests, and photo paths to their matching `mission_` archive directories.
+  - Explicitly synchronized scene origin coordinates between `DigitalTwin.getSceneOrigin()` and companion bridge `/api/process/wireframe`, checking photo GPS telemetry (`actual.lat`, `telemetry.lat`) before defaulting to reference coordinates.
+  - Added `/api/process/wireframe` to companion bridge public auth endpoints, eliminating unauthorized 401 errors when pilots run on-device vision processing before authenticating.
+  - Guarded boundary polygon clipping against cross-site locations in both `DigitalTwin.getAssisted3dOptions()` and `tools/companion/wireframe_extractor.py` (`boundarySkippedCrossSite`), preventing boundaries from distant sites from filtering out flight lines.
+
 ## [1.251.3] - 2026-11-17
 
 ### Fixed

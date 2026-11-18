@@ -192,7 +192,7 @@ function isPublicAuthEndpoint(pathname, method) {
   if (pathname === '/api/openapi.json' || pathname === '/api/mcp/openapi.json') return true;
   if (pathname.startsWith('/api/tools/')) return true;
   if (pathname.startsWith('/api/ai3d/')) return true;
-  if (pathname.startsWith('/api/stitch/') || pathname.startsWith('/api/process/stitch')) return true;
+  if (pathname.startsWith('/api/stitch/') || pathname.startsWith('/api/process/stitch') || pathname.startsWith('/api/process/wireframe')) return true;
   if (pathname === '/health' || pathname === '/favicon.ico') return true;
   if (pathname === '/api/discovery' || pathname === '/api/airspace/discover' || pathname === '/api/adsb/discover' || pathname === '/api/bridge/discover') return true;
 
@@ -5451,11 +5451,27 @@ const handleHttpRequest = async (req, res) => {
 
           // If missionUuid is provided, resolve photos and telemetry from archive
           if (payload.missionUuid) {
-            const mDir = path.join(ARCHIVE_DIR, payload.missionUuid);
+            let missionUuid = payload.missionUuid;
+            const frMatch = missionUuid.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
+            if (frMatch) {
+              missionUuid = `mission_${frMatch[1]}_[${frMatch[2]}]`;
+            }
+            let mDir = path.join(ARCHIVE_DIR, missionUuid);
+            if (!fs.existsSync(mDir) && Array.isArray(payload.photos) && payload.photos[0]) {
+              const sampleP = payload.photos[0].filePath || payload.photos[0].rawPath || payload.photos[0].previewPath || '';
+              const mMatch = sampleP.match(/mission_\d{4}-\d{2}-\d{2}_\[\d{2}-\d{2}-\d{2}\]/);
+              if (mMatch && fs.existsSync(path.join(ARCHIVE_DIR, mMatch[0]))) {
+                missionUuid = mMatch[0];
+                mDir = path.join(ARCHIVE_DIR, missionUuid);
+              }
+            }
+            payload.missionUuid = missionUuid;
             const rec = loadOrRecoverManifest(mDir);
             const manifest = (rec && rec.manifest) ? rec.manifest : null;
-            const originLat = payload.origin?.lat || manifest?.homePoint?.lat || manifest?.photos?.[0]?.actual?.lat || manifest?.photos?.[0]?.lat || 41.3215;
-            const originLon = payload.origin?.lon || manifest?.homePoint?.lon || manifest?.photos?.[0]?.actual?.lon || manifest?.photos?.[0]?.lon || -88.9950;
+            const p0Lat = payload.photos?.[0]?.actual?.lat ?? payload.photos?.[0]?.telemetry?.lat ?? payload.photos?.[0]?.lat;
+            const p0Lon = payload.photos?.[0]?.actual?.lon ?? payload.photos?.[0]?.telemetry?.lon ?? payload.photos?.[0]?.lon;
+            const originLat = payload.origin?.lat || manifest?.homePoint?.lat || manifest?.photos?.[0]?.actual?.lat || manifest?.photos?.[0]?.lat || p0Lat || 41.3215;
+            const originLon = payload.origin?.lon || manifest?.homePoint?.lon || manifest?.photos?.[0]?.actual?.lon || manifest?.photos?.[0]?.lon || p0Lon || -88.9950;
             if (!payload.origin) payload.origin = { lat: originLat, lon: originLon };
 
             const sourcePhotos = (Array.isArray(payload.photos) && payload.photos.length > 0)
@@ -5563,6 +5579,12 @@ const handleHttpRequest = async (req, res) => {
                 }
               } catch (_) {}
             }
+          }
+
+          if (result && typeof result === 'object') {
+            result.origin = payload.origin;
+            result.missionUuid = payload.missionUuid;
+            result.archiveResolved = Boolean(payload.missionUuid && fs.existsSync(path.join(ARCHIVE_DIR, payload.missionUuid)));
           }
 
           res.writeHead(200, {

@@ -810,6 +810,7 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
 
     # Parse boundary polygon if provided (for convex hull / parcel clipping)
     boundary_poly = []
+    boundary_skipped_cross_site = False
     raw_bp = options.get("boundaryPolygon")
     if raw_bp and isinstance(raw_bp, list):
         for bp in raw_bp:
@@ -823,6 +824,16 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
                     plon = float(bp.get("lon") or bp.get("longitude") or bp.get("lng"))
                     bx, bz = latlon_to_world(plat, plon, orig_lat, orig_lon)
                     boundary_poly.append((bx, bz))
+
+    # Sanity-check boundary polygon proximity to scene origin (0, 0)
+    if boundary_poly and len(boundary_poly) >= 3:
+        poly_cx = sum(pt[0] for pt in boundary_poly) / len(boundary_poly)
+        poly_cz = sum(pt[1] for pt in boundary_poly) / len(boundary_poly)
+        dist_from_origin = math.hypot(poly_cx, poly_cz)
+        if dist_from_origin > 1000.0:
+            # Boundary is from a different flight site / workspace, skip clipping
+            boundary_poly = []
+            boundary_skipped_cross_site = True
 
     # Phase 1: Build per-photo metadata
     photo_meta = []
@@ -887,7 +898,8 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
             "rejectedPitchCount": rejected_pitch_count,
             "zeroLines2dCount": zero_lines_2d_count,
             "stereoPairsCount": 0,
-            "clippedByBoundaryCount": 0
+            "clippedByBoundaryCount": 0,
+            "boundarySkippedCrossSite": boundary_skipped_cross_site
         }
         if rejected_pitch_count > 0 and zero_lines_2d_count == 0:
             err_msg = f"0 of {len(photos)} photos met downward gimbal pitch requirement (<= -20 deg; {rejected_pitch_count} were too shallow)."
@@ -1073,7 +1085,8 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
             "rejectedPitchCount": rejected_pitch_count,
             "zeroLines2dCount": zero_lines_2d_count,
             "stereoPairsCount": len(stereo_pairs),
-            "clippedByBoundaryCount": clipped_by_boundary_count
+            "clippedByBoundaryCount": clipped_by_boundary_count,
+            "boundarySkippedCrossSite": boundary_skipped_cross_site
         }
     }
 

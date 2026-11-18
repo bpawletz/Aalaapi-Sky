@@ -46925,6 +46925,68 @@ describe('Android 14+ PendingIntent, Standalone Diagnostics & Screen Keep-Awake 
     });
   });
 
+  describe('v1.251.4 Issue #318: 3D Wireframe Scene Origin Synchronization & Live Diagnostics UI', () => {
+    test('DigitalTwin.resolveCurrentMissionUuid normalizes FlightRecord filenames to mission_ archives', () => {
+      const dt = Object.create(DigitalTwin);
+      dt.activeInspectionManifest = null;
+      dt.flightManifest = null;
+      dt.selectedFlightId = 'FlightRecord_2026-11-16_[16-38-27].txt';
+      assert.strictEqual(dt.resolveCurrentMissionUuid(), 'mission_2026-11-16_[16-38-27]');
+
+      dt.selectedFlightId = 'mission_custom_01';
+      assert.strictEqual(dt.resolveCurrentMissionUuid(), 'mission_custom_01');
+
+      dt.activeInspectionManifest = { missionUuid: 'mission_manifest_99' };
+      assert.strictEqual(dt.resolveCurrentMissionUuid(), 'mission_manifest_99');
+    });
+
+    test('DigitalTwin.getSceneOrigin falls back to photo telemetry before defaulting to static coordinate', () => {
+      const dt = Object.create(DigitalTwin);
+      dt.selectedFlightId = 'flown-inspection';
+      dt.telemetryData = null;
+      dt.flightPhotos = [
+        { actual: { lat: 37.7749, lon: -122.4194 } }
+      ];
+      const origin = dt.getSceneOrigin();
+      assert.strictEqual(origin.lat, 37.7749);
+      assert.strictEqual(origin.lon, -122.4194);
+    });
+
+    test('DigitalTwin.getAssisted3dOptions guards boundary polygon against cross-site locations', () => {
+      const dt = Object.create(DigitalTwin);
+      dt.getSceneOrigin = () => ({ lat: 40.0130, lon: -83.1765 });
+      global.flightLayers = [{
+        boundaryPolygon: [
+          { lat: 41.3215, lon: -88.9950 },
+          { lat: 41.3225, lon: -88.9940 },
+          { lat: 41.3205, lon: -88.9930 }
+        ]
+      }];
+      global.currentLayerIndex = 0;
+      const opts = dt.getAssisted3dOptions();
+      assert.strictEqual(opts.boundaryPolygon, undefined, 'Must omit cross-site boundary polygon');
+    });
+
+    test('wireframe_extractor.py includes boundarySkippedCrossSite and distance guard', () => {
+      const extractorCode = fs.readFileSync(path.join(__dirname, 'tools/companion/wireframe_extractor.py'), 'utf8');
+      assert.ok(extractorCode.includes('boundary_skipped_cross_site'), 'Must track cross-site boundary bypass');
+      assert.ok(extractorCode.includes('dist_from_origin > 1000.0'), 'Must guard against boundaries > 1km from origin');
+    });
+
+    test('server.js normalizes missionUuid and checks payload.photos[0] before fallback origin', () => {
+      const serverCode = fs.readFileSync(path.join(__dirname, 'tools/companion/server.js'), 'utf8');
+      assert.ok(serverCode.includes('mission_${frMatch[1]}_[${frMatch[2]}]'), 'Must normalize FlightRecord to mission_');
+      assert.ok(serverCode.includes('pathname.startsWith(\'/api/process/wireframe\')'), 'Wireframe process must be in public auth endpoints');
+    });
+
+    test('Global toast container and live wireframe status bar exist in index.html', () => {
+      const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      assert.ok(indexHtml.includes('id="global-toast-container"'), 'index.html must contain #global-toast-container');
+      assert.ok(indexHtml.includes('id="diag-wf-live-status-bar"'), 'index.html must contain #diag-wf-live-status-bar');
+      assert.ok(indexHtml.includes('id="diag-wireframe-diagnostics-box"'), 'index.html must contain #diag-wireframe-diagnostics-box');
+    });
+  });
+
 });
 });
 

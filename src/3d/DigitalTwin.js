@@ -2508,6 +2508,7 @@ const FlightDiagnostics = {
             this.flightPhotos = filtered;
             this.flightPhotosFlightId = flightId;
             this.flightManifest = { ...mData, photos: filtered, totalPhotos: filtered.length };
+            this.activeInspectionManifest = this.flightManifest;
             activeInspectionManifest = this.flightManifest;
             if (mData.wireframe && mData.wireframe.success && Array.isArray(mData.wireframe.lines) && mData.wireframe.lines.length > 0 && mData.wireframe.engine !== 'javascript_fallback') {
               this.wireframeData = mData.wireframe;
@@ -2575,6 +2576,14 @@ const FlightDiagnostics = {
     // instead of the loaded flight's actual location.
     if (this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
       return { lat: this.telemetryData.points[0].lat, lon: this.telemetryData.points[0].lon };
+    }
+    if (this.flightPhotos && this.flightPhotos.length > 0) {
+      const p0 = this.flightPhotos[0];
+      const pLat = p0.actual?.lat ?? p0.telemetry?.lat ?? p0.lat;
+      const pLon = p0.actual?.lon ?? p0.telemetry?.lon ?? p0.lon;
+      if (typeof pLat === 'number' && typeof pLon === 'number' && !isNaN(pLat) && !isNaN(pLon)) {
+        return { lat: pLat, lon: pLon };
+      }
     }
     return { lat: 40.0130, lon: -83.1765 };
   },
@@ -5210,6 +5219,7 @@ const FlightDiagnostics = {
 
     const minLen = typeof this.wireframeMinLengthFilter === 'number' ? this.wireframeMinLengthFilter : 0.5;
     const elevOffset = typeof this.wireframeElevationOffset === 'number' ? this.wireframeElevationOffset : 0.0;
+    const maxDist = 300.0;
 
     const validLines = this.wireframeData.lines.filter(line => {
       if (!Array.isArray(line) || line.length < 6) return false;
@@ -5225,12 +5235,27 @@ const FlightDiagnostics = {
     const badge = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-count-badge') : null;
     const planesCount = Array.isArray(this.wireframeData.planes) ? this.wireframeData.planes.length : 0;
     if (badge) {
-      badge.textContent = planesCount > 0 ? `${validLines.length} lines • ${planesCount} planes` : `${validLines.length} lines`;
+      if (validLines.length === 0 && this.wireframeData.lines.length > 0) {
+        badge.textContent = `0 of ${this.wireframeData.lines.length} lines (pruned)`;
+      } else {
+        badge.textContent = planesCount > 0 ? `${validLines.length} lines • ${planesCount} planes` : `${validLines.length} lines`;
+      }
     }
+
+    this.updateWireframeDiagnostics(this.wireframeData, {
+      totalLines: this.wireframeData.lines.length,
+      validLinesCount: validLines.length,
+      minLen,
+      maxDist
+    });
 
     if (validLines.length === 0) {
       const panel = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-panel') : null;
-      if (panel) panel.style.display = 'none';
+      if (panel) panel.style.display = 'block';
+      const info = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-selected-info') : null;
+      if (info && this.wireframeData.lines.length > 0) {
+        info.innerHTML = `<span style="color: #fbbf24;">⚠️ 0 of ${this.wireframeData.lines.length} lines visible within scene bounds. Adjust prune slider (${minLen}m) or verify scene origin.</span>`;
+      }
       const legendWf = (typeof document !== 'undefined') ? document.getElementById('diag-legend-wireframe') : null;
       if (legendWf) legendWf.style.display = 'none';
       const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-toggle-wireframe') : null;
@@ -5309,6 +5334,23 @@ const FlightDiagnostics = {
   },
 
   toggleWireframe(visible) {
+    if (!this.wireframeData || !Array.isArray(this.wireframeData.lines) || this.wireframeData.lines.length === 0) {
+      if (this.hasPhysicalWireframePhotos()) {
+        if (typeof showToast === 'function') {
+          showToast('ℹ️ No 3D wireframe generated yet. Starting OpenCV extraction...', 'info');
+        }
+        this.extractWireframeFromCurrentPhotos();
+        return;
+      }
+      const readiness = this.getWireframeReadinessReport();
+      if (readiness) {
+        const msg = readiness.status === 'ready'
+          ? `ℹ️ Plan ready for 3D Wireframe (${readiness.stereoPairsCount} baselines). Ingest photos to extract.`
+          : `⚠️ Plan not ready for 3D Wireframe: ${readiness.reasons[0] || 'Check flight parameters'}`;
+        if (typeof showToast === 'function') showToast(msg, 'warning');
+      }
+      return;
+    }
     if (visible === undefined) {
       this.diagShowWireframe = !this.diagShowWireframe;
     } else {
@@ -5482,7 +5524,19 @@ const FlightDiagnostics = {
         const activeIdx = (typeof currentLayerIndex !== 'undefined' && currentLayerIndex >= 0 && currentLayerIndex < flightLayers.length) ? currentLayerIndex : 0;
         const targetLayer = flightLayers[activeIdx];
         if (targetLayer && Array.isArray(targetLayer.boundaryPolygon) && targetLayer.boundaryPolygon.length >= 3) {
-          opts.boundaryPolygon = targetLayer.boundaryPolygon;
+          const origin = this.getSceneOrigin();
+          const p0 = targetLayer.boundaryPolygon[0];
+          const bLat = p0.lat !== undefined ? p0.lat : (Array.isArray(p0) ? p0[0] : null);
+          const bLon = p0.lon !== undefined ? p0.lon : (p0.lng !== undefined ? p0.lng : (Array.isArray(p0) ? p0[1] : null));
+          let withinProximity = true;
+          if (bLat !== null && bLon !== null && typeof origin?.lat === 'number') {
+            const dLat = Math.abs(bLat - origin.lat);
+            const dLon = Math.abs(bLon - origin.lon);
+            if (dLat > 0.015 || dLon > 0.015) withinProximity = false;
+          }
+          if (withinProximity) {
+            opts.boundaryPolygon = targetLayer.boundaryPolygon;
+          }
         }
       }
     }
@@ -5825,6 +5879,81 @@ const FlightDiagnostics = {
     }
   },
 
+  resolveCurrentMissionUuid() {
+    if (this.activeInspectionManifest && this.activeInspectionManifest.missionUuid) {
+      return this.activeInspectionManifest.missionUuid;
+    }
+    if (this.flightManifest && this.flightManifest.missionUuid) {
+      return this.flightManifest.missionUuid;
+    }
+    if (this.currentLoadedMission && this.currentLoadedMission.uuid) {
+      return this.currentLoadedMission.uuid;
+    }
+    if (this.selectedFlightId && typeof this.selectedFlightId === 'string') {
+      const frMatch = this.selectedFlightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
+      if (frMatch) {
+        return `mission_${frMatch[1]}_[${frMatch[2]}]`;
+      }
+      return this.selectedFlightId;
+    }
+    if (this.flightPhotos && this.flightPhotos.length > 0) {
+      for (const p of this.flightPhotos) {
+        const sampleP = p.filePath || p.rawPath || p.previewPath || '';
+        const mMatch = sampleP.match(/mission_\d{4}-\d{2}-\d{2}_\[\d{2}-\d{2}-\d{2}\]/);
+        if (mMatch) return mMatch[0];
+      }
+    }
+    return 'default-mission';
+  },
+
+  updateWireframeDiagnostics(data, filterStats = {}) {
+    if (typeof document === 'undefined') return;
+    const box = document.getElementById('diag-wireframe-diagnostics-box');
+    const content = document.getElementById('diag-wf-diag-content');
+    const badge = document.getElementById('diag-wf-diag-engine-badge');
+    if (!box || !content) return;
+
+    if (!data) {
+      box.style.display = 'none';
+      return;
+    }
+
+    box.style.display = 'block';
+    if (badge) {
+      badge.textContent = data.opencvVersion ? `OpenCV ${data.opencvVersion}` : (data.engine || 'cv2_mvs');
+    }
+
+    const execTime = typeof data.executionTimeMs === 'number' ? `${(data.executionTimeMs / 1000).toFixed(1)}s` : null;
+    const origin = data.origin || this.getSceneOrigin();
+    const originStr = (origin && typeof origin.lat === 'number') ? `[${origin.lat.toFixed(5)}, ${origin.lon.toFixed(5)}]` : 'Scene Center';
+    const totalLines = (data.lines && Array.isArray(data.lines)) ? data.lines.length : 0;
+    const validCount = filterStats.validLinesCount !== undefined ? filterStats.validLinesCount : totalLines;
+    const filteredCount = totalLines - validCount;
+    const baselines = data.stereoPairsCount !== undefined ? `${data.stereoPairsCount} baselines` : null;
+    const diag = data.diagnostics || {};
+
+    let html = '';
+    html += `<div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+      <span><strong>Origin:</strong> <span style="font-family: monospace; color: #38bdf8;">${originStr}</span></span>
+      ${execTime ? `<span style="font-family: monospace; color: #fbbf24;">${execTime}</span>` : ''}
+    </div>`;
+
+    html += `<div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+      <span><strong>Lines:</strong> ${validCount} rendered${filteredCount > 0 ? ` <span style="color: #fbbf24;">(${filteredCount} pruned)</span>` : ''}</span>
+      ${baselines ? `<span style="color: #38bdf8;">${baselines}</span>` : ''}
+    </div>`;
+
+    if (diag.totalInputPhotos) {
+      html += `<div style="color: var(--text-muted); font-size: 0.62rem; margin-top: 2px;">
+        Photos: ${diag.validPitchPhotos || 0}/${diag.totalInputPhotos} downward
+        ${diag.clippedByBoundaryCount ? ` • ${diag.clippedByBoundaryCount} clipped by boundary` : ''}
+        ${diag.boundarySkippedCrossSite ? ` • <span style="color: #a78bfa;">Boundary auto-bypassed (cross-site)</span>` : ''}
+      </div>`;
+    }
+
+    content.innerHTML = html;
+  },
+
   async extractWireframeFromCurrentPhotos() {
     const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-extract-wireframe') : null;
     const hasPhys = this.hasPhysicalWireframePhotos();
@@ -5858,27 +5987,55 @@ const FlightDiagnostics = {
       btn.classList.add('diag-btn-working');
       btn.textContent = '⏳ Extracting...';
     }
+
+    const statusBar = (typeof document !== 'undefined') ? document.getElementById('diag-wf-live-status-bar') : null;
+    const statusText = (typeof document !== 'undefined') ? document.getElementById('diag-wf-status-text') : null;
+    const statusDetail = (typeof document !== 'undefined') ? document.getElementById('diag-wf-status-detail') : null;
+    const statusTimer = (typeof document !== 'undefined') ? document.getElementById('diag-wf-timer') : null;
+    const statusSpinner = (typeof document !== 'undefined') ? document.getElementById('diag-wf-status-spinner') : null;
+    const view3dBtn = (typeof document !== 'undefined') ? document.getElementById('diag-wf-view-3d-btn') : null;
+    const dismissBtn = (typeof document !== 'undefined') ? document.getElementById('diag-wf-dismiss-btn') : null;
+
+    if (statusBar) {
+      statusBar.classList.remove('hidden');
+      statusBar.style.display = 'flex';
+    }
+    if (statusSpinner) statusSpinner.style.display = 'block';
+    if (view3dBtn) view3dBtn.style.display = 'none';
+    if (statusText) statusText.textContent = 'Extracting 3D Architectural Wireframe...';
+    if (statusDetail) statusDetail.textContent = 'Stage 1/3: Reading photo baselines & telemetry...';
+    if (statusTimer) statusTimer.textContent = '0.0s';
+
+    const startT = Date.now();
+    const timerInterval = setInterval(() => {
+      const elapsed = ((Date.now() - startT) / 1000).toFixed(1);
+      if (statusTimer) statusTimer.textContent = `${elapsed}s`;
+      if (statusDetail && Date.now() - startT > 1600 && statusDetail.textContent.includes('Stage 1/3')) {
+        statusDetail.textContent = 'Stage 2/3: OpenCV Canny/Hough line detection & epipolar MVS triangulation...';
+      }
+    }, 200);
+
     try {
       const apiBase = (typeof getCompanionApiBase === 'function')
         ? getCompanionApiBase()
         : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
 
-      const missionUuid = (this.activeInspectionManifest && this.activeInspectionManifest.missionUuid)
-        || (this.currentLoadedMission && this.currentLoadedMission.uuid)
-        || this.selectedFlightId
-        || 'default-mission';
-
+      const missionUuid = this.resolveCurrentMissionUuid();
+      const origin = this.getSceneOrigin();
       const assistedOpts = this.getAssisted3dOptions();
       const photosToProcess = (this.flightPhotos && this.flightPhotos.length > 0)
         ? this.flightPhotos
         : ((typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest && Array.isArray(activeInspectionManifest.photos)) ? activeInspectionManifest.photos : []);
 
+      const authHeaders = (typeof getCompanionAuthHeaders === 'function') ? getCompanionAuthHeaders() : {};
+
       const res = await fetch(`${apiBase}/api/process/wireframe`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           missionUuid,
           flightId: this.selectedFlightId,
+          origin,
           options: assistedOpts,
           photos: photosToProcess
         })
@@ -5886,9 +6043,36 @@ const FlightDiagnostics = {
 
       if (!res.ok) throw new Error(`Bridge returned HTTP ${res.status}`);
       const data = await res.json();
+      clearInterval(timerInterval);
+      const elapsed = ((Date.now() - startT) / 1000).toFixed(1);
+
       if (data && data.success) {
+        if (statusSpinner) statusSpinner.style.display = 'none';
+        if (statusText) statusText.textContent = `✅ Wireframe Extracted (${data.count || 0} lines)`;
+        if (statusDetail) statusDetail.textContent = `Stage 3/3: Rendered in 3D viewport (${elapsed}s)`;
+        if (statusTimer) statusTimer.textContent = `${elapsed}s`;
+        if (view3dBtn) {
+          view3dBtn.style.display = 'inline-block';
+          view3dBtn.onclick = () => this.switchTab('3d');
+        }
+        if (dismissBtn) {
+          dismissBtn.onclick = () => {
+            if (statusBar) {
+              statusBar.classList.add('hidden');
+              statusBar.style.display = 'none';
+            }
+          };
+        }
+
         this.loadWireframeGeometry(data);
         this.switchTab('3d');
+        if (typeof this.frameCameraToScene === 'function') {
+          this.frameCameraToScene('3d');
+        }
+        if (this.threeRenderer && this.threeScene && this.threeCamera) {
+          this.threeRenderer.render(this.threeScene, this.threeCamera);
+        }
+
         const pairsBadge = document.getElementById('diag-stereo-pairs-badge');
         if (pairsBadge && typeof data.stereoPairsCount === 'number') {
           pairsBadge.textContent = `${data.stereoPairsCount} Baselines`;
@@ -5900,9 +6084,22 @@ const FlightDiagnostics = {
         throw new Error(data.error || 'Extraction failed');
       }
     } catch (err) {
-      if (typeof showToast === 'function') showToast(`Wireframe extraction failed: ${err.message}`, 'error');
+      clearInterval(timerInterval);
+      if (statusSpinner) statusSpinner.style.display = 'none';
+      if (statusText) statusText.textContent = '⚠️ Wireframe Extraction Note';
+      if (statusDetail) statusDetail.textContent = err.message;
+      if (dismissBtn) {
+        dismissBtn.onclick = () => {
+          if (statusBar) {
+            statusBar.classList.add('hidden');
+            statusBar.style.display = 'none';
+          }
+        };
+      }
+      if (typeof showToast === 'function') showToast(`Wireframe extraction note: ${err.message}`, 'warning');
       else alert(`Wireframe extraction note: ${err.message}`);
     } finally {
+      clearInterval(timerInterval);
       if (btn) {
         btn.disabled = false;
         btn.removeAttribute('aria-busy');
